@@ -1,0 +1,33 @@
+# Docker build context = the repo root (render.yaml dockerContext: .).
+# Allow-list: only the backend and the SQL migrations reach the image.
+*
+!backend/
+!supabase/migrations/
+
+# Never bake dependencies, secrets, local data or tests into the image
+backend/node_modules
+backend/.env
+backend/.env.*
+backend/coverage
+backend/.nyc_output
+backend/**/__tests__
+backend/**/*.test.js
+backend/**/*.md
+backend/demo.db
+backend/**/*.sqlite
+backend/data/attachments
+backend/logs
+backend/tmp
+backend/*.bat
+backend/*.ps1
+backend/Dockerfile
+backend/.eslintrc*
+backend/.prettierrc*
+**/.DS_Store
+**/Thumbs.db
+**/.vscode
+**/.idea
+
+# Operator scripts stay out of the image, except the pre-deploy migration runner
+backend/scripts/
+!backend/scripts/migrate.sh

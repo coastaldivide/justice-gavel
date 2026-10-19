@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v182
@@ -128,8 +129,7 @@ describe('RUNTIME. Deep Flow Simulation', () => {
     }
   });
   test('RT-06: Network errors handled with circuit breaker + user message', async () => {
-    const fs = await import('fs');
-    const api = fs.readFileSync(__REPO + '/frontend/src/services/api.ts','utf8');
+    const api = feSource(__REPO + '/frontend/src/services/api.ts');
     // The client "circuit breaker" was dead code (checkCircuit was never called) and was
     // removed in step 2; transient failures are handled by withRetry + normalised messages.
     expect(api).toContain('withRetry');

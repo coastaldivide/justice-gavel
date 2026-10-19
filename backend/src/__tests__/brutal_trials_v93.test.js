@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v93
@@ -65,9 +66,9 @@ describe('SNT. Sentry Error Monitoring', () => {
 // ── I18N4. i18n/index.ts — Translation Engine ─────────────────────────────
 describe('I18N4. i18n/index.ts — Translation Engine', () => {
   test('I18N4-01: t(key) — primary → English fallback → key fallback chain', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/i18n/index.ts','utf8');
-    expect(src).toContain('export function t(key: string, params?: Record<string, string | number>): string');
+    const src = feSource(__REPO + '/frontend/src/i18n/index.ts');
+    expect(src).toContain('export function t(key: string, params?: TParams): string');
+    expect(src).toMatch(/export type TParams = Record<string, string \| number/);
     expect(src).toContain('const primary = dict[lang] && dict[lang][key];');
     expect(src).toContain('Fallback: English');
     expect(src).toContain('return key;');

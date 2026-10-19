@@ -18,6 +18,7 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
+  useLang();
   const { colors } = useTheme();
   const filled = Math.round(rating);
   return (
@@ -31,7 +32,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
       </View>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
         color:colors.textMuted }}>
-        {rating.toFixed(1)} ({count} review{count!==1?'s':''})
+        {t(count === 1 ? 'x_lawyer_profile_review_one' : 'x_lawyer_profile_review_other', { rating: rating.toFixed(1), count })}
       </Text>
     </View>
   );
@@ -39,7 +40,9 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 
 import Analytics from '../services/analytics';
 import { useInFlight } from '../hooks/useInFlight';
+import { t, useLang, locale } from '../i18n';
 function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
 
   const reviewGuard = React.useRef(false);
@@ -63,7 +66,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         verified: res.data?.verified ?? 0,
         created_at: new Date().toISOString() }, ...prev]);
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'error');
+      showToast(apiErrorMessage(e, t('home_sos_failed')), 'error');
     } finally {
       reviewGuard.current = false;
       setSubmitting(false);
@@ -119,7 +122,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           if (lawyerRes.status==='fulfilled' && lawyerRes.value?.data) {
             setLawyer(lawyerRes.value.data);
             setLoadError(null);
-            navigation.setOptions({ title: lawyerRes.value.data?.name || 'Attorney Profile' });
+            navigation.setOptions({ title: lawyerRes.value.data?.name || t('x_nav_attorney_profile') });
           } else if (lawyerRes.status==='rejected') {
             const status = (lawyerRes.reason as { response?: { status?: number } })?.response?.status;
             setLoadError(status === 404 ? 'notfound' : 'network');
@@ -152,15 +155,15 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const handleCall = useCallback(() => {
     if (!lawyer?.phone) return;
-    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); });
+    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => { showToast(t('action_failed'), 'error'); });
   }, [lawyer, showToast]);
 
   const handleShare = async () => {
     if (!lawyer) return;
     try {
       await RNShare.share({
-        title: `${lawyer.name} -- Criminal Defense Attorney`,
-        message: `Attorney: ${lawyer.name}\nCity: ${lawyer.city}, ${lawyer.state}\n${lawyer.phone ? 'Phone: '+lawyer.phone+'\n' : ''}Find legal help on Justice Gavel: https://justicegavel.app`,
+        title: t('x_lawyer_profile_criminal_defense_attorney', { name: lawyer.name }),
+        message: t('x_lawyer_profile_attorney_city_find_legal', { name: lawyer.name, city: lawyer.city, state: lawyer.state, value: lawyer.phone ? t('x_lawyer_profile_phone', { phone: lawyer.phone }) + '\n' : '' }),
         url: lawyer.website || 'https://justicegavel.app',
       });
     } catch { /* share cancelled */ }
@@ -172,9 +175,9 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     if (!lawyer) return;
     try {
       await api.post('/saved/lawyers', { lawyer_id: lawyer.id });
-      showToast(`${lawyer.name} saved to your attorneys.`, 'success');
+      showToast(t('x_lawyer_profile_saved_attorneys', { name: lawyer.name }), 'success');
     } catch (e) {
-      showToast(apiErrorMessage(e, 'Could not save attorney. Please try again.'), 'error');
+      showToast(apiErrorMessage(e, t('x_lawyer_profile_could_not_save_attorney')), 'error');
     }
   });
 
@@ -184,7 +187,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     const url = Platform.OS === 'ios'
       ? `maps://maps.apple.com/?address=${addr}&q=${encodeURIComponent(lawyer.name)}`
       : `https://www.google.com/maps/search/?api=1&query=${addr}`;
-    Linking.openURL(url).catch(() => showToast('Could not open maps app.'));
+    Linking.openURL(url).catch(() => showToast(t('x_lawyer_profile_could_not_open_maps')));
   };
 
 
@@ -201,14 +204,14 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, color:colors.textMuted,
         textAlign:'center' }}>
         {loadError === 'network'
-          ? 'Could not load this attorney. Check your connection and try again.'
-          : 'Attorney profile not available.'}
+          ? t('x_lawyer_profile_could_not_load_this')
+          : t('x_lawyer_profile_attorney_profile_not_available')}
       </Text>
       {loadError === 'network' && (
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Try again"
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('try_again')}
           onPress={() => { setLoading(true); loadProfile(true); }}
           style={{ marginTop:16, paddingHorizontal:20, paddingVertical:12, minHeight:44, borderRadius:10, backgroundColor:colors.navy }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.white, fontWeight:'700' }}>Try again</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.white, fontWeight:'700' }}>{t('try_again')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -246,25 +249,25 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           {lawyer.source && lawyer.source !== 'seed' && (
             <View style={[s.badge, { backgroundColor: colors.infoBg, flexDirection:'row', alignItems:'center', gap:4 }]}>
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>Google Verified</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>{t('x_lawyer_profile_google_verified')}</Text>
             </View>
           )}
           {lawyer.bar_verified && (
             <View style={s.badge}>
-              <Text maxFontSizeMultiplier={1.4} style={s.badgeText}>✓ Bar Verified</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.badgeText}>{t('x_expungement_bar_verified')}</Text>
             </View>
           )}
           {lawyer.jtb_verified && (
             <View style={[s.badge, { backgroundColor:colors.gold, borderColor:colors.warnDark }]}>
               <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color:colors.textOnGold }]}>
-                ⚖️ JTB Verified
+                {t('x_lawyer_profile_jtb_verified')}
               </Text>
             </View>
           )}
           {lawyer.golden_gavel && (
             <View style={[s.badge, { backgroundColor:colors.warnBg, borderColor:colors.gold }]}>
               <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color:colors.warnDark }]}>
-                🏆 Golden Gavel
+                {t('x_nav_golden_gavel')}
               </Text>
             </View>
           )}
@@ -281,12 +284,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           <View style={{ flex:1 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
               fontWeight:'700', color:colors.warnDark, marginBottom:2 }}>
-              Profile information pending verification
+              {t('x_lawyer_profile_profile_information_pending_verifica')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
               color:colors.warnDark }}>
-              This attorney has not yet claimed their profile. Contact details were
-              sourced from public bar records. Verify credentials before retaining.
+              {t('x_lawyer_profile_this_attorney_has_not')}
             </Text>
           </View>
         </View>
@@ -299,7 +301,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
               {(lawyer.rating ?? 0).toFixed(1)}★
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
-              Rating
+              {t('x_bail_search_rating')}
             </Text>
           </View>
         )}
@@ -309,7 +311,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
               {lawyer.years_experience}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
-              Yrs exp
+              {t('x_lawyer_profile_yrs_exp')}
             </Text>
           </View>
         )}
@@ -321,17 +323,17 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                 : `${Math.round(lawyer.avg_response_hrs)}h`}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
-              Avg reply
+              {t('x_lawyer_profile_avg_reply')}
             </Text>
           </View>
         )}
         {lawyer.free_consultation && (
           <View style={s.stat}>
             <Text maxFontSizeMultiplier={1.4} style={[s.statValue, { color:colors.legal }]}>
-              Free
+              {t('tier_free')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
-              Consult
+              {t('x_lawyer_profile_consult')}
             </Text>
           </View>
         )}
@@ -342,7 +344,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {lawyer.bio ? (
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
-              About
+              {t('x_firm_public_profile_about')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.bodyText, { color:colors.textSecond }]}>
               {lawyer.bio}
@@ -353,7 +355,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {specialties.length > 0 && (
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
-              Specialties
+              {t('x_lawyer_profile_specialties')}
             </Text>
             <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8, marginTop:8 }}>
               {specialties.map((sp: string) => (
@@ -372,7 +374,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {langs.length > 0 && (
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
-              Languages
+              {t('x_lawyer_profile_languages')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.bodyText, { color:colors.textSecond }]}>
               {langs.join(' · ')}
@@ -383,11 +385,10 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {lawyer.bar_number && (
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
-              Bar Information
+              {t('x_lawyer_profile_bar_information')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.bodyText, { color:colors.textSecond }]}>
-              Bar #{lawyer.bar_number}
-              {lawyer.bar_state ? ` · ${lawyer.bar_state}` : ''}
+              {t('x_lawyer_profile_bar', { bar_number: lawyer.bar_number, value: lawyer.bar_state ? ` · ${lawyer.bar_state}` : '' })}
             </Text>
           </View>
         )}
@@ -396,7 +397,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {(
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
-              Reviews
+              {t('x_lawyer_profile_reviews')}
             </Text>
             {reviews.length > 0 && (
               <View style={{ marginBottom: 10 }}>
@@ -408,13 +409,13 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             )}
             {submitted ? (
               <Text testID="review-submitted" maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.legal, marginBottom: 10 }}>
-                ✓ Thanks -- your review was posted.
+                {t('x_lawyer_profile_thanks_review_was_posted')}
               </Text>
             ) : showReview ? (
               <View testID="review-form" style={[s.reviewCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                 <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
                   {[1, 2, 3, 4, 5].map(n => (
-                    <TouchableOpacity key={n} accessibilityRole="button" accessibilityLabel={`${n} star${n > 1 ? 's' : ''}`}
+                    <TouchableOpacity key={n} accessibilityRole="button" accessibilityLabel={t(n === 1 ? 'x_lawyer_profile_star_one' : 'x_lawyer_profile_star_other', { n })}
                       accessibilityState={{ selected: userRating === n }} onPress={() => setUserRating(n)}
                       hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, color: colors.goldText }}>{n <= userRating ? '★' : '☆'}</Text>
@@ -422,10 +423,10 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                   ))}
                 </View>
                 <TextInput
-                  accessibilityLabel="Review comment (optional)"
+                  accessibilityLabel={t('x_lawyer_profile_review_comment_optional')}
                   value={reviewText}
                   onChangeText={setReviewText}
-                  placeholder="Share your experience (optional)"
+                  placeholder={t('x_lawyer_profile_share_experience_optional')}
                   placeholderTextColor={colors.textMuted}
                   multiline
                   maxLength={1000}
@@ -433,25 +434,25 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                     color: colors.textPrimary, textAlignVertical: 'top', marginBottom: 10 }}
                 />
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Post review"
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_lawyer_profile_post_review')}
                     disabled={userRating === 0 || submitting} onPress={submitReview}
                     style={[s.actionBtn, { flex: 1, backgroundColor: colors.navy, opacity: userRating === 0 || submitting ? 0.5 : 1 }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{submitting ? 'Posting…' : 'Post review'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{submitting ? t('x_lawyer_profile_posting') : t('x_lawyer_profile_post_review')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cancel review"
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_lawyer_profile_cancel_review')}
                     onPress={() => setShowReview(false)} style={[s.actionBtn, { paddingHorizontal: 16 }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color: colors.textSecond }]}>Cancel</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color: colors.textSecond }]}>{t('case_cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Write a review" testID="write-review-button"
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_lawyer_profile_write_review')} testID="write-review-button"
                 onPress={() => setShowReview(true)} style={{ paddingVertical: 8, marginBottom: 8 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>✍️ Write a review</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>{t('x_lawyer_profile_write_review_2')}</Text>
               </TouchableOpacity>
             )}
             {reviews.length === 0 ? (
-              <Text style={{color: colors.textMuted, textAlign: 'center', padding: 16}}>No reviews yet</Text>
+              <Text style={{color: colors.textMuted, textAlign: 'center', padding: 16}}>{t('x_lawyer_profile_no_reviews_yet')}</Text>
             ) : reviews.map((r, i) => (
               <View key={`reviews-${i}`} style={[s.reviewCard, { backgroundColor:colors.bgCard,
                 borderColor:colors.border }]}>
@@ -463,11 +464,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                   <Text testID={Number(r.verified) === 1 ? 'review-verified' : 'review-unverified'}
                     maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
                     color: Number(r.verified) === 1 ? colors.legal : colors.textMuted }}>
-                    {Number(r.verified) === 1 ? '✓ Verified client' : 'Unverified review'}
+                    {Number(r.verified) === 1 ? t('x_lawyer_profile_verified_client') : t('x_lawyer_profile_unverified_review')}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
                     color:colors.textMuted }}>
-                    {new Date(r.created_at ?? 0).toLocaleDateString('en-US', { month:'short', year:'numeric' })}
+                    {new Date(r.created_at ?? 0).toLocaleDateString(locale(), { month:'short', year:'numeric' })}
                   </Text>
                 </View>
                 {r.comment ? (
@@ -487,23 +488,23 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <TouchableOpacity
           accessibilityRole="button"
  style={[s.actionBtn, { backgroundColor:colors.navy }]}
-          testID="lawyer-book-button" accessibilityLabel={"\ud83d\udcc5 Book Consultation"}
-          accessibilityHint="Schedules a video consultation" onPress={() => { hapticImpact(); handleBook(); }}>
-          <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
+          testID="lawyer-book-button" accessibilityLabel={t('x_lawyer_profile_book_consultation')}
+          accessibilityHint={t('x_lawyer_profile_schedules_video_consultation')} onPress={() => { hapticImpact(); handleBook(); }}>
+          <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{t('x_lawyer_profile_book_consultation')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Opens a message thread with this attorney" style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
-          accessibilityLabel="Send Message" onPress={handleMessage}
+          accessibilityHint={t('x_lawyer_profile_opens_message_thread_with')} style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
+          accessibilityLabel={t('x_lawyer_profile_send_message')} onPress={handleMessage}
                   >
-          <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{t('x_lawyer_profile_send_message_2')}</Text>
         </TouchableOpacity>
         {lawyer.phone && (
           <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
             testID="lawyer-profile-contact-button" onPress={handleCall} accessibilityRole="button"
- accessibilityLabel="Call attorney"
-          accessibilityHint="Dials this phone number">
-            <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📞 Call</Text>
+ accessibilityLabel={t('x_lawyer_profile_call_attorney')}
+          accessibilityHint={t('x_lawyer_profile_dials_this_phone_number')}>
+            <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{t('lawyers_call')}</Text>
           </TouchableOpacity>
         )}
         {/* Secondary actions row */}
@@ -512,24 +513,24 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             accessibilityRole="button"
 
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleSave} disabled={savePending} accessibilityState={{ disabled: savePending, busy: savePending }} accessibilityLabel={"\u2b50 Save"}
-          accessibilityHint="Saves your changes">
-            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
+            onPress={handleSave} disabled={savePending} accessibilityState={{ disabled: savePending, busy: savePending }} accessibilityLabel={t('x_lawyer_profile_save')}
+          accessibilityHint={t('x_lawyer_profile_saves_changes')}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>{t('x_lawyer_profile_save')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleDirections} accessibilityLabel={"\ud83d\udccd Directions"}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>📍 Directions</Text>
+            onPress={handleDirections} accessibilityLabel={t('x_lawyer_profile_directions')}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>{t('x_lawyer_profile_directions')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
 
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleShare} accessibilityLabel={"\u2191 Share"}
-          accessibilityHint="Shares this information">
-            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>
+            onPress={handleShare} accessibilityLabel={t('x_bar_prep_explanation_share')}
+          accessibilityHint={t('x_deadline_calculator_shares_this_information')}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>{t('x_bar_prep_explanation_share')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -539,12 +540,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={{ margin: 12, padding: 12, backgroundColor: colors.legalBg,
                        borderRadius: 10, borderWidth: 1, borderColor: colors.legalBg }}>
           <Text style={{ fontSize: 11, fontWeight: '700', color: colors.legal, letterSpacing: 0.5, marginBottom: 6 }}>
-            {'✓ RESPONDS VIA JUSTICE GAVEL'}
+            {t('x_lawyer_profile_responds_via_justice_gavel')}
           </Text>
           {!!jtbProfile.platform_rating && (
             <Text style={{ fontSize: 13, color: colors.textSecond, marginBottom: 2 }}>
-              {'Platform rating: ' + jtbProfile.platform_rating.toFixed(1) + ' ★' +
-               (jtbProfile.platform_review_count ? ' (' + jtbProfile.platform_review_count + ' consultations)' : '')}
+              {t('x_lawyer_profile_platform_rating', { value: jtbProfile.platform_rating.toFixed(1), value2: (jtbProfile.platform_review_count ? ' ' + t('x_lawyer_profile_consultations', { platform_review_count: jtbProfile.platform_review_count }) : '') })}
             </Text>
           )}
           {!!jtbProfile.outcome_label && (
@@ -554,10 +554,10 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           )}
           {(jtbProfile.next_slots?.length ?? 0) > 0 && (
             <View>
-              <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>{'Next available:'}</Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>{t('x_lawyer_profile_next_available')}</Text>
               {(jtbProfile.next_slots as Array<{date:string;time:string;label:string}>).slice(0,3).map(sl => (
                 <Text key={sl.date + sl.time} style={{ fontSize: 12, color: colors.legal, marginBottom: 2 }}>
-                  {sl.label + ' at ' + sl.time}
+                  {t('x_lawyer_profile_slot_at', { label: sl.label, time: sl.time })}
                 </Text>
               ))}
             </View>

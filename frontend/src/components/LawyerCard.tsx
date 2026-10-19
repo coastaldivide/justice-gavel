@@ -7,6 +7,7 @@ import { COLORS } from '../constants/theme';
 import {
   View, Text, TouchableOpacity, Linking,
 } from 'react-native';
+import { t, useLang } from '../i18n';
 
 export type Lawyer = {
   id: number;
@@ -40,6 +41,7 @@ type LawyerCardProps = {
 
 /** Renders a single attorney card with call button, verification badges, and distance. */
 export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPress, onCall }: LawyerCardProps) {
+  useLang();
   const dist = lawyer.distanceKm != null
     ? lawyer.distanceKm < 1
       ? '< 1 km'
@@ -58,7 +60,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
         borderWidth: 1,
         borderColor: colors.border,
       }}
-      accessibilityLabel={`Attorney ${lawyer.name}${dist ? `, ${dist} away` : ''}`}>
+      accessibilityLabel={t('x_lawyer_card_attorney', { name: lawyer.name, value: dist ? t('x_lawyer_card_away', { dist }) : '' })}>
 
       {/* Header row */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -87,7 +89,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           {!!lawyer.bar_verified && (
             <View style={{ backgroundColor: COLORS.legal, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>BAR ✓</Text>
+              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>{t('x_lawyer_card_bar')}</Text>
             </View>
           )}
         </View>
@@ -110,10 +112,10 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           </Text>
         )}
         {!!lawyer.free_consultation && (
-          <Text style={{ fontSize: 12, color: colors.legal }}>Free consult</Text>
+          <Text style={{ fontSize: 12, color: colors.legal }}>{t('x_lawyer_card_free_consult')}</Text>
         )}
         {!!lawyer.pro_bono && (
-          <Text style={{ fontSize: 12, color: colors.info }}>Pro bono</Text>
+          <Text style={{ fontSize: 12, color: colors.info }}>{t('x_lawyer_card_pro_bono')}</Text>
         )}
       </View>
 
@@ -128,9 +130,9 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
             paddingVertical: 10, alignItems: 'center',
           }}
           accessibilityRole="button"
-          accessibilityLabel={`Call ${lawyer.name}`}>
+          accessibilityLabel={t('hn_call_a11y', { name: lawyer.name })}>
           <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>
-            📞 Call now
+            {t('x_lawyer_card_call_now')}
           </Text>
         </TouchableOpacity>
       )}

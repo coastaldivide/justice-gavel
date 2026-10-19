@@ -23,17 +23,19 @@ import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 type Phase = 'ready' | 'countdown' | 'sending' | 'done' | 'error';
 
-const RIGHTS_CARDS = [
-  { icon: '🤐', title: 'Stay silent', body: 'Say: "I am invoking my right to remain silent." Then stop talking.' },
-  { icon: '⚖️', title: 'Ask for a lawyer', body: 'Say: "I want a lawyer." They must stop questioning you. Wait for your attorney.' },
-  { icon: '🚗', title: 'Refuse searches', body: 'Say: "I do not consent to a search." Do not resist physically -- fight it in court.' },
-  { icon: '📞', title: 'Your phone call', body: 'You have the right to a call. Call family or a lawyer. Do not discuss your case on the call.' },
-];
+const RIGHTS_CARDS = perLang(() => [
+  { icon: '🤐', title: t('x_emergency_stay_silent'), body: t('x_emergency_say_i_am_invoking') },
+  { icon: '⚖️', title: t('x_emergency_ask_lawyer'), body: t('x_emergency_say_i_want_lawyer') },
+  { icon: '🚗', title: t('x_emergency_refuse_searches'), body: t('x_emergency_say_i_do_not') },
+  { icon: '📞', title: t('x_emergency_phone_call'), body: t('x_emergency_have_right_call_call') },
+]);
 
 function EmergencyScreen({ navigation }: ScreenProps) {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -91,7 +93,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
       const user = userData ? JSON.parse(userData) : {};
       const active = contacts.filter(Boolean);
       if (active.length === 0) {
-        setResult('No emergency contacts saved yet.\nAdd contacts in the Emergency Contacts screen.');
+        setResult(t('x_emergency_no_emergency_contacts_saved'));
         setPhase('error');
         setSendingSOS(false);
         return;
@@ -100,10 +102,10 @@ function EmergencyScreen({ navigation }: ScreenProps) {
         userName: user.displayName || user.name || 'User',
         contacts: active, lat, lng,
       });
-      setResult(`✓ Alert sent to ${res.data?.results?.length ?? active.length} contact(s).`);
+      setResult(t('x_emergency_alert_sent_contact_s', { value: res.data?.results?.length ?? active.length }));
       setPhase('done');
     } catch {
-      setResult('Could not send alert. Check your connection and try again.');
+      setResult(t('x_emergency_could_not_send_alert'));
       setPhase('error');
     } finally {
       setSendingSOS(false);
@@ -115,7 +117,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
   const call = (num: string) => {
     hapticImpact();
     Linking.openURL(`tel:${num.replace(/\D/g, "")}`).catch(() =>
-      showToast(`Please dial ${num} manually.`, 'warning')
+      showToast(t('cp_dial_manually', { num }), 'warning')
     );
   };
 
@@ -133,16 +135,16 @@ function EmergencyScreen({ navigation }: ScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
-          accessibilityLabel="Call 911" onPress={() => call('911')}
+          accessibilityLabel={t('x_emergency_call_911')} onPress={() => call('911')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>🚨  CALL 911</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>{t('x_emergency_call_911_2')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.blue }]}
-          accessibilityLabel={"\ud83d\udc99  CRISIS 988"} onPress={() => call('988')}
+          accessibilityLabel={t('x_emergency_crisis_988')} onPress={() => call('988')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>💙  CRISIS 988</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>{t('x_emergency_crisis_988')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -154,12 +156,12 @@ function EmergencyScreen({ navigation }: ScreenProps) {
         {phase === 'ready' && (
           <>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>
-              Are you in trouble?
+              {t('x_emergency_trouble')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>
               {contacts.length > 0
-                ? `Tap below to alert ${contacts.length} contact(s) with your GPS location.`
-                : '⚠️ No contacts saved yet.\nAdd them in Emergency Contacts first.'}
+                ? t('x_emergency_tap_below_alert_contact', { length: contacts.length })
+                : t('x_emergency_no_contacts_saved_yet')}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
@@ -167,31 +169,31 @@ function EmergencyScreen({ navigation }: ScreenProps) {
               onPress={startCountdown}
               disabled={contacts.length === 0}
               activeOpacity={0.85}
-              accessibilityLabel="Send emergency alert to your contacts"
-              accessibilityHint="Starts a 5 second countdown then sends your location"
+              accessibilityLabel={t('x_emergency_send_emergency_alert_contacts')}
+              accessibilityHint={t('x_emergency_starts_5_second_countdown')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.sosBtnText}>🚨  Send Emergency Alert</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.sosBtnText}>{t('x_emergency_send_emergency_alert')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.shareBtn}
               onPress={() => navigation.navigate('EmergencyShare')}
               activeOpacity={0.85}
-              accessibilityLabel="Share location with bail agent and lawyer"
+              accessibilityLabel={t('x_emergency_share_location_with_bail')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>📤  Share Location + Find Help →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>{t('x_emergency_share_location_find_help')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.addContactsBtn}
               onPress={() => navigation.navigate('Contacts')}
               activeOpacity={0.85}
-              accessibilityLabel="Manage emergency contacts"
+              accessibilityLabel={t('x_emergency_manage_emergency_contacts')}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.addContactsText}>
                 {contacts.length > 0
-                  ? `✓ ${contacts.length} contacts saved  ›  Edit`
-                  : '+ Add emergency contacts'}
+                  ? t('x_emergency_contacts_saved_edit', { length: contacts.length })
+                  : t('x_emergency_add_emergency_contacts')}
               </Text>
             </TouchableOpacity>
           </>
@@ -200,14 +202,14 @@ function EmergencyScreen({ navigation }: ScreenProps) {
         {phase === 'countdown' && (
           <>
             <Text maxFontSizeMultiplier={1.3} style={styles.countdownNum}>{countdown}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Sending in {countdown}s…</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>{t('x_emergency_sending_s', { countdown })}</Text>
             <TouchableOpacity accessibilityRole="button"
               style={styles.cancelBtn}
               onPress={cancelCountdown}
               activeOpacity={0.85}
-              accessibilityLabel="Cancel alert"
+              accessibilityLabel={t('x_emergency_cancel_alert')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>✕  Cancel</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>{t('x_emergency_cancel')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -216,7 +218,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
           <>
             <ActivityIndicator color={colors.white} size="large" />
             <Text maxFontSizeMultiplier={1.4} style={[styles.panelTitle, { marginTop: 14 }]}>
-              Sending alert…
+              {t('x_emergency_sending_alert')}
             </Text>
           </>
         )}
@@ -224,23 +226,23 @@ function EmergencyScreen({ navigation }: ScreenProps) {
         {phase === 'done' && (
           <>
             <Text maxFontSizeMultiplier={1.3} style={styles.bigCheck}>✓</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Alert sent!</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>{t('x_emergency_alert_sent')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
             <TouchableOpacity
               accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-             accessibilityLabel="Done">
-              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Done</Text>
+             accessibilityLabel={t('booking_done')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>{t('booking_done')}</Text>
             </TouchableOpacity>
           </>
         )}
 
         {phase === 'error' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Could not send</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>{t('x_emergency_could_not_send')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-             accessibilityLabel="Try again">
-              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Try again</Text>
+             accessibilityLabel={t('try_again')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>{t('try_again')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -248,16 +250,16 @@ function EmergencyScreen({ navigation }: ScreenProps) {
 
       {/* ── Quick action grid ─────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textSecond }]}>
-        QUICK ACTIONS
+        {t('x_emergency_quick_actions')}
       </Text>
       <View style={styles.quickGrid}>
         {[
-          { icon: '⚖️', label: 'Find\nLawyer',    onPress: () => navigation.navigate('LawyersTab') },
-          { icon: '🔓', label: 'Bail\nAgent',      onPress: () => navigation.navigate('BailTab') },
-          { icon: '💬', label: 'AI\nHelp',         onPress: () => navigation.navigate('ChatTab') },
-          { icon: '🏛️', label: 'Court\nLocator',  onPress: () => navigation.navigate('MoreTab', { screen: 'CourtLocator' }) },
-          { icon: '📋', label: 'Just\nArrested?', onPress: () => navigation.navigate('MoreTab', { screen: 'HelpNow' }) },
-          { icon: '🧠', label: 'Crisis\nHelp',    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
+          { icon: '⚖️', label: t('x_emergency_find_lawyer'),    onPress: () => navigation.navigate('LawyersTab') },
+          { icon: '🔓', label: t('x_emergency_bail_agent'),      onPress: () => navigation.navigate('BailTab') },
+          { icon: '💬', label: t('x_emergency_ai_help'),         onPress: () => navigation.navigate('ChatTab') },
+          { icon: '🏛️', label: t('x_emergency_court_locator'),  onPress: () => navigation.navigate('MoreTab', { screen: 'CourtLocator' }) },
+          { icon: '📋', label: t('x_emergency_just_arrested'), onPress: () => navigation.navigate('MoreTab', { screen: 'HelpNow' }) },
+          { icon: '🧠', label: t('x_emergency_crisis_help'),    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
         ].map(item => (
           <TouchableOpacity accessibilityRole="button"
             key={item.label}
@@ -276,9 +278,9 @@ function EmergencyScreen({ navigation }: ScreenProps) {
 
       {/* ── Know your rights ─────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textSecond }]}>
-        KNOW YOUR RIGHTS RIGHT NOW
+        {t('x_emergency_know_rights_right_now')}
       </Text>
-      {RIGHTS_CARDS.map(c => (
+      {RIGHTS_CARDS().map(c => (
         <View key={c.title} style={[styles.rightsCard, { backgroundColor: colors.bgCard }]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.rightsIcon}>{c.icon}</Text>
           <View style={{ flex: 1 }}>

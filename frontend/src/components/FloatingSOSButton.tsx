@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator, View } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { hapticImpact } from '../utils/webCompat';
+import { t, useLang } from '../i18n';
 
 function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?: boolean }) {
+  useLang();
   const pulse = useRef(new Animated.Value(1)).current;
   const ring  = useRef(new Animated.Value(1)).current;
 
@@ -37,14 +39,14 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
       {/* Button */}
       <Animated.View style={{ transform: [{ scale: pulse }] }}>
         <TouchableOpacity style={styles.btn} onPress={() => { hapticImpact('Heavy').catch(() => {}); onPress(); }}
-      accessibilityLabel="Emergency — call for help"
+      accessibilityLabel={t('x_floating_sosbutton_emergency_call_help')}
       accessibilityRole="button"
-      accessibilityHint="Activates emergency mode" activeOpacity={0.85} disabled={sending}>
+      accessibilityHint={t('x_floating_sosbutton_activates_emergency_mode')} activeOpacity={0.85} disabled={sending}>
           {sending
             ? <ActivityIndicator color={COLORS.white} size="small" />
             : <>
                 <Text style={styles.label}>SOS</Text>
-                <Text style={styles.sub}>HOLD</Text>
+                <Text style={styles.sub}>{t('x_floating_sosbutton_hold')}</Text>
               </>
           }
         </TouchableOpacity>

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v82
@@ -179,8 +180,7 @@ describe('HAGUE-UX. Hague Convention Legal Accuracy + UX', () => {
     // Non-contracting states (India, China, Pakistan) need embassy + local counsel
   });
   test('HAGUE-UX-05: HagueContactScreen legal disclaimer present', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(src).toContain('not legal advice');
     expect(src).toContain('licensed family law attorney');
     expect(src).toContain('legalNoticeText');

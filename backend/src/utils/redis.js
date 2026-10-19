@@ -4,8 +4,8 @@
  * Uses ioredis with graceful degradation — if Redis is unavailable,
  * the app continues to function without caching (just slower).
  *
- * Environment: REDIS_URL (Railway provides this automatically when you
- * add a Redis plugin: Settings → Plugins → Add → Redis)
+ * Environment: REDIS_URL (e.g. a Render Key Value instance's internal URL —
+ * set it on the web service; DEPLOY_ENV_SETUP.md)
  */
 
 import Redis from 'ioredis';

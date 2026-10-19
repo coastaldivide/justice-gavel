@@ -5,6 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Props {
   message?:  string;
@@ -14,11 +15,12 @@ interface Props {
 }
 
 export default function ErrorState({
-  message    = 'Something went wrong. Please try again.',
+  message    = t('x_error_state_something_went_wrong_please'),
   onRetry,
   icon       = '⚠️',
   fullScreen = false,
 }: Props) {
+  useLang();
   const { colors } = useTheme();
 
   return (
@@ -44,10 +46,10 @@ export default function ErrorState({
           style={[s.retryBtn, { borderColor: colors.blue }]}
           onPress={onRetry}
           accessibilityRole="button"
-          accessibilityLabel="Retry — try again"
-          accessibilityHint="Attempts to reload the data"
+          accessibilityLabel={t('x_error_state_retry_try_again')}
+          accessibilityHint={t('x_error_state_attempts_reload_data')}
         >
-          <Text style={[s.retryText, { color: colors.blue }]}>Try Again</Text>
+          <Text style={[s.retryText, { color: colors.blue }]}>{t('help_now_error_retry')}</Text>
         </TouchableOpacity>
       )}
     </View>

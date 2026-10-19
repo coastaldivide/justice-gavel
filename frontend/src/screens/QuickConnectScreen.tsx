@@ -1,7 +1,7 @@
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 import type { ScreenProps } from '../types/navigation';
-import { t } from '../i18n';
+import { t, useLang } from '../i18n';
 import { hapticSuccess, hapticWarn } from '../services/haptics';
 /**
  * QuickConnectScreen -- $19.99 one-time package
@@ -36,8 +36,9 @@ function openDirections(lat: number, lng: number, name: string, onError?: () => 
 
 // ── Contact result card ────────────────────────────────────────────────────────
 function ResultCard({ contact, type, price }: { contact: Record<string,any>; type: 'bondsman' | 'lawyer'; price: string }) {
+  useLang();
   const { showToast } = useToast();
-  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
+  const onLinkError = () => showToast(t('x_match_action_unavailable_this_device'), 'error');
   const isBail  = type === 'bondsman';
   const accent  = isBail ? COLORS.bail : COLORS.legal;
   const bg      = isBail ? COLORS.bailBg   : COLORS.legalBg;
@@ -87,7 +88,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
       {/* Free consult badge */}
       {contact.free_consultation === 1 && (
         <View style={styles.freeConsultBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeConsultText}>✓ Free consultation</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeConsultText}>{t('x_quick_connect_free_consultation')}</Text>
         </View>
       )}
 
@@ -98,14 +99,14 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
           style={[styles.callBtn, { backgroundColor: accent }]}
           onPress={() => callPhone(contact.phone, onLinkError)}
             activeOpacity={0.85}
-          accessibilityHint="Opens your phone dialer"
+          accessibilityHint={t('x_bail_search_opens_phone_dialer')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞  CALL NOW</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_call')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnPhone}>{contact.phone}</Text>
         </TouchableOpacity>
       ) : (
         <View style={[styles.callBtn, { backgroundColor: COLORS.textFaint }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>No phone on file</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_no_phone')}</Text>
         </View>
       )}
 
@@ -114,10 +115,10 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          accessibilityLabel={"\ud83d\uddfa  Get Directions"} onPress={() => openDirections(contact.lat, contact.lng, contact.name, onLinkError)}
+          accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(contact.lat, contact.lng, contact.name, onLinkError)}
             activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>{t('help_now_directions')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -126,6 +127,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const [credit, setCredit] = React.useState<number>(0);
 
@@ -194,11 +196,11 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
       let userMsg = errMsg;
 
       if (isPaymentsUnavailable(e) || status === 503) {
-        userMsg = 'Payments aren’t available yet. No charge was made — free features keep working.';
+        userMsg = t('x_common_payments_aren_t_available');
       } else if (status === 402 && errMsg.toLowerCase().includes('payment')) {
-        userMsg = 'Card was declined. Please try a different payment method.';
+        userMsg = t('x_quick_connect_card_was_declined_please');
       } else if (!e.response) {
-        userMsg = 'No connection. Check your internet and try again.';
+        userMsg = t('x_ch_no_connection_check_internet');
       }
 
       setError(userMsg);
@@ -217,8 +219,8 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Quick Connect</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>One bondsman + one lawyer -- right now</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('qc_heading')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>{t('x_quick_connect_one_bondsman_one_lawyer')}</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.preScroll} showsVerticalScrollIndicator={false}
@@ -226,15 +228,15 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
           {/* Price breakdown */}
           <View style={styles.priceCard}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.priceCardTitle}>What you get</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.priceCardTitle}>{t('qc_what_you_get')}</Text>
 
             <View style={styles.priceRow}>
               <View style={[styles.priceIcon, { backgroundColor: colors.bailBg }]}>
                 <AppIcon name="cash-outline" size={20} color={colors.legal} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>1 Bail Bondsman</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>Nearest licensed bondsman to you. Direct call button.</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>{t('qc_bondsman')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>{t('qc_bondsman_sub')}</Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.bail }]}>$10</Text>
             </View>
@@ -246,14 +248,14 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>1 Criminal Defense Lawyer</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>Nearest verified attorney. Direct call button.</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>{t('qc_lawyer')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>{t('qc_lawyer_sub')}</Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.legal }]}>$10</Text>
             </View>
 
             <View style={styles.totalRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.totalLabel}>Total</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.totalLabel}>{t('qc_total')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.totalAmount}>$19.99</Text>
             </View>
             {credit > 0 && (
@@ -263,23 +265,23 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
             )}
             {credit > 0 && (
               <View style={[styles.totalRow, { borderTopWidth: 1.5, borderTopColor: colors.legal, marginTop: 6, paddingTop: 8 }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.totalLabel, { color: colors.legalDark }]}>You pay</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.totalLabel, { color: colors.legalDark }]}>{t('qc_you_pay')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.totalAmount, { color: colors.legalDark }]}>${Math.max(0, (2000 - credit) / 100).toFixed(2)}</Text>
               </View>
             )}
-            <Text maxFontSizeMultiplier={1.4} style={styles.accountNote}>* Free account required -- takes 10 seconds</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.accountNote}>{t('x_quick_connect_free_account_required_takes')}</Text>
             <View style={{ display: 'none' }}>
             </View>
           </View>
 
           {/* What happens after */}
           <View style={styles.stepsCard}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.stepsTitle}>How it works</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.stepsTitle}>{t('qc_how_it_works')}</Text>
             {[
-              { n: '1', text: 'Tap Pay Now -- one-time $19.99 charge' },
-              { n: '2', text: 'We find the nearest bondsman and lawyer to you' },
-              { n: '3', text: 'Their phone numbers appear immediately' },
-              { n: '4', text: 'Call them directly -- they are real and available' },
+              { n: '1', text: t('x_quick_connect_tap_pay_now_one') },
+              { n: '2', text: t('qc_step2') },
+              { n: '3', text: t('qc_step3') },
+              { n: '4', text: t('x_quick_connect_call_them_directly_they') },
             ].map(s => (
               <View key={s.n} style={styles.stepRow}>
                 <View style={styles.stepNum}>
@@ -303,17 +305,17 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
           {!locReady ? (
             <View style={styles.locRow}>
               <ActivityIndicator size="small" color={COLORS.navy} style={{ marginRight: 8 }} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.locText}>Getting your location…</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.locText}>{t('qc_loc_getting')}</Text>
             </View>
           ) : locError ? (
             <View style={[styles.locRow, styles.locError]}>
               <Text maxFontSizeMultiplier={1.4} style={styles.locErrorText}>
-                ⚠ Location unavailable -- we'll find results for your state
+                {t('x_quick_connect_location_unavailable_we_ll')}
               </Text>
             </View>
           ) : (
             <View style={[styles.locRow, styles.locReady]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.locReadyText}>📍 Location ready -- results near you</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.locReadyText}>{t('x_quick_connect_location_ready_results_near')}</Text>
             </View>
           )}
 
@@ -338,19 +340,18 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
             {paying ? (
               <>
                 <ActivityIndicator color={colors.bgCard} size="small" style={{ marginRight: 10 }} />
-                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>Processing…</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>{t('qc_pay_processing')}</Text>
               </>
             ) : (
               <>
-                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>{credit > 0 ? `Pay Now -- $${Math.max(0,(2000-credit)/100).toFixed(2)}` : `${t('qc_pay_btn')} -- $19.99`}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnSub}>1 bondsman + 1 lawyer · One-time · No subscription</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>{credit > 0 ? t('x_quick_connect_pay_now', { value: Math.max(0,(2000-credit)/100).toFixed(2) }) : `${t('qc_pay_btn')} -- $19.99`}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnSub}>{t('x_quick_connect_1_bondsman_1_lawyer')}</Text>
               </>
             )}
           </TouchableOpacity>
 
           <Text maxFontSizeMultiplier={1.4} style={styles.footerNote}>
-            Payments processed securely by Stripe.{'\n'}
-            Justice Gavel does not store your card information.
+            {t('x_quick_connect_payments_processed_securely_by')}
           </Text>
 
           <View style={{ height: 40 }} />
@@ -367,16 +368,16 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Success header */}
       <View style={[styles.header, styles.headerSuccess]}>
         <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>You're connected!</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_family_connect_re_connected')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {result.mock ? 'Demo mode -- no real charge' : `${result.charged} charged`}
+          {result.mock ? t('x_family_connect_demo_mode_no_real_2') : t('x_quick_connect_charged', { charged: result.charged })}
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.resultsScroll} showsVerticalScrollIndicator={false}>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.callPrompt}>
-          Call them now. They are real professionals in your area.
+          {t('x_quick_connect_call_them_now_they')}
         </Text>
 
         {/* Bondsman result */}
@@ -385,8 +386,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
         ) : (
           <View style={styles.noResult}>
             <Text maxFontSizeMultiplier={1.4} style={styles.noResultText}>
-              No bondsman found in our database for your area yet.{'\n'}
-              Try "Bail Agents Near Me" from the home screen.
+              {t('x_quick_connect_no_bondsman_found_our')}
             </Text>
           </View>
         )}
@@ -397,15 +397,14 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
         ) : (
           <View style={styles.noResult}>
             <Text maxFontSizeMultiplier={1.4} style={styles.noResultText}>
-              No lawyer found in our database for your area yet.{'\n'}
-              Try "Find a Lawyer" from the home screen.
+              {t('x_quick_connect_no_lawyer_found_our')}
             </Text>
           </View>
         )}
 
         {/* Receipt */}
         <View style={styles.receiptCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>Receipt</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>{t('x_quick_connect_receipt')}</Text>
           {(result.breakdown || []).map((b: any) => (
             <View key={b.item} style={styles.receiptRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.receiptItem}>{b.item}</Text>
@@ -413,11 +412,11 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
             </View>
           ))}
           <View style={styles.receiptTotal}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalLabel}>Total charged</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalLabel}>{t('x_quick_connect_total_charged')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalAmount}>{result.charged || '$19.99'}</Text>
           </View>
           {result.mock && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>Demo mode -- no real charge</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>{t('x_family_connect_demo_mode_no_real_2')}</Text>
           )}
         </View>
 
@@ -425,10 +424,10 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.homeBtn}
-          accessibilityLabel={"\u2190 Back to Home"} onPress={() => navigation.navigate('HomeTab')}
+          accessibilityLabel={t('x_quick_connect_back_home')} onPress={() => navigation.navigate('HomeTab')}
             activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.homeBtnText}>← Back to Home</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.homeBtnText}>{t('x_quick_connect_back_home')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />

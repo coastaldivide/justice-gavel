@@ -5,36 +5,37 @@ import {
   StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
 import { api } from '../services/api';
+import { t, perLang, useLang } from '../i18n';
 
 const VERSION = '2026-01-01.1';
 
-const DISCLAIMER_SECTIONS = [
+const DISCLAIMER_SECTIONS = perLang(() => [
   {
     icon: '⚖️',
-    title: 'Not Legal Advice',
-    body: 'Justice Gavel is a legal information platform. Nothing on this app — including AI chat, motion drafts, signal alerts, or research — constitutes legal advice. It does not create an attorney-client relationship.',
+    title: t('upl_heading'),
+    body: t('x_legal_disclaimer_justice_gavel_legal_information'),
   },
   {
     icon: '🤖',
-    title: 'AI-Generated Content',
-    body: 'AI outputs may be incomplete, inaccurate, or outdated. Laws change. Jurisdictions differ. Always verify AI-generated information with a licensed attorney before acting on it.',
+    title: t('x_legal_disclaimer_ai_generated_content'),
+    body: t('x_legal_disclaimer_ai_outputs_may_be'),
   },
   {
     icon: '🔒',
-    title: 'Your Data',
-    body: 'Your case information is private and not sold to third parties. Attorney-client communications on the attorney platform are handled in compliance with professional responsibility rules. See our Privacy Policy for full details.',
+    title: t('x_legal_disclaimer_data'),
+    body: t('x_legal_disclaimer_case_information_private_not'),
   },
   {
     icon: '🚨',
-    title: 'Emergencies',
-    body: 'If you or someone else is in immediate physical danger, call 911. If you are experiencing a mental health crisis, call 988 (Suicide & Crisis Lifeline). Do not rely on this app in life-threatening situations.',
+    title: t('x_legal_disclaimer_emergencies'),
+    body: t('x_legal_disclaimer_if_someone_else_immediate'),
   },
   {
     icon: '⚠️',
-    title: 'No Guarantees',
-    body: 'Legal outcomes depend on facts, jurisdiction, the judge, opposing counsel, and many factors outside our control. Nothing on this platform guarantees any legal result. Justice Gavel, Inc. is not liable for outcomes based on platform content.',
+    title: t('x_legal_disclaimer_no_guarantees'),
+    body: t('x_legal_disclaimer_legal_outcomes_depend_facts'),
   },
-];
+]);
 
 interface Props {
   /** Set when rendered directly (e.g. a gate in App.tsx). Absent when mounted
@@ -46,6 +47,7 @@ interface Props {
 }
 
 function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
+  useLang();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -64,7 +66,7 @@ function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
   const handleAccept = async () => {
 if (loading) return;
         if (!agreed) {
-      showToast('You must check the confirmation box to continue.');
+      showToast(t('x_legal_disclaimer_must_check_confirmation_box'));
       return;
     }
     setAccepting(true);
@@ -82,7 +84,7 @@ if (loading) return;
         navigation.goBack();
       }
     } catch {
-      showToast('Could not record your acceptance. Please check your connection and try again.');
+      showToast(t('x_legal_disclaimer_could_not_record_acceptance'));
     } finally {
       setAccepting(false);
     }
@@ -92,10 +94,9 @@ if (loading) return;
     <View style={s.root}>
       {/* Header — always visible, non-scrollable */}
       <View style={s.header}>
-        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>Before You Continue</Text>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{t('x_legal_disclaimer_before_continue')}</Text>
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
-          Please read our legal notice carefully.{'\n'}
-          Scroll to the bottom to accept.
+          {t('x_legal_disclaimer_please_read_our_legal')}
         </Text>
       </View>
 
@@ -106,12 +107,12 @@ if (loading) return;
         scrollEventThrottle={100}
       >
         
-          {DISCLAIMER_SECTIONS.length === 0 && (
+          {DISCLAIMER_SECTIONS().length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: COLORS.textSecond, fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: COLORS.textSecond, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
             </View>
           )}
-{DISCLAIMER_SECTIONS.map((sec, i) => (
+{DISCLAIMER_SECTIONS().map((sec, i) => (
           <View key={`section-${i}`} style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
@@ -124,13 +125,11 @@ if (loading) return;
         {/* Formal acceptance text */}
         <View style={s.formalBlock}>
           <Text style={s.formalText} maxFontSizeMultiplier={1.4}>
-            By tapping "I Understand and Accept," you acknowledge that you have read
-            this notice, understand that Justice Gavel does not provide legal advice,
-            and agree to our{' '}
-            <Text style={s.link} maxFontSizeMultiplier={1.4}>Terms of Service</Text> and{' '}
-            <Text style={s.link} maxFontSizeMultiplier={1.4}>Privacy Policy</Text>.
+            {t('x_legal_disclaimer_by_tapping_i_understand')}{' '}
+            <Text style={s.link} maxFontSizeMultiplier={1.4}>{t('onb_terms_tos')}</Text>{' '}{t('x_legal_disclaimer_modal_text')}{' '}
+            <Text style={s.link} maxFontSizeMultiplier={1.4}>{t('onb_terms_pp')}</Text>.
           </Text>
-          <Text style={s.formalVersion} maxFontSizeMultiplier={1.4}>Version {VERSION}</Text>
+          <Text style={s.formalVersion} maxFontSizeMultiplier={1.4}>{t('x_legal_disclaimer_version', { VERSION })}</Text>
         </View>
       </ScrollView>
 
@@ -146,20 +145,20 @@ if (loading) return;
               {agreed && <Text style={s.checkmark} maxFontSizeMultiplier={1.4}>✓</Text>}
             </View>
             <Text style={s.checkLabel} maxFontSizeMultiplier={1.4}>
-              I have read and understand this notice. I am not seeking legal advice.
+              {t('x_legal_disclaimer_i_have_read_understand')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[s.acceptBtn, (!agreed || accepting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
             disabled={!agreed || accepting}
           >
             {accepting
               ? <ActivityIndicator color={COLORS.white} />
-              : <Text style={s.acceptBtnText} maxFontSizeMultiplier={1.4}>I Understand and Accept</Text>
+              : <Text style={s.acceptBtnText} maxFontSizeMultiplier={1.4}>{t('x_legal_disclaimer_i_understand_accept')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -167,7 +166,7 @@ if (loading) return;
 
       {!scrolledToBottom && (
         <View style={s.scrollHint}>
-          <Text style={s.scrollHintText} maxFontSizeMultiplier={1.4}>↓ Scroll to read and accept</Text>
+          <Text style={s.scrollHintText} maxFontSizeMultiplier={1.4}>{t('x_legal_disclaimer_scroll_read_accept')}</Text>
         </View>
       )}
     </View>

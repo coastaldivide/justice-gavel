@@ -25,15 +25,16 @@ import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
 import { leadFeeLabel } from '../constants/leadFee';
 import { SampleRecordBadge } from '../components/SampleRecordBadge';
+import { t, useLang } from '../i18n';
 
 // Lead fee: FLAT, from the server (lead.lead_fee_display) — see constants/leadFee.ts.
 
 function bailTier(bailAmount: number): { label: string; color: string; bg: string } {
-  if (!bailAmount || bailAmount <= 0) return { label: 'Bail TBD', color: COLORS.textMuted, bg: COLORS.bg };
-  if (bailAmount < 5000)   return { label: 'Low bail',    color: COLORS.legalDark, bg: COLORS.legalBg };
-  if (bailAmount < 25000)  return { label: 'Mid bail',    color: COLORS.warnDark, bg: COLORS.warnBg };
-  if (bailAmount < 100000) return { label: 'High bail',   color: COLORS.blue, bg: COLORS.bgSubtle };
-  return { label: 'Premium',     color: COLORS.emergencyDark, bg: COLORS.emergencyBg };
+  if (!bailAmount || bailAmount <= 0) return { label: t('x_bondsman_dashboard_bail_tbd'), color: COLORS.textMuted, bg: COLORS.bg };
+  if (bailAmount < 5000)   return { label: t('x_bondsman_dashboard_low_bail'),    color: COLORS.legalDark, bg: COLORS.legalBg };
+  if (bailAmount < 25000)  return { label: t('x_bondsman_dashboard_mid_bail'),    color: COLORS.warnDark, bg: COLORS.warnBg };
+  if (bailAmount < 100000) return { label: t('x_bondsman_dashboard_high_bail'),   color: COLORS.blue, bg: COLORS.bgSubtle };
+  return { label: t('x_bondsman_dashboard_premium'),     color: COLORS.emergencyDark, bg: COLORS.emergencyBg };
 }
 
 function timeAgo(dateStr: string): string {
@@ -41,12 +42,13 @@ function timeAgo(dateStr: string): string {
   const diff = Date.now() - (new Date(dateStr ?? 0).getTime() || Date.now());
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
-  if (h > 0) return `${h}h ago`;
-  return `${m}m ago`;
+  if (h > 0) return t('x_bondsman_dashboard_h_ago', { h });
+  return t('x_bondsman_dashboard_m_ago', { m });
 }
 
 // ── Lead card ─────────────────────────────────────────────────────────────────
 function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -64,14 +66,14 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
           <SampleRecordBadge row={lead} />
           <Text testID="lead-defendant-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.leadLocation}>
-            {lead.county ? `${lead.county} County` : ''}{lead.state ? `, ${lead.state}` : ''}
+            {lead.county ? t('x_bondsman_dashboard_county', { county: lead.county }) : ''}{lead.state ? `, ${lead.state}` : ''}
           </Text>
         </View>
         <View style={styles.bailBlock}>
           <Text maxFontSizeMultiplier={1.4} style={styles.bailAmount}>
-            {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : 'TBD'}
+            {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : t('x_bondsman_dashboard_tbd')}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bailLabel}>bail</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.bailLabel}>{t('x_bondsman_dashboard_bail')}</Text>
         </View>
       </View>
 
@@ -85,7 +87,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
         </View>
         {lead.purchased && (
           <View style={[styles.badge, styles.purchasedBadge]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>✓ Purchased</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>{t('x_bondsman_dashboard_purchased')}</Text>
           </View>
         )}
       </View>
@@ -104,19 +106,19 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
             <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>🏛 {lead.jail_location}</Text>
           )}
           {lead.case_number && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>📎 Case #{lead.case_number}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>{t('x_bondsman_dashboard_case', { case_number: lead.case_number })}</Text>
           )}
           {lead.court_date && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>📅 Court: {lead.court_date ? new Date(lead.court_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"}) : ""}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>{t('x_bondsman_dashboard_court', { value: lead.court_date ? new Date(lead.court_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"}) : "" })}</Text>
           )}
 
           {lead.purchased ? (
             // Already purchased -- full contact revealed
             <View style={styles.revealedBlock}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>✓ Contact Information Unlocked</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>{t('x_bondsman_dashboard_contact_information_unlocked')}</Text>
               {lead.phone && (
                 <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={"\ud83d\udcde {lead.phone}"} onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast('Action failed. Please try again.', 'error'))}
+          accessibilityRole="button" accessibilityLabel={t('x_bondsman_dashboard_call_lead', { phone: lead.phone })} onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast(t('action_failed'), 'error'))}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
                 </TouchableOpacity>
@@ -132,17 +134,17 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
               activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnText}>
-                Accept Lead -- {leadFeeLabel(lead)}
+                {t('x_bondsman_dashboard_accept_lead', { lead: leadFeeLabel(lead) })}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnSub}>
-                Reveals full name, contact info, case details
+                {t('x_bondsman_dashboard_reveals_full_name_contact')}
               </Text>
             </TouchableOpacity>
           )}
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={styles.expandHint}>
-        {expanded ? '▲ Less' : `▼ Details  ·  Lead fee: ${leadFeeLabel(lead)}`}
+        {expanded ? t('lawyers_less') : t('x_bondsman_dashboard_details_lead_fee', { lead: leadFeeLabel(lead) })}
       </Text>
     </TouchableOpacity>
   );
@@ -150,6 +152,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 
 // ── Profile setup modal ───────────────────────────────────────────────────────
 function ProfileModal({ visible, onClose, onSaved }: any) {
+  useLang();
   const { showToast } = useToast();
   const [company, setCompany] = useState('');
   const [license, setLicense]         = useState('');
@@ -158,7 +161,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (!company.trim()) { showToast('Enter your company name.'); return; }
+    if (!company.trim()) { showToast(t('x_bondsman_dashboard_enter_company_name')); return; }
     setSaving(true);
     try {
       await api.post('/billing/bondsman/profile', {
@@ -169,7 +172,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
     } catch {
-      showToast('Check your internet and pull down to refresh.');
+      showToast(t('x_bondsman_dashboard_check_internet_pull_down'));
     } finally {
       setSaving(false);
     }
@@ -180,7 +183,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         onRequestClose={() => {}}>
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Set Up Your Profile</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{t('x_bondsman_dashboard_set_up_profile')}</Text>
           <TouchableOpacity onPress={onClose}
             accessibilityRole="button">
             <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
@@ -188,28 +191,28 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         </View>
               <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
 <ScrollView keyboardShouldPersistTaps='handled' style={styles.modalBody}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Company Name *</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_company_name')}</Text>
           <TextInput
             style={styles.input}
             value={company}
             onChangeText={setCompany}
-            placeholder="ABC Bail Bonds"
+            placeholder={t('x_bondsman_dashboard_abc_bail_bonds')}
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
           maxLength={120}
         />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License Number</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_license_number')}</Text>
           <TextInput
             style={styles.input}
             value={license}
             onChangeText={setLicense}
-            placeholder="TN-12345"
+            placeholder={t('x_bondsman_dashboard_tn_12345')}
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
         />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License State</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_license_state')}</Text>
           <TextInput
             testID="bondsman-license-state"
             style={styles.input}
@@ -219,33 +222,33 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
             placeholderTextColor={COLORS.textMuted}
             autoCapitalize="characters"
             maxLength={2}
-            accessibilityLabel="License state (2-letter code)"
+            accessibilityLabel={t('x_bondsman_dashboard_license_state_2_letter')}
           returnKeyType="next"
           blurOnSubmit
         />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Counties you cover (comma separated)</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_counties_cover_comma_separated')}</Text>
           <TextInput
             style={styles.input}
             value={counties}
             onChangeText={setCounties}
-            placeholder="davidson, shelby, knox"
+            placeholder={t('x_bondsman_dashboard_davidson_shelby_knox')}
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
         />
           <Text maxFontSizeMultiplier={1.4} style={styles.helpText}>
-            You'll receive leads for arrests in these counties only.
+            {t('x_bondsman_dashboard_ll_receive_leads_arrests')}
           </Text>
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-            accessibilityLabel="Save Profile"
-          accessibilityHint="Double-tap to activate"
+            accessibilityLabel={t('atty_save_profile')}
+          accessibilityHint={t('cp_double_tap')}
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}
           >
             {saving
               ? <ActivityIndicator color={COLORS.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>Save Profile</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{t('atty_save_profile')}</Text>
             }
           </TouchableOpacity>
         </ScrollView>
@@ -257,54 +260,54 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
 
 // ── Accept confirmation modal ─────────────────────────────────────────────────
 function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
+  useLang();
   if (!lead) return null;
   return (
     <Modal accessibilityViewIsModal={true} visible={visible} animationType="fade" transparent
         onRequestClose={() => {}}>
       <View style={styles.overlay}>
         <View style={styles.confirmCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>Accept This Lead?</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>{t('x_bondsman_dashboard_accept_this_lead')}</Text>
 
           <View style={styles.confirmDetail}>
             <SampleRecordBadge row={lead} />
             <Text maxFontSizeMultiplier={1.4} style={styles.confirmName}>{lead.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.confirmCharges}>{lead.charges}</Text>
             <View style={styles.confirmRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>Bail amount</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>{t('x_bondsman_dashboard_bail_amount')}</Text>
               <Text testID="lead-bail-amount-detail" maxFontSizeMultiplier={1.4} style={styles.confirmValue}>
-                {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : 'TBD'}
+                {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : t('x_bondsman_dashboard_tbd')}
               </Text>
             </View>
             <View style={styles.confirmRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>County</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>{t('x_bondsman_dashboard_county_2')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.confirmValue}>{lead.county}, {lead.state}</Text>
             </View>
             <View style={[styles.confirmRow, styles.feeRow]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.feeLabel}>Lead fee charged now</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.feeLabel}>{t('x_bondsman_dashboard_lead_fee_charged_now')}</Text>
               <Text testID="lead-bail-amount" maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead)}</Text>
             </View>
           </View>
 
           <Text maxFontSizeMultiplier={1.4} style={styles.confirmNote}>
-            Your card on file will be charged {leadFeeLabel(lead)}.
-            Full contact info revealed immediately.
+            {t('x_bondsman_dashboard_card_file_will_be', { lead: leadFeeLabel(lead) })}
           </Text>
 
           <View style={styles.confirmBtns}>
             <TouchableOpacity
               accessibilityRole="button" style={styles.confirmCancel} onPress={onClose}
-             accessibilityLabel="Cancel">
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmCancelText}>Cancel</Text>
+             accessibilityLabel={t('case_cancel')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.confirmCancelText}>{t('case_cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-              accessibilityLabel="on Confirm"
+              accessibilityLabel={t('x_bondsman_dashboard_charge', { lead: leadFeeLabel(lead) })}
               style={[styles.confirmAccept, loading && { opacity: 0.6 }]}
               onPress={onConfirm}
               disabled={loading}
             >
               {loading
                 ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.confirmAcceptText}>Charge {leadFeeLabel(lead)}</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.confirmAcceptText}>{t('x_bondsman_dashboard_charge', { lead: leadFeeLabel(lead) })}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -316,6 +319,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -371,11 +375,11 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         // so an empty list is missing coverage — say so instead of implying
         // a live feed that is quiet right now.
         setStatusMsg(res.data?.feeds_configured === false
-          ? 'No public arrest feeds configured for your area yet.'
-          : 'No new leads in the last ' + filterHours + ' hours.');
+          ? t('x_bondsman_dashboard_no_public_arrest_feeds')
+          : t('x_bondsman_dashboard_no_new_leads_last', { filterHours }));
       }
     } catch {
-      setStatusMsg('Could not load leads. Pull down to retry.');
+      setStatusMsg(t('x_bondsman_dashboard_could_not_load_leads'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -412,19 +416,19 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       setBadgeStatus({ active: true, verified_badge: true });
       showToast(res.data?.message, 'success');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Check your internet and pull down to refresh.'));
+      showToast(apiErrorMessage(e, t('x_bondsman_dashboard_check_internet_pull_down')));
     } finally { setBadgeLoading(false); }
   });
 
   const handleBadgeCancel = () => {
-confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.',
-      { confirmLabel: 'Cancel Badge', destructive: true }).then(async ok => { if (!ok) return;
+confirm(t('x_bondsman_dashboard_cancel_badge'), t('x_bondsman_dashboard_verified_badge_will_be'),
+      { confirmLabel: t('x_bondsman_dashboard_cancel_badge_2'), destructive: true }).then(async ok => { if (!ok) return;
       try {
           await api.post('/billing/bondsman/verified-badge/cancel');
           setBadgeStatus({ active: false, verified_badge: false });
-          showToast('Badge subscription cancelled.');
+          showToast(t('x_bondsman_dashboard_badge_subscription_cancelled'));
         } catch {
-          showToast('Check your internet and pull down to refresh.');
+          showToast(t('x_bondsman_dashboard_check_internet_pull_down'));
             }
     })
   };
@@ -435,11 +439,11 @@ confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.
     try {
       const res = await api.post(`/billing/leads/${selectedLead.id}/accept`, {});
       setSelectedLead(null);
-showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.`, 'success');
+showToast(t('x_bondsman_dashboard_lead_accepted_contact_info', { fee_charged: res.data?.fee_charged }), 'success');
       loadLeads(true);
-      setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
+      setAcceptedMsg(t('x_bondsman_dashboard_lead_accepted_charged', { value: res.data?.fee_charged || '' }));
     } catch {
-      showToast('Could not process payment. Check your card details and try again.');
+      showToast(t('x_bondsman_dashboard_could_not_process_payment'));
     } finally {
       setAccepting(false);
     }
@@ -454,19 +458,19 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Lead Dashboard</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_bondsman_dashboard_lead_dashboard')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-            {profile?.company_name || 'Bail Bondsman Portal'}
+            {profile?.company_name || t('x_bondsman_dashboard_bail_bondsman_portal')}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Go to CheckInManager"
+            accessibilityLabel={t('x_bondsman_dashboard_go_checkinmanager')}
             style={styles.checkInMgrBtn}
             onPress={() => navigation.navigate('CheckInManager')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>📋 Check-Ins</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>{t('x_bondsman_dashboard_check_ins')}</Text>
           </TouchableOpacity>
           {/* Recovery-agent directory suspended (see AppNavigator: unverified, prohibited in some states) */}
           <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => setShowProfile(true)}
@@ -480,27 +484,27 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
       <View style={styles.statsStrip}>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={styles.statNum}>{totalLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>New leads</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_new_leads')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: colors.emergencyDark }]}>{highValueLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>High value</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_high_value')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: colors.legalDark }]}>{purchasedLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Purchased</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_purchased_2')}</Text>
         </View>
       </View>
 
       {/* Revenue + Performance stats */}
       <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8 }}>
         {[
-          { label:'Accepted',   value: String(leads.filter((l: import('../types/api').BondsmanLead) =>l.purchased).length),  color:colors.legalDark },
-          { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/ (leads.length || 1)*100)+'%' : '--', color:colors.blue },
-          { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
-          { label:'High Value', value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
+          { label:t('x_bondsman_dashboard_accepted'),   value: String(leads.filter((l: import('../types/api').BondsmanLead) =>l.purchased).length),  color:colors.legalDark },
+          { label:t('x_bondsman_dashboard_accept_rate'), value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/ (leads.length || 1)*100)+'%' : '--', color:colors.blue },
+          { label:t('x_bondsman_dashboard_avg_bail'),   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
+          { label:t('x_bondsman_dashboard_high_value_2'), value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
         ].map((s,i) => (
           <View key={`row-${i}`} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
             padding:8, alignItems:'center', borderWidth:1, borderColor:colors.border }}>
@@ -515,20 +519,20 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
         badgeStatus.active ? (
           <View style={styles.badgeBannerActive}>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerTitle}>✓  Verified by Justice Gavel</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>Your listings show the verified badge · $49/month</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerTitle}>{t('x_bondsman_dashboard_verified_by_justice_gavel')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>{t('x_bondsman_dashboard_listings_show_verified_badge')}</Text>
             </View>
             <TouchableOpacity
               accessibilityRole="button" onPress={handleBadgeCancel}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('case_cancel')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerCancel}>Cancel</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerCancel}>{t('case_cancel')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Badge Subscribe"
+            accessibilityLabel={t('x_bondsman_dashboard_badge_subscribe')}
             style={styles.badgeBannerPromo}
             onPress={handleBadgeSubscribe}
             disabled={badgeLoading}
@@ -536,10 +540,10 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           >
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoTitle}>
-                {badgeLoading ? 'Activating…' : '🏅  Get Verified by Justice Gavel'}
+                {badgeLoading ? t('x_bondsman_dashboard_activating') : t('x_bondsman_dashboard_get_verified_by_justice')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoSub}>
-                Show a trusted badge on your listings · $49/month
+                {t('x_bondsman_dashboard_show_trusted_badge_listings')}
               </Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoArrow}>→</Text>
@@ -549,13 +553,13 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
 
       {/* Filter strip */}
       <View style={styles.filterStrip}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>Show last:</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>{t('x_bondsman_dashboard_show_last')}</Text>
         {[12, 24, 48, 72].map(h => (
           <TouchableOpacity
             accessibilityRole="button"
             key={h}
             style={[styles.filterChip, filterHours === h && styles.filterChipActive]}
-            accessibilityLabel={`Last ${h} hours`} onPress={() => setFilterHours(h)}
+            accessibilityLabel={t('x_bondsman_dashboard_last_hours', { h })} onPress={() => setFilterHours(h)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, filterHours === h && styles.filterChipTextActive]}>
               {h}h
@@ -568,7 +572,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.warnDark} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>Loading leads...</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>{t('x_bondsman_dashboard_loading_leads')}</Text>
         </View>
       ) : (
         <>
@@ -581,14 +585,14 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           ListEmptyComponent={
             <View style={styles.center}>
               <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{statusMsg || 'No leads right now.'}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>Pull to refresh or change time filter above.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{statusMsg || t('x_bondsman_dashboard_no_leads_right_now')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>{t('x_bondsman_dashboard_pull_refresh_change_time')}</Text>
               {!statusMsg && (
                 <View style={styles.howLeadsWork}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsTitle}>How leads work</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Leads come from the public arrest feeds connected for your counties</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Set your counties in ⚙️ Profile to receive relevant leads</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Tap a lead → pay the flat lead fee → get full contact info</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsTitle}>{t('x_bondsman_dashboard_how_leads_work')}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_leads_come_from_public')}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_set_counties_profile_receive')}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_tap_lead_pay_flat')}</Text>
                 </View>
               )}
             </View>

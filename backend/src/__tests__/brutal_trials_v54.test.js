@@ -10,7 +10,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * LOG   logger.js — structured logger:
  *       LEVEL_ORDER: debug=0, info=1, warn=2, error=3
  *       MIN_LEVEL defaults to 1 (info) unless LOG_LEVEL env var set
- *       JSON_FORMAT: true when LOG_FORMAT=json (Railway, Datadog)
+ *       JSON_FORMAT: true when LOG_FORMAT=json (Render log streams, Datadog)
  *       SERVICE_META: service='justice-gavel-api', version, env
  *       logger.info / logger.warn / logger.error / logger.debug
  *
@@ -93,7 +93,7 @@ describe('LOG. logger.js — Structured Logging System', () => {
     expect(src).toContain('LOG_LEVEL');
     expect(src).toContain('default: info');
   });
-  test('LOG-03: LOG_FORMAT=json enables structured JSON output (Railway, Datadog)', async () => {
+  test('LOG-03: LOG_FORMAT=json enables structured JSON output (Render log streams, Datadog)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('LOG_FORMAT');

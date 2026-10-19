@@ -1,7 +1,7 @@
 import { useToast } from '../components/ToastProvider';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
 import { AppIcon } from '../components/AppIcon';
-import { t, initLang } from '../i18n';
+import { t, initLang, useLang } from '../i18n';
 import { hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLatestRef } from '../hooks/useLatestRef';
@@ -21,7 +21,7 @@ function useCallPhone() {
   const { showToast } = useToast();
   return function callPhone(phone: string) {
     hapticCall();
-    Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Calling is unavailable on this device.', 'error'));
+    Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast(t('x_bail_search_calling_unavailable_this_device'), 'error'));
   };
 }
 function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
@@ -43,6 +43,7 @@ const CITY_SUGGESTIONS = [
 
 // ── Skeleton placeholder card ─────────────────────────────────────────────
 function SkeletonCard({ colors }: { colors: ThemeColors }) {
+  useLang();
   const shimmer = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -76,6 +77,7 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
 }
 
 function BailSearchScreen(): React.JSX.Element {
+  useLang();
   // These helpers are now custom hooks (they call useToast/useHaptics/
   // useConfirm internally). Invoke them here, in the component body,
   // where hooks are legal; the returned function behaves as before.
@@ -132,7 +134,7 @@ function BailSearchScreen(): React.JSX.Element {
   const search = async (cityOverride?: string) => {
     setLoading(true);
     setLocationDenied(false);
-    setStatus(cityOverride ? `Searching in ${cityOverride}…` : 'Getting your location…');
+    setStatus(cityOverride ? t('x_bail_search_searching', { cityOverride }) : t('qc_loc_getting'));
 
     try {
       let params: Record<string, unknown> = { radiusKm: 100, user_state: userStateRef.current || undefined };
@@ -145,7 +147,7 @@ function BailSearchScreen(): React.JSX.Element {
           const { lat, lng } = await getLocation();
           params.lat = lat;
           params.lng = lng;
-          setStatus('Finding nearby bail agents…');
+          setStatus(t('x_bail_search_finding_nearby_bail_agents'));
         } catch {
           setLoading(false);
           // GPS denied -- show city picker instantly
@@ -171,7 +173,7 @@ function BailSearchScreen(): React.JSX.Element {
           __DEV__ && console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
           attempt++;
           if (attempt >= 3) throw apiErr;
-          setStatus(`Connection issue -- retrying (${attempt}/3)…`);
+          setStatus(t('x_bail_search_connection_issue_retrying_3', { attempt }));
           await new Promise<void>(r => { timerRef.current = setTimeout(r, attempt * 800); });
         }
       }
@@ -182,13 +184,13 @@ function BailSearchScreen(): React.JSX.Element {
       cacheBailAgents(agents).catch(() => {});
       setSearched(true);
       setRetryCount(0);
-      setStatus(agents.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');
+      setStatus(agents.length === 0 ? t('bail_no_results') : '');
     } catch {
       // Try offline cache on failure
       const { agents: cached } = (await getCachedBailAgents().catch(() => ({ agents: [] }))) as any;
       if (cached.length > 0) {
         setItems(cached);
-        setStatus('Showing cached results -- check your connection for live data.');
+        setStatus(t('x_bail_search_showing_cached_results_check'));
         setSearched(true);
         setLoading(false);
         return;
@@ -199,7 +201,7 @@ function BailSearchScreen(): React.JSX.Element {
       if (retryCount >= 1) {
         setLocationDenied(true);
       } else {
-        showToast('Could not connect. Check your internet connection.');
+        showToast(t('x_bail_search_could_not_connect_check'));
       }
     }
     setLoading(false);
@@ -212,10 +214,10 @@ function BailSearchScreen(): React.JSX.Element {
     <View testID="bail-search-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text testID="bail-agent-bail-amount" maxFontSizeMultiplier={1.4} style={styles.heading}>Bail Bond Help</Text>
+          <Text testID="bail-agent-bail-amount" maxFontSizeMultiplier={1.4} style={styles.heading}>{t('bail_heading')}</Text>
           {items.length > 0 && !loading && (
             <View style={styles.countPill}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.countPillText}>{items.length} agents nearby</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.countPillText}>{t('x_bail_search_agents_nearby', { length: items.length })}</Text>
             </View>
           )}
         </View>
@@ -226,11 +228,11 @@ function BailSearchScreen(): React.JSX.Element {
 
       <TouchableOpacity
           accessibilityRole="button" activeOpacity={0.6} style={styles.searchBtn} testID="bail-search-submit-button" onPress={() => search()} disabled={loading}
-        accessibilityLabel="Searching…"
+        accessibilityLabel={t('bail_searching')}
       >
         {loading
-          ? <><ActivityIndicator color={colors.bgCard} style={{ marginRight: 8 }} /><Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>Searching…</Text></>
-          : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>📍  Search Again</Text>
+          ? <><ActivityIndicator color={colors.bgCard} style={{ marginRight: 8 }} /><Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('bail_searching')}</Text></>
+          : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('bail_search_again')}</Text>
         }
       </TouchableOpacity>
 
@@ -242,13 +244,13 @@ function BailSearchScreen(): React.JSX.Element {
       <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 8, gap: 8 }}>
         {(['rating','distance','rate']).map(s => (
           <TouchableOpacity
-      accessibilityLabel={`Sort by ${s}`}
+      accessibilityLabel={t('x_bail_search_sort_by', { s })}
           accessibilityRole="button" key={s} onPress={() => setSortBy(s)}
             style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
               backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
               borderWidth: 1, borderColor: sortBy === s ? colors.blue : colors.border }}>
             <Text maxFontSizeMultiplier={1.4} style={{ color: sortBy === s ? colors.bgCard : colors.textSecond, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
-              {s === 'rating' ? 'Rating' : s === 'distance' ? 'Nearest' : 'Low Rate'}
+              {s === 'rating' ? t('x_bail_search_rating') : s === 'distance' ? t('x_bail_search_nearest') : t('x_bail_search_low_rate')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -265,11 +267,11 @@ function BailSearchScreen(): React.JSX.Element {
             paddingVertical:6, borderRadius:16, borderWidth:1,
             borderColor:filterVerified?colors.navy:colors.border,
             backgroundColor:filterVerified?colors.navy:colors.bgCard }}
-          accessibilityLabel="Filter: JTB Verified only"
+          accessibilityLabel={t('x_bail_search_filter_jtb_verified_only')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
             color:filterVerified?colors.bgCard:colors.textSecond }}>
-            ✓ Verified Only
+            {t('x_bail_search_verified_only')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -279,11 +281,11 @@ function BailSearchScreen(): React.JSX.Element {
             paddingVertical:6, borderRadius:16, borderWidth:1,
             borderColor:filterAvailNow?colors.legalDark:colors.border,
             backgroundColor:filterAvailNow?colors.legalBg:colors.bgCard }}
-          accessibilityLabel="Filter: Available now"
+          accessibilityLabel={t('x_bail_search_filter_available_now')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
             color:filterAvailNow?colors.legalDark:colors.textSecond }}>
-            🕐 Available Now
+            {t('x_bail_search_available_now')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -293,11 +295,11 @@ function BailSearchScreen(): React.JSX.Element {
             paddingVertical:7, borderRadius:16, borderWidth:1,
             borderColor:filterPaymentPlan?colors.gold:colors.border,
             backgroundColor:filterPaymentPlan?colors.warnBg:colors.bgCard }}
-          accessibilityLabel="Filter: Payment plans available"
+          accessibilityLabel={t('x_bail_search_filter_payment_plans_available')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
             color:filterPaymentPlan?colors.warnDark:colors.textSecond }}>
-            💳 Payment Plans
+            {t('x_bail_search_payment_plans')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -330,7 +332,7 @@ function BailSearchScreen(): React.JSX.Element {
           contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              No bail agents found nearby. Try expanding your search area or call 911 for immediate help.
+              {t('x_bail_search_no_bail_agents_found')}
             </Text>
           }
           renderItem={({ item }) => (
@@ -341,7 +343,7 @@ function BailSearchScreen(): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} numberOfLines={1} ellipsizeMode="tail" style={styles.cardName}>{item?.name}</Text>
           {item.jtb_verified && (
           <View style={styles.verifiedBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadgeText}>✓ Verified</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadgeText}>{t('x_bail_search_verified')}</Text>
           </View>
           )}
           </View>
@@ -349,14 +351,14 @@ function BailSearchScreen(): React.JSX.Element {
           {item.hours && (
           <View style={styles.hoursBadge}>
           <Text maxFontSizeMultiplier={1.4} style={styles.hoursText}>
-          🕐 {item.hours === '24/7' ? '✓ Open 24/7' : item.hours}
+          🕐 {item.hours === '24/7' ? t('x_bail_search_open_24_7') : item.hours}
           </Text>
           </View>
           )}
           {item.license_number && (
           <View style={styles.licensePill}>
           <Text maxFontSizeMultiplier={1.4} style={styles.licensePillText}>
-          🪪 Lic {item.license_state ? `${item.license_state} ` : ''}{item.license_number}
+          {t('x_bail_search_lic', { value: item.license_state ? `${item.license_state} ` : '', license_number: item.license_number })}
           </Text>
           </View>
           )}
@@ -375,17 +377,17 @@ function BailSearchScreen(): React.JSX.Element {
           {/* ALWAYS-VISIBLE call button -- primary action */}
           {item?.phone ? (
           <TouchableOpacity accessibilityRole="button" testID="bail-agent-card"
-          accessibilityLabel="Call bail agent"
+          accessibilityLabel={t('x_bail_search_call_bail_agent')}
           style={styles.callBtnBig}
           onPress={() => callPhone(item?.phone)}
           activeOpacity={0.85}
-          accessibilityHint="Opens your phone dialer"
+          accessibilityHint={t('x_bail_search_opens_phone_dialer')}
           >
-          <Text testID="bail-agent-phone" maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>📞  CALL NOW  --  {item?.phone}</Text>
+          <Text testID="bail-agent-phone" maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>{t('x_bail_search_call_now', { phone: item?.phone })}</Text>
           </TouchableOpacity>
           ) : (
           <View style={styles.noPhoneBox}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.noPhoneText}>No phone number on file</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.noPhoneText}>{t('bail_no_phone')}</Text>
           </View>
           )}
 
@@ -394,9 +396,9 @@ function BailSearchScreen(): React.JSX.Element {
           <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          accessibilityLabel={"\ud83d\uddfa  Get Directions"} onPress={() => openDirections(item.lat, item.lng, item?.name, () => showToast('Maps unavailable on this device.', 'error'))}
+          accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(item.lat, item.lng, item?.name, () => showToast(t('x_bail_search_maps_unavailable_this_device'), 'error'))}
           >
-          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>{t('help_now_directions')}</Text>
           </TouchableOpacity>
           )}
           {item.hours && <Text maxFontSizeMultiplier={1.4} style={styles.hoursText}>🕐 {item.hours}</Text>}
@@ -408,7 +410,7 @@ function BailSearchScreen(): React.JSX.Element {
       {/* City search box when GPS denied */}
       {locationDenied && (
         <View style={styles.cityFallback}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.cityFallbackTitle}>📍 What city are you in?</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.cityFallbackTitle}>{t('bail_city_picker_title')}</Text>
           <TextInput testID="bail-search-city-input"
             style={styles.citySearchInput}
             placeholder={t('bail_city_placeholder')}
@@ -425,19 +427,19 @@ function BailSearchScreen(): React.JSX.Element {
         />
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Use My Location"
+            accessibilityLabel={t('x_bail_search_use_my_location')}
             onPress={() => { search(); }}
             style={{ flexDirection:'row', alignItems:'center', gap:6,
               paddingVertical:8, paddingHorizontal:12,
               backgroundColor:colors.infoBg, borderRadius:20, marginTop:6 }}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14 }}>📍</Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.textBrand, fontWeight:'600' }}>Use My Location</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.textBrand, fontWeight:'600' }}>{t('x_bail_search_use_my_location')}</Text>
           </TouchableOpacity>
           <View style={styles.cityList}>
             {filteredCities.map(city => (
               <TouchableOpacity
-      accessibilityLabel="Search" accessibilityRole="button"
+      accessibilityLabel={t('search')} accessibilityRole="button"
                 key={city}
                 style={styles.cityRow}
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
@@ -454,13 +456,13 @@ function BailSearchScreen(): React.JSX.Element {
       {searched && items.length === 0 && !loading && !locationDenied && (
         <View testID="bail-search-empty" style={styles.emptyState}>
           <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No bail agents found here.</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>Try a nearby city:</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('bail_no_agents')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>{t('x_bail_search_try_nearby_city')}</Text>
           <View style={styles.nearbyCities}>
             {['Memphis, TN','Nashville, TN','Atlanta, GA','Houston, TX','Detroit, MI'].map(city => (
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel="Try wider search"
+                accessibilityLabel={t('x_bail_search_try_wider_search')}
                 key={city}
                 style={styles.nearbyCityBtn}
                 onPress={() => search(city)}
@@ -470,9 +472,9 @@ function BailSearchScreen(): React.JSX.Element {
             ))}
           </View>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel={"\ud83d\udccd Pick a Different City"} onPress={() => setLocationDenied(true)}
+          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel={t('x_bail_search_pick_different_city')} onPress={() => setLocationDenied(true)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>📍 Pick a Different City</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>{t('x_bail_search_pick_different_city')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -480,9 +482,7 @@ function BailSearchScreen(): React.JSX.Element {
       {/* Legal accuracy disclaimer — required on all bail search results */}
       <View style={{ paddingHorizontal: 16, paddingBottom: 8, paddingTop: 6, backgroundColor: colors.bg }}>
         <Text style={{ fontSize: 11, color: colors.textSecond, lineHeight: 16, textAlign: 'center' }}>
-          Bail amounts are typical ranges only. Actual bail is set by a judge based on charge, 
-          criminal history, and other factors. This is general information, not legal advice.
-          Consult a licensed attorney before making any legal decisions.
+          {t('x_bail_search_bail_amounts_typical_ranges')}
         </Text>
       </View>
     </KeyboardAvoidingView>

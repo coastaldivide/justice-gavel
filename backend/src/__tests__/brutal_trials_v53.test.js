@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -157,8 +158,7 @@ describe('SCROLL. scrollToEnd — Chat-Style Auto-Scroll Pattern', () => {
     expect(src).not.toContain('scrollToEnd');
   });
   test('SCROLL-06: TermsAcceptanceModal uses text prompt to scroll (not programmatic)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/TermsAcceptanceModal.tsx');
     expect(src).toContain('Scroll through the summary above to unlock');
     expect(src).toContain('scrolledToBottom');
   });

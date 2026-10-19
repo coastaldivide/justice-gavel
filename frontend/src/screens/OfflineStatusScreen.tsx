@@ -10,22 +10,24 @@ import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-nati
 import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { t, useLang, perLang } from '../i18n';
 
-const OFFLINE_FEATURES: { icon: string; label: string; hint: string; screen: string }[] = [
-  { icon: '📋', label: 'Know Your Rights Card', hint: 'Your rights during a stop or arrest',     screen: 'RightsCard' },
-  { icon: '⏰', label: 'Deadline Calculator',   hint: 'Arraignment, appeal and filing deadlines', screen: 'DeadlineCalculator' },
-  { icon: '🚨', label: 'Just Arrested guide',   hint: 'Step-by-step: what to do right now',      screen: 'JustArrested' },
-  { icon: '💰', label: 'Bail Calculator',       hint: 'Typical bail ranges by state',             screen: 'BailCalculator' },
-  { icon: '📁', label: 'My Cases',              hint: 'Saved cases sync when you reconnect',     screen: 'Cases' },
-];
+const OFFLINE_FEATURES = perLang((): { icon: string; label: string; hint: string; screen: string }[] => [
+  { icon: '📋', label: t('rc_page_title'), hint: t('x_offline_status_rights_during_stop_arrest'),     screen: 'RightsCard' },
+  { icon: '⏰', label: t('x_cs_deadline_calculator'),   hint: t('x_offline_status_arraignment_appeal_filing_deadlines'), screen: 'DeadlineCalculator' },
+  { icon: '🚨', label: t('x_offline_status_just_arrested_guide'),   hint: t('x_offline_status_step_by_step_what'),      screen: 'JustArrested' },
+  { icon: '💰', label: t('bail_calculator'),       hint: t('x_offline_status_typical_bail_ranges_by'),             screen: 'BailCalculator' },
+  { icon: '📁', label: t('case_tab_cases'),              hint: t('x_offline_status_saved_cases_sync_when'),     screen: 'Cases' },
+]);
 
-const NEEDS_CONNECTION = [
-  'AI legal chat, research and motion drafting',
-  'Lawyer and bail agent search',
-  'Messages, bookings and payments',
-];
+const NEEDS_CONNECTION = perLang(() => [
+  t('x_offline_status_ai_legal_chat_research'),
+  t('x_offline_status_lawyer_bail_agent_search'),
+  t('x_offline_status_messages_bookings_payments'),
+]);
 
 function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { colors } = useTheme();
   const online = useNetworkStatus();
 
@@ -33,16 +35,16 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.scroll}>
       <View style={[styles.status, { backgroundColor: online ? colors.legalBg : colors.warnBg }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color: online ? colors.legalDark : colors.warnDark }]}>
-          {online ? '✓ You are online — everything is available.' : '📡 You are offline. These tools still work:'}
+          {online ? t('x_offline_status_online_everything_available') : t('x_offline_status_offline_these_tools_still')}
         </Text>
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.section, { color: colors.textMuted }]}>WORKS OFFLINE</Text>
-      {OFFLINE_FEATURES.map(f => (
+      <Text maxFontSizeMultiplier={1.4} style={[styles.section, { color: colors.textMuted }]}>{t('x_offline_status_works_offline')}</Text>
+      {OFFLINE_FEATURES().map(f => (
         <TouchableOpacity
           key={f.screen}
           accessibilityRole="button"
-          accessibilityLabel={`Open ${f.label}`}
+          accessibilityLabel={t('x_offline_status_open', { label: f.label })}
           style={[styles.row, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           onPress={() => navigation.navigate(f.screen as never)}
         >
@@ -55,8 +57,8 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
         </TouchableOpacity>
       ))}
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.section, { color: colors.textMuted }]}>NEEDS A CONNECTION</Text>
-      {NEEDS_CONNECTION.map(item => (
+      <Text maxFontSizeMultiplier={1.4} style={[styles.section, { color: colors.textMuted }]}>{t('x_offline_status_needs_connection')}</Text>
+      {NEEDS_CONNECTION().map(item => (
         <Text key={item} maxFontSizeMultiplier={1.4} style={[styles.needs, { color: colors.textSecond }]}>• {item}</Text>
       ))}
     </ScrollView>

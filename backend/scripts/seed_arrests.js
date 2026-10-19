@@ -4,7 +4,7 @@
  *
  * Usage:
  *   DATABASE_URL="postgres://..." node scripts/seed_arrests.js
- *   OR: Run as a Railway one-off command
+ *   (run from a checkout with the target DATABASE_URL exported — never production)
  *
  * Inserts 600 realistic arrest records across 10 states.
  * Uses ON CONFLICT DO NOTHING — safe to run multiple times.

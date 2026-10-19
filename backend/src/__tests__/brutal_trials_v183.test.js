@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v183
@@ -46,8 +47,7 @@ describe('SVC. Service Files Complete Audit', () => {
     expect(src).toContain('permissionGranted');
   });
   test('SVC-04: api.ts has circuit breaker + error normalization + 401 handler', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/api.ts','utf8');
+    const src = feSource(__REPO + '/frontend/src/services/api.ts');
     expect(src).toContain('withRetry'); // dead circuit-breaker code removed (step 2)
     expect(src).toContain('ECONNABORTED');
     expect(src).toContain("check your connection");

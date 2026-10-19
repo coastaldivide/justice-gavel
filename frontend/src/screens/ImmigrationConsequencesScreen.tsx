@@ -21,91 +21,93 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { t, perLang, useLang } from '../i18n';
 
 
-const CONSEQUENCE_GROUPS = [
+const CONSEQUENCE_GROUPS = perLang(() => [
   {
-    severity: 'Deportable -- almost always triggers removal',
+    severity: t('x_immigration_consequences_deportable_almost_always_triggers'),
     color:    COLORS.emergency,
     bg:       COLORS.emergencyBg,
     offenses: [
-      { offense: 'Aggravated felony (INA § 101(a)(43))', detail: 'The broadest and most severe category. Includes murder, drug trafficking, crimes of violence with 1+ yr sentence, theft/fraud with 1+ yr, sexual abuse of a minor, and many others. Deportation is virtually automatic. No discretionary relief available in most cases.' },
-      { offense: 'Drug conviction (any controlled substance)', detail: 'Any drug conviction -- including misdemeanor possession -- makes a non-citizen deportable. Exception: a single offense of simple possession of 30g or less of marijuana may qualify for a discretionary waiver. Drug trafficking is an aggravated felony.' },
-      { offense: 'Domestic violence / stalking / child abuse', detail: 'Conviction for domestic violence, stalking, child abuse, child neglect, or violation of a protective order makes a non-citizen deportable. This includes misdemeanor domestic battery in many jurisdictions.' },
-      { offense: 'Firearm offense', detail: 'Any conviction relating to purchase, sale, or possession of a firearm or destructive device triggers deportability.' },
-      { offense: 'Two or more crimes involving moral turpitude (CIMT)', detail: 'Crimes involving fraud, theft, or intentional harm to persons or property. Two or more CIMTs at any time after entry, or one CIMT within 5 years of entry with potential sentence of 1+ year, triggers deportability.' },
+      { offense: t('x_immigration_consequences_aggravated_felony_ina_101'), detail: t('x_immigration_consequences_broadest_most_severe_category') },
+      { offense: t('x_immigration_consequences_drug_conviction_any_controlled'), detail: t('x_immigration_consequences_any_drug_conviction_including') },
+      { offense: t('x_immigration_consequences_domestic_violence_stalking_child'), detail: t('x_immigration_consequences_conviction_domestic_violence_stalkin') },
+      { offense: t('x_immigration_consequences_firearm_offense'), detail: t('x_immigration_consequences_any_conviction_relating_purchase') },
+      { offense: t('x_immigration_consequences_two_more_crimes_involving'), detail: t('x_immigration_consequences_crimes_involving_fraud_theft') },
     ],
   },
   {
-    severity: 'Inadmissibility -- bars re-entry or status change',
+    severity: t('x_immigration_consequences_inadmissibility_bars_re_entry'),
     color:    COLORS.warn,
     bg:       COLORS.warnBg,
     offenses: [
-      { offense: 'Single crime involving moral turpitude (CIMT)', detail: 'One CIMT with potential sentence of 1+ year makes a non-citizen inadmissible (bars adjustment of status, re-entry, naturalization). The "petty offense exception" may apply for sentences under 6 months for offenses carrying max 1 year.' },
-      { offense: 'Any drug offense conviction or admission', detail: 'A conviction or even an admission to a drug offense to an immigration officer makes someone inadmissible. This includes marijuana offenses legal in the state where they occurred -- federal law controls immigration consequences.' },
-      { offense: 'Prostitution within 10 years', detail: 'Conviction or admission to engaging in prostitution within 10 years of visa or adjustment application.' },
-      { offense: 'Health-related grounds', detail: 'Not a criminal matter, but relevant context: communicable disease, lack of required vaccinations, or mental disorder with harmful behavior can independently bar admission.' },
+      { offense: t('x_immigration_consequences_single_crime_involving_moral'), detail: t('x_immigration_consequences_one_cimt_with_potential') },
+      { offense: t('x_immigration_consequences_any_drug_offense_conviction'), detail: t('x_immigration_consequences_conviction_even_admission_drug') },
+      { offense: t('x_immigration_consequences_prostitution_within_10_years'), detail: t('x_immigration_consequences_conviction_admission_engaging_prosti') },
+      { offense: t('x_immigration_consequences_health_related_grounds'), detail: t('x_immigration_consequences_not_criminal_matter_but') },
     ],
   },
   {
-    severity: 'Less severe but still consequential',
+    severity: t('x_immigration_consequences_less_severe_but_still'),
     color:    COLORS.legal,
     bg:       COLORS.legalBg,
     offenses: [
-      { offense: 'Simple assault (misdemeanor)', detail: 'May or may not be a CIMT depending on the specific statute and jurisdiction. Must be analyzed case-by-case. Some simple assault convictions are not deportable -- an immigration attorney must review.' },
-      { offense: 'DUI / DWI', detail: 'Not automatically a CIMT. However, DUI combined with other facts (prior convictions, aggravating circumstances, underlying drug charge) can trigger consequences. A DUI may also affect naturalization by evidence of bad moral character. Must be reviewed individually.' },
-      { offense: 'Shoplifting / petit theft', detail: 'Shoplifting with conviction may be a CIMT depending on the value of the property and state law. Items worth $500+ are more likely to qualify. Items worth less, especially with no prior criminal history, often do not.' },
-      { offense: 'Disorderly conduct', detail: 'Generally not a CIMT. However, "fighting words" or assault-based disorderly conduct statutes may qualify. Review the specific elements of conviction.' },
+      { offense: t('x_immigration_consequences_simple_assault_misdemeanor'), detail: t('x_immigration_consequences_may_may_not_be') },
+      { offense: 'DUI / DWI', detail: t('x_immigration_consequences_not_automatically_cimt_however') },
+      { offense: t('x_immigration_consequences_shoplifting_petit_theft'), detail: t('x_immigration_consequences_shoplifting_with_conviction_may') },
+      { offense: t('x_immigration_consequences_disorderly_conduct'), detail: t('x_immigration_consequences_generally_not_cimt_however') },
     ],
   },
-];
+]);
 
-const STATUS_SECTIONS = [
+const STATUS_SECTIONS = perLang(() => [
   {
     icon: '🛡️',
-    title: 'DACA recipients',
-    body: 'DACA does not provide a path to permanent status and offers no protection against deportation for significant criminal offenses. DACA termination is automatic for conviction of a felony, a significant misdemeanor (as defined by DHS -- includes domestic violence, sexual abuse, burglary, DUI, unlawful possession of a firearm, and drug offenses), or three or more misdemeanors. A DACA recipient arrested for any offense should consult an immigration attorney immediately -- before any plea is entered.',
+    title: t('x_immigration_consequences_daca_recipients'),
+    body: t('x_immigration_consequences_daca_does_not_provide'),
     critical: true,
   },
   {
     icon: '🟢',
-    title: 'Green card holders (LPRs)',
-    body: 'Lawful permanent residents can be deported. Deportation is not automatic for most offenses -- it requires a removal proceeding before an immigration judge. However, certain offenses (aggravated felonies, domestic violence, drug trafficking) trigger mandatory detention and removal with very limited relief. Green card holders should NEVER plead guilty to any offense -- even a misdemeanor -- without consulting an immigration attorney, because the immigration consequences of a "minor" state crime can include permanent deportation.',
+    title: t('x_immigration_consequences_green_card_holders_lprs'),
+    body: t('x_immigration_consequences_lawful_permanent_residents_can'),
     critical: false,
   },
   {
     icon: '📋',
-    title: 'Visa holders (temporary status)',
-    body: 'Any criminal conviction can result in visa revocation, denial of visa renewal, or denial of re-entry. The State Department can revoke a visa immediately upon notification of a conviction. A visa holder who travels outside the US after a conviction may be denied re-entry. Non-immigrant visa holders have the fewest protections of any immigration status.',
+    title: t('x_immigration_consequences_visa_holders_temporary_status'),
+    body: t('x_immigration_consequences_any_criminal_conviction_can'),
     critical: false,
   },
   {
     icon: '⭐',
-    title: 'Naturalization applicants',
-    body: 'To naturalize, an applicant must demonstrate "good moral character" for the 5 years before filing (3 years for married-to-citizen applicants). Any criminal conviction in that period is potentially disqualifying. A felony is almost always disqualifying. Multiple misdemeanors, DUI, and offenses involving fraud or moral turpitude can also bar naturalization. Applicants with any criminal history should consult an immigration attorney before filing.',
+    title: t('x_immigration_consequences_naturalization_applicants'),
+    body: t('x_immigration_consequences_naturalize_applicant_must_demonstrat'),
     critical: false,
   },
   {
     icon: '⚖️',
-    title: 'Padilla warnings -- what your criminal attorney owes you',
-    body: 'Under Padilla v. Kentucky (2010), the Supreme Court held that criminal defense attorneys must advise non-citizen clients about the immigration consequences of a plea. If your attorney did not warn you about immigration consequences before you pleaded guilty, you may have a claim for ineffective assistance of counsel. This can be grounds to vacate the conviction. Consult both a criminal defense attorney and an immigration attorney immediately.',
+    title: t('x_immigration_consequences_padilla_warnings_what_criminal'),
+    body: t('x_immigration_consequences_under_padilla_v_kentucky'),
     critical: false,
   },
   {
     icon: '🧩',
-    title: 'Vacating convictions for immigration purposes',
-    body: 'If you were convicted without Padilla warnings, or if new law changes the immigration consequences of your conviction, it may be possible to vacate the conviction through post-conviction relief. This is complex, jurisdiction-specific, and time-sensitive. An immigration attorney and a post-conviction specialist must work together. In some states, specialized clinics handle immigration-related vacaturs.',
+    title: t('x_immigration_consequences_vacating_convictions_immigration_pur'),
+    body: t('x_immigration_consequences_if_were_convicted_without'),
     critical: false,
   },
   {
     icon: '📞',
-    title: 'Resources',
-    body: 'National Immigration Project: nipnlg.org. Immigrant Defense Project: immigrantdefenseproject.org. CLINIC (Catholic Legal Immigration Network): cliniclegal.org. ILRC (Immigrant Legal Resource Center): ilrc.org. Call 211 for local immigration legal aid referrals.',
+    title: t('resources'),
+    body: t('x_immigration_consequences_national_immigration_project_nipnlg'),
     critical: false,
   },
-];
+]);
 
 function ImmigrationConsequencesScreen(): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -125,18 +127,18 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="globe-outline" size={20} color={COLORS.navy} />
-        <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>Immigration & Charges</Text>
-        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Consequences of convictions</Text>
+        <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>{t('x_immigration_consequences_immigration_charges')}</Text>
+        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>{t('x_immigration_consequences_consequences_convictions')}</Text>
       </View>
 
       <InfoTabs
         testID="immigration-tabs"
-        tabs={[{ key: 'consequences', label: 'Criminal Consequences' }, { key: 'status', label: 'By Immigration Status' }]}
+        tabs={[{ key: 'consequences', label: t('x_immigration_consequences_criminal_consequences') }, { key: 'status', label: t('x_immigration_consequences_by_immigration_status') }]}
         active={tab}
         onChange={k => setTab(k as 'consequences' | 'status')}
       />
 
-      {tab === 'consequences' && CONSEQUENCE_GROUPS.map(group => (
+      {tab === 'consequences' && CONSEQUENCE_GROUPS().map(group => (
         <View key={group.severity} style={{ marginBottom: 10 }}>
           <View style={[styles.groupHeader, { backgroundColor: group.bg, borderLeftColor: group.color }]}>
             <Text style={[styles.groupTitle, { color: group.color }]} maxFontSizeMultiplier={1.4}>{group.severity}</Text>
@@ -150,7 +152,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
         </View>
       ))}
 
-      {tab === 'status' && STATUS_SECTIONS.map(sec => (
+      {tab === 'status' && STATUS_SECTIONS().map(sec => (
         <View key={sec.title} style={[styles.statusCard, { backgroundColor: colors.bgCard,
           borderColor: sec.critical ? COLORS.emergency : colors.border }]}>
           <View style={styles.statusHeader}>
@@ -164,8 +166,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
         <Text style={[styles.disclaimerText, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>
-          This information is for general education only and is not legal advice.
-          Laws vary by state. Consult a licensed attorney for advice about your situation.
+          {t('x_family_court_this_information_general_education')}
         </Text>
       </View>
       <AIDisclaimer variant="banner" />

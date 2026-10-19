@@ -31,12 +31,14 @@ import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
 
 // Message template lines are built inside buildMessage()
 
 function EmergencyShareScreen({ navigation }: ScreenProps) {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -134,7 +136,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   ): string => {
     const mapsLink = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
     const lines: string[] = [
-      `🚨 ${arrest.who.trim() || name} needs legal help right now.`,
+      t('x_emergency_share_needs_legal_help_right', { value: arrest.who.trim() || name }),
       ``,
     ];
     if (arrest.who.trim()) lines.push(`👤 Arrested: ${arrest.who.trim()}`);
@@ -195,7 +197,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   const sendShare = async () => {
     const hasArrestInfo = !!(arrest.who.trim() || arrest.where.trim() || arrest.booking.trim() || arrest.charges.trim());
     if (!coords && !bondsman && !lawyer && !hasArrestInfo) {
-      showToast('Add the arrest details or allow location so the message has something to send.');
+      showToast(t('x_emergency_share_add_arrest_details_allow'));
       return;
     }
 
@@ -223,7 +225,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
 
         const canOpen = await Linking.canOpenURL(smsUrl).catch(() => false);
         if (canOpen) {
-          await Linking.openURL(smsUrl).catch(() => showToast('Action failed. Please try again.', 'error'));
+          await Linking.openURL(smsUrl).catch(() => showToast(t('action_failed'), 'error'));
           setSharedTo(contacts.length);
           setPhase('done');
           hapticSuccess();
@@ -234,7 +236,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
       // Fallback: native share sheet
       let result;
       try {
-        result = await RNShare.share({ message, title: `${userName} needs help` });
+        result = await RNShare.share({ message, title: t('x_emergency_share_needs_help', { userName }) });
       } catch {
         // Share sheet unavailable — fallback already handled above
       }
@@ -246,7 +248,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
         setPhase('confirm');
       }
     } catch (e: any) {
-      setErrorMsg(e.message || 'Could not send message.');
+      setErrorMsg(e.message || t('x_emergency_share_could_not_send_message'));
       setPhase('error');
       hapticWarn();
     }
@@ -270,43 +272,42 @@ if (phase === 'ready') return (
         contentContainerStyle={{ paddingBottom: 24, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
       <View style={styles.quickExitBar}>
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           onPress={handleQuickExitTap}
           style={styles.quickExitBtn}
-          accessibilityLabel="Quick exit -- tap 3 times to leave this screen immediately"
+          accessibilityLabel={t('x_emergency_share_quick_exit_tap_3')}
           hitSlop={{ top:12, bottom:12, left:12, right:12 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.quickExitBtnText}>✕ Quick Exit</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.quickExitBtnText}>{t('x_emergency_share_quick_exit')}</Text>
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={styles.quickExitHint}>Tap 3× to exit immediately</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.quickExitHint}>{t('x_emergency_share_tap_3_exit_immediately')}</Text>
       </View>
       <View style={styles.hero}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heroTitle}>One-Tap Emergency Share</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heroTitle}>{t('x_emergency_share_one_tap_emergency_share')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.heroSub}>
-          Sends your GPS location, bail bondsman, and lawyer phone number
-          to your emergency contacts in one message.
+          {t('x_emergency_share_sends_gps_location_bail')}
         </Text>
       </View>
 
       {contacts.length === 0 && (
         <View style={styles.noContactsCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.noContactsTitle}>⚠️ No emergency contacts set</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.noContactsTitle}>{t('x_emergency_share_no_emergency_contacts_set')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.noContactsBody}>
-            Add contacts first so they can be reached when you need help.
+            {t('x_emergency_share_add_contacts_first_so')}
           </Text>
           <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={styles.addContactsBtn}
-            accessibilityLabel={"Add Emergency Contacts \u2192"} onPress={() => navigation.navigate('Contacts')}
+            accessibilityLabel={t('x_emergency_share_add_emergency_contacts')} onPress={() => navigation.navigate('Contacts')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>Add Emergency Contacts →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>{t('x_emergency_share_add_emergency_contacts')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {contacts.length > 0 && (
         <View style={styles.contactsList}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>Will be sent to:</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>{t('x_emergency_share_will_be_sent')}</Text>
           {contacts.map((c, i) => (
             <View key={`contact-${i}`} style={styles.contactRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactNum}>{i + 1}</Text>
@@ -316,12 +317,12 @@ if (phase === 'ready') return (
         </View>
       )}
       <View style={styles.whatIncluded} testID="arrest-info">
-        <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>Arrest details (optional — saved only on this phone)</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>{t('x_emergency_share_arrest_details_optional_saved')}</Text>
         {([
-          ['who', 'Who was arrested', 'Full name'],
-          ['where', 'Where they are held', 'Jail or police station'],
-          ['booking', 'Booking number', 'From the jail or inmate lookup'],
-          ['charges', 'Charges', 'e.g. DUI, possession'],
+          ['who', t('x_es_f_who'), t('x_es_f_who_ph')],
+          ['where', t('x_es_f_where'), t('x_es_f_where_ph')],
+          ['booking', t('x_es_f_booking'), t('x_es_f_booking_ph')],
+          ['charges', t('x_es_f_charges'), t('x_es_f_charges_ph')],
         ] as const).map(([k, label, ph]) => (
           <View key={k} style={{ marginBottom: 8 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.whatItem}>{label}</Text>
@@ -333,33 +334,33 @@ if (phase === 'ready') return (
       </View>
 
       <View style={styles.whatIncluded}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>What's included</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>{t('x_emergency_share_what_s_included')}</Text>
         {[
-          '📍  Your live GPS location (Google Maps link)',
-          '🔓  Nearest bail bondsman phone number',
-          '⚖️  Nearest criminal defense lawyer phone number',
-          '👤  Your name so contacts know who sent it',
-          '🏢  The arrest details you typed above (who, where held, booking number, charges)',
+          t('x_emergency_share_live_gps_location_google'),
+          t('x_emergency_share_nearest_bail_bondsman_phone'),
+          t('x_emergency_share_nearest_criminal_defense_lawyer'),
+          t('x_emergency_share_name_so_contacts_know'),
+          t('x_emergency_share_arrest_details_typed_above'),
         ].map(item => <Text maxFontSizeMultiplier={1.4} key={item} style={styles.whatItem}>{item}</Text>)}
       </View>
 
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={styles.goBtn}
         onPress={gatherInfo}
         testID="emergency-share-go"
         activeOpacity={0.85}
-       accessibilityLabel={"\ud83d\udea8  Get Info & Preview Message"}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>🚨  Get Info & Preview Message</Text>
+       accessibilityLabel={t('x_emergency_share_get_info_preview_message')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={styles.editContactsLink}
         onPress={() => navigation.navigate('Contacts')}
-       accessibilityLabel={"Edit emergency contacts \u2192"}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
+       accessibilityLabel={t('x_emergency_share_edit_emergency_contacts')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>{t('x_emergency_share_edit_emergency_contacts')}</Text>
       </TouchableOpacity>
 
       {/* ── Crisis & Mental Health Resources ───────────────────────────────
@@ -367,84 +368,84 @@ if (phase === 'ready') return (
            serving populations at elevated mental health risk.
            These resources are always shown -- no paywall, no login required. */}
       <View style={styles.crisisSection}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.crisisSectionTitle}>Crisis & Mental Health Resources</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.crisisSectionTitle}>{t('x_emergency_share_crisis_mental_health_resources')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.crisisSectionSub}>
-          Free, confidential, available 24/7. No app or login needed.
+          {t('x_emergency_share_free_confidential_available_24')}
         </Text>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() => Linking.openURL('tel:988').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={styles.crisisInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>988 Suicide & Crisis Lifeline</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>Call or text 988 -- 24/7, free, confidential</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_988_suicide_crisis_lifeline')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_call_text_988_24')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>💬</Text>
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>Crisis Text Line</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>Text HOME to 741741 -- free, 24/7</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_text_home_741741_free')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:18009506264').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() => Linking.openURL('tel:18009506264').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.warnBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🧠</Text>
           </View>
           <View style={styles.crisisInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>NAMI Helpline</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>1-800-950-6264 -- Mon-Fri 10am-10pm ET</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_nami_helpline')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_1_800_950_6264')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:18007994889').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() => Linking.openURL('tel:18007994889').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🏥</Text>
           </View>
           <View style={styles.crisisInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>SAMHSA National Helpline</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>1-800-662-4357 -- Substance use & mental health</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_samhsa_national_helpline')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_1_800_662_4357')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={[styles.crisisRow, { borderBottomWidth: 0 }]}
-          onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => showToast('Action failed. Please try again.', 'error'))}
-          accessibilityLabel="National Domestic Violence Hotline"
+          onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => showToast(t('action_failed'), 'error'))}
+          accessibilityLabel={t('x_emergency_share_national_domestic_violence_hotline')}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.emergencyBg }]}>
             <AppIcon name="shield-checkmark-outline" size={20} color={COLORS.navy} />
           </View>
           <View style={styles.crisisInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>National Domestic Violence Hotline</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>1-800-799-7233 or text START to 88788</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_national_domestic_violence_hotline')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_1_800_799_7233')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>↗</Text>
         </TouchableOpacity>
@@ -459,9 +460,9 @@ if (phase === 'ready') return (
     <View style={styles.center}>
       <ActivityIndicator size="large" color={COLORS.emergency} />
       <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>
-        {phase === 'locating' ? 'Getting your location…'
-         : phase === 'finding' ? 'Finding nearest bail agent and lawyer…'
-         : 'Opening message…'}
+        {phase === 'locating' ? t('qc_loc_getting')
+         : phase === 'finding' ? t('x_emergency_share_finding_nearest_bail_agent')
+         : t('x_emergency_share_opening_message')}
       </Text>
     </View>
   );
@@ -470,15 +471,15 @@ if (phase === 'ready') return (
   if (phase === 'error') return (
     <View style={styles.center}>
       <AppIcon name="warning-outline" size={20} color={colors.warn} />
-      <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>{t('x_emergency_could_not_send')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={styles.retryBtn}
         onPress={sendShare}
-        accessibilityLabel="Try again">
-        <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
+        accessibilityLabel={t('try_again')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>{t('help_now_error_retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -487,17 +488,17 @@ if (phase === 'ready') return (
   if (phase === 'done') return (
     <View style={styles.center}>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneIcon}>✓</Text>
-      <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Message sent!</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>{t('x_emergency_share_message_sent')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>
-        Your message was handed to {sharedTo > 1 ? `your ${sharedTo} emergency contacts` : 'your emergency contact'}.
+        {t('x_emergency_share_message_was_handed', { value: sharedTo > 1 ? t('x_emergency_share_emergency_contacts', { sharedTo }) : t('x_emergency_share_emergency_contact') })}
       </Text>
       <TouchableOpacity
   accessibilityRole="button"
         style={styles.doneBtn}
         onPress={() => { if (navigation.canGoBack()) navigation.goBack(); else setPhase('ready'); }}
-         accessibilityLabel="Done Sharing"
-          accessibilityHint="Confirms and closes this view">
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
+         accessibilityLabel={t('x_emergency_share_done_sharing')}
+          accessibilityHint={t('x_emergency_share_confirms_closes_this_view')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_emergency_share_done_sharing')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -507,8 +508,8 @@ if (phase === 'ready') return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
         contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={styles.confirmHeader}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>Preview Message</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.confirmSub}>Review before sending to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>{t('x_emergency_share_preview_message')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.confirmSub}>{t(contacts.length === 1 ? 'x_emergency_share_review_before_sending_contact_one' : 'x_emergency_share_review_before_sending_contact_other', { length: contacts.length })}</Text>
       </View>
 
       {/* Message preview */}
@@ -521,7 +522,7 @@ if (phase === 'ready') return (
 
       {/* Contacts */}
       <View style={styles.contactsList}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>Sending to:</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>{t('x_emergency_share_sending')}</Text>
         {contacts.map((c, i) => (
           <View key={`contact-${i}`} style={styles.contactRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.contactNum}>{i + 1}</Text>
@@ -533,13 +534,13 @@ if (phase === 'ready') return (
       {/* Provider cards */}
       {bondsman && (
         <View style={styles.providerCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.providerLabel}>🔓 Bail bondsman</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.providerLabel}>{t('x_emergency_share_bail_bondsman')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{bondsman.name}</Text>
           {bondsman.phone && (
             <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-               onPress={() => Linking.openURL('tel:' + String(bondsman.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(`Please dial ${bondsman.phone} manually.`, 'warning'))}
+          accessibilityHint={t('cp_double_tap')}
+               onPress={() => Linking.openURL('tel:' + String(bondsman.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(t('x_emergency_share_please_dial_manually', { phone: bondsman.phone }), 'warning'))}
                accessibilityLabel={bondsman.phone}>
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
@@ -548,13 +549,13 @@ if (phase === 'ready') return (
       )}
       {lawyer && (
         <View style={[styles.providerCard, { borderLeftColor: COLORS.legal }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.providerLabel, { color: COLORS.legal }]}>⚖️ Lawyer</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.providerLabel, { color: COLORS.legal }]}>{t('x_emergency_share_lawyer')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{lawyer.name}</Text>
           {lawyer.phone && (
             <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-               onPress={() => Linking.openURL('tel:' + String(lawyer.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(`Please dial ${lawyer.phone} manually.`, 'warning'))}
+          accessibilityHint={t('cp_double_tap')}
+               onPress={() => Linking.openURL('tel:' + String(lawyer.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(t('x_emergency_share_please_dial_manually', { phone: lawyer.phone }), 'warning'))}
                accessibilityLabel={lawyer.phone}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
@@ -563,22 +564,22 @@ if (phase === 'ready') return (
       )}
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={styles.sendBtn}
         onPress={sendShare}
         testID="emergency-share-send"
-       accessibilityLabel={"\ud83d\udea8  Send Now"}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
+       accessibilityLabel={t('x_emergency_share_send_now')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>{t('x_emergency_share_send_now')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>{t('x_emergency_share_opens_messages_app')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
         style={styles.cancelBtn}
         onPress={() => setPhase('ready')}
-         accessibilityLabel="Cancel"
-          accessibilityHint="Cancels and returns to previous screen">
-        <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>
+         accessibilityLabel={t('case_cancel')}
+          accessibilityHint={t('x_arrest_monitor_cancels_returns_previous_screen')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>{t('case_cancel')}</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
     </ScrollView>

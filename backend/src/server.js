@@ -10,9 +10,9 @@
  * process handlers (signals, uncaught errors) with a single shutdown path.
  */
 import './instrument.js';
-import { validateEnv } from './config.js';
+import { validateEnv, APP_ENV } from './config.js';
 import logger from './utils/logger.js';
-import { APP_VERSION } from './utils/version.js';
+import { APP_VERSION, GIT_COMMIT_SHORT, HOST_PLATFORM, INSTANCE_ID } from './utils/version.js';
 
 validateEnv();   // exits(1) in production when JWT/ENCRYPTION/DATABASE_URL are missing
 
@@ -149,6 +149,8 @@ async function runBarReVerification() {
 
 
 // ── 2. HTTP server ────────────────────────────────────────────────────────────
+// $PORT is injected by the host (Render: 10000 by default). Bind every
+// interface — a container that listens on 127.0.0.1 is unreachable.
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const server = app.listen(PORT, '0.0.0.0');
 server.keepAliveTimeout = 65000;  // > Caddy/nginx idle timeout (60s)
@@ -161,8 +163,11 @@ server.on('listening', () => {
   logger.info({
     msg: '[server] Justice Gavel API started',
     port: addr.port || PORT,
-    env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local',
+    env: APP_ENV,
     version: APP_VERSION,
+    commit: GIT_COMMIT_SHORT,
+    platform: HOST_PLATFORM,
+    instance: INSTANCE_ID,
   });
   logger.info(`[server] Mode: ${process.env.DEMO_MODE === 'true' ? 'DEMO' : 'LIVE'}`);
   if (process.send) process.send('ready');   // PM2 wait_ready
@@ -228,6 +233,8 @@ async function shutdown(signal, exitCode = 0) {
   shuttingDown = true;
   logger.info(`[server] ${signal} received — starting graceful shutdown`);
 
+  // Hard stop at 25 s. Keep it below render.yaml maxShutdownDelaySeconds (30)
+  // so the host's SIGKILL never cuts the drain short (render_blueprint.test.js).
   const force = setTimeout(() => {
     logger.error('[server] Graceful shutdown timed out — forcing exit');
     process.exit(exitCode || 1);
@@ -257,7 +264,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM', 0));
 process.on('SIGINT',  () => shutdown('SIGINT', 0));
 
 // A thrown exception leaves the process in an unknown state: report it and
-// exit non-zero so the platform (Railway/PM2/Docker) restarts us.
+// exit non-zero so the platform (Render/PM2/Docker) restarts us.
 process.on('uncaughtException', (err) => {
   logger.error('[server] Uncaught exception:', err?.stack || err);
   try {

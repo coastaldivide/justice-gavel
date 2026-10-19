@@ -17,6 +17,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AppState } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
+import { t } from '../i18n';
 
 /** How often the open thread checks for new messages (foreground only). */
 export const MESSAGE_POLL_MS = 8_000;
@@ -80,7 +81,7 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
     } catch (e) {
       if (!mountedRef.current || caseIdRef.current !== cid) return;
       // A failed background poll keeps the thread as-is and tries again later.
-      if (!opts.silent) setError(apiErrorMessage(e, 'Could not load messages.'));
+      if (!opts.silent) setError(apiErrorMessage(e, t('x_use_case_messages_could_not_load_messages')));
     } finally {
       if (mountedRef.current && !opts.silent && caseIdRef.current === cid) setLoading(false);
     }
@@ -109,7 +110,7 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
     if (!cid || !text) return false;
     const maxLen = type === 'note' ? 50_000 : 10_000;
     if (text.length > maxLen) {
-      setError(`Message is longer than the ${maxLen.toLocaleString()}-character limit.`);
+      setError(t('x_use_case_messages_message_longer_than_character', { maxLen: maxLen.toLocaleString() }));
       return false;
     }
     setSending(true);
@@ -123,7 +124,7 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
       return true;
     } catch (e) {
       if (mountedRef.current && caseIdRef.current === cid) {
-        setError(apiErrorMessage(e, 'Message not sent. Check your connection and try again.'));
+        setError(apiErrorMessage(e, t('x_use_case_messages_message_not_sent_check')));
       }
       return false;
     } finally {

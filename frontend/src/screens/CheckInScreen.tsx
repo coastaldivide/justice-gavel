@@ -20,13 +20,14 @@ import { api, apiErrorMessage } from '../services/api';
 import { hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { t } from '../i18n';
+import { t, useLang, locale } from '../i18n';
 
 type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'already_done' | 'error' | 'no_enrollment';
 
 
 
 function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | null {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -80,7 +81,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       setPhase(res.data?.checked_in_today ? 'already_done' : 'ready');
     } catch (e: any) {
       setPhase('error');
-      setErrorMsg(apiErrorMessage(e, 'Could not load your check-in. Check your internet.'));
+      setErrorMsg(apiErrorMessage(e, t('x_check_in_could_not_load_check')));
     }
   }, [enrollmentId]);
 
@@ -98,10 +99,10 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
     const next = !gpsVerify;
     setGpsVerify(next);
     if (!next) { setGpsStatus(''); setGpsReady(false); setCoords(null); return; }
-    setGpsStatus('Getting your location…');
+    setGpsStatus(t('qc_loc_getting'));
     getLocation()
-      .then(loc => { setCoords(loc); setGpsReady(true); setGpsStatus('✓ Location ready'); })
-      .catch(() => { setGpsReady(false); setGpsStatus('Location unavailable -- you can still check in without it'); });
+      .then(loc => { setCoords(loc); setGpsReady(true); setGpsStatus(t('x_check_in_location_ready')); })
+      .catch(() => { setGpsReady(false); setGpsStatus(t('x_check_in_location_unavailable_can_still')); });
   };
 
   const doCheckIn = async () => {
@@ -147,7 +148,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         setPhase('already_done');
       } else {
         setPhase('error');
-        setErrorMsg(apiErrorMessage(e, 'Check-in failed. Try again.'));
+        setErrorMsg(apiErrorMessage(e, t('x_check_in_check_failed_try_again')));
       }
     }
   };
@@ -164,24 +165,24 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         }>
       <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20, ...FONTS.black, color: colors.textBrand, textAlign: 'center', marginBottom: 8 }}>
-        Check-In Link Required
+        {t('x_check_in_check_link_required')}
       </Text>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24, paddingHorizontal: 24 }}>
-        Your bail bondsman needs to enroll you in the check-in system and send you a personalized link.
+        {t('x_check_in_bail_bondsman_needs_enroll')}
       </Text>
       <View style={{ backgroundColor: COLORS.legalBg, borderRadius: RADIUS.lg, padding: 16, alignSelf: 'stretch', marginBottom: 24, borderWidth: 1, borderColor: colors.legal }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.legal, marginBottom: 8 }}>How to get enrolled:</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.legal, marginBottom: 8 }}>{t('checkin_how_to_enroll')}</Text>
         {[
-          '1. Contact your bail bondsman',
-          '2. Ask them to enroll you in digital check-in',
-          "3. They'll send you a link via SMS",
-          '4. Tap the link to open your check-in',
+          t('x_check_in_1_contact_bail_bondsman'),
+          t('x_check_in_2_ask_them_enroll'),
+          t('x_check_in_3_they_ll_send'),
+          t('x_check_in_4_tap_link_open'),
         ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={{ fontSize: 12, color: colors.legalDark, lineHeight: 20 }}>{s}</Text>)}
       </View>
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-        testID="checkin-enroll-button" accessibilityLabel="Find a Bail Bondsman"
+          accessibilityHint={t('cp_double_tap')}
+        testID="checkin-enroll-button" accessibilityLabel={t('x_check_in_find_bail_bondsman')}
         style={{ backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, ...SHADOW.md }}
         onPress={() => navigation.navigate('BailTab')}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
@@ -195,8 +196,8 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') return (
     <View style={styles.center}>
-      <SkeletonLoader count={4} label="Check-In" />
-      <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>Loading your check-in…</Text>
+      <SkeletonLoader count={4} label={t('x_check_in_check')} />
+      <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>{t('checkin_loading')}</Text>
     </View>
   );
 
@@ -204,12 +205,12 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   if (phase === 'error') return (
     <View style={styles.center}>
       <AppIcon name="warning-outline" size={20} color={colors.warn} />
-      <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>{t('checkin_unavailable')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.retryBtn} onPress={loadStatus}
-       accessibilityLabel="Try Again">
-        <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
+          accessibilityHint={t('cp_double_tap')} style={styles.retryBtn} onPress={loadStatus}
+       accessibilityLabel={t('help_now_error_retry')}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>{t('help_now_error_retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -219,15 +220,15 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={[styles.scroll, { alignItems: 'center' }]}>
       <View style={styles.doneHero}>
         <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Already checked in today</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Come back tomorrow</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>{t('checkin_already_done')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>{t('checkin_come_back')}</Text>
       </View>
       {enrollment && (
         <View style={styles.enrollmentCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentName}>{enrollment.defendant_name}</Text>
           {enrollment.court_date && (
             <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentDetail}>
-              📅 Court date: {formatDate(enrollment.court_date, { month:'long', day:'numeric', year:'numeric' })}
+              {t('x_check_in_court_date', { court_date: formatDate(enrollment.court_date, { month:'long', day:'numeric', year:'numeric' }) })}
             </Text>
           )}
         </View>
@@ -235,14 +236,14 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       <View style={styles.statsRow}>
         <View style={styles.statBlock}>
           <Text testID="checkin-streak-count" maxFontSizeMultiplier={1.4} style={styles.statNum}>{streak}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Total check-ins</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_total_check_ins')}</Text>
         </View>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: COLORS.legal }]}>✓</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Today done</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_today_done')}</Text>
         </View>
       </View>
-      <Text maxFontSizeMultiplier={1.4} style={styles.nextDue}>Next check-in due tomorrow by 11:59 PM</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.nextDue}>{t('checkin_next_due')}</Text>
     </ScrollView>
   );
 
@@ -251,7 +252,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
     <View style={styles.center}>
       <ActivityIndicator size="large" color={COLORS.navy} />
       <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>
-        {(phase as string) === 'gps' ? 'Getting your location…' : 'Submitting your check-in…'}
+        {(phase as string) === 'gps' ? t('qc_loc_getting') : t('x_check_in_submitting_check')}
       </Text>
     </View>
   );
@@ -261,42 +262,42 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={[styles.scroll, { alignItems: 'center' }]}>
       <View testID="checkin-success-screen" style={styles.doneHero}>
         <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Check-in Complete!</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your bondsman has been notified</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>{t('checkin_complete')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>{t('checkin_bondsman_notified')}</Text>
       </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={styles.statNum}>{streak}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Total check-ins</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_total_check_ins')}</Text>
         </View>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: COLORS.legal }]}>✓</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Today done</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_today_done')}</Text>
         </View>
       </View>
 
       {!!coords && (
         <View style={styles.locationConfirm}>
           <Text maxFontSizeMultiplier={1.4} style={styles.locationConfirmText}>
-            📍 Location recorded: {(coords.lat ?? 0).toFixed(4)}, {(coords.lng ?? 0).toFixed(4)}
+            {t('x_check_in_location_recorded', { value: (coords.lat ?? 0).toFixed(4), value2: (coords.lng ?? 0).toFixed(4) })}
           </Text>
         </View>
       )}
-      <Text maxFontSizeMultiplier={1.4} style={styles.nextDue}>Next check-in due tomorrow by 11:59 PM</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.nextDue}>{t('checkin_next_due')}</Text>
 
       <View style={styles.helpBlock}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockTitle}>Need legal help?</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockSub}>Find a lawyer or bail bondsman instantly.</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockTitle}>{t('checkin_need_help')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockSub}>{t('x_check_in_find_lawyer_bail_bondsman')}</Text>
         <TouchableOpacity
   accessibilityRole="button"
 
-          accessibilityLabel="Find a Lawyer →"
-          accessibilityHint="Searches for attorneys in your area"
+          accessibilityLabel={t('x_check_in_find_lawyer')}
+          accessibilityHint={t('x_check_in_searches_attorneys_area')}
           style={styles.helpBlockBtn}
           onPress={() => navigation.navigate('LawyersTab')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockBtnText}>Find a Lawyer →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockBtnText}>{t('x_check_in_find_lawyer')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -308,12 +309,12 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
       {/* Header */}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Daily Check-In</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_check_in_daily_check')}</Text>
         {enrollment && (
           <Text maxFontSizeMultiplier={1.4} style={styles.headerName}>{enrollment.defendant_name}</Text>
         )}
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
-          Required by your bail bondsman · Takes 10 seconds
+          {t('x_check_in_required_by_bail_bondsman')}
         </Text>
       </View>
 
@@ -321,20 +322,20 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       <View style={styles.statsRow}>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={styles.statNum}>{streak}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Check-ins done</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_check_ins_done')}</Text>
         </View>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: gpsReady ? COLORS.legal : COLORS.textMuted }]}>
             {gpsReady ? '📍' : gpsVerify ? '…' : '—'}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{gpsReady ? 'GPS ready' : gpsVerify ? 'Getting GPS' : 'GPS off'}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{gpsReady ? t('x_check_in_gps_ready') : gpsVerify ? t('x_check_in_getting_gps') : t('x_check_in_gps_off')}</Text>
         </View>
         {enrollment?.court_date && (
           <View style={styles.statBlock}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { fontSize: 14 }]}>
               {daysUntil(enrollment.court_date) ?? '--'}d
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Until court</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_check_in_until_court')}</Text>
           </View>
         )}
       </View>
@@ -346,8 +347,8 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         return days <= 7 && days >= 0 ? (
           <View style={styles.courtWarning}>
             <Text maxFontSizeMultiplier={1.4} style={styles.courtWarningText}>
-              {'⚠️  Court date '}{days === 0 ? 'TODAY' : days === 1 ? 'TOMORROW' : `in ${days} days`}{' -- '}
-              {d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+              {t('x_check_in_court_date_2') + ' '}{days === 0 ? t('x_check_in_today_caps') : days === 1 ? t('x_check_in_tomorrow_caps') : t('x_check_in_days', { days })}{' -- '}
+              {d.toLocaleDateString(locale(), { month: 'long', day: 'numeric' })}
             </Text>
           </View>
         ) : null;
@@ -355,7 +356,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
       {/* Location */}
       <View style={styles.section}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Where are you? <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text></Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('x_check_in_where')}{' '}<Text maxFontSizeMultiplier={1.4} style={styles.optional}>{t('x_check_in_optional')}</Text></Text>
         <TextInput
           style={styles.input}
           placeholderTextColor={COLORS.textSecond}
@@ -366,18 +367,18 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         />
         {gpsVerify && gpsReady && coords && (
           <Text maxFontSizeMultiplier={1.4} style={styles.gpsStatus}>
-            ✓ GPS location will be included
+            {t('x_check_in_gps_location_will_be')}
           </Text>
         )}
       </View>
 
       {/* Notes */}
       <View style={styles.section}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Any notes? <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text></Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('x_check_in_any_notes')}{' '}<Text maxFontSizeMultiplier={1.4} style={styles.optional}>{t('x_check_in_optional')}</Text></Text>
         <TextInput
-              testID="checkin-notes-input" accessibilityLabel="Optional check-in notes"
+              testID="checkin-notes-input" accessibilityLabel={t('x_check_in_optional_check_notes')}
           style={[styles.input, { height: 72, textAlignVertical: 'top' }]}
-          placeholder="e.g. At home -- waiting for attorney callback"
+          placeholder={t('x_check_in_e_g_at_home')}
           placeholderTextColor={COLORS.textSecond}
           value={notes}
           onChangeText={setNotes}
@@ -391,23 +392,23 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       {/* GPS opt-in toggle */}
       <TouchableOpacity
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:12,
           borderTopWidth:1, borderTopColor:colors.border, marginBottom:16, gap:12 }}
         onPress={toggleGps}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         accessibilityState={{ checked: gpsVerify }}
-        accessibilityLabel="Include GPS location in this check-in"
+        accessibilityLabel={t('x_check_in_include_gps_location_this')}
         activeOpacity={0.8}
       >
         <View style={{ flex:1 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
             fontWeight:'600', color:colors.textPrimary }}>
-            📍 Include my location
+            {t('x_check_in_include_my_location')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
             color:colors.textMuted }}>
-            Optional -- records GPS with your check-in
+            {t('x_check_in_optional_records_gps_with')}
           </Text>
           {!!gpsStatus && (
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
@@ -426,20 +427,20 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-        accessibilityLabel="Check In Now"
+          accessibilityHint={t('cp_double_tap')}
+        accessibilityLabel={t('x_check_in_check_now')}
         style={styles.checkInBtn}
         testID="checkin-submit-button" disabled={(phase as string) === 'submitting' || (phase as string) === 'gps'} onPress={doCheckIn}
         activeOpacity={0.88}
       >
           <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnIcon}>✓</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnText}>Check In Now</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnSub}>GPS captured · Takes 3 seconds</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnText}>{t('x_check_in_check_now')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnSub}>{t('checkin_gps_note')}</Text>
         </TouchableOpacity>
       </Animated.View>
 
       <Text maxFontSizeMultiplier={1.4} style={styles.legalNote}>
-        Your location and check-in time are recorded and shared with your bail bondsman only.
+        {t('x_check_in_location_check_time_recorded')}
       </Text>
 
       <View style={{ height: 40 }} />
@@ -450,7 +451,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
           color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ Check-in requirements are set by your specific court, probation officer, or bail conditions. This app cannot replace those official requirements. Always follow your official conditions of release.
+          {t('x_check_in_check_requirements_set_by')}
         </Text>
       </View>
       </ScrollView>

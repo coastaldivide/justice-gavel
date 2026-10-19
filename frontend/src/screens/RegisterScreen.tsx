@@ -8,8 +8,10 @@ import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as secureStorage from '../utils/secureStorage';
 import JTBLogo from '../components/JTBLogo';
+import { t, useLang } from '../i18n';
 
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -37,8 +39,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const onRegister = async () => {
 if (loading) return;
-        if (!normalizedIdentifier) { setError('Enter your email or phone number to create your account.'); return; }
-    if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+        if (!normalizedIdentifier) { setError(t('x_rg_enter_email_phone_number')); return; }
+    if (!password || password.length < 8) { setError(t('x_rg_password_must_be_at')); return; }
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/register', {
@@ -56,7 +58,7 @@ if (loading) return;
       api.post('/push/d7-reengage').catch((e) => { __DEV__ && console.warn(e?.message); });
       setAppAuth('authed');
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Registration failed. Please try again.'));
+      setError(apiErrorMessage(e, t('x_rg_registration_failed_please_try')));
     } finally { setLoading(false); }
   };
 
@@ -68,23 +70,23 @@ if (loading) return;
           <View style={styles.logoWrap}>
             <JTBLogo size={72} />
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.wordmark}>Create Account</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>Free to use  ·  Legal help for everyone</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.wordmark}>{t('create_account')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>{t('x_rg_free_use_legal_help')}</Text>
         </View>
 
         <View style={styles.form}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Email or phone number</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('x_lg_email_phone_number')}</Text>
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}
-              placeholder="email or phone number"
+              placeholder={t('x_lg_email_phone_number_2')}
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
               onChangeText={(v) => { setIdentifier(v); setError(''); }}
 
           maxLength={254}
               autoCapitalize="none"
-          testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
+          testID="register-email-input" accessibilityLabel={t('x_lg_email_address_phone_number')} autoComplete="email"
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
               textContentType="username" returnKeyType="next"
               onSubmitEditing={() => passRef.current?.focus()}
@@ -92,14 +94,14 @@ if (loading) return;
             />
           </View>
 
-          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>Password</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>{t('password')}</Text>
           <View style={styles.inputWrap}>
             <TextInput
               ref={passRef}
               style={[styles.input, { flex: 1 }]}
-              placeholder="At least 8 characters"
+              placeholder={t('x_rg_at_least_8_characters')}
               placeholderTextColor={COLORS.textSecond}
-              testID="register-password-input" accessibilityLabel="Password" secureTextEntry={!showPass}
+              testID="register-password-input" accessibilityLabel={t('password')} secureTextEntry={!showPass}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
               textContentType="newPassword" returnKeyType="next"
@@ -108,9 +110,9 @@ if (loading) return;
             />
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel={showPass ? 'Hide password' : 'Show password'} onPress={() => setShowPass(s => !s)}
+          accessibilityHint={t('cp_double_tap')} accessibilityLabel={showPass ? t('x_lg_hide_password') : t('x_lg_show_password')} onPress={() => setShowPass(s => !s)}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? t('x_lg_hide') : t('x_lg_show')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -118,7 +120,7 @@ if (loading) return;
       <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Defendant or family member account"
+          accessibilityLabel={t('x_rg_defendant_family_member_account')}
           onPress={() => setIsAttorney(false)}
           style={{
             flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
@@ -127,12 +129,12 @@ if (loading) return;
           }}
         >
           <Text style={{ color: !isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
-            ⚖️  I need legal help
+            {t('x_rg_i_need_legal_help')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Attorney account"
+          accessibilityLabel={t('x_rg_attorney_account')}
           onPress={() => setIsAttorney(true)}
           style={{
             flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
@@ -141,7 +143,7 @@ if (loading) return;
           }}
         >
           <Text style={{ color: isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
-            👔  I am an attorney
+            {t('x_rg_i_am_attorney')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -149,8 +151,8 @@ if (loading) return;
       {isAttorney && (
         <View style={{ gap: 8, marginBottom: 8 }}>
           <TextInput
-            accessibilityLabel="Bar number"
-            placeholder="Bar number (optional)"
+            accessibilityLabel={t('hn_bar_number')}
+            placeholder={t('x_rg_bar_number_optional')}
             value={barNumber}
             onChangeText={setBarNumber}
             autoCapitalize="characters"
@@ -158,18 +160,18 @@ if (loading) return;
                      padding: 12, fontSize: 15 }}
           />
           <TextInput
-            accessibilityLabel="State bar (e.g. TN)"
-            placeholder="State bar (e.g. TN)"
+            accessibilityLabel={t('x_rg_state_bar_e_g')}
+            placeholder={t('x_rg_state_bar_e_g')}
             value={barState}
-            onChangeText={t => setBarState(t.toUpperCase().slice(0,2))}
+            onChangeText={tItem => setBarState(tItem.toUpperCase().slice(0,2))}
             maxLength={2}
             autoCapitalize="characters"
             style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                      padding: 12, fontSize: 15 }}
           />
           <TextInput
-            accessibilityLabel="Firm name"
-            placeholder="Firm name (optional)"
+            accessibilityLabel={t('x_firm_acquisition_firm_name')}
+            placeholder={t('x_rg_firm_name_optional')}
             value={firmName}
             onChangeText={setFirmName}
             style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
@@ -179,13 +181,13 @@ if (loading) return;
       )}
 
           <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>
-            Display name <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text>
+            {t('settings.display_name')}{' '}<Text maxFontSizeMultiplier={1.4} style={styles.optional}>{t('x_check_in_optional')}</Text>
           </Text>
           <View style={styles.inputWrap}>
                   <TextInput
               ref={nameRef}
               style={styles.input}
-              placeholder="How should we address you?"
+              placeholder={t('x_rg_how_should_we_address')}
               placeholderTextColor={COLORS.textSecond}
               value={displayName} onChangeText={setDisplayName}
               textContentType="name" returnKeyType="done"
@@ -203,36 +205,36 @@ if (loading) return;
           <TouchableOpacity
             accessibilityRole="button"
 
-            accessibilityLabel="Create Account"
-          accessibilityHint="Creates a new Justice Gavel account"
+            accessibilityLabel={t('create_account')}
+          accessibilityHint={t('x_rg_creates_new_justice_gavel')}
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="register-submit-button" onPress={onRegister} disabled={loading} activeOpacity={0.85}
           >
             {loading
               ? <ActivityIndicator color={colors.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>Create Account</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>{t('create_account')}</Text>
             }
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.loginLink}
+          accessibilityHint={t('cp_double_tap')} style={styles.loginLink}
             onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>
-              Already have an account?{'  '}
-              <Text maxFontSizeMultiplier={1.4} style={styles.loginHighlight}>Sign in</Text>
+              {t('onboard_signin')}{' '}
+              <Text maxFontSizeMultiplier={1.4} style={styles.loginHighlight}>{t('ja_sign_in')}</Text>
             </Text>
           </TouchableOpacity>
         
     </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>
-          By creating an account you agree to our{' '}
+          {t('x_rg_by_creating_account_agree')}{' '}
             <Text maxFontSizeMultiplier={1.4}
               style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
-              onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
-            >Terms of Service</Text>.{'\n'}We never sell your data.
+              onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
+            >{t('onb_terms_tos')}</Text>{t('x_rg_we_never_sell_data')}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

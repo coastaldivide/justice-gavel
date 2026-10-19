@@ -32,6 +32,7 @@ import {
   StyleSheet, ActivityIndicator, Platform, Linking, LayoutAnimation} from 'react-native';
 import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
+import { t, perLang, useLang } from '../i18n';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
 
@@ -46,33 +47,33 @@ export function contentFitsViewport(contentHeight: number, viewportHeight: numbe
 // ─── Summary sections shown in the modal ─────────────────────────────────────
 // The full ToS is accessible via the "Read full Terms" link.
 // This summary hits the legally critical points in plain language.
-const SUMMARY_POINTS = [
+const SUMMARY_POINTS = perLang(() => [
   {
     icon: '⚖️',
-    title: 'Not a Law Firm',
-    body: 'Justice Gavel is a legal information platform, not a law firm. We do not provide legal advice and no attorney-client relationship is created by using this app.',
+    title: t('x_terms_acceptance_modal_not_law_firm'),
+    body: t('x_terms_acceptance_modal_justice_gavel_legal_information'),
   },
   {
     icon: '🤖',
-    title: 'AI May Be Wrong',
-    body: 'Our AI assistant can make mistakes, hallucinate statutes, and misstate the law. Always verify information with a licensed attorney before acting on it.',
+    title: t('x_terms_acceptance_modal_ai_may_be_wrong'),
+    body: t('x_terms_acceptance_modal_our_ai_assistant_can'),
   },
   {
     icon: '📅',
-    title: 'Deadlines Are Advisory',
-    body: 'Deadline alerts, deadline calculations, and signal intelligence are informational only. Court rules vary. Verify every deadline with your attorney.',
+    title: t('x_terms_acceptance_modal_deadlines_advisory'),
+    body: t('x_terms_acceptance_modal_deadline_alerts_deadline_calculation'),
   },
   {
     icon: '🔒',
-    title: 'Your Data Is Secure',
-    body: 'Case notes are AES-256 encrypted. We never sell your data. You can export or delete your data at any time from Settings.',
+    title: t('x_terms_acceptance_modal_data_secure'),
+    body: t('x_terms_acceptance_modal_case_notes_aes_256'),
   },
   {
     icon: '📱',
-    title: 'Recording Laws Vary',
-    body: 'The Encounter Recorder feature is legal in some states and not others. You are responsible for complying with recording laws in your jurisdiction.',
+    title: t('x_terms_acceptance_modal_recording_laws_vary'),
+    body: t('x_terms_acceptance_modal_encounter_recorder_feature_legal'),
   },
-];
+]);
 
 type Props = {
   visible: boolean;
@@ -81,6 +82,7 @@ type Props = {
 };
 
 function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
+  useLang();
   const { showToast } = useToast();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -132,7 +134,7 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
       await api.post('/auth/disclaimer/accept', {});
       onAccepted();
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Could not record acceptance. Please try again.'));
+      setError(apiErrorMessage(e, t('x_terms_acceptance_modal_could_not_record_acceptance')));
     } finally {
       setSubmitting(false);
     }
@@ -150,10 +152,9 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
 
         {/* Header */}
         <View style={s.header}>
-          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>Before You Continue</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>{t('x_legal_disclaimer_before_continue')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>
-            Please read and agree to our Terms of Service.{'\n'}
-            You only need to do this once.
+            {t('x_terms_acceptance_modal_please_read_agree_our')}
           </Text>
         </View>
 
@@ -170,14 +171,14 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           showsVerticalScrollIndicator={true}>
 
           {/* Key points in plain language */}
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>What You Need to Know</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>{t('x_terms_acceptance_modal_what_need_know')}</Text>
           
-          {SUMMARY_POINTS.length === 0 && (
+          {SUMMARY_POINTS().length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
             </View>
           )}
-{SUMMARY_POINTS.map((pt, i) => (
+{SUMMARY_POINTS().map((pt, i) => (
             <View key={`point-${i}`} style={s.point}>
               <Text maxFontSizeMultiplier={1.4} style={s.pointIcon}>{pt.icon}</Text>
               <View style={s.pointBody}>
@@ -191,16 +192,16 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           <TouchableOpacity
             accessibilityRole="link"
             style={s.fullTosLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
-            accessibilityLabel="Read the full Terms of Service"
+            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
+            accessibilityLabel={t('x_terms_acceptance_modal_read_full_terms_service')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>📄 Read the full Terms of Service →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>{t('x_terms_acceptance_modal_read_full_terms_service_2')}</Text>
           </TouchableOpacity>
 
           {/* Scroll indicator */}
           {!scrolledToBottom && (
             <View style={s.scrollHint}>
-              <Text maxFontSizeMultiplier={1.4} style={s.scrollHintText}>↓ Scroll to continue ↓</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.scrollHintText}>{t('x_terms_acceptance_modal_scroll_continue')}</Text>
             </View>
           )}
 
@@ -214,21 +215,21 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           {/* Checkbox 1: ToS agreement */}
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
 
             style={s.checkRow}
             testID="tos-check-terms"
             onPress={() => setCheckToS(v => !v)}
             accessibilityState={{ checked: checkToS }}
-            accessibilityLabel="I have read and agree to the Terms of Service">
+            accessibilityLabel={t('x_terms_acceptance_modal_i_have_read_agree')}>
             <View style={[s.checkbox, checkToS && s.checkboxChecked]}>
               {checkToS && <Text maxFontSizeMultiplier={1.4} style={s.checkmark}>✓</Text>}
             </View>
             <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
-              I have read and agree to the{' '}
+              {t('x_terms_acceptance_modal_i_have_read_agree_2')}{' '}
               <Text maxFontSizeMultiplier={1.4} style={s.link}
-                onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}>
-                Terms of Service
+                onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}>
+                {t('onb_terms_tos')}
               </Text>
             </Text>
           </TouchableOpacity>
@@ -236,27 +237,27 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           {/* Checkbox 2: The critical disclaimer — standalone affirmative act */}
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
 
             style={s.checkRow}
             testID="tos-check-no-advice"
             onPress={() => setCheckNoAdvice(v => !v)}
             accessibilityState={{ checked: checkNoAdvice }}
-            accessibilityLabel="I understand Justice Gavel is not a law firm and does not provide legal advice">
+            accessibilityLabel={t('x_terms_acceptance_modal_i_understand_justice_gavel')}>
             <View style={[s.checkbox, checkNoAdvice && s.checkboxChecked]}>
               {checkNoAdvice && <Text maxFontSizeMultiplier={1.4} style={s.checkmark}>✓</Text>}
             </View>
             <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
-              I understand that{' '}
-              <Text maxFontSizeMultiplier={1.4} style={s.bold}>Justice Gavel is not a law firm</Text>
-              {' '}and nothing on this platform is legal advice. I will consult a licensed attorney for advice specific to my situation.
+              {t('x_terms_acceptance_modal_i_understand_that')}{' '}
+              <Text maxFontSizeMultiplier={1.4} style={s.bold}>{t('x_terms_acceptance_modal_justice_gavel_not_law')}</Text>
+              {' '}{t('x_terms_acceptance_modal_nothing_this_platform_legal')}
             </Text>
           </TouchableOpacity>
 
           {/* Scroll prompt when not yet at bottom */}
           {!scrolledToBottom && (
             <Text maxFontSizeMultiplier={1.4} style={s.scrollToUnlock}>
-              Scroll through the summary above to unlock "I Agree"
+              {t('x_terms_acceptance_modal_scroll_through_summary_above')}
             </Text>
           )}
 
@@ -267,25 +268,25 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
 
           {/* Accept button */}
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[s.acceptBtn, (!canAccept || submitting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
             testID="tos-accept-button"
             disabled={!canAccept || submitting}
-            accessibilityLabel="I Agree — accept Terms of Service"
+            accessibilityLabel={t('x_terms_acceptance_modal_i_agree_accept_terms')}
             accessibilityState={{ disabled: !canAccept || submitting }}>
             {submitting
               ? <ActivityIndicator color={colors.white} />
-              : <Text maxFontSizeMultiplier={1.4} style={s.acceptBtnText}>I Agree — Continue to Justice Gavel</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={s.acceptBtnText}>{t('x_terms_acceptance_modal_i_agree_continue_justice')}</Text>
             }
           </TouchableOpacity>
 
-          <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>Terms of Service v{TOS_VERSION} · Effective May 1, 2026</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>{t('x_terms_acceptance_modal_terms_service_v_effective', { TOS_VERSION })}</Text>
           {onDecline && (
             <TouchableOpacity accessibilityRole="button" testID="tos-decline-button"
-              accessibilityLabel="Decline and sign out" onPress={onDecline}
+              accessibilityLabel={t('x_terms_acceptance_modal_decline_sign_out')} onPress={onDecline}
               style={s.declineBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text maxFontSizeMultiplier={1.4} style={s.declineText}>Decline and sign out</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.declineText}>{t('x_terms_acceptance_modal_decline_sign_out')}</Text>
             </TouchableOpacity>
           )}
         </View>

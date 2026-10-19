@@ -1,4 +1,7 @@
-# Caddyfile — Justice Gavel Production
+# Caddyfile — Justice Gavel on a SELF-MANAGED server (VM + PM2).
+# NOT used on Render: production runs from render.yaml, and Render terminates
+# TLS and proxies to the container itself. Behind Caddy alone, TRUST_PROXY=1
+# (one hop) is correct.
 # Caddy automatically provisions and renews Let's Encrypt SSL certificates.
 #
 # Prerequisites:

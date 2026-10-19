@@ -10,8 +10,10 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'rea
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
+import { t, useLang } from '../i18n';
 
 function DocumentScannerScreen(): React.JSX.Element {
+  useLang();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const caseId: number | undefined = route?.params?.caseId;
@@ -33,10 +35,10 @@ function DocumentScannerScreen(): React.JSX.Element {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResult(res.data?.attachment?.name
-        ? `Uploaded ${res.data.attachment.name}`
-        : 'File uploaded successfully');
+        ? t('x_document_scanner_uploaded_name', { name: res.data.attachment.name })
+        : t('x_document_scanner_file_uploaded_successfully'));
     } catch (err) {
-      setError(apiErrorMessage(err, 'Could not upload the document. Please try again.'));
+      setError(apiErrorMessage(err, t('x_document_scanner_could_not_upload_document_2')));
     } finally {
       setScanning(false);
     }
@@ -51,17 +53,16 @@ function DocumentScannerScreen(): React.JSX.Element {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       >
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>{t('ja_back')}</Text>
       </TouchableOpacity>
 
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary }}>
-        Scan Document
+        {t('x_cs_scan_document_2')}
       </Text>
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, color: colors.textMuted, lineHeight: 22 }}>
-        Select a photo of your court document, citation, or legal notice.
-        The text will be extracted automatically.
+        {t('x_document_scanner_select_photo_court_document')}
       </Text>
 
       {/* File input styled as a drop zone */}
@@ -76,10 +77,10 @@ function DocumentScannerScreen(): React.JSX.Element {
       } as any}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 40, marginBottom: 12 }}>📄</Text>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary, display: 'block' as any }}>
-          Click to select a document photo
+          {t('x_document_scanner_click_select_document_photo')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors.textMuted, marginTop: 4, display: 'block' as any }}>
-          JPEG, PNG, or PDF -- max 10 MB
+          {t('x_document_scanner_jpeg_png_pdf_max')}
         </Text>
         <input
           id="doc-upload"
@@ -94,7 +95,7 @@ function DocumentScannerScreen(): React.JSX.Element {
         <View style={{ alignItems: 'center', paddingVertical: 24, gap: 12 }}>
           <ActivityIndicator size="large" color={colors.navy} />
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>
-            Extracting text from document…
+            {t('x_document_scanner_extracting_text_from_document')}
           </Text>
         </View>
       )}
@@ -108,7 +109,7 @@ function DocumentScannerScreen(): React.JSX.Element {
       {result ? (
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, gap: 10 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '600', color: colors.textPrimary }}>
-            Extracted text:
+            {t('x_document_scanner_extracted_text')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors.textPrimary, lineHeight: 22 }}>
             {result}
@@ -116,7 +117,7 @@ function DocumentScannerScreen(): React.JSX.Element {
         </View>
       ) : null}
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 18 }}>
-        For best results, photograph the document in good lighting with all text visible.
+        {t('x_document_scanner_best_results_photograph_document')}
       </Text>
     </ScrollView>
   );

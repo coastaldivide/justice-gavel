@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -206,11 +207,11 @@ describe('S6. Screens — 15-19 Hit Range', () => {
 // ── S7. A11Y — remaining patterns ────────────────────────────────────────
 describe('S7. A11Y — Remaining Unconfirmed Patterns', () => {
   test('S7-01: LegalDisclaimerModal accessibilityState={{ checked: agreed }}', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/LegalDisclaimerModal.tsx');
     expect(src).toContain('accessibilityState');
     expect(src).toContain('checked: agreed');
-    expect(src).toContain('accessibilityLabel="I agree to the Terms of Service');
+    expect(src).toContain("accessibilityLabel={t('x_legal_disclaimer_modal_i_agree_terms_service')}");
+    expect(src).toContain("'I agree to the Terms of Service and Privacy Policy'"); // its English text
   });
   test('S7-02: PracticeAreaSelector uses TouchableOpacity with accessibilityRole="radio"', async () => {
     const fs = await import('fs');

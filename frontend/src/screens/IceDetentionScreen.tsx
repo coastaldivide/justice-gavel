@@ -23,6 +23,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useTheme, COLORS, RADIUS } from '../constants/theme';
 import { hapticImpact, hapticSelection, RNShare } from '../utils/webCompat';
+import { t, tl, useLang, type Lang } from '../i18n';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
 const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
@@ -39,227 +40,46 @@ const C_FFFBEB = ('\x23' + 'fffbeb') as string; // hex color
 // ── Content ────────────────────────────────────────────────────────────────────
 
 
-const CONTENT = {
-  en: {
-    langBtn: 'Español 🌐',
-    title: 'ICE Detention Help',
-    subtitle: 'Know your rights — regardless of immigration status',
+// Text lives in src/i18n (iced_*). The screen shows the app language; the toggle
+// switches this one page to English (or back) — e.g. to show it to someone else.
+const PHONES = ['210-787-3745', '213-639-3900', '212-549-2660', '415-255-9499', '301-587-7993'];
+const URLS = ['https://www.raicestexas.org', 'https://www.nilc.org', 'https://www.aclu.org/know-your-rights/immigrants-rights', 'https://www.ilrc.org', 'https://cliniclegal.org'];
+const LOCATOR_URL = 'https://locator.ice.gov/odls/#/index';
+const RIGHTS = [
+  { icon: '🤐', color: C_DC2626, bg: C_FEF2F2, bold: true },
+  { icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF, bold: false },
+  { icon: '🚫', color: C_7C3AED, bg: C_F5F3FF, bold: false },
+  { icon: '🚪', color: C_D97706, bg: C_FFFBEB, bold: false },
+  { icon: '🌐', color: C_059669, bg: C_ECFDF5, bold: false },
+];
+const ENDONYM: Record<Lang, string> = { en: 'English', es: 'Español', pt: 'Português', vi: 'Tiếng Việt' };
 
-    rights: [
-      {
-        icon: '🤐', color: C_DC2626, bg: C_FEF2F2,
-        title: 'RIGHT TO REMAIN SILENT',
-        body: 'You do NOT have to answer questions about where you were born, how you entered the US, or your immigration status.\n\nSay exactly: "I am exercising my right to remain silent."',
-        bold: true,
-      },
-      {
-        icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF,
-        title: 'RIGHT TO A LAWYER',
-        body: 'You have the right to speak with an attorney BEFORE answering any questions — even if you cannot afford one. ICE must allow you to make a phone call.\n\nSay: "I want a lawyer before I answer any questions."',
-        bold: false,
-      },
-      {
-        icon: '🚫', color: C_7C3AED, bg: C_F5F3FF,
-        title: 'DO NOT SIGN ANYTHING',
-        body: 'Never sign documents ICE gives you without a lawyer. This includes "voluntary departure" forms. Signing can permanently waive your right to a hearing before a judge and result in immediate deportation with no appeal.',
-        bold: false,
-      },
-      {
-        icon: '🚪', color: C_D97706, bg: C_FFFBEB,
-        title: 'YOUR HOME IS PROTECTED',
-        body: 'ICE cannot enter your home without a judicial warrant signed by a JUDGE — not an ICE "administrative warrant." Ask them to slide it under the door. If they cannot, do not open the door. You may speak through the closed door.',
-        bold: false,
-      },
-      {
-        icon: '🌐', color: C_059669, bg: C_ECFDF5,
-        title: 'THESE RIGHTS APPLY TO EVERYONE',
-        body: 'These rights apply to every person in the United States — citizen, green card holder, visa holder, DACA recipient, undocumented person, or asylum seeker. Your immigration status does NOT change these rights.',
-        bold: false,
-      },
-    ],
+function content(lang: Lang) {
+  const tx = (k: string) => tl(lang, k);
+  return {
+    title: tx('iced_title'),
+    subtitle: tx('iced_subtitle'),
+    rightsLabel: tx('iced_rights_label'),
+    rights: RIGHTS.map((r, i) => ({ ...r, title: tx(`iced_r${i + 1}_title`), body: tx(`iced_r${i + 1}_body`) })),
+    stepsTitle: tx('iced_steps_title'),
+    steps: [1, 2, 3, 4, 5, 6].map(n => tx(`iced_step_${n}`)),
+    locateTitle: tx('iced_locate_title'),
+    locateDesc: tx('iced_locate_desc'),
+    locateBtn: tx('iced_locate_btn'),
+    locateUrl: LOCATOR_URL,
+    legalTitle: tx('iced_legal_title'),
+    resources: PHONES.map((phone, i) => ({ name: tx(`iced_res_${i + 1}_name`), desc: tx(`iced_res_${i + 1}_desc`), phone, url: URLS[i], highlight: i === 0 })),
+    shareBtn: tx('iced_share_btn'),
+    shareMsg: tx('iced_share_msg'),
+    shareTitle: tx('iced_share_title'),
+    webBtn: tx('iced_web_btn'),
+    callA11y: (phone: string) => tl(lang, 'iced_call_a11y', { phone }),
+    webA11y: tx('iced_web_a11y'),
+    disclaimer: tx('iced_disclaimer'),
+  };
+}
 
-    stepsTitle: 'WHAT TO DO RIGHT NOW',
-    steps: [
-      'Stay calm. Panic leads to mistakes. Breathe.',
-      'Say only: "I want a lawyer. I am exercising my right to remain silent." Then stop talking.',
-      'Do NOT run, resist physically, or argue with officers.',
-      'Write down or memorize: officer name, badge number, agency, and vehicle number.',
-      'Call — or have a family member call — an immigration attorney or legal aid immediately.',
-      'If released, write down everything that happened as soon as possible.',
-    ],
 
-    locateTitle: 'FIND WHERE THEY ARE HELD',
-    locateDesc: 'If a family member was detained, use the official ICE Detainee Locator. You need their full legal name and country of birth.',
-    locateBtn: '🔍 Open ICE Detainee Locator',
-    locateUrl: 'https://locator.ice.gov/odls/#/index',
-
-    legalTitle: 'FREE LEGAL HELP — CALL NOW',
-    resources: [
-      {
-        name: 'RAICES Emergency Line',
-        phone: '210-787-3745',
-        url: 'https://www.raicestexas.org',
-        desc: 'Immigration legal services, especially families & children',
-        highlight: true,
-      },
-      {
-        name: 'National Immigration Law Center',
-        phone: '213-639-3900',
-        url: 'https://www.nilc.org',
-        desc: 'Free legal help for low-income immigrants',
-        highlight: false,
-      },
-      {
-        name: 'ACLU Immigrants\' Rights Project',
-        phone: '212-549-2660',
-        url: 'https://www.aclu.org/know-your-rights/immigrants-rights',
-        desc: 'Know-your-rights info and legal referrals',
-        highlight: false,
-      },
-      {
-        name: 'Immigrant Legal Resource Center',
-        phone: '415-255-9499',
-        url: 'https://www.ilrc.org',
-        desc: 'Know-your-rights materials, legal aid referrals',
-        highlight: false,
-      },
-      {
-        name: 'Catholic Legal Immigration Network (CLINIC)',
-        phone: '301-587-7993',
-        url: 'https://cliniclegal.org',
-        desc: 'Nationwide network of immigration legal services',
-        highlight: false,
-      },
-    ],
-
-    shareBtn: '📤 Share This With Family',
-    shareMsg: `ICE DETENTION RIGHTS — Share with family:
-
-1. STAY CALM
-2. Say ONLY: "I want a lawyer. I am exercising my right to remain silent."
-3. Do NOT sign anything
-4. Do NOT open the door without a judge-signed warrant
-5. These rights apply regardless of immigration status
-
-📍 Find where they are: https://locator.ice.gov/odls
-📞 Free legal help: RAICES 210-787-3745 | NILC 213-639-3900
-
-Download Justice Gavel: https://justicegavel.app`,
-
-    disclaimer: 'General legal information only — not legal advice. Content sourced from the ACLU (2024), National Immigration Law Center, and Immigrant Legal Resource Center. Immigration law is complex and changes frequently. Consult a licensed immigration attorney for your specific situation.',
-  },
-
-  es: {
-    langBtn: 'English 🌐',
-    title: 'Ayuda con Detención del ICE',
-    subtitle: 'Conozca sus derechos — sin importar su estatus migratorio',
-
-    rights: [
-      {
-        icon: '🤐', color: C_DC2626, bg: C_FEF2F2,
-        title: 'DERECHO A GUARDAR SILENCIO',
-        body: 'NO tiene que responder preguntas sobre dónde nació, cómo entró a los EE.UU., o su estatus migratorio.\n\nDiga exactamente: "Estoy ejerciendo mi derecho a guardar silencio."',
-        bold: true,
-      },
-      {
-        icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF,
-        title: 'DERECHO A UN ABOGADO',
-        body: 'Tiene derecho a hablar con un abogado ANTES de responder cualquier pregunta — aunque no pueda pagar uno. El ICE debe permitirle hacer una llamada telefónica.\n\nDiga: "Quiero un abogado antes de responder cualquier pregunta."',
-        bold: false,
-      },
-      {
-        icon: '🚫', color: C_7C3AED, bg: C_F5F3FF,
-        title: 'NO FIRME NADA',
-        body: 'Nunca firme documentos que el ICE le dé sin un abogado presente. Esto incluye formularios de "salida voluntaria." Firmar puede eliminar permanentemente su derecho a una audiencia ante un juez y resultar en deportación inmediata sin apelación.',
-        bold: false,
-      },
-      {
-        icon: '🚪', color: C_D97706, bg: C_FFFBEB,
-        title: 'SU HOGAR ESTÁ PROTEGIDO',
-        body: 'El ICE no puede entrar a su hogar sin una orden judicial firmada por un JUEZ — no una "orden administrativa" del ICE. Pídales que la deslicen bajo la puerta. Si no pueden, no abra la puerta. Puede hablar a través de la puerta cerrada.',
-        bold: false,
-      },
-      {
-        icon: '🌐', color: C_059669, bg: C_ECFDF5,
-        title: 'ESTOS DERECHOS APLICAN A TODOS',
-        body: 'Estos derechos aplican a toda persona en los Estados Unidos — ciudadano, residente permanente, titular de visa, beneficiario de DACA, persona indocumentada, o solicitante de asilo. Su estatus migratorio NO cambia estos derechos.',
-        bold: false,
-      },
-    ],
-
-    stepsTitle: 'QUÉ HACER AHORA MISMO',
-    steps: [
-      'Mantenga la calma. El pánico lleva a errores. Respire.',
-      'Diga solo: "Quiero un abogado. Estoy ejerciendo mi derecho a guardar silencio." Luego deje de hablar.',
-      'NO huya, resista físicamente, ni discuta con los agentes.',
-      'Anote o memorice: nombre del agente, número de placa, agencia y número de vehículo.',
-      'Llame — o haga que un familiar llame — a un abogado de inmigración o asistencia legal de inmediato.',
-      'Si lo liberan, anote todo lo que sucedió lo antes posible.',
-    ],
-
-    locateTitle: 'ENCUENTRE DÓNDE ESTÁ DETENIDO',
-    locateDesc: 'Si un familiar fue detenido, use el Localizador de Detenidos oficial del ICE. Necesita su nombre legal completo y país de nacimiento.',
-    locateBtn: '🔍 Abrir Localizador del ICE',
-    locateUrl: 'https://locator.ice.gov/odls/#/index',
-
-    legalTitle: 'AYUDA LEGAL GRATUITA — LLAME AHORA',
-    resources: [
-      {
-        name: 'Línea de Emergencia RAICES',
-        phone: '210-787-3745',
-        url: 'https://www.raicestexas.org',
-        desc: 'Servicios legales de inmigración, especialmente familias y niños',
-        highlight: true,
-      },
-      {
-        name: 'Centro Nacional de Ley de Inmigración',
-        phone: '213-639-3900',
-        url: 'https://www.nilc.org',
-        desc: 'Ayuda legal gratuita para inmigrantes de bajos ingresos',
-        highlight: false,
-      },
-      {
-        name: 'Proyecto de Derechos de Inmigrantes de la ACLU',
-        phone: '212-549-2660',
-        url: 'https://www.aclu.org',
-        desc: 'Información de derechos y derivaciones legales',
-        highlight: false,
-      },
-      {
-        name: 'Centro de Recursos Legales para Inmigrantes',
-        phone: '415-255-9499',
-        url: 'https://www.ilrc.org',
-        desc: 'Materiales de derechos y derivaciones de asistencia legal',
-        highlight: false,
-      },
-      {
-        name: 'Red Católica de Inmigración Legal (CLINIC)',
-        phone: '301-587-7993',
-        url: 'https://cliniclegal.org',
-        desc: 'Red nacional de servicios legales de inmigración',
-        highlight: false,
-      },
-    ],
-
-    shareBtn: '📤 Compartir con la Familia',
-    shareMsg: `DERECHOS DE DETENCIÓN DEL ICE — Comparta con su familia:
-
-1. MANTENGA LA CALMA
-2. Diga SOLO: "Quiero un abogado. Estoy ejerciendo mi derecho a guardar silencio."
-3. NO firme nada
-4. NO abra la puerta sin orden firmada por un juez
-5. Estos derechos aplican sin importar el estatus migratorio
-
-📍 Encuentre dónde está: https://locator.ice.gov/odls
-📞 Ayuda legal gratuita: RAICES 210-787-3745 | NILC 213-639-3900
-
-Descargue Justice Gavel: https://justicegavel.app`,
-
-    disclaimer: 'Información legal general solamente — no es asesoramiento legal. Contenido basado en la ACLU (2024), Centro Nacional de Ley de Inmigración y Centro de Recursos Legales para Inmigrantes. La ley de inmigración es compleja y cambia frecuentemente. Consulte a un abogado de inmigración autorizado para su situación específica.',
-  },
-} as const;
-
-type Lang = keyof typeof CONTENT;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -298,33 +118,38 @@ const _HEX_ICEDETENTION = {
 function IceDetentionScreen(): React.JSX.Element {
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
-  const [lang, setLang] = useState<Lang>('en');
-  const L = CONTENT[lang];
+  const appLang = useLang();
+  // null = the app language; otherwise the language this page was switched to
+  const [viewLang, setViewLang] = useState<Lang | null>(null);
+  const lang: Lang = viewLang ?? appLang;
+  const L = content(lang);
+  const other: Lang = lang !== 'en' ? 'en' : (appLang !== 'en' ? appLang : 'es');
+  const langBtn = `${ENDONYM[other]} 🌐`;
   const s = makeStyles(colors);
 
   const toggleLang = useCallback(() => {
     hapticSelection();
-    setLang(l => l === 'en' ? 'es' : 'en');
-  }, []);
+    setViewLang(other === appLang ? null : other);
+  }, [other, appLang]);
 
   const openLink = useCallback((url: string) => {
     hapticImpact();
     Linking.openURL(url).catch(() =>
-      showToast('Please visit the URL directly.', 'warning')
+      showToast(t('iced_open_url_failed'), 'warning')
     );
   }, [showToast]);
 
   const callNumber = useCallback((phone: string) => {
     hapticImpact();
     Linking.openURL('tel:' + phone.replace(/[^\d+]/g, '')).catch(() =>
-      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
+      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast(t('iced_dialer_failed'), 'error'))
     );
   }, [showToast]);
 
   const shareInfo = useCallback(() => {
     hapticImpact();
-    RNShare.share({ message: L.shareMsg, title: 'ICE Detention Rights' });
-  }, [L.shareMsg]);
+    RNShare.share({ message: L.shareMsg, title: L.shareTitle });
+  }, [L.shareMsg, L.shareTitle]);
 
   return (
     <ScrollView
@@ -337,8 +162,8 @@ function IceDetentionScreen(): React.JSX.Element {
       <View style={s.langRow}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel={L.langBtn}>
-          <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{L.langBtn}</Text>
+          accessibilityHint={t('cp_double_tap')} style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel={langBtn}>
+          <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{langBtn}</Text>
         </TouchableOpacity>
       </View>
 
@@ -350,7 +175,7 @@ function IceDetentionScreen(): React.JSX.Element {
       </View>
 
       {/* Rights */}
-      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>YOUR RIGHTS / SUS DERECHOS</Text>
+      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.rightsLabel}</Text>
       {L.rights.map((r, i) => (
         <View key={`rights-${i}`} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
           <View style={s.rightTop}>
@@ -380,7 +205,7 @@ function IceDetentionScreen(): React.JSX.Element {
         <Text style={[s.locatorDesc, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.locateDesc}</Text>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={s.locatorBtn}
           accessibilityLabel={L.locateBtn} onPress={() => openLink(L.locateUrl)}
           testID="ice-locator-btn"
@@ -403,21 +228,21 @@ function IceDetentionScreen(): React.JSX.Element {
           <View style={s.resourceBtns}>
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               style={[s.callBtn, { backgroundColor: r.highlight ? COLORS.legal : COLORS.navy }]}
-              accessibilityLabel={"\ud83d\udcde {r.phone}"} onPress={() => callNumber(r.phone)}
+              accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
               <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {r.phone}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               style={[s.webBtn, { borderColor: colors.border }]}
-              accessibilityLabel={"Web \u2192"} onPress={() => openLink(r.url)}
+              accessibilityLabel={L.webA11y} onPress={() => openLink(r.url)}
               testID={`ice-web-${i}`}
             >
-              <Text style={[s.webBtnTxt, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>Web →</Text>
+              <Text style={[s.webBtnTxt, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.webBtn}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -426,7 +251,7 @@ function IceDetentionScreen(): React.JSX.Element {
       {/* Share */}
       <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel={L.shareBtn}>
+          accessibilityHint={t('cp_double_tap')} style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel={L.shareBtn}>
         <Text style={s.shareBtnTxt} maxFontSizeMultiplier={1.4}>{L.shareBtn}</Text>
       </TouchableOpacity>
 

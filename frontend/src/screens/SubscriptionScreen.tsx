@@ -21,6 +21,7 @@ import { api, apiErrorMessage, isPaymentsUnavailable, unwrapList } from '../serv
 import { PAYMENTS_COMING_SOON } from '../payments';
 import { useTheme, COLORS } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
+import { t, useLang } from '../i18n';
 
 type ProviderType = 'lawyer' | 'bail_agent';
 
@@ -35,38 +36,31 @@ export type ProviderPlan = {
 };
 
 /** What each attorney plan includes (features only — prices come from the API). */
-const ATTORNEY_FEATURES: Record<string, string[]> = {
-  esquire: [
-    'Attorney dashboard and client inbox',
-    'AI motion drafting library (review before filing)',
-    'Case and matter management with AI research',
-    'Conflict checks and docket tools',
-  ],
-};
-ATTORNEY_FEATURES.esquire_annual = ATTORNEY_FEATURES.esquire;
+const ESQUIRE_FEATURES = ['x_subscription_feat_dashboard', 'x_subscription_feat_motions', 'x_subscription_feat_cases', 'x_subscription_feat_conflicts'];
+const ATTORNEY_FEATURE_KEYS: Record<string, string[]> = { esquire: ESQUIRE_FEATURES, esquire_annual: ESQUIRE_FEATURES };
 
 export function attorneyPlansFrom(body: unknown): ProviderPlan[] {
   return unwrapList<Record<string, any>>(body, 'tiers')
-    .filter(t => t && t.audience === 'attorney' && typeof t.display_price === 'string')
-    .map(t => ({
-      key: String(t.key),
-      name: String(t.name),
-      price: t.display_price,
-      sub: t.billing === 'annual' ? 'Billed once a year' : 'Billed monthly',
-      features: ATTORNEY_FEATURES[t.key] || [],
-      trialDays: Number(t.trial_days) || null,
+    .filter(tItem => tItem && tItem.audience === 'attorney' && typeof tItem.display_price === 'string')
+    .map(tItem => ({
+      key: String(tItem.key),
+      name: String(tItem.name),
+      price: tItem.display_price,
+      sub: tItem.billing === 'annual' ? t('x_subscription_billed_once_year') : t('x_subscription_billed_monthly'),
+      features: (ATTORNEY_FEATURE_KEYS[tItem.key] || []).map(k => t(k)),
+      trialDays: Number(tItem.trial_days) || null,
     }));
 }
 
 export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
   return unwrapList<Record<string, any>>(body, 'tiers')
-    .filter(t => t && typeof t.display === 'string')
-    .map(t => ({
-      key: String(t.key),
-      name: String(t.name),
-      price: t.display,
-      sub: t.annual_display ? `or ${t.annual_display}${t.annual_savings ? ` · ${t.annual_savings}` : ''}` : null,
-      features: String(t.label || '').split('·').map((f: string) => f.trim()).filter(Boolean),
+    .filter(tItem => tItem && typeof tItem.display === 'string')
+    .map(tItem => ({
+      key: String(tItem.key),
+      name: String(tItem.name),
+      price: tItem.display,
+      sub: tItem.annual_display ? t('x_subscription_text', { annual_display: tItem.annual_display, value: tItem.annual_savings ? ` · ${tItem.annual_savings}` : '' }) : null,
+      features: String(tItem.label || '').split('·').map((f: string) => f.trim()).filter(Boolean),
       trialDays: null,
     }));
 }
@@ -74,6 +68,7 @@ export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
 function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
   plan: ProviderPlan; active: boolean; onSubscribe: (key: string) => void; onCancel: () => void; loading: boolean; styles: any;
 }) {
+  useLang();
   return (
     <View style={styles.tierCard} testID={`plan-${plan.key}`}>
       <View style={styles.tierHeader}>
@@ -84,7 +79,7 @@ function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
         </View>
         {active && (
           <View style={styles.activeBadge}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.activeBadgeText}>✓ Active</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.activeBadgeText}>{t('x_consumer_subscription_active')}</Text>
           </View>
         )}
       </View>
@@ -103,7 +98,7 @@ function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
       {!active ? (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={`Subscribe to ${plan.name}`}
+          accessibilityLabel={t('x_subscription_subscribe', { name: plan.name })}
           activeOpacity={0.6}
           style={[styles.subscribeBtn, loading && { opacity: 0.6 }]}
           onPress={() => onSubscribe(plan.key)}
@@ -113,21 +108,21 @@ function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
                 <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>
-                  {plan.trialDays ? `Start ${plan.trialDays}-Day Free Trial` : 'Subscribe'}
+                  {plan.trialDays ? t('x_subscription_start_day_free_trial', { trialDays: plan.trialDays }) : t('x_subscription_subscribe_2')}
                 </Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnSub}>
-                  {plan.trialDays ? `Then ${plan.price} -- ` : ''}cancel anytime · auto-renews
+                  {t('x_subscription_cancel_anytime_auto_renews', { value: plan.trialDays ? t('x_subscription_then', { price: plan.price }) + ' ' : '' })}
                 </Text>
               </>
           }
         </TouchableOpacity>
       ) : (
         <View style={styles.activeBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>✓ You're on this plan</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>{t('x_consumer_subscription_re_this_plan')}</Text>
           <TouchableOpacity accessibilityRole="button" testID={`cancel-${plan.key}`}
-            accessibilityLabel={`Cancel ${plan.name}`} onPress={onCancel} disabled={loading}
+            accessibilityLabel={t('x_subscription_cancel', { name: plan.name })} onPress={onCancel} disabled={loading}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel plan</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>{t('x_subscription_cancel_plan')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -136,6 +131,7 @@ function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
 }
 
 function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { colors } = useTheme();
@@ -175,7 +171,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
         setActiveTier(sub?.data?.active ? sub.data.tier : null);
       }
     } catch (e: any) {
-      if (mountedRef.current) { setPlans([]); setLoadError(apiErrorMessage(e, 'Could not load plans. Check your connection.')); }
+      if (mountedRef.current) { setPlans([]); setLoadError(apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans'))); }
     }
   }, []);
 
@@ -192,8 +188,8 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const doSubscribe = async (tier: string) => {
     // iOS App Store IAP gate (Apple §3.1.1): digital subscriptions on iOS go through the website.
     if (Platform.OS === 'ios') {
-      confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
-        { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
+      confirm(t('x_consumer_subscription_subscribe_web'), t('x_subscription_ios_subscriptions_managed_at'),
+        { confirmLabel: t('x_consumer_subscription_open_website') }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
       return;
     }
     setSubscribing(tier);
@@ -202,12 +198,12 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
       const res = providerType === 'lawyer'
         ? await api.post('/billing/subscribe', { tier, provider_type: 'lawyer' })
         : await api.post('/billing/bondsman/subscribe', { tier });
-      showToast(res.data?.message || 'Subscription started.', 'success');
+      showToast(res.data?.message || t('x_subscription_subscription_started'), 'success');
       await load(providerType);
     } catch (e: any) {
-      if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON);
-      else if (e?.response?.status === 409) setError('You already have an active plan. Manage it in Settings.');
-      else setError(apiErrorMessage(e, 'Could not start the subscription. Please try again.'));
+      if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON());
+      else if (e?.response?.status === 409) setError(t('x_consumer_subscription_already_have_active_plan'));
+      else setError(apiErrorMessage(e, t('x_subscription_could_not_start_subscription')));
     } finally {
       if (mountedRef.current) setSubscribing(null);
     }
@@ -216,18 +212,18 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const handleSubscribe = (tier: string) => { requireAuth(() => doSubscribe(tier)); };
 
   const handleCancel = () => {
-    confirm('Cancel your plan?', 'Your plan stays active until the end of the current billing period.',
-      { confirmLabel: 'Yes, cancel', destructive: true }).then(async ok => {
+    confirm(t('x_subscription_cancel_plan_2'), t('x_subscription_plan_stays_active_until'),
+      { confirmLabel: t('x_subscription_yes_cancel'), destructive: true }).then(async ok => {
       if (!ok) return;
       setError('');
       try {
         if (providerType === 'lawyer') await api.post('/billing/cancel');
         else await api.post('/billing/bondsman/subscription/cancel');
-        showToast('Your plan has been cancelled. Access continues until period end.', 'info');
+        showToast(t('x_subscription_plan_has_been_cancelled'), 'info');
         await load(providerType);
       } catch (e: any) {
-        if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON);
-        else setError(apiErrorMessage(e, 'Could not cancel your plan. Please try again.'));
+        if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON());
+        else setError(apiErrorMessage(e, t('x_subscription_could_not_cancel_plan')));
       }
     });
   };
@@ -244,16 +240,16 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
         </View>
       )}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Provider Plans</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_subscription_provider_plans')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          Tools for attorneys and bail agents who work with Justice Gavel users
+          {t('x_subscription_tools_attorneys_bail_agents')}
         </Text>
       </View>
 
       <View style={styles.toggleBlock}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>I am a:</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>{t('x_subscription_i_am')}</Text>
         <View style={styles.toggleRow}>
-          {([['lawyer', '⚖️ Attorney'], ['bail_agent', '🔓 Bail Agent']] as const).map(([type, label]) => (
+          {([['lawyer', t('x_family_connect_attorney')], ['bail_agent', t('x_family_connect_bail_agent')]] as const).map(([type, label]) => (
             <TouchableOpacity key={type}
               accessibilityRole="button"
               accessibilityState={{ selected: providerType === type }}
@@ -275,7 +271,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={{ alignItems: 'center', padding: 24 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, textAlign: 'center', marginBottom: 8 }}>{loadError}</Text>
           <TouchableOpacity accessibilityRole="button" onPress={onRefresh}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary }}>Tap to retry</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary }}>{t('bc_retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : plans.map(plan => (
@@ -288,25 +284,23 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       {providerType === 'bail_agent' && (
         <View style={styles.bondsCTA}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>🔓 Leads</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>{t('x_subscription_leads')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTAText}>
-            Bondsmen accept only the leads they want, for a flat {BONDSMAN_LEAD_FEE_DISPLAY} per
-            lead -- the same fee whatever the bail amount.
+            {t('x_subscription_bondsmen_accept_only_leads', { value: BONDSMAN_LEAD_FEE_DISPLAY })}
           </Text>
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.bondsCTABtn}
-            accessibilityLabel={'Open Lead Dashboard \u2192'} onPress={() => navigation.navigate('BondsmanDashboard')}
+            accessibilityLabel={t('x_subscription_open_lead_dashboard')} onPress={() => navigation.navigate('BondsmanDashboard')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>{t('x_subscription_open_lead_dashboard')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <AuthGateModal />
       <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        Subscriptions auto-renew until cancelled; cancel any time here.
-        A paid plan does not change where you appear in directory search results.
+        {t('x_subscription_subscriptions_auto_renew_until')}
       </Text>
       <View style={{ height: 40 }} />
     </ScrollView>

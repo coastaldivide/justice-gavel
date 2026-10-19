@@ -5,22 +5,24 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { TINTS } from '../constants/theme';
+import { t, useLang, perLang } from '../i18n';
 
-const MOTION_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  suppress:       { ...TINTS.pink,     label: 'Suppress Evidence' },
-  bail_reduction: { ...TINTS.blue,     label: 'Bail Reduction' },
-  dismiss:        { ...TINTS.green,    label: 'Dismiss Charges' },
-  continuance:    { ...TINTS.orange,   label: 'Continuance' },
-  discovery:      { ...TINTS.violet,   label: 'Discovery' },
-  speedy_trial:   { ...TINTS.purple,   label: 'Speedy Trial' },
-  acquittal:      { ...TINTS.greenAlt, label: 'Acquittal' },
-  reduce_sentence:{ ...TINTS.indigo,   label: 'Reduce Sentence' },
-};
+const MOTION_COLORS = perLang((): Record<string, { bg: string; text: string; label: string }> => ({
+  suppress:       { ...TINTS.pink,     label: t('x_motion_type_badge_suppress_evidence') },
+  bail_reduction: { ...TINTS.blue,     label: t('x_motion_type_badge_bail_reduction') },
+  dismiss:        { ...TINTS.green,    label: t('x_motion_type_badge_dismiss_charges') },
+  continuance:    { ...TINTS.orange,   label: t('x_motion_type_badge_continuance') },
+  discovery:      { ...TINTS.violet,   label: t('x_motion_type_badge_discovery') },
+  speedy_trial:   { ...TINTS.purple,   label: t('x_motion_type_badge_speedy_trial') },
+  acquittal:      { ...TINTS.greenAlt, label: t('x_motion_type_badge_acquittal') },
+  reduce_sentence:{ ...TINTS.indigo,   label: t('x_motion_type_badge_reduce_sentence') },
+}));
 
 type Props = { motionType: string };
 
 export const MotionTypeBadge = React.memo(function MotionTypeBadge({ motionType }: Props) {
-  const info = MOTION_COLORS[motionType] ?? { ...TINTS.gray, label: motionType };
+  useLang();
+  const info = MOTION_COLORS()[motionType] ?? { ...TINTS.gray, label: motionType };
   return (
     <View style={{
       backgroundColor: info.bg, borderRadius: 8,

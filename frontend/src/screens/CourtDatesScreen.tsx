@@ -78,6 +78,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed' | 'checklist' | 'both'; styles: any }) {
+  useLang();
   return (
     <View>
       {(which === 'missed' || which === 'both') && (

@@ -11,7 +11,7 @@ import { api } from '../services/api';
 import { getContacts } from '../services/storage';
 import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
-import { t, initLang, useLang } from '../i18n';
+import { t, initLang, useLang, perLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { getCoreProgress, consumePendingRoute, prefetchRights } from '../services/corePath';
 import { getUserState } from '../utils/userState';
@@ -22,46 +22,46 @@ import * as secureStorage from '../utils/secureStorage';
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
 // Labels use plain 3rd-grade functional language -- what the button DOES, not what it IS
 // `label` is the English reference; the tile shows t(`home_tile_${key}`) (es/pt/vi in i18n/*.json).
-const TILES = [
-  { key: 'just_arrested', icon: '🚨', label: 'Just Arrested?\nTap Here Now', nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
-  { key: 'Emergency', label: 'Emergency\nHelp Now', icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
+const TILES = perLang(() => [
+  { key: 'just_arrested', icon: '🚨', label: t('home_tile_just_arrested'), nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
+  { key: 'Emergency', label: t('home_tile_Emergency'), icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
   // Ordered by urgency. Most people arriving at this app need these in order.
-  { key: 'Bail',      label: 'Get Out\nOf Jail',    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
-  { key: 'Lawyers',   label: 'Find a\nLawyer',      icon: '⚖️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
-  { key: 'Rights',    label: 'Know My\nRights',     icon: '✊', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
-  { key: 'Chat',      label: 'Ask a\nQuestion',     icon: '💬', color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
+  { key: 'Bail',      label: t('home_tile_Bail'),    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
+  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: '⚖️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
+  { key: 'Rights',    label: t('home_tile_Rights'),     icon: '✊', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
+  { key: 'Chat',      label: t('home_tile_Chat'),     icon: '💬', color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
-  { key: 'WhatNext',  label: 'What Happens\nNext?', icon: '📋', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
-  { key: 'Cases',     label: 'My\nCases',           icon: '📁', color: COLORS.steel, bg: COLORS.bgCard, nav: 'HomeTab',        primary: false },
-  { key: 'Expunge',   label: 'Clear My\nRecord',    icon: '🗂️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
-  { key: 'court_locator',  icon: '🏛️', label: 'Find\nCourthouse',       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
-  { key: 'bail_calc',      icon: '💰', label: 'Bail\nCalculator',        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-  { key: 'dui_laws',       icon: '🚗', label: 'DUI\nLaw Guide',          nav: 'More:DUILaws',         bg: COLORS.errorBg, color: COLORS.emergency, primary: false },
-  { key: 'specialty_courts',icon: '⚖️', label: 'Specialty\nCourts',     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
-  { key: 'drug_penalties', icon: '💊', label: 'Drug Charge\nPenalties',  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: '📋', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
+  { key: 'Cases',     label: t('home_tile_Cases'),           icon: '📁', color: COLORS.steel, bg: COLORS.bgCard, nav: 'HomeTab',        primary: false },
+  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: '🗂️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
+  { key: 'court_locator',  icon: '🏛️', label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
+  { key: 'bail_calc',      icon: '💰', label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+  { key: 'dui_laws',       icon: '🚗', label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: COLORS.errorBg, color: COLORS.emergency, primary: false },
+  { key: 'specialty_courts',icon: '⚖️', label: t('home_tile_specialty_courts'),     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'drug_penalties', icon: '💊', label: t('home_tile_drug_penalties'),  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
   // ── Extended features — professional / specialty ──────────────────────────
-  { key: 'Advocacy',      icon: '📢', label: 'Policy\n& Advocacy',     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'ArrestMonitor', icon: '🔔', label: 'Arrest\nAlerts',          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'AttyDash',      icon: '⚖️', label: 'Attorney\nDashboard',     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-  { key: 'CheckIn',       icon: '✅', label: 'Check-In\nManager',       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Diversion',     icon: '🔄', label: 'Diversion\nPrograms',     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyConn',    icon: '👨‍👩‍👧', label: 'Family\nConnect',         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyCourt',   icon: '🏛️', label: 'Family\nCourt',           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FirmAcq',       icon: '🏢', label: 'Firm\nAcquisition',       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'HousingRts',    icon: '🏠', label: 'Housing\nRights',         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Immigration',   icon: '🛂', label: 'Immigration\nConsequences',nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Insurance',     icon: '🛡️', label: 'Legal\nInsurance',        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Interrogation', icon: '🎙️', label: 'Record\nInterrogation',   nav: 'More:InterrogationRecorder', bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'JuvenileJ',     icon: '🧒', label: 'Juvenile\nJustice',       nav: 'More:JuvenileJustice',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'MentalHealth',  icon: '🧠', label: 'Mental Health\nDiversion', nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Resources',     icon: '📚', label: 'Legal\nResources',        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Search',        icon: '🔍', label: 'Search\nEverything',      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Advocacy',      icon: '📢', label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'ArrestMonitor', icon: '🔔', label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'AttyDash',      icon: '⚖️', label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+  { key: 'CheckIn',       icon: '✅', label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Diversion',     icon: '🔄', label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FamilyConn',    icon: '👨‍👩‍👧', label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FamilyCourt',   icon: '🏛️', label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FirmAcq',       icon: '🏢', label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'HousingRts',    icon: '🏠', label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Immigration',   icon: '🛂', label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
+  { key: 'Insurance',     icon: '🛡️', label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Interrogation', icon: '🎙️', label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'JuvenileJ',     icon: '🧒', label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'MentalHealth',  icon: '🧠', label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
+  { key: 'Resources',     icon: '📚', label: t('home_tile_Resources'),        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Search',        icon: '🔍', label: t('home_tile_Search'),      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
 
   // ── Bar Exam Prep ─────────────────────────────────────────────────────────
-  { key: 'BarPrep',       icon: '📖', label: 'Bar Exam\nPrep',           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-];
+  { key: 'BarPrep',       icon: '📖', label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+]);
 
 function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang(); // re-render in the chosen language
@@ -442,7 +442,7 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES.map((tile: any) => (
+          {TILES().map((tile: any) => (
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}

@@ -1,0 +1,33 @@
+{
+  "strings": {
+    "Justice Gavel": "brand name",
+    "JUSTICE": "brand logo lettering (Justice Gavel)",
+    "GAVEL": "brand logo lettering (Justice Gavel)",
+    "JTB": "brand monogram",
+    "SOS": "international distress signal, the same in every language",
+    "REC": "recording indicator, the same in every language",
+    "ROI": "finance abbreviation used as-is in es / pt / vi",
+    "USD": "currency code",
+    "PDF": "file format",
+    "PDF · JPEG · PNG · TIFF · HEIC · DOCX · TXT": "file formats",
+    "English": "language name in its own language (language picker)",
+    "Español": "language name in its own language (language picker)",
+    "Português": "language name in its own language (language picker)",
+    "Tiếng Việt": "language name in its own language (language picker)",
+    "Justice Gavel LLC": "legal entity name",
+    "Google Play": "store brand",
+    "Justice Gavel · justicegavel.app": "brand + domain",
+    "Instagram": "brand",
+    "Apple Pay": "payment brand",
+    "Google Pay": "payment brand",
+    "Venmo": "payment brand",
+    "Zelle": "payment brand",
+    "Amazon Pay": "payment brand",
+    "JUSTICE GAVEL": "brand logo lettering",
+    "JTB ✓": "brand monogram + check mark",
+    "Crisis Text Line": "US crisis service name (organisation)"
+  },
+  "files": {
+    "src/utils/userState.ts": "canonical English US state names (matched against geocoder output); shown through stateName() / i18n/stateNames.ts"
+  }
+}

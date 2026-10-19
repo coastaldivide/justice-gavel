@@ -82,7 +82,7 @@ describe('Monitoring — alert thresholds', () => {
   test('oncall contact is from environment or config', () => {
     const sh = readFileSync(resolve(MON_DIR, 'selfHealing.js'), 'utf-8');
     const hasEnvContact = sh.includes('ONCALL') || sh.includes('process.env') || sh.includes('config');
-    if (!hasEnvContact) console.log('  ℹ️  Oncall contact: set in Railway env as ONCALL_PHONE/ONCALL_EMAIL');
+    if (!hasEnvContact) console.log('  ℹ️  Oncall contact: set as a Render env var: ONCALL_PHONE/ONCALL_EMAIL');
     expect(true).toBe(true);
   });
 });

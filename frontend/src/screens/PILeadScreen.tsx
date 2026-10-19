@@ -22,28 +22,30 @@ import { PI_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
+import { t, perLang, useLang } from '../i18n';
 
 type Step = 'type' | 'severity' | 'details' | 'submitted';
 
-const CASE_TYPES = [
-  { key: 'Personal Injury',  label: 'I was injured',             icon: '🩹', color: COLORS.warnDark, bg: COLORS.bailBg,
-    sub: 'Car accident, slip & fall, medical mistake, workplace injury' },
-  { key: 'Civil Rights',     label: 'My rights were violated',   icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle,
-    sub: 'Police misconduct, wrongful arrest, excessive force' },
-  { key: 'Employment',       label: 'Work problem',              icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg,
-    sub: 'Wrongful termination, discrimination, unpaid wages' },
-  { key: 'Medical',          label: 'Medical malpractice',       icon: '🏥', color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
-    sub: 'Surgical error, misdiagnosis, medication mistake' },
-];
+const CASE_TYPES = perLang(() => [
+  { key: 'Personal Injury',  label: t('x_pilead_i_was_injured'),             icon: '🩹', color: COLORS.warnDark, bg: COLORS.bailBg,
+    sub: t('x_pilead_car_accident_slip_fall') },
+  { key: 'Civil Rights',     label: t('x_pilead_my_rights_were_violated'),   icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle,
+    sub: t('x_pilead_police_misconduct_wrongful_arrest') },
+  { key: 'Employment',       label: t('x_pilead_work_problem'),              icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg,
+    sub: t('x_pilead_wrongful_termination_discrimination_') },
+  { key: 'Medical',          label: t('x_pilead_medical_malpractice'),       icon: '🏥', color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
+    sub: t('x_pilead_surgical_error_misdiagnosis_medicati') },
+]);
 
-const SEVERITIES = [
-  { key: 'minor',        label: 'Minor',        sub: 'Small injury, recovered quickly',    color: COLORS.legalDark, bg: COLORS.legalBg },
-  { key: 'moderate',     label: 'Moderate',     sub: 'Medical treatment needed',           color: COLORS.warnDark, bg: COLORS.warnBg },
-  { key: 'serious',      label: 'Serious',      sub: 'Hospitalized or lasting impact',     color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'catastrophic', label: 'Catastrophic', sub: 'Permanent disability or death',      color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-];
+const SEVERITIES = perLang(() => [
+  { key: 'minor',        label: t('x_pilead_minor'),        sub: t('x_pilead_small_injury_recovered_quickly'),    color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'moderate',     label: t('x_pilead_moderate'),     sub: t('x_pilead_medical_treatment_needed'),           color: COLORS.warnDark, bg: COLORS.warnBg },
+  { key: 'serious',      label: t('x_pilead_serious'),      sub: t('x_pilead_hospitalized_lasting_impact'),     color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'catastrophic', label: t('x_pilead_catastrophic'), sub: t('x_pilead_permanent_disability_death'),      color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+]);
 
 function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles();
@@ -67,13 +69,13 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const [description, setDesc]  = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const selectedType     = CASE_TYPES.find(t => t.key === caseType);
-  const selectedSeverity = SEVERITIES.find(s => s.key === severity);
+  const selectedType     = CASE_TYPES().find(tItem => tItem.key === caseType);
+  const selectedSeverity = SEVERITIES().find(s => s.key === severity);
 
   const submit = () => requireAuth(async () => {
     hapticImpact();
     if (!description.trim() || description.trim().length < 20) {
-      showToast('Please describe what happened in a few sentences so attorneys can evaluate your case.');
+      showToast(t('x_pilead_please_describe_what_happened'));
       return;
     }
     if (mountedRef.current) setLoading(true);
@@ -85,7 +87,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
       });
       if (mountedRef.current) setStep('submitted');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Check your connection and try again.'));
+      showToast(apiErrorMessage(e, t('home_sos_failed')));
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -96,23 +98,23 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.successWrap}>
         <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.successTitle, { color: colors.textPrimary }]}>Your case is in review</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.successTitle, { color: colors.textPrimary }]}>{t('x_pilead_case_review')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.successSub, { color: colors.textSecond }]}>
-          Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a connection fee to reach you. There is no cost to you.
+          {t('x_pilead_attorneys_area_will_review')}
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          accessibilityLabel="Browse lawyers now" onPress={() => navigation.navigate('LawyersTab')}
+          accessibilityLabel={t('x_pilead_browse_lawyers_now')} onPress={() => navigation.navigate('LawyersTab')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>⚖️  Browse Lawyers Now</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_pilead_browse_lawyers_now_2')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.homeBtn}
-          accessibilityLabel="Back to Home" onPress={() => navigation.navigate('HomeTab')}
+          accessibilityLabel={t('x_booking_back_home')} onPress={() => navigation.navigate('HomeTab')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.homeBtnText, { color: colors.textMuted }]}>Back to Home</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.homeBtnText, { color: colors.textMuted }]}>{t('x_booking_back_home')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -143,24 +145,24 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         {/* ── Step 1: Case type ─────────────────────────────────────────── */}
         {step === 'type' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>What happened?</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_pilead_what_happened')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.stepSub, { color: colors.textMuted }]}>
-              Your case description is free and confidential. Attorneys pay to contact you -- you pay nothing.
+              {t('x_pilead_case_description_free_confidential')}
             </Text>
-            {CASE_TYPES.map(t => (
+            {CASE_TYPES().map(tItem => (
               <TouchableOpacity
                 accessibilityRole="button"
-                key={t.key}
-                style={[styles.typeCard, { backgroundColor: t.bg, borderColor: t.color + '55' }]}
-                accessibilityLabel={t.icon} onPress={() => { setCaseType(t.key); setStep('severity'); }}
+                key={tItem.key}
+                style={[styles.typeCard, { backgroundColor: tItem.bg, borderColor: tItem.color + '55' }]}
+                accessibilityLabel={tItem.icon} onPress={() => { setCaseType(tItem.key); setStep('severity'); }}
 
               >
-                <Text maxFontSizeMultiplier={1.4} style={styles.typeIcon}>{t.icon}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.typeIcon}>{tItem.icon}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.typeLabel, { color: t.color }]}>{t.label}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.typeSub, { color: colors.textMuted }]}>{t.sub}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.typeLabel, { color: tItem.color }]}>{tItem.label}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.typeSub, { color: colors.textMuted }]}>{tItem.sub}</Text>
                 </View>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.typeArrow, { color: t.color }]}>›</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.typeArrow, { color: tItem.color }]}>›</Text>
               </TouchableOpacity>
             ))}
           </>
@@ -170,15 +172,15 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         {step === 'severity' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('type')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('type')} style={styles.back}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
             </TouchableOpacity>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>How serious was it?</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_pilead_how_serious_was_it')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.stepSub, { color: colors.textMuted }]}>
-              This helps match you with the right attorney. More serious cases connect with more experienced lawyers.
+              {t('x_pilead_this_helps_match_with')}
             </Text>
-            {(caseType === 'Civil Rights' ? SEVERITIES.slice(0, 3) : SEVERITIES).map(s => (
+            {(caseType === 'Civil Rights' ? SEVERITIES().slice(0, 3) : SEVERITIES()).map(s => (
               <TouchableOpacity
                 accessibilityRole="button"
                 key={s.key}
@@ -195,7 +197,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               </TouchableOpacity>
             ))}
             <Text maxFontSizeMultiplier={1.4} style={[styles.feeNote, { color: colors.textMuted }]}>
-              Attorneys pay a flat {PI_LEAD_FEE_DISPLAY} connection fee, whatever the severity -- you pay nothing.
+              {t('x_pilead_attorneys_pay_flat_connection', { PI_LEAD_FEE_DISPLAY })}
             </Text>
           </>
         )}
@@ -204,9 +206,9 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         {step === 'details' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('severity')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('severity')} style={styles.back}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
             </TouchableOpacity>
 
             {/* Summary badge */}
@@ -218,9 +220,9 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               </Text>
             </View>
 
-            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>Describe what happened</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_pilead_describe_what_happened')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.stepSub, { color: colors.textMuted }]}>
-              Be specific -- when, where, and what happened. Attorneys use this to evaluate your case. Keep it factual.
+              {t('x_pilead_be_specific_when_where')}
             </Text>
 
             <TextInput
@@ -229,26 +231,26 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               multiline
               maxLength={2000}
               numberOfLines={7}
-              placeholder="e.g. On March 12, 2025 I was rear-ended at the intersection of..."
+              placeholder={t('x_pilead_e_g_march_12')}
               placeholderTextColor={COLORS.textSecond}
               value={description}
               onChangeText={setDesc}
               textAlignVertical="top"
-              accessibilityLabel="Describe what happened"
+              accessibilityLabel={t('x_pilead_describe_what_happened')}
 
           returnKeyType="next"
           blurOnSubmit
         />
 
             <Text maxFontSizeMultiplier={1.4} style={[styles.charCount, { color: colors.textMuted }]}>
-              {description.length < 20 ? `${20 - description.length} more characters needed` : `${description.length} characters`}
+              {description.length < 20 ? t('x_pilead_more_characters_needed', { value: 20 - description.length }) : t('x_pilead_characters', { length: description.length })}
             </Text>
 
             {/* Privacy note */}
             <View style={[styles.privacyNote, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle,
               borderColor: colors.blue + '44' }]}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.privacyText, { color: colors.blue }]}>
-                🔒 Your name and contact info are hidden from attorneys until you choose to share them. You stay anonymous until a match is made.
+                {t('x_pilead_name_contact_info_hidden')}
               </Text>
             </View>
 
@@ -257,12 +259,12 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
                 (loading || description.trim().length < 20) && styles.submitBtnDisabled]}
               onPress={submit}
               disabled={loading || description.trim().length < 20}
-              accessibilityLabel="Submit your case to attorneys"
-          accessibilityHint="Double-tap to activate"
+              accessibilityLabel={t('x_pilead_submit_case_attorneys')}
+          accessibilityHint={t('cp_double_tap')}
             >
               {loading
                 ? <ActivityIndicator color={colors.bgCard} />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.submitBtnText}>Submit My Case -- Free →</Text>}
+                : <Text maxFontSizeMultiplier={1.4} style={styles.submitBtnText}>{t('x_pilead_submit_my_case_free')}</Text>}
             </TouchableOpacity>
           </>
         )}

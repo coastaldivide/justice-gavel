@@ -16,6 +16,7 @@ import { getUserState } from '../utils/userState';
 import {
   cacheSearch, getCachedSearch,
   saveRecentSearch, getRecentSearches, clearRecentSearches } from '../services/offlineCache';
+import { t, perLang, useLang } from '../i18n';
 
 interface SearchResult {
   id: number;
@@ -34,17 +35,18 @@ const TYPE_ICONS: Record<string, string> = {
   lawyer:  '⚖️',
   lesson:  '📚' };
 
-const TYPE_LABELS: Record<string, string> = {
-  case:    'Cases',
-  message: 'Messages',
-  lawyer:  'Saved Attorneys',
-  lesson:  'Legal Lessons' };
+const TYPE_LABELS = perLang((): Record<string, string> => ({
+  case:    t('nav_cases'),
+  message: t('messages_title'),
+  lawyer:  t('x_search_saved_attorneys'),
+  lesson:  t('x_search_legal_lessons') }));
 
 const SECTION_ORDER = ['case', 'message', 'lawyer', 'lesson'];
 
 
 
 function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
@@ -106,7 +108,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         }).catch(() => {});
       setSearched(true);
     } catch {
-      if (mountedRef.current) { setResults([]); setSearched(true); setSearchError('Search failed. Check your connection.'); }
+      if (mountedRef.current) { setResults([]); setSearched(true); setSearchError(t('x_search_search_failed_check_connection')); }
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -151,7 +153,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         <AppIcon name="search-outline" size={20} color={COLORS.navy} />
         <TextInput
           style={[s.input, { color: colors.textPrimary }]}
-          placeholder="Search cases, messages, attorneys, lessons…"
+          placeholder={t('x_search_search_cases_messages_attorneys')}
           placeholderTextColor={colors.placeholder}
           value={query}
           onChangeText={handleChange}
@@ -161,8 +163,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           keyboardType="default"
           maxLength={120}
           clearButtonMode="while-editing"
-          accessibilityLabel="Search"
-          accessibilityHint="Double-tap to activate"
+          accessibilityLabel={t('search')}
+          accessibilityHint={t('cp_double_tap')}
         />
         {loading && (
           <ActivityIndicator size="small" color={colors.navy} style={{ marginRight: 8 }} />
@@ -181,10 +183,10 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
 {searchError
                   ? searchError
-                  : `No results for "${query}"`}
+                  : t('x_search_no_results', { query })}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[s.emptySub, { color: colors.textMuted }]}>
-                Try different words or check the spelling.
+                {t('x_search_try_different_words_check')}
               </Text>
             </View>
           ) : !searched ? (
@@ -195,7 +197,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                     alignItems:'center', marginBottom:8 }}>
                     <Text maxFontSizeMultiplier={1.4}
                       style={[s.sectionLabel, { color: colors.textMuted }]}>
-                      🕐 Recent Searches
+                      {t('x_search_recent_searches')}
                     </Text>
                     <TouchableOpacity
                       accessibilityRole="button"
@@ -203,11 +205,11 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                         clearRecentSearches().catch(() => {});
                         setRecentSearches([]);
                       }}
-                      accessibilityLabel="Clear recent searches"
+                      accessibilityLabel={t('x_search_clear_recent_searches')}
                     >
                       <Text maxFontSizeMultiplier={1.4}
                         style={{ fontSize:12, lineHeight:18, color: colors.textMuted }}>
-                        Clear
+                        {t('x_ch_clear')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -218,7 +220,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                       style={[s.resultRow, { backgroundColor: colors.bgCard,
                         borderColor: colors.border }]}
                       onPress={() => { setQuery(q); doSearch(q); }}
-                      accessibilityLabel={`Search for ${q}`}
+                      accessibilityLabel={t('x_search_search', { q })}
                       activeOpacity={0.75}
                     >
                       <Text maxFontSizeMultiplier={1.4}
@@ -234,10 +236,10 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
               <View style={{ marginBottom: 16 }}>
                 <Text maxFontSizeMultiplier={1.4}
                   style={[s.sectionLabel, { color: colors.textMuted, marginBottom: 10 }]}>
-                  💡 Common Searches
+                  {t('x_search_common_searches')}
                 </Text>
                 <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
-                  {['DUI attorney','bail bondsman','expungement','drug charge','know my rights',
+                  {[t('x_search_dui_attorney'),'bail bondsman','expungement','drug charge','know my rights',
                     'public defender','court date','probation violation','assault charge'].map(q => (
                     <TouchableOpacity
           accessibilityRole="button" key={q}
@@ -256,7 +258,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <AppIcon name="search-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4}
                   style={[s.emptySub, { color: colors.textMuted }]}>
-                  Search across your cases, messages,{'\n'}saved attorneys, and legal lessons.
+                  {t('x_search_search_across_cases_messages')}
                 </Text>
               </View>
             </View>
@@ -266,7 +268,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4}
               style={[s.sectionLabel, { color: colors.textMuted }]}>
-              {TYPE_ICONS[section.type]} {TYPE_LABELS[section.type]}
+              {TYPE_ICONS[section.type]} {TYPE_LABELS()[section.type]}
             </Text>
             {(section.items || []).map((result, i) => (
               <TouchableOpacity

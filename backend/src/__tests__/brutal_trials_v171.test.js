@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v171
@@ -31,11 +32,12 @@ describe('CONTENT. User-Visible Strings — No Nonsense', () => {
   });
   test('CONTENT-02: HomeScreen TILES all have meaningful labels', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/HomeScreen.tsx');
     const tilesStart = src.indexOf('const TILES');
-    const tilesEnd   = src.indexOf('];', tilesStart)+2;
+    const tilesEnd   = src.indexOf(']);', tilesStart)+3;   // TILES = perLang(() => [ … ]) — labels follow the app language
     const tiles = src.slice(tilesStart, tilesEnd);
-    const labels = [...tiles.matchAll(/label:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    const labels = [...tiles.matchAll(/label:\s*t\(['"]([^'"]+)['"]\)/g)].map(m=>en[m[1]] ?? '');
     expect(labels.length).toBeGreaterThanOrEqual(28);
     for(const label of labels){
       const clean = label.replace(/\\n/g,'').replace(/[^\w\s&?]/g,'').trim();

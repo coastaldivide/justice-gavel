@@ -7,24 +7,25 @@ import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 
-const CATEGORIES = [
-  { key: 'ALL',                label: 'All',              icon: '📚' },
-  { key: 'PUBLIC_DEFENDER',   label: 'Public Defender',  icon: '⚖️'  },
-  { key: 'LEGAL_AID',         label: 'Free Legal Aid',   icon: '🆘' },
-  { key: 'CRISIS_LINE',       label: 'Crisis Lines',     icon: '📞' },
-  { key: 'DV_SHELTER',        label: 'DV Help',          icon: '🏠' },
-  { key: 'INMATE_LOOKUP',     label: 'Find Inmate',      icon: '🔍' },
-  { key: 'TREATMENT',         label: 'Treatment',        icon: '💊' },
-  { key: 'EXPUNGEMENT',       label: 'Clear Record',     icon: '🗂️'  },
-  { key: 'IMMIGRATION_COURT', label: 'Immigration',      icon: '🌎' },
-  { key: 'COURT_PAYMENT',     label: 'Pay Fees',         icon: '💳' },
-  { key: 'VICTIM_COMPENSATION',label: 'Victim Help',     icon: '🛡️'  },
-  { key: 'LAW_CLINIC',        label: 'Free Clinics',     icon: '🎓' },
-  { key: 'PROBATION',         label: 'Probation',        icon: '📋' },
-  { key: 'ATTORNEY_COMPLAINT',label: 'Report Attorney',  icon: '⚠️'  },
-];
+const CATEGORIES = perLang(() => [
+  { key: 'ALL',                label: t('x_practice_area_selector_all'),              icon: '📚' },
+  { key: 'PUBLIC_DEFENDER',   label: t('x_resources_public_defender'),  icon: '⚖️'  },
+  { key: 'LEGAL_AID',         label: t('x_resources_free_legal_aid'),   icon: '🆘' },
+  { key: 'CRISIS_LINE',       label: t('x_resources_crisis_lines'),     icon: '📞' },
+  { key: 'DV_SHELTER',        label: t('x_resources_dv_help'),          icon: '🏠' },
+  { key: 'INMATE_LOOKUP',     label: t('x_resources_find_inmate'),      icon: '🔍' },
+  { key: 'TREATMENT',         label: t('x_resources_treatment'),        icon: '💊' },
+  { key: 'EXPUNGEMENT',       label: t('x_resources_clear_record'),     icon: '🗂️'  },
+  { key: 'IMMIGRATION_COURT', label: t('chat_cat_immigration'),      icon: '🌎' },
+  { key: 'COURT_PAYMENT',     label: t('x_resources_pay_fees'),         icon: '💳' },
+  { key: 'VICTIM_COMPENSATION',label: t('x_resources_victim_help'),     icon: '🛡️'  },
+  { key: 'LAW_CLINIC',        label: t('x_resources_free_clinics'),     icon: '🎓' },
+  { key: 'PROBATION',         label: t('x_resources_probation'),        icon: '📋' },
+  { key: 'ATTORNEY_COMPLAINT',label: t('x_resources_report_attorney'),  icon: '⚠️'  },
+]);
 
 const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   ALL:                { bg: COLORS.infoBg, border: COLORS.blue, text: COLORS.navy },
@@ -47,6 +48,7 @@ const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> =
 
 
 function ResourcesScreen(): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
@@ -77,7 +79,7 @@ function ResourcesScreen(): React.JSX.Element {
     } catch {
       const cached = await getCachedResources().catch(() => []);
       if (mountedRef.current && cached?.length) setAllItems(cached);
-      else if (mountedRef.current) setError('Could not load resources');
+      else if (mountedRef.current) setError(t('x_resources_could_not_load_resources'));
     } finally {
       if (mountedRef.current) { setLoading(false); setRefreshing(false); }
     }
@@ -108,7 +110,7 @@ function ResourcesScreen(): React.JSX.Element {
   if (loading && !allItems.length) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', backgroundColor:bg }}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text maxFontSizeMultiplier={1.4} style={{ color:sub, marginTop:12 }}>Loading resources…</Text>
+      <Text maxFontSizeMultiplier={1.4} style={{ color:sub, marginTop:12 }}>{t('x_resources_loading_resources')}</Text>
     </View>
   );
 
@@ -118,11 +120,11 @@ function ResourcesScreen(): React.JSX.Element {
       {/* Search bar */}
       <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:8 }}>
         <TextInput
-          accessibilityLabel="Search resources…"
-          accessibilityHint="Double-tap to activate"
+          accessibilityLabel={t('x_resources_search_resources')}
+          accessibilityHint={t('cp_double_tap')}
           value={q}
           onChangeText={setQ}
-          placeholder="Search resources…"
+          placeholder={t('x_resources_search_resources')}
           placeholderTextColor={sub}
           style={{
             backgroundColor: card, borderRadius:10, paddingHorizontal:14,
@@ -140,7 +142,7 @@ function ResourcesScreen(): React.JSX.Element {
         <ScrollView keyboardShouldPersistTaps="handled"
         horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
-        {CATEGORIES.map(cat => {
+        {CATEGORIES().map(cat => {
           const active = category === cat.key;
           const cc = CAT_COLORS[cat.key] || CAT_COLORS.textMuted;
           return (
@@ -167,8 +169,7 @@ function ResourcesScreen(): React.JSX.Element {
 
       {/* Count */}
       <Text maxFontSizeMultiplier={1.4} style={{ paddingHorizontal:16, paddingBottom:6, color:sub, fontSize:12 }}>
-        {filtered.length} resource{filtered.length !== 1 ? 's' : ''}
-        {category !== 'ALL' ? ` · ${CATEGORIES.find(c=>c.key===category)?.label}` : ''}
+        {t(filtered.length === 1 ? 'x_resources_resource_one' : 'x_resources_resource_other', { length: filtered.length, value2: category !== 'ALL' ? ` · ${CATEGORIES().find(c=>c.key===category)?.label}` : '' })}
       </Text>
 
       {error ? (
@@ -176,10 +177,10 @@ function ResourcesScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.emergencyDark, textAlign:'center', margin:20 }}>{error}</Text>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Try again" onPress={() => load()}
+            accessibilityLabel={t('try_again')} onPress={() => load()}
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
           >
-            <Text style={{ color: ('\x23' + '1d4ed8') as string, fontSize: 14 }}>Try again</Text>
+            <Text style={{ color: ('\x23' + '1d4ed8') as string, fontSize: 14 }}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -191,13 +192,13 @@ function ResourcesScreen(): React.JSX.Element {
           initialNumToRender={15}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color:sub, textAlign:'center', marginTop:40 }}>
-              🔍 No resources found{q ? ` for "${q}"` : ''}.
+              {t('x_resources_no_resources_found', { value: q ? ' ' + t('x_resources_text', { q }) : '' })}
             </Text>
           }
           renderItem={({ item }: { item: any }) => {
             const isOpen = expanded === item.id;
             const cc = CAT_COLORS[item.category] || CAT_COLORS.textMuted;
-            const cat = CATEGORIES.find(c => c.key === item.category);
+            const cat = CATEGORIES().find(c => c.key === item.category);
             return (
               <TouchableOpacity
   accessibilityRole="button"
@@ -218,7 +219,7 @@ function ResourcesScreen(): React.JSX.Element {
                     paddingHorizontal:8, paddingVertical:4, flexShrink:0,
                   }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'700', color:cc.text }}>
-                      {cat?.icon} {item.state || 'NAT'}
+                      {cat?.icon} {item.state || t('x_resources_national')}
                     </Text>
                   </View>
                   <View style={{ flex:1 }}>
@@ -231,7 +232,7 @@ function ResourcesScreen(): React.JSX.Element {
                         paddingHorizontal:6, paddingVertical:2,
                         alignSelf:'flex-start', marginTop:4,
                       }}>
-                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:10, fontWeight:'700' }}>FREE</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:10, fontWeight:'700' }}>{t('x_resources_free')}</Text>
                       </View>
                     )}
                   </View>
@@ -247,7 +248,7 @@ function ResourcesScreen(): React.JSX.Element {
                     <View style={{ marginTop:12, gap:6 }}>
                       {item.phone ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
+                          onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name="call-outline" size={20} color={colors.legal} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
@@ -257,7 +258,7 @@ function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.url ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(item.url).catch(() => showToast('Action failed. Please try again.', 'error'))}
+                          onPress={() => Linking.openURL(item.url).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🌐</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}
@@ -268,7 +269,7 @@ function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.address ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
+                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
@@ -283,7 +284,7 @@ function ResourcesScreen(): React.JSX.Element {
                       {item.income_limit ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name="cash-outline" size={20} color={colors.legal} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>Eligibility: {item.income_limit}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{t('x_resources_eligibility', { income_limit: item.income_limit })}</Text>
                         </View>
                       ) : null}
                     </View>

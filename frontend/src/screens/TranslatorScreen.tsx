@@ -33,14 +33,15 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
+import { t, useLang, perLang } from '../i18n';
 
 // ── Language config ────────────────────────────────────────────────────────
-const LANGUAGES = [
-  { code: 'en', label: 'English',    native: 'English',    flag: '🇺🇸' },
-  { code: 'es', label: 'Spanish',    native: 'Español',    flag: '🇲🇽' },
-  { code: 'pt', label: 'Portuguese', native: 'Português',  flag: '🇧🇷' },
-  { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', flag: '🇻🇳' },
-];
+const LANGUAGES = perLang(() => [
+  { code: 'en', label: t('x_st_english'),    native: 'English',    flag: '🇺🇸' },
+  { code: 'es', label: t('hn_lang_spanish'),    native: 'Español',    flag: '🇲🇽' },
+  { code: 'pt', label: t('hn_lang_portuguese'), native: 'Português',  flag: '🇧🇷' },
+  { code: 'vi', label: t('hn_lang_vietnamese'), native: 'Tiếng Việt', flag: '🇻🇳' },
+]);
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface TurnMessage {
@@ -57,7 +58,7 @@ interface TurnMessage {
 type Phase = 'setup' | 'session' | 'join';
 
 function getLang(code: string) {
-  return LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
+  return LANGUAGES().find(l => l.code === code) || LANGUAGES()[0];
 }
 
 // ── Animated message bubble ────────────────────────────────────────────────
@@ -66,6 +67,7 @@ function TurnBubble({
 }: {
   msg: TurnMessage; isA: boolean;
 }) {
+  useLang();
   const { isDark } = useTheme();
   const styles = makeStyles();
 
@@ -143,10 +145,11 @@ function LangPicker({
   value: string; onChange: (code: string) => void;
   exclude?: string;
 }) {
+  useLang();
   return (
     <View style={styles.langPickerRow}
       testID="translator-screen">
-      {LANGUAGES.filter(l => l.code !== exclude).map(l => (
+      {LANGUAGES().filter(l => l.code !== exclude).map(l => (
         <TouchableOpacity
           accessibilityRole="button"
           key={l.code}
@@ -170,6 +173,7 @@ function LangPicker({
 
 // ── Main screen ────────────────────────────────────────────────────────────
 function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -200,7 +204,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    navigation.setOptions({ title: '🗣 Interpreter' });
+    navigation.setOptions({ title: t('x_nav_interpreter') });
   }, [navigation]);
 
   // Auto-scroll on new messages
@@ -246,7 +250,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         setMessages([]);
         setPhase('session');
       } catch (e: any) {
-showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
+showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'error');
         setCreating(false);
       }
     };
@@ -258,7 +262,7 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
   const joinSession = useCallback(async () => {
     const code = joinCode.trim().toUpperCase();
     if (code.length !== 6) {
-      setJoinError('Enter the 6-character code from the attorney\'s phone.');
+      setJoinError(t('x_translator_enter_6_character_code'));
       return;
     }
     setJoinError('');
@@ -282,7 +286,7 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
 
       setPhase('session');
     } catch {
-      setJoinError('Session not found. Check the code and try again.');
+      setJoinError(t('x_translator_session_not_found_check'));
     }
   }, [joinCode]);
 
@@ -330,7 +334,7 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
       else              setInputB(text);
-showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
+showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
       if (side === 'a') setSendingA(false);
       else              setSendingB(false);
     }
@@ -339,8 +343,8 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
   const shareCode = useCallback(() => {
     try {
       RNShare.share({
-      message: `Join my translation session on Justice Gavel.\n\nCode: ${sessionCode}\n\nDownload the app and tap "Interpreter" → "Join with code".`,
-      title: 'Join Translation Session',
+      message: t('x_translator_join_my_translation_session', { sessionCode }),
+      title: t('x_translator_join_translation_session'),
     });
     } catch {
       // Share API unavailable on this browser/device — fail silently
@@ -357,10 +361,10 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
       <ScrollView contentContainerStyle={styles.setupScroll} keyboardShouldPersistTaps="handled">
         <Text maxFontSizeMultiplier={1.4} style={styles.joinEmoji}>🗝</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.joinTitle, { color: colors.textPrimary }]}>
-          Join translation session
+          {t('x_translator_join_translation_session_2')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.joinSub, { color: colors.textMuted }]}>
-          Enter the 6-character code from the attorney's phone.
+          {t('x_translator_enter_6_character_code')}
         </Text>
 
         <TextInput
@@ -391,15 +395,15 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
           onPress={joinSession}
           disabled={joinCode.length !== 6}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.joinBtnText}>Join Session →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.joinBtnText}>{t('x_translator_join_session')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.backLink}
-          accessibilityLabel={"\u2190 Back"} onPress={() => setPhase('setup')}
+          accessibilityLabel={t('ja_back')} onPress={() => setPhase('setup')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -416,18 +420,17 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
 
         <Text maxFontSizeMultiplier={1.4} style={styles.setupEmoji}>🗣</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupTitle, { color: colors.textPrimary }]}>
-          Attorney-Client Interpreter
+          {t('x_translator_attorney_client_interpreter')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupSub, { color: colors.textMuted }]}>
-          Real-time translation for attorney-client meetings.{'\n'}
-          Replaces a $50-200/hr professional interpreter.
+          {t('x_translator_real_time_translation_attorney')}
         </Text>
 
         {/* Mode selector */}
         <View style={[styles.modeRow, { borderColor: colors.border }]}>
           {[
-            { key: 'solo',  icon: '📱', label: 'One phone', sub: 'Pass the phone back and forth' },
-            { key: 'split', icon: '📲', label: 'Two phones', sub: 'Each person uses their own phone' },
+            { key: 'solo',  icon: '📱', label: t('translator_one_phone'), sub: t('x_translator_pass_phone_back_forth') },
+            { key: 'split', icon: '📲', label: t('translator_two_phones'), sub: t('x_translator_each_person_uses_their') },
           ].map(m => (
             <TouchableOpacity
               accessibilityRole="button"
@@ -450,20 +453,20 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
         {creating && <ActivityIndicator color={COLORS.navy} style={{ marginVertical: 12 }} />}
         {/* Attorney language */}
         <Text maxFontSizeMultiplier={1.4} style={[styles.langLabel, { color: colors.textMuted }]}>
-          Attorney's language
+          {t('translator_attorney_lang')}
         </Text>
         <LangPicker value={langA} onChange={setLangA} exclude={langB} />
 
         {/* Client language */}
         <Text maxFontSizeMultiplier={1.4} style={[styles.langLabel, { color: colors.textMuted }]}>
-          Client's language
+          {t('translator_client_lang')}
         </Text>
         <LangPicker value={langB} onChange={setLangB} exclude={langA} />
 
         {/* Join existing */}
         <View style={[styles.dividerRow, { borderColor: colors.border }]}>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text maxFontSizeMultiplier={1.4} style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.dividerText, { color: colors.textMuted }]}>{t('x_translator_text')}</Text>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </View>
 
@@ -473,12 +476,12 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
           onPress={() => setPhase('join')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.joinExistingText, { color: colors.textPrimary }]}>
-            🗝  Join with a code (client)
+            {t('x_translator_join_with_code_client')}
           </Text>
         </TouchableOpacity>
 
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupDisclaimer, { color: colors.textMuted }]}>
-          Translations are AI-generated. For critical legal proceedings, use a certified interpreter.
+          {t('x_translator_translations_ai_generated_critical')}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -498,13 +501,13 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
           backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
           borderBottomColor: COLORS.navy + '33',
         }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarLabel, { color: colors.textMuted }]}>Session code</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarLabel, { color: colors.textMuted }]}>{t('translator_session_code')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarCode, { color: COLORS.navy }]}>{sessionCode}</Text>
           {mode === 'split' && (
             <TouchableOpacity
               accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
-             accessibilityLabel={"Share \u2192"}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>Share →</Text>
+             accessibilityLabel={t('x_translator_share')}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>{t('x_translator_share')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -516,9 +519,9 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
               setCode('');
             }}
             style={styles.endBtn}
-            accessibilityLabel="End session"
+            accessibilityLabel={t('x_translator_end_session')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.endBtnText}>End</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.endBtnText}>{t('x_translator_end')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -535,8 +538,8 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
             <Text maxFontSizeMultiplier={1.4} style={styles.emptyThreadIcon}>💬</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyThreadText, { color: colors.textMuted }]}>
               {onlySideB
-                ? `Type in ${langBObj.native} below. The attorney will see your message in ${langAObj.native}.`
-                : `Type in ${langAObj.native} or ${langBObj.native} below.\nBoth sides will see translations instantly.`}
+                ? t('x_translator_type_below_attorney_will', { native: langBObj.native, native2: langAObj.native })
+                : t('x_translator_type_below_both_sides', { native: langAObj.native, native2: langBObj.native })}
             </Text>
           </View>
         )}
@@ -573,13 +576,13 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
                   borderColor: COLORS.navy + '44',
                   color: colors.textPrimary,
                 }]}
-                placeholder={`Type in ${langAObj.native}…`}
+                placeholder={t('x_translator_type', { native: langAObj.native })}
                 placeholderTextColor={COLORS.textSecond}
                 value={inputA}
                 onChangeText={setInputA}
                 multiline
                 maxLength={500}
-                accessibilityLabel={`Type in ${langAObj.label}`}
+                accessibilityLabel={t('x_translator_type_2', { label: langAObj.label })}
               />
               <TouchableOpacity
                 accessibilityRole="button"
@@ -588,8 +591,8 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
                 }]}
                 onPress={() => sendMessage('a')}
                 disabled={!inputA.trim() || sendingA}
-                accessibilityLabel="Send and translate"
-          accessibilityHint="Double-tap to activate"
+                accessibilityLabel={t('x_translator_send_translate')}
+          accessibilityHint={t('cp_double_tap')}
               >
                 {sendingA
                   ? <ActivityIndicator color={colors.bgCard} size="small" />
@@ -617,13 +620,13 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
                 borderColor: 'rgba(84,110,122,0.27)',
                 color: colors.textPrimary,
               }]}
-              placeholder={`Type in ${langBObj.native}…`}
+              placeholder={t('x_translator_type', { native: langBObj.native })}
               placeholderTextColor={COLORS.textSecond}
               value={inputB}
               onChangeText={setInputB}
               multiline
               maxLength={500}
-              accessibilityLabel={`Type in ${langBObj.label}`}
+              accessibilityLabel={t('x_translator_type_2', { label: langBObj.label })}
             />
             <TouchableOpacity
               accessibilityRole="button"
@@ -632,8 +635,8 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
               }]}
               onPress={() => sendMessage('b')}
               disabled={!inputB.trim() || sendingB}
-              accessibilityLabel="Send and translate"
-          accessibilityHint="Double-tap to activate"
+              accessibilityLabel={t('x_translator_send_translate')}
+          accessibilityHint={t('cp_double_tap')}
             >
               {sendingB
                 ? <ActivityIndicator color={colors.bgCard} size="small" />

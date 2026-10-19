@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v139
@@ -107,8 +108,7 @@ describe('SCR3. Underexplored FE Screens — 8 Documented', () => {
     // PI lead submission: injured party enters claim → routed to PI attorneys
   });
   test('SCR3-06: TermsOfServiceScreen — 14,812 char ToS display', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TermsOfServiceScreen.tsx','utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/TermsOfServiceScreen.tsx');
     expect(src.length).toBeGreaterThan(12000);
     expect(src).toContain('TermsOfServiceScreen');
     // Standalone ToS screen — linked from settings + login flow

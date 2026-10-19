@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v83 — BRUTAL × 10
@@ -123,8 +124,7 @@ describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to �
     expect(src).toContain("{ code:'IN', name:'India (non-contracting)' }");
   });
   test('S6-04: HagueContactScreen legal notice on home screen', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(src).toContain('legalNoticeText');
     expect(src).toContain('not legal advice');
     expect(src).toContain('licensed family law attorney');

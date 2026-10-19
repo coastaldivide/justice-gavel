@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -942,8 +943,7 @@ describe('14. Screen Contracts — Share, Clipboard, Linking, Focus', () => {
   });
 
   test('14-09: DeadlineCalculatorScreen Share includes app name in message', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx');
     expect(src).toContain('Share.share');
     expect(src).toContain('Justice Gavel');
   });

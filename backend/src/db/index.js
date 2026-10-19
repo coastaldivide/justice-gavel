@@ -140,7 +140,7 @@ async function initPostgres(url) {
   // UTC. Keep it as the plain 'YYYY-MM-DD' string the app sent.
   pg.types.setTypeParser(1082, v => v);
 
-  const isLocal = /localhost|127\.0\.0\.1|::1|\.internal\b|\.railway\.internal/.test(url)
+  const isLocal = /localhost|127\.0\.0\.1|::1|\.internal\b/.test(url)
     || /sslmode=disable/.test(url);
   const pool = new pg.Pool({
     connectionString: url,

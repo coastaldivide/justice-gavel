@@ -61,9 +61,9 @@ describe('arrestVisibility helper', () => {
     expect(realArrestSql('ar')).toMatch(/NOT .*ar\.source/);
   });
 
-  it('the toggle is documented (Railway doc + config optional vars)', async () => {
+  it('the toggle is documented (DEPLOY_ENV_SETUP.md + config optional vars)', async () => {
     const fs = await import('fs');
-    const doc = fs.readFileSync(new URL('../../../RAILWAY_ENV_SETUP.md', import.meta.url), 'utf8');
+    const doc = fs.readFileSync(new URL('../../../DEPLOY_ENV_SETUP.md', import.meta.url), 'utf8');
     expect(doc).toMatch(/SHOW_SAMPLE_ARRESTS=false/);
     const cfg = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
     expect(cfg).toMatch(/OPTIONAL_FEATURES = \{[\s\S]*SHOW_SAMPLE_ARRESTS:/);

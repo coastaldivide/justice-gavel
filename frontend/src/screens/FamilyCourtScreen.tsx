@@ -18,118 +18,120 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, LayoutAnimation }
 import type { ScreenProps } from '../types/navigation';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { t, perLang, useLang } from '../i18n';
 
 
-const CUSTODY_SECTIONS = [
+const CUSTODY_SECTIONS = perLang(() => [
   {
     icon: '⚖️',
-    title: 'Types of custody',
-    body: 'Legal custody is the right to make major decisions about a child\'s education, healthcare, and religion. Physical custody is where the child lives. Both can be sole (one parent) or joint (shared). Courts strongly prefer joint legal custody when both parents are fit -- sole legal custody requires evidence the other parent is unfit or unavailable.',
+    title: t('x_family_court_types_custody'),
+    body: t('x_family_court_legal_custody_right_make'),
   },
   {
     icon: '🧒',
-    title: 'How courts decide',
-    body: 'Every state uses "best interest of the child" as the standard. Courts consider: the child\'s relationship with each parent, each parent\'s ability to provide stability, the child\'s adjustment to home and school, any history of domestic violence or abuse, and in many states the child\'s own preference (usually considered at age 12-14). There is no presumption favoring mothers over fathers in any state.',
+    title: t('x_family_court_how_courts_decide'),
+    body: t('x_family_court_every_state_uses_best'),
   },
   {
     icon: '🔒',
-    title: 'Criminal record and custody',
-    body: 'A criminal record does not automatically disqualify a parent from custody. Courts look at the nature of the offense, how long ago it occurred, evidence of rehabilitation, and whether the offense involved violence or child endangerment. A domestic violence conviction is the most significant factor -- courts take it very seriously and may impose supervised visitation or limit contact. Drug offenses may trigger drug testing requirements. Non-violent, older offenses carry far less weight.',
+    title: t('x_family_court_criminal_record_custody'),
+    body: t('x_family_court_criminal_record_does_not'),
   },
   {
     icon: '📋',
-    title: 'Emergency custody',
-    body: 'If a child is in immediate danger, either parent can request an emergency custody order (ex parte order) -- a temporary order issued without the other parent present. The requesting parent must show immediate harm. Emergency orders are temporary and require a full hearing, usually within 14-21 days, where both parents can present their case.',
+    title: t('x_family_court_emergency_custody'),
+    body: t('x_family_court_if_child_immediate_danger'),
   },
   {
     icon: '✏️',
-    title: 'Modifying a custody order',
-    body: 'Once a custody order is in place, it can only be modified by showing a substantial change in circumstances -- a significant change in the child\'s needs or a parent\'s situation. Moving to a new state, a parent\'s incarceration, a significant change in the child\'s school or health needs, and evidence of abuse all qualify. Routine disagreements between parents do not.',
+    title: t('x_family_court_modifying_custody_order'),
+    body: t('x_family_court_once_custody_order_place'),
   },
   {
     icon: '🏛️',
-    title: 'Representing yourself',
-    body: 'You have the right to represent yourself in family court (pro se). Many courthouses have self-help centers with forms and guidance. However, if the other parent has an attorney and the stakes involve custody of your children, getting at least a one-hour consultation with a family law attorney before your first hearing is strongly recommended. The decisions made in early hearings often set the pattern for years.',
+    title: t('x_family_court_representing_yourself'),
+    body: t('x_family_court_have_right_represent_yourself'),
   },
   {
     icon: '📞',
-    title: 'If you cannot afford an attorney',
-    body: 'Legal aid organizations provide free or low-cost family law help in every state. Income-qualified applicants can get full representation. Law school family law clinics also take cases. Domestic violence organizations often have staff attorneys for protective order cases. Call 211 from any phone to reach local legal aid referrals.',
+    title: t('x_family_court_if_cannot_afford_attorney'),
+    body: t('x_family_court_legal_aid_organizations_provide'),
   },
-];
+]);
 
-const ORDERS_SECTIONS = [
+const ORDERS_SECTIONS = perLang(() => [
   {
     icon: '🚨',
-    title: 'Emergency protective order (EPO)',
-    body: 'Issued by police on the scene -- usually the same night as an incident. Lasts 3-7 days. Requires no court hearing. If you have been assaulted or threatened and police respond, ask the officer for an EPO before they leave. This automatically gets you into court within a week for a longer order.',
+    title: t('x_family_court_emergency_protective_order_epo'),
+    body: t('x_family_court_issued_by_police_scene'),
   },
   {
     icon: '📋',
-    title: 'Temporary restraining order (TRO)',
-    body: 'Filed at the courthouse, usually the same day or next business day. A judge reviews your written declaration without the other person present (ex parte). If granted, the TRO typically lasts 20-25 days until the full hearing. You do not need a police report to file a TRO -- your sworn statement is sufficient.',
+    title: t('x_family_court_temporary_restraining_order_tro'),
+    body: t('x_family_court_filed_at_courthouse_usually'),
   },
   {
     icon: '⚖️',
-    title: 'Permanent protective order',
-    body: 'Issued after a full court hearing where both parties can present evidence. Despite the name, "permanent" usually means 1-5 years, renewable. The order can include: no contact provisions, stay-away distances, move-out orders (requiring abuser to leave shared home), custody and visitation terms, and firearm surrender requirements.',
+    title: t('x_family_court_permanent_protective_order'),
+    body: t('x_family_court_issued_after_full_court'),
   },
   {
     icon: '📝',
-    title: 'How to file',
-    body: 'Go to the family court or civil court clerk\'s office. Ask for the protective order packet. Fill out the petition describing specific incidents with dates, locations, and what was said or done. Be specific -- vague descriptions like "he was threatening" are weaker than "on [date] at [location] he said he would kill me and showed me a knife." File for free -- there is no filing fee for domestic violence protective orders in any state.',
+    title: t('x_family_court_how_file'),
+    body: t('x_family_court_go_family_court_civil'),
   },
   {
     icon: '🔒',
-    title: 'What a protective order covers',
-    body: 'A protective order can protect you, your children, other family members, and even your pets. It can prohibit all contact (phone, text, email, through third parties), require the abuser to stay a specific distance from your home, workplace, and children\'s school, and require surrender of firearms. Violation of a protective order is a crime -- call 911 immediately if the order is violated.',
+    title: t('x_family_court_what_protective_order_covers'),
+    body: t('x_family_court_protective_order_can_protect'),
   },
   {
     icon: '⚠️',
-    title: 'If you have a criminal record',
-    body: 'Your criminal history does not affect your right to obtain a protective order as a victim. Courts issue protective orders based on what the respondent did to you, not your history. However, if there are active custody proceedings, the protective order will affect custody and visitation arrangements.',
+    title: t('x_family_court_if_have_criminal_record'),
+    body: t('x_family_court_criminal_history_does_not'),
   },
   {
     icon: '🌐',
-    title: 'National resources',
-    body: 'National Domestic Violence Hotline: 1-800-799-7233 (TTY: 1-800-787-3224). Text START to 88788. WomensLaw.org has state-specific protective order information for all 50 states. Law enforcement, hospitals, and domestic violence shelters can all help connect you to emergency protective order processes.',
+    title: t('x_family_court_national_resources'),
+    body: t('x_family_court_national_domestic_violence_hotline'),
   },
-];
+]);
 
-const SUPPORT_SECTIONS = [
+const SUPPORT_SECTIONS = perLang(() => [
   {
     icon: '🧮',
-    title: 'How child support is calculated',
-    body: 'Every state uses a formula. Most states use an income shares model -- both parents\' incomes are combined, the total child support obligation is calculated based on the combined income and number of children, then each parent pays their proportional share. The parent who pays child support (the non-custodial parent) typically pays their share to the other parent. Calculators are available on every state\'s family court website.',
+    title: t('x_family_court_how_child_support_calculated'),
+    body: t('x_family_court_every_state_uses_formula'),
   },
   {
     icon: '💼',
-    title: 'Income and unemployment',
-    body: 'If you are unemployed or underemployed, courts will often impute income -- calculate support based on what you could earn, not what you currently earn. This is based on your work history, education, and local job market. If you are genuinely unable to work due to incarceration, disability, or documented job loss, this can be presented. Self-employed income is harder to hide than many believe -- courts look at tax returns, bank statements, and lifestyle.',
+    title: t('x_family_court_income_unemployment'),
+    body: t('x_family_court_if_unemployed_underemployed_courts'),
   },
   {
     icon: '🔒',
-    title: 'Child support and criminal record',
-    body: 'If you are incarcerated, you are still legally obligated to pay child support unless you petition the court for a modification. Arrears (unpaid support) accumulate during incarceration in most states. Some states automatically suspend support during incarceration -- most do not. File a modification petition immediately upon incarceration. The court can set a nominal amount ($0 or minimal) until release. Failure to do this results in large arrears that are very difficult to discharge.',
+    title: t('x_family_court_child_support_criminal_record'),
+    body: t('x_family_court_if_incarcerated_still_legally'),
   },
   {
     icon: '📝',
-    title: 'Modifying a support order',
-    body: 'Child support can be modified when there is a substantial change in circumstances -- typically a 15-25% change in income, a significant change in the child\'s needs, or a change in custody arrangement. Either parent can request a modification. File promptly -- modifications are rarely retroactive. If you lose your job, file for modification the same week, not months later.',
+    title: t('x_family_court_modifying_support_order'),
+    body: t('x_family_court_child_support_can_be'),
   },
   {
     icon: '⚠️',
-    title: 'Non-payment consequences',
-    body: 'Unpaid child support is treated very seriously. Consequences include: driver\'s license suspension, professional license suspension, passport denial, tax refund interception, bank account levy, wage garnishment, and ultimately contempt of court which can result in jail. None of these consequences are suspended during a pending modification -- file the modification first.',
+    title: t('x_family_court_non_payment_consequences'),
+    body: t('x_family_court_unpaid_child_support_treated'),
   },
   {
     icon: '📞',
-    title: 'Getting help',
-    body: 'Every state has a Child Support Enforcement (CSE) agency -- free service that helps establish, enforce, and modify support orders. If you are the custodial parent trying to collect, contact your state\'s CSE agency. If you are the paying parent who needs a modification, consult a family law attorney or your county\'s self-help center.',
+    title: t('x_family_court_getting_help'),
+    body: t('x_family_court_every_state_has_child'),
   },
-];
+]);
 
 function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -139,7 +141,7 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [tab, setTab] = React.useState<'custody' | 'orders' | 'support'>('custody');
-  const allSections = tab === 'custody' ? CUSTODY_SECTIONS : tab === 'orders' ? ORDERS_SECTIONS : SUPPORT_SECTIONS;
+  const allSections = tab === 'custody' ? CUSTODY_SECTIONS() : tab === 'orders' ? ORDERS_SECTIONS() : SUPPORT_SECTIONS();
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -150,14 +152,14 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Family Court</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Custody, support & orders</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('civil_family_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_family_court_custody_support_orders')}</Text>
       </View>
 
       <View style={{ paddingHorizontal: 12 }}>
         <InfoTabs
           testID="family-court-tabs"
-          tabs={[{ key: 'custody', label: 'Custody' }, { key: 'orders', label: 'Protective Orders' }, { key: 'support', label: 'Child Support' }]}
+          tabs={[{ key: 'custody', label: t('x_family_court_custody') }, { key: 'orders', label: t('x_court_forms_protective_orders') }, { key: 'support', label: t('x_family_court_child_support') }]}
           active={tab}
           onChange={k => setTab(k as 'custody' | 'orders' | 'support')}
         />
@@ -167,12 +169,12 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
       {tab === 'support' && (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Open the child support estimator"
+          accessibilityLabel={t('x_family_court_open_child_support_estimator')}
           style={[styles.cta, { backgroundColor: colors.navy, marginHorizontal: 12 }]}
           onPress={() => navigation.navigate('ChildSupport')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.ctaText, { color: colors.textOnNavy }]}>
-            🧮 Estimate your child support →
+            {t('x_family_court_estimate_child_support')}
           </Text>
         </TouchableOpacity>
       )}
@@ -183,10 +185,10 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
           <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
+            {t('empty_state_nothing')}
           </Text>
           <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
+            {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
         ) : allSections.map((sec: any, idx: number) => (
@@ -202,8 +204,7 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textMuted }]}>
-          This information is for general education only and is not legal advice.
-          Laws vary by state. Consult a licensed attorney for advice about your situation.
+          {t('x_family_court_this_information_general_education')}
         </Text>
       </View>
     </ScrollView>

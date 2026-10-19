@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -176,8 +177,7 @@ describe('3. DeadlineCalculatorScreen — Criminal Defense Deadlines', () => {
   });
 
   test('3-04: has Share export for deadline results', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx');
     expect(src).toContain('Share.share');
     expect(src).toContain('Justice Gavel');
   });
@@ -583,8 +583,7 @@ describe('13. jobPoller.ts — Progressive Backoff', () => {
   });
 
   test('13-06: processing phase shows progress: Thinking→Analyzing→Almost there', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/jobPoller.ts', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/services/jobPoller.ts');
     expect(src).toContain("'Thinking…'");
     expect(src).toContain("'Analyzing…'");
     expect(src).toContain("'Almost there…'");

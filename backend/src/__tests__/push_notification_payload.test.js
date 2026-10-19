@@ -72,8 +72,8 @@ describe('Push notification — VAPID configuration', () => {
       server.includes('VAPID_PRIVATE_KEY') ||
       envRequired.includes('VAPID_PRIVATE_KEY');
     // If not found, VAPID private key should be in deployment docs
-    if (!hasVapidPrivate) console.log('  ℹ️  VAPID_PRIVATE_KEY: set directly in Railway env, not in config');
-    expect(true).toBe(true); // Present in Railway env vars — verified separately
+    if (!hasVapidPrivate) console.log('  ℹ️  VAPID_PRIVATE_KEY: set directly as a Render env var, not in config');
+    expect(true).toBe(true); // Present in the Render env vars — verified separately
   });
 
   test('VAPID keys come from environment (not hardcoded)', () => {

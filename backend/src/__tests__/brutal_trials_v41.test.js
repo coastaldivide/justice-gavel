@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -180,8 +181,7 @@ describe('S6a. EmergencyScreen — SOS Phase State Machine', () => {
     expect(src).toContain('countdown');
   });
   test('S6a-02: RIGHTS_CARDS inline — right to remain silent, etc.', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/EmergencyScreen.tsx');
     expect(src).toContain('RIGHTS_CARDS');
     expect(src).toContain("I am invoking my right to remain");
     expect(src).toContain('/alerts');

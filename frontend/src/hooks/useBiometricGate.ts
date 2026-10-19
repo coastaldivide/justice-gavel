@@ -26,6 +26,7 @@ let backgroundTime: number | null = null;
 const RELOCK_AFTER_MS = 60_000; // 60 seconds in background = re-lock all screens
 
 import { AppState } from 'react-native';
+import { t } from '../i18n';
 // Module-level AppState listener — intentionally lives for app lifetime (re-lock gate)
 AppState.addEventListener('change', (nextState) => {
   if (nextState === 'background' || nextState === 'inactive') {
@@ -86,9 +87,9 @@ export function useBiometricGate(screenKey: string): BiometricGateResult {
     setUnlocking(true);
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock to view',
+        promptMessage: t('x_use_biometric_gate_unlock_view'),
         disableDeviceFallback: false,
-        cancelLabel: 'Cancel',
+        cancelLabel: t('case_cancel'),
       });
       if (result.success && mountedRef.current) {
         UNLOCKED_SCREENS.add(screenKey);

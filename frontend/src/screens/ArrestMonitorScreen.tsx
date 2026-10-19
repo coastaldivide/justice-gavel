@@ -12,6 +12,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 const MAX_WATCHES = 5;
 
@@ -26,6 +27,7 @@ interface Watch {
 }
 
 function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
@@ -74,9 +76,9 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, [load]);
 
   const addWatch = async () => {
-    if (!name.trim()) { showToast('Enter the full name to start monitoring.', 'error'); return; }
+    if (!name.trim()) { showToast(t('x_arrest_monitor_enter_full_name_start'), 'error'); return; }
     if (watches.length >= MAX_WATCHES) {
-      showToast(`Pro plan supports up to ${MAX_WATCHES} active monitors.`, 'warning');
+      showToast(t('x_arrest_monitor_pro_plan_supports_up', { MAX_WATCHES }), 'warning');
       return;
     }
     setAdding(true);
@@ -89,14 +91,14 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
       await load();
     } catch (e: any) {
       setLoading(false);
-      showToast(apiErrorMessage(e, 'Could not add monitor.'), 'info');
+      showToast(apiErrorMessage(e, t('x_arrest_monitor_could_not_add_monitor')), 'info');
     }
     setAdding(false);
   };
 
   const removeWatch = (id: number) => {
-confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add any time.",
-      { confirmLabel:'Remove', destructive:true }).then(async ok=>{ if(!ok) return;
+confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_alerts'),
+      { confirmLabel:t('saved_remove'), destructive:true }).then(async ok=>{ if(!ok) return;
       await api.delete(`/arrests/monitors/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setWatches(prev => prev.filter(w => w.id !== id));
     })
@@ -109,20 +111,17 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
         testID="arrest-monitor-screen">
         <View style={styles.upsellCard}>
           <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>Arrest Monitoring</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>{t('x_arrest_monitor_arrest_monitoring')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellBody}>
-            Get a push alert when a name you watch appears in the public arrest
-            records we ingest.{'\n\n'}
-            Monitor up to 5 names. Coverage depends on the public booking feeds
-            connected for your area.
+            {t('x_arrest_monitor_get_push_alert_when')}
           </Text>
           <View style={styles.upsellFeatures}>
             {[
-              'Nightly check of ingested arrest records',
-              'Push notification on a new match',
-              'Up to 5 names monitored',
-              'Covers connected public booking feeds',
-              'Includes full Pro plan features',
+              t('x_arrest_monitor_nightly_check_ingested_arrest'),
+              t('x_arrest_monitor_push_notification_new_match'),
+              t('x_arrest_monitor_up_5_names_monitored'),
+              t('x_arrest_monitor_covers_connected_public_booking'),
+              t('x_arrest_monitor_includes_full_pro_plan'),
             ].map(f => (
               <View key={f} style={styles.upsellFeatureRow}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.upsellCheck}>✓</Text>
@@ -132,21 +131,21 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           </View>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={styles.upsellBtn}
             onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>{t('x_arrest_monitor_upgrade_legal_pro_14')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.upsellSkip}
-          accessibilityLabel="Maybe later"
+          accessibilityLabel={t('chat_limit_dismiss')}
           onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-            <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>{t('chat_limit_dismiss')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -171,18 +170,18 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           <View style={styles.statusBar}>
             <View style={styles.statusBadge}>
               <Text maxFontSizeMultiplier={1.4} style={styles.statusDot}>●</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>Active</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>{t('case_status_active')}</Text>
             </View>
-            <Text maxFontSizeMultiplier={1.4} style={styles.statusCount}>{watches.length} / {MAX_WATCHES} monitors</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.statusCount}>{t('x_arrest_monitor_monitors', { length: watches.length, MAX_WATCHES })}</Text>
           </View>
 
           {/* Active watches */}
           {watches.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>👁</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No monitors yet</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('x_arrest_monitor_no_monitors_yet')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
-                Add a name below -- we'll alert you when it appears in the arrest records we ingest.
+                {t('x_arrest_monitor_add_name_below_we')}
               </Text>
             </View>
           ) : (
@@ -191,22 +190,22 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchName}>{w.watch_name}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchLocation}>
-                    {w.county !== 'All' ? `${w.county}, ` : 'All counties -- '}{w.state}
+                    {w.county !== 'All' ? `${w.county}, ` : t('x_arrest_monitor_all_counties') + ' '}{w.state}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchStatus}>
                     {w.last_checked
-                      ? `Last checked: ${new Date(w.last_checked).toLocaleDateString()}`
-                      : 'Checking tonight'}
+                      ? t('x_arrest_monitor_last_checked', { value: new Date(w.last_checked).toLocaleDateString() })
+                      : t('x_arrest_monitor_checking_tonight')}
                   </Text>
                   {w.last_result === 'found' && (
                     <View style={styles.matchBadge}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.matchText}>⚡ Match found -- check arrest records</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.matchText}>{t('x_arrest_monitor_match_found_check_arrest')}</Text>
                     </View>
                   )}
                 </View>
                 <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.removeBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} onPress={() => removeWatch(w.id)}
+          accessibilityHint={t('cp_double_tap')} style={styles.removeBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} onPress={() => removeWatch(w.id)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -218,10 +217,10 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           {watches.length < MAX_WATCHES && (
             showForm ? (
               <View style={styles.addForm}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.addFormTitle}>Add Monitor</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.addFormTitle}>{t('x_arrest_monitor_add_monitor')}</Text>
                 <TextInput
                   style={styles.formInput}
-                  accessibilityLabel="Full name to monitor" placeholder="Full name (e.g. John Smith)"
+                  accessibilityLabel={t('x_arrest_monitor_full_name_monitor')} placeholder={t('x_arrest_monitor_full_name_e_g')}
                   placeholderTextColor={COLORS.textSecond}
                   value={name}
                   onChangeText={setName}
@@ -233,7 +232,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TextInput
                     style={[styles.formInput, { flex: 1 }]}
-                    accessibilityLabel="County (optional)" placeholder="County (optional)"
+                    accessibilityLabel={t('x_arrest_monitor_county_optional')} placeholder={t('x_arrest_monitor_county_optional')}
                     placeholderTextColor={COLORS.textSecond}
                     value={county}
                     onChangeText={setCounty}
@@ -241,9 +240,9 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           blurOnSubmit
         />
                   <TextInput
-          accessibilityLabel="State"
+          accessibilityLabel={t('state')}
                     style={[styles.formInput, { width: 70 }]}
-                    placeholder="State"
+                    placeholder={t('state')}
                     placeholderTextColor={COLORS.textSecond}
                     value={state}
                     onChangeText={v => setState(v.toUpperCase().slice(0, 2))}
@@ -254,46 +253,41 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity
                     accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
                     style={[styles.addBtn, { flex: 1 }]}
                     onPress={addWatch}
                     disabled={adding}
                   >
                     {adding
                       ? <ActivityIndicator color={colors.bgCard} size="small" />
-                      : <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>Start Monitoring</Text>
+                      : <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>{t('x_arrest_monitor_start_monitoring')}</Text>
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
 
                     style={styles.cancelFormBtn}
-                    accessibilityLabel="Cancel"
-          accessibilityHint="Cancels and returns to previous screen" onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
+                    accessibilityLabel={t('case_cancel')}
+          accessibilityHint={t('x_arrest_monitor_cancels_returns_previous_screen')} onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>Cancel</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>{t('case_cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.addTrigger} accessibilityLabel="+ Add a Name to Monitor" onPress={() => setShowForm(true)}
+          accessibilityHint={t('cp_double_tap')} style={styles.addTrigger} accessibilityLabel={t('x_arrest_monitor_add_name_monitor')} onPress={() => setShowForm(true)}
               >
-                <Text maxFontSizeMultiplier={1.4} style={styles.addTriggerText}>+ Add a Name to Monitor</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.addTriggerText}>{t('x_arrest_monitor_add_name_monitor')}</Text>
               </TouchableOpacity>
             )
           )}
 
           {/* Explanation */}
           <View style={styles.infoCard}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.infoTitle}>How it works</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.infoTitle}>{t('qc_how_it_works')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.infoText}>
-              Every night we check the names on your list against the public arrest
-              records in our database. On a new match you get a push notification
-              with the booking details.{'\n\n'}
-              Coverage depends on the public booking feeds connected for your area --
-              a monitor can only match records from those feeds. Monitors run for as
-              long as your Pro subscription is active.
+              {t('x_arrest_monitor_every_night_we_check')}
             </Text>
           </View>
 

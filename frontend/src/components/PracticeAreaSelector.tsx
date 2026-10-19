@@ -10,6 +10,7 @@ import {
   ScrollView, TouchableOpacity, Text, View, StyleSheet,
 } from 'react-native';
 import { COLORS, FONTS, RADIUS } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 export interface PracticeArea {
   key:   string;
@@ -19,32 +20,32 @@ export interface PracticeArea {
   bg:    string;
 }
 
-export const PRACTICE_AREAS: PracticeArea[] = [
+export const PRACTICE_AREAS = perLang((): PracticeArea[] => [
   // ── Criminal (core product) ──────────────────────────────────────────────
   { key: 'DUI',               label: 'DUI / DWI',           icon: '🚗', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-  { key: 'Drug Offenses',     label: 'Drug Charges',        icon: '💊', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'Assault',           label: 'Assault / Battery',   icon: '⚠️', color: COLORS.warn, bg: COLORS.warnBg },
-  { key: 'Domestic Violence', label: 'Domestic Violence',   icon: '🏠', color: COLORS.emergency, bg: COLORS.emergencyBg },
-  { key: 'Theft',             label: 'Theft / Robbery',     icon: '🔓', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'Weapons Charges',   label: 'Weapons',             icon: '🔫', color: COLORS.textSecond, bg: COLORS.bgSubtle },
-  { key: 'Federal Crimes',    label: 'Federal',             icon: '🏛️', color: COLORS.navy, bg: COLORS.bgSubtle },
-  { key: 'Murder/Homicide',   label: 'Murder / Homicide',   icon: '⚖️', color: COLORS.emergency, bg: COLORS.emergencyBg },
-  { key: 'Sex Offenses',      label: 'Sex Offenses',        icon: '🛡️', color: COLORS.bail, bg: COLORS.bailBg },
-  { key: 'Juvenile Defense',  label: 'Juvenile',            icon: '👶', color: COLORS.legalDark, bg: COLORS.legalBg },
-  { key: 'Expungement',       label: 'Expungement',         icon: '📄', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'White Collar',      label: 'White Collar',        icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'Drug Offenses',     label: t('x_practice_area_selector_drug_charges'),        icon: '💊', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Assault',           label: t('whn_charge_assault'),   icon: '⚠️', color: COLORS.warn, bg: COLORS.warnBg },
+  { key: 'Domestic Violence', label: t('div_charge_domestic'),   icon: '🏠', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Theft',             label: t('x_practice_area_selector_theft_robbery'),     icon: '🔓', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Weapons Charges',   label: t('hn_charge_weapons'),             icon: '🔫', color: COLORS.textSecond, bg: COLORS.bgSubtle },
+  { key: 'Federal Crimes',    label: t('x_practice_area_selector_federal'),             icon: '🏛️', color: COLORS.navy, bg: COLORS.bgSubtle },
+  { key: 'Murder/Homicide',   label: t('x_practice_area_selector_murder_homicide'),   icon: '⚖️', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Sex Offenses',      label: t('x_practice_area_selector_sex_offenses'),        icon: '🛡️', color: COLORS.bail, bg: COLORS.bailBg },
+  { key: 'Juvenile Defense',  label: t('x_practice_area_selector_juvenile'),            icon: '👶', color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'Expungement',       label: t('chat_prompt_expungement'),         icon: '📄', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'White Collar',      label: t('x_practice_area_selector_white_collar'),        icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg },
   // ── Civil & Family ────────────────────────────────────────────────────────
-  { key: 'Family Law',        label: 'Family Law',          icon: '👨‍👩‍👧', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'Divorce',           label: 'Divorce',             icon: '💔', color: COLORS.emergency, bg: COLORS.emergencyBg },
-  { key: 'Child Custody',     label: 'Child Custody',       icon: '👶', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'Immigration',       label: 'Immigration',         icon: '✈️', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'Personal Injury',   label: 'Personal Injury',     icon: '🩹', color: COLORS.warn, bg: COLORS.bailBg },
-  { key: 'Employment',        label: 'Employment',          icon: '💼', color: COLORS.legal, bg: COLORS.legalBg },
-  { key: 'Bankruptcy',        label: 'Bankruptcy',          icon: '💳', color: COLORS.textSecond, bg: COLORS.bgSubtle },
-  { key: 'Real Estate',       label: 'Real Estate',         icon: '🏡', color: COLORS.legalDark, bg: COLORS.legalBg },
-  { key: 'Civil Rights',      label: 'Civil Rights',        icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle },
-  { key: 'Traffic',           label: 'Traffic',             icon: '🚦', color: COLORS.gold, bg: COLORS.warnBg },
-];
+  { key: 'Family Law',        label: t('x_practice_area_selector_family_law'),          icon: '👨‍👩‍👧', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Divorce',           label: t('chat_prompt_divorce'),             icon: '💔', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Child Custody',     label: t('x_practice_area_selector_child_custody'),       icon: '👶', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Immigration',       label: t('chat_cat_immigration'),         icon: '✈️', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Personal Injury',   label: t('x_practice_area_selector_personal_injury'),     icon: '🩹', color: COLORS.warn, bg: COLORS.bailBg },
+  { key: 'Employment',        label: t('x_practice_area_selector_employment'),          icon: '💼', color: COLORS.legal, bg: COLORS.legalBg },
+  { key: 'Bankruptcy',        label: t('chat_prompt_bankruptcy'),          icon: '💳', color: COLORS.textSecond, bg: COLORS.bgSubtle },
+  { key: 'Real Estate',       label: t('x_practice_area_selector_real_estate'),         icon: '🏡', color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'Civil Rights',      label: t('x_practice_area_selector_civil_rights'),        icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle },
+  { key: 'Traffic',           label: t('hn_charge_traffic'),             icon: '🚦', color: COLORS.gold, bg: COLORS.warnBg },
+]);
 
 interface Props {
   selected:    string;
@@ -53,18 +54,19 @@ interface Props {
 }
 
 function PracticeAreaSelector({ selected, onSelect, showAll = false }: Props) {
+  useLang();
   const scrollRef = useRef<ScrollView>(null);
 
   const areas = showAll
-    ? PRACTICE_AREAS
-    : PRACTICE_AREAS.slice(0, 12); // criminal only by default
+    ? PRACTICE_AREAS()
+    : PRACTICE_AREAS().slice(0, 12); // criminal only by default
 
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.label}>Area of Law</Text>
+        <Text style={styles.label}>{t('x_practice_area_selector_area_law')}</Text>
         {!showAll && (
-          <Text style={styles.seeAll}>Scroll for more →</Text>
+          <Text style={styles.seeAll}>{t('x_practice_area_selector_scroll_more')}</Text>
         )}
       </View>
       <ScrollView
@@ -84,7 +86,7 @@ function PracticeAreaSelector({ selected, onSelect, showAll = false }: Props) {
         >
           <Text style={styles.chipIcon}>⚖️</Text>
           <Text style={[styles.chipLabel, !selected && styles.chipLabelActive]}>
-            All
+            {t('x_practice_area_selector_all')}
           </Text>
         </TouchableOpacity>
 

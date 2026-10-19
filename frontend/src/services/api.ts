@@ -14,7 +14,7 @@ import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStor
 import { setAppAuth } from './auth';
 import { notifyDisclaimerRequired } from './legalGate';
 import { isIdempotentPost, newIdempotencyKey } from '../constants/idempotency';
-import { getLang } from '../i18n';
+import { getLang, t, perLang } from '../i18n';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.
 // Falls back to the production API when the variable is not set.
@@ -96,11 +96,11 @@ instance.interceptors.request.use(async (config) => {
 });
 
 // Friendly copy for well-known backend error codes (503 feature flags etc.)
-export const FRIENDLY_ERRORS: Record<string, string> = {
-  payments_unavailable: 'Payments aren’t available yet. No charge was made — free features keep working.',
-  ai_unavailable:       'AI features are temporarily unavailable. Please try again later.',
-  disclaimer_required:  'Please review and accept the legal notice to use AI features.',
-};
+export const FRIENDLY_ERRORS = perLang((): Record<string, string> => ({
+  payments_unavailable: t('x_common_payments_aren_t_available'),
+  ai_unavailable:       t('x_api_ai_features_temporarily_unavailable'),
+  disclaimer_required:  t('x_api_please_review_accept_legal'),
+}));
 
 /**
  * Unwrap a list from an API response body. Endpoints answer in one of three
@@ -141,9 +141,9 @@ export function isAiUnavailable(e: any): boolean {
 }
 
 /** Best human-readable message for an API error. */
-export function apiErrorMessage(e: any, fallback = 'Something went wrong. Please try again.'): string {
+export function apiErrorMessage(e: any, fallback = t('x_error_state_something_went_wrong_please')): string {
   const code = e?.response?.data?.error;
-  return FRIENDLY_ERRORS[code] || e?.response?.data?.message || (typeof e?.message === 'string' && e.message) || fallback;
+  return FRIENDLY_ERRORS()[code] || e?.response?.data?.message || (typeof e?.message === 'string' && e.message) || fallback;
 }
 
 // Auto-logout on 401 — JWT expired or revoked
@@ -159,13 +159,13 @@ instance.interceptors.response.use(
     // 451: the AI disclaimer must be accepted first — open the legal gate.
     if (error?.response?.status === 451 || error?.response?.data?.code === 'disclaimer_required') {
       error.code = 'disclaimer_required';
-      error.message = FRIENDLY_ERRORS.disclaimer_required;
+      error.message = FRIENDLY_ERRORS().disclaimer_required;
       notifyDisclaimerRequired();
       return Promise.reject(error);
     }
     const errCode: string | undefined = error?.response?.data?.error;
     const serverMsg: string | undefined =
-      FRIENDLY_ERRORS[errCode as string] ??
+      FRIENDLY_ERRORS()[errCode as string] ??
       error?.response?.data?.message ??
       errCode ??
       undefined;
@@ -174,13 +174,13 @@ instance.interceptors.response.use(
       // Override the generic axios message with the server's actual message
       error.message = serverMsg;
     } else if (!error?.response && error?.code === 'ECONNABORTED') {
-      error.message = 'Request timed out. Please check your connection.';
+      error.message = t('x_api_request_timed_out_please');
     } else if (!error?.response) {
-      error.message = 'Network error. Please check your connection.';
+      error.message = t('x_api_network_error_please_check');
     } else if (error?.response?.status === 429) {
-      error.message = 'Too many requests. Please wait a moment and try again.';
+      error.message = t('x_use_api_error_too_many_requests_please');
     } else if (error?.response?.status >= 500) {
-      error.message = 'Server error. Please try again in a few moments.';
+      error.message = t('x_api_server_error_please_try');
     }
 
     // Only auto-logout when we actually sent a token (an expired/revoked

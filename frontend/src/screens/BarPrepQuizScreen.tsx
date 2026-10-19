@@ -21,6 +21,7 @@ import {
 import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useHaptics }     from '../hooks/useHaptics';
+import { t, useLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Question {
@@ -53,6 +54,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'BarPrepQuiz'>) {
+  useLang();
   const { session_id, questions, mode, time_limit_seconds, subject_id = null } = (route?.params ?? { questions: [] }) as {
     session_id:         number;
     subject_id?:        number | null;
@@ -86,9 +88,9 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
   // ── Confirm exit helper (FIX #11: shared by ✕ button and hardware back) ────
   const confirmExit = useCallback(() => {
-    Alert.alert('Exit Quiz?', 'Your progress will be lost.', [
-      { text: 'Continue', style: 'cancel' },
-      { text: 'Exit', style: 'destructive', onPress: () => navigation.goBack() },
+    Alert.alert(t('x_bar_prep_quiz_exit_quiz'), t('x_bar_prep_quiz_progress_will_be_lost'), [
+      { text: t('continue'), style: 'cancel' },
+      { text: t('x_bar_prep_quiz_exit'), style: 'destructive', onPress: () => navigation.goBack() },
     ]);
   }, [navigation]);
 
@@ -219,7 +221,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
       });
     } catch {
       setSubmitting(false);
-      Alert.alert('Error', 'Failed to submit answers. Try again.');
+      Alert.alert(t('error'), t('x_bar_prep_quiz_failed_submit_answers_try'));
     }
   }, [submitting, answers, mode, session_id, navigation, total, subject_id, questions]);
 
@@ -240,9 +242,9 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   // Opened without a quiz (e.g. deep link / stale state) — nothing to show.
   if (!current) {
     return (
-      <EmptyState icon="📝" title="No quiz in progress"
-        subtitle="Start a practice session from Bar Prep."
-        action={{ label: 'Go to Bar Prep', onPress: () => navigation.navigate('BarPrepHome') }} />
+      <EmptyState icon="📝" title={t('x_bar_prep_quiz_no_quiz_progress')}
+        subtitle={t('x_bar_prep_quiz_start_practice_session_from')}
+        action={{ label: t('x_bar_prep_quiz_go_bar_prep'), onPress: () => navigation.navigate('BarPrepHome') }} />
     );
   }
 
@@ -334,21 +336,21 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             selected === correctAnswer ? styles.correctCard : styles.wrongCard,
           ]}>
             <Text style={styles.explanationIcon}>
-              {selected === correctAnswer ? '✅ Correct' : '❌ Incorrect'}
+              {selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}
             </Text>
             <Text style={styles.explanationText}>{explanation}</Text>
             <TouchableOpacity accessibilityRole="button"
               style={styles.fullExplanationLink}
               onPress={() => navigation.navigate('BarPrepExplanation', { question_id: current.id })}
             >
-              <Text style={styles.fullExplanationLinkText}>View Full Explanation →</Text>
+              <Text style={styles.fullExplanationLinkText}>{t('x_bar_prep_quiz_view_full_explanation')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {mode === 'timed' && selected && !revealed && (
           <View style={styles.timedNote}>
-            <Text style={styles.timedNoteText}>Answer recorded. Explanations shown after submission.</Text>
+            <Text style={styles.timedNoteText}>{t('x_bar_prep_quiz_answer_recorded_explanations_shown')}</Text>
           </View>
         )}
       </ScrollView>
@@ -362,7 +364,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             disabled={!selected && !revealed}
             activeOpacity={0.85}
           >
-            <Text style={styles.nextBtnText}>Next →</Text>
+            <Text style={styles.nextBtnText}>{t('whn_next')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity accessibilityRole="button"
@@ -371,7 +373,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             disabled={submitting}
             activeOpacity={0.85}
           >
-            <Text style={styles.nextBtnText}>{submitting ? 'Submitting…' : '✓ Submit Session'}</Text>
+            <Text style={styles.nextBtnText}>{submitting ? t('x_bar_prep_quiz_submitting') : t('x_bar_prep_quiz_submit_session')}</Text>
           </TouchableOpacity>
         )}
 
@@ -381,7 +383,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
       </View>
     </View>

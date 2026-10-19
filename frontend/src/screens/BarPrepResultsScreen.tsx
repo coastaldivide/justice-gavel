@@ -14,27 +14,29 @@ import {
 import { ScreenParams } from '../navigation/NavigationTypes';
 import { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 type Props = ScreenProps<'BarPrepResults'>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function ScoreRing({ pct }: { pct: number }) {
+  useLang();
   const { colors } = useTheme();
   const passing = pct >= 65;
   const color   = pct >= 80 ? COLORS.legal : pct >= 65 ? COLORS.steel : COLORS.bail;
-  const verdict = pct >= 75 ? 'Excellent' : pct >= 65 ? 'Passing' : 'Keep Studying';
+  const verdict = pct >= 75 ? t('x_bar_prep_results_excellent') : pct >= 65 ? t('x_bar_prep_results_passing') : t('x_bar_prep_results_keep_studying');
   return (
     <View style={styles.ringWrapper} accessibilityRole="none">
       <View style={[styles.ring, { borderColor: color }]}>
-        <Text style={[styles.ringPct, { color }]} accessibilityLabel={`Score ${pct} percent`}>
+        <Text style={[styles.ringPct, { color }]} accessibilityLabel={t('x_bar_prep_results_score_percent', { pct })}>
           {pct}%
         </Text>
         <Text style={styles.ringLabel}>{verdict}</Text>
       </View>
       {passing
-        ? <Text style={[styles.passBadge, { color: colors.legal }]}>✓ Bar-passing territory</Text>
-        : <Text style={[styles.passBadge, { color: colors.bail }]}>Review and retry</Text>}
+        ? <Text style={[styles.passBadge, { color: colors.legal }]}>{t('x_bar_prep_results_bar_passing_territory')}</Text>
+        : <Text style={[styles.passBadge, { color: colors.bail }]}>{t('x_bar_prep_results_review_retry')}</Text>}
     </View>
   );
 }
@@ -47,20 +49,21 @@ function AnswerRow({
   isCorrect: boolean;
   index: number;
 }) {
+  useLang();
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const correctLetter = q.correct_answer?.toUpperCase();
   const correctText   = q[`option_${q.correct_answer?.toLowerCase()}`] ?? correctLetter;
   const userText      = userAnswer
     ? (q[`option_${userAnswer.toLowerCase()}`] ?? userAnswer.toUpperCase())
-    : 'No answer';
+    : t('x_bar_prep_results_no_answer');
 
   return (
     <TouchableOpacity
       style={[styles.ansRow, isCorrect ? styles.ansCorrect : styles.ansWrong]}
       onPress={() => setExpanded(v => !v)}
       accessibilityRole="button"
-      accessibilityLabel={`Question ${index + 1}: ${isCorrect ? 'correct' : 'incorrect'}. Tap to ${expanded ? 'collapse' : 'expand'}.`}
+      accessibilityLabel={t('x_bar_prep_results_question_tap', { value: index + 1, value2: isCorrect ? 'correct' : 'incorrect', value3: expanded ? 'collapse' : 'expand' })}
     >
       <View style={styles.ansHeader}>
         <Text style={styles.ansIcon}>{isCorrect ? '✓' : '✗'}</Text>
@@ -75,24 +78,24 @@ function AnswerRow({
         <View style={styles.ansDetail}>
           {!isCorrect && (
             <View style={styles.ansLine}>
-              <Text style={[styles.ansLineLabel, { color: COLORS.bail }]}>Your answer: </Text>
+              <Text style={[styles.ansLineLabel, { color: COLORS.bail }]}>{t('x_bar_prep_results_answer')}{' '}</Text>
               <Text style={[styles.ansLineVal, { color: COLORS.bail }]}>{userText}</Text>
             </View>
           )}
           <View style={styles.ansLine}>
-            <Text style={[styles.ansLineLabel, { color: COLORS.legal }]}>Correct answer: </Text>
+            <Text style={[styles.ansLineLabel, { color: COLORS.legal }]}>{t('x_bar_prep_results_correct_answer')}{' '}</Text>
             <Text style={[styles.ansLineVal, { color: COLORS.legal }]}>{correctText}</Text>
           </View>
           {q.rule_tested ? (
-            <Text style={styles.ansRule}>Rule: {q.rule_tested}</Text>
+            <Text style={styles.ansRule}>{t('x_bar_prep_results_rule', { rule_tested: q.rule_tested })}</Text>
           ) : null}
           <TouchableOpacity
             style={styles.explainBtn}
             onPress={() => {/* parent will handle */}}
             accessibilityRole="button"
-            accessibilityLabel="View full explanation"
+            accessibilityLabel={t('x_bar_prep_results_view_full_explanation')}
           >
-            <Text style={styles.explainBtnText}>📖 Full Explanation</Text>
+            <Text style={styles.explainBtnText}>{t('x_bar_prep_results_full_explanation')}</Text>
           </TouchableOpacity>
         
         {/* Supplemental study disclaimer */}
@@ -101,8 +104,7 @@ function AnswerRow({
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
-          Consult official bar preparation materials for authoritative content.
+          {t('x_bar_prep_results_supplemental_study_only_not')}
         </Text>
       </View>
       )}
@@ -113,6 +115,7 @@ function AnswerRow({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function BarPrepResultsScreen({ route, navigation }: Props) {
+  useLang();
   const {
     score_pct, correct, total, mode,
     answers, questions, timed_out,
@@ -149,9 +152,9 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
 
   if (!route.params) {
     return (
-      <EmptyState icon="📊" title="No results to show"
-        subtitle="Finish a Bar Prep quiz to see your results here."
-        action={{ label: 'View progress', onPress: handleViewProgress }} />
+      <EmptyState icon="📊" title={t('x_bar_prep_results_no_results_show')}
+        subtitle={t('x_bar_prep_results_finish_bar_prep_quiz')}
+        action={{ label: t('x_bar_prep_results_view_progress'), onPress: handleViewProgress }} />
     );
   }
 
@@ -159,15 +162,15 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
     <ScrollView
       style={styles.root}
       contentContainerStyle={styles.content}
-      accessibilityLabel="Bar exam prep results"
+      accessibilityLabel={t('x_bar_prep_results_bar_exam_prep_results')}
     >
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.title}>
-          {timed_out ? '⏱ Time\'s Up' : '✓ Session Complete'}
+          {timed_out ? t('x_bar_prep_results_time_s_up') : t('x_bar_prep_results_session_complete')}
         </Text>
         <Text style={styles.subtitle}>
-          {mode === 'timed' ? 'Timed Mode' : 'Practice Mode'} · {total} questions
+          {t('x_bar_prep_results_questions', { value: mode === 'timed' ? t('x_bar_prep_results_timed_mode') : t('x_bar_prep_results_practice_mode'), total })}
         </Text>
       </View>
 
@@ -178,17 +181,17 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={[styles.statNum, { color: COLORS.legal }]}>{correct}</Text>
-          <Text style={styles.statLabel}>Correct</Text>
+          <Text style={styles.statLabel}>{t('x_bar_prep_results_correct')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
           <Text style={[styles.statNum, { color: COLORS.bail }]}>{total - correct}</Text>
-          <Text style={styles.statLabel}>Wrong</Text>
+          <Text style={styles.statLabel}>{t('x_bar_prep_results_wrong')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
           <Text style={[styles.statNum, { color: COLORS.info }]}>{total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
+          <Text style={styles.statLabel}>{t('qc_total')}</Text>
         </View>
       </View>
 
@@ -199,10 +202,10 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
             style={[styles.ctaBtn, styles.ctaPrimary]}
             onPress={handleRetryWrong}
             accessibilityRole="button"
-            accessibilityLabel={`Retry ${wrongQuestions.length} wrong questions`}
+            accessibilityLabel={t('x_bar_prep_results_retry_wrong_questions', { length: wrongQuestions.length })}
           >
             <Text style={styles.ctaBtnTextPrimary}>
-              🔁 Retry {wrongQuestions.length} Wrong
+              {t('x_bar_prep_results_retry_wrong', { length: wrongQuestions.length })}
             </Text>
           </TouchableOpacity>
         )}
@@ -210,15 +213,15 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
           style={[styles.ctaBtn, styles.ctaSecondary]}
           onPress={handleViewProgress}
           accessibilityRole="button"
-          accessibilityLabel="View progress dashboard"
+          accessibilityLabel={t('x_bar_prep_results_view_progress_dashboard')}
         >
-          <Text style={styles.ctaBtnTextSecondary}>📈 View Progress</Text>
+          <Text style={styles.ctaBtnTextSecondary}>{t('x_bar_prep_results_view_progress_2')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* ── Answer review ─────────────────────────────────────────────────── */}
-      <Text style={styles.sectionLabel}>Answer Review</Text>
-      <Text style={styles.sectionHint}>Tap any question to see the correct answer</Text>
+      <Text style={styles.sectionLabel}>{t('x_bar_prep_results_answer_review')}</Text>
+      <Text style={styles.sectionHint}>{t('x_bar_prep_results_tap_any_question_see')}</Text>
       {(questions ?? []).map((q: any, i: number) => {
         const ans = answerMap[q.id];
         return (

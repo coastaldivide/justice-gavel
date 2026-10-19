@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -313,8 +314,7 @@ describe('S12. UX — Emergency + Subscription + Family Logic', () => {
     expect(src).toContain("'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error'");
   });
   test('S12-02: ConsumerSub cancel keeps access until period end (no immediate cutoff)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx');
     expect(src).toContain('access until');
     expect(src).toContain('handleCancel');
   });

@@ -1,4 +1,5 @@
-/**
+
+import { t, perLang } from '../i18n';/**
  * motionTemplates.ts — Offline motion templates
  *
  * 7 common motion types with skeleton structure.
@@ -13,11 +14,11 @@ export interface MotionTemplate {
   template: string;
 }
 
-export const MOTION_TEMPLATES: MotionTemplate[] = [
+export const MOTION_TEMPLATES = perLang((): MotionTemplate[] => [
   {
     key: 'continue',
-    label: 'Motion for Continuance',
-    description: 'Request more time to prepare your defense.',
+    label: t('x_motion_templates_motion_continuance'),
+    description: t('x_motion_templates_request_more_time_prepare'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -59,8 +60,8 @@ I hereby certify that a copy of the foregoing has been served upon the
   },
   {
     key: 'suppress',
-    label: 'Motion to Suppress',
-    description: 'Challenge unlawfully obtained evidence.',
+    label: t('x_motion_templates_motion_suppress'),
+    description: t('x_motion_templates_challenge_unlawfully_obtained_eviden'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -108,8 +109,8 @@ _______________________________
   },
   {
     key: 'dismiss',
-    label: 'Motion to Dismiss',
-    description: 'Ask the court to dismiss charges.',
+    label: t('x_motion_templates_motion_dismiss'),
+    description: t('x_motion_templates_ask_court_dismiss_charges'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -156,8 +157,8 @@ _______________________________
   },
   {
     key: 'bail_reduction',
-    label: 'Motion for Bail Reduction',
-    description: 'Request the court to lower your bail amount.',
+    label: t('x_motion_templates_motion_bail_reduction'),
+    description: t('x_motion_templates_request_court_lower_bail'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -212,8 +213,8 @@ _______________________________
   },
   {
     key: 'discovery',
-    label: 'Motion for Discovery',
-    description: 'Request the prosecution share its evidence.',
+    label: t('x_motion_templates_motion_discovery'),
+    description: t('x_motion_templates_request_prosecution_share_its'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -268,8 +269,8 @@ _______________________________
   },
   {
     key: 'limine',
-    label: 'Motion in Limine',
-    description: 'Ask the court to exclude specific evidence at trial.',
+    label: t('x_motion_templates_motion_limine'),
+    description: t('x_motion_templates_ask_court_exclude_specific'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -314,8 +315,8 @@ _______________________________
   },
   {
     key: 'diversion',
-    label: 'Motion for Diversion / Deferred Prosecution',
-    description: 'Request an alternative to prosecution.',
+    label: t('x_motion_templates_motion_diversion_deferred_prosecutio'),
+    description: t('x_motion_templates_request_alternative_prosecution'),
     template: `IN THE [COURT NAME]
 [COUNTY] COUNTY, [STATE]
 
@@ -367,4 +368,4 @@ _______________________________
 [NAME]
 [DATE]`,
   },
-];
+]);

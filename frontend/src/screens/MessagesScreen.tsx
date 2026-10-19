@@ -24,7 +24,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, apiErrorMessage } from '../services/api';
 import * as secureStorage from '../utils/secureStorage';
-import { t } from '../i18n';
+import { t, useLang, locale } from '../i18n';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { useCaseMessages, CaseMessage } from '../hooks/useCaseMessages';
@@ -35,7 +35,7 @@ function formatTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? ''
-    : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    : d.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
 }
 
 function dayLabel(iso: string): string {
@@ -45,9 +45,9 @@ function dayLabel(iso: string): string {
   const diff = Math.floor(
     (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff === 0) return t('x_attorney_inbox_today');
+  if (diff === 1) return t('x_messages_yesterday');
+  return d.toLocaleDateString(locale(), { month: 'short', day: 'numeric' });
 }
 
 type Row =
@@ -78,6 +78,7 @@ interface CaseRow { id: number; title: string; status?: string }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
@@ -140,7 +141,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           const open = list.find(c => ['Open', 'Active'].includes(String(c.status)));
           if (open) { setActiveCase({ id: open.id, title: open.title }); return; }
           const created = await api.post('/cases', {
-            title: `Message -- ${lawyerName || 'Attorney'}`, status: 'Open', notes: '',
+            title: t('x_messages_message', { value: lawyerName || t('x_attorney_dashboard_attorney') }), status: 'Open', notes: '',
           });
           if (stale || !mountedRef.current) return;
           setActiveCase({ id: created.data.id, title: created.data.title });
@@ -149,7 +150,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         }
       } catch (e) {
         if (!stale && mountedRef.current) {
-          setResolveError(apiErrorMessage(e, 'Could not load your cases.'));
+          setResolveError(apiErrorMessage(e, t('x_messages_could_not_load_cases')));
         }
       } finally {
         if (!stale && mountedRef.current) setResolving(false);
@@ -198,18 +199,18 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       <View style={styles.emptyWrap}>
         <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>💬</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-          Sign in to send messages
+          {t('x_messages_sign_send_messages')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>
-          Case messages are private between you and your legal team,{'\n'}and encrypted at rest.
+          {t('x_messages_case_messages_private_between')}
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Sign in"
+          accessibilityLabel={t('ja_sign_in')}
           style={[styles.primaryBtn, { backgroundColor: colors.navy }]}
           onPress={() => requireAuth(() => checkAuth())}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>Sign In</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>{t('sign_in')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -236,15 +237,15 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               {t('msg_empty')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>
-              Messages live inside a case. Create a case first, then message{'\n'}your attorney from its Messages tab.
+              {t('x_messages_messages_live_inside_case')}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Go to My Cases"
+              accessibilityLabel={t('x_messages_go_my_cases')}
               style={[styles.primaryBtn, { backgroundColor: colors.navy }]}
               onPress={() => navigation.navigate('Cases')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>Go to My Cases</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>{t('x_messages_go_my_cases')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -254,13 +255,13 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             contentContainerStyle={styles.pickerContent}
             ListHeaderComponent={
               <Text maxFontSizeMultiplier={1.4} style={[styles.pickerHeader, { color: colors.textMuted }]}>
-                Pick a case to open its message thread
+                {t('x_messages_pick_case_open_its')}
               </Text>
             }
             renderItem={({ item }: { item: CaseRow }) => (
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel={`Open messages for ${item.title}`}
+                accessibilityLabel={t('x_messages_open_messages', { title: item.title })}
                 style={[styles.caseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
                 onPress={() => setActiveCase({ id: item.id, title: item.title })}
               >
@@ -299,7 +300,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: colors.emergency }]}>{error}</Text>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Dismiss error"
+            accessibilityLabel={t('x_messages_dismiss_error')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             onPress={clearError}
           >
@@ -329,7 +330,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 {t('msg_empty')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>
-                Start the conversation below. Messages are private, logged to{'\n'}your case, and keep your personal number off the record.
+                {t('x_messages_start_conversation_below_messages')}
               </Text>
             </View>
           }
@@ -349,7 +350,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               <View
                 style={[styles.msgRow, mine && styles.msgRowMine]}
                 accessibilityRole="text"
-                accessibilityLabel={`${mine ? 'You' : msg.sender_name || 'Your legal team'}: ${msg.body}`}
+                accessibilityLabel={`${mine ? t('x_messages_text') : msg.sender_name || t('x_messages_legal_team')}: ${msg.body}`}
               >
                 <View style={styles.msgCol}>
                   {!mine && msg.sender_name ? (
@@ -368,14 +369,14 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                     </Text>
                     {msg.attachment_id ? (
                       <Text maxFontSizeMultiplier={1.4} style={[styles.attachmentText, { color: mine ? colors.textOnNavy : colors.textMuted }]}>
-                        📎 {msg.attachment_name || 'Attachment'}
+                        📎 {msg.attachment_name || t('x_messages_attachment')}
                         {msg.attachment_size ? `  ·  ${formatBytes(msg.attachment_size)}` : ''}
                       </Text>
                     ) : null}
                   </View>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.metaText, mine && styles.metaTextMine, { color: colors.textMuted }]}>
                     {formatTime(msg.sent_at)}
-                    {mine ? (msg.read_at ? '  ✓✓ Read' : '  ✓ Sent') : ''}
+                    {mine ? (msg.read_at ? '  ' + t('x_messages_read') : '  ' + t('x_messages_sent')) : ''}
                   </Text>
                 </View>
               </View>
@@ -401,7 +402,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           onChangeText={setBody}
           multiline
           maxLength={10_000}
-          accessibilityLabel="Message input"
+          accessibilityLabel={t('x_messages_message_input')}
         />
         <TouchableOpacity
           accessibilityRole="button"

@@ -15,8 +15,8 @@ Without this step, OTA updates will not work in production.
 
 # ── Required secrets (set before first build) ──────────────────────────────────
 
-# Backend API URL (your Railway URL after deploy)
-eas secret:create --scope project --name EXPO_PUBLIC_API_BASE --value "https://YOUR_RAILWAY_URL/api"
+# Backend API URL (the Render custom domain, or the service's onrender.com URL)
+eas secret:create --scope project --name EXPO_PUBLIC_API_BASE --value "https://api.justicegavel.app/api"
 
 # Sentry auth token for sourcemap uploads
 # Get from: sentry.io → Settings → API → Auth Tokens

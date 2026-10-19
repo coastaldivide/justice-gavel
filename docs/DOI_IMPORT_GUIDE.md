@@ -131,7 +131,7 @@ The script auto-detects the state from the filename.
 ## Running the Import
 
 The importer writes the **main Postgres database** through `DATABASE_URL`
-(run it on Railway with `railway run ...`). It does not use the Supabase REST
+(run it from the Render service Shell, or locally with `DATABASE_URL` exported). It does not use the Supabase REST
 client any more, and it never overwrites or deletes a `bail_agents` row.
 
 ```bash

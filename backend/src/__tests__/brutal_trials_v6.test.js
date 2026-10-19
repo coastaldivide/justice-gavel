@@ -821,7 +821,7 @@ describe('12. app.js — Server Configuration', () => {
     expect(src).toContain('1mb');
   });
 
-  test('12-05: trust proxy is configured (for Railway/Heroku)', async () => {
+  test('12-05: trust proxy is configured (for the hosting proxy, e.g. Render)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
     expect(src).toContain('trust proxy');

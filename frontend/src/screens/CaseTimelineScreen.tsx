@@ -20,6 +20,7 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
+import { t, perLang, useLang, locale } from '../i18n';
 
 const EVENT_ICONS: Record<string, string> = {
   arrest:          '🔒',
@@ -55,22 +56,22 @@ const EVENT_COLORS: Record<string, string> = {
   status_change:  COLORS.blue,
 };
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  arrest:          'Arrest',
-  bail_set:        'Bail Set',
-  arraignment:     'Arraignment',
-  hearing:         'Hearing',
-  motion_filed:    'Motion Filed',
-  continuance:     'Continuance',
-  verdict:         'Verdict',
-  sentencing:      'Sentencing',
-  appeal:          'Appeal',
-  attorney_added:  'Attorney Added',
-  document_added:  'Document Added',
-  note:            'Note',
-  other:           'Event',
-  status_change:   'Status Change',
-};
+const EVENT_TYPE_LABELS = perLang((): Record<string, string> => ({
+  arrest:          t('whn_dui_1_title'),
+  bail_set:        t('x_case_timeline_bail_set'),
+  arraignment:     t('whn_dui_3_title'),
+  hearing:         t('x_case_timeline_hearing'),
+  motion_filed:    t('x_case_timeline_motion_filed'),
+  continuance:     t('x_motion_type_badge_continuance'),
+  verdict:         t('x_case_timeline_verdict'),
+  sentencing:      t('hearing_sentencing'),
+  appeal:          t('x_case_timeline_appeal'),
+  attorney_added:  t('x_case_timeline_attorney_added'),
+  document_added:  t('x_case_timeline_document_added'),
+  note:            t('note'),
+  other:           t('x_case_timeline_event'),
+  status_change:   t('x_case_timeline_status_change'),
+}));
 
 interface CaseEvent {
   id: number;
@@ -87,7 +88,7 @@ function formatEventDate(dateStr: string | null): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  return d.toLocaleDateString(locale(), { month:'short', day:'numeric', year:'numeric' });
 }
 
 function formatAmount(cents: number | null): string {
@@ -98,6 +99,7 @@ function formatAmount(cents: number | null): string {
 
 
 function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -108,19 +110,19 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
     // Event dates are calendar days: remind at 9:00 local the day before.
     const remind = localReminderInstant(String(dateStr).slice(0, 10), 1, 9, 0);
     if (!remind || remind <= new Date()) {
-      showToast('This event is too close to set a reminder.');
+      showToast(t('x_case_timeline_this_event_too_close'));
       return;
     }
     try {
       await scheduleReminder({
-        title: '📋 Tomorrow: ' + event.title,
-        body:  event.location ? `At ${event.location}` : 'Check your case details.',
+        title: t('x_case_timeline_tomorrow', { title: event.title }),
+        body:  event.location ? t('x_case_timeline_at', { location: event.location }) : t('x_case_timeline_check_case_details'),
         deliverAt: remind,
         caseId,
       });
-      showToast(`Reminder set for ${formatReminderTime(remind.toISOString())}.`, 'info');
+      showToast(t('x_case_timeline_reminder_set', { value: formatReminderTime(remind.toISOString()) }), 'info');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not set the reminder.'), 'error');
+      showToast(apiErrorMessage(e, t('x_case_timeline_could_not_set_reminder')), 'error');
     }
   };
 
@@ -187,7 +189,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
 
   const handleAdd = async () => {
     if (!newTitle.trim()) {
-      setFormError('Enter a title for this event.');
+      setFormError(t('x_case_timeline_enter_title_this_event'));
       return;
     }
     setSaving(true);
@@ -207,7 +209,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
       setNewDesc(''); setNewLocation('');
       await loadEvents();
     } catch {
-      setFormError('Could not save event. Check your connection and try again.');
+      setFormError(t('x_case_timeline_could_not_save_event'));
     } finally {
       setSaving(false);
     }
@@ -219,7 +221,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
     try {
       await api.delete(`/cases/${caseId}/events/${eventId}`);
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not remove the event. Try again.'), 'error');
+      showToast(apiErrorMessage(e, t('x_case_timeline_could_not_remove_event')), 'error');
       loadEvents();
     }
   };
@@ -229,7 +231,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
   const renderItem = ({ item, index }: { item: CaseEvent; index: number }) => {
     const color = EVENT_COLORS[item.event_type] || EVENT_COLORS.textMuted;
     const icon  = EVENT_ICONS[item.event_type]  || '•';
-    const label = EVENT_TYPE_LABELS[item.event_type] || 'Event';
+    const label = EVENT_TYPE_LABELS()[item.event_type] || t('x_case_timeline_event');
     const isLast = index === events.length - 1;
 
     return (
@@ -249,13 +251,13 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
           style={[s.eventCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           onLongPress={() => {
               if (item.id < 0) return; // auto-generated -- not deletable
-              confirm(item.title.slice(0, 40), 'Set a reminder or remove this event?',
-                { confirmLabel: '🗑️ Remove Event', cancelLabel: '🔔 Set Reminder', destructive: true }).then(ok => {
+              confirm(item.title.slice(0, 40), t('x_case_timeline_set_reminder_remove_this'),
+                { confirmLabel: t('x_case_timeline_remove_event'), cancelLabel: t('x_case_timeline_set_reminder'), destructive: true }).then(ok => {
                   if (ok) removeEvent(item.id); else scheduleEventReminder(item);
                 });
             }}
-          accessibilityLabel={`${label}: ${item.title}. Long press to remove.`}
-          accessibilityHint={item.id < 0 ? "Auto-recorded status change" : "Long press for options"}
+          accessibilityLabel={t('x_case_timeline_long_press_remove', { label, title: item.title })}
+          accessibilityHint={item.id < 0 ? t('x_case_timeline_auto_recorded_status_change') : t('x_case_timeline_long_press_options')}
           activeOpacity={0.85}
         >
           <View style={s.eventHeader}>
@@ -306,7 +308,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
           <ActivityIndicator size="large" color={colors.navy} />
           <Text maxFontSizeMultiplier={1.4} style={{ marginTop:12, fontSize:13,
             lineHeight:19, color:colors.textMuted }}>
-            Loading timeline…
+            {t('x_case_timeline_loading_timeline')}
           </Text>
         </View>
       )}
@@ -330,10 +332,10 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
         ListHeaderComponent={
           <View style={s.header}>
             <Text maxFontSizeMultiplier={1.4} style={[s.headerTitle, { color: colors.textPrimary }]}>
-              {caseTitle || 'Case'} Timeline
+              {t('x_case_timeline_timeline', { value: caseTitle || t('cd_case') })}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.headerSub, { color: colors.textMuted }]}>
-              {events.length} event{events.length !== 1 ? 's' : ''} · Long press any event to remove
+              {t(events.length === 1 ? 'x_case_timeline_event_long_press_any_one' : 'x_case_timeline_event_long_press_any_other', { length: events.length })}
             </Text>
           </View>
         }
@@ -342,11 +344,10 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
             <View style={s.empty}>
               <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
-                No events yet
+                {t('x_case_timeline_no_events_yet')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[s.emptySub, { color: colors.textMuted }]}>
-                Tap + Add Event to start your case timeline.{'\n'}
-                Track arrests, bail, hearings, and more.
+                {t('x_case_timeline_tap_add_event_start')}
               </Text>
             </View>
           ) : null
@@ -359,10 +360,10 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
       <TouchableOpacity
         accessibilityRole="button"
         style={[s.fab, { backgroundColor: colors.navy }]}
-        accessibilityLabel="+ Add Event" onPress={() => setShowAdd(true)}
+        accessibilityLabel={t('x_case_timeline_add_event')} onPress={() => setShowAdd(true)}
         activeOpacity={0.85}
       >
-        <Text maxFontSizeMultiplier={1.4} style={s.fabText}>+ Add Event</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.fabText}>{t('x_case_timeline_add_event')}</Text>
       </TouchableOpacity>
 
       {/* Add event modal */}
@@ -371,26 +372,26 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
         <View style={s.modalOverlay}>
           <View style={[s.modalSheet, { backgroundColor: colors.bgCard }]}>
             <Text maxFontSizeMultiplier={1.4} style={[s.modalTitle, { color: colors.textPrimary }]}>
-              Add Event
+              {t('x_case_timeline_add_event_2')}
             </Text>
 
             {/* Event type pills */}
             <View style={s.typePills}>
               {['arrest','bail_set','arraignment','hearing','motion_filed',
-                'continuance','verdict','note','other'].map(t => (
+                'continuance','verdict','note','other'].map(tItem => (
                 <TouchableOpacity
-          accessibilityRole="button" key={t}
-                  onPress={() => setNewType(t)}
+          accessibilityRole="button" key={tItem}
+                  onPress={() => setNewType(tItem)}
                   style={[s.typePillBtn, {
-                    backgroundColor: newType===t ? (EVENT_COLORS[t]||colors.navy) : colors.bgSubtle,
-                    borderColor:     newType===t ? (EVENT_COLORS[t]||colors.navy) : colors.border,
+                    backgroundColor: newType===tItem ? (EVENT_COLORS[tItem]||colors.navy) : colors.bgSubtle,
+                    borderColor:     newType===tItem ? (EVENT_COLORS[tItem]||colors.navy) : colors.border,
                   }]}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={{
                     fontSize:11, lineHeight:18, fontWeight:'700',
-                    color: newType===t ? colors.bgCard : colors.textMuted,
+                    color: newType===tItem ? colors.bgCard : colors.textMuted,
                   }}>
-                    {EVENT_ICONS[t]} {EVENT_TYPE_LABELS[t]}
+                    {EVENT_ICONS[tItem]} {EVENT_TYPE_LABELS()[tItem]}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -399,19 +400,19 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
             <TextInput
               style={[s.input, { backgroundColor:colors.inputBg, borderColor:colors.inputBorder,
                 color:colors.inputText }]}
-              placeholder="Event title (required)"
+              placeholder={t('x_case_timeline_event_title_required')}
               placeholderTextColor={colors.placeholder}
               value={newTitle}
               onChangeText={setNewTitle}
               maxLength={200}
               returnKeyType="next"
               blurOnSubmit={false}
-              accessibilityLabel="Event title"
+              accessibilityLabel={t('x_case_timeline_event_title')}
             />
             <TextInput
               style={[s.input, { backgroundColor:colors.inputBg, borderColor:colors.inputBorder,
                 color:colors.inputText }]}
-              placeholder="Date (e.g. 2026-05-14) -- optional"
+              placeholder={t('x_case_timeline_date_e_g_2026')}
               placeholderTextColor={colors.placeholder}
               value={newDate}
               onChangeText={setNewDate}
@@ -419,31 +420,31 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
               maxLength={20}
               returnKeyType="next"
               blurOnSubmit={false}
-              accessibilityLabel="Event date"
+              accessibilityLabel={t('x_case_timeline_event_date')}
             />
             <TextInput
               style={[s.input, { backgroundColor:colors.inputBg, borderColor:colors.inputBorder,
                 color:colors.inputText }]}
-              placeholder="Location or court name -- optional"
+              placeholder={t('x_case_timeline_location_court_name_optional')}
               placeholderTextColor={colors.placeholder}
               value={newLocation}
               onChangeText={setNewLocation}
               maxLength={200}
               returnKeyType="next"
               blurOnSubmit={false}
-              accessibilityLabel="Event location"
+              accessibilityLabel={t('x_case_timeline_event_location')}
             />
             <TextInput
               style={[s.input, s.descInput, { backgroundColor:colors.inputBg,
                 borderColor:colors.inputBorder, color:colors.inputText }]}
-              placeholder="Notes or description -- optional"
+              placeholder={t('x_case_timeline_notes_description_optional')}
               placeholderTextColor={colors.placeholder}
               value={newDesc}
               onChangeText={setNewDesc}
               multiline
               numberOfLines={3}
               maxLength={1000}
-              accessibilityLabel="Event notes"
+              accessibilityLabel={t('x_case_timeline_event_notes')}
             />
 
             {!!formError && (
@@ -456,7 +457,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
                 accessibilityRole="button" style={[s.cancelBtn, { borderColor: colors.border }]}
                 onPress={() => { setShowAdd(false); setFormError(''); }}>
                 <Text maxFontSizeMultiplier={1.4} style={[s.cancelBtnText, { color: colors.textMuted }]}>
-                  Cancel
+                  {t('case_cancel')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -464,12 +465,12 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
                 style={[s.saveBtn, { backgroundColor: saving ? colors.bgSubtle : colors.navy }]}
                 onPress={handleAdd}
                 disabled={saving}
-                accessibilityLabel="Save event"
+                accessibilityLabel={t('x_case_timeline_save_event')}
                 activeOpacity={0.85}
               >
                 <Text maxFontSizeMultiplier={1.4} style={[s.saveBtnText,
                   { color: saving ? colors.textMuted : colors.bgCard }]}>
-                  {saving ? 'Saving…' : 'Save Event'}
+                  {saving ? t('x_attorney_dashboard_saving') : t('x_case_timeline_save_event_2')}
                 </Text>
               </TouchableOpacity>
             </View>

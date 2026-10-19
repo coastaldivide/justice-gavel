@@ -96,7 +96,7 @@ describe('notifications', () => {
   it('in context (court date saved): explainer with the reminder reason, then the system prompt', async () => {
     const spy = answerAlert('Turn on reminders');
     expect(await requestNotificationsInContext()).toBe('granted');
-    expect(spy.mock.calls[0][1]).toBe(REMINDER_REASON);
+    expect(spy.mock.calls[0][1]).toBe(REMINDER_REASON());
     expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 

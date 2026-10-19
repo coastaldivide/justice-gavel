@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -1245,8 +1246,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
   });
 
   test('17-05: api.ts error interceptor normalises server messages', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/api.ts', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/services/api.ts');
     expect(src).toContain('serverMsg');
     expect(src).toContain('error?.response?.data?.error');
     expect(src).toContain('Too many requests');

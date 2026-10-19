@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v157
@@ -72,8 +73,7 @@ describe('I3. SELECT * Column Projection Applied', () => {
 // ── I-4: GoldenGavelScreen Empty State ────────────────────────────────────
 describe('I4. GoldenGavelScreen — Empty State Added', () => {
   test('I4-01: GoldenGavelScreen now handles empty hall of fame', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/GoldenGavelScreen.tsx','utf8');
+    const src=feSource(__REPO + '/frontend/src/screens/GoldenGavelScreen.tsx');
     expect(src).toContain('length === 0');
     expect(src).toContain('Hall of Fame');
     // Shows message when no attorneys have been evaluated yet

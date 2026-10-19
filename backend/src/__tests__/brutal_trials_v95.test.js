@@ -122,12 +122,13 @@ describe('WBK. billing/webhooks.js — Stripe Webhook Signature Verification', (
     expect(src).toContain('signature verification will fail');
     // express.json() parses body — Stripe needs raw bytes for HMAC verification
   });
-  test('WBK-03: STRIPE_WEBHOOK_SECRET from Railway env — never hardcoded', async () => {
+  test('WBK-03: STRIPE_WEBHOOK_SECRET from the host env (Render) — never hardcoded', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(src).toContain('Railway');
-    // Set in Railway dashboard from Stripe webhook dashboard
+    expect(src).toContain('Render environment variable');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    // Set in the Render dashboard from the Stripe webhook dashboard
   });
   test('WBK-04: webhook verifies signature before processing any event', async () => {
     const fs = await import('fs');

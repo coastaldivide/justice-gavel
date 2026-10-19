@@ -23,7 +23,7 @@ if [ -z "${DATABASE_URL:-}" ] && [ -f backend/.env ]; then
   set -a; . backend/.env; set +a
 fi
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "❌ Set DATABASE_URL (main Postgres) first, e.g. railway run bash scripts/run_doi_import.sh"
+  echo "❌ Set DATABASE_URL (main Postgres) first, exported from Render → service → Environment"
   exit 1
 fi
 

@@ -31,6 +31,7 @@ import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { useAuthGate } from '../components/AuthGate';
+import { t, perLang, useLang } from '../i18n';
 
 type Flow = 'browse' | 'activate' | 'status';
 
@@ -39,19 +40,19 @@ const TRIAL_DAYS = 14; // keep in sync with backend TRIAL_DAYS
 const STANDARD_PRICE_DISPLAY = '$199/mo'; // keep in sync with firm_pricing_configs
 
 // ─── VERTICAL DATA ────────────────────────────────────────────────────────────
-const VERTICALS = [
-  { key: 'criminal_defense', label: 'Criminal Defense',    emoji: '⚖️',  color: COLORS.legal },
-  { key: 'civil_rights',     label: 'Civil Rights § 1983', emoji: '✊',  color: COLORS.blue },
-  { key: 'white_collar',     label: 'White-Collar / Reg',  emoji: '🏦',  color: COLORS.navy },
-  { key: 'family',           label: 'Family Law',          emoji: '👨‍👩‍👧',  color: COLORS.emergency },
-  { key: 'immigration',      label: 'Immigration',         emoji: '🛂',  color: COLORS.warn },
-  { key: 'personal_injury',  label: 'Personal Injury',     emoji: '🏥',  color: COLORS.emergency },
-  { key: 'public_defense',   label: 'Public Defense',      emoji: '🛡️',  color: COLORS.navy },
-  { key: 'appellate',        label: 'Appellate / PCR',     emoji: '📜',  color: COLORS.blue },
-  { key: 'military',         label: 'Military / UCMJ',     emoji: '🎖️',  color: COLORS.legal },
-  { key: 'juvenile',         label: 'Juvenile & Dependency',emoji: '👦', color: COLORS.warn },
-  { key: 'general',          label: 'General Practice',    emoji: '📁',  color: COLORS.steel },
-];
+const VERTICALS = perLang(() => [
+  { key: 'criminal_defense', label: t('x_court_forms_criminal_defense'),    emoji: '⚖️',  color: COLORS.legal },
+  { key: 'civil_rights',     label: t('x_firm_acquisition_civil_rights_1983'), emoji: '✊',  color: COLORS.blue },
+  { key: 'white_collar',     label: t('x_firm_acquisition_white_collar_reg'),  emoji: '🏦',  color: COLORS.navy },
+  { key: 'family',           label: t('x_practice_area_selector_family_law'),          emoji: '👨‍👩‍👧',  color: COLORS.emergency },
+  { key: 'immigration',      label: t('chat_cat_immigration'),         emoji: '🛂',  color: COLORS.warn },
+  { key: 'personal_injury',  label: t('x_practice_area_selector_personal_injury'),     emoji: '🏥',  color: COLORS.emergency },
+  { key: 'public_defense',   label: t('x_firm_acquisition_public_defense'),      emoji: '🛡️',  color: COLORS.navy },
+  { key: 'appellate',        label: t('x_firm_acquisition_appellate_pcr'),     emoji: '📜',  color: COLORS.blue },
+  { key: 'military',         label: t('x_firm_acquisition_military_ucmj'),     emoji: '🎖️',  color: COLORS.legal },
+  { key: 'juvenile',         label: t('x_firm_acquisition_juvenile_dependency'),emoji: '👦', color: COLORS.warn },
+  { key: 'general',          label: t('x_firm_acquisition_general_practice'),    emoji: '📁',  color: COLORS.steel },
+]);
 
 const TIER_COLORS: Record<string, string> = {
   standard:   COLORS.blue,
@@ -61,6 +62,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function FirmAcquisitionScreen({ navigation }: any) {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);
@@ -149,7 +151,7 @@ function FirmAcquisitionScreen({ navigation }: any) {
       const res = await api.post('/firm-acquisition/upgrade', { target_tier: tier });
 showToast(res.data?.message, 'success');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not submit upgrade request.'), 'error');
+      showToast(apiErrorMessage(e, t('x_firm_acquisition_could_not_submit_upgrade')), 'error');
     } finally { setUpgrading(false); }
   };
 
@@ -161,8 +163,8 @@ showToast(res.data?.message, 'success');
 
   // ── Activate trial ────────────────────────────────────────────────────────
   const activateTrial = async () => {
-    if (!firmName.trim()) { showToast('Firm name is required.'); return; }
-    if (firmName.trim().length < 2) { showToast('Firm name must be at least 2 characters.'); return; }
+    if (!firmName.trim()) { showToast(t('x_firm_acquisition_firm_name_required')); return; }
+    if (firmName.trim().length < 2) { showToast(t('x_firm_acquisition_firm_name_must_be')); return; }
     const canProceed = await (requireAuth as any)();
     if (canProceed === false) return;
     setActiv(true);
@@ -175,7 +177,7 @@ showToast(res.data?.message, 'success');
       setFlow('status');  // navigate first — loadStatus failure must not trap user on trial form
       loadStatus().catch(() => null);  // refresh status in background
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not activate trial.'), 'error');
+      showToast(apiErrorMessage(e, t('x_firm_acquisition_could_not_activate_trial')), 'error');
     } finally { setActiv(false); }
   };
 
@@ -185,7 +187,7 @@ showToast(res.data?.message, 'success');
     </View>
   );
 
-  const vertObj = VERTICALS.find(v => v.key === selectedV);
+  const vertObj = VERTICALS().find(v => v.key === selectedV);
 
   return (
     <View style={s.root}
@@ -196,11 +198,11 @@ showToast(res.data?.message, 'success');
           {(['browse','activate'] as Flow[]).map(f => (
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
-              accessibilityLabel='Select firm vertical'
+          accessibilityHint={t('cp_double_tap')} key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
+              accessibilityLabel={t('x_firm_acquisition_select_firm_vertical')}
             >
               <Text maxFontSizeMultiplier={1.4} style={[s.flowLabel, flow===f && s.flowLabelActive]}>
-                {f === 'browse' ? '🔍 Explore' : '🚀 Start Free Trial'}
+                {f === 'browse' ? t('x_firm_acquisition_explore') : t('x_firm_acquisition_start_free_trial')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -220,40 +222,40 @@ showToast(res.data?.message, 'success');
             <View style={s.heroCard}>
               <Text maxFontSizeMultiplier={1.4} style={s.heroTitle}>{status.firm?.name}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.heroSub}>
-                {VERTICALS.find(v => v.key === status.firm?.vertical)?.emoji}{' '}
-                {VERTICALS.find(v => v.key === status.firm?.vertical)?.label}
+                {VERTICALS().find(v => v.key === status.firm?.vertical)?.emoji}{' '}
+                {VERTICALS().find(v => v.key === status.firm?.vertical)?.label}
               </Text>
               {status.trial_active && status.trial_days_left > 0 ? (
                 <View style={s.trialBadge}>
                   <Text maxFontSizeMultiplier={1.4} style={s.trialBadgeText}>
-                    🕐 Trial — {status.trial_days_left} day{status.trial_days_left === 1 ? '' : 's'} remaining
+                    {t(status.trial_days_left === 1 ? 'x_firm_acquisition_trial_day_remaining_one' : 'x_firm_acquisition_trial_day_remaining_other', { trial_days_left: status.trial_days_left })}
                   </Text>
                 </View>
               ) : status.firm?.plan === 'trial' && !status.trial_active ? (
                 <View style={[s.trialBadge, { backgroundColor: colors.emergencyBg }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={[s.trialBadgeText, { color: colors.emergency }]}>⚠️ Trial expired — upgrade to continue</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.trialBadgeText, { color: colors.emergency }]}>{t('x_firm_acquisition_trial_expired_upgrade_continue')}</Text>
                 </View>
               ) : null}
             </View>
 
             {/* Stats row */}
             <View style={s.statsRow}>
-              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.member_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Team members</Text></View>
-              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.matter_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Matters</Text></View>
+              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.member_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_team_members')}</Text></View>
+              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.matter_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_matters')}</Text></View>
               <View style={s.stat}>
                 <Text maxFontSizeMultiplier={1.4} style={[s.statVal, { color: TIER_COLORS[status.firm?.pricing_tier] || colors.steel }]}>
                   {status.firm?.pricing_tier}
                 </Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Billing tier</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_billing_tier')}</Text>
               </View>
             </View>
 
             {/* Onboarding checklist */}
-            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Getting started</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_acquisition_getting_started')}</Text>
             <View style={s.progressTrack}>
               <View style={[s.progressFill, { width: `${checkPct}%` as any }]} />
             </View>
-            <Text maxFontSizeMultiplier={1.4} style={s.progressLabel}>{checkPct}% complete</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.progressLabel}>{t('x_firm_acquisition_complete', { checkPct })}</Text>
 
             {checklist.length === 0 ? (
               // Skeleton placeholder while checklist loads
@@ -268,7 +270,7 @@ showToast(res.data?.message, 'success');
                 <Text maxFontSizeMultiplier={1.4} style={s.checkIcon}>{c.done ? '✅' : c.required ? '⬜' : '◽'}</Text>
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={[s.checkLabel, c.done && { color: colors.textMuted }]}>{c.label}</Text>
-                  {c.required && !c.done && <Text maxFontSizeMultiplier={1.4} style={s.checkRequired}>Required</Text>}
+                  {c.required && !c.done && <Text maxFontSizeMultiplier={1.4} style={s.checkRequired}>{t('required')}</Text>}
                 </View>
               </View>
             ))}
@@ -276,59 +278,59 @@ showToast(res.data?.message, 'success');
             {/* Upgrade CTA — shown when on trial or standard tier */}
             {status?.firm && ['trial','standard'].includes(status.firm.plan) && (
               <View style={s.upgradeCard}>
-                <Text maxFontSizeMultiplier={1.4} style={s.upgradeTitle}>Ready to upgrade?</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>Mission pricing (75% off) available for nonprofits, public defenders, and government offices.</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.upgradeTitle}>{t('x_firm_acquisition_ready_upgrade')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>{t('x_firm_acquisition_mission_pricing_75_off')}</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TouchableOpacity
                     accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                     style={[s.upgradeBtn, { backgroundColor: colors.legalDark }]}
                     onPress={() => requestUpgrade('enterprise')}
                     disabled={upgrading}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? 'Submitting…' : 'Enterprise'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? t('x_bar_prep_quiz_submitting') : t('x_firm_acquisition_enterprise')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                     style={[s.upgradeBtn, { backgroundColor: COLORS.warnDark }]}
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? '…' : 'Mission (75% off)'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? '…' : t('x_firm_acquisition_mission_75_off')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
             {/* Quick actions */}
-            <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>{t('x_firm_acquisition_quick_actions')}</Text>
             <View style={s.actionGrid}>
               <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.actionBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => navigation.navigate('FirmVertical')}
+          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => navigation.navigate('FirmVertical')}
                       >
                 <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_configure_vertical')}</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
+          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_deadline_calculator')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
+          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_create_matter')}</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
+          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
                 <AppIcon name="card-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_upgrade_plan')}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -337,15 +339,15 @@ showToast(res.data?.message, 'success');
         {/* ── BROWSE FLOW ──────────────────────────────────────────────────── */}
         {flow === 'browse' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>Find your vertical</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>Justice Gavel adapts its feature set, deadline rules, and AI matching to your specific practice area.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>{t('x_firm_acquisition_find_vertical')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{t('x_firm_acquisition_justice_gavel_adapts_its')}</Text>
 
             {/* Vertical grid */}
             <View style={s.vertGrid}>
-              {VERTICALS.map(v => (
+              {VERTICALS().map(v => (
                 <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                   key={v.key}
                   style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
                   accessibilityLabel={v.emoji} onPress={() => setSelectedV(v.key)}
@@ -381,7 +383,7 @@ showToast(res.data?.message, 'success');
             {/* Pricing cards */}
             {plans.length > 0 && (
               <>
-                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>Pricing</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>{t('x_firm_acquisition_pricing')}</Text>
                 {plans.map((p: any) => (
                   <View key={p.tier_key} style={[s.tierCard, { borderLeftColor: TIER_COLORS[p.tier_key] || colors.steel }]}>
                     <View style={s.tierHeader}>
@@ -389,12 +391,12 @@ showToast(res.data?.message, 'success');
                         <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: TIER_COLORS[p.tier_key] }]}>{p.display_name}</Text>
                         <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{p.description}</Text>
                       </View>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>/mo</Text></Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>{t('x_check_in_manager_mo')}</Text></Text>
                     </View>
                     <View style={s.tierMeta}>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>🪑 {p.seat_limit >= 999 ? '∞' : p.seat_limit} seats</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>📁 {p.matter_limit >= 99999 ? '∞' : p.matter_limit} matters</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>🤖 {p.ai_calls_daily}/day</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_seats', { value: p.seat_limit >= 999 ? '∞' : p.seat_limit })}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_matters_2', { value: p.matter_limit >= 99999 ? '∞' : p.matter_limit })}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_day', { ai_calls_daily: p.ai_calls_daily })}</Text>
                     </View>
                   </View>
                 ))}
@@ -403,9 +405,9 @@ showToast(res.data?.message, 'success');
 
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.ctaBtn} accessibilityLabel={"Start {TRIAL_DAYS}-day free trial \u2192"} onPress={() => setFlow('activate')}
+          accessibilityHint={t('cp_double_tap')} style={s.ctaBtn} accessibilityLabel={t('x_firm_acquisition_start_trial_days_day', { TRIAL_DAYS })} onPress={() => setFlow('activate')}
                     >
-              <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>{t('x_firm_acquisition_start_day_free_trial', { TRIAL_DAYS })}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -413,30 +415,30 @@ showToast(res.data?.message, 'success');
         {/* ── ACTIVATE FLOW ─────────────────────────────────────────────────── */}
         {flow === 'activate' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>Activate your trial</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{TRIAL_DAYS} days free. No credit card required. Cancel any time.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>{t('x_firm_acquisition_activate_trial')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{t('x_firm_acquisition_days_free_no_credit', { TRIAL_DAYS })}</Text>
 
             {/* Selected vertical recap */}
             <View style={[s.vertRecap, { borderColor: vertObj?.color || colors.steel }]}>
               <Text maxFontSizeMultiplier={1.4} style={s.vertRecapEmoji}>{vertObj?.emoji}</Text>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={s.vertRecapLabel}>{vertObj?.label}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>Tap Explore to change vertical</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>{t('x_firm_acquisition_tap_explore_change_vertical')}</Text>
               </View>
               <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Change" onPress={() => setFlow('browse')}
+          accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('x_firm_acquisition_change')} onPress={() => setFlow('browse')}
                       >
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>{t('x_firm_acquisition_change')}</Text>
               </TouchableOpacity>
             </View>
 
-            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Firm name</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_acquisition_firm_name')}</Text>
             <TextInput
               style={[s.input, activating && { opacity: 0.5 }]}
               value={firmName}
               onChangeText={setFirmName}
-              placeholder="e.g. Harrington Voss & Slate LLP"
+              placeholder={t('x_firm_acquisition_e_g_harrington_voss')}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="words"
               editable={!activating}
@@ -445,11 +447,11 @@ showToast(res.data?.message, 'success');
 
             <View style={s.trialPerks}>
               {[
-                'All vertical features unlocked',
-                'Automatic deadline seeding on every matter',
-                'Invite your full team during trial',
-                'Specialty trackers (asylum, DPA, TRO)',
-                'Switch vertical any time',
+                t('x_firm_acquisition_all_vertical_features_unlocked'),
+                t('x_firm_acquisition_automatic_deadline_seeding_every'),
+                t('x_firm_acquisition_invite_full_team_during'),
+                t('x_firm_acquisition_specialty_trackers_asylum_dpa'),
+                t('x_firm_acquisition_switch_vertical_any_time'),
               ].map((p, i) => (
                 <View key={`perk-${i}`} style={s.perkRow}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: colors.legal, marginRight: 8 }}>✓</Text>
@@ -460,17 +462,15 @@ showToast(res.data?.message, 'success');
 
             <TouchableOpacity style={s.activateBtn} onPress={activateTrial} disabled={activating}
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Activate free trial">
+          accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('x_firm_acquisition_activate_free_trial')}>
               {activating
                 ? <ActivityIndicator color={colors.navy} />
-                : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>Activate free trial</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>{t('x_firm_acquisition_activate_free_trial')}</Text>
               }
             </TouchableOpacity>
 
             <Text maxFontSizeMultiplier={1.4} style={s.legalNote}>
-              By activating a trial you agree to the Justice Gavel Terms of Service.
-              Your trial converts to the Standard plan ({STANDARD_PRICE_DISPLAY}) after {TRIAL_DAYS} days unless you cancel.
-              Mission and Government pricing requires verification.
+              {t('x_firm_acquisition_by_activating_trial_agree', { STANDARD_PRICE_DISPLAY, TRIAL_DAYS })}
             </Text>
           </>
         )}

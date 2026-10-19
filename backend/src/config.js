@@ -19,7 +19,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // ── Stripe key aliases — accept either STRIPE_SECRET_KEY or STRIPE_SECRET ─────
 if (!process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET) process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET;
 if (!process.env.STRIPE_SECRET && process.env.STRIPE_SECRET_KEY) process.env.STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
-// Railway/Supabase sometimes expose POSTGRES_URL instead of DATABASE_URL
+// Some hosts / Supabase integrations expose POSTGRES_URL instead of DATABASE_URL
 if (!process.env.DATABASE_URL && process.env.POSTGRES_URL) process.env.DATABASE_URL = process.env.POSTGRES_URL;
 
 // ── Hard requirements in production ───────────────────────────────────────────
@@ -65,7 +65,7 @@ const OPTIONAL_FEATURES = {
   SUPABASE_URL:          'Supabase storage/auth helpers disabled',
   OPENAI_API_KEY:        'Whisper transcription disabled',
   // JSON array of public arrest-feed objects ({id,url,state,county}); see
-  // services/arrest_ingest.js and RAILWAY_ENV_SETUP.md for the exact shape.
+  // services/arrest_ingest.js and DEPLOY_ENV_SETUP.md for the exact shape.
   ARREST_FEED_URLS:      'Arrest ingestion disabled — POST /api/arrests/ingest has no feed to pull and arrest coverage is empty',
   // Default (unset/false) is the safe production setting. "true" is for demos only:
   // seeded sample arrest rows (source seed_v1 etc.) then appear in read-only arrest
@@ -204,7 +204,7 @@ export const CONFIG = {
   },
 };
 // ── All environment variables used across the codebase ─────────────────────
-// Grouped for Railway / Heroku dashboard clarity
+// Grouped for hosting-dashboard clarity (Render env vars; DEPLOY_ENV_SETUP.md)
 export const ALL_ENV_VARS = {
 
   // ── Authentication ──────────────────────────────────────────────────────
@@ -389,7 +389,12 @@ export const ALL_ENV_VARS = {
 
   // ── Runtime ──────────────────────────────────────────────────────────────
   NODE_ENV:                 process.env.NODE_ENV                   || 'development',
-  RAILWAY_ENVIRONMENT:      process.env.RAILWAY_ENVIRONMENT        || '',
+  // Set by Render (utils/version.js): build / instance info for /health, logs
+  // and the Sentry release. GIT_COMMIT is the host-neutral fallback.
+  RENDER:                   process.env.RENDER                     || '',    // 'true' on Render
+  RENDER_GIT_COMMIT:        process.env.RENDER_GIT_COMMIT          || '',
+  RENDER_INSTANCE_ID:       process.env.RENDER_INSTANCE_ID         || '',
+  GIT_COMMIT:               process.env.GIT_COMMIT                 || '',
 };
 
 

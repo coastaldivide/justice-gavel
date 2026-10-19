@@ -8,7 +8,7 @@ import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { RootStackParamList } from '../types/navigation';
-import { t, useLang, locale } from '../i18n';
+import { t, useLang, locale, perLang } from '../i18n';
 import { COLORS } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
@@ -48,6 +48,7 @@ import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
 // a single top-level boundary would unmount and remount the whole navigation
 // tree on every lazy load, losing tab state and back history.
 function ScreenFallback() {
+  useLang();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center',
                    backgroundColor: COLORS.white }}>
@@ -64,7 +65,7 @@ function withSuspense<P extends object>(
       <Lazy {...props} />
     </React.Suspense>
   );
-  Wrapped.displayName = `withSuspense(${(Lazy as any).displayName || 'Screen'})`;
+  Wrapped.displayName = `withSuspense(${(Lazy as any).displayName || 'Screen'})`; // i18n-exempt: React dev-tools name
   return Wrapped;
 }
 
@@ -152,14 +153,15 @@ const GuestStack = createNativeStackNavigator<RootStackParamList>();
 const Tab        = createBottomTabNavigator<RootStackParamList>();
 
 // ── Shared header style ────────────────────────────────────────────────────────
-const HDR = {
+const HDR = perLang(() => ({
   headerStyle:     { backgroundColor: COLORS.navy },
   headerTintColor: COLORS.white,
   headerTitleStyle:{ fontWeight: '700' as const },
-  headerBackTitle: 'Back',
-};
+  headerBackTitle: t('back'),
+}));
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+  useLang();
   return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.45 }}>{emoji}</Text>;
 }
 
@@ -170,102 +172,102 @@ function MoreNavigator() {
   // App.tsx, where it has access to the root navigation container ref.
   return (
     <ErrorBoundary>
-    <MoreStack.Navigator screenOptions={HDR}>
+    <MoreStack.Navigator screenOptions={HDR()}>
       <MoreStack.Screen name="MoreHome"              component={HomeScreen}                 options={{ headerShown: false }} />
-      <MoreStack.Screen name="Emergency"             component={EmergencyScreen}             options={{ title: '🚨 Emergency Alert' }} />
-      <MoreStack.Screen name="CaseTimeline"          component={CaseTimelineScreen}          options={{ title: 'Case Timeline' }} />
-      <MoreStack.Screen name="MatterIntelligence"     component={MatterIntelligenceScreen}  options={{ title: '🧠 Matter Intelligence' }} />
-      <MoreStack.Screen name="FirmAcquisition"       component={FirmAcquisitionScreen}    options={{ title: '🚀 Start Your Firm Trial' }} />
-      <MoreStack.Screen name="FirmVertical"         component={FirmVerticalScreen}        options={{ title: '🏢 Firm Vertical Setup' }} />
-      <MoreStack.Screen name="Cases"                 component={CaseScreen}                  options={{ title: '📁 My Cases' }} />
-      <MoreStack.Screen name="Contacts"              component={ContactsScreen}              options={{ title: 'Emergency Contacts' }} />
-      <MoreStack.Screen name="Bail"                  component={BailSearchScreen}            options={{ title: '🔓 Bail Agents' }} />
-      <MoreStack.Screen name="Resources"             component={ResourcesScreen}             options={{ title: '📋 Legal Resources' }} />
-      <MoreStack.Screen name="Payments"              component={PaymentsScreen}              options={{ title: '💳 Payments' }} />
-      <MoreStack.Screen name="Education"             component={LessonsScreen}               options={{ title: '📚 Know Your Rights' }} />
-      <MoreStack.Screen name="Match"                 component={MatchScreen}                 options={{ title: '🎯 AI Lawyer Match' }} />
-      <MoreStack.Screen name="Insurance"             component={InsuranceScreen}             options={{ title: '🛡️ Legal Insurance' }} />
-      <MoreStack.Screen name="GoldenGavel"           component={GoldenGavelScreen}           options={{ title: '🏆 Golden Gavel' }} />
-          <MoreStack.Screen name="BarPrepHome"        component={BarPrepHomeScreen}        options={{ title: '⚖️ Bar Exam Prep', headerShown: false }} />
+      <MoreStack.Screen name="Emergency"             component={EmergencyScreen}             options={{ title: t('x_nav_emergency_alert') }} />
+      <MoreStack.Screen name="CaseTimeline"          component={CaseTimelineScreen}          options={{ title: t('x_nav_case_timeline') }} />
+      <MoreStack.Screen name="MatterIntelligence"     component={MatterIntelligenceScreen}  options={{ title: t('x_nav_matter_intelligence') }} />
+      <MoreStack.Screen name="FirmAcquisition"       component={FirmAcquisitionScreen}    options={{ title: t('x_nav_start_firm_trial') }} />
+      <MoreStack.Screen name="FirmVertical"         component={FirmVerticalScreen}        options={{ title: t('x_nav_firm_vertical_setup') }} />
+      <MoreStack.Screen name="Cases"                 component={CaseScreen}                  options={{ title: t('x_nav_my_cases') }} />
+      <MoreStack.Screen name="Contacts"              component={ContactsScreen}              options={{ title: t('x_nav_emergency_contacts') }} />
+      <MoreStack.Screen name="Bail"                  component={BailSearchScreen}            options={{ title: t('x_nav_bail_agents') }} />
+      <MoreStack.Screen name="Resources"             component={ResourcesScreen}             options={{ title: t('x_nav_legal_resources') }} />
+      <MoreStack.Screen name="Payments"              component={PaymentsScreen}              options={{ title: t('x_nav_payments') }} />
+      <MoreStack.Screen name="Education"             component={LessonsScreen}               options={{ title: t('x_nav_know_rights') }} />
+      <MoreStack.Screen name="Match"                 component={MatchScreen}                 options={{ title: t('x_nav_ai_lawyer_match') }} />
+      <MoreStack.Screen name="Insurance"             component={InsuranceScreen}             options={{ title: t('x_nav_legal_insurance') }} />
+      <MoreStack.Screen name="GoldenGavel"           component={GoldenGavelScreen}           options={{ title: t('x_nav_golden_gavel') }} />
+          <MoreStack.Screen name="BarPrepHome"        component={BarPrepHomeScreen}        options={{ title: t('x_nav_bar_exam_prep'), headerShown: false }} />
           <MoreStack.Screen name="BarPrepQuiz"        component={BarPrepQuizScreen}        options={{ headerShown: false }} />
-          <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: '📖 Explanation' }} />
-          <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: '📈 MBE Progress' }} />
-          <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: '📅 Study Schedule' }} />
-          <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: '📊 Quiz Results', headerShown: false }} />
-      <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: '⚖️ Bar Verification' }} />
-      <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: '📊 Advocacy Stats' }} />
+          <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: t('x_nav_explanation') }} />
+          <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: t('x_nav_mbe_progress') }} />
+          <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: t('x_nav_study_schedule') }} />
+          <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: t('x_nav_quiz_results'), headerShown: false }} />
+      <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: t('x_nav_bar_verification') }} />
+      <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: t('x_nav_advocacy_stats') }} />
       {/* RecoveryAgent screen suspended — pending license verification */}
-          <MoreStack.Screen name="BondsmanDashboard"     component={BondsmanDashboardScreen}     options={{ title: '🔓 Lead Dashboard' }} />
-      <MoreStack.Screen name="Subscription"          component={SubscriptionScreen}          options={{ title: '⚖️ Attorney Plans' }} />
-      <MoreStack.Screen name="FamilyConnect"         component={FamilyConnectScreen}         options={{ title: '🚨 Emergency Connection' }} />
-      <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: '⚡ Quick Connect' }} />
-      <MoreStack.Screen name="ConsumerSubscription"  component={ConsumerSubscriptionScreen}  options={{ title: '📋 Choose Your Plan' }} />
-      <MoreStack.Screen name="ArrestMonitor"         component={ArrestMonitorScreen}         options={{ title: '🔔 Arrest Monitor' }} />
+          <MoreStack.Screen name="BondsmanDashboard"     component={BondsmanDashboardScreen}     options={{ title: t('x_nav_lead_dashboard') }} />
+      <MoreStack.Screen name="Subscription"          component={SubscriptionScreen}          options={{ title: t('x_nav_attorney_plans') }} />
+      <MoreStack.Screen name="FamilyConnect"         component={FamilyConnectScreen}         options={{ title: t('x_nav_emergency_connection') }} />
+      <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: t('x_nav_quick_connect') }} />
+      <MoreStack.Screen name="ConsumerSubscription"  component={ConsumerSubscriptionScreen}  options={{ title: t('x_nav_choose_plan') }} />
+      <MoreStack.Screen name="ArrestMonitor"         component={ArrestMonitorScreen}         options={{ title: t('x_nav_arrest_monitor') }} />
       <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: `🚨 ${t('nav_title_help_now')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: '📅 Book a Consultation' }} />
+      <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: t('x_nav_book_consultation') }} />
       <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: `📋 ${t('rc_page_title')}` }} />
       <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: `📅 ${t('ja_my_court_dates')}` }} />
       <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: `📅 ${t('nav_title_court_date')}` }} />
-      <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
-      <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />
-      <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: "Attorney Inbox" }} />
-        <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: '⚖️ What Happens Next' }} />
-      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: '🚨 Emergency Share', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: '💙 Crisis Support', headerStyle: { backgroundColor: COLORS.blue }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: '🤝 Diversion Eligibility' }} />
-      <MoreStack.Screen name="Translator"            component={TranslatorScreen}            options={{ title: '🗣 Interpreter' }} />
-      <MoreStack.Screen name="Discovery"             component={DiscoveryScreen}             options={{ title: '📄 Discovery AI' }} />
-      <MoreStack.Screen name="LegalResearch"         component={LegalResearchScreen}         options={{ title: '⚖️ Legal Research' }} />
-      <MoreStack.Screen name="MotionLibrary"         component={MotionLibraryScreen}         options={{ title: '📄 Motion Library' }} />
-      <MoreStack.Screen name="VoiceNote"             component={VoiceNoteScreen}             options={{ title: '🎙 Voice Note' }} />
-      <MoreStack.Screen name="Messages"              component={MessagesScreen}              options={{ title: '💬 Messages' }} />
-      <MoreStack.Screen name="SavedLawyers"          component={SavedLawyersScreen}          options={{ title: '⭐ Saved Lawyers' }} />
-      <MoreStack.Screen name="DeadlineCalculator"    component={DeadlineCalculatorScreen}    options={{ title: '⏰ Deadline Calculator' }} />
-      <MoreStack.Screen name="PILead"                component={PILeadScreen}                options={{ title: '⚖️ Submit Your Case' }} />
-      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: '🏠 Tenant Rights', headerStyle: { backgroundColor: COLORS.legalDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: '✈️ ICE Detention Help', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="JuvenileJustice"       component={JuvenileJusticeScreen}       options={{ title: '🧒 Juvenile Justice' }} />
+      <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: t('x_nav_daily_check'), headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: t('x_nav_check_manager') }} />
+      <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
+      <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
+        <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />
+      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: t('x_nav_emergency_share'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: t('x_nav_crisis_support'), headerStyle: { backgroundColor: COLORS.blue }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: t('x_nav_diversion_eligibility') }} />
+      <MoreStack.Screen name="Translator"            component={TranslatorScreen}            options={{ title: t('x_nav_interpreter') }} />
+      <MoreStack.Screen name="Discovery"             component={DiscoveryScreen}             options={{ title: t('x_nav_discovery_ai') }} />
+      <MoreStack.Screen name="LegalResearch"         component={LegalResearchScreen}         options={{ title: t('x_nav_legal_research') }} />
+      <MoreStack.Screen name="MotionLibrary"         component={MotionLibraryScreen}         options={{ title: t('x_nav_motion_library') }} />
+      <MoreStack.Screen name="VoiceNote"             component={VoiceNoteScreen}             options={{ title: t('x_nav_voice_note') }} />
+      <MoreStack.Screen name="Messages"              component={MessagesScreen}              options={{ title: t('x_nav_messages') }} />
+      <MoreStack.Screen name="SavedLawyers"          component={SavedLawyersScreen}          options={{ title: t('x_nav_saved_lawyers') }} />
+      <MoreStack.Screen name="DeadlineCalculator"    component={DeadlineCalculatorScreen}    options={{ title: t('x_nav_deadline_calculator') }} />
+      <MoreStack.Screen name="PILead"                component={PILeadScreen}                options={{ title: t('x_nav_submit_case') }} />
+      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: t('x_nav_tenant_rights'), headerStyle: { backgroundColor: COLORS.legalDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: t('x_nav_ice_detention_help'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="JuvenileJustice"       component={JuvenileJusticeScreen}       options={{ title: t('x_nav_juvenile_justice') }} />
         <MoreStack.Screen name="HagueContact"
           component={HagueContactScreen}
-          options={{ title: '🌐 Hague Convention' }} />
-      <MoreStack.Screen name="MentalHealthDiversion" component={DiversionScreen} options={{ title: '🧠 Mental Health & Law' }} />
-      <MoreStack.Screen name="FamilyCourt"           component={FamilyCourtScreen}           options={{ title: '👨‍👩‍👧 Family Court' }} />
-      <MoreStack.Screen name="ChildSupport"          component={ChildSupportScreen}          options={{ title: '🧮 Support Calculator' }} />
-      <MoreStack.Screen name="ImmigrationConsequences" component={ImmigrationConsequencesScreen} options={{ title: '🌎 Immigration Consequences' }} />
-      <MoreStack.Screen name="HousingRights"         component={HousingRightsScreen}         options={{ title: '🏘️ Housing Rights' }} />
-      <MoreStack.Screen name="AttorneyDashboard"     component={AttorneyDashboardScreen}     options={{ title: '⚖️ Attorney Dashboard' }} />
-      <MoreStack.Screen name="DUILaws"               component={LegalPenaltiesScreen}               options={{ title: '🚗 DUI Laws by State' }} />
-      <MoreStack.Screen name="DrugPenalties"         component={LegalPenaltiesScreen}         options={{ title: '💊 Drug Charge Penalties' }} />
-      <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: '⚖️ Specialty Courts' }} />
-      <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: '🏛️ Court Locator' }} />
+          options={{ title: t('x_nav_hague_convention') }} />
+      <MoreStack.Screen name="MentalHealthDiversion" component={DiversionScreen} options={{ title: t('x_nav_mental_health_law') }} />
+      <MoreStack.Screen name="FamilyCourt"           component={FamilyCourtScreen}           options={{ title: t('x_nav_family_court') }} />
+      <MoreStack.Screen name="ChildSupport"          component={ChildSupportScreen}          options={{ title: t('x_nav_support_calculator') }} />
+      <MoreStack.Screen name="ImmigrationConsequences" component={ImmigrationConsequencesScreen} options={{ title: t('x_nav_immigration_consequences') }} />
+      <MoreStack.Screen name="HousingRights"         component={HousingRightsScreen}         options={{ title: t('x_nav_housing_rights') }} />
+      <MoreStack.Screen name="AttorneyDashboard"     component={AttorneyDashboardScreen}     options={{ title: t('x_nav_attorney_dashboard') }} />
+      <MoreStack.Screen name="DUILaws"               component={LegalPenaltiesScreen}               options={{ title: t('x_nav_dui_laws_by_state') }} />
+      <MoreStack.Screen name="DrugPenalties"         component={LegalPenaltiesScreen}         options={{ title: t('x_nav_drug_charge_penalties') }} />
+      <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: t('x_nav_specialty_courts') }} />
+      <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: t('x_nav_court_locator') }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: `💰 ${t('bail_calculator')}` }} />
       <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: `🚨 ${t('nav_title_just_arrested')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: '📝 Court Forms' }} />
-      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: '🎙 Encounter Recorder', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: '📷 Document Scanner' }} />
-      <MoreStack.Screen name="LawyerProfile"         component={LawyerProfileScreen}         options={{ title: 'Attorney Profile' }} />
-      <MoreStack.Screen name="Search"                component={SearchScreen}                options={{ title: '🔍 Search' }} />
-      <MoreStack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: "Terms of Service" }} />
-      <MoreStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: "Privacy Policy" }} />
+      <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: t('x_nav_court_forms') }} />
+      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: t('x_nav_document_scanner') }} />
+      <MoreStack.Screen name="LawyerProfile"         component={LawyerProfileScreen}         options={{ title: t('x_nav_attorney_profile') }} />
+      <MoreStack.Screen name="Search"                component={SearchScreen}                options={{ title: t('x_nav_search') }} />
+      <MoreStack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: t('onb_terms_tos') }} />
+      <MoreStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: t('onb_terms_pp') }} />
       <MoreStack.Screen name="Settings"              component={SettingsScreen}
-options={{ title: '⚙️ Settings' }} />
-          <MoreStack.Screen name="VideoConsultation" component={VideoConsultationScreen} options={{ title: 'Video Consultation', headerShown: true }} />
+options={{ title: t('x_nav_settings') }} />
+          <MoreStack.Screen name="VideoConsultation" component={VideoConsultationScreen} options={{ title: t('x_nav_video_consultation'), headerShown: true }} />
       <MoreStack.Screen name="FirmPublicProfile"
           component={FirmPublicProfileScreen}
-          options={{ title: "Firm Profile" }}
+          options={{ title: t('x_nav_firm_profile') }}
         />
         <MoreStack.Screen
           name="FirmDiscovery"
           component={FirmDiscoveryScreen}
-          options={{ title: "Find a Firm" }}
+          options={{ title: t('x_nav_find_firm') }}
         />
-        <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: 'Conflict Check',      headerShown: true }} />
-      <MoreStack.Screen name="Matter"              component={MatterScreen}              options={{ title: 'Matter Detail',       headerShown: true }} />
-      <MoreStack.Screen name="OfflineStatus"       component={OfflineStatusScreen}       options={{ title: '📵 Offline Mode' }} />
+        <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: t('x_nav_conflict_check'),      headerShown: true }} />
+      <MoreStack.Screen name="Matter"              component={MatterScreen}              options={{ title: t('x_nav_matter_detail'),       headerShown: true }} />
+      <MoreStack.Screen name="OfflineStatus"       component={OfflineStatusScreen}       options={{ title: t('x_nav_offline_mode') }} />
       {/* Sign-in from inside the app (guest browsing → AuthGate "Sign in") */}
       <MoreStack.Screen name="Login"               component={LoginScreen}               options={{ headerShown: false }} />
-      <MoreStack.Screen name="Register"            component={RegisterScreen}            options={{ title: 'Create Account' }} />
+      <MoreStack.Screen name="Register"            component={RegisterScreen}            options={{ title: t('create_account') }} />
 </MoreStack.Navigator>
     </ErrorBoundary>
   );
@@ -325,13 +327,13 @@ function GuestNavigator() {
       <GuestStack.Screen name="AgeGate"    component={AgeGateScreen}    />
       <GuestStack.Screen name="Onboarding" component={OnboardingScreen} />
       <GuestStack.Screen name="Login"      component={LoginScreen} />
-      <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />
+      <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: t('create_account'), ...HDR() }} />
       <GuestStack.Screen name="AttorneyPrivacy" component={AttorneyPrivacyScreen} />
           <GuestStack.Screen name="LegalDisclaimer" component={LegalDisclaimerScreen} />
         <GuestStack.Screen name="JustArrested"     component={JustArrestedScreen}      options={{ headerTitle: t('nav_title_your_rights') }} />
         <GuestStack.Screen name="Emergency"        component={EmergencyShareScreen}    options={{ headerShown: false }} />
-        <GuestStack.Screen name="TermsOfService"   component={TermsOfServiceScreen}    options={{ headerShown: true, title: 'Terms of Service', ...HDR }} />
-        <GuestStack.Screen name="PrivacyPolicy"    component={PrivacyPolicyScreen}     options={{ headerShown: true, title: 'Privacy Policy', ...HDR }} />
+        <GuestStack.Screen name="TermsOfService"   component={TermsOfServiceScreen}    options={{ headerShown: true, title: t('onb_terms_tos'), ...HDR() }} />
+        <GuestStack.Screen name="PrivacyPolicy"    component={PrivacyPolicyScreen}     options={{ headerShown: true, title: t('onb_terms_pp'), ...HDR() }} />
       </GuestStack.Navigator>
     </ErrorBoundary>
   );

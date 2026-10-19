@@ -22,6 +22,7 @@ import { hapticImpact } from '../utils/webCompat';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import {useTheme} from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 type Agent = {
   id: number;
@@ -57,6 +58,7 @@ const US_STATES = [
 ];
 
 function RecoveryAgentsScreen(): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
@@ -92,7 +94,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
 
   var search = useCallback(async () => {
     if (!selectedState) {
-      showToast('Choose a state to search for recovery agents.');
+      showToast(t('x_recovery_agents_choose_state_search_recovery'));
       return;
     }
     hapticImpact();
@@ -114,7 +116,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
       setStateLaw(res.data?.state_law || null);
     } catch {
       if (!mountedRef.current) return;
-      setError('Could not load agents. Check your connection and try again.');
+      setError(t('x_recovery_agents_could_not_load_agents'));
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -130,12 +132,12 @@ function RecoveryAgentsScreen(): React.JSX.Element {
 
   const call = useCallback((phone: string, name: string) => {
     hapticImpact();
-    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/[^0-9]/g,'')}`).catch(() => {}); });
+    confirm(t('x_recovery_agents_call', { name }), phone, { confirmLabel: t('saved_call') }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/[^0-9]/g,'')}`).catch(() => {}); });
   }, [confirm]);
 
   const openWeb = useCallback((url: string) => {
     hapticImpact();
-    Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => showToast('Action unavailable.', 'error'));
+    Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => showToast(t('x_expungement_action_unavailable'), 'error'));
   }, [showToast]);
 
   const renderAgent = useCallback(({ item }: { item: Agent }) => (
@@ -176,18 +178,18 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         {item.armed_certified ? (
           <View style={[styles.badge, { backgroundColor: colors.emergencyBg }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.emergency }]}>🔫 Armed Certified</Text>
+              { color: colors.emergency }]}>{t('x_recovery_agents_armed_certified')}</Text>
           </View>
         ) : (
           <View style={[styles.badge, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.textMuted }]}>Unarmed</Text>
+              { color: colors.textMuted }]}>{t('x_recovery_agents_unarmed')}</Text>
           </View>
         )}
         {item.license_number ? (
           <View style={[styles.badge, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.legal }]}>✓ Licensed</Text>
+              { color: colors.legal }]}>{t('x_recovery_agents_licensed')}</Text>
           </View>
         ) : null}
         {item.available_24_7 ? (
@@ -220,28 +222,28 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.callBtn, { backgroundColor: colors.legalDark }]}
-            accessibilityLabel={"\ud83d\udcde Call"} onPress={() => call(item.phone, item.name)}
+            accessibilityLabel={t('lawyers_call')} onPress={() => call(item.phone, item.name)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.callBtnText}>
-              📞 Call
+              {t('lawyers_call')}
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.callBtnText,
-              { color: colors.textMuted }]}>No phone listed</Text>
+              { color: colors.textMuted }]}>{t('hn_no_phone')}</Text>
           </View>
         )}
         {item.website ? (
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.webBtn, { borderColor: colors.border }]}
-            accessibilityLabel={"\ud83c\udf10 Website"} onPress={() => openWeb(item.website)}
+            accessibilityLabel={t('lawyers_website')} onPress={() => openWeb(item.website)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
-              { color: colors.textBrand }]}>🌐 Website</Text>
+              { color: colors.textBrand }]}>{t('lawyers_website')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -258,7 +260,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         {/* State picker -- horizontal scroll */}
         <Text maxFontSizeMultiplier={1.3} style={[styles.searchLabel,
           { color: colors.textSecond }]}>
-          Select State
+          {t('x_recovery_agents_select_state')}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           style={{ marginBottom: 10 }}>
@@ -288,9 +290,9 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         <View style={styles.filterRow}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.filterLabel,
             { color: colors.textSecond }]}>
-            Armed certified only
+            {t('x_recovery_agents_armed_certified_only')}
           </Text>
-          <Switch accessibilityLabel="Toggle setting"
+          <Switch accessibilityLabel={t('x_recovery_agents_toggle_setting')}
             value={armedOnly}
             onValueChange={setArmedOnly}
             trackColor={{ false: colors.border, true: colors.emergencyDark }}
@@ -309,7 +311,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         >
           <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
             { color: selectedState ? colors.bg : colors.textMuted }]}>
-            {loading ? 'Searching…' : '🔍  Search Recovery Agents'}
+            {loading ? t('bail_searching') : t('x_recovery_agents_search_recovery_agents')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -327,8 +329,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           }]}>
             {stateLaw.allowed ? '✅' : '⛔'}  {selectedState} -- {
               stateLaw.allowed
-                ? stateLaw.license ? 'License required' : 'No license requirement'
-                : 'Commercial bail restricted'
+                ? stateLaw.license ? t('x_recovery_agents_license_required') : t('x_recovery_agents_no_license_requirement')
+                : t('x_recovery_agents_commercial_bail_restricted')
             }
           </Text>
           {stateLaw.law ? (
@@ -349,9 +351,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         borderLeftColor: colors.warnDark }]}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.disclaimerText,
           { color: colors.textMuted }]}>
-          ⚖️ This directory is for licensed bondsmen only. Always verify agent
-          credentials and state licensing requirements before engagement.
-          Not legal advice.
+          {t('x_recovery_agents_this_directory_licensed_bondsmen')}
         </Text>
       </View>
 
@@ -361,7 +361,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           <ActivityIndicator size="large" color={colors.navy} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.loadingText,
             { color: colors.textMuted }]}>
-            Searching {selectedState}…
+            {t('x_recovery_agents_searching', { selectedState })}
           </Text>
         </View>
       ) : error ? (
@@ -371,8 +371,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             {error}
           </Text>
           <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.navy }]}
-            onPress={search} accessibilityRole="button" accessibilityLabel="Try again">
-            <Text maxFontSizeMultiplier={1.2} style={styles.retryText}>Try Again</Text>
+            onPress={search} accessibilityRole="button" accessibilityLabel={t('try_again')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.retryText}>{t('help_now_error_retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : searched && agents.length === 0 ? (
@@ -380,8 +380,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           <AppIcon name="search-outline" size={20} color={colors.navy} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText,
             { color: colors.textMuted }]}>
-            No licensed recovery agents found in {selectedState}.{'\n'}
-            Try a neighboring state or contact your state DOI.
+            {t('x_recovery_agents_no_licensed_recovery_agents', { selectedState })}
           </Text>
         </View>
       ) : (
@@ -397,7 +396,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             agents.length > 0 ? (
               <Text maxFontSizeMultiplier={1.3} style={[styles.resultCount,
                 { color: colors.textMuted }]}>
-                {agents.length} agent{agents.length !== 1 ? 's' : ''} found in {selectedState}
+                {t(agents.length === 1 ? 'x_recovery_agents_agent_found_one' : 'x_recovery_agents_agent_found_other', { length: agents.length, selectedState })}
               </Text>
             ) : null
           }

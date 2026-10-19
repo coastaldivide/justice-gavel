@@ -23,6 +23,9 @@ import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safe
  * GET    /api/admin/log                  — update audit log (paginated)
  * GET    /api/admin/log/:table/:id       — update log for one record
  * GET    /api/admin/stats                — DB summary stats
+ * GET    /api/admin/diagnostics/client-ip — how the app sees the caller's IP (req.ip, req.ips,
+ *                                          X-Forwarded-For, trust proxy, per-hop candidates) —
+ *                                          used to set TRUST_PROXY after a deploy (RUNBOOK)
  *
  * POST   /api/admin/refresh              — trigger a provider refresh (in-process, background)
  *   Body: { city?, type?, source?, dryRun? }  → 202 (started) | 200 (skipped: no API key)
@@ -41,6 +44,7 @@ import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safe
  */
 
 import { runHealthScan }       from '../services/healthScan.js';
+import { clientIpReport }      from '../utils/clientIp.js';
 import { hasMinRole }         from '../middleware/rbac.js';
 import { makeUserLimiter }    from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
@@ -376,6 +380,14 @@ router.get('/stats', async (req, res) => {
     });
   } catch (e) {
     logger.error({ msg: '[admin]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── Diagnostics: client IP / trust proxy ─────────────────────────────────────
+// Behind the router-level guards above (signed-in admin by LIVE DB role, AND
+// X-Admin-Key). Shows only the caller's own request; never cached.
+router.get('/diagnostics/client-ip', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(clientIpReport(req));
 });
 
 // ── Trigger refresh (in-process, main Postgres) ──────────────────────────────

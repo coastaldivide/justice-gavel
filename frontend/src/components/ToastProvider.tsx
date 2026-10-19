@@ -19,6 +19,7 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import { TOAST_ACCENTS, COLORS as THEME_COLORS } from '../constants/theme';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { t, useLang } from '../i18n';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -55,6 +56,7 @@ const ICONS: Record<ToastType, string> = {
 };
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
+  useLang();
   const opacity = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -71,7 +73,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         <Text style={styles.icon}>{ICONS[toast.type]}</Text>
       </View>
       <Text style={styles.message} numberOfLines={3}>{toast.message}</Text>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Dismiss notification" onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_toast_provider_dismiss_notification')} onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Text style={styles.close}>✕</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -81,6 +83,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 let _id = 0;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  useLang();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const insets = useSafeAreaInsets();
 
@@ -90,15 +93,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const dismiss = useCallback((id: number) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts(prev => prev.filter(tItem => tItem.id !== id));
   }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <View style={[styles.container, { bottom: insets.bottom + 16 }]} pointerEvents="box-none">
-        {toasts.map(t => (
-          <ToastItem key={t.id} toast={t} onDismiss={dismiss} />
+        {toasts.map(tItem => (
+          <ToastItem key={tItem.id} toast={tItem} onDismiss={dismiss} />
         ))}
       </View>
     </ToastContext.Provider>

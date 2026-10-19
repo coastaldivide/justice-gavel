@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -148,8 +149,7 @@ describe('S6C. InterrogationRecorderScreen — Speaker Label/Color Helpers', () 
     expect(src).toContain('colors');
   });
   test('S6C-02: speakerLabel maps SUSPECT→"YOU", others pass through', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.tsx');
     expect(src).toContain('speakerLabel');
     expect(src).toContain("'SUSPECT'");
     expect(src).toContain("'YOU'");
@@ -343,8 +343,7 @@ describe('S12. UX — Internal Logic Depth', () => {
     expect(src).toContain('loadDeadlines');
   });
   test('S12-05: InterrogationRecorder speakerLabel maps SUSPECT→YOU for readability', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.tsx');
     expect(src).toContain('speakerLabel');
     expect(src).toContain("'YOU'");
     expect(src).toContain("'SUSPECT'");

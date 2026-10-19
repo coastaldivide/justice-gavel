@@ -15,7 +15,7 @@
  *   2. Memory leak guard
  *      Problem: Heap exceeds 512MB (leak or traffic spike)
  *      Action:  Force garbage collection, clear in-memory caches
- *      If fails: Graceful restart (Railway will restart the container)
+ *      If fails: Graceful restart (the host — Render, PM2, Docker — restarts the container)
  *
  *   4. Stale lock cleanup
  *      Problem: Scheduled job lock not released (crash during job)
@@ -70,12 +70,12 @@ export async function healDatabase() {
 
 // ── 2. Memory leak guard ───────────────────────────────────────────────────────
 // Thresholds are derived from the container's memory limit (MEMORY_LIMIT_MB,
-// default 512 — the Railway plan this deploys to) and watch RSS, because the
+// default 512 — the Render Starter instance in render.yaml) and watch RSS, because the
 // container OOM-killer enforces RSS, not V8 heap. On a 512MB container:
 //   warn      72% → 368 MB   (notifyWarn once per episode)
 //   critical  85% → 435 MB   (force GC if exposed, then notifyError)
 //   restart   93% → 476 MB   (graceful exit before the OOM-killer SIGKILLs us,
-//                             so Railway restarts a cleanly-shut-down process)
+//                             so the host restarts a cleanly-shut-down process)
 // The old thresholds (heap 512 MB warn → restart at heap 600 MB) could never
 // fire on a 512 MB container — RSS exceeds heap, so the kernel killed the
 // process long before heap reached 512 MB.
@@ -112,12 +112,12 @@ export function startMemoryWatchdog() {
         limitMB: MEMORY_LIMIT_MB,
       });
 
-      // Attempt 3: Graceful restart (Railway restarts container on exit),
+      // Attempt 3: Graceful restart (the host restarts the container on exit),
       // before the kernel OOM-killer SIGKILLs us mid-request.
       if (rssMB > MEMORY_RESTART_MB) {
         logger.error(`[self-heal] rss over ${MEMORY_RESTART_MB}MB — initiating graceful restart`);
         await notifyCritical('Memory exhaustion — forcing restart', { rssMB, heapMB, code: 'oom_restart' });
-        process.exit(1);  // Railway auto-restarts
+        process.exit(1);  // Render / PM2 / Docker restart policy brings it back
       }
 
     } else if (rssMB > MEMORY_WARN_MB && !memoryWarned) {

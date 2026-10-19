@@ -16,45 +16,47 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 type TabKey = 'drug' | 'mental' | 'veteran';
 
-const TABS: { key: TabKey; label: string; emoji: string }[] = [
-  { key: 'drug',    label: 'Drug / Alcohol', emoji: '💊' },
-  { key: 'mental',  label: 'Mental Health',  emoji: '🧠' },
-  { key: 'veteran', label: 'Veterans Court',  emoji: '🎖' },
-];
+const TABS = perLang((): { key: TabKey; label: string; emoji: string }[] => [
+  { key: 'drug',    label: t('x_diversion_drug_alcohol'), emoji: '💊' },
+  { key: 'mental',  label: t('x_diversion_mental_health'),  emoji: '🧠' },
+  { key: 'veteran', label: t('x_diversion_veterans_court'),  emoji: '🎖' },
+]);
 
 // Drug diversion criteria (from DiversionScreen)
-const DRUG_CRITERIA = [
-  { question: 'Is this your first or second drug-related offense?', key: 'firstOffense' },
-  { question: 'Was the charge for simple possession (not trafficking/distribution)?', key: 'possession' },
-  { question: 'Do you have no prior violent criminal history?', key: 'nonViolent' },
-  { question: 'Are you willing to complete a drug treatment program?', key: 'treatment' },
-  { question: 'Can you comply with regular drug testing requirements?', key: 'testing' },
-  { question: 'Is your charge a non-violent felony or misdemeanor?', key: 'chargeType' },
-];
+const DRUG_CRITERIA = perLang(() => [
+  { question: t('x_diversion_this_first_second_drug'), key: 'firstOffense' },
+  { question: t('x_diversion_was_charge_simple_possession'), key: 'possession' },
+  { question: t('x_diversion_do_have_no_prior'), key: 'nonViolent' },
+  { question: t('x_diversion_willing_complete_drug_treatment'), key: 'treatment' },
+  { question: t('x_diversion_can_comply_with_regular'), key: 'testing' },
+  { question: t('x_diversion_charge_non_violent_felony'), key: 'chargeType' },
+]);
 
 // Mental health diversion criteria (from MentalHealthDiversionScreen)
-const MENTAL_CRITERIA = [
-  { question: 'Have you been diagnosed with a qualifying mental health disorder (schizophrenia, bipolar, PTSD, depression, etc.)?', key: 'diagnosis' },
-  { question: 'Is there a significant link between your mental illness and the alleged offense?', key: 'nexus' },
-  { question: 'Is the charge a non-violent or low-level offense?', key: 'nonViolent' },
-  { question: 'Are you willing to participate in a court-ordered mental health treatment plan?', key: 'treatment' },
-  { question: 'Do you have stable housing or can it be arranged with assistance?', key: 'housing' },
-  { question: 'Is this your first or second offense?', key: 'priorRecord' },
-];
+const MENTAL_CRITERIA = perLang(() => [
+  { question: t('x_diversion_have_been_diagnosed_with'), key: 'diagnosis' },
+  { question: t('x_diversion_there_significant_link_between'), key: 'nexus' },
+  { question: t('x_diversion_charge_non_violent_low'), key: 'nonViolent' },
+  { question: t('x_diversion_willing_participate_court_ordered'), key: 'treatment' },
+  { question: t('x_diversion_do_have_stable_housing'), key: 'housing' },
+  { question: t('x_diversion_this_first_second_offense'), key: 'priorRecord' },
+]);
 
 // Veteran court criteria
-const VETERAN_CRITERIA = [
-  { question: 'Are you a current or former member of the US military?', key: 'veteran' },
-  { question: 'Do you have a service-connected condition (PTSD, TBI, substance abuse)?', key: 'serviceCondition' },
-  { question: 'Is the charge a non-violent offense?', key: 'nonViolent' },
-  { question: 'Are you willing to participate in VA services and treatment?', key: 'vaServices' },
-  { question: 'Is there a Veterans Treatment Court in your jurisdiction?', key: 'localCourt' },
-];
+const VETERAN_CRITERIA = perLang(() => [
+  { question: t('x_diversion_current_former_member_us'), key: 'veteran' },
+  { question: t('x_diversion_do_have_service_connected'), key: 'serviceCondition' },
+  { question: t('x_diversion_charge_non_violent_offense'), key: 'nonViolent' },
+  { question: t('x_diversion_willing_participate_va_services'), key: 'vaServices' },
+  { question: t('x_diversion_there_veterans_treatment_court'), key: 'localCourt' },
+]);
 
 function DiversionScreen({ navigation }: any) {
+  useLang();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
@@ -70,8 +72,8 @@ function DiversionScreen({ navigation }: any) {
     setAnswers({});
   };
 
-  const criteria = activeTab === 'drug' ? DRUG_CRITERIA :
-                   activeTab === 'mental' ? MENTAL_CRITERIA : VETERAN_CRITERIA;
+  const criteria = activeTab === 'drug' ? DRUG_CRITERIA() :
+                   activeTab === 'mental' ? MENTAL_CRITERIA() : VETERAN_CRITERIA();
 
   const yesCount   = criteria.filter(c => answers[c.key]).length;
   const eligible   = yesCount === criteria.length;
@@ -83,27 +85,27 @@ function DiversionScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate">
-          <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
+          accessibilityHint={t('cp_double_tap')}>
+          <Text style={[styles.back, { color: colors.primary }]}>{t('ja_back')}</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Diversion Programs</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('x_diversion_diversion_programs')}</Text>
         <View style={{ width: 50 }} />
       </View>
 
       {/* Tabs */}
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {TABS?.length === 0 ? (
+        {TABS()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
           <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
+            {t('empty_state_nothing')}
           </Text>
           <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
+            {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
-        ) : TABS.map(tab => (
+        ) : TABS().map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
@@ -126,8 +128,7 @@ function DiversionScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <Text style={[styles.intro, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-          Answer honestly — this helps determine if you may qualify for a diversion program
-          that could keep a conviction off your record.
+          {t('x_diversion_answer_honestly_this_helps')}
         </Text>
 
         {/* Eligibility checklist */}
@@ -159,12 +160,12 @@ function DiversionScreen({ navigation }: any) {
             <Text style={[styles.resultTitle, {
               color: eligible ? colors.legal : maybeEligible ? colors.warnDark : colors.emergencyDark,
             }]}>
-              {eligible     ? 'You may qualify for diversion' :
-               maybeEligible? 'You may partially qualify — speak to an attorney' :
-                              'You may not qualify — but ask an attorney to be sure'}
+              {eligible     ? t('x_diversion_may_qualify_diversion') :
+               maybeEligible? t('x_diversion_may_partially_qualify_speak') :
+                              t('x_diversion_may_not_qualify_but')}
             </Text>
             <Text style={[styles.resultSub, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-              {yesCount} of {criteria.length} criteria met
+              {t('x_diversion_criteria_met', { yesCount, length: criteria.length })}
             </Text>
           </View>
         )}
@@ -172,19 +173,18 @@ function DiversionScreen({ navigation }: any) {
         {/* Attorney CTA */}
         <View style={[styles.ctaCard, { backgroundColor: (colors as any).primary + '15' }]}>
           <Text style={[styles.ctaTitle, { color: colors.primary }]}>
-            Get a free case evaluation
+            {t('x_diversion_get_free_case_evaluation')}
           </Text>
           <Text style={[styles.ctaText, { color: colors.text }]}>
-            Diversion eligibility depends on your specific case and prosecutor.
-            An attorney who knows your district can give you a real answer.
+            {t('x_diversion_diversion_eligibility_depends_specif')}
           </Text>
           <TouchableOpacity
             style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
             onPress={() => navigation?.navigate('LawyersTab')}
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           >
-            <Text style={styles.ctaBtnText}>Find a lawyer →</Text>
+            <Text style={styles.ctaBtnText}>{t('x_diversion_find_lawyer')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

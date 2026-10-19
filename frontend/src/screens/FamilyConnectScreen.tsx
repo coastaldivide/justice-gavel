@@ -16,6 +16,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Activi
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
+import { t, useLang } from '../i18n';
 
 // Plain helper (no hooks); failures are reported through onError.
 function callPhone(phone: string, onError?: () => void) {
@@ -24,7 +25,8 @@ function callPhone(phone: string, onError?: () => void) {
 
 // ── Step indicator ────────────────────────────────────────────────────────────
 function StepBar({ step }: { step: number }) {
-  const steps = ['Find Arrest', 'Your Info', 'Connect'];
+  useLang();
+  const steps = [t('x_family_connect_step_find'), t('x_family_connect_step_info'), t('x_family_connect_step_connect')];
   return (
     <View style={styles.stepBar}>
       {steps.map((label, i) => {
@@ -51,6 +53,7 @@ function StepBar({ step }: { step: number }) {
 
 // ── Contact card ─────────────────────────────────────────────────────────────
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'attorney' | 'bail' }) {
+  useLang();
   const { showToast } = useToast();
   const isAtty = type === 'attorney';
   const color = isAtty ? COLORS.navy : COLORS.bail;
@@ -72,7 +75,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
         </View>
         <View style={[styles.contactTypeBadge, { backgroundColor: bg }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeBadgeText, { color }]}>
-            {isAtty ? '⚖️ Attorney' : '🔓 Bail Agent'}
+            {isAtty ? t('x_family_connect_attorney') : t('x_family_connect_bail_agent')}
           </Text>
         </View>
       </View>
@@ -94,15 +97,15 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
       {contact.phone ? (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="No phone on file"
+          accessibilityLabel={t('help_now_no_phone')}
           style={[styles.callBtn, { backgroundColor: color }]}
-          onPress={() => callPhone(contact.phone, () => showToast(`Please dial ${contact.phone} manually.`, 'warning'))}
+          onPress={() => callPhone(contact.phone, () => showToast(t('x_emergency_share_please_dial_manually', { phone: contact.phone }), 'warning'))}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 Call {contact.name.split(' ')[0]}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('x_family_connect_call', { value: contact.name.split(' ')[0] })}</Text>
         </TouchableOpacity>
       ) : (
         <View style={[styles.callBtn, { backgroundColor: COLORS.emergencyDark }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>No phone on file</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_no_phone')}</Text>
         </View>
       )}
     </View>
@@ -111,6 +114,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -153,7 +157,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
   const searchArrests = async () => {
     if (!searchName.trim()) {
-      showToast('Enter the first or last name of the person who was arrested.');
+      showToast(t('x_family_connect_enter_first_last_name'));
       return;
     }
     setSearching(true);
@@ -167,7 +171,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       setSearched(true);
     } catch {
       setSearchResults([]);
-      showToast('Could not search right now. Check your connection and try again.');
+      showToast(t('x_family_connect_could_not_search_right'));
     } finally {
       setSearching(false);
     }
@@ -184,8 +188,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const proceedToPayment = () => {
-    if (!familyName.trim()) { showToast('Please enter your name.'); return; }
-    if (!familyPhone.trim()) { showToast('Please enter your phone number.'); return; }
+    if (!familyName.trim()) { showToast(t('x_family_connect_please_enter_name')); return; }
+    if (!familyPhone.trim()) { showToast(t('x_family_connect_please_enter_phone_number')); return; }
     // Require account before charging -- browsing users get sign-in prompt
     requireAuth(() => handleConnect());
   };
@@ -203,7 +207,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       });
       setResult(res.data || null);
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Something went wrong. Check your connection and try again.'));
+      showToast(apiErrorMessage(e, t('x_family_connect_something_went_wrong_check')));
       setStep(2);
     } finally {
       setPaying(false);
@@ -218,13 +222,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
       {/* Header */}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Emergency Connection</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_family_connect_emergency_connection')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          Get verified attorneys and bail agents on the phone -- right now
+          {t('x_family_connect_get_verified_attorneys_bail')}
         </Text>
         <View style={styles.priceBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.priceText}>$28.99 one-time</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.priceSubText}>No subscription. Instant results.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.priceText}>{t('x_family_connect_28_99_one_time')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.priceSubText}>{t('x_family_connect_no_subscription_instant_results')}</Text>
         </View>
       </View>
 
@@ -233,9 +237,9 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       {/* ── Step 1: Find Arrest ─────────────────────────────────────────────── */}
       {step === 1 && (
         <View style={styles.section}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>Who was arrested?</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_family_connect_who_was_arrested')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionSub}>
-            Search our arrest database to pre-fill their information for faster help.
+            {t('x_family_connect_search_our_arrest_database')}
           </Text>
 
           <View style={styles.searchRow}>
@@ -243,28 +247,28 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               style={styles.searchInput}
               value={searchName}
               onChangeText={setSearchName}
-              placeholder="First or last name"
+              placeholder={t('x_family_connect_first_last_name')}
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={searchArrests}
               returnKeyType="search"
             maxLength={200}
             />
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-              accessibilityLabel="Search"
+              accessibilityLabel={t('search')}
               style={[styles.searchBtn, searching && { opacity: 0.6 }]}
               onPress={searchArrests}
               disabled={searching}
             >
               {searching
                 ? <ActivityIndicator color={colors.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>Search</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('search')}</Text>
               }
             </TouchableOpacity>
           </View>
 
           {searchResults.length > 0 && (
             <View style={styles.resultsList}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.resultsHeader}>{searchResults.length} record(s) found -- tap to select:</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.resultsHeader}>{t('x_family_connect_record_s_found_tap', { length: searchResults.length })}</Text>
               {searchResults.map((r: any) => (
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -277,7 +281,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     <SampleRecordBadge row={r} />
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultName}>{r.name}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultDetail}>
-                      {r.county ? `${r.county} County` : ''}{r.state ? `, ${r.state}` : ''}{r.booking_date ? `  ·  ${new Date(r.booking_date).toLocaleDateString()}` : ''}
+                      {r.county ? t('x_bondsman_dashboard_county', { county: r.county }) : ''}{r.state ? `, ${r.state}` : ''}{r.booking_date ? `  ·  ${new Date(r.booking_date).toLocaleDateString()}` : ''}
                     </Text>
                     {r.charges && (
                       <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultCharges} numberOfLines={1}>
@@ -286,7 +290,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     )}
                     {((r as import('../types/api').BailAgent).bail_amount ?? 0) > 0 && (
                       <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultBail}>
-                        Bail: ${((r as import('../types/api').BailAgent).bail_amount ?? 0).toLocaleString()}
+                        {t('x_family_connect_bail', { value: ((r as import('../types/api').BailAgent).bail_amount ?? 0).toLocaleString() })}
                       </Text>
                     )}
                   </View>
@@ -298,19 +302,19 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           {searched && !searching && searchResults.length === 0 && (
             <View testID="arrest-search-empty" style={styles.emptyResults}>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsTitle}>
-                {feedsConfigured ? 'No matching record found' : 'No public arrest feeds configured for your area yet'}
+                {feedsConfigured ? t('x_family_connect_no_matching_record_found') : t('x_family_connect_no_public_arrest_feeds')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsText}>
                 {feedsConfigured
-                  ? "That's okay -- you can still connect with attorneys and bail agents. Continue without an arrest record below."
-                  : "Our arrest-record search doesn't cover your area yet, so not finding a record here is expected. You can still connect with attorneys and bail agents -- continue without a record below."}
+                  ? t('x_family_connect_that_s_okay_can')
+                  : t('x_family_connect_our_arrest_record_search')}
               </Text>
             </View>
           )}
           <TouchableOpacity accessibilityRole="button" style={styles.skipBtn} onPress={skipToStep2}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.skipBtnText}>
-              {searchResults.length > 0 ? 'Continue without selecting a record →' : 'Skip search and continue →'}
+              {searchResults.length > 0 ? t('x_family_connect_continue_without_selecting_record') : t('x_family_connect_skip_search_continue')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -322,11 +326,10 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           {selectedArrest && (
             <View style={styles.arrestSummary}>
               <SampleRecordBadge row={selectedArrest} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryTitle}>For: {selectedArrest.name}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryTitle}>{t('x_family_connect_text', { name: selectedArrest.name })}</Text>
               {selectedArrest.county && (
                 <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryDetail}>
-                  {selectedArrest.county} County{selectedArrest.state ? `, ${selectedArrest.state}` : ''}
-                  {selectedArrest.bail_amount > 0 ? `  ·  Bail: $${selectedArrest.bail_amount.toLocaleString()}` : ''}
+                  {t('x_family_connect_county', { county: selectedArrest.county, value: selectedArrest.state ? `, ${selectedArrest.state}` : '', value2: selectedArrest.bail_amount > 0 ? '  ' + t('x_family_connect_bail_2', { value: selectedArrest.bail_amount.toLocaleString() }) : '' })}
                 </Text>
               )}
               {selectedArrest.charges && (
@@ -336,28 +339,28 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               )}
             </View>
           )}
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>Your contact information</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_family_connect_contact_information')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionSub}>
-            So attorneys and bail agents can call you back immediately.
+            {t('x_family_connect_so_attorneys_bail_agents')}
           </Text>
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Your name *</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_family_connect_name')}</Text>
           <TextInput
             style={styles.input}
             value={familyName}
             onChangeText={setFamilyName}
-            placeholder="Jane Smith"
+            placeholder={t('x_family_connect_jane_smith')}
             placeholderTextColor={colors.textMuted}
           returnKeyType="next"
           blurOnSubmit
         />
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Your phone number *</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_family_connect_phone_number')}</Text>
           <TextInput
             style={styles.input}
             value={familyPhone}
             onChangeText={setFamilyPhone}
-            placeholder="Phone number"
+            placeholder={t('x_auth_gate_phone_number')}
             placeholderTextColor={colors.textMuted}
             keyboardType="phone-pad"
           returnKeyType="next"
@@ -365,13 +368,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         maxLength={20}
         />
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Email (optional)</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_family_connect_email_optional')}</Text>
           <TextInput
-          accessibilityLabel="Email address"
+          accessibilityLabel={t('x_family_connect_email_address')}
             style={styles.input}
             value={familyEmail}
             onChangeText={setFamilyEmail}
-            placeholder="Email address"
+            placeholder={t('x_family_connect_email_address')}
             placeholderTextColor={colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -381,13 +384,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         />
 
           <View style={styles.feeBlock}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>What you get for $28.99</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{t('x_family_connect_what_get_28_99')}</Text>
             {[
-              '⚖️ 3 verified criminal defense attorneys in the county',
-              '🔓 2 bail bondsmen available right now',
-              '📋 Pre-filled case info shared with each contact',
-              '📞 Direct call buttons -- reach them instantly',
-              '🔒 One-time fee, no subscription',
+              t('x_family_connect_3_verified_criminal_defense'),
+              t('x_family_connect_2_bail_bondsmen_available'),
+              t('x_family_connect_pre_filled_case_info'),
+              t('x_family_connect_direct_call_buttons_reach'),
+              t('x_family_connect_one_time_fee_no'),
             ].map(item => (
               <View key={item} style={styles.feeItem}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.feeItemText}>{item}</Text>
@@ -399,15 +402,15 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             accessibilityRole="button"
             style={styles.payBtn}
             onPress={proceedToPayment}
-           accessibilityLabel="Pay $28.99 &amp; Get Connected Now">
-            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay $28.99 &amp; Get Connected Now</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>Demo mode: no real charge</Text>
+           accessibilityLabel={t('x_family_connect_pay_28_99_amp')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('x_family_connect_pay_28_99_amp')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>{t('x_family_connect_demo_mode_no_real')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button" style={styles.backBtn} onPress={() => setStep(1)}
-              accessibilityLabel="Go back"
-              accessibilityHint="Returns to previous step">
-            <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Back</Text>
+              accessibilityLabel={t('x_gradient_header_go_back')}
+              accessibilityHint={t('x_family_connect_returns_previous_step')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>{t('ja_back')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -418,32 +421,32 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           {paying ? (
             <View style={styles.payingBlock}>
               <ActivityIndicator size="large" color={colors.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>Connecting you with verified contacts</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.payingHint}>This takes just a moment</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>{t('x_family_connect_connecting_with_verified_contacts')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payingHint}>{t('x_family_connect_this_takes_just_moment')}</Text>
             </View>
           ) : result ? (
             <>
               <View style={styles.successBanner}>
                 <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-                <Text maxFontSizeMultiplier={1.4} style={styles.successTitle}>You're connected!</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.successTitle}>{t('x_family_connect_re_connected')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.successSub}>
-                  Call any of the contacts below right now. They are expecting calls.
+                  {t('x_family_connect_call_any_contacts_below')}
                 </Text>
               </View>
 
               {result.arrest && (
                 <View style={styles.caseCard}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.caseTitle}>Case Information</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.caseTitle}>{t('x_family_connect_case_information')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.caseName}>{result.arrest.name}</Text>
                   {result.arrest.charges && (
                     <Text maxFontSizeMultiplier={1.4} style={styles.caseCharges}>{result.arrest.charges}</Text>
                   )}
                   {result.arrest.bail_amount > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={styles.caseBail}>Bail: ${result.arrest.bail_amount.toLocaleString()}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.caseBail}>{t('x_family_connect_bail', { value: result.arrest.bail_amount.toLocaleString() })}</Text>
                   )}
                   {result.arrest.county && (
                     <Text maxFontSizeMultiplier={1.4} style={styles.caseLocation}>
-                      {result.arrest.county} County, {result.arrest.state}
+                      {t('x_family_connect_county_2', { county: result.arrest.county, state: result.arrest.state })}
                     </Text>
                   )}
                 </View>
@@ -451,7 +454,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
               {result.attorneys?.length > 0 && (
                 <>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>⚖️ Criminal Defense Attorneys</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>{t('x_family_connect_criminal_defense_attorneys')}</Text>
                   {result.attorneys.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="attorney" />
                   ))}
@@ -460,7 +463,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
               {result.bail_agents?.length > 0 && (
                 <>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>🔓 Bail Bondsmen</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>{t('x_family_connect_bail_bondsmen')}</Text>
                   {result.bail_agents.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="bail" />
                   ))}
@@ -470,33 +473,32 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               {(!result.attorneys?.length && !result.bail_agents?.length) && (
                 <View style={styles.noContacts}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.noContactsText}>
-                    No contacts found in our database for this county yet.
-                    Try calling your county's public defender office directly.
+                    {t('x_family_connect_no_contacts_found_our')}
                   </Text>
                 </View>
               )}
               <View style={styles.receiptBlock}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>Payment Receipt</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>{t('x_family_connect_payment_receipt')}</Text>
                 <View style={styles.receiptRow}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>Emergency Connection</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_emergency_connection')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptAmount}>$28.99.00</Text>
                 </View>
                 <View style={styles.receiptRow}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>Connection ID</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_connection_id')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptValue}>#{result.connection_id}</Text>
                 </View>
                 {result.mock && (
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>Demo mode -- no real charge</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>{t('x_family_connect_demo_mode_no_real_2')}</Text>
                 )}
               </View>
             </>
           ) : (
             <View style={styles.errorBlock}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>Something went wrong. Please go back and try again.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{t('x_family_connect_something_went_wrong_please')}</Text>
               <TouchableOpacity
-          accessibilityRole="button" style={styles.backBtn} accessibilityLabel={"\u2190 Go back"} onPress={() => setStep(2)}
+          accessibilityRole="button" style={styles.backBtn} accessibilityLabel={t('x_age_gate_go_back')} onPress={() => setStep(2)}
                 >
-                <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>{t('x_age_gate_go_back')}</Text>
               </TouchableOpacity>
             </View>
           )}

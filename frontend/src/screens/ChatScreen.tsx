@@ -72,7 +72,7 @@ class StreamHttpError extends Error {
 const TERMINAL_STREAM_STATUSES = new Set([400, 401, 402, 403, 429, 451, 503]);
 import { pollJob }        from '../services/jobPoller';
 import { isOnline }       from '../services/offlineCache';
-import { t }              from '../i18n';
+import { t, useLang, perLang, locale }              from '../i18n';
 import { getUserState }   from '../utils/userState';
 import { getToken }       from '../utils/secureStorage';
 import * as ExpoCrypto from 'expo-crypto';
@@ -153,12 +153,13 @@ interface BubbleProps {
 }
 
 function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: BubbleProps) {
+  useLang();
   const { showToast } = useToast();
   const isUser = msg.role === 'user';
 
   const handleLongPress = () => {
     const text = msg.text || '';
-    Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard', 'success')).catch(() => {});
+    Clipboard.setStringAsync(text).then(() => showToast(t('x_ch_copied_clipboard'), 'success')).catch(() => {});
   };
 
   return (
@@ -172,7 +173,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: Bubb
         </View>
       )}
       <Pressable
-        accessibilityRole="button" accessibilityLabel="Attach file"
+        accessibilityRole="button" accessibilityLabel={t('x_ch_attach_file')}
         onLongPress={handleLongPress}
         delayLongPress={400}
         style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}
@@ -186,10 +187,10 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: Bubb
         {!isUser && !!msg.rightsRefs?.length && (
           <View testID="chat-rights-refs" style={styles.rightsRefs}>
             {msg.rightsRefs.map(r => (
-              <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={`From your rights card: ${r.heading}`}
+              <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={t('x_ch_from_rights_card', { heading: r.heading })}
                 style={styles.rightsRef} onPress={onOpenRights}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>📋 From your rights card: {r.heading.replace(/^\d+\.\s*/, '')} →</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>Source: {r.source}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>{t('x_ch_from_rights_card_2', { value: r.heading.replace(/^\d+\.\s*/, '') })}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>{t('x_ch_source', { source: r.source })}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -223,135 +224,169 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: Bubb
 
 // ── Quick-start prompt categories ─────────────────────────────────────────────
 // T1-G: colors.* replaced with hex literals (module scope — no hook access here)
-const PROMPT_CATEGORIES = [
+const PROMPT_CATEGORIES = perLang(() => [
   {
     category: t('chat_cat_emergency'),
     color: COLORS.emergency,          // was COLORS.emergencyDark
     prompts: [
-      { label: t('chat_prompt_just_arrested'), text: 'I was just arrested. What should I do right now?' },
-      { label: t('chat_prompt_know_rights'),   text: 'What are my rights during a police stop?' },
-      { label: t('chat_prompt_dui'),           text: 'I was charged with a DUI. What happens next?' },
-      { label: t('chat_prompt_need_lawyer'),   text: 'I need a criminal defense lawyer. Can you help me find one?' },
+      { label: t('chat_prompt_just_arrested'), text: t('x_ch_i_was_just_arrested') },
+      { label: t('chat_prompt_know_rights'),   text: t('x_ch_what_my_rights_during') },
+      { label: t('chat_prompt_dui'),           text: t('x_ch_i_was_charged_with') },
+      { label: t('chat_prompt_need_lawyer'),   text: t('x_ch_i_need_criminal_defense') },
     ],
   },
   {
     category: t('chat_cat_drug_criminal'),
     color: COLORS.blue,          // was COLORS.blue
     prompts: [
-      { label: t('chat_prompt_drug'),         text: 'I was charged with drug possession. What are my options?' },
-      { label: t('chat_prompt_assault'),      text: 'I have an assault charge. What should I expect?' },
-      { label: t('chat_prompt_expungement'),  text: 'Can I get my arrest record expunged?' },
-      { label: t('chat_prompt_probation'),    text: 'I may have violated my probation. What happens next?' },
+      { label: t('chat_prompt_drug'),         text: t('x_ch_i_was_charged_with_2') },
+      { label: t('chat_prompt_assault'),      text: t('x_ch_i_have_assault_charge') },
+      { label: t('chat_prompt_expungement'),  text: t('x_ch_can_i_get_my') },
+      { label: t('chat_prompt_probation'),    text: t('x_ch_i_may_have_violated') },
     ],
   },
   {
     category: t('chat_cat_family'),
     color: COLORS.blue,
     prompts: [
-      { label: t('chat_prompt_divorce'),     text: 'I want to file for divorce. What are the steps?' },
-      { label: t('chat_prompt_custody'),     text: 'How does child custody work in my state?' },
-      { label: t('chat_prompt_restraining'), text: 'How do I get a restraining order?' },
-      { label: t('chat_prompt_tenant'),      text: 'My landlord is trying to evict me. What are my rights?' },
+      { label: t('chat_prompt_divorce'),     text: t('x_ch_i_want_file_divorce') },
+      { label: t('chat_prompt_custody'),     text: t('x_ch_how_does_child_custody') },
+      { label: t('chat_prompt_restraining'), text: t('x_ch_how_do_i_get') },
+      { label: t('chat_prompt_tenant'),      text: t('x_ch_my_landlord_trying_evict') },
     ],
   },
   {
     category: t('chat_cat_work'),
     color: COLORS.navy,          // was COLORS.legalDark
     prompts: [
-      { label: t('chat_prompt_wrongful'),    text: 'I think I was wrongfully fired. What can I do?' },
-      { label: t('chat_prompt_wage'),        text: 'My employer is not paying me correctly. What are my options?' },
-      { label: t('chat_prompt_bankruptcy'),  text: 'What are my options if I cannot pay my debts?' },
-      { label: t('chat_prompt_claims'),      text: 'How do I file a small claims court case?' },
+      { label: t('chat_prompt_wrongful'),    text: t('x_ch_i_think_i_was') },
+      { label: t('chat_prompt_wage'),        text: t('x_ch_my_employer_not_paying') },
+      { label: t('chat_prompt_bankruptcy'),  text: t('x_ch_what_my_options_if') },
+      { label: t('chat_prompt_claims'),      text: t('x_ch_how_do_i_file') },
     ],
   },
   {
     category: t('chat_cat_immigration'),
     color: COLORS.emergency,          // was COLORS.warnDark
     prompts: [
-      { label: t('chat_prompt_ice'),   text: 'A family member was detained by ICE. What should we do?', intent: 'ice_detention' },
-      { label: t('chat_prompt_asylum'),text: 'How do I apply for asylum in the US?' },
-      { label: t('chat_prompt_visa'),  text: 'My visa is expiring. What are my options?' },
-      { label: t('chat_prompt_daca'),  text: 'What are my rights as a DACA recipient?' },
+      { label: t('chat_prompt_ice'),   text: t('x_ch_family_member_was_detained'), intent: 'ice_detention' },
+      { label: t('chat_prompt_asylum'),text: t('x_ch_how_do_i_apply') },
+      { label: t('chat_prompt_visa'),  text: t('x_ch_my_visa_expiring_what') },
+      { label: t('chat_prompt_daca'),  text: t('x_ch_what_my_rights_as') },
     ],
   },
-];
+]);
 
-const QUICK_PROMPTS = PROMPT_CATEGORIES[0].prompts;
+const QUICK_PROMPTS = perLang(() => PROMPT_CATEGORIES()[0].prompts);
 
 // ── Offline AI response cache ──────────────────────────────────────────────────
-const OFFLINE_QA: { q: string[]; a: string }[] = [
-  { q: ['miranda', 'miranda rights', 'what are my rights'],
-    a: "You have the right to remain silent -- use it. You have the right to an attorney -- ask for one immediately. If you cannot afford an attorney, one must be appointed for you. Do not answer any questions about the alleged offense until your attorney is present. Say only: 'I am invoking my right to remain silent and my right to an attorney.' Then stop talking." },
-  { q: ['bail', 'how does bail work', 'what is bail'],
-    a: "Bail is money paid to the court to secure release from jail before trial. The judge sets the amount at a bail hearing, usually within 24-72 hours of arrest. You can pay the full amount directly (gets returned after the case), or use a bail bondsman who posts it for a fee the agent sets — ask what they charge, and whether any of it is refundable, before you sign. If you cannot make bail, you stay in custody until trial or until the bail is reduced. Your attorney can file a motion to reduce bail." },
-  { q: ['arraignment', 'what happens at arraignment'],
-    a: "Arraignment is your first formal court appearance -- usually within 24-72 hours of arrest. The judge reads the charges, you enter a plea (not guilty is almost always the right plea at arraignment), and bail is set or reviewed. Keep it short: enter not guilty, say nothing else. Your attorney does the talking." },
-  { q: ['attorney', 'public defender', 'do i get a lawyer', 'can i afford a lawyer'],
-    a: "You have a constitutional right to an attorney. If you cannot afford one, the court will appoint a public defender at no cost. Request a public defender at arraignment. A public defender is a licensed attorney -- they handle thousands of these cases and know the local courts. Do not waive your right to an attorney." },
-  { q: ['phone call', 'right to a phone call'],
-    a: "You have the right to make a phone call after arrest. In most states this must be allowed within a reasonable time -- usually a few hours. Use it to call a family member or an attorney. Do not use it to discuss the facts of your case -- jail calls are recorded." },
-  { q: ['search', 'can police search me', 'illegal search'],
-    a: "Police can search you without a warrant if: you consent (never consent), you are being arrested (incident to arrest), they see evidence in plain view, there are exigent circumstances (emergency), or a warrant has been issued. Do not consent to any search. Say: 'I do not consent to a search.' If searched anyway, do not resist -- raise it with your attorney as a Fourth Amendment suppression issue." },
-  { q: ['right to remain silent', '5th amendment', 'self incrimination'],
-    a: "The Fifth Amendment protects you from being forced to testify against yourself. You can invoke this right at any time -- before, during, or after arrest. Simply say: 'I am invoking my Fifth Amendment right to remain silent.' After that, answer no questions about the alleged offense. This includes questions that seem harmless. Silence cannot be used against you -- but anything you say can." },
-  { q: ['expungement', 'clear my record', 'seal my record'],
-    a: "Expungement seals or destroys criminal records so they do not appear on background checks. Eligibility depends on your state, the charge, how much time has passed, and whether you completed your sentence. Most first-time non-violent misdemeanors are eligible after a waiting period. Use the Expungement Checker in this app for your specific state and charge type." },
-  { q: ['dui', 'dwi', 'drunk driving'],
-    a: "A DUI/DWI arrest triggers two separate proceedings: a criminal case and an administrative DMV hearing to suspend your license. The license suspension hearing has a short deadline -- usually 7-10 days after arrest -- and is separate from the criminal case. You need an attorney for both. Do not plead guilty at arraignment. Many DUI defenses involve the accuracy of the breathalyzer, the legality of the stop, and the field sobriety test procedure." },
-  { q: ['domestic violence', 'domestic battery'],
-    a: "Domestic violence charges often involve mandatory arrest policies -- police may be required to arrest even if the alleged victim does not want to press charges. The state, not the victim, prosecutes the case. Immigration consequences for non-citizens are severe. Bail may involve a protective order prohibiting contact. Do not contact the alleged victim, even if they want you to -- violating a protective order is a separate crime." },
-  { q: ['drug possession', 'possession', 'controlled substance'],
-    a: "Drug possession charges vary by substance, quantity, and whether the state considers it simple possession or possession with intent to distribute. First-time possession charges may qualify for diversion programs -- completing the program results in no conviction. Immigration consequences for non-citizens are severe even for minor drug offenses. Use the Diversion Checker in this app." },
-  { q: ['felony', 'what is a felony'],
-    a: "A felony is a serious crime typically punishable by more than one year in prison (as opposed to a misdemeanor, which carries less than one year). Felony convictions have severe collateral consequences: loss of voting rights in many states, loss of the right to possess firearms, bars to public housing and some employment, and immigration consequences for non-citizens. Never plead guilty to a felony without fully understanding these consequences." },
-  { q: ['misdemeanor', 'what is a misdemeanor'],
-    a: "A misdemeanor is a lesser criminal offense typically punishable by up to one year in jail (not prison). Class A or Class 1 misdemeanors are the most serious; Class C or Class 3 are the least serious. Even misdemeanors can have significant consequences for employment, housing, and immigration. Many misdemeanors are eligible for expungement after a waiting period." },
-  { q: ['probable cause', 'what is probable cause'],
-    a: "Probable cause is the legal standard police must meet before making an arrest or conducting a search. It means there is a reasonable basis to believe a crime has been committed. It is more than a hunch but less than certainty. If police arrested you or searched you without probable cause, your attorney can file a motion to suppress any evidence obtained as a result." },
-  { q: ['plea deal', 'plea bargain', 'should i take a plea'],
-    a: "A plea bargain is an agreement to plead guilty in exchange for a reduced charge or lighter sentence. Whether to accept depends on the strength of the evidence against you, the likely outcome at trial, and your personal circumstances. Never accept a plea without consulting an attorney who has reviewed the discovery. Once you plead guilty, it is very difficult to reverse." },
-  { q: ['jury trial', 'right to jury trial'],
-    a: "You have a constitutional right to a jury trial for any offense carrying more than six months in jail. A jury of 12 (or 6 in some states for misdemeanors) must unanimously agree you are guilty beyond a reasonable doubt. In a bench trial, a judge decides. Your attorney can advise which is more advantageous for your specific case and judge." },
-  { q: ['discovery', 'what is discovery'],
-    a: "Discovery is the process through which you get to see the evidence the prosecution plans to use against you. It includes police reports, witness statements, lab results, body camera footage, and anything the prosecution knows that might help your defense (Brady material). Your attorney files a motion for discovery. Under Brady v. Maryland, the prosecution must turn over any evidence favorable to the defense." },
-  { q: ['speedy trial', 'how long can they hold me'],
-    a: "The Sixth Amendment guarantees the right to a speedy trial. Most states have specific speedy trial deadlines -- typically 70-180 days from arrest for felonies. Excessive delays can result in dismissal. If you are held in custody and your case is not being resolved, your attorney should file a motion asserting your speedy trial rights." },
-  { q: ['bond', 'bondsman', 'bail bondsman'],
-    a: "A bail bondsman posts the full bail with the court on your behalf in exchange for a fee the agent sets. Fees differ by agent and state, so ask what they charge, and whether any of it is refundable, before you sign. If you fail to appear, the bondsman is responsible for the full amount and may send a bounty hunter to find you." },
-  { q: ['suppress', 'motion to suppress', 'throw out evidence'],
-    a: "A motion to suppress asks the court to exclude evidence obtained in violation of your constitutional rights -- typically the Fourth Amendment (unlawful search), Fifth Amendment (coerced statement), or Sixth Amendment (interrogation after counsel invoked). If the motion is granted, the suppressed evidence cannot be used at trial. This often leads to reduced charges or dismissal." },
-  { q: ['immigration', 'deportation', 'ice', 'non-citizen'],
-    a: "A criminal conviction -- even a misdemeanor -- can trigger deportation, inadmissibility, or loss of DACA status for non-citizens. Immigration consequences depend on the exact charge, not the name of the offense. Never plead guilty without having an immigration attorney review the immigration consequences. See the Immigration Consequences section of this app for detail by offense type." },
-  { q: ['juvenile', 'minor', 'under 18', 'teen'],
-    a: "Juvenile court is separate from adult court and uses different terminology -- adjudicated delinquent, not convicted. Records are confidential in most states and can often be sealed automatically or by petition. A juvenile cannot waive Miranda rights in many states without a parent or attorney present. The most dangerous event is a transfer to adult court -- fight it immediately. See the Juvenile Justice section of this app." },
-  { q: ['parole', 'probation', 'what is parole'],
-    a: "Probation is supervision instead of (or in addition to) jail time, ordered at sentencing. Parole is early release from prison under supervision. Both involve conditions -- regular check-ins, drug testing, no new offenses, and often restrictions on travel and association. A violation can result in revocation and the underlying sentence being imposed. Attend every check-in. Communicate proactively with your officer." },
-  { q: ['court date', 'miss court', 'missed hearing'],
-    a: "Missing a court date results in a bench warrant for your arrest and often forfeiture of any bail paid. Appear at every court date. If you cannot appear due to a genuine emergency, your attorney must notify the court immediately and file a motion to continue. Do not simply not show up -- a bench warrant stays active until you are arrested or surrender." },
-  { q: ['what do i do', 'arrested', 'just arrested', 'i was arrested'],
-    a: "Do these things in order: 1) Say nothing except 'I want a lawyer.' 2) Do not resist -- comply physically while invoking rights verbally. 3) Remember the officer's name and badge number. 4) Use your phone call to contact family or an attorney. 5) Do not discuss the case with anyone in the jail -- conversations are monitored. 6) At arraignment, plead not guilty. 7) Find a criminal defense attorney before your next court date." },
-  { q: ['dui', 'dwi', 'drunk driving', 'drinking and driving', 'i was drinking'],
-    a: "After a DUI arrest -- do this immediately:\n1. DO NOT answer questions about drinking (invoke silence + lawyer)\n2. You have 7-10 DAYS to request a DMV hearing or your license is automatically suspended -- this is separate from the criminal case\n3. A DUI attorney can often negotiate a better outcome than you expect\n4. You will be arraigned within 24-72 hours -- plead NOT GUILTY\n\nUse the Deadline Calculator in this app to track your DMV deadline." },
-  { q: ['just arrested', 'i was arrested', 'what do i do', 'help me', 'arrested'],
-    a: "Right now -- the only 3 things that matter:\n\n1. SAY: 'I am invoking my right to remain silent and I want a lawyer.' Then stop talking.\n2. Do NOT consent to any searches.\n3. Use your phone call to call a bail bondsman or attorney -- NOT to discuss what happened.\n\nEverything else can wait. Open the HelpNow screen in this app to find a bondsman and attorney near you." },
-  { q: ['domestic violence', 'dv', 'hit my partner', 'my partner hit me', 'domestic'],
-    a: "Domestic violence situations:\n\nIF YOU ARE IN DANGER: Call 911 immediately.\nNational DV Hotline: 1-800-799-7233 (24/7, free, confidential)\n\nIF YOU WERE CHARGED:\n• Do not contact the alleged victim -- even if they want you to\n• Comply with any protective order completely\n• The state prosecutes DV cases -- the victim cannot 'drop charges'\n• Get a defense attorney immediately" },
-  { q: ['drug', 'drugs', 'possession', 'weed', 'marijuana', 'cocaine', 'meth'],
-    a: "For a drug possession charge:\n\n1. STAY SILENT -- drug cases are often built on statements you make\n2. The most common defense is an unlawful search -- if police searched without a warrant or consent, evidence may be suppressed\n3. First-time possession often qualifies for diversion programs (no conviction)\n4. Public defenders handle drug cases routinely\n\nOpen 'Drug Charge Penalties' in this app to see what your state\'s laws say." },
-  { q: ['i cant afford', 'no money', 'broke', 'poor', 'free help'],
-    a: "You have FREE options:\n\n1. PUBLIC DEFENDER -- Free attorney appointed by the court. Real lawyers. Request one at arraignment.\n2. LAW SCHOOL CLINICS -- Law students supervised by professors handle real cases for free. Find one in Resources.\n3. LEGAL AID -- Income-based free legal help. Find in Resources.\n4. SELF-REPRESENTATION -- Last resort but possible for minor charges.\n\nYou always have options. Open Resources in this app to find free help near you." },
-  { q: ['scared', 'nervous', 'freaking out', 'panic', 'help', 'please help'],
-    a: "Take a breath. You can get through this.\n\nRight now, the most important thing: Don't talk to police about the incident. Just say you want a lawyer.\n\nThis app can help you find a bail bondsman to get out of jail, an attorney to defend you, and a public defender if you can\'t afford one.\n\nTap 'HelpNow' on the home screen to get connected immediately." },
-  { q: ['probation', 'violated probation', 'probation violation', 'missed check in'],
-    a: "If you violated probation:\n\n1. Contact your probation officer proactively -- being upfront is always better than them finding out\n2. Get an attorney before your next PO meeting if possible\n3. A probation violation hearing has a LOWER standard of proof than a criminal trial\n4. First violations often result in increased conditions, not automatic revocation\n\nDocument any circumstances that explain the violation (medical issue, job loss, etc.)." },
-];
+const OFFLINE_QA = perLang((): { q: string[]; a: string }[] => [
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'miranda', 'miranda rights', 'what are my rights'],
+    a: t('x_ch_have_right_remain_silent') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'bail', 'how does bail work', 'what is bail'],
+    a: t('x_ch_bail_money_paid_court') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'arraignment', 'what happens at arraignment'],
+    a: t('x_ch_arraignment_first_formal_court') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'attorney', 'public defender', 'do i get a lawyer', 'can i afford a lawyer'],
+    a: t('x_ch_have_constitutional_right_attorney') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'phone call', 'right to a phone call'],
+    a: t('x_ch_have_right_make_phone') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'search', 'can police search me', 'illegal search'],
+    a: t('x_ch_police_can_search_without') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'right to remain silent', '5th amendment', 'self incrimination'],
+    a: t('x_ch_fifth_amendment_protects_from') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'expungement', 'clear my record', 'seal my record'],
+    a: t('x_ch_expungement_seals_destroys_criminal') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'dui', 'dwi', 'drunk driving'],
+    a: t('x_ch_dui_dwi_arrest_triggers') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'domestic violence', 'domestic battery'],
+    a: t('x_ch_domestic_violence_charges_often') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'drug possession', 'possession', 'controlled substance'],
+    a: t('x_ch_drug_possession_charges_vary') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'felony', 'what is a felony'],
+    a: t('x_ch_felony_serious_crime_typically') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'misdemeanor', 'what is a misdemeanor'],
+    a: t('x_ch_misdemeanor_lesser_criminal_offense') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'probable cause', 'what is probable cause'],
+    a: t('x_ch_probable_cause_legal_standard') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'plea deal', 'plea bargain', 'should i take a plea'],
+    a: t('x_ch_plea_bargain_agreement_plead') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'jury trial', 'right to jury trial'],
+    a: t('x_ch_have_constitutional_right_jury') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'discovery', 'what is discovery'],
+    a: t('x_ch_discovery_process_through_which') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'speedy trial', 'how long can they hold me'],
+    a: t('x_ch_sixth_amendment_guarantees_right') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'bond', 'bondsman', 'bail bondsman'],
+    a: t('x_ch_bail_bondsman_posts_full') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'suppress', 'motion to suppress', 'throw out evidence'],
+    a: t('x_ch_motion_suppress_asks_court') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'immigration', 'deportation', 'ice', 'non-citizen'],
+    a: t('x_ch_criminal_conviction_even_misdemeanor') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'juvenile', 'minor', 'under 18', 'teen'],
+    a: t('x_ch_juvenile_court_separate_from') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'parole', 'probation', 'what is parole'],
+    a: t('x_ch_probation_supervision_instead_additi') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'court date', 'miss court', 'missed hearing'],
+    a: t('x_ch_missing_court_date_results') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'what do i do', 'arrested', 'just arrested', 'i was arrested'],
+    a: t('x_ch_do_these_things_order') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'dui', 'dwi', 'drunk driving', 'drinking and driving', 'i was drinking'],
+    a: t('x_ch_after_dui_arrest_do') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'just arrested', 'i was arrested', 'what do i do', 'help me', 'arrested'],
+    a: t('x_ch_right_now_only_3') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'domestic violence', 'dv', 'hit my partner', 'my partner hit me', 'domestic'],
+    a: t('x_ch_domestic_violence_situations_if') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'drug', 'drugs', 'possession', 'weed', 'marijuana', 'cocaine', 'meth'],
+    a: t('x_ch_drug_possession_charge_1') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'i cant afford', 'no money', 'broke', 'poor', 'free help'],
+    a: t('x_ch_have_free_options_1') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'scared', 'nervous', 'freaking out', 'panic', 'help', 'please help'],
+    a: t('x_ch_take_breath_can_get') },
+  { q: [ // i18n-exempt: English match keywords (localized ones: x_ch_offline_kw_N)
+    'probation', 'violated probation', 'probation violation', 'missed check in'],
+    a: t('x_ch_if_violated_probation_1') },
+]);
 
 // T1-H/I: hooks removed from function body; function closes cleanly with return null
 function getOfflineAnswer(query: string): string | null {
   const q = query.toLowerCase().trim();
-  for (const entry of OFFLINE_QA) {
-    if (entry.q.some(keyword => q.includes(keyword))) {
-      return entry.a + '\n\n_Offline response -- cached answer. Connect to the internet for a personalized AI response._';
+  for (const [i, entry] of OFFLINE_QA().entries()) {
+    // English keywords always match; x_ch_offline_kw_N adds the same keywords in the app language
+    const local = t(`x_ch_offline_kw_${i + 1}`).split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if ([...entry.q, ...local].some(keyword => q.includes(keyword))) {
+      return t('x_ch_offline_response_cached_answer', { a: entry.a });
     }
   }
   return null;
@@ -361,6 +396,7 @@ function getOfflineAnswer(query: string): string | null {
 // T1-J: function signature is on one line; all hooks are inside the function body
 
 function ChatScreen({ navigation, route }: ScreenProps) {
+  useLang();
   const { confirm } = useConfirm();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -456,38 +492,38 @@ function ChatScreen({ navigation, route }: ScreenProps) {
     if (!messages || messages.length === 0) return;
     try {
       const header = [
-        'Justice Gavel AI Conversation',
+        t('x_ch_justice_gavel_ai_conversation'),
         '================================',
-        `Exported: ${new Date().toLocaleDateString('en-US', {
+        t('x_ch_export_exported', { date: new Date().toLocaleDateString(locale(), {
           year: 'numeric', month: 'long', day: 'numeric',
-        })}`,
-        caseTitle ? `Case: ${caseTitle}` : '',
+        }) }),
+        caseTitle ? t('x_ch_export_case', { title: caseTitle }) : '',
         '',
       ].filter(Boolean).join('\n');
 
       const body = (messages ?? []).map(m => {
-        const sender = m.role === 'assistant' ? 'Justice Gavel AI' : 'You';
+        const sender = m.role === 'assistant' ? t('x_ch_justice_gavel_ai') : t('x_ch_export_you');
         return `[${sender}]\n${m.text}`;
       }).join('\n\n---\n\n');
 
       const footer = [
         '', '================================',
-        'IMPORTANT: This conversation is general legal information only.',
-        'It is not legal advice. Consult a licensed attorney for advice',
-        'specific to your situation.', '',
+        t('x_ch_important_this_conversation_general'),
+        t('x_ch_it_not_legal_advice'),
+        t('x_ch_specific_situation'), '',
         'Justice Gavel · justicegavel.app',
       ].join('\n');
 
       await RNShare.share({
         message: header + '\n\n' + body + '\n\n' + footer,
-        title: 'AI Legal Conversation',
+        title: t('x_ch_ai_legal_conversation'),
       });
     } catch { /* share cancelled by user — not an error */ }
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(() => {
-confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
-      { confirmLabel: 'Clear', destructive: true }).then(async ok => { if (!ok) return;
+confirm(t('x_ch_clear_conversation'), t('x_ch_delete_all_messages_this'),
+      { confirmLabel: t('x_ch_clear'), destructive: true }).then(async ok => { if (!ok) return;
   const sid = sessionId || await getSessionId();
     try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
     const newId = randomId();
@@ -509,15 +545,17 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
 
     // ── Crisis keyword detection — route immediately, skip AI ─────────────────
     const lower = text.trim().toLowerCase();
-    const CRISIS_WORDS = ['suicide', 'kill myself', 'end it', 'hurt myself', 'overdose',
-      'dont want to live', 'want to die', 'harm myself', 'self harm'];
-    const DV_WORDS = ['hitting me', 'beating me', 'choking me', 'he hit', 'she hit',
-      'being abused', 'domestic violence', 'unsafe at home'];
+    // English phrases always match; x_ch_crisis_words / x_ch_dv_words add them in the app language.
+    const localWords = (k: string) => t(k).split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+    const CRISIS_WORDS = ['suicide', 'kill myself', 'end it', 'hurt myself', 'overdose', // i18n-exempt: matched, not shown
+      'dont want to live', 'want to die', 'harm myself', 'self harm', ...localWords('x_ch_crisis_words')]; // i18n-exempt: matched
+    const DV_WORDS = ['hitting me', 'beating me', 'choking me', 'he hit', 'she hit', // i18n-exempt: matched, not shown
+      'being abused', 'domestic violence', 'unsafe at home', ...localWords('x_ch_dv_words')]; // i18n-exempt: matched
 
     if (CRISIS_WORDS.some(w => lower.includes(w))) {
       setMessages(prev => [...prev, {
         id: randomId(), role: 'assistant',
-        text: "I hear you. Please reach out for immediate support right now:\n\n📞 988 Suicide & Crisis Lifeline -- call or text 988 (free, 24/7)\n📞 Crisis Text Line -- text HOME to 741741\n\nYou don't have to face this alone. These counselors are trained to help and will listen without judgment.\n\nIf you're in immediate danger, call 911.",
+        text: t('x_ch_i_hear_please_reach'),
         suggestLawyerSearch: false,
       }]);
       setLoading(false);
@@ -527,7 +565,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
     if (DV_WORDS.some(w => lower.includes(w))) {
       setMessages(prev => [...prev, {
         id: randomId(), role: 'assistant',
-        text: "Your safety is the most important thing right now.\n\n🔴 If you are in immediate danger -- call 911\n\n📞 National DV Hotline: 1-800-799-7233 (24/7, confidential)\n💬 Text START to 88788\n\nI can also help you find a local shelter, understand your legal rights, or locate the nearest public defender. What do you need right now?",
+        text: t('x_ch_safety_most_important_thing'),
         suggestLawyerSearch: false,
       }]);
       setLoading(false);
@@ -538,7 +576,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
     if (text.trim().length < 3) {
       setMessages(prev => [...prev, {
         id: randomId(), role: 'assistant',
-        text: "I want to help -- can you tell me a little more about what's going on? For example:\n\n• \"I was just arrested -- what do I do?\"\n• \"How do I find a bail bondsman?\"\n• \"What are my rights if police stop me?\"",
+        text: t('x_ch_i_want_help_can'),
         suggestLawyerSearch: false,
       }]);
       setLoading(false);
@@ -551,7 +589,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         const offlineAnswer = getOfflineAnswer(text.trim());
         setMessages(prev => [...prev, {
           id:   randomId(), role: 'assistant',
-          text: offlineAnswer || "You're offline. Connect to the internet for AI responses.\n\nTip: common questions like Miranda rights, bail, arraignment, and expungement are available offline -- try asking about those.",
+          text: offlineAnswer || t('x_ch_re_offline_connect_internet'),
           suggestLawyerSearch: false,
         }]);
         setLoading(false);
@@ -658,7 +696,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
             // The answer was already streaming (and billed): keep what arrived
             // instead of asking the same question a second time.
             setMessages(prev => prev.map(m => m.id === placeholderId
-              ? { ...m, text: streamedText + '\n\n⚠️ The answer was cut off. Ask again to continue.' }
+              ? { ...m, text: t('x_ch_answer_was_cut_off', { streamedText }) }
               : m));
             setLoading(false);
             return;
@@ -683,14 +721,14 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       if (res.data?.jobId) {
         const jobId         = res.data?.jobId;
         const placeholderId = randomId();
-        setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: '⏳ Thinking…' }]);
+        setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: t('x_ch_thinking') }]);
         scrollToBottom();
         pollJob(jobId, {
           onProgress: ({ status, elapsed }: { status: string; elapsed: number }) => {
             const sec   = Math.round(elapsed / 1000);
             const phase = status === 'processing'
-              ? (sec < 5 ? '⏳ Thinking…' : sec < 20 ? '⏳ Analyzing…' : '⏳ Almost there…')
-              : '⏳ Waiting in queue…';
+              ? (sec < 5 ? t('x_ch_thinking') : sec < 20 ? t('x_ch_analyzing') : t('x_ch_almost_there'))
+              : t('x_ch_waiting_queue');
             setMessages(prev => prev.map(m => m.id === placeholderId ? { ...m, text: phase } : m));
           },
         }).then((job: any) => {
@@ -699,7 +737,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
             m.id === placeholderId
               ? {
                   id: randomId(), role: 'assistant',
-                  text:                (d.reply as string) || (d.answer as string) || 'Done.',
+                  text:                (d.reply as string) || (d.answer as string) || t('x_ch_done'),
                   suggestLawyerSearch: d.suggestLawyerSearch as boolean,
                   intent:              d.intent as string,
                   rightsRefs:          Array.isArray(d.rights_refs) ? (d.rights_refs as RightsRef[]) : undefined,
@@ -711,7 +749,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         }).catch((e: Error) => {
           setMessages(prev => prev.map(m =>
             m.id === placeholderId
-              ? { id: randomId(), role: 'assistant', text: '⚠️ ' + (e.message || 'Request failed. Try again.') }
+              ? { id: randomId(), role: 'assistant', text: '⚠️ ' + (e.message || t('x_ch_request_failed_try_again')) }
               : m
           ));
           setLoading(false);
@@ -736,13 +774,13 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         notifyDisclaimerRequired();
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: 'Before using AI chat, please review and accept the legal notice (Justice Gavel is not a law firm and this is not legal advice). Then ask your question again.',
+          text: t('x_ch_before_using_ai_chat'),
           suggestLawyerSearch: false,
         }]);
       } else if (status === 402 || code === 'chat_limit_reached') {
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: "You've used your free AI questions for today.\n\nUpgrade to a paid plan for unlimited chat, full lawyer search, arrest records, and all Know Your Rights lessons.",
+          text: t('x_ch_ve_used_free_ai'),
           suggestLawyerSearch: false,
           showUpgrade: true,
         }]);
@@ -751,20 +789,20 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
           text: aiDown
-            ? 'AI chat is temporarily unavailable. In the meantime you can browse lawyers, your rights card, and the legal guides — they all work without AI.'
-            : 'The server had an error. Please try again in a moment.',
+            ? t('x_ch_ai_chat_temporarily_unavailable')
+            : t('x_ch_server_had_error_please'),
           suggestLawyerSearch: false,
         }]);
       } else if (!status) {
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: 'No connection. Check your internet and try again.',
+          text: t('x_ch_no_connection_check_internet'),
           suggestLawyerSearch: false,
         }]);
       } else {
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: 'Sorry, I had trouble responding. Please try again.',
+          text: t('x_ch_sorry_i_had_trouble'),
           suggestLawyerSearch: false,
         }]);
       }
@@ -791,8 +829,8 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Legal Help</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>AI-powered rights guide</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_ch_legal_help')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>{t('x_ch_ai_powered_rights_guide')}</Text>
         </View>
         {messages.length > 0 && (
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -801,15 +839,15 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
               onPress={exportConversation}
               style={styles.clearBtn}
               testID="chat-export-button"
-             accessibilityLabel="Share conversation">
-              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Share</Text>
+             accessibilityLabel={t('x_ch_share_conversation')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('share')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
               onPress={clearChat}
               style={styles.clearBtn}
-             accessibilityLabel="Clear">
-              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear</Text>
+             accessibilityLabel={t('x_ch_clear')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('x_ch_clear')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -830,11 +868,10 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
             borderLeftWidth: 3, borderLeftColor: colors.gold,
           }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 }}>
-            ⚠️ AI Legal Information -- Not Legal Advice
+            {t('x_ch_ai_legal_information_not')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, fontSize: 11, lineHeight: 16 }}>
-            I am an AI guide, not a licensed attorney. Nothing here is legal advice. For advice
-            specific to your case, consult a licensed attorney. Tap to dismiss.
+            {t('x_ch_i_am_ai_guide')}
           </Text>
         </TouchableOpacity>
       )}
@@ -843,13 +880,13 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       {isEmpty ? (
         <View style={styles.emptyState}>
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Know your rights</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('ja_s1')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
-            Ask anything about your legal situation. I'm here to help.
+            {t('x_ch_ask_anything_about_legal')}
           </Text>
           <View style={styles.quickPrompts}>
             {/* T1-P: onPress fixed — no longer split across lines */}
-            {QUICK_PROMPTS.map(p => (
+            {QUICK_PROMPTS().map(p => (
               <TouchableOpacity
                 accessibilityRole="button"
                 key={p.label}
@@ -881,7 +918,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           )}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              Start a conversation. Ask any legal question.
+              {t('x_ch_start_conversation_ask_any')}
             </Text>
           }
           contentContainerStyle={styles.messageList}
@@ -913,14 +950,14 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           style={styles.iconBtn}
           onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote'})}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityHint="Opens voice recorder to transcribe and send a message"
+          accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🎙</Text>
         </TouchableOpacity>
 
         <TextInput
           style={styles.textInput}
-          placeholder="Ask anything -- What should I do? How do I get out?"
+          placeholder={t('x_ch_ask_anything_what_should')}
           placeholderTextColor={colors.textMuted}
           value={input}
           onChangeText={setInput}
@@ -936,8 +973,8 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           style={styles.iconBtn}
           onPress={() => navigation.navigate('MoreTab', { screen: 'Translator'})}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel="Open interpreter"
-          accessibilityHint="Opens real-time translation for non-English speakers"
+          accessibilityLabel={t('x_ch_open_interpreter')}
+          accessibilityHint={t('x_ch_opens_real_time_translation')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🌐</Text>
         </TouchableOpacity>
@@ -954,7 +991,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
-        Not legal advice. For emergencies call 911.
+        {t('x_ch_not_legal_advice_emergencies')}
       </Text>
       <AIDisclaimer variant="banner" />
 

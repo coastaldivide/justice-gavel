@@ -92,7 +92,7 @@ When the CCRC page shows a new state, update `STATE_RULES` in
 
 ## Scheduling
 Run the checks weekly (`--quick`) and monthly (`--full`) from an operator
-machine or `railway run` with `DATABASE_URL` set. The JSON report is written
+machine (with `DATABASE_URL` exported) or the Render service Shell. The JSON report is written
 to `REPORT_DIR` (default `./reports`) — keep it outside the container, or it
 is lost on the next deploy.
 

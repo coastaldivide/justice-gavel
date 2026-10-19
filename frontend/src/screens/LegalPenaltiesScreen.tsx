@@ -16,35 +16,37 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
-const TABS = [
-  { key: 'drug', label: 'Drug Offenses' },
-  { key: 'dui',  label: 'DUI / Traffic' },
-  { key: 'other',label: 'Other Charges' },
-] as const;
+const TABS = perLang(() => [
+  { key: 'drug', label: t('hn_charge_drug') },
+  { key: 'dui',  label: t('x_legal_penalties_dui_traffic') },
+  { key: 'other',label: t('x_legal_penalties_other_charges') },
+] as const);
 
-type TabKey = typeof TABS[number]['key'];
+type TabKey = ReturnType<typeof TABS>[number]['key'];
 
 // Drug penalty data preserved from DrugPenaltiesScreen
-const DRUG_SCHEDULES = [
-  { schedule: 'Schedule I', examples: 'Heroin, LSD, Ecstasy, Peyote, PCP', max_years: 20, max_fine: 250000 },
-  { schedule: 'Schedule II', examples: 'Cocaine, Meth, Oxycodone, Fentanyl', max_years: 15, max_fine: 100000 },
-  { schedule: 'Schedule III', examples: 'Anabolic steroids, Ketamine, Codeine', max_years: 5, max_fine: 15000 },
-  { schedule: 'Schedule IV', examples: 'Xanax, Valium, Ambien', max_years: 3, max_fine: 10000 },
-  { schedule: 'Schedule V', examples: 'Cough preps, Pregabalin', max_years: 1, max_fine: 5000 },
-];
+const DRUG_SCHEDULES = perLang(() => [
+  { schedule: t('x_legal_penalties_schedule_i'), examples: t('x_legal_penalties_heroin_lsd_ecstasy_peyote'), max_years: 20, max_fine: 250000 },
+  { schedule: t('x_legal_penalties_schedule_ii'), examples: t('x_legal_penalties_cocaine_meth_oxycodone_fentanyl'), max_years: 15, max_fine: 100000 },
+  { schedule: t('x_legal_penalties_schedule_iii'), examples: t('x_legal_penalties_anabolic_steroids_ketamine_codeine'), max_years: 5, max_fine: 15000 },
+  { schedule: t('x_legal_penalties_schedule_iv'), examples: t('x_legal_penalties_xanax_valium_ambien'), max_years: 3, max_fine: 10000 },
+  { schedule: t('x_legal_penalties_schedule_v'), examples: t('x_legal_penalties_cough_preps_pregabalin'), max_years: 1, max_fine: 5000 },
+]);
 
 // DUI data preserved from DUILawsScreen
-const DUI_FACTS = [
-  { label: 'Legal BAC Limit', value: '0.08% (0.04% for CDL, 0.02% under-21)' },
-  { label: '1st Offense', value: 'Up to 6 months jail, $1,000–$2,000 fine, 6-month license suspension' },
-  { label: '2nd Offense', value: 'Up to 1 year jail, $2,000–$5,000 fine, 2-year license suspension' },
-  { label: 'Felony DUI', value: '3rd+ offense, injury/death involved, child passenger present' },
-  { label: 'Implied Consent', value: 'Refusing BAC test = automatic license suspension in all 50 states' },
-  { label: 'Aggravating Factors', value: 'BAC > 0.16%, speeding, accident, prior convictions' },
-];
+const DUI_FACTS = perLang(() => [
+  { label: t('x_legal_penalties_legal_bac_limit'), value: t('x_legal_penalties_bac_value') },
+  { label: t('x_legal_penalties_1st_offense'), value: t('x_legal_penalties_first_value') },
+  { label: t('x_legal_penalties_2nd_offense'), value: t('x_legal_penalties_second_value') },
+  { label: t('x_legal_penalties_felony_dui'), value: t('x_legal_penalties_felony_value') },
+  { label: t('x_legal_penalties_implied_consent'), value: t('x_legal_penalties_implied_value') },
+  { label: t('x_legal_penalties_aggravating_factors'), value: t('x_legal_penalties_aggravating_value') },
+]);
 
 function LegalPenaltiesScreen({ navigation }: any) {
+  useLang();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
   const styles = makeStyles();
@@ -64,15 +66,15 @@ function LegalPenaltiesScreen({ navigation }: any) {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation?.goBack()}
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('x_gradient_header_go_back')}
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
+          <Text style={[styles.back, { color: colors.primary }]}>{t('ja_back')}</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>
-          Legal Penalties
+          {t('x_legal_penalties_legal_penalties')}
         </Text>
         <View style={{ width: 50 }} />
       </View>
@@ -80,24 +82,24 @@ function LegalPenaltiesScreen({ navigation }: any) {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { backgroundColor: (colors as any).warningBg ?? colors.warnBg }]}>
         <Text style={[styles.disclaimerText, { color: (colors as any).warning ?? colors.warnDark }]}>
-          ⚠ Penalties vary by state and case circumstances. This is general information, not legal advice.
+          {t('x_legal_penalties_penalties_vary_by_state')}
         </Text>
       </View>
 
       {/* Tabs */}
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {(TABS as any)?.length === 0 ? (
+        {(TABS() as any)?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
           <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
+            {t('empty_state_nothing')}
           </Text>
           <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
+            {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
-        ) : TABS.map(tab => (
+        ) : TABS().map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
@@ -128,9 +130,9 @@ function LegalPenaltiesScreen({ navigation }: any) {
         {activeTab === 'drug' && (
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Federal Drug Schedules & Maximum Penalties
+              {t('x_legal_penalties_federal_drug_schedules_maximum')}
             </Text>
-            {DRUG_SCHEDULES.map((s, i) => (
+            {DRUG_SCHEDULES().map((s, i) => (
               <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
                 <Text style={[styles.scheduleLabel, { color: colors.primary }]}>
                   {s.schedule}
@@ -141,10 +143,10 @@ function LegalPenaltiesScreen({ navigation }: any) {
                 <View style={styles.penaltyRow}>
                   <View style={styles.penaltyItem}>
                     <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
-                      {s.max_years} yrs
+                      {t('x_legal_penalties_yrs', { max_years: s.max_years })}
                     </Text>
                     <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                      Max prison
+                      {t('x_legal_penalties_max_prison')}
                     </Text>
                   </View>
                   <View style={styles.penaltyItem}>
@@ -152,7 +154,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
                       ${s.max_fine.toLocaleString()}
                     </Text>
                     <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                      Max fine
+                      {t('x_legal_penalties_max_fine')}
                     </Text>
                   </View>
                 </View>
@@ -164,9 +166,9 @@ function LegalPenaltiesScreen({ navigation }: any) {
         {activeTab === 'dui' && (
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              DUI / DWI — Key Facts
+              {t('x_legal_penalties_dui_dwi_key_facts')}
             </Text>
-            {DUI_FACTS.map((fact, i) => (
+            {DUI_FACTS().map((fact, i) => (
               <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
                 <Text style={[styles.factLabel, { color: colors.primary }]}>
                   {fact.label}
@@ -182,7 +184,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
         {activeTab === 'other' && (
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Common Criminal Penalties
+              {t('x_legal_penalties_common_criminal_penalties')}
             </Text>
             {[
               { charge: 'Simple Assault', class: 'Misdemeanor', prison: '0–1 yr', fine: 'Up to $2,500' },
@@ -204,7 +206,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
                   </Text>
                 </View>
                 <Text style={[styles.sentenceText, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                  Prison: {item.prison}  ·  Fine: {item.fine}
+                  {t('x_legal_penalties_prison_fine', { prison: item.prison, fine: item.fine })}
                 </Text>
               </View>
             ))}

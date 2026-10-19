@@ -857,6 +857,39 @@
         ]
       }
     },
+    "/api/admin/diagnostics/client-ip": {
+      "get": {
+        "operationId": "get_api_admin_diagnostics_client-ip",
+        "summary": "GET /api/admin/diagnostics/client-ip",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "x-staff-only": true
+      }
+    },
     "/api/admin/health-scan/history": {
       "get": {
         "operationId": "get_api_admin_health-scan_history",

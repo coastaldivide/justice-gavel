@@ -24,92 +24,94 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation, TouchableOpacity } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 
 type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability';
 
-const SITUATIONS: { key: Situation; label: string; icon: string; color: string; bg: string }[] = [
-  { key: 'eviction_notice',    label: 'I got an eviction notice',        icon: '📄', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-  { key: 'lockout',            label: 'My landlord locked me out',       icon: '🔒', color: COLORS.warnDark, bg: COLORS.warnBg },
-  { key: 'utility_shutoff',    label: 'Utilities were shut off',         icon: '💡', color: COLORS.gold, bg: COLORS.warnBg },
-  { key: 'harassment',         label: 'Landlord is harassing me',        icon: '⚠️', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'mold_habitability',  label: 'Unsafe / uninhabitable unit',     icon: '🏚️', color: COLORS.textSecond, bg: COLORS.bgSubtle },
-];
+const SITUATIONS = perLang((): { key: Situation; label: string; icon: string; color: string; bg: string }[] => [
+  { key: 'eviction_notice',    label: t('x_tenant_rights_i_got_eviction_notice'),        icon: '📄', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+  { key: 'lockout',            label: t('x_tenant_rights_my_landlord_locked_me'),       icon: '🔒', color: COLORS.warnDark, bg: COLORS.warnBg },
+  { key: 'utility_shutoff',    label: t('x_tenant_rights_utilities_were_shut_off'),         icon: '💡', color: COLORS.gold, bg: COLORS.warnBg },
+  { key: 'harassment',         label: t('x_tenant_rights_landlord_harassing_me'),        icon: '⚠️', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'mold_habitability',  label: t('x_tenant_rights_unsafe_uninhabitable_unit'),     icon: '🏚️', color: COLORS.textSecond, bg: COLORS.bgSubtle },
+]);
 
-const GUIDANCE: Record<Situation, { urgent: string[]; rights: string[]; deadline?: string }> = {
+const GUIDANCE = perLang((): Record<Situation, { urgent: string[]; rights: string[]; deadline?: string }> => ({
   eviction_notice: {
-    deadline: 'You typically have 3-30 days depending on your state and the reason. DO NOT ignore this.',
+    deadline: t('x_tenant_rights_typically_have_3_30'),
     urgent: [
-      'Read the notice carefully -- note the date and reason. Take a photo.',
-      'Do NOT move out yet. An eviction notice is not a court order.',
-      'Pay any overdue rent if the notice is for non-payment -- this can stop the eviction in most states.',
-      'Contact a housing attorney or legal aid immediately -- before the deadline.',
-      'Attend every court hearing. Missing one = automatic judgment against you.',
+      t('x_tenant_rights_read_notice_carefully_note'),
+      t('x_tenant_rights_do_not_move_out'),
+      t('x_tenant_rights_pay_any_overdue_rent'),
+      t('x_tenant_rights_contact_housing_attorney_legal'),
+      t('x_tenant_rights_attend_every_court_hearing'),
     ],
     rights: [
-      'Your landlord must go to court to legally remove you.',
-      'You cannot be locked out, have utilities cut, or have belongings removed without a court order.',
-      'You can dispute the eviction in court -- even if you owe rent.',
-      'Retaliation evictions (after you complained about conditions) may be illegal.',
+      t('x_tenant_rights_landlord_must_go_court'),
+      t('x_tenant_rights_cannot_be_locked_out'),
+      t('x_tenant_rights_can_dispute_eviction_court'),
+      t('x_tenant_rights_retaliation_evictions_after_complain'),
     ],
   },
   lockout: {
     urgent: [
-      'A self-help lockout is ILLEGAL in most states. Call 911 if you are locked out without a court order.',
-      'Document everything -- photos, texts, emails from your landlord.',
-      'Contact a housing attorney immediately. Courts issue emergency orders within hours.',
-      'Keep all communications with your landlord in writing from now on.',
+      t('x_tenant_rights_self_help_lockout_illegal'),
+      t('x_tenant_rights_document_everything_photos_texts'),
+      t('x_tenant_rights_contact_housing_attorney_immediately'),
+      t('x_tenant_rights_keep_all_communications_with'),
     ],
     rights: [
-      'Your landlord CANNOT change your locks without a court eviction order.',
-      'You may be entitled to money damages for an illegal lockout.',
-      'Emergency injunctive relief can restore your access same day.',
+      t('x_tenant_rights_landlord_cannot_change_locks'),
+      t('x_tenant_rights_may_be_entitled_money'),
+      t('x_tenant_rights_emergency_injunctive_relief_can'),
     ],
   },
   utility_shutoff: {
     urgent: [
-      'Contact your utility company first -- utilities in your name cannot be shut off by a landlord.',
-      'If landlord controls utilities, an intentional shutoff is illegal in most states.',
-      'Document the shutoff with photos and a written notice to your landlord.',
-      'File a complaint with your local housing authority or code enforcement.',
-      'Seek emergency legal relief if you have children, medical equipment, or extreme weather.',
+      t('x_tenant_rights_contact_utility_company_first'),
+      t('x_tenant_rights_if_landlord_controls_utilities'),
+      t('x_tenant_rights_document_shutoff_with_photos'),
+      t('x_tenant_rights_file_complaint_with_local'),
+      t('x_tenant_rights_seek_emergency_legal_relief'),
     ],
     rights: [
-      'Landlords cannot shut off essential utilities to force you out.',
-      'You may deduct repair costs from rent in some states (repair-and-deduct).',
-      'Document all habitability issues with photos and written complaints.',
+      t('x_tenant_rights_landlords_cannot_shut_off'),
+      t('x_tenant_rights_may_deduct_repair_costs'),
+      t('x_tenant_rights_document_all_habitability_issues'),
     ],
   },
   harassment: {
     urgent: [
-      'Document every incident -- dates, times, what was said or done. Screenshot all texts.',
-      'Send all communication in writing (email or certified mail) going forward.',
-      'File a police report if you feel threatened.',
-      'Contact a housing attorney -- landlord harassment is illegal in most states.',
+      t('x_tenant_rights_document_every_incident_dates'),
+      t('x_tenant_rights_send_all_communication_writing'),
+      t('x_tenant_rights_file_police_report_if'),
+      t('x_tenant_rights_contact_housing_attorney_landlord'),
     ],
     rights: [
-      'You have the right to quiet enjoyment of your home.',
-      'Landlords must give proper notice before entry (typically 24-48 hours).',
-      'Repeated unannounced entry, threats, or intimidation can be grounds for damages.',
+      t('x_tenant_rights_have_right_quiet_enjoyment'),
+      t('x_tenant_rights_landlords_must_give_proper'),
+      t('x_tenant_rights_repeated_unannounced_entry_threats'),
     ],
   },
   mold_habitability: {
     urgent: [
-      'Send a written notice to your landlord describing the problem and requesting repair.',
-      'Take photos and videos of all issues -- dated and timestamped.',
-      'Keep copies of all communications.',
-      'Contact local code enforcement for an inspection -- this creates an official record.',
-      'Do NOT withhold rent without legal advice -- it can backfire.',
+      t('x_tenant_rights_send_written_notice_landlord'),
+      t('x_tenant_rights_take_photos_videos_all'),
+      t('x_tenant_rights_keep_copies_all_communications'),
+      t('x_tenant_rights_contact_local_code_enforcement'),
+      t('x_tenant_rights_do_not_withhold_rent'),
     ],
     rights: [
-      'Your landlord has a legal duty to maintain a habitable unit.',
-      'You may be entitled to rent reduction, repair-and-deduct, or lease termination.',
-      'Retaliation for reporting habitability issues is illegal in most states.',
+      t('x_tenant_rights_landlord_has_legal_duty'),
+      t('x_tenant_rights_may_be_entitled_rent'),
+      t('x_tenant_rights_retaliation_reporting_habitability_i'),
     ],
   },
-};
+}));
 
 function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -120,8 +122,8 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
   const styles = makeStyles(colors);
   // 1. What's happening?  2. Immediate steps + rights for that situation.
   const [situation, setSituation] = React.useState<Situation | ''>('');
-  const guidance = situation ? GUIDANCE[situation] : null;
-  const selected = SITUATIONS.find(x => x.key === situation);
+  const guidance = situation ? GUIDANCE()[situation] : null;
+  const selected = SITUATIONS().find(x => x.key === situation);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -132,12 +134,12 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>🏘️</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Tenant Rights</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Housing & landlord-tenant law</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('tr_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_tenant_rights_housing_landlord_tenant_law')}</Text>
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>What's happening?</Text>
-      {SITUATIONS.map(sit => {
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('tr_situation_label')}</Text>
+      {SITUATIONS().map(sit => {
         const active = sit.key === situation;
         return (
           <TouchableOpacity
@@ -164,7 +166,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={styles.deadlineText}>{guidance.deadline}</Text>
             </View>
           )}
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Do this now</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('x_tenant_rights_do_this_now')}</Text>
           {guidance.urgent.map((step, i) => (
             <View key={step} style={[styles.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={[styles.stepNum, { backgroundColor: selected.color }]}>
@@ -173,7 +175,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={[styles.stepText, { color: colors.textPrimary }]}>{step}</Text>
             </View>
           ))}
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Your rights</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('tr_your_rights')}</Text>
           <View style={[styles.rightsCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             {guidance.rights.map(r => (
               <View key={r} style={styles.rightsRow}>
@@ -185,11 +187,11 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={styles.ctaBlock}>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Find a housing attorney"
+              accessibilityLabel={t('x_tenant_rights_find_housing_attorney')}
               onPress={() => navigation.navigate('LawyersTab')}
               style={[styles.ctaBtn, { backgroundColor: colors.navy }]}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>⚖️  Find a housing attorney</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>{t('x_tenant_rights_find_housing_attorney_2')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -198,8 +200,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textMuted }]}>
-          This information is for general education only and is not legal advice.
-          Laws vary by state. Consult a licensed attorney for advice about your situation.
+          {t('x_family_court_this_information_general_education')}
         </Text>
       </View>
     </ScrollView>

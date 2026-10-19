@@ -35,6 +35,7 @@ import {
 import { useTheme } from '../constants/theme';
 import { hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
+import { t, useLang } from '../i18n';
 
 // ── Member state list (subset — full list from API) ─────────────────────────
 const QUICK_COUNTRIES = [
@@ -64,6 +65,7 @@ interface HagueContactScreenProps {
 }
 
 function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const { caseId, caseName } = route?.params || {};
@@ -98,7 +100,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
       if (mountedRef.current) setAuthorityData(res.data || null);
     } catch {
       hapticWarn();
-      showToast('Could not load authority information. Check HCCH at hcch.net directly.');
+      showToast(t('x_hague_contact_could_not_load_authority'));
     } finally {
       if (mountedRef.current) setLoadingAuth(false);
     }
@@ -113,24 +115,24 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   const openUrl = useCallback((url: string) => {
     hapticSelect();
     Linking.openURL(url).catch(() =>
-      showToast('Please copy this URL manually.', 'warning')
+      showToast(t('x_hague_contact_please_copy_this_url'), 'warning')
     );
   }, [showToast]);
 
   const callNumber = useCallback((phone: string) => {
     hapticCall();
     Linking.openURL(`tel:${phone.replace(/[^0-9+]/g, '')}`).catch(() =>
-      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
+      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast(t('x_hague_contact_could_not_open_dialer'), 'error'))
     );
   }, [showToast]);
 
   const submitIntake = useCallback(async () => {
     if (!caseId) {
-      return showToast('Open from a specific case to record intake.');
+      return showToast(t('x_hague_contact_open_from_specific_case'));
     }
-    if (!childName.trim()) return showToast('Child name is required.');
-    if (!selectedCountry) return showToast('Select destination country first.');
-    if (!abductionDate.trim()) return showToast('Abduction date is required.');
+    if (!childName.trim()) return showToast(t('x_hague_contact_child_name_required'));
+    if (!selectedCountry) return showToast(t('x_hague_contact_select_destination_country_first'));
+    if (!abductionDate.trim()) return showToast(t('x_hague_contact_abduction_date_required'));
 
     if (mountedRef.current) setSubmitting(true);
     try {
@@ -148,7 +150,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
       if (mountedRef.current) setPhase('result');
     } catch {
       hapticWarn();
-      showToast('Failed to record intake. Please try again.');
+      showToast(t('x_hague_contact_failed_record_intake_please'));
     } finally {
       if (mountedRef.current) setSubmitting(false);
     }
@@ -166,12 +168,12 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         testID="hague-contact-screen">
         <View style={s.successBanner}>
           <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-          <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>Intake Recorded</Text>
-          <Text maxFontSizeMultiplier={1.4} style={s.successSub}>Attached to your case for tracking</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>{t('x_hague_contact_intake_recorded')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.successSub}>{t('x_hague_contact_attached_case_tracking')}</Text>
         </View>
 
         <View style={s.card}>
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Next Steps</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_hague_contact_next_steps')}</Text>
           {(intakeResult.next_steps || []).map((step: string, i: number) => (
             <View key={`item-${i}`} style={s.stepRow}>
               <Text maxFontSizeMultiplier={1.4} style={s.stepNum}>{i + 1}</Text>
@@ -181,22 +183,22 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         </View>
 
         <View style={s.card}>
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Emergency Contacts</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_nav_emergency_contacts')}</Text>
           <TouchableOpacity
             accessibilityRole="button"
             style={s.contactRow}
             onPress={() => callNumber('+18884074747')}
-            accessibilityLabel="Call Office of Children's Issues emergency line"
+            accessibilityLabel={t('x_hague_contact_call_office_children_s')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🏛 OCI Emergency Line</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>{t('x_hague_contact_oci_emergency_line')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-888-407-4747</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={s.contactRow}
-            accessibilityLabel={"\ud83d\udd34 NCMEC 24/7"} onPress={() => callNumber('18008435678')}
+            accessibilityLabel={t('x_hague_contact_ncmec_24_7')} onPress={() => callNumber('18008435678')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC 24/7</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>{t('x_hague_contact_ncmec_24_7')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-843-5678</Text>
           </TouchableOpacity>
         </View>
@@ -204,10 +206,10 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={s.btnPrimary}
-          accessibilityLabel="Back to Case" onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
+          accessibilityLabel={t('x_hague_contact_back_case')} onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Back to Case</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>{t('x_hague_contact_back_case')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -218,34 +220,34 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   if (phase === 'intake') {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <Text maxFontSizeMultiplier={1.4} style={s.heading}>Record Intake</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_hague_contact_record_intake')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={s.subheading}>
-          For case tracking only. Your attorney files the application directly with the U.S. Central Authority.
+          {t('x_hague_contact_case_tracking_only_attorney')}
         </Text>
 
-        <Text maxFontSizeMultiplier={1.4} style={s.label}>Child's Full Name *</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('x_hague_contact_child_s_full_name')}</Text>
         <TextInput
           style={s.input}
           value={childName}
           onChangeText={setChildName}
-          placeholder="As it appears on birth certificate"
+          placeholder={t('x_hague_contact_as_it_appears_birth')}
           placeholderTextColor={colors.textMuted}
           maxFontSizeMultiplier={1.4}
           maxLength={100}
           returnKeyType="next" />
 
-        <Text maxFontSizeMultiplier={1.4} style={s.label}>Child's Age</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('x_hague_contact_child_s_age')}</Text>
         <TextInput
           style={s.input}
           value={childAge}
           onChangeText={v => setChildAge(v.replace(/[^0-9]/g, '').slice(0, 2))}
-          placeholder="Years"
+          placeholder={t('x_hague_contact_years')}
           keyboardType="number-pad"
           maxFontSizeMultiplier={1.4}
           maxLength={3} returnKeyType="next" />
 
 
-        <Text maxFontSizeMultiplier={1.4} style={s.label}>Date of Abduction / Wrongful Retention *</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('x_hague_contact_date_abduction_wrongful_retention')}</Text>
         <TextInput
           accessibilityLabel="YYYY-MM-DD"
           style={s.input}
@@ -256,21 +258,21 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
           maxLength={10} returnKeyType="next" />
 
 
-        <Text maxFontSizeMultiplier={1.4} style={s.label}>Destination Country</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('x_hague_contact_destination_country')}</Text>
         <View style={s.countryTag}>
           <Text maxFontSizeMultiplier={1.4} style={s.countryTagText}>
             {selectedCountry
               ? QUICK_COUNTRIES.find(c => c.code === selectedCountry)?.name || selectedCountry
-              : 'Not selected — go back to select country'}
+              : t('x_hague_contact_not_selected_go_back')}
           </Text>
         </View>
 
-        <Text maxFontSizeMultiplier={1.4} style={s.label}>Notes (facts, witnesses, documentation available)</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('x_hague_contact_notes_facts_witnesses_documentation')}</Text>
         <TextInput
           style={[s.input, { height: 100, textAlignVertical: 'top' }]}
           value={intakeNotes}
           onChangeText={setIntakeNotes}
-          placeholder="Key facts for case record..."
+          placeholder={t('x_hague_contact_key_facts_case_record')}
           multiline
           maxFontSizeMultiplier={1.4}
           maxLength={2000} returnKeyType="done" />
@@ -283,15 +285,15 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         >
           {submitting
             ? <ActivityIndicator color={colors.white} />
-            : <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake</Text>}
+            : <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>{t('x_hague_contact_record_intake')}</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
           style={s.btnSecondary}
-          accessibilityLabel="Back" onPress={() => setPhase('lookup')}
+          accessibilityLabel={t('back')} onPress={() => setPhase('lookup')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>Back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>{t('back')}</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -301,13 +303,13 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   if (phase === 'lookup') {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <Text maxFontSizeMultiplier={1.4} style={s.heading}>Central Authorities</Text>
-        <Text maxFontSizeMultiplier={1.4} style={s.subheading}>Select destination country</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_hague_contact_central_authorities')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.subheading}>{t('x_hague_contact_select_destination_country')}</Text>
 
         
           {QUICK_COUNTRIES.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
             </View>
           )}
 {QUICK_COUNTRIES.map(c => (
@@ -316,7 +318,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
             key={c.code}
             style={[s.countryBtn, selectedCountry === c.code && s.countryBtnActive]}
             onPress={() => onSelectCountry(c.code)}
-            accessibilityLabel={`Select ${c.name}`}
+            accessibilityLabel={t('x_hague_contact_select', { name: c.name })}
           >
             <Text maxFontSizeMultiplier={1.4} style={[s.countryBtnText, selectedCountry === c.code && s.countryBtnTextActive]}>
               {c.name}
@@ -339,7 +341,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
                 <TouchableOpacity
                   accessibilityRole="button"
                   onPress={() => openUrl(authorityData.central_authority.website)}
-                  accessibilityLabel="Open central authority website"
+                  accessibilityLabel={t('x_hague_contact_open_central_authority_website')}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={s.linkText}>{authorityData.central_authority.website}</Text>
                 </TouchableOpacity>
@@ -348,16 +350,16 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
             <TouchableOpacity
               accessibilityRole="button"
               style={s.btnPrimary}
-              accessibilityLabel="Record Intake for Case" onPress={() => setPhase('intake')}
+              accessibilityLabel={t('x_hague_contact_record_intake_case')} onPress={() => setPhase('intake')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake for Case</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>{t('x_hague_contact_record_intake_case')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} accessibilityLabel={"\u2190 Back"} onPress={() => setPhase('home')}
+        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} accessibilityLabel={t('ja_back')} onPress={() => setPhase('home')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>← Back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>{t('ja_back')}</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -366,9 +368,9 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   // ── PHASE: Home ────────────────────────────────────────────────────────────
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <Text maxFontSizeMultiplier={1.4} style={s.heading}>🌐 Hague Convention</Text>
+      <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_nav_hague_convention')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={s.subheading}>
-        International Child Abduction — Central Authority Contacts & Reporting
+        {t('x_hague_contact_international_child_abduction_centra')}
       </Text>
 
       {caseName && (
@@ -379,19 +381,19 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
 
       {/* Emergency Section */}
       <View style={[s.card, s.emergencyCard]}>
-        <Text maxFontSizeMultiplier={1.4} style={s.emergencyTitle}>🚨 Emergency Contacts</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.emergencyTitle}>{t('x_hague_contact_emergency_contacts')}</Text>
 
         <TouchableOpacity
           accessibilityRole="button"
           style={s.contactRow}
           onPress={() => callNumber('+18884074747')}
-          accessibilityHint="24/7 emergency line for US citizens abroad"
+          accessibilityHint={t('x_hague_contact_24_7_emergency_line')}
         >
           <View style={s.contactInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🏛 Office of Children's Issues (OCI)</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>U.S. Central Authority — State Dept</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-888-407-4747 (24/7 emergency)</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>Mon–Fri 8am–8pm: +1-202-501-4444</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>{t('x_hague_contact_office_children_s_issues')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>{t('x_hague_contact_u_s_central_authority')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>{t('x_hague_contact_1_888_407_4747')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>{t('x_hague_contact_mon_fri_8am_8pm')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -403,16 +405,16 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
           onPress={() => callNumber('18008435678')}
         >
           <View style={s.contactInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC — 24/7 Hotline</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>National Center for Missing & Exploited Children</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-THE-LOST (1-800-843-5678)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>{t('x_hague_contact_ncmec_24_7_hotline')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>{t('x_hague_contact_national_center_missing_exploited')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>{t('x_hague_contact_1_800_lost_1')}</Text>
           </View>
         </TouchableOpacity>
       </View>
 
       {/* Reporting Paths */}
       <View style={s.card}>
-        <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Federal Reporting Paths</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_hague_contact_federal_reporting_paths')}</Text>
 
         <TouchableOpacity
           accessibilityRole="button"
@@ -421,8 +423,8 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🏛</Text>
           <View style={s.reportInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>FBI IC3 — Federal Report</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>International Parental Kidnapping (18 U.S.C. § 1204)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>{t('x_hague_contact_fbi_ic3_federal_report')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>{t('x_hague_contact_international_parental_kidnapping_18')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -433,8 +435,8 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         >
           <AppIcon name="document-text-outline" size={20} color={colors.navy} />
           <View style={s.reportInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>File Hague Application</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Submit to OCI — travel.state.gov</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>{t('x_hague_contact_file_hague_application')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>{t('x_hague_contact_submit_oci_travel_state')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -445,8 +447,8 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🌐</Text>
           <View style={s.reportInfo}>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>INTERPOL — Yellow Notice</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Via FBI or local law enforcement</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>{t('x_hague_contact_interpol_yellow_notice')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>{t('x_hague_contact_via_fbi_local_law')}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -456,16 +458,14 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         accessibilityRole="button"
         style={s.btnPrimary}
         onPress={() => setPhase('lookup')}
-        accessibilityLabel="Look up destination country central authority"
+        accessibilityLabel={t('x_hague_contact_look_up_destination_country')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Find Destination Country Authority →</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>{t('x_hague_contact_find_destination_country_authority')}</Text>
       </TouchableOpacity>
 
       <View style={s.legalNotice}>
         <Text maxFontSizeMultiplier={1.4} style={s.legalNoticeText}>
-          Justice Gavel provides contact information and case intake tracking.
-          Hague applications must be filed directly by attorneys with the U.S. Central Authority.
-          This is not legal advice. Consult a licensed family law attorney.
+          {t('x_hague_contact_justice_gavel_provides_contact')}
         </Text>
       </View>
     </ScrollView>

@@ -20,6 +20,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { api } from '../services/api';
 import { useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 type RouteParams = { firmId: number; firmName?: string };
 
@@ -32,6 +33,7 @@ interface FirmProfile {
 }
 
 function FirmPublicProfileScreen() {
+  useLang();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();
@@ -45,7 +47,7 @@ function FirmPublicProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: firmName || 'Firm Profile' });
+    navigation.setOptions({ title: firmName || t('x_nav_firm_profile') });
   }, [navigation, firmName]);
 
   const loadFirm = useCallback(async () => {
@@ -55,7 +57,7 @@ function FirmPublicProfileScreen() {
       setFirm(r.data);
       setError('');
     } catch {
-      setError('Could not load firm profile. Please try again.');
+      setError(t('x_firm_public_profile_could_not_load_firm'));
     } finally {
       setLoading(false);
     }
@@ -73,14 +75,14 @@ function FirmPublicProfileScreen() {
   }, [loadFirm]);
 
   const callFirm = () => {
-    if (!firm?.phone) { showToast('No phone number listed'); return; }
-    Linking.openURL(`tel:${firm.phone}`).catch(() => showToast('Could not open phone'));
+    if (!firm?.phone) { showToast(t('bail_call_no_phone')); return; }
+    Linking.openURL(`tel:${firm.phone}`).catch(() => showToast(t('x_firm_public_profile_could_not_open_phone')));
   };
 
   const openWebsite = () => {
-    if (!firm?.website) { showToast('No website listed'); return; }
+    if (!firm?.website) { showToast(t('x_firm_public_profile_no_website_listed')); return; }
     const url = firm.website.startsWith('http') ? firm.website : `https://${firm.website}`;
-    Linking.openURL(url).catch(() => showToast('Could not open website'));
+    Linking.openURL(url).catch(() => showToast(t('x_firm_public_profile_could_not_open_website')));
   };
 
   const contactFirm = () => {
@@ -96,17 +98,17 @@ function FirmPublicProfileScreen() {
   if (error || !firm) return (
     <View style={[s.center, { backgroundColor: colors.primary }]}>
       <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 16, textAlign: 'center', padding: 24 }}>
-        {error || 'Firm not found'}
+        {error || t('x_firm_public_profile_firm_not_found')}
       </Text>
       <TouchableOpacity
         onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-        accessibilityLabel="Go back to firm directory"
+          accessibilityHint={t('cp_double_tap')}
+        accessibilityLabel={t('x_firm_public_profile_go_back_firm_directory')}
         style={[s.btn, { backgroundColor: colors.blue }]}
       >
-        <Text style={s.btnText}>Go Back</Text>
+        <Text style={s.btnText}>{t('x_firm_public_profile_go_back')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -129,12 +131,12 @@ function FirmPublicProfileScreen() {
         <View style={s.badges}>
           {firm.accepting_clients && (
             <View style={[s.badge, { backgroundColor: colors.legalBg }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.legal }}>● Accepting clients</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.legal }}>{t('x_firm_discovery_accepting_clients')}</Text>
             </View>
           )}
           {firm.free_consultation && (
             <View style={[s.badge, { backgroundColor: colors.infoBg }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textBrand }}>Free consultation</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textBrand }}>{t('hn_free_consult')}</Text>
             </View>
           )}
         </View>
@@ -143,7 +145,7 @@ function FirmPublicProfileScreen() {
       {/* Description */}
       {!!firm.description && (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>About</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>{t('x_firm_public_profile_about')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={[s.body, { color: colors.textPrimary }]}>{firm.description}</Text>
         </View>
       )}
@@ -151,7 +153,7 @@ function FirmPublicProfileScreen() {
       {/* Practice Areas */}
       {!!firm.practice_areas && (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>Practice Areas</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>{t('x_firm_public_profile_practice_areas')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={[s.body, { color: colors.textPrimary }]}>{firm.practice_areas}</Text>
         </View>
       )}
@@ -159,7 +161,7 @@ function FirmPublicProfileScreen() {
       {/* Attorneys */}
       {firm.attorneys?.length > 0 && (
         <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>Attorneys</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>{t('x_firm_public_profile_attorneys')}</Text>
           {firm.attorneys.map(att => (
             <View key={att.id} style={s.attRow}>
               <View style={s.avatar}>
@@ -168,7 +170,7 @@ function FirmPublicProfileScreen() {
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.3} style={[s.attName, { color: colors.textPrimary }]}>{att.display_name}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted }}>
-                  {att.firm_role?.replace('_', ' ') || 'Attorney'}
+                  {att.firm_role?.replace('_', ' ') || t('x_attorney_dashboard_attorney')}
                 </Text>
               </View>
             </View>
@@ -185,10 +187,10 @@ function FirmPublicProfileScreen() {
             style={[s.btn, { backgroundColor: colors.legalDark, flex: 1 }]}
             onPress={callFirm}
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            accessibilityLabel={`Call ${firm.name}`}
+          accessibilityHint={t('cp_double_tap')}
+            accessibilityLabel={t('hn_call_a11y', { name: firm.name })}
           >
-            <Text style={s.btnText}>📞 Call</Text>
+            <Text style={s.btnText}>{t('lawyers_call')}</Text>
           </TouchableOpacity>
         )}
         {firm.website && (
@@ -196,20 +198,20 @@ function FirmPublicProfileScreen() {
             style={[s.btn, { backgroundColor: colors.blue, flex: 1 }]}
             onPress={openWebsite}
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            accessibilityLabel={`Visit ${firm.name} website`}
+          accessibilityHint={t('cp_double_tap')}
+            accessibilityLabel={t('x_firm_public_profile_visit_website', { name: firm.name })}
           >
-            <Text style={s.btnText}>🌐 Website</Text>
+            <Text style={s.btnText}>{t('lawyers_website')}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[s.btn, { backgroundColor: COLORS.navy, flex: 1 }]}
           onPress={contactFirm}
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          accessibilityLabel={`Find attorneys at ${firm.name}`}
+          accessibilityHint={t('cp_double_tap')}
+          accessibilityLabel={t('x_firm_public_profile_find_attorneys_at', { name: firm.name })}
         >
-          <Text style={s.btnText}>Find Attorneys</Text>
+          <Text style={s.btnText}>{t('x_firm_public_profile_find_attorneys')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

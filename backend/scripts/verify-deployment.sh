@@ -1,7 +1,8 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
 # Justice Gavel — Post-Deployment Verification Script
-# Run after setup-railway.sh to confirm everything is live and working.
+# Run after a Render deploy to confirm everything is live and working
+# (the full end-to-end check is scripts/smoke-test.mjs).
 #
 # Usage: bash scripts/verify-deployment.sh [API_URL]
 # Default: https://api.justicegavel.app

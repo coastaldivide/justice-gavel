@@ -152,7 +152,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
             {t('onb_help_q')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
-            Public Defender Project: 1-800-341-0059 · ACLU: 1-212-549-2500
+            {t('x_onboarding_public_defender_project_1')}
           </Text>
         </View>
 

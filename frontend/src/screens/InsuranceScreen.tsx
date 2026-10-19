@@ -3,23 +3,25 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
-const PLANS = [
-  { key: 'basic',  label: 'Basic',  icon: '🛡️', desc: 'Consultations, document review, Q&A hotline',     color: COLORS.blue },
-  { key: 'legal_pro',    label: 'Legal Pro',    icon: '⚖️', desc: 'Basic + court date reminders, attorney matching', color: COLORS.blue },
-  { key: 'family', label: 'Family', icon: '👨‍👩‍👧', desc: 'Pro + covers spouse and dependents',               color: COLORS.legalDark },
-];
+const PLANS = perLang(() => [
+  { key: 'basic',  label: t('x_insurance_basic'),  icon: '🛡️', desc: t('x_insurance_consultations_document_review_q'),     color: COLORS.blue },
+  { key: 'legal_pro',    label: t('tier_legal_pro'),    icon: '⚖️', desc: t('x_insurance_basic_court_date_reminders'), color: COLORS.blue },
+  { key: 'family', label: t('x_insurance_family'), icon: '👨‍👩‍👧', desc: t('x_insurance_pro_covers_spouse_dependents'),               color: COLORS.legalDark },
+]);
 
-const FEATURES = [
-  { label: 'Unlimited legal Q&A', basic: true,  pro: true,  family: true },
-  { label: 'Document review (2/mo)',  basic: true,  pro: true,  family: true },
-  { label: 'Attorney consultations',  basic: false, pro: true,  family: true },
-  { label: 'Court date reminders',    basic: false, pro: true,  family: true },
-  { label: 'AI lawyer matching',      basic: false, pro: true,  family: true },
-  { label: 'Covers family members',   basic: false, pro: false, family: true },
-];
+const FEATURES = perLang(() => [
+  { label: t('x_insurance_unlimited_legal_q'), basic: true,  pro: true,  family: true },
+  { label: t('x_insurance_document_review_2_mo'),  basic: true,  pro: true,  family: true },
+  { label: t('x_insurance_attorney_consultations'),  basic: false, pro: true,  family: true },
+  { label: t('x_insurance_court_date_reminders'),    basic: false, pro: true,  family: true },
+  { label: t('x_insurance_ai_lawyer_matching'),      basic: false, pro: true,  family: true },
+  { label: t('x_insurance_covers_family_members'),   basic: false, pro: false, family: true },
+]);
 
 function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
@@ -38,32 +40,32 @@ function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
 const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       if (mountedRef.current) setQuote(r.data || null);
     } catch {
-      if (mountedRef.current) setError('Could not load insurance quote. Check your connection and try again.');
+      if (mountedRef.current) setError(t('x_insurance_could_not_load_insurance'));
     }
     if (mountedRef.current) setGetting(false);
   };
 
-  const selected = PLANS.find(p => p.key === plan) ?? PLANS[0];
+  const selected = PLANS().find(p => p.key === plan) ?? PLANS()[0];
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll}
       testID="insurance-screen">
 
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Legal Insurance</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sub}>Protect yourself before you need a lawyer</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_insurance_legal_insurance')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sub}>{t('x_insurance_protect_yourself_before_need')}</Text>
       </View>
 
       {/* Plan selector */}
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color: colors.textMuted }]}>Choose your plan</Text>
-      {PLANS.map(p => (
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color: colors.textMuted }]}>{t('x_insurance_choose_plan')}</Text>
+      {PLANS().map(p => (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           key={p.key}
           style={[styles.planCard, { backgroundColor: colors.bgCard, borderColor: colors.border }, plan === p.key && { borderColor: p.color, borderWidth: 2, backgroundColor: p.color + '0A' }]}
           onPress={() => { setPlan(p.key); setQuote(null); }}
-          accessibilityLabel="Select insurance plan"
+          accessibilityLabel={t('x_insurance_select_insurance_plan')}
           activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.planIcon}>{p.icon}</Text>
@@ -78,15 +80,15 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       ))}
 
       {/* Feature comparison */}
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color: colors.textMuted }]}>What's included</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color: colors.textMuted }]}>{t('x_emergency_share_what_s_included')}</Text>
       <View style={[styles.featuresCard, { backgroundColor: colors.bgCard }]}>
         <View style={styles.featRow}>
           <View style={{ flex: 2 }} />
-          {PLANS.map(p => (
+          {PLANS().map(p => (
             <Text maxFontSizeMultiplier={1.4} key={p.key} style={[styles.featHeader, { color: p.color }]}>{p.label}</Text>
           ))}
         </View>
-        {FEATURES.map(f => (
+        {FEATURES().map(f => (
           <View key={f.label} style={styles.featRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.featLabel}>{f.label}</Text>
             {(['basic', 'pro', 'family'] as const).map(k => (
@@ -101,9 +103,9 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       {/* Get quote */}
       <TouchableOpacity
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
       >
-        {getting ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.quoteBtnText}>Get my quote for {selected.label}</Text>}
+        {getting ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.quoteBtnText}>{t('x_insurance_get_my_quote', { label: selected.label })}</Text>}
       </TouchableOpacity>
 
       {!!error && (
@@ -111,25 +113,25 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12 }}>⚠️  {error}</Text>
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" onPress={() => { setError(''); setQuote(null); }}
-            accessibilityLabel="Retry →"
+          accessibilityHint={t('cp_double_tap')} onPress={() => { setError(''); setQuote(null); }}
+            accessibilityLabel={t('x_insurance_retry')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>Retry →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>{t('x_insurance_retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
       {quote && (
         <View style={[styles.quoteResult, { borderColor: selected.color + '55', backgroundColor: colors.bgCard }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.quoteLabel}>Your estimated monthly cost</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.quotePrice, { color: selected.color }]}>${quote.monthly}<Text maxFontSizeMultiplier={1.4} style={styles.quoteMo}>/mo</Text></Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.quoteProvider}>via {quote.provider}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.quoteLabel}>{t('x_insurance_estimated_monthly_cost')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.quotePrice, { color: selected.color }]}>${quote.monthly}<Text maxFontSizeMultiplier={1.4} style={styles.quoteMo}>{t('x_check_in_manager_mo')}</Text></Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.quoteProvider}>{t('x_insurance_via', { provider: quote.provider })}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.quoteLegal}>{quote.legalese}</Text>
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
-            accessibilityLabel="Enroll now →"
+          accessibilityHint={t('cp_double_tap')} style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
+            accessibilityLabel={t('x_insurance_enroll_now')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>Enroll now →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>{t('x_insurance_enroll_now')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -139,9 +141,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12, marginBottom:8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
-          ⚖️ General information only -- not insurance or legal advice. Coverage terms
-          vary by policy. Review your policy documents and consult a licensed insurance
-          professional for advice specific to your situation.
+          {t('x_insurance_general_information_only_not')}
         </Text>
       </View>
 

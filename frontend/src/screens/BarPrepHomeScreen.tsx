@@ -25,6 +25,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useHaptics }       from '../hooks/useHaptics';
 import { GradientHeader }   from '../components/GradientHeader';
 import { useAuthGate }      from '../components/AuthGate';
+import { t, useLang, perLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Subject {
@@ -57,74 +58,75 @@ const CATEGORY_MAP: Record<string, string[]> = {
   ],
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS = perLang((): Record<string, string> => ({
   // Criminal Law
-  homicide:             'Homicide',
-  theft_property:       'Theft & Property',
-  defenses:             'Defenses',
-  criminal_procedure:   'Crim Procedure',
+  homicide:             t('x_bar_prep_home_homicide'),
+  theft_property:       t('x_bar_prep_home_theft_property'),
+  defenses:             t('x_bar_prep_home_defenses'),
+  criminal_procedure:   t('x_bar_prep_home_crim_procedure'),
   // Constitutional Law
-  fourth_amendment:     '4th Amendment',
-  fifth_sixth_amendment:'5th & 6th Amendment',
-  due_process:          'Due Process',
-  equal_protection:     'Equal Protection',
-  first_amendment:      '1st Amendment',
-  incorporation_14th:   'Incorporation / 14th',
-  commerce_clause:      'Commerce Clause',
-  executive_power:      'Executive Power',
-  takings_clause:       'Takings Clause',
+  fourth_amendment:     t('x_bar_prep_home_4th_amendment'),
+  fifth_sixth_amendment:t('x_bar_prep_home_5th_6th_amendment'),
+  due_process:          t('x_bar_prep_home_due_process'),
+  equal_protection:     t('x_bar_prep_home_equal_protection'),
+  first_amendment:      t('x_bar_prep_home_1st_amendment'),
+  incorporation_14th:   t('x_bar_prep_home_incorporation_14th'),
+  commerce_clause:      t('x_bar_prep_home_commerce_clause'),
+  executive_power:      t('x_bar_prep_home_executive_power'),
+  takings_clause:       t('x_bar_prep_home_takings_clause'),
   // Contracts
-  formation:            'Contract Formation',
-  consideration:        'Consideration',
-  performance_breach:   'Performance & Breach',
-  remedies:             'Remedies',
-  contract_defenses:    'Contract Defenses',
-  ucc_article_2:        'UCC Article 2',
+  formation:            t('x_bar_prep_home_contract_formation'),
+  consideration:        t('x_bar_prep_home_consideration'),
+  performance_breach:   t('x_bar_prep_home_performance_breach'),
+  remedies:             t('x_bar_prep_home_remedies'),
+  contract_defenses:    t('x_bar_prep_home_contract_defenses'),
+  ucc_article_2:        t('x_bar_prep_home_ucc_article_2'),
   // Civil Procedure
-  jurisdiction:         'Jurisdiction',
-  pleading:             'Pleading',
-  discovery_civ_pro:    'Discovery',
-  summary_judgment:     'Summary Judgment',
-  trial:                'Trial',
-  preclusion:           'Preclusion',
-  venue:                'Venue',
-  class_actions:        'Class Actions',
-  appeals:              'Appeals',
+  jurisdiction:         t('x_bar_prep_home_jurisdiction'),
+  pleading:             t('x_bar_prep_home_pleading'),
+  discovery_civ_pro:    t('x_motion_type_badge_discovery'),
+  summary_judgment:     t('x_bar_prep_home_summary_judgment'),
+  trial:                t('hearing_trial'),
+  preclusion:           t('x_bar_prep_home_preclusion'),
+  venue:                t('x_bar_prep_home_venue'),
+  class_actions:        t('x_bar_prep_home_class_actions'),
+  appeals:              t('x_bar_prep_home_appeals'),
   // Evidence
-  relevance:            'Relevance',
-  character_evidence:   'Character Evidence',
-  hearsay:              'Hearsay',
-  hearsay_exceptions:   'Hearsay Exceptions',
-  impeachment:          'Impeachment',
-  privileges:           'Privileges',
-  expert_witnesses:     'Expert Witnesses',
-  authentication:       'Authentication',
+  relevance:            t('x_bar_prep_home_relevance'),
+  character_evidence:   t('x_bar_prep_home_character_evidence'),
+  hearsay:              t('x_bar_prep_home_hearsay'),
+  hearsay_exceptions:   t('x_bar_prep_home_hearsay_exceptions'),
+  impeachment:          t('x_bar_prep_home_impeachment'),
+  privileges:           t('x_bar_prep_home_privileges'),
+  expert_witnesses:     t('x_bar_prep_home_expert_witnesses'),
+  authentication:       t('x_bar_prep_home_authentication'),
   // Real Property
-  ownership:            'Ownership',
-  concurrent_ownership: 'Concurrent Ownership',
-  landlord_tenant:      'Landlord-Tenant',
-  recording_acts:       'Recording Acts',
-  adverse_possession:   'Adverse Possession',
-  easements:            'Easements',
-  covenants:            'Covenants',
-  mortgages:            'Mortgages',
+  ownership:            t('x_bar_prep_home_ownership'),
+  concurrent_ownership: t('x_bar_prep_home_concurrent_ownership'),
+  landlord_tenant:      t('x_bar_prep_home_landlord_tenant'),
+  recording_acts:       t('x_bar_prep_home_recording_acts'),
+  adverse_possession:   t('x_bar_prep_home_adverse_possession'),
+  easements:            t('x_bar_prep_home_easements'),
+  covenants:            t('x_bar_prep_home_covenants'),
+  mortgages:            t('x_bar_prep_home_mortgages'),
   // Torts
-  intentional_torts:    'Intentional Torts',
-  negligence:           'Negligence',
-  strict_liability:     'Strict Liability',
-  products_liability:   'Products Liability',
-  defamation:           'Defamation',
-  nuisance:             'Nuisance',
-  damages_torts:        'Damages',
-};
+  intentional_torts:    t('x_bar_prep_home_intentional_torts'),
+  negligence:           t('x_bar_prep_home_negligence'),
+  strict_liability:     t('x_bar_prep_home_strict_liability'),
+  products_liability:   t('x_bar_prep_home_products_liability'),
+  defamation:           t('x_bar_prep_home_defamation'),
+  nuisance:             t('x_bar_prep_home_nuisance'),
+  damages_torts:        t('x_bar_prep_home_damages'),
+}));
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHome'>) {
+  useLang();
   const { colors }                      = useTheme();
   const { impact }                      = useHaptics();
   const { AuthGateModal }               = useAuthGate(navigation);
   // Bar prep disclaimer — shown once in the UI, not on every question
-  const BAR_PREP_DISCLAIMER = 'MBE study supplement · 548 practice questions · Not a substitute for Barbri or Themis';
+  const BAR_PREP_DISCLAIMER = t('x_bar_prep_home_mbe_study_supplement_548');
   const [subjects, setSubjects]         = useState<Subject[]>([]);
   const [dashboard, setDashboard]       = useState<Dashboard | null>(null);
   const [loading, setLoading]           = useState(true);
@@ -148,7 +150,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
       }
     } catch (e: any) {
       if (e?.response?.status !== 402) {
-        Alert.alert('Error', 'Could not load bar prep data.');
+        Alert.alert(t('error'), t('x_bar_prep_home_could_not_load_bar'));
       }
     } finally {
       setLoading(false);
@@ -180,7 +182,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
       if (e?.response?.status === 402) {
         navigation.navigate('Settings', { showUpgrade: true });
       } else {
-        Alert.alert('Error', 'Could not start session. Try again.');
+        Alert.alert(t('error'), t('x_bar_prep_home_could_not_start_session'));
       }
     }
   }, [selectedSubject, selectedCategory, mode, questionCount, impact, navigation]);
@@ -201,8 +203,8 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
     <View style={styles.container}>
       <AuthGateModal />
         <GradientHeader
-          title="Bar Exam Prep"
-          subtitle="MBE Supplement — All 7 Tested Subjects"
+          title={t('x_bar_prep_home_bar_exam_prep')}
+          subtitle={t('x_bar_prep_home_mbe_supplement_all_7')}
         />
 
         <ScrollView
@@ -217,15 +219,15 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Stats Banner ─────────────────────────────────────────── */}
           {dashboard && (
             <View style={styles.statsBanner}>
-              <StatPill label="🔥 Streak" value={`${dashboard.streak_days ?? 0}d`} />
-              <StatPill label="📊 Pass Prob" value={`${dashboard.pass_probability}%`} accent />
-              <StatPill label="👥 Top" value={`${dashboard.peer_percentile}%`} />
-              <StatPill label="📬 Due" value={String(dashboard.questions_due)} />
+              <StatPill label={t('x_bar_prep_home_streak')} value={`${dashboard.streak_days ?? 0}d`} />
+              <StatPill label={t('x_bar_prep_home_pass_prob')} value={`${dashboard.pass_probability}%`} accent />
+              <StatPill label={t('x_bar_prep_home_top')} value={`${dashboard.peer_percentile}%`} />
+              <StatPill label={t('x_bar_prep_home_due')} value={String(dashboard.questions_due)} />
             </View>
           )}
 
           {/* ── Subject Selector ──────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>Subject</Text>
+          <Text style={styles.sectionLabel}>{t('x_bar_prep_home_subject')}</Text>
           <View style={styles.subjectRow}>
             {subjects.map(s => (
               <TouchableOpacity accessibilityRole="button"
@@ -247,7 +249,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                   {s.name}
                 </Text>
                 <Text style={styles.subjectMeta}>
-                  {Math.round(s.mbe_weight * 100)}% MBE · {s.question_count}Q
+                  {t('x_bar_prep_home_mbe_q', { Math: Math.round(s.mbe_weight * 100), question_count: s.question_count })}
                 </Text>
                 {s.progress && (
                   <View style={styles.progressBar}>
@@ -259,7 +261,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                 )}
                 {s.progress && (
                   <Text style={styles.accuracyText}>
-                    {s.progress.accuracy_pct}% accuracy · {s.progress.answered_count} answered
+                    {t('x_bar_prep_home_accuracy_answered', { accuracy_pct: s.progress.accuracy_pct, answered_count: s.progress.answered_count })}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -269,14 +271,14 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Category Chips ────────────────────────────────────────── */}
           {categories.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>Category (optional)</Text>
+              <Text style={styles.sectionLabel}>{t('x_bar_prep_home_category_optional')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
                 <TouchableOpacity accessibilityRole="button"
                   style={[styles.chip, !selectedCategory && styles.chipActive]}
                   onPress={() => { impact('light'); setSelectedCategory(null); }}
                 >
                   <Text style={[styles.chipText, !selectedCategory && styles.chipTextActive]}>
-                    All Topics
+                    {t('x_bar_prep_home_all_topics')}
                   </Text>
                 </TouchableOpacity>
                 {categories.map(cat => (
@@ -286,7 +288,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                     onPress={() => { impact('light'); setSelectedCategory(cat); }}
                   >
                     <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextActive]}>
-                      {CATEGORY_LABELS[cat] || cat}
+                      {CATEGORY_LABELS()[cat] || cat}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -295,7 +297,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           )}
 
           {/* ── Mode Selector ─────────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>Mode</Text>
+          <Text style={styles.sectionLabel}>{t('x_bar_prep_home_mode')}</Text>
           <View style={styles.modeRow}>
             {(['practice', 'timed'] as const).map(m => (
               <TouchableOpacity accessibilityRole="button"
@@ -308,10 +310,10 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                 }}
               >
                 <Text style={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>
-                  {m === 'practice' ? '✏️ Practice' : '⏱ Timed MBE Sim'}
+                  {m === 'practice' ? t('x_bar_prep_home_practice') : t('x_bar_prep_home_timed_mbe_sim')}
                 </Text>
                 <Text style={styles.modeSubtext}>
-                  {m === 'practice' ? 'Explanations shown after each Q' : '100Q · 2.5 hrs'}
+                  {m === 'practice' ? t('x_bar_prep_home_explanations_shown_after_each') : t('x_bar_prep_home_100q_2_5_hrs')}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -320,7 +322,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Question Count Picker (practice only) ─────────────────── */}
           {mode === 'practice' && (
             <>
-              <Text style={styles.sectionLabel}>Questions per Session</Text>
+              <Text style={styles.sectionLabel}>{t('x_bar_prep_home_questions_per_session')}</Text>
               <View style={styles.countRow}>
                 {[10, 25, 50].map(n => (
                   <TouchableOpacity accessibilityRole="button"
@@ -348,17 +350,17 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
             activeOpacity={0.85}
           >
             <Text style={styles.startBtnText}>
-              {mode === 'timed' ? '⚡ Start MBE Simulation' : `▶ Start ${questionCount} Questions`}
+              {mode === 'timed' ? t('x_bar_prep_home_start_mbe_simulation') : t('x_bar_prep_home_start_questions', { questionCount })}
             </Text>
           </TouchableOpacity>
 
           {/* ── Footer Links ─────────────────────────────────────────── */}
           <View style={styles.footerLinks}>
             <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepProgress')}>
-              <Text style={styles.footerLink}>📈 Progress Dashboard</Text>
+              <Text style={styles.footerLink}>{t('x_bar_prep_home_progress_dashboard')}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepSchedule')}>
-              <Text style={styles.footerLink}>📅 Study Schedule</Text>
+              <Text style={styles.footerLink}>{t('x_nav_study_schedule')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -367,6 +369,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
 }
 
 function StatPill({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  useLang();
   const { colors } = useTheme();
   return (
     <View style={[pillStyles.pill, accent && pillStyles.accent]}>
@@ -379,7 +382,7 @@ function StatPill({ label, value, accent }: { label: string; value: string; acce
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
     </View>
   );

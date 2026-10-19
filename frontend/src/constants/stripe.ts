@@ -10,6 +10,7 @@
  */
 
 import Constants from 'expo-constants';
+import { t, perLang } from '../i18n';
 
 const env = Constants.expoConfig?.extra ?? {};
 
@@ -29,15 +30,15 @@ export const STRIPE_PRICE_IDS = {
 export type StripePriceId = typeof STRIPE_PRICE_IDS[keyof typeof STRIPE_PRICE_IDS];
 
 /** Human-readable plan names keyed by price ID */
-export const PLAN_NAMES: Record<string, string> = {
-  [STRIPE_PRICE_IDS.LEGAL_RADAR_MONTHLY]: 'Legal Radar',
-  [STRIPE_PRICE_IDS.ADVISOR_MONTHLY]:     'Advisor',
-  [STRIPE_PRICE_IDS.LEGAL_PRO_MONTHLY]:   'Legal Pro',
-  [STRIPE_PRICE_IDS.ESQUIRE_MONTHLY]:     'Esquire',
-  [STRIPE_PRICE_IDS.ADVISOR_ANNUAL]:      'Advisor (Annual)',
-  [STRIPE_PRICE_IDS.LEGAL_PRO_ANNUAL]:    'Legal Pro (Annual)',
-  [STRIPE_PRICE_IDS.ESQUIRE_ANNUAL]:      'Esquire (Annual)',
-};
+export const PLAN_NAMES = perLang((): Record<string, string> => ({
+  [STRIPE_PRICE_IDS.LEGAL_RADAR_MONTHLY]: t('tier_legal_radar'),
+  [STRIPE_PRICE_IDS.ADVISOR_MONTHLY]:     t('tier_advisor'),
+  [STRIPE_PRICE_IDS.LEGAL_PRO_MONTHLY]:   t('tier_legal_pro'),
+  [STRIPE_PRICE_IDS.ESQUIRE_MONTHLY]:     t('tier_esquire'),
+  [STRIPE_PRICE_IDS.ADVISOR_ANNUAL]:      t('x_stripe_advisor_annual'),
+  [STRIPE_PRICE_IDS.LEGAL_PRO_ANNUAL]:    t('x_stripe_legal_pro_annual'),
+  [STRIPE_PRICE_IDS.ESQUIRE_ANNUAL]:      t('x_stripe_esquire_annual'),
+}));
 
 /** Monthly prices in USD for display only (not billing) */
 export const PLAN_DISPLAY_PRICES = {

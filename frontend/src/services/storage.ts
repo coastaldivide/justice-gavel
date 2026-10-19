@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { t } from '../i18n';
 
 export async function setContacts(c: string[]): Promise<void> {
   try {
@@ -31,8 +32,8 @@ export async function getUserName(): Promise<string> {
       const user = JSON.parse(userData);
       if (user.displayName || user.name) return user.displayName || user.name;
     }
-    return (await AsyncStorage.getItem('userName')) || 'User';
+    return (await AsyncStorage.getItem('userName')) || t('x_storage_user');
   } catch {
-    return 'User';
+    return t('x_storage_user');
   }
 }

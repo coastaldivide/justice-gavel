@@ -17,23 +17,23 @@ import { unwrapList, api } from '../services/api';
 import React, { useMemo } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation, ActivityIndicator } from 'react-native';
-import { t }   from '../i18n';
+import { t, perLang, useLang }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
 // ── Hotlines ──────────────────────────────────────────────────────────────────
-const CRISIS_LINES = [
-  { name: '211 — Social Services',     number: '211',              desc: 'Housing, food, utilities, crisis support. Free, confidential, 24/7.' },
-  { name: 'RAINN Sexual Assault',      number: '1-800-656-4673',   desc: 'National Sexual Assault Hotline. Confidential, 24/7.' },
-  { name: 'Human Trafficking',         number: '1-888-373-7888',   desc: 'National Human Trafficking Hotline. Text BeFree to 233733.' },
-  { name: 'Veterans Crisis Line',      number: '988 (then 1)',     desc: 'Crisis support for Veterans and Service members. 24/7.' },
-  { name: 'Trans Lifeline',            number: '1-877-565-8860',   desc: 'Peer support by and for trans people. US and Canada.' },
-  { name: 'Crisis Text Line',          number: 'Text HOME to 741741', desc: 'Text-based crisis support. Free, 24/7.' },
+const CRISIS_LINES = perLang(() => [
+  { name: '211 — Social Services',     number: '211',              desc: t('x_crisis_resources_housing_food_utilities_crisis') },
+  { name: 'RAINN Sexual Assault',      number: '1-800-656-4673',   desc: t('x_crisis_resources_national_sexual_assault_hotline') },
+  { name: 'Human Trafficking',         number: '1-888-373-7888',   desc: t('x_crisis_resources_national_human_trafficking_hotline') },
+  { name: 'Veterans Crisis Line',      number: '988 (then 1)',     desc: t('x_crisis_resources_crisis_support_veterans_service') },
+  { name: 'Trans Lifeline',            number: '1-877-565-8860',   desc: t('x_crisis_resources_peer_support_by_trans') },
+  { name: 'Crisis Text Line',          number: 'Text HOME to 741741', desc: t('x_crisis_resources_text_based_crisis_support') },
   {
     key: '988',
     name: '988 Suicide & Crisis Lifeline',
     number: '988',
-    description: 'Free, confidential support 24/7. Call or text 988.',
-    forWhom: 'Suicidal thoughts, emotional distress, mental health crisis of any kind',
+    description: t('x_crisis_resources_free_confidential_support_24'),
+    forWhom: t('x_crisis_resources_suicidal_thoughts_emotional_distress'),
     primary: true,
     color: COLORS.blue,
     bg:    COLORS.bgSubtle,
@@ -42,8 +42,8 @@ const CRISIS_LINES = [
     key: 'samhsa',
     name: 'SAMHSA Helpline',
     number: '1-800-662-4357',
-    description: 'Substance Abuse & Mental Health Services. Free, confidential, 24/7.',
-    forWhom: 'Substance abuse, addiction, mental health treatment referrals',
+    description: t('x_crisis_resources_substance_abuse_mental_health'),
+    forWhom: t('x_crisis_resources_substance_abuse_addiction_mental'),
     primary: false,
     color: COLORS.legalDark,
     bg:    COLORS.legalBg,
@@ -52,8 +52,8 @@ const CRISIS_LINES = [
     key: 'domestic',
     name: 'National DV Hotline',
     number: '1-800-799-7233',
-    description: 'Domestic violence support 24/7. Also available via text: text START to 88788.',
-    forWhom: 'Domestic violence, intimate partner violence, safety planning',
+    description: t('x_crisis_resources_domestic_violence_support_24'),
+    forWhom: t('x_crisis_resources_domestic_violence_intimate_partner'),
     primary: false,
     color: COLORS.emergencyDark,
     bg:    COLORS.emergencyBg,
@@ -62,8 +62,8 @@ const CRISIS_LINES = [
     key: 'veterans',
     name: 'Veterans Crisis Line',
     number: '1-800-273-8255',
-    description: 'Press 1 after dialing. Text 838255.',
-    forWhom: 'Veterans, service members, and their families',
+    description: t('x_crisis_resources_press_1_after_dialing'),
+    forWhom: t('x_crisis_resources_veterans_service_members_their'),
     primary: false,
     color: COLORS.blue,
     bg:    COLORS.bgSubtle,
@@ -72,20 +72,20 @@ const CRISIS_LINES = [
     key: 'trevor',
     name: 'The Trevor Project',
     number: '1-866-488-7386',
-    description: 'LGBTQ+ youth crisis support 24/7. Also text START to 678-678.',
-    forWhom: 'LGBTQ+ young people in crisis',
+    description: t('x_crisis_resources_lgbtq_youth_crisis_support'),
+    forWhom: t('x_crisis_resources_lgbtq_young_people_crisis'),
     primary: false,
     color: COLORS.legalDark,
     bg:    COLORS.legalBg,
   },
-];
+]);
 
 // ── Self-help grounding tips ──────────────────────────────────────────────────
-const GROUNDING = [
+const GROUNDING = perLang(() => [
   { icon: '🫁', title: t('crisis_breathe_title'), body: t('crisis_breathe_body') },
   { icon: '👁️', title: t('crisis_ground_title'), body: t('crisis_ground_body') },
   { icon: '📍', title: t('crisis_safe_title'), body: t('crisis_safe_body') },
-];
+]);
 
 // Plain helper (no hooks): dial a crisis line; report failure via onError so
 // the caller can show the number to dial manually.
@@ -96,8 +96,9 @@ function callLine(number: string, onError?: (number: string) => void) {
 
 
 function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
-  const onDialError = (number: string) => showToast(`Please dial ${number} manually.`, 'warning');
+  const onDialError = (number: string) => showToast(t('x_crisis_resources_please_dial_manually', { number }), 'warning');
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -115,7 +116,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
   // Crisis lines from the resources directory that are not already listed above.
   const directoryLines = useMemo(() => {
     const digits = (v: unknown) => String(v ?? '').replace(/[^0-9]/g, '');
-    const known = new Set(CRISIS_LINES.map(l => digits(l.number)));
+    const known = new Set(CRISIS_LINES().map(l => digits(l.number)));
     return dbLines.filter(r => r?.name && digits(r.phone) && !known.has(digits(r.phone)));
   }, [dbLines]);
   const { colors } = useTheme();
@@ -144,7 +145,6 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('crisis_header_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
-          Whatever you're going through right now -- an arrest, a crisis, a moment
           {t('crisis_header_sub')}
         </Text>
       </View>
@@ -155,8 +155,8 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
         style={styles.primaryBtn}
         onPress={() => callLine('988', onDialError)}
         activeOpacity={0.88}
-        accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
-        accessibilityHint="Opens your phone to call the free 24/7 crisis line"
+        accessibilityLabel={t('x_crisis_resources_call_988_suicide_crisis')}
+        accessibilityHint={t('x_crisis_resources_opens_phone_call_free')}
       >
         <AppIcon name="call-outline" size={20} color={colors.legal} />
         <View style={styles.primaryBtnText}>
@@ -175,7 +175,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* ── Grounding ──────────────────────────────────────────────────── */}
       <View style={[styles.groundingCard, { backgroundColor: colors.bgCard }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.groundingLabel}>{t('crisis_grounding_label')}</Text>
-        {GROUNDING.map((g, i) => (
+        {GROUNDING().map((g, i) => (
           <View key={`GROUNDIN-${i}`} style={styles.groundingRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.groundingIcon}>{g.icon}</Text>
             <View style={{ flex: 1 }}>
@@ -189,14 +189,14 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* ── More crisis lines ──────────────────────────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('crisis_more_lines')}</Text>
 
-      {CRISIS_LINES.filter(l => !l.primary).map(line => (
+      {CRISIS_LINES().filter(l => !l.primary).map(line => (
         <TouchableOpacity
           accessibilityRole="button"
           key={line.key ?? line.name}
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
           onPress={() => callLine(line.number, onDialError)}
           activeOpacity={0.85}
-          accessibilityLabel={`Call ${line.name}`}
+          accessibilityLabel={t('hn_call_a11y', { name: line.name })}
           accessibilityHint={line.forWhom ?? line.desc}
         >
           <View style={[styles.lineDot, { backgroundColor: line.bg ?? COLORS.bgSubtle }]}>
@@ -220,7 +220,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
           onPress={() => callLine(String(r.phone), onDialError)}
           activeOpacity={0.85}
-          accessibilityLabel={`Call ${r.name}`}
+          accessibilityLabel={t('hn_call_a11y', { name: r.name })}
           accessibilityHint={r.description || undefined}
         >
           <View style={[styles.lineDot, { backgroundColor: COLORS.bgSubtle }]}>
@@ -248,25 +248,24 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.navy }]}
           onPress={() => navigation.navigate('LawyersTab')}
-          accessibilityLabel="Find a lawyer"
+          accessibilityLabel={t('find_lawyer')}
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>Find a Lawyer</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>{t('lawyers_heading')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.bail }]}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
-          accessibilityLabel="Get immediate help"
+          accessibilityLabel={t('x_crisis_resources_get_immediate_help')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>🔓</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>HELP NOW</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>{t('help_now')}</Text>
         </TouchableOpacity>
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.footer, { color: colors.textMuted }]}>
-        Justice Gavel connects you to legal help. For mental health emergencies,
-        please call 988 or 911.
+        {t('x_crisis_resources_justice_gavel_connects_legal')}
       </Text>
 
       <View style={{ height: 40 }} />

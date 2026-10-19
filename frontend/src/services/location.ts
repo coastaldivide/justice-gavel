@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { STATE_NAMES, setUserState, getUserState } from '../utils/userState';
 import { api } from './api';
 import { requestLocationInContext, locationGranted } from './permissions';
+import { t } from '../i18n';
 
 /**
  * prompt: true  → ask in context (our explainer with `reason`, then the system
@@ -156,7 +157,7 @@ export async function detectAndSaveUserState(ask: LocationAsk = { prompt: false 
 export function formatDistance(distanceKm: number | null): string {
   if (distanceKm == null) return '';
   const miles = distanceKm * 0.621371;
-  if (miles < 1) return `${Math.round(distanceKm * 1000)} m away`;
-  if (miles < 500) return `${miles.toFixed(1)} mi away`;
-  return `${distanceKm.toFixed(0)} km away`;
+  if (miles < 1) return t('x_location_m_away', { meters: Math.round(distanceKm * 1000) });
+  if (miles < 500) return t('x_location_mi_away', { miles: miles.toFixed(1) });
+  return t('x_location_km_away', { distanceKm: distanceKm.toFixed(0) });
 }

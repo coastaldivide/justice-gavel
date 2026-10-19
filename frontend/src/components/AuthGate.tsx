@@ -22,6 +22,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW } from '../constants/theme';
 import { getToken, setToken } from '../utils/secureStorage';
+import { t } from '../i18n';
 
 export function useAuthGate(navigation: any, quickMode = false) {
   const [visible, setVisible]     = useState(false);
@@ -58,10 +59,10 @@ export function useAuthGate(navigation: any, quickMode = false) {
   // Quick phone+PIN signup — fewer fields = fewer drops
   const doQuickSignup = async () => {
     if (!phone.trim() || phone.replace(/\D/g,'').length < 10) {
-      setSignupError('Enter a valid phone number'); return;
+      setSignupError(t('x_auth_gate_enter_valid_phone_number')); return;
     }
     if (pin.length < 4) {
-      setSignupError('Enter a 4-digit PIN'); return;
+      setSignupError(t('x_auth_gate_enter_4_digit_pin')); return;
     }
     setSignupLoading(true);
     setSignupError('');
@@ -79,7 +80,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
       // Execute the pending action
       if (pendingFn) setTimeout(() => pendingFn(), 300);
     } catch (e: unknown) {
-      setSignupError(apiErrorMessage(e, 'Could not create account. Try again.'));
+      setSignupError(apiErrorMessage(e, t('x_auth_gate_could_not_create_account')));
     } finally {
       setSignupLoading(false);
     }
@@ -96,15 +97,14 @@ export function useAuthGate(navigation: any, quickMode = false) {
           {showQuickForm ? (
             // ── Quick signup: phone + PIN only ──────────────────────────
             <>
-              <Text style={styles.title}>Quick Sign Up</Text>
+              <Text style={styles.title}>{t('x_auth_gate_quick_sign_up')}</Text>
               <Text style={styles.body}>
-                Phone number + 4-digit PIN.{'\n'}
-                Takes 10 seconds. Then pay.
+                {t('x_auth_gate_phone_number_4_digit')}
               </Text>
 
               <TextInput
                 style={styles.quickInput}
-                placeholder="Phone number"
+                placeholder={t('x_auth_gate_phone_number')}
                 placeholderTextColor={COLORS.textLight}
                 value={phone}
                 onChangeText={setPhone}
@@ -113,10 +113,10 @@ export function useAuthGate(navigation: any, quickMode = false) {
               />
               <TextInput
                 style={styles.quickInput}
-                placeholder="4-digit PIN"
+                placeholder={t('x_auth_gate_4_digit_pin')}
                 placeholderTextColor={COLORS.textLight}
                 value={pin}
-                onChangeText={t => setPin(t.replace(/\D/g,'').slice(0,4))}
+                onChangeText={tItem => setPin(tItem.replace(/\D/g,'').slice(0,4))}
                 keyboardType="number-pad"
                 secureTextEntry
                 maxLength={4}
@@ -131,35 +131,34 @@ export function useAuthGate(navigation: any, quickMode = false) {
           accessibilityRole="button">
                 {signupLoading
                   ? <ActivityIndicator color={COLORS.white} size="small" />
-                  : <Text style={styles.primaryBtnText}>Create Account & Pay</Text>
+                  : <Text style={styles.primaryBtnText}>{t('x_auth_gate_create_account_pay')}</Text>
                 }
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.switchLink} onPress={() => setShowQuickForm(false)}
                         accessibilityRole="button"
                       >
-                <Text style={styles.switchLinkText}>Use email instead →</Text>
+                <Text style={styles.switchLinkText}>{t('x_auth_gate_use_email_instead')}</Text>
               </TouchableOpacity>
             </>
           ) : (
             // ── Standard auth gate ───────────────────────────────────────
             <>
-              <Text style={styles.title}>Sign in to continue</Text>
+              <Text style={styles.title}>{t('x_auth_gate_sign_continue')}</Text>
               <Text style={styles.body}>
-                A free account is required.{'\n'}
-                Takes under 30 seconds.
+                {t('x_auth_gate_free_account_required_takes')}
               </Text>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={goToRegister} activeOpacity={0.85}
           accessibilityRole="button"
         >
-                <Text style={styles.primaryBtnText}>Create Free Account</Text>
+                <Text style={styles.primaryBtnText}>{t('x_auth_gate_create_free_account')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.secondaryBtn} onPress={goToLogin} activeOpacity={0.85}
           accessibilityRole="button"
         >
-                <Text style={styles.secondaryBtnText}>Already have an account? Sign in</Text>
+                <Text style={styles.secondaryBtnText}>{t('x_auth_gate_already_have_account_sign')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -167,7 +166,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
           <TouchableOpacity style={styles.cancelBtn} onPress={() => setVisible(false)}
                     accessibilityRole="button"
                   >
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('case_cancel')}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>

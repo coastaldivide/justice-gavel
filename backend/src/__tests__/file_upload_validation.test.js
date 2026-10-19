@@ -91,7 +91,7 @@ describe('File upload — filename security', () => {
 
   test('Windows reserved names are treated as regular filenames (not blocked by sanitizer)', () => {
     // Our sanitizer handles special characters, not Windows reserved names
-    // This is acceptable since we're on Linux (Railway/Ubuntu)
+    // This is acceptable since we're on Linux (Render / Docker Alpine / Ubuntu CI)
     const sanitized = sanitizeFilename('CON.pdf');
     expect(typeof sanitized).toBe('string');
     expect(sanitized.length).toBeGreaterThan(0);

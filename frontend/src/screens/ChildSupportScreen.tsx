@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Switch } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 // Income shares model — the majority US approach
 // Guideline figures approximate mean combined obligation tables (simplified)
@@ -64,11 +65,11 @@ function calculateSupport(
     baseObligation:    Math.round(baseObligation),
     parent1Obligation: Math.round(parent1Obligation),
     parent2Obligation: Math.round(parent2Obligation),
-    payor:             p1IsPayor ? 'Parent 1' : 'Parent 2',
-    payee:             p1IsPayor ? 'Parent 2' : 'Parent 1',
+    payor:             p1IsPayor ? 'Parent 1' : 'Parent 2', // i18n-exempt: ids, shown via x_child_support_parent_*
+    payee:             p1IsPayor ? 'Parent 2' : 'Parent 1', // i18n-exempt: ids, shown via x_child_support_parent_*
     netMonthly:        Math.round(netPayment),
     netAnnual:         Math.round(netPayment * 12),
-    model:             'Income Shares (simplified)',
+    model:             t('x_child_support_income_shares_simplified'),
     disclaimer:        true,
   };
 }
@@ -78,6 +79,7 @@ function fmt(n: number) {
 }
 
 function ChildSupportScreen() {
+  useLang();
   const { showToast } = useToast();
   const [p1Income, setP1Income] = useState('');
   const [p2Income, setP2Income] = useState('');
@@ -92,15 +94,15 @@ function ChildSupportScreen() {
     const p1Num = parseFloat(p1Income);
     const p2Num = parseFloat(p2Income);
     if (!p1Income || isNaN(p1Num) || p1Num <= 0) {
-      showToast('Please enter a valid income for Parent 1.');
+      showToast(t('x_child_support_please_enter_valid_income'));
       return;
     }
     if (!p2Income || isNaN(p2Num) || p2Num <= 0) {
-      showToast('Please enter a valid income for Parent 2.');
+      showToast(t('x_child_support_please_enter_valid_income_2'));
       return;
     }
     if (parseInt(children||'0') < 1 || parseInt(children||'0') > 10) {
-      showToast('Number of children must be between 1 and 10.');
+      showToast(t('x_child_support_number_children_must_be'));
       return;
     }
 
@@ -120,19 +122,18 @@ function ChildSupportScreen() {
       <UPLDisclaimer compact />
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>
-        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>Child & Spousal Support</Text>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{t('x_child_support_child_spousal_support')}</Text>
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
-          Estimate based on Income Shares Model (majority US standard).{'\n'}
-          Actual orders vary by state — consult your attorney.
+          {t('x_child_support_estimate_based_income_shares')}
         </Text>
       </View>
 
       <View style={s.form}>
         {/* Incomes */}
-        <Text style={[s.sectionLabel, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>MONTHLY GROSS INCOME</Text>
+        <Text style={[s.sectionLabel, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_monthly_gross_income')}</Text>
         <View style={s.row}>
           <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 1</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1')}</Text>
             <TextInput
               style={inputStyle}
               placeholder="e.g. 4500"
@@ -144,7 +145,7 @@ function ChildSupportScreen() {
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 2</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_2')}</Text>
             <TextInput
           accessibilityLabel="e.g. 3000"
               style={inputStyle}
@@ -159,7 +160,7 @@ function ChildSupportScreen() {
         </View>
 
         {/* Children */}
-        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Number of children</Text>
+        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_number_children')}</Text>
         <View style={s.row}>
           {['1','2','3','4','5'].map(n => (
             <TouchableOpacity
@@ -174,24 +175,24 @@ function ChildSupportScreen() {
         </View>
 
         {/* Custody split */}
-        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 1 physical custody (%)</Text>
+        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1_physical_custody')}</Text>
         <TextInput
-          accessibilityLabel="e.g. 70 (parent 1 has 70%)"
+          accessibilityLabel={t('x_child_support_e_g_70_parent')}
           style={inputStyle}
-          placeholder="e.g. 70 (parent 1 has 70%)"
+          placeholder={t('x_child_support_e_g_70_parent')}
           placeholderTextColor={COLORS.textMuted}
           keyboardType="numeric"
           value={custody}
           onChangeText={setCustody}
           returnKeyType="done" blurOnSubmit={true}
         />
-        <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>50 = equal shared custody</Text>
+        <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_50_equal_shared_custody')}</Text>
 
         {/* Spousal support toggle */}
         <View style={[s.switchRow, { borderColor: COLORS.border }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[s.switchLabel, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>Include spousal support?</Text>
-            <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>Alimony paid by higher earner</Text>
+            <Text style={[s.switchLabel, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_include_spousal_support')}</Text>
+            <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_alimony_paid_by_higher')}</Text>
           </View>
           <Switch
             value={alimony}
@@ -202,7 +203,7 @@ function ChildSupportScreen() {
         </View>
         {alimony && (
           <>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Monthly spousal support amount ($)</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_monthly_spousal_support_amount')}</Text>
             <TextInput
               style={inputStyle}
               placeholder="e.g. 800"
@@ -220,53 +221,51 @@ function ChildSupportScreen() {
           accessibilityRole="button"
           style={[s.calcBtn, { backgroundColor: COLORS.navy }]}
           onPress={calculate}
-         accessibilityLabel="Calculate Estimate"
-          accessibilityHint="Double-tap to activate">
-          <Text style={s.calcBtnText} maxFontSizeMultiplier={1.4}>Calculate Estimate</Text>
+         accessibilityLabel={t('x_child_support_calculate_estimate')}
+          accessibilityHint={t('cp_double_tap')}>
+          <Text style={s.calcBtnText} maxFontSizeMultiplier={1.4}>{t('x_child_support_calculate_estimate')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Result */}
       {result && (
         <View style={[s.result, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-          <Text style={[s.resultTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>Estimated Support Order</Text>
+          <Text style={[s.resultTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_estimated_support_order')}</Text>
 
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Combined monthly income</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_combined_monthly_income')}</Text>
             <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.combined)}</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Base obligation ({children} child{Number(children) > 1 ? 'ren' : ''})</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.baseObligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t(Number(children) === 1 ? 'x_child_support_base_obligation_child_one' : 'x_child_support_base_obligation_child_other', { children })}</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo', { baseObligation: fmt(result.baseObligation) })}</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 1 share ({Math.round(Number(custody) || 70)}% custody)</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent1Obligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1_share_custody', { Math: Math.round(Number(custody) || 70) })}</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo_2', { parent1Obligation: fmt(result.parent1Obligation) })}</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 2 share ({100 - (Math.round(Number(custody) || 70))}% custody)</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent2Obligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_2_share_custody', { value: 100 - (Math.round(Number(custody) || 70)) })}</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo_3', { parent2Obligation: fmt(result.parent2Obligation) })}</Text>
           </View>
 
           {/* Net payment */}
           <View style={[s.netBlock, { backgroundColor: COLORS.navy + '15' }]}>
-            <Text style={[s.netLabel, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{result.payor} pays {result.payee}</Text>
-            <Text style={[s.netAmount, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netMonthly)}<Text style={{ fontSize: 14 }} maxFontSizeMultiplier={1.4}>/month</Text></Text>
-            <Text style={[s.netAnnual, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netAnnual)} per year</Text>
+            <Text style={[s.netLabel, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_pays', { payor: t(result.payor === 'Parent 1' ? 'x_child_support_parent_1' : 'x_child_support_parent_2'), payee: t(result.payee === 'Parent 1' ? 'x_child_support_parent_1' : 'x_child_support_parent_2') })}</Text>
+            <Text style={[s.netAmount, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netMonthly)}<Text style={{ fontSize: 14 }} maxFontSizeMultiplier={1.4}>{t('x_child_support_month')}</Text></Text>
+            <Text style={[s.netAnnual, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_per_year', { netAnnual: fmt(result.netAnnual) })}</Text>
           </View>
 
           {alimony && parseFloat(alimonyAmt) > 0 && (
             <View style={[s.alimonyBlock, { borderColor: COLORS.border }]}>
               <Text style={[s.alimonyLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
-                + Spousal support: {fmt(parseFloat(alimonyAmt))}/mo ({fmt(parseFloat(alimonyAmt) * 12)}/yr)
+                {t('x_child_support_spousal_support_mo_yr', { value: fmt(parseFloat(alimonyAmt)), value2: fmt(parseFloat(alimonyAmt) * 12) })}
               </Text>
             </View>
           )}
 
           <Text style={[s.disclaimer, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
-            ⚠️ This is an estimate using a simplified income shares table. Actual orders are
-            set by the court based on your state's guidelines, which may differ significantly.
-            This does not constitute legal advice. Always consult a licensed family law attorney.
+            {t('x_child_support_this_estimate_using_simplified')}
           </Text>
         </View>
       )}

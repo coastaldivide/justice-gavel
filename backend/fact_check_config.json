@@ -18,10 +18,10 @@
       "specific_state": "node src/scripts/fact_check_monitor.js --state=VA",
       "update_record": "node src/scripts/update_legal_data.js --type=dui --state=TN"
     },
-    "railway_cron": {
+    "render_cron": {
       "weekly_quick":   "0 9 * * 1",
       "monthly_full":   "0 9 1 * *",
-      "comment": "Add to Railway: Settings → Cron Jobs → New Cron Job"
+      "comment": "Optional Render Cron Job (type: cron in render.yaml, same Docker image, command node src/scripts/fact_check_monitor.js)"
     },
     "alert_on_flag": {
       "method": "Check exit code: if script exits with code 1, at least one source flagged",

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -134,8 +135,7 @@ describe('2. RegisterScreen — Account Creation', () => {
   });
 
   test('2-02: RegisterScreen enforces 8-character minimum password', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/RegisterScreen.tsx');
     expect(src).toContain('password.length < 8');
     expect(src).toContain('8 characters');
   });
@@ -505,15 +505,13 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
   });
 
   test('10-04: trial CTA only when the backend plan has trial days', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx');
     expect(src).toContain('trialDays');
     expect(src).toContain('-Day Free Trial');
   });
 
   test('10-05: no placement / ranking promises for paid plans', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx');
     expect(src).not.toMatch(/top placement|top of search|#1 in search|priority placement/i);
     expect(src).toContain('does not change where you appear');
   });

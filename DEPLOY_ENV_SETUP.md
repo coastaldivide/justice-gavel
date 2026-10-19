@@ -1,4 +1,4 @@
-# Environment & Railway Setup (backend API)
+# Environment & Deploy Setup (backend API — hosted on Render)
 
 **This is the single environment-variable reference.**
 Every backend variable below is actually read by the code, and every variable
@@ -9,18 +9,53 @@ build variables, see the end of this file).
 `backend/src/__tests__/env_docs_consistency.test.js` fails if any of the four
 drift from the code. `ENVIRONMENT_VARS.md` is just a pointer here.
 
-## Railway service settings
+## Render service settings
 
-- **Root Directory: `backend`** — Railway then uses `backend/railway.json`,
-  which builds `backend/Dockerfile` and health-checks `GET /health`.
-  (The old repo-root `railway.json` was removed; it pointed the build at the
-  wrong context.) If you build from the repo root instead, `nixpacks.toml` /
-  `Procfile` start the same command.
-- Start command: `node --import ./src/instrument.js src/server.js`
-- The server listens on `$PORT` (Railway injects it; default 4000).
-- `/health` returns **200** only when a real `SELECT 1` succeeds, **503** otherwise.
-- Migrations are applied manually (`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>`
-  for each `supabase/migrations/*.sql` in filename order) — the API never runs DDL.
+Everything below is declared in **`render.yaml`** (repo root, a Render
+Blueprint): Render → New → Blueprint → this repo creates the production
+service `justice-gavel-api` and the staging service
+`justice-gavel-api-staging`. Walkthrough: RUNBOOK.md → "DEPLOY (Render)";
+go-live order: `backend/scripts/go-live-checklist.md`.
+
+- **Runtime: Docker.** Build context is the repo root (`dockerContext: .`),
+  Dockerfile `./backend/Dockerfile`. The image carries the backend,
+  `supabase/migrations` (at `/supabase/migrations`) and `psql`; the repo-root
+  `.dockerignore` keeps everything else (frontend, tests, `.env`) out.
+- Start command (Dockerfile `CMD`): `node --import ./src/instrument.js src/server.js`.
+- The server listens on **`$PORT` on `0.0.0.0`**. Render injects `PORT`
+  (default 10000; the image defaults to 10000 too). Locally the default is 4000.
+- **Health check:** `healthCheckPath: /health` returns **200** only when a real
+  `SELECT 1` succeeds, **503** otherwise. A new deploy only takes traffic once
+  it answers 200; a running instance that keeps failing is restarted by Render.
+- **Pre-deploy:** `preDeployCommand: sh /app/scripts/migrate.sh` applies new
+  `supabase/migrations/*.sql` files (psql, `ON_ERROR_STOP`) before the new
+  version starts; each file runs once and is recorded in
+  `jg_meta.schema_migrations`. A failing migration fails the deploy and the
+  previous version keeps serving. The API itself never runs DDL.
+- **Auto-deploy:** `autoDeployTrigger: checksPass` — a push to `main` deploys
+  only after the GitHub CI checks pass.
+- **Shutdown:** `maxShutdownDelaySeconds: 30`. On SIGTERM the server stops
+  accepting connections, drains in-flight requests and AI jobs, closes the
+  pool and exits; it force-exits at 25 s, inside Render's 30 s window.
+- `value:` entries in `render.yaml` are re-applied on every Blueprint sync;
+  `sync: false` entries are asked for once and then owned by the dashboard
+  (Render → service → Environment).
+
+## Set by Render (do not set by hand)
+
+```
+PORT                                     listen port (Render default 10000; local default 4000)
+RENDER=true                              marks the Render runtime (/health `commit`, boot log `platform`)
+RENDER_GIT_COMMIT                        deployed commit: /health + /metrics `commit`, boot log,
+                                          default Sentry release justice-gavel@<version>+<commit>
+RENDER_INSTANCE_ID                       per-instance id in the boot log and the client-IP diagnostics
+GIT_COMMIT                               host-neutral fallback for RENDER_GIT_COMMIT (other hosts,
+                                          local docker runs); optional
+```
+
+Render also sets `RENDER_EXTERNAL_URL`, `RENDER_SERVICE_NAME`,
+`IS_PULL_REQUEST` and `WEB_CONCURRENCY`; the API does not read them (it runs
+one process per instance).
 
 ## Required in production
 
@@ -28,11 +63,13 @@ The server refuses to start without these:
 
 ```
 NODE_ENV=production
-DATABASE_URL=<postgres://... Supabase/Railway Postgres connection string>
+DATABASE_URL=<postgres://... Supabase connection string>
                                           (POSTGRES_URL is read as an alias when DATABASE_URL is unset)
 JWT_SECRET=<openssl rand -hex 32>
 JWT_REFRESH_SECRET=<openssl rand -hex 32, different from JWT_SECRET>
-ENCRYPTION_KEY=<openssl rand -hex 32  (64 hex chars) — never change once data exists>
+ENCRYPTION_KEY=<openssl rand -hex 32  (64 hex chars) — never change once data exists.
+                                          Moving hosts: copy the EXISTING value; a new key makes
+                                          every encrypted note/message unreadable>
 ```
 
 In development/test a missing secret is replaced by a random per-process value
@@ -71,10 +108,15 @@ STRIPE_ACH_ENABLED=false                 enable Stripe ACH bank transfer
 RESEND_API_KEY=<re_...>                  transactional email (else emails are only logged)
 LIVE_EMAIL                               "false" forces log-only email even with RESEND_API_KEY set
 EMAIL_FROM=noreply@justicegavel.app      sender for user email (ALERT_EMAIL_FROM for ops alerts)
-REDIS_URL=<redis://...>                  BullMQ queue (else AI jobs run in-process)
+REDIS_URL=<redis://...>                  BullMQ queue (else AI jobs run in-process); on Render, the
+                                          internal URL of a Render Key Value instance
 SENTRY_DSN=<https://...@sentry.io/...>   error tracking (SENTRY_ENVIRONMENT / SENTRY_RELEASE /
                                           SENTRY_TRACES_SAMPLE_RATE / SENTRY_PROFILES_SAMPLE_RATE
-                                          / SENTRY_PROFILING optional tuning)
+                                          / SENTRY_PROFILING optional tuning). Server DSN (not a
+                                          secret; set as a plain value in render.yaml, never in code):
+                                          https://ad2ee2fa5207f691bf98e75d1b6c213f@o4511570018041856.ingest.us.sentry.io/4511570031673344
+                                          Environment = APP_ENV; release = SENTRY_RELEASE or
+                                          justice-gavel@<version>+<RENDER_GIT_COMMIT>
 OPENAI_API_KEY=<sk-...>                  Whisper transcription (else transcription 503)
 DAILY_API_KEY=<...>                      Daily.co video consultation rooms (else video 503)
 GOOGLE_PLACES_KEY=<AIza...>              data refresh: provider scrapers + nightly refresh (in-app
@@ -123,8 +165,10 @@ RATE_LIMIT_PER_MIN=200                   global per-IP request limit
 ```
 ATTACHMENTS_DIR=/app/data/attachments    message attachments (POST /api/messages/attachment), stored
                                           AES-256-GCM encrypted. Default is <app>/data/attachments;
-                                          on Railway attach a volume there, or set SUPABASE_URL +
-                                          SUPABASE_SERVICE_KEY to use Supabase Storage instead
+                                          on Render the container disk is ephemeral, so use Supabase
+                                          Storage (SUPABASE_URL + SUPABASE_SERVICE_KEY,
+                                          ATTACHMENTS_STORAGE=supabase — render.yaml does) or a
+                                          Render disk (render.yaml has the commented block)
 ATTACHMENTS_BUCKET=case-documents        Supabase Storage bucket for attachments (objects under messages/)
 ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment upload returns 503
                                           storage_unavailable
@@ -159,8 +203,8 @@ LIVE_PAYMENTS=false                      /api/pay multi-provider orchestrator: r
 
 ## Staging
 
-Staging is a second Railway environment (and a second Supabase project) that
-runs the SAME production build:
+Staging is the second service in `render.yaml` (`justice-gavel-api-staging`)
+with its own Supabase project; it runs the SAME production build:
 
 ```
 NODE_ENV=production                      production hardening (required secrets, strict CORS, no stack traces)
@@ -169,7 +213,13 @@ PRODUCTION_DATABASE_URL=<prod URL>       optional guard: staging refuses to boot
 DATABASE_URL=<staging Supabase URL>      never the production database
 STRIPE_SECRET_KEY=sk_test_…              test keys only (or unset → payments_unavailable, as in prod today)
 LIVE_REFRESH=false                       keep nightly jobs off unless you are testing them
+JWT_SECRET / JWT_REFRESH_SECRET / ENCRYPTION_KEY / ADMIN_KEY
+                                         render.yaml generates random values (generateValue) — fine
+                                          for staging, never for production
 ```
+
+`PRODUCTION_DATABASE_URL` on staging is optional: it stores the production
+database credential in the staging service, so weigh that against the guard.
 
 `NODE_ENV=staging` is rejected at boot (it would silently switch production
 hardening off). Deploy and smoke-test steps: RUNBOOK.md → "Staging".
@@ -186,7 +236,7 @@ PG_POOL_MAX=20                           Postgres connection pool size (default 
 PGSSL=false                              disable TLS to Postgres (local dev; auto-off for localhost)
 MEMORY_LIMIT_MB=512                      container memory limit; the self-healing watchdog warns at
                                           72%, GCs/alerts at 85% and restarts gracefully at 93% of
-                                          this (defaults match the 512 MB Railway plan)
+                                          this (defaults match the 512 MB Render Starter instance)
 AI_DAILY_BUDGET_USD=50                   global daily AI spend cap in USD (UTC day). Every model call is
                                           metered into ai_usage_log; at the cap AI features answer 503
                                           ai_unavailable (reason daily_budget_reached) until 00:00 UTC.
@@ -265,9 +315,16 @@ integrations: Stripe is the only supported payment provider.
   `update_legal_data.js`) write the **main Postgres database** and need only
   `DATABASE_URL` (plus `GOOGLE_PLACES_KEY` / `YELP_API_KEY` for the Google /
   Yelp sources). They refuse to run without `DATABASE_URL`; there is no local
-  SQLite output any more. Run them on Railway with `railway run node src/scripts/<script>.js`.
-- Set by the platform, do not set by hand: `PORT` (default 4000 locally),
-  `RAILWAY_ENVIRONMENT` (used as the Sentry environment / boot log label).
+  SQLite output any more. Run them from the Render service **Shell** tab
+  (`node src/scripts/<script>.js` — the env is already set), or locally with
+  `DATABASE_URL` exported.
+- Migration runner (`backend/scripts/migrate.sh`, the Render pre-deploy step):
+  `MIGRATIONS_DATABASE_URL` (optional; defaults to `DATABASE_URL` — set it to a
+  direct / session-mode connection if `DATABASE_URL` is a transaction pooler
+  that rejects a statement), `MIGRATIONS_DIR` (optional; defaults to the repo /
+  image layout). `--status` lists applied / pending files; `--baseline <file>`
+  records files up to `<file>` as applied without running them.
+- Platform variables: see "Set by Render" above.
 
 ## Verify a deploy
 
@@ -276,7 +333,7 @@ cd backend
 node scripts/smoke-test.mjs https://<your-api-host> [--db-url $DATABASE_URL]
 ```
 
-Full go-live sequence: `backend/scripts/railway-checklist.md`.
+Full go-live sequence: `backend/scripts/go-live-checklist.md`.
 
 ## Frontend build variables (EXPO_PUBLIC_*)
 

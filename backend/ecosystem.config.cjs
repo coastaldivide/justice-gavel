@@ -1,5 +1,7 @@
 /**
- * ecosystem.config.cjs — PM2 process configuration for Railway / production
+ * ecosystem.config.cjs — PM2 process configuration for a self-managed server
+ * (a VM behind Caddy, see ../Caddyfile). NOT used on Render: Render runs the
+ * Docker image (backend/Dockerfile) directly and restarts it on exit.
  *
  * Usage:
  *   pm2 start ecosystem.config.cjs          # start
@@ -7,8 +9,7 @@
  *   pm2 logs justice-gavel-api              # tail logs
  *   pm2 monit                                # live monitor
  *
- * Railway uses this automatically when RAILWAY_ENVIRONMENT=production
- * and "start": "pm2-runtime start ecosystem.config.cjs" is set in package.json.
+ * In a container, use `pm2-runtime start ecosystem.config.cjs --env production`.
  */
 
 module.exports = {
@@ -19,16 +20,16 @@ module.exports = {
     interpreter_args: '--experimental-vm-modules',
 
     // ── Clustering ───────────────────────────────────────────
-    // Railway Starter: 1 vCPU → instances: process.env.NODE_CLUSTER_WORKERS ? parseInt(process.env.NODE_CLUSTER_WORKERS) : 1, // set NODE_CLUSTER_WORKERS=max on multi-core Railway plan
-    // Railway Pro:     2 vCPU → instances: 2
-    // Railway Team:    4 vCPU → instances: 'max'
+    // One process per server: background jobs (scheduler, reminder delivery,
+    // watchdogs) run in every process, so scale with more machines/instances
+    // only after reading RUNBOOK "Scaling".
     instances:        1,
     exec_mode:        'fork',   // use 'cluster' when instances > 1
 
     // ── Restart policy ────────────────────────────────────────
     autorestart:      true,
     watch:            false,    // never watch in production
-    max_memory_restart: '512M', // restart if memory exceeds 512MB (Railway Starter limit)
+    max_memory_restart: '512M', // restart if memory exceeds 512MB (match MEMORY_LIMIT_MB)
     restart_delay:    2000,     // 2s between restart attempts
     exp_backoff_restart_delay: 100,
 
@@ -37,7 +38,7 @@ module.exports = {
       NODE_ENV:    'production',
       NODE_OPTIONS: '--experimental-vm-modules',
       LOG_LEVEL:   'warn',      // suppress info logs in production
-      LOG_FORMAT:  'json',      // structured JSON for Railway log drain
+      LOG_FORMAT:  'json',      // structured JSON for log shipping
     },
     env_development: {
       NODE_ENV:    'development',
@@ -46,8 +47,7 @@ module.exports = {
     },
 
     // ── Logging ───────────────────────────────────────────────
-    // Railway pipes stdout/stderr to its log system automatically
-    // These paths are only used for local PM2 runs
+    // Log files for PM2 runs (container hosts read stdout/stderr instead)
     out_file:   './logs/out.log',
     error_file: './logs/error.log',
     merge_logs: true,
@@ -65,11 +65,11 @@ module.exports = {
     // min_uptime: '10s',   // must stay up 10s to count as "started"
   }],
 
-  // ── Deploy config (for pm2 deploy — optional, Railway uses Git deploy) ─────
+  // ── Deploy config (for `pm2 deploy` to your own server — optional) ────────
   deploy: {
     production: {
-      user:       'railway',
-      host:       'RAILWAY_HOST',    // set via Railway env
+      user:       'deploy',
+      host:       'YOUR_SERVER_HOST',
       ref:        'origin/main',
       repo:       'git@github.com:YOUR_ORG/justice-gavel.git',
       path:       '/app',

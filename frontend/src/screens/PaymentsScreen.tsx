@@ -21,42 +21,44 @@ import { ScreenCapture } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { useAuthGate } from '../components/AuthGate';
+import { t, useLang, perLang, locale } from '../i18n';
 
 // ── Payment purposes ──────────────────────────────────────────────────────────
 
-const PURPOSES = [
-  { key: 'consultation', label: 'Consultation fee', icon: '💬', defaultAmount: '150', description: 'One-time fee for your initial attorney meeting' },
-  { key: 'retainer',     label: 'Attorney retainer', icon: '⚖️', defaultAmount: '1500', description: 'Upfront retainer to retain your attorney' },
-  { key: 'bail',         label: 'Bail assistance',  icon: '🔓', defaultAmount: '500', description: 'Deposit toward bail bond or bail assistance service' },
-  { key: 'other',        label: 'Other / custom',   icon: '💳', defaultAmount: '100', description: 'Custom amount for any legal service' },
-];
+const PURPOSES = perLang(() => [
+  { key: 'consultation', label: t('x_payments_consultation_fee'), icon: '💬', defaultAmount: '150', description: t('x_payments_one_time_fee_initial') },
+  { key: 'retainer',     label: t('x_payments_attorney_retainer'), icon: '⚖️', defaultAmount: '1500', description: t('x_payments_upfront_retainer_retain_attorney') },
+  { key: 'bail',         label: t('x_payments_bail_assistance'),  icon: '🔓', defaultAmount: '500', description: t('x_payments_deposit_toward_bail_bond') },
+  { key: 'other',        label: t('x_payments_other_custom'),   icon: '💳', defaultAmount: '100', description: t('x_payments_custom_amount_any_legal') },
+]);
 
 // ── Payment methods -- primary 3 + more ───────────────────────────────────────
 
-const PRIMARY_METHODS = [
-  { key: 'stripe',    label: 'Credit / debit card', icon: '💳', sub: 'Visa, Mastercard, Amex' },
+const PRIMARY_METHODS = perLang(() => [
+  { key: 'stripe',    label: t('x_payments_credit_debit_card'), icon: '💳', sub: t('x_payments_visa_mastercard_amex') },
   { key: Platform.OS === 'ios' ? 'apple_pay' : 'google_pay',
     label: Platform.OS === 'ios' ? 'Apple Pay' : 'Google Pay',
     icon: Platform.OS === 'ios' ? '🍎' : '🤖',
-    sub: 'Fast, no card entry needed' },
-  { key: 'paypal',    label: 'PayPal', icon: '🅿', sub: 'Pay with your PayPal balance' },
-];
+    sub: t('x_payments_fast_no_card_entry') },
+  { key: 'paypal',    label: 'PayPal', icon: '🅿', sub: t('x_payments_pay_with_paypal_balance') },
+]);
 
-const MORE_METHODS = [
-  { key: 'braintree',       label: 'Venmo',                icon: '💜', sub: 'via Braintree' },
-  { key: 'ach',             label: 'Bank transfer (ACH)',   icon: '🏦', sub: 'US bank accounts' },
-  { key: 'zelle',           label: 'Zelle',                icon: '⚡', sub: 'Instructions provided' },
-  { key: 'amazon_pay',      label: 'Amazon Pay',           icon: '📦', sub: 'Amazon account' },
-  { key: 'crypto_coinbase', label: 'Crypto (Coinbase)',    icon: '₿',  sub: 'BTC, ETH, USDC' },
-];
+const MORE_METHODS = perLang(() => [
+  { key: 'braintree',       label: 'Venmo',                icon: '💜', sub: t('x_payments_via_braintree') },
+  { key: 'ach',             label: t('x_payments_bank_transfer_ach'),   icon: '🏦', sub: t('x_payments_us_bank_accounts') },
+  { key: 'zelle',           label: 'Zelle',                icon: '⚡', sub: t('x_payments_instructions_provided') },
+  { key: 'amazon_pay',      label: 'Amazon Pay',           icon: '📦', sub: t('x_payments_amazon_account') },
+  { key: 'crypto_coinbase', label: t('x_payments_crypto_coinbase'),    icon: '₿',  sub: 'BTC, ETH, USDC' },
+]);
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PurposeCard({ p, selected, onSelect }: any) {
+  useLang();
   return (
     <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
       accessibilityLabel={p.icon} onPress={() => onSelect(p)}
       activeOpacity={0.8}
@@ -74,10 +76,11 @@ function PurposeCard({ p, selected, onSelect }: any) {
 }
 
 function MethodRow({ m, selected, onSelect }: any) {
+  useLang();
   return (
     <TouchableOpacity
       accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       style={[styles.methodRow, selected && styles.methodRowSelected]}
       accessibilityLabel={m.icon} onPress={() => onSelect(m.key)}
       activeOpacity={0.8}
@@ -96,6 +99,7 @@ function MethodRow({ m, selected, onSelect }: any) {
 
 // Stripe PaymentSheet hook — enables native card sheet instead of browser redirect
 function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -111,9 +115,10 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     try {
       const Print   = await import('expo-print');
       const Sharing = await import('expo-sharing');
-      const date = new Date(String(payment.created_at || Date.now())).toLocaleDateString('en-US', {
+      const date = new Date(String(payment.created_at || Date.now())).toLocaleDateString(locale(), {
         year: 'numeric', month: 'long', day: 'numeric',
       });
+      const h = (k: string, p?: Record<string, string | number>) => escapeHtml(t(k, p));
       const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -131,30 +136,30 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 </style></head><body>
 <div class="header">
   <div class="logo">⚖️ Justice Gavel</div>
-  <div class="tagline">Legal self-help for everyone · justicegavel.app</div>
+  <div class="tagline">${h('x_payments_rc_tagline')}</div>
 </div>
-<h2>Payment Receipt</h2>
-<p class="receipt-no">Receipt #JG-${String(payment.id || Date.now()).slice(-8).toUpperCase()} · ${date}</p>
+<h2>${h('x_payments_rc_title')}</h2>
+<p class="receipt-no">${h('x_payments_rc_number', { number: `JG-${String(payment.id || Date.now()).slice(-8).toUpperCase()}`, date })}</p>
 <table>
-  <tr><td>Description</td><td>${escapeHtml(payment.description || payment.tier || 'Subscription')}</td></tr>
-  <tr><td>Amount</td><td>$${((Number((payment as unknown as import('../types/api').Payment).amount_cents) || 0) / 100).toFixed(2)}</td></tr>
-  <tr><td>Status</td><td>${escapeHtml(payment.status || 'Paid')}</td></tr>
-  <tr><td>Date</td><td>${date}</td></tr>
+  <tr><td>${h('x_payments_rc_description')}</td><td>${escapeHtml(payment.description || payment.tier || t('x_payments_rc_subscription'))}</td></tr>
+  <tr><td>${h('x_payments_rc_amount')}</td><td>$${((Number((payment as unknown as import('../types/api').Payment).amount_cents) || 0) / 100).toFixed(2)}</td></tr>
+  <tr><td>${h('x_payments_rc_status')}</td><td>${escapeHtml(payment.status || t('x_payments_rc_paid'))}</td></tr>
+  <tr><td>${h('x_payments_rc_date')}</td><td>${date}</td></tr>
 </table>
-<table class="total"><tr><td>Total Paid</td><td>$${((Number((payment as any).amount_cents) || 0) / 100).toFixed(2)}</td></tr></table>
+<table class="total"><tr><td>${h('x_payments_rc_total_paid')}</td><td>$${((Number((payment as any).amount_cents) || 0) / 100).toFixed(2)}</td></tr></table>
 <div class="footer">
-  Justice Gavel, Inc. · Not a law firm · This receipt is for payment purposes only.<br>
-  Questions? Contact support at justicegavel.app
+  ${h('x_payments_rc_footer')}<br>
+  ${h('x_payments_rc_questions')}
 </div>
 </body></html>`;
 
       const { uri } = await Print.printToFileAsync({ html, base64: false });
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Save or share your receipt',
+        dialogTitle: t('x_payments_save_share_receipt'),
       });
     } catch {
-      showToast('Check your connection and try again.');
+      showToast(t('home_sos_failed'));
     } finally {
       setGeneratingReceipt(false);
     }
@@ -170,15 +175,15 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [purpose, setPurpose]     = useState(PURPOSES[0]);
+  const [purpose, setPurpose]     = useState(PURPOSES()[0]);
   // Pre-select payment purpose from navigation params
   React.useEffect(() => {
     const productId = (route?.params as Record<string,string>)?.productId;
     if (productId) setPurpose(productId as any);
   }, [route?.params]);
 
-  const [amount, setAmount]       = useState(PURPOSES[0].defaultAmount);
-  const [method, setMethod]       = useState(PRIMARY_METHODS[0].key);
+  const [amount, setAmount]       = useState(PURPOSES()[0].defaultAmount);
+  const [method, setMethod]       = useState(PRIMARY_METHODS()[0].key);
   const [showMore, setShowMore]   = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
   const [loading, setLoading]     = useState(false);
@@ -194,21 +199,21 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
-  const onSelectPurpose = (p: typeof PURPOSES[0]) => {
+  const onSelectPurpose = (p: ReturnType<typeof PURPOSES>[0]) => {
     setPurpose(p);
     setAmount(p.defaultAmount);
     setStatus('');
   };
 
   const allMethods = [
-    ...PRIMARY_METHODS,
-    ...(showMore ? MORE_METHODS : []),
+    ...PRIMARY_METHODS(),
+    ...(showMore ? MORE_METHODS() : []),
   ];
-  const selectedMethod = allMethods.find(m => m.key === method) || PRIMARY_METHODS[0];
+  const selectedMethod = allMethods.find(m => m.key === method) || PRIMARY_METHODS()[0];
 
   const onPay = () => {
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { setStatus('Please enter a valid amount.'); return; }
+    if (!amt || amt <= 0) { setStatus(t('x_payments_please_enter_valid_amount')); return; }
     requireAuth(() => doPayment(amt));
   };
 
@@ -222,7 +227,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         amount: amt,
         currency: 'USD',
         meta: {
-          description: `Justice Gavel -- ${purpose.label}`,
+          description: t('x_payments_justice_gavel', { label: purpose.label }),
           purpose: purpose.key,
         }
       });
@@ -239,21 +244,21 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         if (!initError) {
           const { error: presentError } = await presentPaymentSheet();
           if (!presentError) {
-            setStatus('Payment complete ✓');
+            setStatus(t('x_payments_payment_complete'));
             setLastPayment({ ...(res.data || {}), amount: amt, method, purpose: purpose.label, created_at: new Date().toISOString() });
           } else if (presentError.code === 'payments_unavailable') {
-            setStatus(PAYMENTS_COMING_SOON);
+            setStatus(PAYMENTS_COMING_SOON());
           } else if (presentError.code !== 'Canceled') {
-            setStatus(presentError.message || 'Payment failed. Please try again.');
+            setStatus(presentError.message || t('x_booking_payment_failed_please_try'));
           }
         }
       } else if (res.data?.url) {
-        Linking.openURL(res.data?.url).catch(() => showToast('Action failed. Please try again.', 'error'));
-        setStatus('Payment page opened. Complete your payment in the browser.');
+        Linking.openURL(res.data?.url).catch(() => showToast(t('action_failed'), 'error'));
+        setStatus(t('x_payments_payment_page_opened_complete'));
       } else if (res.data?.instructions) {
         setStatus(res.data?.instructions);
       } else {
-        setStatus('Payment initiated. Check your email for confirmation.');
+        setStatus(t('x_payments_payment_initiated_check_email'));
       }
     } catch (e: any) {
       setLoading(false);
@@ -262,13 +267,13 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       if (isPaymentsUnavailable(e) || statusCode === 503) {
         // Billing not configured on the backend -- friendly message, nothing charged
-        setStatus(PAYMENTS_COMING_SOON);
+        setStatus(PAYMENTS_COMING_SOON());
       } else if (statusCode === 401 || statusCode === 403) {
-        setStatus('Please sign in to make a payment.');
+        setStatus(t('x_payments_please_sign_make_payment'));
       } else if (!e.response && serverMsg.toLowerCase().includes('network')) {
-        setStatus('No connection. Check your internet and try again.');
+        setStatus(t('x_ch_no_connection_check_internet'));
       } else {
-        setStatus('Payment could not be processed. ' + (serverMsg || 'Please try again.'));
+        setStatus(t('x_payments_payment_could_not_be', { value: (serverMsg || t('x_consumer_subscription_please_try_again')) }));
       }
     } finally {
       setLoading(false);
@@ -282,21 +287,21 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Make a payment</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>Secure, encrypted transactions</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_payments_make_payment')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>{t('x_payments_secure_encrypted_transactions')}</Text>
       </View>
 
       {/* Step 1: Purpose */}
       <View style={styles.section}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>Step 1 -- What is this payment for?</Text>
-        {PURPOSES.map(p => (
+        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>{t('x_payments_step_1_what_this')}</Text>
+        {PURPOSES().map(p => (
           <PurposeCard key={p.key} p={p} selected={purpose.key === p.key} onSelect={onSelectPurpose} />
         ))}
       </View>
 
       {/* Step 2: Amount */}
       <View style={styles.section}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>Step 2 -- Amount</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>{t('x_payments_step_2_amount')}</Text>
         <View style={styles.amountRow}>
           <Text maxFontSizeMultiplier={1.4} style={styles.currencySymbol}>$</Text>
           <TextInput
@@ -317,15 +322,15 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       {/* Step 3: Payment method */}
       <View style={styles.section}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>Step 3 -- How would you like to pay?</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>{t('x_payments_step_3_how_would')}</Text>
 
         {lastMethod && lastMethod !== method && (
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
+          accessibilityHint={t('cp_double_tap')} style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.lastUsedText}>
-              ↩ Use last method: {[...PRIMARY_METHODS, ...MORE_METHODS].find(m => m.key === lastMethod)?.label || lastMethod}
+              {t('x_payments_use_last_method', { value: [...PRIMARY_METHODS(), ...MORE_METHODS()].find(m => m.key === lastMethod)?.label || lastMethod })}
             </Text>
 
           </TouchableOpacity>
@@ -336,10 +341,10 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         ))}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
+          accessibilityHint={t('cp_double_tap')} style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.moreToggleText}>
-            {showMore ? '▲ Fewer options' : '▼ More payment options (Venmo, ACH, Zelle, Crypto…)'}
+            {showMore ? t('x_payments_fewer_options') : t('x_payments_more_payment_options_venmo')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -351,25 +356,25 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={styles.summaryAmount}>${(parseFloat(amount || '0') || 0).toFixed(2)}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>via {selectedMethod.label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>🔒 Encrypted</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>{t('x_payments_via', { label: selectedMethod.label })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>{t('qc_encrypted')}</Text>
         </View>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
           style={[styles.payBtn, loading && styles.payBtnDisabled]}
           onPress={onPay}
           disabled={loading}>
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${(parseFloat(amount || '0') || 0).toFixed(2)} with {selectedMethod.label}</Text>
+            : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('x_payments_pay_with', { value: (parseFloat(amount || '0') || 0).toFixed(2), label: selectedMethod.label })}</Text>
           }
         </TouchableOpacity>
 
         {!!status && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.statusText,
             (status.startsWith('Payment could') || status.startsWith('Please sign')) && styles.statusError,
-            status === PAYMENTS_COMING_SOON && styles.statusConfig,
+            status === PAYMENTS_COMING_SOON() && styles.statusConfig,
           ]}>
             {status}
           </Text>
@@ -378,25 +383,25 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         {!!lastPayment && (
               <TouchableOpacity
                 accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                 style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
                   paddingVertical:6 }}
                 onPress={() => lastPayment && generateReceipt(lastPayment)}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                 disabled={generatingReceipt}
-                accessibilityLabel="Download payment receipt"
+                accessibilityLabel={t('x_payments_download_payment_receipt')}
               >
                 <AppIcon name="document-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
                   color:colors.textBrand, fontWeight:'600' }}>
-                  {generatingReceipt ? 'Generating…' : 'Download Receipt'}
+                  {generatingReceipt ? t('x_expungement_generating') : t('x_payments_download_receipt')}
                 </Text>
               </TouchableOpacity>
         )}
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={styles.footerNote}>
-        Payments are processed securely. Justice Gavel does not store your card information.
+        {t('x_payments_payments_processed_securely_justice')}
       </Text>
 
       <View style={{ height: 40 }} />
@@ -406,8 +411,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         borderLeftWidth:4, borderLeftColor:colors.blue,
         padding:12, marginTop:12, marginBottom:8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, lineHeight:16 }}>
-          💳 Payments are processed securely by Stripe. Subscriptions auto-renew unless cancelled.
-          For billing questions or refund requests, contact support@justicegavel.app.
+          {t('x_payments_payments_processed_securely_by')}
         </Text>
       </View>
 

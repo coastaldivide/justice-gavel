@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -233,8 +234,7 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
 
   test('3-05: OfflineBanner shows 📵 emoji and descriptive text', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/OfflineBanner.tsx');
     expect(src).toContain('📵');
     expect(src).toContain('No internet connection');
   });

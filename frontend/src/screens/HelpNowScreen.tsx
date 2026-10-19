@@ -47,14 +47,14 @@ interface Filters { charge: string; language: string; free: boolean; open: boole
 // Filter values are what the server matches (English practice areas / languages as listed);
 // the chip labels are translated.
 const CHARGES: { value: string; key: string }[] = [
-  { value: 'DUI', key: 'hn_charge_dui' }, { value: 'Drug Offenses', key: 'hn_charge_drug' },
-  { value: 'Assault', key: 'hn_charge_assault' }, { value: 'Domestic Violence', key: 'hn_charge_domestic' },
-  { value: 'Theft', key: 'hn_charge_theft' }, { value: 'Weapons', key: 'hn_charge_weapons' },
-  { value: 'Traffic', key: 'hn_charge_traffic' },
+  { value: 'DUI', key: 'hn_charge_dui' }, { value: 'Drug Offenses', key: 'hn_charge_drug' }, // i18n-exempt: server filter values; chip labels come from the key
+  { value: 'Assault', key: 'hn_charge_assault' }, { value: 'Domestic Violence', key: 'hn_charge_domestic' }, // i18n-exempt: server filter values; chip labels come from the key
+  { value: 'Theft', key: 'hn_charge_theft' }, { value: 'Weapons', key: 'hn_charge_weapons' }, // i18n-exempt: server filter values; chip labels come from the key
+  { value: 'Traffic', key: 'hn_charge_traffic' }, // i18n-exempt: server filter values; chip labels come from the key
 ];
 const LANGUAGES: { value: string; key: string }[] = [
-  { value: 'Spanish', key: 'hn_lang_spanish' }, { value: 'Vietnamese', key: 'hn_lang_vietnamese' },
-  { value: 'Portuguese', key: 'hn_lang_portuguese' }, { value: 'Chinese', key: 'hn_lang_chinese' },
+  { value: 'Spanish', key: 'hn_lang_spanish' }, { value: 'Vietnamese', key: 'hn_lang_vietnamese' }, // i18n-exempt: server filter values; chip labels come from the key
+  { value: 'Portuguese', key: 'hn_lang_portuguese' }, { value: 'Chinese', key: 'hn_lang_chinese' }, // i18n-exempt: server filter values; chip labels come from the key
 ];
 const DISTANCES = [10, 25, 50];
 const REASON_CODES = ['wrong_phone', 'closed', 'wrong_address', 'wrong_hours', 'not_this_service', 'other'];

@@ -6,6 +6,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 export function isSampleRecord(row: unknown): boolean {
   const v = (row as { is_sample?: unknown } | null | undefined)?.is_sample;
@@ -13,15 +14,16 @@ export function isSampleRecord(row: unknown): boolean {
 }
 
 export function SampleRecordBadge({ row }: { row: unknown }): React.JSX.Element | null {
+  useLang();
   if (!isSampleRecord(row)) return null;
   return (
     <View
       testID="sample-record-badge"
       style={styles.badge}
       accessible
-      accessibilityLabel="Sample record. This is generated demo data, not a real arrest."
+      accessibilityLabel={t('x_sample_record_badge_sample_record_this_generated')}
     >
-      <Text maxFontSizeMultiplier={1.4} style={styles.text}>Sample record · not a real arrest</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.text}>{t('x_sample_record_badge_sample_record_not_real')}</Text>
     </View>
   );
 }

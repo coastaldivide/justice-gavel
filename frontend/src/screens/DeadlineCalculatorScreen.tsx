@@ -26,7 +26,8 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useMemo } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
-import { getUserState } from '../utils/userState';
+import { getUserState, stateName } from '../utils/userState';
+import { t, useLang, perLang, locale } from '../i18n';
 
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
@@ -93,12 +94,12 @@ const STATE_DMV_DUI_DAYS: Record<string, number> = {
   WY: 20,  // 20 days to request hearing
 };
 
-const DEADLINE_RULES: DeadlineRule[] = [
+const DEADLINE_RULES = perLang((): DeadlineRule[] => [
   {
-    label: 'Arraignment',
+    label: t('whn_dui_3_title'),
     icon:  '🏛️',
-    description: 'First court appearance -- charges read, bail set',
-    note: 'Most states: 48-72 hours after arrest. Federal: without unnecessary delay (usually 24-48 hrs).',
+    description: t('x_deadline_calculator_first_court_appearance_charges'),
+    note: t('x_deadline_calculator_most_states_48_72'),
     compute: (arrest, _, state) => {
       const d = new Date(arrest);
       const hrs = (state && STATE_ARRAIGNMENT_HRS[state]) || 72;
@@ -106,10 +107,10 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'DMV License Hearing (DUI/DWI only)',
+    label: t('x_deadline_calculator_dmv_license_hearing_dui'),
     icon:  '🚗',
-    description: 'Deadline to request a hearing to keep your driving privileges',
-    note: 'Only applies to DUI/DWI arrests. Missing it usually means an automatic license suspension. Shown once your state is set.',
+    description: t('x_deadline_calculator_deadline_request_hearing_keep'),
+    note: t('x_deadline_calculator_only_applies_dui_dwi'),
     compute: (arrest, _, state) => {
       const days = state ? STATE_DMV_DUI_DAYS[state] : undefined;
       if (!days) return null;
@@ -118,30 +119,30 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'Bail Hearing',
+    label: t('whn_dui_4_title'),
     icon:  '🔓',
-    description: 'Right to bail determination',
-    note: 'Most states require bail to be set within 48 hours of arrest.',
+    description: t('x_deadline_calculator_right_bail_determination'),
+    note: t('x_deadline_calculator_most_states_require_bail'),
     compute: (arrest) => {
       const d = new Date(arrest);
       d.setHours(d.getHours() + 48);
       return d;
     } },
   {
-    label: 'Preliminary Hearing',
+    label: t('x_deadline_calculator_preliminary_hearing'),
     icon:  '📋',
-    description: 'Probable cause hearing (felony cases)',
-    note: 'Federal: within 14 days if in custody, 21 days if released. Most states: 10-30 days.',
+    description: t('x_deadline_calculator_probable_cause_hearing_felony'),
+    note: t('x_deadline_calculator_federal_within_14_days'),
     compute: (arrest) => {
       const d = new Date(arrest);
       d.setDate(d.getDate() + 14);
       return d;
     } },
   {
-    label: 'Speedy Trial -- Assert Right',
+    label: t('x_deadline_calculator_speedy_trial_assert_right'),
     icon:  '⏱️',
-    description: 'Deadline to formally assert 6th Amendment speedy trial right',
-    note: 'Assert in writing as early as possible. Federal Speedy Trial Act: trial within 70 days of indictment.',
+    description: t('x_deadline_calculator_deadline_formally_assert_6th'),
+    note: t('x_deadline_calculator_assert_writing_as_early'),
     compute: (arrest, _, state) => {
       const d = new Date(arrest);
       const days = (state && STATE_SPEEDY_TRIAL_DAYS[state]) || 30;
@@ -149,20 +150,20 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'Federal Speedy Trial Act',
+    label: t('x_deadline_calculator_federal_speedy_trial_act'),
     icon:  '⚖️',
-    description: 'Federal trial must begin within 70 days of indictment',
-    note: '18 U.S.C. § 3161. Excludes periods of delay attributable to the defense.',
+    description: t('x_deadline_calculator_federal_trial_must_begin'),
+    note: t('x_deadline_calculator_18_u_s_c'),
     compute: (arrest) => {
       const d = new Date(arrest);
       d.setDate(d.getDate() + 70);
       return d;
     } },
   {
-    label: 'Notice of Appeal -- Federal',
+    label: t('x_deadline_calculator_notice_appeal_federal'),
     icon:  '📣',
-    description: '14-day deadline from judgment -- federal criminal',
-    note: 'Fed. R. App. P. 4(b). Missing this deadline permanently waives appellate rights. No extensions without extraordinary cause.',
+    description: t('x_deadline_calculator_14_day_deadline_from'),
+    note: t('x_deadline_calculator_fed_r_app_p'),
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -170,10 +171,10 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'Notice of Appeal -- State (30-day)',
+    label: t('x_deadline_calculator_notice_appeal_state_30'),
     icon:  '📣',
-    description: '30-day deadline from judgment -- most states',
-    note: 'Verify your state\'s exact deadline. Some states allow 60 days. Missing it permanently waives appeal.',
+    description: t('x_deadline_calculator_30_day_deadline_from'),
+    note: t('x_deadline_calculator_verify_state_s_exact'),
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -181,10 +182,10 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'AEDPA Habeas Corpus',
+    label: t('x_deadline_calculator_aedpa_habeas_corpus'),
     icon:  '⚖️',
-    description: '1-year limit from conviction becoming final',
-    note: '28 U.S.C. § 2244(d). Tolled while state PCR proceedings are pending. Missing this bar is fatal to federal habeas.',
+    description: t('x_deadline_calculator_1_year_limit_from'),
+    note: t('x_deadline_calculator_28_u_s_c'),
     compute: (_, judgment, state) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -193,17 +194,17 @@ const DEADLINE_RULES: DeadlineRule[] = [
       return d;
     } },
   {
-    label: 'State PCR Petition',
+    label: t('x_deadline_calculator_state_pcr_petition'),
     icon:  '📜',
-    description: 'Post-conviction relief -- state court',
-    note: 'Varies widely by state: TN = 1 year, CA = 2 years, federal = AEDPA 1 year. File before direct appeal is final to preserve AEDPA tolling.',
+    description: t('x_deadline_calculator_post_conviction_relief_state'),
+    note: t('x_deadline_calculator_varies_widely_by_state'),
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
       d.setFullYear(d.getFullYear() + 1);
       return d;
     } },
-];
+]);
 
 // ── State-specific arraignment / bail deadline overrides ─────────────────────
 // Sources: published state statutes, last verified April 2026.
@@ -329,18 +330,7 @@ const STATE_PCR_YEARS: Record<string, number> = {
 
 
 function getStateName(code: string): string {
-  const NAMES: Record<string,string> = {
-    AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',
-    CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'Washington D.C.',FL:'Florida',
-    GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',
-    KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',
-    MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',
-    MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',
-    NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',
-    OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',
-    SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',
-    WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming' };
-  return NAMES[code] || code;
+  return stateName(code) || code;
 }
 
 // ── Color coding ──────────────────────────────────────────────────────────────
@@ -353,15 +343,15 @@ function deadlineColor(deadline: Date, today: Date): 'red' | 'amber' | 'green' |
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale(), { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function daysLabel(deadline: Date, today: Date): string {
   const days = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 0)  return `${Math.abs(days)} days ago`;
-  if (days === 0) return 'TODAY';
-  if (days === 1) return 'Tomorrow';
-  return `${days} days away`;
+  if (days < 0)  return t('x_deadline_calculator_days_ago', { days: Math.abs(days) });
+  if (days === 0) return t('x_deadline_calculator_today');
+  if (days === 1) return t('x_date_utils_tomorrow');
+  return t('x_deadline_calculator_days_away', { days });
 }
 
 function parseDate(str: string): Date | null {
@@ -374,6 +364,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   rule: DeadlineRule; arrest: Date | null; judgment: Date | null;
   today: Date; isDark: boolean; state?: string;
 }) {
+  useLang();
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -384,13 +375,13 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
       const Calendar = await import('expo-calendar');
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
-        showToast('Enable calendar access in Settings to add deadlines.');
+        showToast(t('x_deadline_calculator_enable_calendar_access_settings'));
         return;
       }
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
       const defaultCal = calendars.find(cal => cal.isPrimary) || calendars[0];
       if (!defaultCal) {
-        showToast('Could not locate a calendar on this device.');
+        showToast(t('x_deadline_calculator_could_not_locate_calendar'));
         return;
       }
       const start = new Date(dueDate);
@@ -398,7 +389,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
       const end = new Date(start);
       end.setHours(17, 0, 0, 0);
       await Calendar.createEventAsync(defaultCal.id, {
-        title: 'Justice Gavel Deadline: ' + title,
+        title: t('x_deadline_calculator_justice_gavel_deadline', { title }),
         startDate: start,
         endDate: end,
         alarms: [
@@ -406,11 +397,11 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           { relativeOffset: -60 * 24 },       // 1 day before
           { relativeOffset: -60 * 2 },        // 2 hours before
         ],
-        notes: 'Calculated by Justice Gavel Deadline Calculator. Verify with local court rules.',
+        notes: t('x_deadline_calculator_calculated_by_justice_gavel'),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-      showToast(title + ' added to calendar with reminders.', 'success');
+      showToast(t('x_deadline_calculator_added_calendar_with_reminders', { title }), 'success');
     } catch {
-      showToast('Could not add event. Please try again.');
+      showToast(t('x_deadline_calculator_could_not_add_event'));
     }
   }, [showToast]);
 
@@ -418,19 +409,19 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   const scheduleReminder = async (label: string, due: Date) => {
     const remind3Days = new Date(due.getFullYear(), due.getMonth(), due.getDate() - 3, 9, 0, 0, 0);
     if (remind3Days <= new Date()) {
-      showToast('This deadline is within 3 days -- act today.');
+      showToast(t('x_deadline_calculator_this_deadline_within_3'));
       return;
     }
     setRemindLoading(true);
     try {
       await postReminder({
-        title: '⏱️ Deadline in 3 days',
-        body: label + ' -- ' + due.toLocaleDateString('en-US',
+        title: t('x_deadline_calculator_deadline_3_days'),
+        body: label + ' -- ' + due.toLocaleDateString(locale(),
           { month: 'short', day: 'numeric', year: 'numeric' }),
         deliverAt: remind3Days });
-      showToast('Reminder set for 3 days before.', 'success');
+      showToast(t('x_deadline_calculator_reminder_set_3_days'), 'success');
     } catch {
-      showToast("Make sure you're signed in and notifications are enabled.", 'info');
+      showToast(t('x_deadline_calculator_make_sure_re_signed'), 'info');
     } finally {
       setRemindLoading(false);
     }
@@ -445,8 +436,8 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: COLORS.textSecond }]}>{rule.label}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowSub, { color: COLORS.textSecond }]}>
             {rule.label.includes('Appeal') || rule.label.includes('Habeas') || rule.label.includes('PCR')
-              ? 'Enter judgment date above'
-              : 'Enter arrest date above'}
+              ? t('x_deadline_calculator_enter_judgment_date_above')
+              : t('x_deadline_calculator_enter_arrest_date_above')}
           </Text>
 
 
@@ -466,7 +457,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   return (
     <TouchableOpacity
       accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       style={[styles.row, { backgroundColor: col.bg, borderColor: col.border }]}
       onPress={() => setExpanded(p => !p)}
       activeOpacity={0.85}
@@ -491,7 +482,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={`Remind me 3 days before ${rule.label}`}
+              accessibilityLabel={t('x_deadline_calculator_remind_me_3_days', { label: rule.label })}
               onPress={() => scheduleReminder(rule.label, deadline)}
               disabled={remindLoading}
               style={{ marginTop: 6, marginRight: 8, flexDirection: 'row', alignItems: 'center',
@@ -501,12 +492,12 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
             >
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18,
                 color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
-                {remindLoading ? 'Setting…' : '🔔 Remind me'}
+                {remindLoading ? t('x_deadline_calculator_setting') : t('x_deadline_calculator_remind_me')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={`Add ${rule.label} to calendar`}
+              accessibilityLabel={t('x_deadline_calculator_add_calendar', { label: rule.label })}
               onPress={() => addToCalendar(rule.label, deadline)}
               style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
@@ -515,7 +506,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
             >
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.info,
                 fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
-                + Calendar
+                {t('x_deadline_calculator_calendar')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -528,6 +519,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function DeadlineCalculatorScreen(): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -564,7 +556,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
 
   const urgentCount = useMemo(() => {
     if (!arrestDate) return 0;
-    return DEADLINE_RULES.filter(r => {
+    return DEADLINE_RULES().filter(r => {
       const d = r.compute(arrestDate, judgmentDate, userState);
       if (!d) return false;
       const status = deadlineColor(d, today);
@@ -585,44 +577,44 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.title, { color: colors.textPrimary }]}>Deadline Calculator</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.title, { color: colors.textPrimary }]}>{t('x_cs_deadline_calculator')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.sub, { color: colors.textMuted }]}>
-          Enter dates to compute all critical deadlines. Tap any row for legal notes.
+          {t('x_deadline_calculator_enter_dates_compute_all')}
         </Text>
       </View>
 
       {/* Date inputs */}
       <View style={[styles.inputCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.inputLabel, { color: colors.textMuted }]}>ARREST DATE</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.inputLabel, { color: colors.textMuted }]}>{t('x_deadline_calculator_arrest_date')}</Text>
         <TextInput
           style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary,
             backgroundColor: colors.bg }]}
           value={arrestInput}
           onChangeText={setArrestInput}
-          placeholder="e.g. March 10, 2025  or  2025-03-10"
+          placeholder={t('x_deadline_calculator_e_g_march_10')}
           placeholderTextColor={colors.textSecond}
           keyboardType="default"
           returnKeyType="next"
           blurOnSubmit
         />
         <Text maxFontSizeMultiplier={1.4} style={[styles.inputLabel, { color: colors.textMuted, marginTop: 12 }]}>
-          JUDGMENT / CONVICTION DATE (for appeal + habeas deadlines)
+          {t('x_deadline_calculator_judgment_conviction_date_appeal')}
         </Text>
         <TextInput
           style={[styles.dateInput, { borderColor: colors.border, color: colors.textPrimary,
             backgroundColor: colors.bg }]}
           value={judgmentInput}
           onChangeText={setJudgmentInput}
-          placeholder="e.g. March 21, 2025  or  2025-03-21"
+          placeholder={t('x_deadline_calculator_e_g_march_21')}
           placeholderTextColor={colors.textSecond}
           keyboardType="default"
-          accessibilityLabel="Judgment date"
+          accessibilityLabel={t('x_deadline_calculator_judgment_date')}
           returnKeyType="next"
           blurOnSubmit
         />
         {!arrestDate && arrestInput.length > 0 && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.parseError, { color: colors.emergency }]}>
-            Cannot parse date -- try format: March 10, 2025
+            {t('x_deadline_calculator_cannot_parse_date_try')}
           </Text>
         )}
       </View>
@@ -632,7 +624,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
         <View style={[styles.urgentBanner, { backgroundColor: isDark ? colors.emergencyBg : colors.emergencyBg,
           borderColor: colors.emergencyDark }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.urgentText, { color: colors.emergencyDark }]}>
-            ⏰  {urgentCount} deadline{urgentCount > 1 ? 's' : ''} require immediate attention
+            {t(urgentCount === 1 ? 'x_deadline_calculator_deadline_require_immediate_attention_one' : 'x_deadline_calculator_deadline_require_immediate_attention_other', { urgentCount })}
           </Text>
         </View>
       )}
@@ -640,10 +632,10 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
       {/* Color legend */}
       <View style={[styles.legend, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         {[
-          { color: colors.emergencyDark, label: '≤ 7 days -- Act today' },
-          { color: colors.warnDark, label: '≤ 30 days -- Urgent' },
-          { color: colors.legalDark, label: '> 30 days -- Scheduled' },
-          { color: colors.textSecond, label: 'Past / not applicable' },
+          { color: colors.emergencyDark, label: t('x_deadline_calculator_7_days_act_today') },
+          { color: colors.warnDark, label: t('x_deadline_calculator_30_days_urgent') },
+          { color: colors.legalDark, label: t('x_deadline_calculator_30_days_scheduled') },
+          { color: colors.textSecond, label: t('x_deadline_calculator_past_not_applicable') },
         ].map((item, i) => (
           <View key={`item-${i}`} style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: item.color }]} />
@@ -655,11 +647,11 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
       {/* Deadlines */}
       {!!stateName && (
         <Text testID="deadline-state-note" maxFontSizeMultiplier={1.4} style={[styles.legendText, { color: colors.textSecond, marginBottom: 8 }]}>
-          Using {stateName} rules where deadlines differ by state.
+          {t('x_deadline_calculator_using_rules_where_deadlines', { stateName })}
         </Text>
       )}
       <View style={styles.deadlineList}>
-        {DEADLINE_RULES.map((rule, i) => (
+        {DEADLINE_RULES().map((rule, i) => (
           <DeadlineRow
             key={`DEADLINE-${i}`}
             rule={rule}
@@ -674,9 +666,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
 
       {/* Disclaimer */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textSecond }]}>
-        Deadlines are general estimates. Verify exact deadlines against your jurisdiction's rules,
-        local court orders, and any applicable tolling events with a licensed attorney.
-        Missing a deadline may permanently waive legal rights.
+        {t('x_deadline_calculator_deadlines_general_estimates_verify')}
       </Text>
 
       <View style={{ height: 40 }} />
@@ -689,16 +679,15 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
           onPress={async () => {
           try {
               await RNShare.share({
-                message: 'Justice Gavel -- Deadline Calculator Results\n\n'
-                  + 'Use the Justice Gavel app to calculate your legal deadlines.',
-                title: 'Legal Deadlines' });
+                message: t('x_deadline_calculator_justice_gavel_deadline_calculator'),
+                title: t('x_deadline_calculator_legal_deadlines') });
             } catch {}
           }}
-          accessibilityLabel="Share deadline results"
-          accessibilityHint="Shares this information"
+          accessibilityLabel={t('x_deadline_calculator_share_deadline_results')}
+          accessibilityHint={t('x_deadline_calculator_shares_this_information')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700', fontSize:14 }}>
-            📤 Share Results
+            {t('x_deadline_calculator_share_results')}
           </Text>
         </TouchableOpacity>
 
@@ -708,10 +697,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
           color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ CRITICAL: Deadlines shown are general guidelines. DMV hearing
-          deadlines and court deadlines vary by county and jurisdiction.
-          Missing a deadline can permanently waive your rights. Verify every
-          deadline with a licensed attorney in your state immediately.
+          {t('x_deadline_calculator_critical_deadlines_shown_general')}
         </Text>
       </View>
 

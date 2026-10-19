@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -167,8 +168,7 @@ describe('RAS. RecoveryAgentsScreen — renderAgent + openWeb', () => {
 // ── REG. RegisterScreen — onRegister ─────────────────────────────────────
 describe('REG. RegisterScreen — onRegister', () => {
   test('REG-01: onRegister validates identifier.trim() then POST /auth/register', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/RegisterScreen.tsx');
     expect(src).toContain('onRegister');
     expect(src).toContain('identifier.trim()');
     expect(src).toContain('/auth/register');
@@ -344,8 +344,7 @@ describe('S12. UX — Final Internal Logic Complete', () => {
     expect(src).toContain('handlePay');
   });
   test('S12-03: PrivacyPolicyScreen requestDeletion = GDPR Article 17 compliance', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/PrivacyPolicyScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/PrivacyPolicyScreen.tsx');
     expect(src).toContain('Request Data Deletion');
     expect(src).toContain('requestDeletion');
   });

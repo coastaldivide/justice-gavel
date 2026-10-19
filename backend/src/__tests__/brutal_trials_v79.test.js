@@ -174,7 +174,7 @@ describe('DBP. DB Postgres Pool — max=10, SSL, Timeouts', () => {
     expect(src).toContain('10');
     // PostgreSQL connection pool with max 10 connections
   });
-  test('DBP-02: SSL rejectUnauthorized=false for Railway managed PostgreSQL', async () => {
+  test('DBP-02: SSL rejectUnauthorized=false for managed PostgreSQL (Supabase)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/db/index.js', 'utf8');
     expect(src).toContain('rejectUnauthorized');

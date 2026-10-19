@@ -4,7 +4,7 @@
  * Wraps console.* to:
  *   - Add ISO timestamp prefix
  *   - Silence debug/info logs when LOG_LEVEL=error (e.g. in test runners)
- *   - Structured JSON output when LOG_FORMAT=json (e.g. Railway, Datadog);
+ *   - Structured JSON output when LOG_FORMAT=json (e.g. Render log streams, Datadog);
  *     production defaults to JSON
  *   - Stamp every line logged while handling a request with that request's
  *     id (request_id), via AsyncLocalStorage — see runWithRequestContext()
@@ -26,8 +26,8 @@ import { redact, redactString } from './redact.js';
 
 const LEVEL_ORDER = { debug: 0, info: 1, warn: 2, error: 3 };
 const MIN_LEVEL   = LEVEL_ORDER[process.env.LOG_LEVEL?.toLowerCase()] ?? 1; // default: info
-// One-line JSON when LOG_FORMAT=json. Production defaults to JSON (Railway /
-// Datadog ingest one JSON object per line); set LOG_FORMAT=text to opt out.
+// One-line JSON when LOG_FORMAT=json. Production defaults to JSON (Render log
+// streams / Datadog ingest one JSON object per line); set LOG_FORMAT=text to opt out.
 const JSON_FORMAT = process.env.LOG_FORMAT === 'json'
   || (process.env.NODE_ENV === 'production' && !process.env.LOG_FORMAT);
 

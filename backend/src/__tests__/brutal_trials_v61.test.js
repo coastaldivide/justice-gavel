@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -301,8 +302,7 @@ describe('LES. LessonsScreen — markComplete', () => {
 // ── LOG. LoginScreen — onLogin + browseAsGuest ───────────────────────────
 describe('LOG. LoginScreen — onLogin + browseAsGuest', () => {
   test('LOG-01: onLogin validates identifier then POST /auth/login', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/LoginScreen.tsx');
     expect(src).toContain('onLogin');
     expect(src).toContain('identifier');
     expect(src).toContain('/auth/login');

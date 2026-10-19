@@ -1,9 +1,9 @@
 /**
  * ci_cd_config.test.js
  * Tests GitHub Actions workflows, Dependabot config,
- * Railway config, and EAS build configuration.
+ * Render deploy config, and EAS build configuration.
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -42,8 +42,7 @@ describe('CI — ci.yml workflow', () => {
   test('deploy job depends on all test jobs (needs)', () => {
     const doc    = yaml.load(readFileSync(CI, 'utf-8'));
     const deploy = doc.jobs.deploy;
-    if (!deploy) return;
-    if (!deploy) { console.log('  ℹ️  No deploy job — using railway CLI directly'); return; }
+    if (!deploy) return;   // Render deploys main itself once CI passes (autoDeployTrigger: checksPass)
     const needs = deploy.needs || [];
     const needsArr = Array.isArray(needs) ? needs : (needs ? [needs] : []);
     expect(needsArr.length).toBeGreaterThanOrEqual(2);
@@ -52,7 +51,7 @@ describe('CI — ci.yml workflow', () => {
   test('deploy job (if any) only runs on main branch', () => {
     const doc    = yaml.load(readFileSync(CI, 'utf-8'));
     const deploy = doc.jobs.deploy;
-    if (!deploy) return;   // Railway deploys from the branch itself; no deploy job in CI
+    if (!deploy) return;   // Render deploys from the branch itself; no deploy job in CI
     expect(JSON.stringify(deploy)).toMatch(/refs\/heads\/main|github\.ref.*main/);
   });
 
@@ -70,20 +69,22 @@ describe('CI — Dependabot', () => {
 
 });
 
-describe('Deployment — Railway config', () => {
-  test('Procfile exists', () => expect(existsSync(resolve(ROOT, 'Procfile'))).toBe(true));
-  test('Procfile starts backend', () => {
-    const c = readFileSync(resolve(ROOT, 'Procfile'), 'utf-8');
-    expect(c).toMatch(/web:|server\.js|node/i);
+describe('Deployment — Render config (details: render_blueprint.test.js)', () => {
+  test('render.yaml exists at the repo root and builds backend/Dockerfile', () => {
+    const bp = yaml.load(readFileSync(resolve(ROOT, 'render.yaml'), 'utf-8'));
+    for (const s of bp.services) expect(s.dockerfilePath).toBe('./backend/Dockerfile');
   });
-  test('railway.json exists (backend service root)', () => expect(existsSync(resolve(ROOT, 'backend/railway.json'))).toBe(true));
-  test('nixpacks.toml configures Node.js', () => {
-    const c = readFileSync(resolve(ROOT, 'nixpacks.toml'), 'utf-8');
-    expect(c).toMatch(/node|nodejs/i);
+  test('Dockerfile starts the backend with Sentry instrumentation', () => {
+    const c = readFileSync(resolve(ROOT, 'backend/Dockerfile'), 'utf-8');
+    expect(c).toMatch(/CMD \["node", "--import", "\.\/src\/instrument\.js", "src\/server\.js"\]/);
   });
-  test('root directory set to backend in Railway config', () => {
-    const proc = readFileSync(resolve(ROOT, 'Procfile'), 'utf-8');
-    expect(proc).toMatch(/backend/i);
+  test('no leftover config for the previous host: render.yaml + Dockerfile are the only deploy files', () => {
+    const rootFiles = readdirSync(ROOT);
+    for (const f of ['Procfile', 'nixpacks.toml']) expect(rootFiles).not.toContain(f);
+    // backend/: only the known JSON files (no per-host service JSON)
+    const backendJson = readdirSync(resolve(ROOT, 'backend')).filter(f => f.endsWith('.json')).sort();
+    expect(backendJson).toEqual(['fact_check_config.json', 'package-lock.json', 'package.json']);
+    expect(existsSync(resolve(ROOT, 'DEPLOY_ENV_SETUP.md'))).toBe(true);
   });
 });
 

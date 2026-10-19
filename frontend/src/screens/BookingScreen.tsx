@@ -9,7 +9,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Linking, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { t }   from '../i18n';
+import { t, perLang, useLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
 import { useAuthGate } from '../components/AuthGate';
@@ -17,14 +17,21 @@ import { usePaymentSheet } from '../payments';
 import { toLocalISODate } from '../utils/dateUtils';
 
 
-const DURATIONS = [
-  { min: 15, label: '15 min',  sub: 'Quick intro',      fee: '$9.99',  cents: 999,  emoji: '⚡' },
-  { min: 30, label: '30 min',  sub: 'Standard consult', fee: '$14.99', cents: 1499, emoji: '⚖️', popular: true },
-  { min: 60, label: '60 min',  sub: 'Deep dive',        fee: '$24.99', cents: 2499, emoji: '🔍' },
-];
+const DURATIONS = perLang(() => [
+  { min: 15, label: t('x_booking_15_min'),  sub: t('x_booking_quick_intro'),      fee: '$9.99',  cents: 999,  emoji: '⚡' },
+  { min: 30, label: t('x_booking_30_min'),  sub: t('x_booking_standard_consult'), fee: '$14.99', cents: 1499, emoji: '⚖️', popular: true },
+  { min: 60, label: t('x_booking_60_min'),  sub: t('x_booking_deep_dive'),        fee: '$24.99', cents: 2499, emoji: '🔍' },
+]);
 
-const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
-               '1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM'];
+// Slot values sent to the server (en-US clock); shown through slotLabel() in the app's language.
+const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM', // i18n-exempt: slot values
+               '1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM']; // i18n-exempt: slot values
+function slotLabel(slot: string): string {
+  const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(slot);
+  if (!m) return slot;
+  const d = new Date(2000, 0, 1, (Number(m[1]) % 12) + (m[3] === 'PM' ? 12 : 0), Number(m[2]));
+  return d.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
+}
 
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
@@ -36,12 +43,12 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
     if (d.getDay() === 0) continue; // skip Sundays
     days.push({
       date:  toLocalISODate(d),
-      label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      times: TIMES.map((t, ti) => {
+      label: d.toLocaleDateString(locale(), { weekday: 'short', month: 'short', day: 'numeric' }),
+      times: TIMES.map((tItem, ti) => {
         // Deterministic availability based on date + time index
         // Avoids slots changing every render -- consistent UX
         const seed = d.getDate() + d.getMonth() * 31 + ti * 7;
-        return { time: t, available: (seed % 10) > 2 };
+        return { time: tItem, available: (seed % 10) > 2 };
       }),
     });
     if (days.length >= 7) break;
@@ -50,6 +57,7 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
 }
 
 function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   const [prefillLoaded, setPrefillLoaded] = React.useState(false);
@@ -77,7 +85,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const [step, setStep]           = useState<Step>('duration');
-  const [duration, setDuration]   = useState(DURATIONS[1]);
+  const [duration, setDuration]   = useState(DURATIONS()[1]);
   const [days, setDays]            = useState(buildDays);
 
   // Refresh slots from server when lawyerId is known (and on pull-to-refresh)
@@ -111,11 +119,11 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     requireAuth(() => {});
   }, [requireAuth]);
 
-  const availTimes = selDay?.times.filter(t => t.available) ?? [];
+  const availTimes = selDay?.times.filter(tItem => tItem.available) ?? [];
   const noSlots    = availTimes.length === 0;
 
   const confirmBooking = () => requireAuth(async () => {
-    if (!selTime) { showToast('Select a time slot to continue.', 'warning'); return; }
+    if (!selTime) { showToast(t('x_booking_select_time_slot_continue'), 'warning'); return; }
     setBooking(true);
     try {
       // Step 1 — Create booking + PaymentIntent server-side
@@ -166,7 +174,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       });
 
       if (initError) {
-        showToast(initError.message || 'Payment setup failed. Please try again.', 'error');
+        showToast(initError.message || t('x_booking_payment_setup_failed_please'), 'error');
         setBooking(false);
         return;
       }
@@ -176,7 +184,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       if (presentError) {
         if (presentError.code !== 'Canceled') {
-          showToast(presentError.message || 'Payment failed. Please try again.', 'error');
+          showToast(presentError.message || t('x_booking_payment_failed_please_try'), 'error');
         }
         setBooking(false);
         return;
@@ -187,14 +195,14 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       setStep('confirmed');
       track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: false }).catch(()=>{});
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not complete booking. Please try again.'), 'info');
+      showToast(apiErrorMessage(e, t('x_booking_could_not_complete_booking')), 'info');
     } finally {
       setBooking(false);
     }
   });
 
   const sendCallback = async () => {
-    if (!callbackPhone.trim()) { showToast('Enter your phone number so the attorney can reach you.', 'warning'); return; }
+    if (!callbackPhone.trim()) { showToast(t('x_booking_enter_phone_number_so'), 'warning'); return; }
     setSendingCallback(true);
     try {
       await api.post('/consultations/callback-request', {
@@ -226,16 +234,15 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
         <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Consultation booked!</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_confirmed_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
-          {selDay.label} at {selTime} · {duration.label}
-          {'\n'}{lawyerName || 'Your lawyer'} will confirm shortly.
+          {t('x_booking_at_will_confirm_shortly', { label: selDay.label, selTime: slotLabel(selTime), label2: duration.label, value: lawyerName || t('x_booking_lawyer') })}
         </Text>
         <View style={[styles.receiptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Duration   <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.label}</Text></Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{confirmed?.fee_charged || duration.fee}</Text></Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('booking_duration')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.label}</Text></Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('booking_platform_fee')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{confirmed?.fee_charged || duration.fee}</Text></Text>
           {!!confirmed?.booking?.id && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Booking #  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{String(confirmed.booking.id)}</Text></Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('x_booking_booking')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{String(confirmed.booking.id)}</Text></Text>
           )}
           {!!confirmed?.message && (
             <Text testID="booking-confirmation-message" maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{confirmed.message}</Text>
@@ -246,15 +253,15 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
           onPress={() => {
             Linking.openURL('calshow://').catch(() =>
-              Linking.openURL('content://com.android.calendar/time/').catch(() => showToast('Action failed. Please try again.', 'error')));
+              Linking.openURL('content://com.android.calendar/time/').catch(() => showToast(t('action_failed'), 'error')));
           }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_add_calendar')}</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           onPress={handleBack}
-           accessibilityLabel="Back to Home">
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
+           accessibilityLabel={t('x_booking_back_home')}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_back_home')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -267,14 +274,14 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
         <AppIcon name="call-outline" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Callback requested</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_callback_sent_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
-          {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
+          {t('x_booking_will_call_at_schedule', { value: lawyerName || t('x_booking_attorney'), callbackPhone })}
         </Text>
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           onPress={handleBack}
-           accessibilityLabel="Back to Home">
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
+           accessibilityLabel={t('x_booking_back_home')}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_back_home')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -301,24 +308,24 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       {/* ── Step 1: Duration ──────────────────────────────────────────────── */}
       {step === 'duration' && (
         <>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>How long do you need?</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_how_long_do_need')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.stepSub, { color: colors.textMuted }]}>
-            Consulting with {lawyerName || 'your lawyer'}. Platform fee is separate from attorney fees.
+            {t('x_booking_consulting_with_platform_fee', { value: lawyerName || t('x_booking_lawyer_2') })}
           </Text>
-          {DURATIONS.map(d => (
+          {DURATIONS().map(d => (
             <TouchableOpacity
           accessibilityRole="button" key={d.min}
               style={[styles.durationCard, { backgroundColor: colors.bgCard, borderColor: colors.border },
                 duration.min === d.min && { borderColor: COLORS.navy, borderWidth: 2 }]}
               onPress={() => setDuration(d)}
-              accessibilityLabel={`${d.label} -- ${d.fee} platform fee`}>
+              accessibilityLabel={t('x_booking_platform_fee', { label: d.label, fee: d.fee })}>
               <Text maxFontSizeMultiplier={1.4} style={styles.durEmoji}>{d.emoji}</Text>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.durLabel, { color: colors.textPrimary }]}>{d.label}</Text>
                   {d.popular && (
                     <View style={styles.popularBadge}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.popularText}>Most popular</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.popularText}>{t('x_booking_most_popular')}</Text>
                     </View>
                   )}
                 </View>
@@ -329,8 +336,8 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           ))}
           <TouchableOpacity
             accessibilityRole="button" style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
-            onPress={handleDatetimeStep} accessibilityLabel={"Next \u2192"}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
+            onPress={handleDatetimeStep} accessibilityLabel={t('whn_next')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('whn_next')}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -339,11 +346,11 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       {step === 'datetime' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('duration')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('duration')} style={styles.back}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
           </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>Pick a date and time</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_pick_date_time')}</Text>
 
           {/* Day picker */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
@@ -365,9 +372,9 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           {noSlots ? (
             <View style={[styles.noSlotsCard, { backgroundColor: isDark ? colors.bgCard : colors.bg, borderColor: colors.border }]}>
               <Text maxFontSizeMultiplier={1.4} style={styles.noSlotsEmoji}>📅</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.noSlotsTitle, { color: colors.textPrimary }]}>No open slots this day</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.noSlotsTitle, { color: colors.textPrimary }]}>{t('x_booking_no_open_slots_this')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.noSlotsSub, { color: colors.textMuted }]}>
-                Request a callback -- {lawyerName || 'the attorney'} will call you to schedule.
+                {t('x_booking_request_callback_will_call', { value: lawyerName || t('x_booking_attorney_2') })}
               </Text>
               <TextInput
                 style={[styles.callbackInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
@@ -376,7 +383,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 keyboardType="phone-pad"
                 value={callbackPhone}
                 onChangeText={setCallbackPhone}
-                accessibilityLabel="Your phone number for callback"
+                accessibilityLabel={t('x_booking_phone_number_callback')}
           returnKeyType="next"
           blurOnSubmit
         />
@@ -386,22 +393,22 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 onPress={sendCallback} disabled={sendingCallback}>
                 {sendingCallback
                   ? <ActivityIndicator color={colors.bgCard} />
-                  : <Text maxFontSizeMultiplier={1.4} style={styles.callbackBtnText}>Request Callback →</Text>}
+                  : <Text maxFontSizeMultiplier={1.4} style={styles.callbackBtnText}>{t('x_booking_request_callback')}</Text>}
               </TouchableOpacity>
             </View>
           ) : (
             <>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>Available times</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>{t('x_booking_available_times')}</Text>
               <View testID="booking-datetime-step" style={styles.timesGrid}>
-                {availTimes.map(t => (
+                {availTimes.map(tItem => (
                   <TouchableOpacity
-                    accessibilityRole="button" key={t.time}
+                    accessibilityRole="button" key={tItem.time}
                     style={[styles.timeChip, { borderColor: colors.border, backgroundColor: colors.bgCard },
-                      selTime === t.time && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
-                    onPress={() => setSelTime(t.time)}>
+                      selTime === tItem.time && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
+                    onPress={() => setSelTime(tItem.time)}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.timeChipText,
-                      { color: selTime === t.time ? COLORS.navy : colors.textSecond }]}>
-                      {t.time}
+                      { color: selTime === tItem.time ? COLORS.navy : colors.textSecond }]}>
+                      {slotLabel(tItem.time)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -410,8 +417,8 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 accessibilityRole="button"
                 style={[styles.nextBtn, { backgroundColor: COLORS.navy }, !selTime && styles.nextBtnDisabled]}
                 testID="booking-confirm-button" onPress={handleConfirmStep}
-                disabled={!selTime} accessibilityLabel={"Next \u2192"}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
+                disabled={!selTime} accessibilityLabel={t('whn_next')}>
+                <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('whn_next')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -422,49 +429,49 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       {step === 'confirm' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('datetime')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('datetime')} style={styles.back}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
           </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>Confirm booking</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_confirm_booking')}</Text>
 
           <View style={[styles.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLine, { color: colors.textPrimary }]}>
-              {lawyerName || 'Your lawyer'}
+              {lawyerName || t('x_booking_lawyer')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLine, { color: colors.textSecond }]}>
-              {selDay.label} · {selTime} · {duration.label}
+              {selDay.label} · {slotLabel(selTime)} · {duration.label}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.summaryFee, { color: colors.textBrand }]}>
-              Platform fee: {duration.fee}
+              {t('x_booking_platform_fee_2', { fee: duration.fee })}
             </Text>
           </View>
 
           <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>
-            Add notes for the attorney (optional)
+            {t('x_booking_add_notes_attorney_optional')}
           </Text>
           <TextInput
             style={[styles.notesInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
             multiline numberOfLines={4} maxLength={2000}
-            placeholder="e.g. I have a DUI from last week, first offense..."
+            placeholder={t('x_booking_e_g_i_have')}
             placeholderTextColor={COLORS.textSecond}
             value={notes}
             onChangeText={setNotes}
             textAlignVertical="top"
-            accessibilityLabel="Notes for your attorney"
+            accessibilityLabel={t('x_booking_notes_attorney')}
           />
 
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel={"Confirm & Pay {duration.fee} \u2192"}
-          accessibilityHint="Double-tap to activate">
+            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel={t('x_booking_confirm_pay_duration_fee', { fee: duration.fee })}
+          accessibilityHint={t('cp_double_tap')}>
             {booking
               ? <ActivityIndicator color={colors.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>Confirm & Pay {duration.fee} →</Text>}
+              : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>{t('x_booking_confirm_pay', { fee: duration.fee })}</Text>}
           </TouchableOpacity>
 
           <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textMuted }]}>
-            Platform fee only. Attorney rates are set separately. Cancel 24h before for a full refund.
+            {t('x_booking_platform_fee_only_attorney')}
           </Text>
         </>
       )}

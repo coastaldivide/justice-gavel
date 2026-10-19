@@ -17,6 +17,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Linking } from 'react-native';
 import { COLORS, FONT } from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 type Context = 'general' | 'motions' | 'research' | 'forms' | 'expungement';
 
@@ -25,28 +26,29 @@ interface Props {
   style?: object;
 }
 
-const NOTICES: Record<Context, string> = {
-  general:     'General legal information only — not legal advice. Consult a licensed attorney for advice about your situation.',
-  motions:     'AI-generated draft — not reviewed by an attorney. Review carefully before filing.',
-  research:    'For informational purposes only. Laws change. Verify with current official sources.',
-  forms:       'Official government forms. You are responsible for reviewing every field before filing.',
-  expungement: 'Eligibility rules vary by state and case type. An attorney can advise on your specific situation.',
-};
+const NOTICES = perLang((): Record<Context, string> => ({
+  general:     t('x_legal_notice_general_legal_information_only'),
+  motions:     t('x_legal_notice_ai_generated_draft_not'),
+  research:    t('x_legal_notice_informational_purposes_only_laws'),
+  forms:       t('x_legal_notice_official_government_forms_responsibl'),
+  expungement: t('x_legal_notice_eligibility_rules_vary_by'),
+}));
 
 function LegalNotice({ context = 'general', style }: Props) {
+  useLang();
   const s = styles(COLORS, FONT);
 
   return (
     <View style={[s.container, style]}>
       <Text maxFontSizeMultiplier={1.4} style={s.notice}>
-        ℹ️ {NOTICES[context]}{' '}
+        ℹ️ {NOTICES()[context]}{' '}
         <Text
           maxFontSizeMultiplier={1.4}
           style={s.link}
           onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => {})}
-          accessibilityLabel="Find free legal help" accessibilityRole="link"
+          accessibilityLabel={t('x_legal_notice_find_free_legal_help')} accessibilityRole="link"
         >
-          Find free legal help →
+          {t('x_legal_notice_find_free_legal_help_2')}
         </Text>
       </Text>
     </View>

@@ -31,6 +31,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { COLORS, FONT } from '../constants/theme';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { t, useLang } from '../i18n';
 
 // ── Versioning ────────────────────────────────────────────────────────────────
 export const CONSENT_VERSION = '2.0';
@@ -67,6 +68,7 @@ interface Props {
 }
 
 function LegalDisclaimerModal({ visible, onAccept }: Props) {
+  useLang();
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -98,27 +100,26 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
         <View style={s.brand}>
           <Text maxFontSizeMultiplier={1.4} style={s.logo}>⚖️</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.appName}>Justice Gavel</Text>
-          <Text maxFontSizeMultiplier={1.4} style={s.tagline}>Legal self-help for everyone</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.tagline}>{t('x_legal_disclaimer_modal_legal_self_help_everyone')}</Text>
         </View>
 
         {/* ── Core statement — clear, brief, human ── */}
         <View style={s.statement}>
           <Text maxFontSizeMultiplier={1.4} style={s.statementText}>
-            Justice Gavel helps you understand your legal rights and navigate
-            the justice system. We are{' '}
-            <Text maxFontSizeMultiplier={1.4} style={s.bold}>not a law firm</Text>
-            {' '}and nothing here is legal advice.
+            {t('x_legal_disclaimer_modal_justice_gavel_helps_understand')}{' '}
+            <Text maxFontSizeMultiplier={1.4} style={s.bold}>{t('x_legal_disclaimer_modal_not_law_firm')}</Text>
+            {' '}{t('x_legal_disclaimer_modal_nothing_here_legal_advice')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={[s.statementText, { marginTop: 12 }]}>
-            For advice about your specific situation, please consult a{' '}
+            {t('x_legal_disclaimer_modal_advice_about_specific_situation')}{' '}
             <Text
               maxFontSizeMultiplier={1.4}
               style={s.link}
               onPress={() => openLink('https://www.lawhelp.org/')}
             >
-              licensed attorney
+              {t('x_legal_disclaimer_modal_licensed_attorney')}
             </Text>
-            . Many offer free consultations.
+            {t('x_legal_disclaimer_modal_many_offer_free_consultations')}
           </Text>
         </View>
 
@@ -128,7 +129,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
           onPress={() => setAgreed(v => !v)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: agreed }}
-          accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+          accessibilityLabel={t('x_legal_disclaimer_modal_i_agree_terms_service')}
           activeOpacity={0.7}
         >
           <View style={[s.checkBox, agreed && { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}>
@@ -137,23 +138,23 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
             )}
           </View>
           <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
-            I agree to the{' '}
+            {t('x_legal_disclaimer_modal_i_agree')}{' '}
             <Text
               maxFontSizeMultiplier={1.4}
               style={s.link}
               onPress={() => openLink('https://justicegavel.app/terms')}
             >
-              Terms of Service
+              {t('onb_terms_tos')}
             </Text>
-            {' '}and{' '}
+            {' '}{t('x_legal_disclaimer_modal_text')}{' '}
             <Text
               maxFontSizeMultiplier={1.4}
               style={s.link}
               onPress={() => openLink('https://justicegavel.app/privacy')}
             >
-              Privacy Policy
+              {t('onb_terms_pp')}
             </Text>
-            . I understand this app does not provide legal advice.
+            {t('x_legal_disclaimer_modal_i_understand_this_app')}
           </Text>
         </TouchableOpacity>
 
@@ -163,16 +164,16 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
           onPress={handleAccept}
           disabled={!agreed}
           accessibilityRole="button"
-          accessibilityLabel="Get started"
+          accessibilityLabel={t('x_legal_disclaimer_modal_get_started')}
           accessibilityState={{ disabled: !agreed }}>
           <Text maxFontSizeMultiplier={1.4} style={[s.btnText, !agreed && s.btnTextDisabled]}>
-            Get Started
+            {t('x_legal_disclaimer_modal_get_started_2')}
           </Text>
         </TouchableOpacity>
 
         {/* ── Fine print ── */}
         <Text maxFontSizeMultiplier={1.4} style={s.fine}>
-          Justice Gavel, Inc. · Not a law firm · No attorney-client relationship
+          {t('x_legal_disclaimer_modal_justice_gavel_inc_not')}
         </Text>
 
       </View>

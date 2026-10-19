@@ -15,37 +15,38 @@ import { PAYMENTS_COMING_SOON } from '../payments';
 
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { t, useLang, perLang } from '../i18n';
 
 /** Presentation + inclusions per plan key. Prices are NOT here. */
-const PLAN_COPY: Record<string, { icon: string; color: string; highlight?: boolean; badge?: string; features: string[] }> = {
+const PLAN_COPY = perLang((): Record<string, { icon: string; color: string; highlight?: boolean; badge?: string; features: string[] }> => ({
   legal_radar: {
     icon: '📊', color: COLORS.blue,
     features: [
-      'Arrest monitoring alerts from ingested public records',
-      'County arrest analytics dashboard',
-      'Weekly Legal Radar report',
-      'Charge trend and bail amount data',
+      t('x_consumer_subscription_arrest_monitoring_alerts_from'),
+      t('x_consumer_subscription_county_arrest_analytics_dashboard'),
+      t('x_consumer_subscription_weekly_legal_radar_report'),
+      t('x_consumer_subscription_charge_trend_bail_amount'),
     ],
   },
   advisor: {
     icon: '🔓', color: COLORS.legal,
     features: [
-      'Find lawyers & bail agents -- full contact info',
-      'Unlimited AI legal chat',
-      'All Know Your Rights lessons',
-      'Case management',
+      t('x_consumer_subscription_find_lawyers_bail_agents'),
+      t('x_consumer_subscription_unlimited_ai_legal_chat'),
+      t('x_consumer_subscription_all_know_rights_lessons'),
+      t('x_consumer_subscription_case_management'),
     ],
   },
   legal_pro: {
-    icon: '⭐', color: COLORS.navy, highlight: true, badge: 'Most Popular',
+    icon: '⭐', color: COLORS.navy, highlight: true, badge: t('x_consumer_subscription_most_popular'),
     features: [
-      'Everything in 24 Hour Advisor',
-      'Arrest monitoring -- alerts when a watched name appears in ingested public records',
-      'AI Lawyer Match report',
-      'Video consultations',
+      t('x_consumer_subscription_everything_24_hour_advisor'),
+      t('x_consumer_subscription_arrest_monitoring_alerts_when'),
+      t('x_consumer_subscription_ai_lawyer_match_report'),
+      t('x_consumer_subscription_video_consultations'),
     ],
   },
-};
+}));
 
 export type ConsumerPlan = {
   key: string; label: string; price: string; trialDays: number;
@@ -55,25 +56,26 @@ export type ConsumerPlan = {
 
 /** Build the plan cards from GET /billing/tiers?audience=consumer. */
 export function consumerPlansFrom(body: unknown): ConsumerPlan[] {
-  const tiers = unwrapList<Record<string, any>>(body, 'tiers').filter(t => t && t.audience === 'consumer');
-  const monthly = tiers.filter(t => t.billing === 'monthly');
+  const tiers = unwrapList<Record<string, any>>(body, 'tiers').filter(tItem => tItem && tItem.audience === 'consumer');
+  const monthly = tiers.filter(tItem => tItem.billing === 'monthly');
   return monthly.map(m => {
-    const annual = tiers.find(t => t.billing === 'annual' && t.matches_monthly === m.key) || null;
+    const annual = tiers.find(tItem => tItem.billing === 'annual' && tItem.matches_monthly === m.key) || null;
     const saving = annual && m.monthly_cents && annual.annual_cents
       ? Math.round((m.monthly_cents * 12 - annual.annual_cents) / 100) : 0;
-    const copy = PLAN_COPY[m.key] || { icon: '✓', color: COLORS.navy, features: [] };
+    const copy = PLAN_COPY()[m.key] || { icon: '✓', color: COLORS.navy, features: [] };
     return {
       key: m.key, label: m.name, price: m.display_price, trialDays: Number(m.trial_days) || 0,
       annualKey: annual?.key ?? null,
-      annualPrice: annual ? `$${(annual.annual_cents / 100).toFixed(0)}/yr` : null,
+      annualPrice: annual ? t('x_consumer_subscription_price_per_year', { price: `$${(annual.annual_cents / 100).toFixed(0)}` }) : null,
       annualTrialDays: annual ? Number(annual.trial_days) || 0 : null,
-      annualSavings: saving > 0 ? `Save $${saving}` : null,
+      annualSavings: saving > 0 ? t('x_consumer_subscription_save_amount', { amount: `$${saving}` }) : null,
       ...copy,
     };
   });
 }
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
+  useLang();
   return (
     <View style={[styles.card, tier.highlight && styles.cardHighlight]}
       testID="consumer-subscription-screen">
@@ -91,19 +93,19 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
           </Text>
           {annual && (
             <Text maxFontSizeMultiplier={1.4} style={styles.tierPriceSub}>
-              {tier.annualPrice ? (tier.annualSavings || 'Billed yearly') : 'Monthly billing only'}
+              {tier.annualPrice ? (tier.annualSavings || t('x_consumer_subscription_billed_yearly')) : t('x_consumer_subscription_monthly_billing_only')}
             </Text>
           )}
         </View>
         {active && (
           <View style={styles.activePill}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.activePillText}>✓ Active</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.activePillText}>{t('x_consumer_subscription_active')}</Text>
           </View>
         )}
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.trialText, { color: tier.color }]}>
-        ✓ {(annual && tier.annualPrice ? tier.annualTrialDays : tier.trialDays) || 0}-day free trial
+        {t('x_consumer_subscription_day_free_trial', { value: (annual && tier.annualPrice ? tier.annualTrialDays : tier.trialDays) || 0 })}
       </Text>
 
       <View style={styles.featureList}>
@@ -126,16 +128,16 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
-                <Text maxFontSizeMultiplier={1.4} style={styles.subBtnText}>Start Free Trial</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.subBtnText}>{t('start_free_trial')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.subBtnSub}>
-                  Then {annual && tier.annualPrice ? tier.annualPrice : tier.price} -- cancel anytime
+                  {t('x_consumer_subscription_then_cancel_anytime', { value: annual && tier.annualPrice ? tier.annualPrice : tier.price })}
                 </Text>
               </>
           }
         </TouchableOpacity>
       ) : (
         <View style={styles.activeBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.activeBlockText}>✓ You're on this plan</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.activeBlockText}>{t('x_consumer_subscription_re_this_plan')}</Text>
         </View>
       )}
     </View>
@@ -143,6 +145,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
 }
 
 function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -162,7 +165,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     setRefreshing(true);
     api.get('/billing/consumer/subscription')
       .then(r => { if (mountedRef.current) setSubscription(r.data?.subscription ?? null); })
-      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
+      .catch(() => showToast(t('x_consumer_subscription_could_not_refresh_check'), 'error'))
       .finally(() => { if (mountedRef.current) setRefreshing(false); });
   };
   const [subscribing, setSubscribing]   = useState<string | null>(null);
@@ -185,7 +188,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
       setPlansError('');
       setSubscription(subRes?.data?.subscription ?? null);
     } catch (e: any) {
-      if (mountedRef.current) setPlansError(apiErrorMessage(e, 'Could not load plans. Check your connection.'));
+      if (mountedRef.current) setPlansError(apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans')));
     } finally { if (mountedRef.current) setLoading(false); }
   };
 
@@ -199,8 +202,8 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
-      confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
+      confirm(t('x_consumer_subscription_subscribe_web'), t('x_consumer_subscription_ios_subscriptions_managed_at'),
+      { confirmLabel: t('x_consumer_subscription_open_website') }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
       setSubscribing(null);
       return;
     }
@@ -212,16 +215,16 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
         ? await api.post('/billing/subscribe', { tier, provider_type: 'consumer' })
         : await api.post('/billing/consumer/subscribe', { tier });
       setSubscription(res.data?.subscription);
-showToast(res.data?.message || 'Free trial activated!', 'success');
+showToast(res.data?.message || t('x_consumer_subscription_free_trial_activated'), 'success');
       loadSub();
     } catch (e: any) {
       if (isPaymentsUnavailable(e)) {
-        showToast(PAYMENTS_COMING_SOON, 'info');
+        showToast(PAYMENTS_COMING_SOON(), 'info');
         return;
       }
-      const msg = apiErrorMessage(e, 'Please try again.');
+      const msg = apiErrorMessage(e, t('x_consumer_subscription_please_try_again'));
       if (msg.includes('Already subscribed') || e?.response?.data?.error === 'already_subscribed') {
-        showToast('You already have an active plan. Manage it in Settings.', 'info');
+        showToast(t('x_consumer_subscription_already_have_active_plan'), 'info');
       } else {
         showToast(msg, 'info');
       }
@@ -229,15 +232,15 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
   };
 
   const handleCancel = () => {
-    confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing period.',
-      { confirmLabel: 'Cancel', destructive: true }).then(async ok => {
+    confirm(t('x_consumer_subscription_cancel_plan'), t('x_consumer_subscription_ll_keep_access_until'),
+      { confirmLabel: t('case_cancel'), destructive: true }).then(async ok => {
         if (!ok) return;
         try {
           await api.post('/billing/cancel');
           setSubscription(null);
-          showToast('Your plan has been cancelled.');
+          showToast(t('x_consumer_subscription_plan_has_been_cancelled'));
         } catch (e: any) {
-          showToast(apiErrorMessage(e, 'Please try again. If this keeps happening, check your internet connection.'), 'error');
+          showToast(apiErrorMessage(e, t('x_consumer_subscription_please_try_again_if')), 'error');
         }
       });
   };
@@ -259,9 +262,9 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
       <AuthGateModal />
 
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Choose Your Plan</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_consumer_subscription_choose_plan')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {plans.length ? `Plans from ${plans.map(p => p.price).sort((x, y) => parseFloat(x.replace(/[^0-9.]/g, '')) - parseFloat(y.replace(/[^0-9.]/g, '')))[0]}` : 'Choose the plan that fits'}
+          {plans.length ? t('x_consumer_subscription_plans_from', { value: plans.map(p => p.price).sort((x, y) => parseFloat(x.replace(/[^0-9.]/g, '')) - parseFloat(y.replace(/[^0-9.]/g, '')))[0] }) : t('x_consumer_subscription_choose_plan_that_fits')}
         </Text>
       </View>
 
@@ -270,19 +273,19 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, !annual && styles.toggleBtnActive]}
-          accessibilityLabel="Monthly" onPress={() => setAnnual(false)}
+          accessibilityLabel={t('x_consumer_subscription_monthly')} onPress={() => setAnnual(false)}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>{t('x_consumer_subscription_monthly')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, annual && styles.toggleBtnActive]}
-          accessibilityLabel="Annual" onPress={() => setAnnual(true)}
+          accessibilityLabel={t('x_consumer_subscription_annual')} onPress={() => setAnnual(true)}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>Annual</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>{t('x_consumer_subscription_annual')}</Text>
           {plans.some(p => p.annualSavings) && (
             <View style={styles.savingsBadge}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.savingsBadgeText}>Save yearly</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.savingsBadgeText}>{t('x_consumer_subscription_save_yearly')}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -291,33 +294,33 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
       {annual && (
         <View style={styles.annualNote}>
           <Text maxFontSizeMultiplier={1.4} style={styles.annualNoteText}>
-            ℹ️ After the free trial an annual plan is billed the full yearly price at once.
+            {t('x_consumer_subscription_after_free_trial_annual')}
           </Text>
         </View>
       )}
 
       {/* What free users get (with clear limits) */}
       <View style={styles.freeCard}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.freeTierLabel}>FREE ACCOUNT</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.freeTierLabel}>{t('x_consumer_subscription_free_account')}</Text>
         <View style={styles.freeRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeItem}>✓  Create account &amp; log in</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeLimitBadge}>Always free</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeItem}>{t('x_consumer_subscription_create_account_amp_log')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeLimitBadge}>{t('x_consumer_subscription_always_free')}</Text>
         </View>
         <View style={styles.freeRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeItem}>✓  AI chat</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeLimitBadge}>3 msgs/day</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeItem}>{t('x_consumer_subscription_ai_chat')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeLimitBadge}>{t('x_consumer_subscription_3_msgs_day')}</Text>
         </View>
         <View style={styles.freeRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>🔒  Lawyer &amp; bail agent contact info</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>Paid only</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>{t('x_consumer_subscription_lawyer_amp_bail_agent')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>{t('x_consumer_subscription_paid_only')}</Text>
         </View>
         <View style={styles.freeRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>🔒  Arrest record search</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>Paid only</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>{t('x_consumer_subscription_arrest_record_search')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>{t('x_consumer_subscription_paid_only')}</Text>
         </View>
         <View style={styles.freeRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>🔒  Lessons &amp; resources</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>Paid only</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeItemLocked}>{t('x_consumer_subscription_lessons_amp_resources')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.freeLockBadge}>{t('x_consumer_subscription_paid_only')}</Text>
         </View>
       </View>
 
@@ -326,17 +329,17 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         <View style={styles.activeBanner}>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerTitle}>
-              ✓ {plans.find(t => t.key === activeTier || t.annualKey === activeTier)?.label || activeTier} Plan -- {subscription.status}
+              {t('x_consumer_subscription_plan', { value: plans.find(tItem => tItem.key === activeTier || tItem.annualKey === activeTier)?.label || activeTier, status: subscription.status })}
             </Text>
             {subscription.trial_ends_at && subscription.status === 'trialing' && (
               <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>
-                Free trial ends {new Date(subscription.trial_ends_at ?? 0).toLocaleDateString()}
+                {t('x_consumer_subscription_free_trial_ends', { value: new Date(subscription.trial_ends_at ?? 0).toLocaleDateString() })}
               </Text>
             )}
           </View>
           <TouchableOpacity accessibilityRole="button" onPress={handleCancel}
-           accessibilityLabel="Cancel">
-            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
+           accessibilityLabel={t('case_cancel')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>{t('case_cancel')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -355,8 +358,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         />
       ))}
       <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        Cancel before the free trial ends and you won't be charged.
-        Payments processed securely by Stripe.
+        {t('x_consumer_subscription_cancel_before_free_trial')}
       </Text>
       <View style={{ height: 40 }} />
 
@@ -365,9 +367,9 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
           style={{ alignItems: 'center', paddingVertical: 16 }}
           onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel="Continue with free features">
+          accessibilityLabel={t('x_consumer_subscription_continue_with_free_features')}>
           <Text style={{ fontSize: 13, color: colors.info, textDecorationLine: 'underline' }}>
-            Continue with free features →
+            {t('x_consumer_subscription_continue_with_free_features_2')}
           </Text>
         </TouchableOpacity>
     </ScrollView>

@@ -8,6 +8,7 @@ import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
+import { t, useLang } from '../i18n';
 
 interface Lesson { id: number; title: string; category: string; content: string; points: number; }
 
@@ -16,6 +17,7 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
+  useLang();
   const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
@@ -86,9 +88,9 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       const stored = await AsyncStorage.getItem(`points_${userId}`);
       const newPts = (parseInt(stored || '0', 10) + pts);
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
-      showToast(`+${pts} points added to your rewards!`, 'success');
+      showToast(t('x_lessons_points_added_rewards', { pts }), 'success');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not mark complete.'), 'info');
+      showToast(apiErrorMessage(e, t('x_lessons_could_not_mark_complete')), 'info');
     }
   }, [completed, userId, showToast]);
 
@@ -109,7 +111,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
             return (
               <TouchableOpacity
                 accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                 style={[styles.card, done && styles.cardDone]}
                 onPress={() => setExpanded(open ? null : item.id)}
                 activeOpacity={0.85}
@@ -122,9 +124,9 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                     <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, done && styles.cardTitleDone]}>{item.title}</Text>
                     <View style={styles.metaRow}>
                       <View style={[styles.catBadge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{item.category}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{['Criminal', 'General', 'Civil', 'Constitutional'].includes(item.category) ? t(`x_lessons_cat_${String(item.category).toLowerCase()}`) : item.category}</Text>
                       </View>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>+{item.points} pts</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>{t('x_lessons_pts', { points: item.points })}</Text>
                     </View>
                   </View>
                   <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>{open ? '▲' : '▼'}</Text>
@@ -135,13 +137,13 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                     <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
                     {!done && (
                       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.completeBtn}
+          accessibilityHint={t('cp_double_tap')} style={styles.completeBtn}
                         onPress={() => markComplete(item.id, item.points || 0)}
                         >
-                        <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>{t('x_lessons_mark_as_complete_pts', { points: item.points })}</Text>
                       </TouchableOpacity>
                     )}
-                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.completedLabel}>✓ Completed -- {item.points} points earned</Text>}
+                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.completedLabel}>{t('x_lessons_completed_points_earned', { points: item.points })}</Text>}
                   </View>
                 )}
               </TouchableOpacity>
@@ -154,28 +156,28 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       {/* Progress banner */}
       <View style={styles.progressCard}>
         <View style={styles.progressTop}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.progressTitle}>Know Your Rights</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.progressPts}>{earnedPts} / {totalPts} pts</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.progressTitle}>{t('education')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.progressPts}>{t('x_lessons_pts_2', { earnedPts, totalPts })}</Text>
         </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any }]} />
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={styles.progressSub}>{completed.size} of {lessons.length} lessons complete</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.progressSub}>{t('x_lessons_lessons_complete', { size: completed.size, length: lessons.length })}</Text>
       </View>
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
       ) : lessons.length === 0 ? (
-        <View style={styles.empty}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No lessons available yet.</Text></View>
+        <View style={styles.empty}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{t('x_lessons_no_lessons_available_yet')}</Text></View>
       ) : (
         <>
         {/* Category filter chips */}
         {filterCat && (
           <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingTop: 8, gap: 6 }}>
-            {['Criminal','General','Civil','Constitutional'].map(cat => (
+            {['Criminal','General','Civil','Constitutional'].map(cat => ( // i18n-exempt: lesson category values; label below
               <TouchableOpacity
                 accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                 key={cat}
                 style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
                   backgroundColor: filterCat === cat ? (CAT_COLORS[cat] || colors.navy) : colors.bg }}
@@ -183,7 +185,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700',
-                  color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{cat}</Text>
+                  color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{t(`x_lessons_cat_${cat.toLowerCase()}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -194,23 +196,23 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           keyExtractor={l => String(l.id)}
           ListFooterComponent={
             <View style={styles.lifeCard}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.lifeTitle}>Your legal needs go beyond this arrest.</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.lifeSub}>Justice Gavel covers DUI, divorce, immigration, employment, and 18 other areas of law. Find a specialist for your next legal moment.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.lifeTitle}>{t('x_lessons_legal_needs_go_beyond')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.lifeSub}>{t('x_lessons_justice_gavel_covers_dui')}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TouchableOpacity
           accessibilityRole="button"
- style={styles.lifeBtn} accessibilityLabel="Find a Lawyer"
-          accessibilityHint="Searches for attorneys in your area" onPress={() => navigation.navigate("LawyersTab")}
+ style={styles.lifeBtn} accessibilityLabel={t('lawyers_heading')}
+          accessibilityHint={t('x_check_in_searches_attorneys_area')} onPress={() => navigation.navigate("LawyersTab")}
           >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>{t('lawyers_heading')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
-                  accessibilityLabel={"\ud83d\udccb Get Rights Card"} onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
+                  accessibilityLabel={t('x_lessons_get_rights_card')} onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>📋 Get Rights Card</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>{t('x_lessons_get_rights_card')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -218,7 +220,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              No lessons found. Check your connection.
+              {t('x_lessons_no_lessons_found_check')}
             </Text>
           }
           renderItem={renderLesson}

@@ -18,12 +18,15 @@ import { useNavigation } from '@react-navigation/native';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
+// Language values as lawyer profiles store them (English); the picker shows langLabel().
+const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo']; // i18n-exempt: stored values
+const langLabel = (l: string): string => t(`lang_name_${l.toLowerCase()}`);
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
-const CASE_TYPES = PRACTICE_AREAS.map(a => a.key);
+const CASE_TYPES = PRACTICE_AREAS().map(a => a.key);
 
 
 // ── Contact helpers ───────────────────────────────────────────────────────────
@@ -51,12 +54,13 @@ function openWebsite(url: string, onError?: () => void) {
 // ── Match result card ─────────────────────────────────────────────────────────
 
 function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
+  useLang();
   const { showToast } = useToast();
   const rankColors = [COLORS.emergencyDark, COLORS.warnDark, COLORS.legalDark];
   const rankColor = rankColors[rank - 1] ?? COLORS.navy;
 
   const navigation = useNavigation<any>();
-  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
+  const onLinkError = () => showToast(t('x_match_action_unavailable_this_device'), 'error');
   const [msgModal,   setMsgModal]   = useState(false);
   const openSecureMessage = () => { setMsgSent(false); setMsgModal(true); };
   const [msgName,    setMsgName]    = useState('');
@@ -67,15 +71,15 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-      accessibilityLabel={`View profile for ${String(item?.name || 'attorney')}`}
+          accessibilityHint={t('cp_double_tap')}
+      accessibilityLabel={t('x_match_view_profile', { value: String(item?.name || 'attorney') })}
       onPress={() => navigation.navigate('LawyerProfile', { id: item?.id, lawyerId: item?.id })}
       style={styles.card}
       activeOpacity={0.85}
     >
       {/* Rank banner */}
       <View style={[styles.rankBanner, { backgroundColor: rankColor }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.rankText}>#{rank} Match</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.rankText}>{t('x_match_match', { rank })}</Text>
         {item.distanceKm != null && (
           <Text maxFontSizeMultiplier={1.4} style={styles.rankDist}>📍 {formatDistance(item.distanceKm)}</Text>
         )}
@@ -93,13 +97,13 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 
         {/* Accessibility badges */}
         <View style={styles.badgeRow}>
-          {item.free_consultation && <Text maxFontSizeMultiplier={1.4} style={styles.greenBadge}>Free Consult</Text>}
-          {item.pro_bono && <Text maxFontSizeMultiplier={1.4} style={styles.purpleBadge}>Pro Bono</Text>}
-          {item.sliding_scale && <Text maxFontSizeMultiplier={1.4} style={styles.tealBadge}>Sliding Scale</Text>}
-          {item.verified && <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadge}>✓ Verified</Text>}
-          {item.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bailBg, color: COLORS.bail }]}>🥉 Bronze Gavel</Text>}
-          {item.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bgSubtle, color: COLORS.textSecond }]}>🥈 Silver Gavel</Text>}
-          {item.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.warnBg, color: COLORS.goldText, borderColor: COLORS.gold }]}>🏆 Golden Gavel</Text>}
+          {item.free_consultation && <Text maxFontSizeMultiplier={1.4} style={styles.greenBadge}>{t('x_lawyers_free_consult')}</Text>}
+          {item.pro_bono && <Text maxFontSizeMultiplier={1.4} style={styles.purpleBadge}>{t('x_lawyers_pro_bono')}</Text>}
+          {item.sliding_scale && <Text maxFontSizeMultiplier={1.4} style={styles.tealBadge}>{t('x_lawyers_sliding_scale')}</Text>}
+          {item.verified && <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadge}>{t('x_bail_search_verified')}</Text>}
+          {item.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bailBg, color: COLORS.bail }]}>{t('x_match_bronze_gavel')}</Text>}
+          {item.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bgSubtle, color: COLORS.textSecond }]}>{t('x_match_silver_gavel')}</Text>}
+          {item.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.warnBg, color: COLORS.goldText, borderColor: COLORS.gold }]}>{t('x_nav_golden_gavel')}</Text>}
         </View>
 
         {/* Specialties */}
@@ -118,13 +122,13 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 
         {/* Years experience */}
         {item.years_experience && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.experience}>{item.years_experience} years experience</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.experience}>{t('x_match_years_experience', { years_experience: item.years_experience })}</Text>
         )}
 
         {/* AI match report */}
         {item.matchReport && (
           <View style={styles.reportBlock}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.reportLabel}>Why this match</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.reportLabel}>{t('x_match_why_this_match')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.reportText}>{item.matchReport}</Text>
           </View>
         )}
@@ -134,32 +138,32 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           {item?.phone && (
             <TouchableOpacity
           accessibilityRole="button"
- style={[styles.actionBtn, styles.callBtn]} accessibilityLabel={"\ud83d\udcde Call"}
-          accessibilityHint="Dials this phone number" onPress={() => callPhone(item?.phone, onLinkError)}
+ style={[styles.actionBtn, styles.callBtn]} accessibilityLabel={t('lawyers_call')}
+          accessibilityHint={t('x_lawyer_profile_dials_this_phone_number')} onPress={() => callPhone(item?.phone, onLinkError)}
                     >
-              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 Call</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('lawyers_call')}</Text>
             </TouchableOpacity>
           )}
           {item?.phone && (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(item?.phone, onLinkError)}
+          accessibilityHint={t('cp_double_tap')} style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel={t('x_match_text')} onPress={() => sendSMS(item?.phone, onLinkError)}
                     >
-              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_match_text')}</Text>
             </TouchableOpacity>
           )}
           {item.lat && item.lng && (
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel={"\ud83d\uddfa Dir"} onPress={() => openDirections(item.lat, item.lng, item?.name, onLinkError)}
+          accessibilityHint={t('cp_double_tap')} style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel={t('x_match_dir')} onPress={() => openDirections(item.lat, item.lng, item?.name, onLinkError)}
                     >
-              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🗺 Dir</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_match_dir')}</Text>
             </TouchableOpacity>
           )}
           {item.website && (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel={"\ud83c\udf10 Web"} onPress={() => openWebsite(item.website, onLinkError)}
+          accessibilityHint={t('cp_double_tap')} style={[styles.actionBtn, styles.webBtn]} accessibilityLabel={t('x_match_web')} onPress={() => openWebsite(item.website, onLinkError)}
                     >
-              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🌐 Web</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_match_web')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -167,12 +171,12 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Leave a Message -- always-visible async contact option */}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.leaveMessageBtn}
           onPress={() => { setMsgSent(false); setMsgModal(true); }}
           activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.leaveMessageBtnText}>✉️  Leave a Message for {item?.name}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.leaveMessageBtnText}>{t('x_match_leave_message', { name: item?.name })}</Text>
         </TouchableOpacity>
 
         {/* Leave a Message modal */}
@@ -180,36 +184,36 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
-              accessibilityLabel="Message sent"
+          accessibilityHint={t('cp_double_tap')} style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
+              accessibilityLabel={t('x_match_message_sent')}
             >
             <View style={[styles.msgSheet, { backgroundColor: COLORS.bgCard }]}>
               {msgSent ? (
                 <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                   <AppIcon name="checkmark-circle" size={20} color={COLORS.legal} />
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetTitle, { color: COLORS.textPrimary }]}>Message sent</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetTitle, { color: COLORS.textPrimary }]}>{t('x_match_message_sent')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetSub, { color: COLORS.textSecond }]}>
-                    {item?.name} will contact you shortly.
+                    {t('x_match_will_contact_shortly', { name: item?.name })}
                   </Text>
                   <TouchableOpacity
           accessibilityRole="button"
- style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done"
-          accessibilityHint="Confirms and closes this view" onPress={() => setMsgModal(false)}
+ style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel={t('booking_done')}
+          accessibilityHint={t('x_emergency_share_confirms_closes_this_view')} onPress={() => setMsgModal(false)}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>Done</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>{t('booking_done')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetTitle, { color: COLORS.textPrimary }]}>
-                    Leave a message for {item?.name}
+                    {t('x_match_leave_message_2', { name: item?.name })}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetSub, { color: COLORS.textSecond }]}>
-                    They'll get your message and contact you during business hours.
+                    {t('x_match_they_ll_get_message')}
                   </Text>
                   <TextInput
                     style={[styles.msgInput, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
-                    placeholder="Your name"
+                    placeholder={t('x_match_name')}
                     placeholderTextColor={COLORS.textSecond}
                     value={msgName}
                     onChangeText={setMsgName}
@@ -220,7 +224,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         />
                   <TextInput
                     style={[styles.msgInput, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
-                    placeholder="Best phone or email to reach you"
+                    placeholder={t('x_match_best_phone_email_reach')}
                     placeholderTextColor={COLORS.textSecond}
                     value={msgPhone}
                     onChangeText={setMsgPhone}
@@ -231,9 +235,9 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         maxLength={254}
         />
                   <TextInput
-          accessibilityLabel="Briefly describe your situation (optional)"
+          accessibilityLabel={t('x_match_briefly_describe_situation_optional')}
                     style={[styles.msgInput, styles.msgInputTall, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
-                    placeholder="Briefly describe your situation (optional)"
+                    placeholder={t('x_match_briefly_describe_situation_optional')}
                     placeholderTextColor={COLORS.textSecond}
                     value={msgNote}
                     onChangeText={setMsgNote}
@@ -244,7 +248,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   />
                   <TouchableOpacity
                     accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
                     style={[styles.msgSendBtn, (!msgName.trim() || !msgPhone.trim()) && { opacity: 0.45 }]}
                     disabled={!msgName.trim() || !msgPhone.trim() || msgSending || (!msgPhone.trim().includes('@') && msgPhone.trim().replace(/\D/g,'').length < 7)}
                     activeOpacity={0.85}
@@ -260,21 +264,21 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                         setMsgSent(true);
                         setMsgName(''); setMsgPhone(''); setMsgNote('');
                       } catch {
-                        showToast('Check your connection and try again.');
+                        showToast(t('home_sos_failed'));
                       } finally {
                         setMsgSending(false);
                       }
                     }}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>{msgSending ? 'Sending…' : 'Send Message'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>{msgSending ? t('booking_sending') : t('x_lawyer_profile_send_message')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
           accessibilityRole="button"
  style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-                    accessibilityLabel="Cancel"
-          accessibilityHint="Cancels and returns to previous screen"
+                    accessibilityLabel={t('case_cancel')}
+          accessibilityHint={t('x_arrest_monitor_cancels_returns_previous_screen')}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12 }}>Cancel</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12 }}>{t('case_cancel')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -286,14 +290,14 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Encrypted in-app message -- requires account */}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          accessibilityLabel="open Secure Message"
+          accessibilityHint={t('cp_double_tap')}
+          accessibilityLabel={t('x_match_open_secure_message')}
           style={[styles.leaveMessageBtn, styles.secureMsgBtn]}
           onPress={openSecureMessage}
           activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.leaveMessageBtnText, { color: COLORS.legalDark }]}>
-            {'🔒  Message Securely -- End-to-End Encrypted'}
+            {t('x_match_message_securely_end_end')}
           </Text>
         </TouchableOpacity>
 
@@ -306,6 +310,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 function MatchScreen(): React.JSX.Element {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
@@ -325,7 +330,7 @@ function MatchScreen(): React.JSX.Element {
 
   const findMatches = useCallback(async () => {
     setLoading(true);
-    setStatusMsg('Getting your location...');
+    setStatusMsg(t('x_match_getting_location'));
     setResults([]);
     setHasSearched(true);
 
@@ -334,13 +339,13 @@ function MatchScreen(): React.JSX.Element {
 
       if (loc.city) {
         setLocationLabel(loc.source === 'gps'
-          ? `Searching near ${loc.city}`
+          ? t('x_match_searching_near', { city: loc.city })
           : loc.city);
       } else {
-        setLocationLabel(loc.permissionGranted ? 'Using your GPS location' : 'Using default location');
+        setLocationLabel(loc.permissionGranted ? t('x_match_using_gps_location') : t('x_match_using_default_location'));
       }
 
-      setStatusMsg('Finding your best matches...');
+      setStatusMsg(t('x_match_finding_best_matches'));
 
       const params: Record<string, unknown> = {
         lat: loc.lat,
@@ -355,16 +360,16 @@ function MatchScreen(): React.JSX.Element {
       const res = await api.get('/match/lawyers', { params });
       const matches = unwrapList(res.data, 'lawyers', 'matches');
       setResults(matches);
-      setStatusMsg(matches.length === 0 ? 'No matches found. Try removing filters.' : '');
+      setStatusMsg(matches.length === 0 ? t('x_match_no_matches_found_try') : '');
     } catch (e: any) {
       const errMsg  = e.response?.data?.message || apiErrorMessage(e, '');
       const status  = e.response?.status;
       if (status === 503 || e.response?.data?.error === 'ai_unavailable') {
-        setStatusMsg('AI lawyer matching is temporarily unavailable. Please try again later, or browse the Lawyers tab.');
+        setStatusMsg(t('x_match_ai_lawyer_matching_temporarily'));
       } else if (!e.response) {
-        setStatusMsg('No connection. Check your internet and try again.');
+        setStatusMsg(t('x_ch_no_connection_check_internet'));
       } else {
-        setStatusMsg('Match failed: ' + (errMsg || 'Please try again.'));
+        setStatusMsg(t('x_match_match_failed', { value: (errMsg || t('x_consumer_subscription_please_try_again')) }));
       }
     } finally {
       setLoading(false);
@@ -396,20 +401,20 @@ function MatchScreen(): React.JSX.Element {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>AI Lawyer Match</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>Tell us your situation and we'll find the best attorney near you.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_match_ai_lawyer_match')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>{t('x_match_tell_us_situation_we')}</Text>
         </View>
 
         {/* Situation input */}
         <View style={styles.section}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Describe your situation (optional)</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('x_match_describe_situation_optional')}</Text>
           <TextInput
-          accessibilityLabel="e.g. I was pulled over and charged with a DUI last night. I need someone who speaks Spanish and offers payment plans."
+          accessibilityLabel={t('x_match_e_g_i_was')}
             style={styles.textArea}
             multiline
               maxLength={2000}
             numberOfLines={4}
-            placeholder="e.g. I was pulled over and charged with a DUI last night. I need someone who speaks Spanish and offers payment plans."
+            placeholder={t('x_match_e_g_i_was')}
             placeholderTextColor={colors.textMuted}
             value={situation}
             onChangeText={setSituation}
@@ -418,41 +423,41 @@ function MatchScreen(): React.JSX.Element {
 
         {/* Filters */}
         <View style={styles.section}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Case type</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('x_lawyers_case_type')}</Text>
           <View style={styles.pickerWrap}>
             <Picker selectedValue={caseType} onValueChange={v => setCaseType(String(v))} style={styles.picker}>
-              <Picker.Item label="Not sure / Any" value="" />
-              {CASE_TYPES.filter(Boolean).map(t => <Picker.Item key={t} label={t} value={t} />)}
+              <Picker.Item label={t('x_match_not_sure_any')} value="" />
+              {CASE_TYPES.filter(Boolean).map(tItem => <Picker.Item key={tItem} label={tItem} value={tItem} />)}
             </Picker>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Preferred language</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('x_match_preferred_language')}</Text>
           <View style={styles.pickerWrap}>
             <Picker selectedValue={language} onValueChange={v => setLanguage(String(v))} style={styles.picker}>
-              <Picker.Item label="English (or any)" value="" />
-              {LANGUAGES_FILTERED.map(l => <Picker.Item key={l} label={l} value={l} />)}
+              <Picker.Item label={t('x_match_english_any')} value="" />
+              {LANGUAGES_FILTERED.map(l => <Picker.Item key={l} label={langLabel(l)} value={l} />)}
             </Picker>
           </View>
         </View>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
+          accessibilityHint={t('cp_double_tap')} style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
         >
           <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>Pro bono / free representation only</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>{t('x_lawyers_pro_bono_free_representation')}</Text>
         </TouchableOpacity>
 
         {/* Search button */}
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
-          accessibilityLabel="📍 Find My Best Matches"
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
+          accessibilityLabel={t('x_match_find_my_best_matches')}
         >
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>📍 Find My Best Matches</Text>
+            : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('x_match_find_my_best_matches')}</Text>
           }
         </TouchableOpacity>
 
@@ -465,13 +470,13 @@ function MatchScreen(): React.JSX.Element {
         {/* Results */}
         {results.length > 0 && (
           <View style={styles.resultsSection}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.resultsHeading}>Your Top {results.length} Matches</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.resultsHeading}>{t('x_match_top_matches', { length: results.length })}</Text>
             {results.map((item, i) => <MatchCard key={String(item?.name + i)} item={item} rank={i + 1} />)}
           </View>
         )}
 
         {hasSearched && !loading && results.length === 0 && !statusMsg && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyMsg}>No matches found for your filters. Try broadening your search.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.emptyMsg}>{t('x_match_no_matches_found_filters')}</Text>
         )}
         <View style={{ height: 40 }} />
       </ScrollView>

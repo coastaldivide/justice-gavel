@@ -18,9 +18,10 @@ import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
+import { t, perLang, useLang } from '../i18n';
 
 const EFFECTIVE_DATE  = 'May 1, 2026';
-const COMPANY         = 'Justice Gavel LLC';
+const COMPANY = 'Justice Gavel LLC';
 const CONTACT_EMAIL   = 'privacy@justicegavel.app';
 const WEBSITE         = 'https://justicegavel.app';
 const DPO_EMAIL       = 'dpo@justicegavel.app'; // Data Protection Officer (GDPR)
@@ -34,208 +35,131 @@ type DataRow = {
   retention: string;
 };
 
-const DATA_TABLE: DataRow[] = [
+const DATA_TABLE = perLang((): DataRow[] => [
   {
-    category: 'Account Information',
-    examples: 'Name, email, phone number, password (hashed)',
-    purpose: 'Create and manage your account; authentication',
-    shared: 'Not sold. Shared only with Resend (email) and Expo (push notifications)',
-    retention: 'Until account deletion + 30 days',
+    category: t('x_privacy_policy_account_information'),
+    examples: t('x_privacy_policy_name_email_phone_number'),
+    purpose: t('x_privacy_policy_create_manage_account_authentication'),
+    shared: t('x_privacy_policy_not_sold_shared_only'),
+    retention: t('x_privacy_policy_until_account_deletion_30'),
   },
   {
-    category: 'Case & Legal Data',
-    examples: 'Case notes, documents, court dates, charge types',
-    purpose: 'Provide case management features',
-    shared: 'Not shared. Encrypted at rest',
-    retention: 'Until account deletion or manual deletion',
+    category: t('x_privacy_policy_case_legal_data'),
+    examples: t('x_privacy_policy_case_notes_documents_court'),
+    purpose: t('x_privacy_policy_provide_case_management_features'),
+    shared: t('x_privacy_policy_not_shared_encrypted_at'),
+    retention: t('x_privacy_policy_until_account_deletion_manual'),
   },
   {
-    category: 'Audio Recordings',
-    examples: 'Police encounter recordings (Encounter Recorder feature)',
-    purpose: 'Transcription and PDF generation only',
-    shared: 'Processed by OpenAI Whisper for transcription. Deleted after processing',
-    retention: 'Deleted from our servers immediately after transcript generated',
+    category: t('x_privacy_policy_audio_recordings'),
+    examples: t('x_privacy_policy_police_encounter_recordings_encounte'),
+    purpose: t('x_privacy_policy_transcription_pdf_generation_only'),
+    shared: t('x_privacy_policy_processed_by_openai_whisper'),
+    retention: t('x_privacy_policy_deleted_from_our_servers'),
   },
   {
-    category: 'Location Data',
-    examples: 'GPS coordinates (only when you search or use SOS)',
-    purpose: 'Find nearby attorneys, bail agents, and courthouses',
-    shared: 'Not stored. Used in real-time only',
-    retention: 'Not retained after search completes',
+    category: t('x_privacy_policy_location_data'),
+    examples: t('x_privacy_policy_gps_coordinates_only_when'),
+    purpose: t('x_privacy_policy_find_nearby_attorneys_bail'),
+    shared: t('x_privacy_policy_not_stored_used_real'),
+    retention: t('x_privacy_policy_not_retained_after_search'),
   },
   {
-    category: 'Device & Usage Data',
-    examples: 'Device type, OS version, app version, crash reports',
-    purpose: 'Bug fixing, performance monitoring (Sentry)',
-    shared: 'Sentry (crash reporting only, no PII)',
-    retention: '90 days',
+    category: t('x_privacy_policy_device_usage_data'),
+    examples: t('x_privacy_policy_device_type_os_version'),
+    purpose: t('x_privacy_policy_bug_fixing_performance_monitoring'),
+    shared: t('x_privacy_policy_sentry_crash_reporting_only'),
+    retention: t('x_privacy_policy_90_days'),
   },
   {
-    category: 'AI Conversation Data',
-    examples: 'Messages sent to AI assistant',
-    purpose: 'Generate AI responses; improve AI quality',
-    shared: 'Processed by Anthropic. Not used to train Anthropic models',
-    retention: '90 days for quality review, then deleted',
+    category: t('x_privacy_policy_ai_conversation_data'),
+    examples: t('x_privacy_policy_messages_sent_ai_assistant'),
+    purpose: t('x_privacy_policy_generate_ai_responses_improve'),
+    shared: t('x_privacy_policy_processed_by_anthropic_not'),
+    retention: t('x_privacy_policy_90_days_quality_review'),
   },
   {
-    category: 'Payment Data',
-    examples: 'Subscription status, payment method type',
-    purpose: 'Process subscriptions',
-    shared: 'Stripe handles payment processing. We do not store card numbers',
-    retention: 'Per Stripe retention policy; subscription records kept 7 years',
+    category: t('x_privacy_policy_payment_data'),
+    examples: t('x_privacy_policy_subscription_status_payment_method'),
+    purpose: t('x_privacy_policy_process_subscriptions'),
+    shared: t('x_privacy_policy_stripe_handles_payment_processing'),
+    retention: t('x_privacy_policy_per_stripe_retention_policy'),
   },
   {
-    category: 'Push Notification Tokens',
-    examples: 'Expo push token for your device',
-    purpose: 'Send court date reminders and alerts',
-    shared: 'Expo push infrastructure (Apple APNs / Google FCM)',
-    retention: 'Until disabled in Settings or account deletion',
+    category: t('x_privacy_policy_push_notification_tokens'),
+    examples: t('x_privacy_policy_expo_push_token_device'),
+    purpose: t('x_privacy_policy_send_court_date_reminders'),
+    shared: t('x_privacy_policy_expo_push_infrastructure_apple'),
+    retention: t('x_privacy_policy_until_disabled_settings_account'),
   },
-];
+]);
 
 type Section = { heading: string; body: string };
-const SECTIONS: Section[] = [
+const SECTIONS = perLang((): Section[] => [
   {
-    heading: '1. Who We Are',
+    heading: t('x_privacy_policy_1_who_we'),
     body:
-      COMPANY + ' operates the Justice Gavel mobile application. ' +
-      'We are incorporated in Tennessee, United States.\n\n' +
-      'Data Controller (GDPR): ' + COMPANY + '\n' +
-      'Contact: ' + CONTACT_EMAIL + '\n' +
-      'DPO (EU users): ' + DPO_EMAIL,
+      t('x_privacy_policy_operates_justice_gavel_mobile', { COMPANY: COMPANY, COMPANY2: COMPANY, CONTACT_EMAIL, DPO_EMAIL }),
   },
   {
-    heading: '2. Data We Collect',
+    heading: t('x_privacy_policy_2_data_we_collect'),
     body:
-      'We collect only the data necessary to provide our services. ' +
-      'See the Data Table above for a complete breakdown by category.\n\n' +
-      'We do NOT collect:\n' +
-      '• Social Security numbers or government ID numbers\n' +
-      '• Financial account numbers (Stripe handles payments separately)\n' +
-      '• Biometric data (Face ID/Touch ID operates entirely on your device)\n' +
-      '• Health information (crisis support data is not stored)',
+      t('x_privacy_policy_we_collect_only_data'),
   },
   {
-    heading: '3. How We Use Your Data',
+    heading: t('x_privacy_policy_3_how_we_use'),
     body:
-      'We use your data to:\n\n' +
-      '• Provide and improve the Justice Gavel platform\n' +
-      '• Connect you with attorneys and bail agents near you\n' +
-      '• Send you court date reminders and legal deadline alerts\n' +
-      '• Generate AI-powered legal information responses\n' +
-      '• Process subscription payments\n' +
-      '• Monitor and fix bugs and performance issues\n' +
-      '• Comply with legal obligations\n\n' +
-      'We do NOT use your data to:\n' +
-      '• Show you targeted advertising\n' +
-      '• Sell your data to third parties\n' +
-      '• Build profiles for marketing purposes',
+      t('x_privacy_policy_we_use_data_provide'),
   },
   {
-    heading: '4. Third-Party Service Providers',
+    heading: t('x_privacy_policy_4_third_party_service'),
     body:
-      'We work with the following service providers. Each is contractually ' +
-      'bound to protect your data:\n\n' +
-      '• Anthropic -- AI responses (claude.ai privacy policy)\n' +
-      '• OpenAI -- Audio transcription (openai.com/policies)\n' +
-      '• Stripe -- Payment processing (stripe.com/privacy)\n' +
-      '• Resend -- Email notifications (resend.com/legal/privacy-policy)\n' +
-      '• Sentry -- Crash reporting (sentry.io/privacy)\n' +
-      '• Expo / AWS -- App infrastructure\n\n' +
-      'We do not share your data with attorneys listed on our platform ' +
-      'unless you explicitly initiate contact with them.',
+      t('x_privacy_policy_we_work_with_following'),
   },
   {
-    heading: '5. Audio Recordings -- Special Notice',
+    heading: t('x_privacy_policy_5_audio_recordings_special'),
     body:
-      'When you use the Encounter Recorder:\n\n' +
-      '1. Audio is recorded on your device\n' +
-      '2. When you tap "Stop & Transcribe," audio is sent to OpenAI Whisper\n' +
-      '3. OpenAI processes it and returns a text transcript\n' +
-      '4. The transcript is processed by our AI to generate a PDF\n' +
-      '5. The audio file is NOT retained on our servers after processing\n' +
-      '6. The PDF is returned to your device -- we do not store it\n\n' +
-      'Your recordings belong to you. We are a processor, not a controller, ' +
-      'of your recording data.',
+      t('x_privacy_policy_when_use_encounter_recorder'),
   },
   {
-    heading: '6. Data Security',
+    heading: t('x_privacy_policy_6_data_security'),
     body:
-      'We implement industry-standard security measures:\n\n' +
-      '• All data transmitted over TLS 1.3\n' +
-      '• Sensitive data encrypted at rest using AES-256\n' +
-      '• Passwords hashed with bcrypt (never stored in plaintext)\n' +
-      '• Regular security audits and penetration testing\n' +
-      '• Principle of least privilege for internal data access\n' +
-      '• Biometric authentication option for the app itself\n\n' +
-      'No security system is perfect. In the event of a breach affecting ' +
-      'your personal data, we will notify you within 72 hours as required by law.',
+      t('x_privacy_policy_we_implement_industry_standard'),
   },
   {
-    heading: '7. Your Rights (GDPR / CCPA)',
+    heading: t('x_privacy_policy_7_rights_gdpr_ccpa'),
     body:
-      'Regardless of where you are located, you have the right to:\n\n' +
-      '• Access: Request a copy of the data we hold about you\n' +
-      '• Correction: Request we correct inaccurate data\n' +
-      '• Deletion: Request we delete your account and associated data\n' +
-      '• Portability: Receive your data in a machine-readable format\n' +
-      '• Objection: Object to certain processing activities\n' +
-      '• Restriction: Request we limit how we use your data\n• Opt-Out: California residents have the right to opt out of the sale of personal information. We do not sell personal information.\n\n' +
-      'California residents have additional rights under CCPA, including ' +
-      'the right to know what personal information we sell (we sell none).\n\n' +
-      'To exercise any right, contact: ' + CONTACT_EMAIL,
+      t('x_privacy_policy_regardless_where_located_have', { CONTACT_EMAIL }),
   },
   {
-    heading: '8. Children\'s Privacy',
+    heading: t('x_privacy_policy_8_children_s_privacy'),
     body:
-      'Justice Gavel is not directed to children under 13. We do not ' +
-      'knowingly collect personal information from children under 13. ' +
-      'If we learn we have collected such information, we will delete it ' +
-      'immediately and notify the account holder.\n\n' +
-      'Users 13-17 may use the app in limited capacity. Users under 18 ' +
-      'may not subscribe or provide payment information.',
+      t('x_privacy_policy_justice_gavel_not_directed'),
   },
   {
-    heading: '9. Data Retention',
+    heading: t('x_privacy_policy_9_data_retention'),
     body:
-      'We retain your data only as long as necessary for the purposes ' +
-      'described in this policy, or as required by law.\n\n' +
-      'When you delete your account:\n' +
-      '• Profile data is deleted within 30 days\n' +
-      '• Case data is deleted immediately\n' +
-      '• AI conversation history is deleted within 90 days\n' +
-      '• Payment records are retained 7 years (legal obligation)\n' +
-      '• Anonymized, aggregated analytics data may be retained indefinitely',
+      t('x_privacy_policy_we_retain_data_only'),
   },
   {
-    heading: '10. International Data Transfers',
+    heading: t('x_privacy_policy_10_international_data_transfers'),
     body:
-      'We are based in the United States. If you access Justice Gavel from ' +
-      'outside the US, your data may be transferred to and processed in the US.\n\n' +
-      'For EU/EEA users: We rely on Standard Contractual Clauses (SCCs) ' +
-      'and adequacy decisions where applicable for international transfers. ' +
-      'Contact our DPO at ' + DPO_EMAIL + ' for more information.',
+      t('x_privacy_policy_we_based_united_states', { DPO_EMAIL }),
   },
   {
-    heading: '11. Changes to This Policy',
+    heading: t('x_privacy_policy_11_changes_this_policy'),
     body:
-      'We may update this Privacy Policy periodically. We will notify you ' +
-      'of material changes via in-app notification and email at least 30 days ' +
-      'before they take effect. Continued use of Justice Gavel after the ' +
-      'effective date constitutes acceptance of the updated policy.',
+      t('x_privacy_policy_we_may_update_this'),
   },
   {
-    heading: '12. Contact & Complaints',
+    heading: t('x_privacy_policy_12_contact_complaints'),
     body:
-      'Privacy inquiries: ' + CONTACT_EMAIL + '\n' +
-      'EU Data Protection Officer: ' + DPO_EMAIL + '\n' +
-      'Website: ' + WEBSITE + '/privacy\n\n' +
-      'EU/EEA users may lodge a complaint with their local data protection ' +
-      'authority if they believe we have not complied with applicable law.',
+      t('x_privacy_policy_privacy_inquiries_eu_data', { CONTACT_EMAIL, DPO_EMAIL, WEBSITE }),
   },
-];
+]);
 
 function PrivacyPolicyScreen(): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
@@ -245,14 +169,14 @@ function PrivacyPolicyScreen(): React.JSX.Element {
   const openEmail = (addr: string) => {
     hapticImpact();
     Linking.openURL(`mailto:${addr}`).catch(() =>
-      showToast(`Contact us at ${addr}`, 'info')
+      showToast(t('x_privacy_policy_contact_us_at', { addr }), 'info')
     );
   };
 
   const requestDeletion = () => {
     hapticImpact();
-    confirm('Request Data Deletion?', 'This will send an email to our privacy team to initiate deletion of your account and all associated data.',
-      { confirmLabel: 'Send Request' }).then(ok => { if (ok) openEmail(CONTACT_EMAIL); });
+    confirm(t('x_privacy_policy_request_data_deletion'), t('x_privacy_policy_this_will_send_email'),
+      { confirmLabel: t('x_privacy_policy_send_request') }).then(ok => { if (ok) openEmail(CONTACT_EMAIL); });
   };
 
   return (
@@ -269,10 +193,10 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           JUSTICE GAVEL
         </Text>
         <Text maxFontSizeMultiplier={1.2} style={styles.headerTitle}>
-          Privacy Policy
+          {t('onb_terms_pp')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerMeta}>
-          Effective {EFFECTIVE_DATE}
+          {t('x_privacy_policy_effective', { EFFECTIVE_DATE })}
         </Text>
         <View style={styles.headerBadges}>
           {['GDPR', 'CCPA', 'Apple', 'Google Play'].map(badge => (
@@ -288,14 +212,14 @@ function PrivacyPolicyScreen(): React.JSX.Element {
         borderLeftColor: colors.legalDark }]}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.summaryTitle,
           { color: colors.legalDark }]}>
-          🔒 Privacy in Plain English
+          {t('x_privacy_policy_privacy_plain_english')}
         </Text>
         {[
-          'We do NOT sell your data to anyone, ever.',
-          'We do NOT show you ads or build ad profiles.',
-          'Audio recordings are deleted from our servers after transcription.',
-          'Location is used in real-time only -- never stored.',
-          'You can delete your account and all data anytime.',
+          t('x_privacy_policy_we_do_not_sell'),
+          t('x_privacy_policy_we_do_not_show'),
+          t('x_privacy_policy_audio_recordings_deleted_from'),
+          t('x_privacy_policy_location_used_real_time'),
+          t('x_privacy_policy_can_delete_account_all'),
         ].map((item, i) => (
           <Text key={`item-${i}`} maxFontSizeMultiplier={1.3} style={[styles.summaryItem,
             { color: isDark ? colors.legal : colors.legalDark }]}>
@@ -307,7 +231,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
       {/* ── Data table ───────────────────────────────────────────── */}
       <TouchableOpacity
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={[styles.tableToggle, { backgroundColor: colors.bgCard,
           borderColor: colors.border }]}
         onPress={() => {
@@ -315,11 +239,11 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           setTableExpanded(v => !v);
         }}
           accessibilityState={{ selected: false }}
-        accessibilityLabel="Toggle data collection table"
+        accessibilityLabel={t('x_privacy_policy_toggle_data_collection_table')}
       >
         <Text maxFontSizeMultiplier={1.3} style={[styles.tableToggleText,
           { color: colors.textPrimary }]}>
-          📊 What Data We Collect -- Full Table
+          {t('x_privacy_policy_what_data_we_collect')}
         </Text>
         <Text style={[styles.tableChevron, { color: colors.textMuted }]}>
           {tableExpanded ? '▲' : '▼'}
@@ -328,18 +252,18 @@ function PrivacyPolicyScreen(): React.JSX.Element {
 
       {tableExpanded && (
         <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-          {DATA_TABLE?.length === 0 ? (
+          {DATA_TABLE()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
           <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
+            {t('empty_state_nothing')}
           </Text>
           <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
+            {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
-        ) : DATA_TABLE.map((row, i) => (
+        ) : DATA_TABLE().map((row, i) => (
             <View key={`DATA_TAB-${i}`} style={[styles.tableRow,
               { backgroundColor: i % 2 === 0 ? colors.bgCard : colors.bgSubtle,
                 borderBottomColor: colors.border }]}>
@@ -349,19 +273,19 @@ function PrivacyPolicyScreen(): React.JSX.Element {
               </Text>
               <View style={styles.tableFields}>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableLabel,
-                  { color: colors.textMuted }]}>Examples</Text>
+                  { color: colors.textMuted }]}>{t('x_privacy_policy_examples')}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableValue,
                   { color: colors.textSecond }]}>{row.examples}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableLabel,
-                  { color: colors.textMuted }]}>Purpose</Text>
+                  { color: colors.textMuted }]}>{t('x_privacy_policy_purpose')}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableValue,
                   { color: colors.textSecond }]}>{row.purpose}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableLabel,
-                  { color: colors.textMuted }]}>Shared with</Text>
+                  { color: colors.textMuted }]}>{t('x_privacy_policy_shared_with')}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableValue,
                   { color: colors.textSecond }]}>{row.shared}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableLabel,
-                  { color: colors.textMuted }]}>Retention</Text>
+                  { color: colors.textMuted }]}>{t('x_privacy_policy_retention')}</Text>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.tableValue,
                   { color: colors.textSecond }]}>{row.retention}</Text>
               </View>
@@ -371,7 +295,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
       )}
 
       {/* ── Full sections ────────────────────────────────────────── */}
-      {SECTIONS.map((section, idx) => (
+      {SECTIONS().map((section, idx) => (
         <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: colors.legalDark }]}>
           <Text maxFontSizeMultiplier={1.2} style={[styles.sectionHeading,
@@ -389,34 +313,34 @@ function PrivacyPolicyScreen(): React.JSX.Element {
       <View style={[styles.rightsCard, { backgroundColor: colors.bgCard }]}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.rightsTitle,
           { color: colors.textPrimary }]}>
-          Exercise Your Rights
+          {t('x_privacy_policy_exercise_rights')}
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={[styles.rightsBtn, { backgroundColor: colors.legalDark }]}
           onPress={() => openEmail(CONTACT_EMAIL)}
           activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>
-            📋 Request Data Access / Correction
+            {t('x_privacy_policy_request_data_access_correction')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={[styles.rightsBtn, { backgroundColor: colors.emergencyDark }]}
           onPress={requestDeletion}
           activeOpacity={0.85}
-          accessibilityLabel="Request account and data deletion"
+          accessibilityLabel={t('x_privacy_policy_request_account_data_deletion')}
         >
           <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>
-            🗑  Request Account Deletion
+            {t('x_privacy_policy_request_account_deletion')}
           </Text>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsNote,
           { color: colors.textMuted }]}>
-          We respond to all privacy requests within 30 days.
+          {t('x_privacy_policy_we_respond_all_privacy')}
         </Text>
       </View>
 
@@ -424,11 +348,11 @@ function PrivacyPolicyScreen(): React.JSX.Element {
       <View style={[styles.footer, { backgroundColor: colors.bgCard }]}>
         <Text maxFontSizeMultiplier={1.3} style={[styles.footerText,
           { color: colors.textMuted }]}>
-          © {new Date().getFullYear()} {COMPANY}. All rights reserved.
+          {t('x_privacy_policy_all_rights_reserved', { value: new Date().getFullYear(), COMPANY: COMPANY })}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={[styles.footerText,
           { color: colors.textMuted, marginTop: 4 }]}>
-          We believe in your rights -- including the right to your own data.
+          {t('x_privacy_policy_we_believe_rights_including')}
         </Text>
       </View>
 

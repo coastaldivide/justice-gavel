@@ -14,8 +14,10 @@ import { setAppAuth } from '../services/auth';
 import { registerForPush } from '../services/push';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as secureStorage from '../utils/secureStorage';
+import { t, useLang } from '../i18n';
 
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -29,8 +31,8 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const onLogin = async () => {
 if (loading) return;
-        if (!identifier.trim()) { setError('Enter your email address or phone number to continue.'); return; }
-    if (!password)           { setError('Enter your password to sign in.'); return; }
+        if (!identifier.trim()) { setError(t('x_lg_enter_email_address_phone')); return; }
+    if (!password)           { setError(t('x_lg_enter_password_sign')); return; }
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/login', { identifier: identifier.trim(), password });
@@ -47,7 +49,7 @@ if (loading) return;
         navigation.goBack();
       }
     } catch (e: any) {
-      setError(e.response?.data?.message || e.message || 'Login failed. Check your details and try again.');
+      setError(e.response?.data?.message || e.message || t('x_lg_login_failed_check_details'));
     } finally { setLoading(false); }
   };
 
@@ -68,38 +70,38 @@ if (loading) return;
             <JTBLogo size={96} />
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.wordmark}>Justice Gavel</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>YOUR LEGAL CONNECTION</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>{t('x_lg_legal_connection')}</Text>
         </View>
 
         {/* Divider */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.dividerText}>SIGN IN</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.dividerText}>{t('x_lg_sign')}</Text>
           <View style={styles.dividerLine} />
         </View>
 
         {/* Browse without account -- TOP of form, first thing seen */}
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
+          accessibilityHint={t('cp_double_tap')} style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>🔍  Search Without an Account</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnSub}>Find lawyers & bail agents instantly -- no sign-up</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>{t('x_lg_search_without_account')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnSub}>{t('x_lg_find_lawyers_bail_agents')}</Text>
         </TouchableOpacity>
 
         {/* Divider */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.dividerText}>OR SIGN IN</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.dividerText}>{t('x_lg_sign_2')}</Text>
           <View style={styles.dividerLine} />
         </View>
 
         {/* Form */}
         <View style={styles.form}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Email or phone number</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('x_lg_email_phone_number')}</Text>
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}
-              placeholder="email or phone number"
+              placeholder={t('x_lg_email_phone_number_2')}
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
               onChangeText={(v) => { setIdentifier(v); setError(''); }}
@@ -109,19 +111,19 @@ if (loading) return;
               textContentType="username"
               returnKeyType="next"
               testID="login-email-input"
-              accessibilityLabel="Email address or phone number"
+              accessibilityLabel={t('x_lg_email_address_phone_number')}
               onSubmitEditing={() => passRef.current?.focus()}
               selectionColor={COLORS.steel}
             />
           </View>
 
-          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>Password</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>{t('password')}</Text>
           <View style={styles.inputWrap}>
             <TextInput
               ref={passRef}
               testID="login-password-input"
               style={[styles.input, { flex: 1 }]}
-              placeholder="Your password"
+              placeholder={t('x_lg_password')}
               placeholderTextColor={COLORS.textSecond}
               secureTextEntry={!showPass}
               value={password}
@@ -133,9 +135,9 @@ if (loading) return;
             />
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel={showPass ? 'Hide password' : 'Show password'} onPress={() => setShowPass(s => !s)}
+          accessibilityHint={t('cp_double_tap')} accessibilityLabel={showPass ? t('x_lg_hide_password') : t('x_lg_show_password')} onPress={() => setShowPass(s => !s)}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? t('x_lg_hide') : t('x_lg_show')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -146,53 +148,53 @@ if (loading) return;
           )}
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={{ alignItems: 'center', marginBottom: 10 }}
             onPress={() => {
               // forgot password
 
               const email = identifier.trim();
-              if (!email) { showToast('Enter your email first, then tap Forgot Password.', 'info'); return; }
-              confirm('Reset Password', `Send a reset link to ${email}?`,
-                { confirmLabel: 'Send Link' }).then(ok => {
+              if (!email) { showToast(t('x_lg_enter_email_first_then'), 'info'); return; }
+              confirm(t('x_lg_reset_password'), t('x_lg_send_reset_link', { email }),
+                { confirmLabel: t('x_lg_send_link') }).then(ok => {
                 if (!ok) return;
                 api.post('/auth/forgot-password', { email })
-                  .then(() => showToast('Reset link sent! Check your inbox.', 'success'))
-                  .catch(() => showToast('Could not send reset link. Try again.', 'error'));
+                  .then(() => showToast(t('x_lg_reset_link_sent_check'), 'success'))
+                  .catch(() => showToast(t('x_lg_could_not_send_reset'), 'error'));
               });
             }}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>Forgot password?</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>{t('x_lg_forgot_password')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             accessibilityRole="button"
 
-            accessibilityLabel="Sign In"
-          accessibilityHint="Signs you in to your account"
+            accessibilityLabel={t('sign_in')}
+          accessibilityHint={t('x_lg_signs_account')}
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="login-submit-button" onPress={onLogin} disabled={loading} activeOpacity={0.85}
           >
             {loading
               ? <ActivityIndicator color={colors.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>Sign In</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>{t('sign_in')}</Text>
             }
           </TouchableOpacity>
 
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
-            accessibilityLabel="Create one"
+          accessibilityHint={t('cp_double_tap')} style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
+            accessibilityLabel={t('x_lg_create_one')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.registerText}>
-              Don't have an account?{'  '}
-              <Text maxFontSizeMultiplier={1.4} style={styles.registerHighlight}>Create one</Text>
+              {t('x_lg_don_t_have_account')}{' '}
+              <Text maxFontSizeMultiplier={1.4} style={styles.registerHighlight}>{t('x_lg_create_one')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>
-          🔒  Encrypted  ·  Never sold  ·  CCPA compliant
+          {t('x_lg_encrypted_never_sold_ccpa')}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

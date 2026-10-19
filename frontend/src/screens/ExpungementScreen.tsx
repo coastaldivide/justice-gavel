@@ -22,6 +22,7 @@ import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { RNShare } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
+import { t, useLang, locale } from '../i18n';
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -30,10 +31,16 @@ const US_STATES = [
   'VA','WA','WV','WI','WY','DC',
 ];
 
-const CHARGE_EXAMPLES = [
-  'DUI / Drunk Driving', 'Drug Possession', 'Theft / Shoplifting',
-  'Assault / Battery', 'Disorderly Conduct', 'Trespassing',
-  'Domestic Violence', 'Probation Violation', 'Other / Not sure',
+// Values sent to the eligibility check (English, as the server matches them); chips show the label.
+const CHARGE_EXAMPLES: { value: string; key: string }[] = [ // i18n-exempt: values; labels are x_exp_ch_*
+  { value: 'DUI / Drunk Driving', key: 'x_exp_ch_dui' }, { value: 'Drug Possession', key: 'x_exp_ch_drug' }, // i18n-exempt: values
+  { value: 'Theft / Shoplifting', key: 'x_exp_ch_theft' }, { value: 'Assault / Battery', key: 'x_exp_ch_assault' }, // i18n-exempt: values
+  { value: 'Disorderly Conduct', key: 'x_exp_ch_disorderly' }, { value: 'Trespassing', key: 'x_exp_ch_trespass' }, // i18n-exempt: values
+  { value: 'Domestic Violence', key: 'x_exp_ch_dv' }, { value: 'Probation Violation', key: 'x_exp_ch_probation' }, // i18n-exempt: values
+  { value: 'Other / Not sure', key: 'x_exp_ch_other' }, // i18n-exempt: values
+];
+const CASE_OUTCOMES: { value: string; key: string }[] = [ // i18n-exempt: values; labels are x_exp_status_*
+  { value: 'Closed', key: 'x_exp_status_closed' }, { value: 'Dismissed', key: 'x_exp_status_dismissed' }, { value: 'Still Open', key: 'x_exp_status_still_open' }, // i18n-exempt: values
 ];
 
 type EligibilityResult = {
@@ -48,6 +55,7 @@ type EligibilityResult = {
 function ExpungementCountdown({ waitYears, caseDate }: {
   waitYears: number; caseDate: string;
 }) {
+  useLang();
   const { showToast } = useToast();
 
   const eligible = React.useMemo(() => {
@@ -71,13 +79,13 @@ function ExpungementCountdown({ waitYears, caseDate }: {
         remind.setTime(Date.now() + 3 * 86400000);
       }
       await scheduleReminder({
-        title: '📋 You may now be eligible for expungement',
-        body: 'Based on your waiting period, check your eligibility now.',
+        title: t('x_expungement_may_now_be_eligible'),
+        body: t('x_expungement_based_waiting_period_check'),
         deliverAt: remind,
       });
-showToast('Reminder set for when you become eligible.', 'success');
+showToast(t('x_expungement_reminder_set_when_become'), 'success');
     } catch {
-      showToast('Make sure notifications are enabled in Settings.');
+      showToast(t('x_expungement_make_sure_notifications_enabled'));
     }
   }, [eligible, now, showToast]);
 
@@ -89,25 +97,24 @@ showToast('Reminder set for when you become eligible.', 'success');
         <>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22,
             fontWeight: '700', color: COLORS.legalDark, marginBottom: 4 }}>
-            ✅ You may now be eligible
+            {t('x_expungement_may_now_be_eligible_2')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19,
             color: COLORS.legalDark }}>
-            Based on your case date, your {waitYears}-year waiting period has passed.
-            Consult an attorney to confirm and begin the petition process.
+            {t('x_expungement_based_case_date_year', { waitYears })}
           </Text>
         </>
       ) : (
         <>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22,
             fontWeight: '700', color: COLORS.navy, marginBottom: 4 }}>
-            ⏳ Eligible in approximately {yearsLeft} years
+            {t('x_expungement_eligible_approximately_years', { yearsLeft })}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19,
             color: COLORS.textSecond, marginBottom: 10 }}>
-            Estimated eligibility date:{' '}
+            {t('x_expungement_estimated_eligibility_date')}{' '}
             <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '700' }}>
-              {eligible.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {eligible.toLocaleDateString(locale(), { month: 'long', day: 'numeric', year: 'numeric' })}
             </Text>
           </Text>
           <TouchableOpacity accessibilityRole="button"
@@ -115,13 +122,13 @@ showToast('Reminder set for when you become eligible.', 'success');
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6,
               backgroundColor: COLORS.navy, borderRadius: 8,
               paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' }}
-            accessibilityLabel="Set a reminder for your eligibility date"
+            accessibilityLabel={t('x_expungement_set_reminder_eligibility_date')}
           
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19,
               fontWeight: '700', color: COLORS.bgCard }}>
-              Remind me
+              {t('x_cs_remind_me')}
             </Text>
           </TouchableOpacity>
         </>
@@ -131,6 +138,7 @@ showToast('Reminder set for when you become eligible.', 'success');
 }
 
 function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.  // Log expungement screen visit — prevents re-trigger from nightly scheduler
@@ -163,7 +171,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       setPetitionDraft(res.data?.draft || '');
       setShowPetition(true);
     } catch {
-      showToast('Check your connection and try again.');
+      showToast(t('home_sos_failed'));
     } finally {
       setGenPetition(false);
     }
@@ -204,7 +212,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [showPetition, setShowPetition]     = useState(false);
 
   const checkEligibility = async () => {
-    if (!state) { setStateError('Please select your state first.'); setLoading(false); return; }
+    if (!state) { setStateError(t('x_expungement_please_select_state_first')); setLoading(false); return; }
     setStateError('');
     setLoading(true);
     try {
@@ -227,7 +235,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not check eligibility. Try again.'), 'info');
+      showToast(apiErrorMessage(e, t('x_expungement_could_not_check_eligibility')), 'info');
     } finally {
       setLoading(false);
     }
@@ -242,10 +250,10 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   React.useEffect(() => {
     if (incomingCharges && incomingState && stepRef.current === 'form') {
       // Give state one tick to update before submitting
-      const t = setTimeout(() => {
+      const tItem = setTimeout(() => {
         checkEligibilityRef.current();
       }, 400);
-      return () => clearTimeout(t);
+      return () => clearTimeout(tItem);
     }
   }, [incomingState, incomingCharges, checkEligibilityRef, stepRef]);
 
@@ -268,9 +276,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
     : '';
 
   const eligLabel = result
-    ? result?.eligibility?.likely       ? 'Likely Eligible'
-    : result?.eligibility?.conditional  ? 'Possibly Eligible'
-    : 'Not Eligible'
+    ? result?.eligibility?.likely       ? t('x_expungement_likely_eligible')
+    : result?.eligibility?.conditional  ? t('x_expungement_possibly_eligible')
+    : t('x_expungement_not_eligible')
     : '';
 
   // ── Form step ────────────────────────────────────────────────────────────
@@ -286,10 +294,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       <View style={styles.hero}>
 
               <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={styles.heroTitle}>Could your record be cleared?</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heroTitle}>{t('x_expungement_could_record_be_cleared')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.heroSub}>
-          Millions of Americans are eligible to seal or expunge their arrest records --
-          but most never apply. Find out in 30 seconds.
+          {t('x_expungement_millions_americans_eligible_seal')}
         </Text>
       </View>
 
@@ -301,25 +308,22 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         borderLeftWidth: 3, borderLeftColor: colors.warnDark,
       }}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: colors.bail, marginBottom: 4 }}>
-          Under 18 or have a juvenile record?
+          {t('x_expungement_under_18_have_juvenile')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.warnDark, lineHeight: 20 }}>
-          Juvenile records are sealed or expunged under different laws and through
-          separate courts from adult records. The eligibility rules, waiting periods,
-          and forms below apply to adult criminal records only.{' '}
-          For juvenile records, contact your{' '}
+          {t('x_expungement_juvenile_records_sealed_expunged')}{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
             onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => {})}
           >
-            state's juvenile public defender or juvenile court clerk
+            {t('x_expungement_state_s_juvenile_public')}
           </Text>
-          {' '}directly.
+          {' '}{t('x_expungement_directly')}
         </Text>
       </View>
 
       {/* State */}
-      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Your state</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('div_your_state')}</Text>
       <TouchableOpacity
           accessibilityRole="button"
           style={styles.stateBtn}
@@ -345,38 +349,38 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       )}
 
       {/* Case status */}
-      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Case outcome</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_expungement_case_outcome')}</Text>
       <View style={styles.statusRow}>
-        {['Closed', 'Dismissed', 'Still Open'].map(s => (
+        {CASE_OUTCOMES.map(({ value: s, key: sKey }) => (
           <TouchableOpacity accessibilityRole="button"
             key={s}
             style={[styles.statusChip, caseStatus === s && styles.statusChipActive]}
-            accessibilityLabel={s} onPress={() => setCaseStatus(s)}
+            accessibilityLabel={t(sKey)} onPress={() => setCaseStatus(s)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, caseStatus === s && styles.statusChipTextActive]}>{s}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, caseStatus === s && styles.statusChipTextActive]}>{t(sKey)}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {/* Charges */}
-      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>What were the charges?</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_expungement_what_were_charges')}</Text>
       <View style={styles.chargeChips}>
-        {CHARGE_EXAMPLES.map(ch => (
+        {CHARGE_EXAMPLES.map(({ value: ch, key: chKey }) => (
           <TouchableOpacity accessibilityRole="button"
             key={ch}
             style={[styles.chargeChip, charges === ch && styles.chargeChipActive]}
-            accessibilityLabel={ch} onPress={() => setCharges(charges === ch ? '' : ch)}
+            accessibilityLabel={t(chKey)} onPress={() => setCharges(charges === ch ? '' : ch)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.chargeChipText, charges === ch && styles.chargeChipTextActive]}>{ch}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.chargeChipText, charges === ch && styles.chargeChipTextActive]}>{t(chKey)}</Text>
           </TouchableOpacity>
         ))}
       </View>
       <TextInput
-              testID="expungement-charges-input" accessibilityLabel="Describe your charges"
+              testID="expungement-charges-input" accessibilityLabel={t('x_expungement_describe_charges')}
         style={styles.chargeInput}
-        placeholder="Or type your charge (e.g. 'possession of marijuana 2020')"
+        placeholder={t('x_expungement_type_charge_e_g')}
         placeholderTextColor={COLORS.textSecond}
-        value={charges.includes('/') || CHARGE_EXAMPLES.includes(charges) ? '' : charges}
+        value={charges.includes('/') || CHARGE_EXAMPLES.some(c => c.value === charges) ? '' : charges}
         onChangeText={setCharges}
           returnKeyType="next"
           blurOnSubmit
@@ -387,15 +391,15 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         style={[styles.checkBtn, loading && { opacity: 0.6 }]}
         testID="expungement-check-button" onPress={checkEligibility}
         disabled={loading}
-        activeOpacity={0.85} accessibilityLabel={"Check My Eligibility  \u2192"}>
+        activeOpacity={0.85} accessibilityLabel={t('x_expungement_check_my_eligibility')}>
 
         {loading
           ? <ActivityIndicator color={colors.bgCard} />
-          : <Text maxFontSizeMultiplier={1.4} style={styles.checkBtnText}>Check My Eligibility  →</Text>
+          : <Text maxFontSizeMultiplier={1.4} style={styles.checkBtnText}>{t('x_expungement_check_my_eligibility')}</Text>
         }
       </TouchableOpacity>
 
-      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimerNote}>Free eligibility check · No account required · Not legal advice</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimerNote}>{t('x_expungement_free_eligibility_check_no')}</Text>
       <View style={{ height: 40 }} />
     </ScrollView>
     </KeyboardAvoidingView>
@@ -412,7 +416,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictState}>{result?.stateName} · {result?.chargeType}</Text>
         {(result?.eligibility?.waitYears ?? 0) > 0 && (
           <Text testID="expungement-wait-years" maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
-            Typical waiting period: {(result as any).eligibility?.waitYears} year{(result as any).eligibility?.waitYears > 1 ? 's' : ''}
+            {t((result as any).eligibility?.waitYears === 1 ? 'x_expungement_typical_waiting_period_year_one' : 'x_expungement_typical_waiting_period_year_other', { waitYears: (result as any).eligibility?.waitYears })}
           </Text>
         )}
         {/* Eligibility date calculator */}
@@ -428,12 +432,12 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
 
       {/* What expungement means */}
       <View style={styles.explainCard}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.explainTitle}>What does expungement do?</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.explainTitle}>{t('x_expungement_what_does_expungement_do')}</Text>
         {[
-          '🔒 Seals the arrest from most public background checks',
-          '💼 Employers, landlords, and lenders cannot see it',
-          '✓  You can legally say "I was not arrested" on most applications',
-          '⚖️ The court record still exists for law enforcement',
+          t('x_expungement_seals_arrest_from_most'),
+          t('x_expungement_employers_landlords_lenders_cannot'),
+          t('x_expungement_can_legally_say_i'),
+          t('x_expungement_court_record_still_exists'),
         ].map(item => (
           <Text maxFontSizeMultiplier={1.4} key={item} style={styles.explainItem}>{item}</Text>
         ))}
@@ -443,7 +447,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       {result && !result?.eligibility?.notEligible && (
         <>
           <Text maxFontSizeMultiplier={1.4} style={styles.partnersTitle}>
-            Expungement attorneys in {result.stateName || state}
+            {t('x_expungement_expungement_attorneys', { value: result.stateName || state })}
           </Text>
             {/* Generate expungement petition */}
             {result && !result?.eligibility?.notEligible && (
@@ -453,14 +457,14 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onPress={generatePetition}
                 disabled={genPetition}
-                accessibilityLabel="Generate expungement petition draft"
-          accessibilityHint="Double-tap to activate"
+                accessibilityLabel={t('x_expungement_generate_expungement_petition_draft')}
+          accessibilityHint={t('cp_double_tap')}
               
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '700',
                   fontSize: 14, lineHeight: 21 }}>
-                  {genPetition ? 'Generating…' : 'Generate Petition Draft'}
+                  {genPetition ? t('x_expungement_generating') : t('x_expungement_generate_petition_draft')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -473,28 +477,28 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <TouchableOpacity
   accessibilityRole="button"
-                    accessibilityLabel="Close petition draft"
+                    accessibilityLabel={t('x_expungement_close_petition_draft')}
                     onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
-                      color: colors.textBrand }}>← Close</Text>
+                      color: colors.textBrand }}>{t('x_expungement_close')}</Text>
                   </TouchableOpacity>
                   <Text maxFontSizeMultiplier={1.4} style={{ flex: 1, fontSize: 16,
                     fontWeight: '700', color: colors.textPrimary }}>
-                    Petition Draft
+                    {t('x_expungement_petition_draft')}
                   </Text>
                   <TouchableOpacity accessibilityRole="button"
                     onPress={async () => {
                       try {
-                        await RNShare.share({ message: petitionDraft, title: 'Expungement Petition Draft' })
+                        await RNShare.share({ message: petitionDraft, title: t('x_expungement_expungement_petition_draft') })
                       } catch {
                         // Share API unavailable on this browser/device — fail silently
 
                     }}}
- accessibilityLabel="Share petition draft"
+ accessibilityLabel={t('x_expungement_share_petition_draft')}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14,
-                      color: colors.textBrand, fontWeight: '600' }}>Share</Text>
+                      color: colors.textBrand, fontWeight: '600' }}>{t('share')}</Text>
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={{ flex: 1, padding: 16 }}>
@@ -509,7 +513,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           {attLoading && (
             <View style={[styles.partnerCard, { alignItems: 'center', padding: 20 }]}>
               <ActivityIndicator color={colors.steelMid} />
-              <Text testID="expungement-attorneys-section" maxFontSizeMultiplier={1.4} style={[styles.partnerDesc, { marginTop: 8 }]}>Finding attorneys near you…</Text>
+              <Text testID="expungement-attorneys-section" maxFontSizeMultiplier={1.4} style={[styles.partnerDesc, { marginTop: 8 }]}>{t('x_expungement_finding_attorneys_near')}</Text>
             </View>
           )}
 
@@ -521,33 +525,33 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   {atty.address && <Text maxFontSizeMultiplier={1.4} style={[styles.partnerDesc, { marginBottom: 0 }]}>{atty.city || atty.address}</Text>}
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                  {atty.jtb_verified  && <View style={{ backgroundColor:colors.legalBg, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.legal, fontWeight:'800' }}>✅ JTB Verified</Text></View>}
-                  {!atty.jtb_verified && atty.bar_verified && <View style={{ backgroundColor:colors.bgElevated, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.info, fontWeight:'800' }}>✓ Bar Verified</Text></View>}
+                  {atty.jtb_verified  && <View style={{ backgroundColor:colors.legalBg, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.legal, fontWeight:'800' }}>{t('x_expungement_jtb_verified')}</Text></View>}
+                  {!atty.jtb_verified && atty.bar_verified && <View style={{ backgroundColor:colors.bgElevated, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.info, fontWeight:'800' }}>{t('x_expungement_bar_verified')}</Text></View>}
                   {atty.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'800', color:colors.textPrimary }}>🏆</Text>}
                   {atty.rating != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, color:colors.textPrimary, fontWeight:'700' }}>★ {isNaN(Number(atty.rating)) ? "N/A" : Number(atty.rating).toFixed(1)}</Text>}
                 </View>
               </View>
               {atty.free_consultation && (
                 <View style={{ backgroundColor:colors.legalBg, borderRadius:8, padding:6, marginBottom:6 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, color:colors.legal, fontWeight:'700' }}>✓ Free initial consultation</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, color:colors.legal, fontWeight:'700' }}>{t('x_expungement_free_initial_consultation')}</Text>
                 </View>
               )}
               <View style={{ flexDirection:'row', gap:8, marginTop:4 }}>
                 {atty.phone && (
                   <TouchableOpacity accessibilityRole="button"
                     style={[styles.partnerBtn, { flex:1, backgroundColor:colors.legalDark }]}
-                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => showToast('Action unavailable.', 'error')); }}
-                    accessibilityLabel={`Call ${atty.name}`}
+                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => showToast(t('x_expungement_action_unavailable'), 'error')); }}
+                    accessibilityLabel={t('hn_call_a11y', { name: atty.name })}
                   >
-                    <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>📞 Call</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{t('lawyers_call')}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity accessibilityRole="button"
                   style={[styles.partnerBtn, { flex:2 }]}
                   onPress={() => navigation.navigate('MoreTab', { screen: 'Booking', params: { lawyerName: atty.name, lawyerPhone: atty.phone || '', lawyerId: atty.id }})}
-                  accessibilityLabel={`Book consultation with ${atty.name}`}
+                  accessibilityLabel={t('x_expungement_book_consultation_with', { name: atty.name })}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Book Free Consultation →</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{t('x_expungement_book_free_consultation')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -555,13 +559,13 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
 
           {!attLoading && attorneys.length === 0 && (
             <View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.partnersTitle}>Partner services</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.partnersTitle}>{t('x_expungement_partner_services')}</Text>
               {result?.partners?.map(partner => (
                 <View key={partner.key} style={styles.partnerCard}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.partnerName}>{partner.name}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.partnerDesc} numberOfLines={3} ellipsizeMode="tail">{partner.description}</Text>
                   <View style={styles.partnerFeeRow}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.partnerFeeLabel}>Estimated cost</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.partnerFeeLabel}>{t('x_expungement_estimated_cost')}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerFeeValue}>{partner.estimatedCost}</Text>
                   </View>
                   <TouchableOpacity
@@ -574,7 +578,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{partner.cta}  →</Text>
                   </TouchableOpacity>
               <Text maxFontSizeMultiplier={1.4} style={styles.partnerReturnNote}>
-                Opens in browser · Tap Back to return to Justice Gavel
+                {t('x_expungement_opens_browser_tap_back')}
               </Text>
                 </View>
           ))}
@@ -586,18 +590,18 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       {/* Not eligible */}
       {result?.eligibility.notEligible && (
         <View testID="expungement-not-eligible-banner" style={styles.notEligibleCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.notEligibleTitle}>What you can still do</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.notEligibleTitle}>{t('x_expungement_what_can_still_do')}</Text>
           {[
-            '⚖️  Speak to a defense attorney -- some exceptions exist',
-            '📋  Apply for a Certificate of Relief (limits background check impact)',
-            "🏛️  Apply for a Governor's pardon in some states",
-            '⏳  Check back when the waiting period is complete',
+            t('x_expungement_speak_defense_attorney_some'),
+            t('x_expungement_apply_certificate_relief_limits'),
+            t('x_expungement_apply_governor_s_pardon'),
+            t('x_expungement_check_back_when_waiting'),
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.notEligibleItem}>{s}</Text>)}
           <TouchableOpacity accessibilityRole="button"
             style={styles.partnerBtn}
-            accessibilityLabel={"Find a Criminal Defense Lawyer \u2192"} onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel={t('x_expungement_find_criminal_defense_lawyer')} onPress={() => navigation.navigate('LawyersTab')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Find a Criminal Defense Lawyer →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{t('x_expungement_find_criminal_defense_lawyer')}</Text>
           </TouchableOpacity>
         </View>
       )}

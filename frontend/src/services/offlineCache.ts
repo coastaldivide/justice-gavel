@@ -16,6 +16,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo      from '@react-native-community/netinfo';
+import { t } from '../i18n';
 
 // ── TTL constants ─────────────────────────────────────────────────────────────
 const TTL_30_DAYS  = 30 * 24 * 60 * 60 * 1000;
@@ -165,15 +166,15 @@ export async function getCachedExpungement(state: string): Promise<unknown> {
 
 // ── Format cache age for display ─────────────────────────────────────────────
 export function cacheAgeLabel(cachedAt: string | null): string {
-  if (!cachedAt) return 'Never synced';
+  if (!cachedAt) return t('x_offline_cache_never_synced');
   const diff = Date.now() - new Date(cachedAt).getTime();
   const mins = Math.floor(diff / 60000);
   const hrs  = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  if (mins < 2)  return 'Just synced';
-  if (mins < 60) return `Synced ${mins}m ago`;
-  if (hrs  < 24) return `Synced ${hrs}h ago`;
-  return `Synced ${days}d ago`;
+  if (mins < 2)  return t('x_offline_cache_just_synced');
+  if (mins < 60) return t('x_offline_cache_synced_m_ago', { mins });
+  if (hrs  < 24) return t('x_offline_cache_synced_h_ago', { hrs });
+  return t('x_offline_cache_synced_d_ago', { days });
 }
 
 // ── Clear all caches (on logout) ──────────────────────────────────────────────

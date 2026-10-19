@@ -6,7 +6,7 @@
  * can show a friendly "Payments are coming soon" message instead of crashing.
  */
 
-export const PAYMENTS_COMING_SOON = 'Payments aren’t available yet. No charge was made — free features keep working.';
+export const PAYMENTS_COMING_SOON = perLang(() => t('x_common_payments_aren_t_available'));
 
 export interface PaymentSheetError {
   code: string;
@@ -16,6 +16,7 @@ export interface PaymentSheetError {
 // Type-only import: erased at build time, so the native-only Stripe module is
 // never resolved into the web bundle (index.web.tsx also uses this file).
 import type { PaymentSheet } from '@stripe/stripe-react-native';
+import { t, perLang } from '../i18n';
 
 /** What screens pass to initPaymentSheet — Stripe's real SetupParams. */
 export type PaymentSheetSetupParams = PaymentSheet.SetupParams;
@@ -28,7 +29,7 @@ export interface PaymentSheetApi {
 }
 
 const unavailableResult = async (): Promise<{ error: PaymentSheetError }> => ({
-  error: { code: 'payments_unavailable', message: PAYMENTS_COMING_SOON },
+  error: { code: 'payments_unavailable', message: PAYMENTS_COMING_SOON() },
 });
 
 export const UNAVAILABLE_SHEET: PaymentSheetApi = {

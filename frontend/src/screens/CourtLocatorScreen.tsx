@@ -6,6 +6,7 @@ import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Pla
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { unwrapList,api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 type Courthouse = {
   id: number;
@@ -26,6 +27,7 @@ type Courthouse = {
 
 
 function CourtLocatorScreen(): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -66,14 +68,14 @@ function CourtLocatorScreen(): React.JSX.Element {
         name: fc.name,
         address: fc.address,
         phone: fc.phone,
-        hours: fc.hours || 'Mon-Fri 8:30am-4:30pm',
+        hours: fc.hours || t('x_court_locator_mon_fri_8_30am'),
         county: fc.district,
-        notes: `Federal district: ${fc.district}`,
+        notes: t('x_court_locator_federal_district', { district: String(fc.district ?? '') }),
         court_type: 'Federal',
       })) : raw;
       setResults(normalized as unknown as Courthouse[]);
     } catch {
-      setError('Could not load courthouses. Check connection.');
+      setError(t('x_court_locator_could_not_load_courthouses'));
     } finally { setLoading(false); }
   }, [courtMode]);
 
@@ -85,8 +87,8 @@ function CourtLocatorScreen(): React.JSX.Element {
 
 
   useEffect(() => {
-    const t = setTimeout(() => doSearch(search), 350);
-    return () => clearTimeout(t);
+    const tItem = setTimeout(() => doSearch(search), 350);
+    return () => clearTimeout(tItem);
   }, [search, doSearch, courtMode]);
 
   // Load nearby / default on mount
@@ -97,11 +99,11 @@ function CourtLocatorScreen(): React.JSX.Element {
     const url = Platform.OS === 'ios'
       ? `maps://maps.apple.com/?address=${encoded}`
       : `https://maps.google.com/?q=${encoded}`;
-    Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+    Linking.openURL(url).catch(() => showToast(t('action_failed'), 'error'));
   };
 
   const openPhone = (phone: string) =>
-    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => showToast('Action failed. Please try again.', 'error'));
+    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('action_failed'), 'error'));
 
   return (
     <KeyboardAvoidingView
@@ -121,7 +123,7 @@ function CourtLocatorScreen(): React.JSX.Element {
             }}>
             <Text maxFontSizeMultiplier={1.4} style={{ color: courtMode===mode ? colors.bgCard : text,
               fontWeight:'700', fontSize:13 }}>
-              {mode==='state' ? '🏛️ State Courts' : '⚖️ Federal Courts'}
+              {mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -132,7 +134,7 @@ function CourtLocatorScreen(): React.JSX.Element {
         <TextInput
           value={search}
           onChangeText={setSearch}
-          placeholder={courtMode==="federal" ? "Search by state or district…" : "Search by city, state, or county…"}
+          placeholder={courtMode==="federal" ? t('x_court_locator_search_by_state_district') : t('x_court_locator_search_by_city_state')}
           placeholderTextColor={sub}
           style={{
             backgroundColor: card, borderRadius: 10,
@@ -151,7 +153,7 @@ function CourtLocatorScreen(): React.JSX.Element {
       )}
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch(search.trim().length >= 2 ? search : 'Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch(search.trim().length >= 2 ? search : 'Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>{t('retry')}</Text></TouchableOpacity>
       </>) : null}
       {/* FlashList only supports padding/background in contentContainerStyle,
           so the centered max-width column lives on a wrapper View instead. */}
@@ -166,8 +168,8 @@ function CourtLocatorScreen(): React.JSX.Element {
           !loading && !error ? (
             <Text testID="court-locator-empty" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
               {search.trim().length >= 2
-                ? `No courthouses found for “${search.trim()}”. Try the county name or the state.`
-                : '📋 Search for a city or county to find the courthouse.'}
+                ? t('x_court_locator_no_courthouses_found_try', { search: search.trim() })
+                : t('x_court_locator_search_city_county_find')}
             </Text>
           ) : null
         }
@@ -194,7 +196,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     {item.name}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, marginTop: 2 }}>
-                    {item.city} · {item.county} County · {item.state}
+                    {t('x_court_locator_county', { city: item.city, county: item.county, state: item.state })}
                   </Text>
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: sub }}>{open ? '▲' : '▼'}</Text>
@@ -213,7 +215,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                   {/* Address */}
                   <TouchableOpacity
                     accessibilityRole="button"
-                    accessibilityLabel="Tap for directions"
+                    accessibilityLabel={t('x_court_locator_tap_directions')}
                     onPress={() => openMaps(item.address)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📍</Text>
@@ -221,7 +223,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                         {item.address}
                       </Text>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>Tap for directions</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>{t('x_court_locator_tap_directions')}</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -262,12 +264,12 @@ function CourtLocatorScreen(): React.JSX.Element {
                   {item.url ? (
                     <TouchableOpacity
                       accessibilityRole="button"
-                      accessibilityLabel="Court Website"
-                      onPress={() => Linking.openURL(item.url ?? '').catch(() => showToast('Action failed. Please try again.', 'error'))}
+                      accessibilityLabel={t('x_court_locator_court_website')}
+                      onPress={() => Linking.openURL(item.url ?? '').catch(() => showToast(t('action_failed'), 'error'))}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>🌐</Text>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>
-                        Court Website
+                        {t('x_court_locator_court_website')}
                       </Text>
                     </TouchableOpacity>
                   ) : null}

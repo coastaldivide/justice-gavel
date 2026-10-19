@@ -1,4 +1,5 @@
-/**
+
+import { t, locale } from '../i18n';/**
  * dateUtils.ts — Shared date calculation utilities
  * Used across CaseScreen, CheckInScreen, AttorneyDashboard, CheckInManager,
  * ExpungementScreen, FirmVertical, HomeScreen
@@ -61,18 +62,18 @@ export function formatDate(
 ): string {
   const d = parseLocalDate(dateStr);
   if (!d) return '--';
-  return d.toLocaleDateString('en-US', opts);
+  return d.toLocaleDateString(locale(), opts);
 }
 
 /** "Today", "Tomorrow", "In X days", "X days ago", or a date string */
 export function relativeDateLabel(dateStr: string | null | undefined): string {
   const days = daysUntil(dateStr);
   if (days === null) return '--';
-  if (days === 0)  return 'Today';
-  if (days === 1)  return 'Tomorrow';
-  if (days === -1) return 'Yesterday';
-  if (days > 1)    return `In ${days} days`;
-  return `${Math.abs(days)} days ago`;
+  if (days === 0)  return t('x_attorney_inbox_today');
+  if (days === 1)  return t('x_date_utils_tomorrow');
+  if (days === -1) return t('x_messages_yesterday');
+  if (days > 1)    return t('x_date_utils_days', { days });
+  return t('x_deadline_calculator_days_ago', { days: Math.abs(days) });
 }
 
 export const MS_PER_DAY  = 86_400_000;

@@ -31,7 +31,7 @@ import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { FileSystem, RNShare } from '../utils/webCompat';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
-import { t }   from '../i18n';
+import { t, useLang, perLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
@@ -54,6 +54,7 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
+  useLang();
   const progress = useRef(new Animated.Value(0)).current;
   const anim     = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -86,20 +87,21 @@ function ProgressBar({ active }: { active: boolean }) {
 // ── Result section ────────────────────────────────────────────────────────────
 // ── Confidence tag helpers ───────────────────────────────────────────────────
 function ConfidenceTag({ text }: { text: string }) {
+  useLang();
   if (text.startsWith('[STRONG]'))  return (
     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.emergencyDark,
       backgroundColor: COLORS.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
-      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>STRONG</Text>
+      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_strong')}</Text>
   );
   if (text.startsWith('[NOTABLE]')) return (
     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.warnDark,
       backgroundColor: COLORS.warnBg, paddingHorizontal: 5, paddingVertical: 2,
-      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>NOTABLE</Text>
+      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_notable')}</Text>
   );
   if (text.startsWith('[POSSIBLE]')) return (
     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.textSecond,
       backgroundColor: COLORS.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
-      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>POSSIBLE -- verify</Text>
+      borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_possible_verify')}</Text>
   );
   return null;
 }
@@ -114,6 +116,7 @@ function Section({
   numbered?: boolean;
   onItemPress?: (item: string) => void;
 }) {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -129,7 +132,7 @@ function Section({
   return (
     <Animated.View style={[styles.section, { backgroundColor: bg, borderColor, opacity: fadeAnim }]}>
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={styles.sectionHeader}
         onPress={() => setExpanded(e => !e)}
       >
@@ -147,15 +150,15 @@ function Section({
         <View style={styles.sectionBody}>
           {(items || []).map((item, i) => (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               key={`row-${i}`}
               style={styles.itemRow}
               onPress={() => {
                 Clipboard.setStringAsync(stripTag(item))
-                  .then(() => showToast('Copied to clipboard', 'success'))
+                  .then(() => showToast(t('x_ch_copied_clipboard'), 'success'))
                   .catch(() => {});
               }}
-              accessibilityLabel={`Copy item: ${item}`}
+              accessibilityLabel={t('x_discovery_copy_item', { item })}
             >
               <View style={[styles.itemBullet, { backgroundColor: color }]}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.itemBulletText}>
@@ -170,7 +173,7 @@ function Section({
             </TouchableOpacity>
           ))}
           <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: COLORS.textMuted }]}>
-            Tap any item to copy
+            {t('x_discovery_tap_any_item_copy')}
           </Text>
         </View>
       )}
@@ -180,10 +183,11 @@ function Section({
 
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryRow({ item, onOpen, onDelete }: any) {
+  useLang();
   return (
     <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       style={[styles.histRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
       onPress={() => onOpen(item)}
     >
@@ -195,11 +199,11 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
           numberOfLines={1}>{item.filename}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.histMeta, { color: COLORS.textMuted }]}>
           {item.doc_type}
-          {item.page_count > 0 ? `  ·  ${item.page_count}p` : ''}
-          {item.inconsistencies_count > 0 ? `  ·  ${item.inconsistencies_count} flags` : ''}
+          {item.page_count > 0 ? '  ·  ' + t('x_discovery_pages_short', { n: item.page_count }) : ''}
+          {item.inconsistencies_count > 0 ? '  ' + t('x_discovery_flags', { inconsistencies_count: item.inconsistencies_count }) : ''}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: COLORS.textMuted }]}>
-          {new Date(item.created_at ?? 0).toLocaleDateString('en-US', {
+          {new Date(item.created_at ?? 0).toLocaleDateString(locale(), {
             month: 'short', day: 'numeric', year: 'numeric'
           })}
         </Text>
@@ -209,8 +213,8 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
 
         onPress={() => onDelete(item.id)}
         style={styles.histDelete}
-        accessibilityLabel="Delete analysis"
-          accessibilityHint="Permanently removes this item"
+        accessibilityLabel={t('x_discovery_delete_analysis')}
+          accessibilityHint={t('x_discovery_permanently_removes_this_item')}
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
@@ -220,14 +224,15 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-const DOC_TYPES = [
+const DOC_TYPES = perLang(() => [
     t('disc_doc_police'),  t('disc_doc_lab'),       t('disc_doc_medical'),
     t('disc_doc_witness'), t('disc_doc_bodycam'),    t('disc_doc_warrant'),
     t('disc_doc_crime_scene'), t('disc_doc_evidence'), t('disc_doc_court'),
     t('disc_doc_da'),      t('disc_doc_tox'),        t('disc_doc_transcript'),
-  ];
+  ]);
 
 function DiscoveryScreen({ route, navigation }: ScreenProps) {
+  useLang();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { colors, isDark } = useTheme();
@@ -276,12 +281,12 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       if (asset.size && asset.size > 32 * 1024 * 1024) {
-        showToast('Maximum PDF size is 32MB.');
+        showToast(t('x_discovery_maximum_pdf_size_32mb'));
         return;
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
     } catch (e: any) {
-      showToast(e?.message || 'Could not open the file picker.', 'error');
+      showToast(e?.message || t('x_discovery_could_not_open_file'), 'error');
     }
   }, [showToast]);
 
@@ -327,8 +332,8 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       // Clean up cached PDF
       await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
-      const msg = apiErrorMessage(e, 'Analysis failed.');
-      showToast(msg + ' Try a smaller PDF or check your connection.', 'error');
+      const msg = apiErrorMessage(e, t('x_discovery_analysis_failed'));
+      showToast(t('x_discovery_try_smaller_pdf_check', { msg }), 'error');
         setPhase('upload');
       setPhase('upload');
     } finally {
@@ -341,9 +346,9 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     requireAuth(async () => {
       // Confirm payment if not Pro subscriber
       if (!hasPro) {
-        confirm(`Analyze "${file.name}" for $19.99?`,
-          'Full analysis: summary, key facts, inconsistencies, and cross-examination questions.',
-          { confirmLabel: 'Analyze — $19.99' }).then(async ok => { if (!ok) return;
+        confirm(t('x_discovery_analyze_19_99', { name: file.name }),
+          t('x_discovery_full_analysis_summary_key'),
+          { confirmLabel: t('x_discovery_analyze_19_99_2') }).then(async ok => { if (!ok) return;
           runAnalysis();
         });
       } else {
@@ -365,23 +370,23 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   // Header buttons (declared after loadHistory, which they call).
   useEffect(() => {
     navigation.setOptions({
-      title: phase === 'history' ? '📄 Analysis History' : '📄 Discovery',
+      title: phase === 'history' ? t('x_discovery_analysis_history') : t('x_discovery_discovery'),
       headerRight: () => (
         <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
           {phase !== 'history' && (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" onPress={loadHistory} accessibilityLabel="History">
-              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+          accessibilityHint={t('cp_double_tap')} onPress={loadHistory} accessibilityLabel={t('x_discovery_history')}>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{t('x_discovery_history')}</Text>
             </TouchableOpacity>
           )}
           {phase === 'result' && (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               onPress={() => {
               setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
             }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{t('x_discovery_new')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -399,8 +404,8 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   }, [showToast]);
 
   const deleteAnalysis = useCallback(async (id: number) => {
-    confirm('Delete analysis?','This cannot be undone.',
-      { confirmLabel:'Delete', destructive:true }).then(async ok=>{ if(!ok) return;
+    confirm(t('x_discovery_delete_analysis_2'),t('x_discovery_this_cannot_be_undone'),
+      { confirmLabel:t('case_delete'), destructive:true }).then(async ok=>{ if(!ok) return;
       await api.delete(`/discovery/analysis/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setHistory(h => h.filter(a => a.id !== id));
     });
@@ -412,13 +417,13 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       `📄 ${analysis.filename} -- Discovery Analysis`,
       `\nSUMMARY\n${analysis.summary}`,
       analysis.key_facts?.length
-        ? `\nKEY FACTS\n${(analysis.key_facts ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? '\n' + t('x_discovery_key_facts', { value: (analysis.key_facts ?? []).map((f,i) => `${i+1}. ${f}`).join('\n') })
         : '',
       analysis.inconsistencies?.length
         ? `\n⚠️ INCONSISTENCIES\n${(analysis.inconsistencies ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
         : '',
       analysis.questions?.length
-        ? `\nCROSS-EXAMINATION QUESTIONS\n${(analysis.questions ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? '\n' + t('x_discovery_cross_examination_questions', { value: (analysis.questions ?? []).map((f,i) => `${i+1}. ${f}`).join('\n') })
         : '',
     ].filter(Boolean).join('\n');
     try {
@@ -448,7 +453,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       {/* Drop zone */}
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         style={[styles.dropZone, {
           borderColor: file ? COLORS.legal : colors.border,
           backgroundColor: file
@@ -456,7 +461,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
             : colors.bgCard }]}
         onPress={pickFile}
         activeOpacity={0.8}
-        accessibilityLabel="Select discovery document"
+        accessibilityLabel={t('x_discovery_select_discovery_document')}
       >
         {file ? (
           <>
@@ -464,48 +469,48 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropFilename, { color: COLORS.legal }]}
               numberOfLines={2}>{file.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropSize, { color: colors.textMuted }]}>
-              {file.size ? `${(file.size / 1024).toFixed(0)} KB` : 'Ready'}
+              {file.size ? t('x_discovery_kb', { value: (file.size / 1024).toFixed(0) }) : t('x_discovery_ready')}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.dropChange, { color: COLORS.steel }]}>Tap to change</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.dropChange, { color: COLORS.steel }]}>{t('disc_tap_change')}</Text>
           </>
         ) : (
           <>
             <Text maxFontSizeMultiplier={1.4} style={styles.dropIcon}>⬆️</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropPrompt, { color: colors.textPrimary }]}>
-              Tap to select a document
+              {t('disc_upload_prompt')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropSub, { color: colors.textMuted }]}>
               PDF · JPEG · PNG · TIFF · HEIC · DOCX · TXT
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropSub, { color: colors.textMuted }]}>
-              Police reports · Lab results · Warrants · Evidence photos · DA letters
+              {t('disc_upload_examples')}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.dropLimit, { color: colors.textMuted }]}>Max 32MB</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.dropLimit, { color: colors.textMuted }]}>{t('disc_max_size')}</Text>
           </>
         )}
       </TouchableOpacity>
 
       {/* Document type selector */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>
-        Document type (optional -- helps with analysis)
+        {t('x_discovery_document_type_optional_helps')}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         style={styles.typeScroll} contentContainerStyle={{ gap: 8 }}>
-        {DOC_TYPES.map(t => (
+        {DOC_TYPES().map(tItem => (
           <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            key={t}
+          accessibilityHint={t('cp_double_tap')}
+            key={tItem}
             style={[styles.typeChip, {
-              backgroundColor: docType === t
+              backgroundColor: docType === tItem
                 ? COLORS.navy : colors.bgCard,
-              borderColor: docType === t ? COLORS.navy : colors.border }]}
-            onPress={() => setDocType(docType === t ? '' : t)}
-            accessibilityLabel={t}
+              borderColor: docType === tItem ? COLORS.navy : colors.border }]}
+            onPress={() => setDocType(docType === tItem ? '' : tItem)}
+            accessibilityLabel={tItem}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.typeChipText,
-              { color: docType === t ? colors.bgCard : colors.textSecond }]}>
-              {t}
+              { color: docType === tItem ? colors.bgCard : colors.textSecond }]}>
+              {tItem}
             </Text>
           </TouchableOpacity>
         ))}
@@ -516,12 +521,12 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         <View style={[styles.previewCard, {
           backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
           borderColor: COLORS.navy + '33' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.previewTitle, { color: COLORS.navy }]}>What you'll receive</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.previewTitle, { color: COLORS.navy }]}>{t('x_discovery_what_ll_receive')}</Text>
           {[
-            ['📝', 'Plain English summary of the document'],
-            ['🔍', 'Key facts extracted -- dates, names, measurements'],
-            ['⚠️', 'Inconsistencies flagged with exact page references'],
-            ['❓', 'Suggested cross-examination questions'],
+            ['📝', t('x_discovery_plain_english_summary_document')],
+            ['🔍', t('x_discovery_key_facts_extracted_dates')],
+            ['⚠️', t('x_discovery_inconsistencies_flagged_with_exact')],
+            ['❓', t('x_discovery_suggested_cross_examination_question')],
           ].map(([icon, text]) => (
             <View key={text as string} style={styles.previewRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.previewIcon}>{icon}</Text>
@@ -539,20 +544,20 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         borderColor: hasPro ? COLORS.legal + '55' : colors.border }]}>
         {hasPro ? (
           <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: COLORS.legal }]}>
-            ✅  Discovery Pro -- unlimited analyses included
+            {t('x_discovery_discovery_pro_unlimited_analyses')}
           </Text>
         ) : (
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: colors.textPrimary }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>$19.99 per document</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>{t('x_discovery_19_99_per_document')}</Text>
             </Text>
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-              accessibilityLabel="Upgrade to Discovery Pro"
+          accessibilityHint={t('cp_double_tap')}
+              accessibilityLabel={t('x_discovery_upgrade_discovery_pro')}
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Subscription' })}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.proLink, { color: COLORS.steel }]}>
-                Discovery Pro ($149.99/mo) -- unlimited →
+                {t('x_discovery_discovery_pro_149_99')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -561,20 +566,20 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {/* Analyze button */}
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
         style={[styles.analyzeBtn, {
           backgroundColor: file ? COLORS.navy : colors.border }, analyzing && { opacity: 0.6 }]}
         onPress={analyze}
         disabled={!file || analyzing}
-        accessibilityLabel={`Analyze document -- ${hasPro ? 'included' : '$19.99'}`}
+        accessibilityLabel={t('x_discovery_analyze_document', { value: hasPro ? 'included' : '$19.99' })}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>
-          {hasPro ? 'Analyze Document →' : 'Analyze -- $19.99 →'}
+          {hasPro ? t('x_discovery_analyze_document_2') : t('x_discovery_analyze_19_99_3')}
         </Text>
       </TouchableOpacity>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textMuted }]}>
-        PDFs are not stored. Analyzed and discarded immediately. Attorney review required before use.
+        {t('x_discovery_pdfs_not_stored_analyzed')}
       </Text>
     </ScrollView>
   );
@@ -585,7 +590,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       <View style={styles.analyzingWrap}>
         <AppIcon name="search-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingTitle, { color: colors.textPrimary }]}>
-          Analyzing document…
+          {t('disc_analyzing')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingFile, { color: colors.textMuted }]}
           numberOfLines={1}>{file?.name}</Text>
@@ -593,11 +598,11 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         <ProgressBar active={analyzing} />
 
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingSteps, { color: colors.textMuted }]}>
-          Reading full document · Extracting facts{'\n'}Checking for inconsistencies · Drafting questions
+          {t('x_discovery_reading_full_document_extracting')}
         </Text>
 
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingTime, { color: colors.textMuted }]}>
-          Usually 30-60 seconds for longer documents
+          {t('x_discovery_usually_30_60_seconds')}
         </Text>
       </View>
     </View>
@@ -613,14 +618,14 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         ? (
           <View style={styles.emptyWrap}>
             <AppIcon name="document-outline" size={20} color={COLORS.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No analyses yet</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_discovery_no_analyses_yet')}</Text>
             <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               style={[styles.analyzeBtn, { backgroundColor: COLORS.navy, width: '100%', marginTop: 16 }]}
-              accessibilityLabel={"\u2190 Upload a Document"} onPress={() => setPhase('upload')}
+              accessibilityLabel={t('x_discovery_upload_document')} onPress={() => setPhase('upload')}
           >
-              <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>← Upload a Document</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>{t('x_discovery_upload_document')}</Text>
             </TouchableOpacity>
           </View>
         )
@@ -658,7 +663,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
             )}
             {analysis?.page_count ? (
               <Text maxFontSizeMultiplier={1.4} style={[styles.resultMetaText, { color: colors.textMuted }]}>
-                {analysis.page_count} pages
+                {t('x_discovery_pages', { page_count: analysis.page_count })}
               </Text>
             ) : null}
             {analysis?.charged && (
@@ -672,16 +677,16 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
           onPress={shareAnalysis}
           style={styles.shareBtn}
-          accessibilityLabel="Share analysis"
-          accessibilityHint="Shares this information"
+          accessibilityLabel={t('x_discovery_share_analysis')}
+          accessibilityHint={t('x_deadline_calculator_shares_this_information')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>↑ Share</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>{t('x_bar_prep_explanation_share')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Summary */}
       <View style={[styles.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLabel, { color: colors.textMuted }]}>SUMMARY</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLabel, { color: colors.textMuted }]}>{t('x_discovery_summary')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.summaryText, { color: colors.textPrimary }]}>
           {analysis?.summary}
         </Text>
@@ -690,14 +695,13 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       {/* Inconsistencies -- shown first, most critical */}
       {!!analysis?.inconsistencies?.length && (
         <Text maxFontSizeMultiplier={1.4} style={[styles.inconsistNote, { color: colors.textMuted }]}>
-          Tap any flagged inconsistency to generate a Motion to Suppress pre-filled with that finding.
-          Verify against the original document before filing.
+          {t('x_discovery_tap_any_flagged_inconsistency')}
         </Text>
       )}
       {!!analysis?.inconsistencies?.length && (
         <Section
           icon="⚠️"
-          title="Inconsistencies & Red Flags"
+          title={t('x_discovery_inconsistencies_red_flags')}
           items={analysis.inconsistencies}
           color={colors.bail}
           bg={isDark ? colors.bailBg : colors.warnBg}
@@ -721,7 +725,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       {/* Key facts */}
       <Section
         icon="🔍"
-        title="Key Facts"
+        title={t('disc_result_facts')}
         items={analysis?.key_facts || []}
         color={COLORS.legal}
         bg={isDark ? colors.legalBg : colors.legalBg}
@@ -731,7 +735,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       {/* Questions */}
       <Section
         icon="❓"
-        title="Suggested Questions"
+        title={t('x_discovery_suggested_questions')}
         items={analysis?.questions || []}
         color={COLORS.navy}
         bg={isDark ? colors.textPrimary : colors.bgSubtle}
@@ -745,8 +749,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
-          ⚖️ AI document analysis is not legal advice. Analysis may miss key issues or
-          misinterpret jurisdiction-specific rules. Have an attorney review all documents.
+          {t('x_discovery_ai_document_analysis_not')}
         </Text>
       </View>
       <AIDisclaimer variant="banner" />

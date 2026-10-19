@@ -14,7 +14,8 @@
 #
 # Prerequisites: DATABASE_URL (required). GOOGLE_PLACES_KEY / YELP_API_KEY are
 # optional — a step whose key is missing is skipped with a message.
-#   Railway:  railway run bash scripts/run-all-scrapes.sh
+#   Production DB: export DATABASE_URL from Render (service → Environment)
+#   and run this from a checkout — operator scripts are not in the image.
 #
 # Usage (from backend/):
 #   bash scripts/run-all-scrapes.sh                 # everything, all states
@@ -59,7 +60,7 @@ echo "Mode:              ${DRY_RUN:-write}${STATE:+ | state $STATE}"
 echo ""
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "❌ DATABASE_URL not set. Run via: railway run bash scripts/run-all-scrapes.sh"
+  echo "❌ DATABASE_URL not set. Export it first (Render → service → Environment), then: bash scripts/run-all-scrapes.sh"
   exit 1
 fi
 

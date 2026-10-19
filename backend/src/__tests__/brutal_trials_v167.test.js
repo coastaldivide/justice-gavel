@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v167
@@ -19,10 +20,9 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 // ══ PASSWORD SECURITY ═════════════════════════════════════════════════════
 describe('PWD. Password Fields — secureTextEntry Required', () => {
   test('PWD-01: LoginScreen password field has secureTextEntry', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/LoginScreen.tsx','utf8');
+    const src=feSource(__REPO + '/frontend/src/screens/LoginScreen.tsx');
     // Find password TextInput block and verify secureTextEntry present
-    const pwIdx=src.indexOf('placeholder="Your password"');
+    const pwIdx=src.indexOf("placeholder={t('x_lg_password')}");
     const pwBlock=src.slice(pwIdx, pwIdx+400);
     expect(pwBlock).toContain('secureTextEntry');
     // Before fix: password displayed in plaintext — users' passwords visible to observers

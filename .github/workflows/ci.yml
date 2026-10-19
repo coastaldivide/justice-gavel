@@ -153,7 +153,9 @@ jobs:
         # saved/reviews, and the "Just arrested?" core path: rights card, combined
         # lawyer + bail search, listing reports/claims, court dates + reminders,
         # .ics, family followers with consent) exercised end-to-end against the
-        # migrated database.
+        # migrated database. Also the Render pre-deploy migration runner
+        # (backend/scripts/migrate.sh: fresh DB, ledger replay, failure stops,
+        # --baseline) on scratch databases it creates and drops.
         # These suites skip themselves in the in-memory jest run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
@@ -165,7 +167,8 @@ jobs:
         # IDOR (C3/C4/H5/H6/M8), upload memory DoS (C5), public check-in routes
         # (H1/H2), stale token roles + admin provider tables (H3/H4), translation
         # session abuse (H7), SAML forgery (H8), webhook SSRF (H9), email HTML
-        # injection (M4). Each test proves the attack fails AND the legitimate
+        # injection (M4), and the admin-only client-IP diagnostics used to set
+        # TRUST_PROXY. Each test proves the attack fails AND the legitimate
         # flow still works. The PG-gated suites skip in the in-memory run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}

@@ -120,7 +120,7 @@ const TIERS = {
 // No per-lead fees — pricing is for directory access and platform tools.
 // Stripe price IDs: create these in Stripe Dashboard → Products → Bondsman [Tier]
 //
-// Create a Product for each in Stripe, then set the price IDs in Railway:
+// Create a Product for each in Stripe, then set the price IDs as Render environment variables:
 //   STRIPE_BONDSMAN_STARTER_ID   = price_xxxx  ($49/mo)
 //   STRIPE_BONDSMAN_PRO_ID       = price_xxxx  ($149/mo)
 //   STRIPE_BONDSMAN_MARKET_ID    = price_xxxx  ($349/mo)

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -154,8 +155,7 @@ describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => 
     expect(src).toContain('/auth/me');
   });
   test('S6-04: FirmAcquisitionScreen Switch is in feature-list rendering (not form toggle)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx');
     expect(src).toContain('Switch vertical any time');
     expect(src).toContain('/firm-acquisition/status');
   });

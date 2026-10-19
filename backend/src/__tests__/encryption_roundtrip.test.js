@@ -74,7 +74,7 @@ describe('Encryption — round trip', () => {
 
 describe('Encryption — key validation', () => {
   // Shape-check fixture only (64 hex chars). The previous value here was the
-  // real ENCRYPTION_KEY that had leaked into railway-checklist.md — replaced.
+  // real ENCRYPTION_KEY that had leaked into the old deploy checklist — replaced.
   const validKey  = '1df8e38d0eb071733f3fdee4b2cecce311c527276a98644e92d009967a4379ce';
   test('production key is 64 hex chars (32 bytes)', () => {
     expect(validKey.length).toBe(64);

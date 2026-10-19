@@ -417,8 +417,10 @@ async function langJourney(browser, base, lang, locale) {
   const apiLangs = new Set();
   const otherLang = [];
   page.on('request', r => { if (r.url().startsWith(API)) { const h = r.headers()['accept-language'] || '(none)'; apiLangs.add(h); if (h !== lang) otherLang.push(`${r.method()} ${r.url().slice(API.length)} [${h}]`); } });
-  const noEnglish = async (where) => {
-    const txt = await bodyText(page);
+  // `data`: server records shown as-is (provider / public-defender names, firm names) — not app text.
+  const noEnglish = async (where, data = []) => {
+    let txt = await bodyText(page);
+    for (const d of data.filter(Boolean).sort((x, y) => y.length - x.length)) txt = txt.split(d).join(' ');
     const leaks = fragments.filter(f => txt.includes(f));
     if (leaks.length) throw new Error(`${where}: English text shown: ${leaks.slice(0, 5).map(x => JSON.stringify(x)).join(', ')}`);
     if (/Something went wrong/i.test(txt)) throw new Error(`${where}: ErrorBoundary`);
@@ -472,7 +474,9 @@ async function langJourney(browser, base, lang, locale) {
     const note = await byTid(page, 'help-ranking-note').innerText();
     const srv = await apiCall('GET', `/help/nearby?state=TN&lang=${lang}`);
     if (!note.includes(srv.body.meta.ranking)) throw new Error(`ranking note not the server's ${lang} text: "${note}"`);
-    await noEnglish('help now');
+    const records = [...(srv.body.lawyers || []), ...(srv.body.bail_agents || [])].flatMap(p => [p.name, p.organization, p.address]);
+    const pd = srv.body.public_defender || {};
+    await noEnglish('help now', [...records, pd.name, pd.eligibility, pd.about]);
     await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
     await byTid(page, 'court-dates-sign-in').waitFor({ timeout: 15000 });
     await page.getByText(L.ja_missed).first().click();
@@ -481,6 +485,46 @@ async function langJourney(browser, base, lang, locale) {
     if (!txt.includes(L.cg_missed_4)) throw new Error('missed-date guidance last step not shown in the language');
     await page.screenshot({ path: path.join(OUT, `${ID}-3-court-dates.png`) });
     return 'results notes = server text; sign-in prompt, checklist and missed-date guidance in the language';
+  });
+
+  let token = null;
+  if (ok) ok = await step('3b sign up in the language (form, Terms gate)', async () => {
+    const email = `i18n-${lang}-${Date.now().toString(36)}@journeys.test`; const password = 'CorrectHorse9!';
+    await byTid(page, 'court-dates-register').click();
+    await byTid(page, 'register-email-input').fill(email, { timeout: 15000 });
+    await byTid(page, 'register-password-input').fill(password);
+    await page.getByPlaceholder(L.x_rg_how_should_we_address).fill('Ana').catch(() => {});
+    await noEnglish('register');
+    await byTid(page, 'register-submit-button').click();
+    await byTid(page, 'tos-accept-button').waitFor({ timeout: 20000 });
+    await noEnglish('terms gate');
+    await acceptTerms(page, `${ID}-3b`, { mustScroll: true });
+    const login = await apiCall('POST', '/auth/login', { body: { identifier: email, password }, ip: freshIp() });
+    token = login.body && login.body.token;
+    if (!token) throw new Error(`login after sign-up: ${login.status}`);
+    return 'register form + Terms gate in the language';
+  });
+
+  if (ok) ok = await step('3c case screen: a case with its status and court date in the language', async () => {
+    const title = lang === 'vi' ? 'Vụ 9' : 'Caso 9';
+    const cas = await apiCall('POST', '/cases', { token, body: { title, case_type: 'DUI', state: 'TN', next_court_date: dayPlus(20) } });
+    if (cas.status >= 300) throw new Error(`create case: ${cas.status}`);
+    await page.goto(base + '/cases', { waitUntil: 'networkidle' });
+    await page.getByText(title).first().waitFor({ timeout: 15000 });
+    const txt = await noEnglish('case screen');
+    const status = cas.body?.status || cas.body?.case?.status;
+    if (status === 'Open' && !txt.includes(L.case_status_open)) throw new Error('case status not shown in the language');
+    await page.screenshot({ path: path.join(OUT, `${ID}-3c-cases.png`) });
+    return `case list, status "${L.case_status_open}"`;
+  });
+
+  if (ok) ok = await step('3d Settings in the language', async () => {
+    await page.goto(base + '/settings', { waitUntil: 'networkidle' });
+    await byTid(page, 'settings-screen').waitFor({ timeout: 15000 });
+    await page.waitForTimeout(1500);
+    await noEnglish('settings');
+    await page.screenshot({ path: path.join(OUT, `${ID}-3d-settings.png`) });
+    return 'settings rows, account and language sections';
   });
 
   if (ok) await step('4 every API call carried the language', async () => {

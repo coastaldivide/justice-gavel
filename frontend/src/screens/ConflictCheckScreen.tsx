@@ -13,6 +13,7 @@ import {
   ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
+import { t, useLang } from '../i18n';
 
 interface ConflictResult {
   found: boolean;
@@ -23,6 +24,7 @@ interface ConflictResult {
 
 
 function ConflictCheckScreen() {
+  useLang();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -36,7 +38,7 @@ function ConflictCheckScreen() {
   const runCheck = useCallback(async () => {
     const names = parties.split('\n').map(n => n.trim()).filter(Boolean);
     if (names.length === 0) {
-      showToast('Enter at least one party name');
+      showToast(t('x_conflict_check_enter_at_least_one'));
       return;
     }
     setLoading(true); setError(null); setResult(null);
@@ -47,9 +49,9 @@ function ConflictCheckScreen() {
       setResult(data);
     } catch (e: any) {
       if (e?.response?.status === 403) {
-        showToast('Conflict checks require a Legal Pro subscription.');
+        showToast(t('x_conflict_check_conflict_checks_require_legal'));
       } else {
-        setError(apiErrorMessage(e, 'Conflict check failed'));
+        setError(apiErrorMessage(e, t('x_conflict_check_conflict_check_failed')));
       }
     } finally {
       setLoading(false);
@@ -58,16 +60,16 @@ function ConflictCheckScreen() {
 
   return (
     <View style={styles.screen}>
-      <Text maxFontSizeMultiplier={1.3} style={styles.title}>Conflict of Interest Check</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('x_conflict_check_conflict_interest_check')}</Text>
       <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>
-        Enter party names (one per line) to check for conflicts with existing firm clients.
+        {t('x_conflict_check_enter_party_names_one')}
       </Text>
 
       <TextInput
         style={styles.input}
         value={parties}
         onChangeText={setParties}
-        placeholder={"John Smith\nAcme Corporation\nMary Jones"}
+        placeholder={t('x_conflict_check_john_smith_acme_corporation')}
         multiline
         numberOfLines={6}
         returnKeyType="default"
@@ -79,12 +81,12 @@ function ConflictCheckScreen() {
         onPress={runCheck}
         disabled={loading}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-        accessibilityLabel="Run conflict check"
+          accessibilityHint={t('cp_double_tap')}
+        accessibilityLabel={t('x_conflict_check_run_conflict_check')}
       >
         {loading
           ? <ActivityIndicator color={COLORS.white} />
-          : <Text style={styles.btnText}>Run Conflict Check</Text>
+          : <Text style={styles.btnText}>{t('x_conflict_check_run_conflict_check_2')}</Text>
         }
       </TouchableOpacity>
 
@@ -94,10 +96,10 @@ function ConflictCheckScreen() {
         <View style={styles.results}>
           <View style={[styles.resultBanner, { backgroundColor: result.found ? COLORS.emergencyBg : COLORS.legalBg }]}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.resultTitle, { color: result.found ? COLORS.bail : COLORS.legal }]}>
-              {result.found ? `⚠️  ${result.matches.length} Conflict(s) Found` : '✅ No Conflicts Found'}
+              {result.found ? t('x_conflict_check_conflict_s_found', { length: result.matches.length }) : t('x_conflict_check_no_conflicts_found')}
             </Text>
             <Text maxFontSizeMultiplier={1.3} style={styles.resultSub}>
-              Checked {result.checked} parties against firm's client database
+              {t('x_conflict_check_checked_parties_against_firm', { checked: result.checked })}
             </Text>
           </View>
 
@@ -110,7 +112,7 @@ function ConflictCheckScreen() {
                 <View style={styles.matchRow}>
                   <Text maxFontSizeMultiplier={1.3} style={styles.matchName}>{item.party_name}</Text>
                   <Text maxFontSizeMultiplier={1.3} style={styles.matchMatter}>{item.matter_title}</Text>
-                  <Text maxFontSizeMultiplier={1.3} style={styles.matchRole}>Role: {item.party_role}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.matchRole}>{t('x_conflict_check_role', { party_role: item.party_role })}</Text>
                 </View>
               )}
             />

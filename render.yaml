@@ -1,0 +1,160 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Render Blueprint — Justice Gavel API (production + staging)
+#
+# Render → New → Blueprint → pick this repo. Render reads this file, creates the
+# two web services and asks ONCE for every `sync: false` value (secrets are
+# never stored in the repo). Step-by-step and the exact values to enter:
+# RUNBOOK.md → "DEPLOY (Render)" and DEPLOY_ENV_SETUP.md.
+#
+# Both services build backend/Dockerfile from the repo root (the image also
+# carries supabase/migrations and psql), and run scripts/migrate.sh as the
+# pre-deploy step: new migrations are applied before the new version starts,
+# and a failing migration stops the deploy (the previous version keeps
+# serving). Pre-deploy commands need a paid instance type, hence `starter`.
+#
+# Values with `value:` are re-applied on every Blueprint sync — change them
+# here (commit + push), not only in the dashboard. `sync: false` values are
+# owned by the dashboard after creation.
+# ══════════════════════════════════════════════════════════════════════════════
+services:
+  # ── Production ──────────────────────────────────────────────────────────────
+  - type: web
+    name: justice-gavel-api
+    runtime: docker
+    branch: main
+    region: oregon                 # immutable after creation
+    plan: starter                  # 512 MB — matches MEMORY_LIMIT_MB below
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health       # 200 only after a real SELECT 1; 503 otherwise
+    autoDeployTrigger: checksPass  # deploy main only after GitHub CI passes
+    preDeployCommand: sh /app/scripts/migrate.sh
+    numInstances: 1                # stateless (attachments in Supabase Storage): can scale up
+    maxShutdownDelaySeconds: 30    # server drains, then force-exits at 25 s (src/server.js)
+    buildFilter:
+      paths:
+        - backend/**
+        - supabase/migrations/**
+        - render.yaml
+        - .dockerignore
+      ignoredPaths:
+        - backend/src/__tests__/**
+        - backend/**/*.md
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: production
+      # Express trust proxy — see RUNBOOK "Client IP / TRUST_PROXY": confirm
+      # with GET /api/admin/diagnostics/client-ip after the first deploy.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: LIVE_REFRESH          # nightly scheduler; "true" at go-live (RUNBOOK "Data refresh")
+        value: "false"
+      - key: MEMORY_LIMIT_MB
+        value: "512"
+      - key: ATTACHMENTS_STORAGE   # Supabase Storage — the container disk is ephemeral
+        value: supabase
+      - key: BASE_URL
+        value: https://api.justicegavel.app
+      - key: APP_URL
+        value: https://justicegavel.app
+      # Sentry DSN is not a secret (it only allows sending events).
+      - key: SENTRY_DSN
+        value: https://ad2ee2fa5207f691bf98e75d1b6c213f@o4511570018041856.ingest.us.sentry.io/4511570031673344
+      # ── Required secrets (prompted once) ──
+      - key: DATABASE_URL          # production Supabase connection string
+        sync: false
+      - key: JWT_SECRET            # existing value if migrating; else openssl rand -hex 32
+        sync: false
+      - key: JWT_REFRESH_SECRET    # existing value if migrating; else openssl rand -hex 32
+        sync: false
+      - key: ENCRYPTION_KEY        # MUST be the existing key — encrypted rows are unreadable with any other
+        sync: false
+      - key: ADMIN_KEY             # X-Admin-Key for /api/admin/* and /api/bot/*
+        sync: false
+      # ── Feature keys (prompted once; each enables one feature) ──
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EXPO_ACCESS_TOKEN
+        sync: false
+      - key: GOOGLE_PLACES_KEY
+        sync: false
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+      - key: ONCALL_EMAIL
+        sync: false
+      # Stripe is not set up yet: payments answer 503 payments_unavailable.
+      # When it is, add STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / the price
+      # ids in the dashboard (DEPLOY_ENV_SETUP.md) — no code change needed.
+    # ── Alternative to Supabase Storage: a persistent disk for attachments ──
+    # Paid plans only; pins the service to ONE instance (no scaling) and turns
+    # off zero-downtime deploys (each deploy stops the old instance first).
+    # Daily snapshots are kept 7 days. To use it, uncomment, set
+    # ATTACHMENTS_STORAGE=local and add ATTACHMENTS_DIR=/var/data/attachments.
+    # disk:
+    #   name: attachments
+    #   mountPath: /var/data
+    #   sizeGB: 1
+
+  # ── Staging: the same production build, its own database and secrets ───────
+  - type: web
+    name: justice-gavel-api-staging
+    runtime: docker
+    branch: main                   # or a `staging` branch for staging-first promotion
+    region: oregon
+    plan: starter
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    preDeployCommand: sh /app/scripts/migrate.sh
+    numInstances: 1
+    maxShutdownDelaySeconds: 30
+    buildFilter:
+      paths:
+        - backend/**
+        - supabase/migrations/**
+        - render.yaml
+        - .dockerignore
+      ignoredPaths:
+        - backend/src/__tests__/**
+        - backend/**/*.md
+    envVars:
+      - key: NODE_ENV
+        value: production          # production hardening; NODE_ENV=staging is refused at boot
+      - key: APP_ENV
+        value: staging             # labels logs / Sentry / /health; refuses LIVE Stripe keys
+      - key: TRUST_PROXY
+        value: "1"
+      - key: LIVE_REFRESH
+        value: "false"
+      - key: MEMORY_LIMIT_MB
+        value: "512"
+      - key: ATTACHMENTS_STORAGE
+        value: supabase
+      - key: SENTRY_DSN
+        value: https://ad2ee2fa5207f691bf98e75d1b6c213f@o4511570018041856.ingest.us.sentry.io/4511570031673344
+      - key: DATABASE_URL          # the STAGING Supabase project — never production
+        sync: false
+      # Fresh random secrets are fine on staging (nothing to keep readable).
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

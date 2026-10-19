@@ -14,7 +14,7 @@ import { FlashList } from '@shopify/flash-list';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { planCourtReminders, formatReminderTime } from '../services/reminders';
 import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers, cacheCases, getCachedCases } from '../services/offlineCache';
-import { t }   from '../i18n';
+import { t, useLang, locale }   from '../i18n';
 import { formatCourtDay } from '../services/corePath';
 import * as Calendar      from 'expo-calendar';
 import * as ImagePicker   from 'expo-image-picker';
@@ -29,7 +29,13 @@ const C_0A1929 = ('\x23' + '0A1929') as string; // hex color
 const STATUS_COLORS: Record<string, string> = {
   Open: COLORS.blue, Active: COLORS.legalDark, Pending: COLORS.warnDark,
   Closed: COLORS.textMuted, Dismissed: COLORS.blue};
-const STATUS_OPTIONS = ['Open', 'Active', 'Pending', 'Closed', 'Dismissed'];
+// Stored status values (English, as the server records them); shown through statusLabel().
+const STATUS_OPTIONS = ['Open', 'Active', 'Pending', 'Closed', 'Dismissed']; // i18n-exempt: stored values
+const STATUS_KEYS: Record<string, string> = {
+  Open: 'case_status_open', Active: 'case_status_active', Pending: 'case_status_pending',
+  Closed: 'case_status_closed', Dismissed: 'case_status_dismissed',
+};
+export const statusLabel = (s: string | null | undefined): string => (s && STATUS_KEYS[s] ? t(STATUS_KEYS[s]) : String(s ?? ''));
 
 interface Case {
   state?:          string;
@@ -38,6 +44,7 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite, onExport }: any) {
+  useLang();
   const { showToast } = useToast();
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
@@ -64,40 +71,40 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                       const planned = await planCourtReminders(item.id);
                       const when = planned.map(r => formatReminderTime(r.deliver_at));
                       showToast(when.length
-                        ? `Court reminders set: ${when.join(' · ')}`
-                        : 'Court reminders are set.', 'success');
+                        ? t('x_cs_court_reminders_set', { when: when.join(' · ') })
+                        : t('x_cs_court_reminders_set_2'), 'success');
                     } catch (e: any) {
-                      showToast(apiErrorMessage(e, 'Could not set reminder'), 'error');
+                      showToast(apiErrorMessage(e, t('x_cs_could_not_set_reminder')), 'error');
                     }
                   }}
-                  accessibilityLabel="Set court date reminder"
+                  accessibilityLabel={t('x_cs_set_court_date_reminder')}
                 >
                   <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
-                    color:COLORS.navy, fontWeight:'600' }}>Remind me</Text>
+                    color:COLORS.navy, fontWeight:'600' }}>{t('x_cs_remind_me')}</Text>
                 </TouchableOpacity>
               )}
         <View style={[styles.statusBadge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color }]}>{item.status}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color }]}>{statusLabel(item.status)}</Text>
         </View>
       </View>
       {hasDate && (
         <View style={[styles.courtDateRow, days !== null && (days as number) <= 7 && styles.courtDateUrgent]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateIcon}>📅</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateText}>
-            Court: {formatDate(item.next_court_date, { month: 'short', day: 'numeric', year: 'numeric' })}
-            {days !== null && (days as number) >= 0 && <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}>  ({(days as number) === 0 ? 'Today!' : (days as number) === 1 ? 'Tomorrow!' : `${days} days`})</Text>}
+            {t('x_cs_court', { next_court_date: formatDate(item.next_court_date, { month: 'short', day: 'numeric', year: 'numeric' }) })}
+            {days !== null && (days as number) >= 0 && <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}>  ({(days as number) === 0 ? t('x_cs_today') : (days as number) === 1 ? t('x_cs_tomorrow') : t('x_cs_days', { days })})</Text>}
           </Text>
         </View>
       )}
       {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }}>{item.notes}</Markdown>}
-      <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at ?? 0).toLocaleDateString()}</Text>
+      <Text maxFontSizeMultiplier={1.4}>{t('x_cs_created', { value: new Date(item.created_at ?? 0).toLocaleDateString() })}</Text>
       <TouchableOpacity
           accessibilityRole="button" testID="case-share-sheet"
         style={styles.shareBtn}
         onPress={() => onShare?.(item)}
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>{t('x_cs_share_link')}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button" testID="case-court-dates"
@@ -119,7 +126,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           style={styles.calendarBtn}
           onPress={() => onCalendar(item)}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.calendarBtnText}>📅  Add to Calendar</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.calendarBtnText}>{t('x_cs_add_calendar')}</Text>
         </TouchableOpacity>
       )}
       {['Open', 'Active', 'Pending'].includes(item.status) && (
@@ -130,7 +137,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             caseId: item.id, caseTitle: item.title
           })}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.discoveryBtnText}>🔍 Analyze discovery docs →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.discoveryBtnText}>{t('x_cs_analyze_discovery_docs')}</Text>
         </TouchableOpacity>
       )}
       {['Closed','Dismissed'].includes(item.status) && (
@@ -142,9 +149,9 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
               screen: 'CaseTimeline',
               params: { caseId: item.id, caseTitle: item.title }
             })}
-            accessibilityLabel="View case timeline"
+            accessibilityLabel={t('x_cs_view_case_timeline')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>📋 View Timeline →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>{t('x_cs_view_timeline')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
@@ -153,10 +160,10 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
               screen: 'VoiceNote',
               params: { caseId: item.id, caseTitle: item.title }
             })}
-            accessibilityLabel="Record a voice note for this case"
+            accessibilityLabel={t('x_cs_record_voice_note_this')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
-              🎤 Voice Note →
+              {t('x_cs_voice_note')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -166,20 +173,20 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
               screen: 'DocumentScanner',
               params: { caseId: item.id }
             })}
-            accessibilityLabel="Scan a document and attach to this case"
+            accessibilityLabel={t('x_cs_scan_document_attach_this')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
-              📷 Scan Document →
+              {t('x_cs_scan_document')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
             onPress={() => onExport?.(item)}
-            accessibilityLabel="Export full case summary as PDF"
+            accessibilityLabel={t('x_cs_export_full_case_summary')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
-              📄 Export Case PDF →
+              {t('x_cs_export_case_pdf')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -194,7 +201,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                 caseTitle:      item.title || undefined}
             })}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>📋 Check expungement eligibility →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>{t('x_cs_check_expungement_eligibility')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
@@ -203,9 +210,9 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
               screen: 'PILead',
               params: { caseType: 'Civil Rights' }
             })}
-            accessibilityLabel="Were your rights violated? Submit your case to civil rights attorneys -- free"
+            accessibilityLabel={t('x_cs_were_rights_violated_submit')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.civilRightsBtnText}>✊ Were your rights violated? Get a civil rights attorney -- free →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.civilRightsBtnText}>{t('x_cs_were_rights_violated_get')}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -258,6 +265,7 @@ function parseScanResult(raw: string, data: Record<string,unknown>): {
 }
 
 function CaseScreen({ route, navigation }: any) {
+  useLang();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const mountedRef = React.useRef(true);
@@ -280,9 +288,10 @@ function CaseScreen({ route, navigation }: any) {
     try {
       const Print = await import('expo-print');
       const Sharing = await import('expo-sharing');
-      const date = new Date().toLocaleDateString('en-US', {
+      const date = new Date().toLocaleDateString(locale(), {
         year:'numeric', month:'long', day:'numeric'
       });
+      const h = (k: string, p?: Record<string, string | number>) => escapeHtml(t(k, p));
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -296,24 +305,24 @@ function CaseScreen({ route, navigation }: any) {
     font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
   .footer { margin-top: 48px; font-size: 11px; color: #9CA3AF; border-top: 1px solid #E5E7EB; padding-top: 12px; }
 </style></head><body>
-<h1>${escapeHtml(String(cas.title || '')) || 'Case Summary'}</h1>
-<div class="meta">Exported ${date} · Justice Gavel</div>
-<h2>Case Details</h2>
-<div class="field"><span class="label">Status:</span> ${escapeHtml(String(cas.status || 'Active'))}</div>
-<div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? formatDate(String(cas.next_court_date), {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
-<div class="field"><span class="label">State:</span> ${escapeHtml(String(cas.state || 'Not specified'))}</div>
-${cas.charges ? `<div class="field"><span class="label">Charges:</span> ${escapeHtml(String(cas.charges || ''))}</div>` : ''}
-${cas.bail_amount ? `<div class="field"><span class="label">Bail Amount:</span> $${Number(cas.bail_amount).toLocaleString()}</div>` : ''}
-${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes || ''))}</div>` : ''}
-<div class="footer">Justice Gavel, Inc. · Not a law firm · Confidential case document</div>
+<h1>${escapeHtml(String(cas.title || '')) || h('x_cs_case_summary')}</h1>
+<div class="meta">${h('x_cs_pdf_exported', { date })}</div>
+<h2>${h('x_cs_pdf_case_details')}</h2>
+<div class="field"><span class="label">${h('x_cs_pdf_status')}</span> ${escapeHtml(statusLabel(String(cas.status || 'Active')))}</div>
+<div class="field"><span class="label">${h('x_cs_pdf_next_court_date')}</span> ${cas.next_court_date ? formatDate(String(cas.next_court_date), {month:'long', day:'numeric', year:'numeric'}) : h('x_cs_not_set')}</div>
+<div class="field"><span class="label">${h('x_cs_pdf_state')}</span> ${escapeHtml(String(cas.state || t('x_cs_not_specified')))}</div>
+${cas.charges ? `<div class="field"><span class="label">${h('x_cs_pdf_charges')}</span> ${escapeHtml(String(cas.charges || ''))}</div>` : ''}
+${cas.bail_amount ? `<div class="field"><span class="label">${h('x_cs_pdf_bail_amount')}</span> $${Number(cas.bail_amount).toLocaleString(locale())}</div>` : ''}
+${cas.notes ? `<h2>${h('x_cs_pdf_notes')}</h2><div class="notes">${escapeHtml(String(cas.notes || ''))}</div>` : ''}
+<div class="footer">${h('x_cs_pdf_footer')}</div>
 </body></html>`;
       const { uri } = await Print.printToFileAsync({ html, base64: false });
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Export Case Summary',
+        dialogTitle: t('x_cs_export_case_summary'),
       });
     } catch {
-      showToast('Could not generate PDF. Try again.');
+      showToast(t('x_cs_could_not_generate_pdf'));
     }
   };
 
@@ -474,7 +483,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
 
   const saveGuard = React.useRef(false);
   const save = useCallback(async () => {
-    if (!editCase.title?.trim()) { setError('Please enter a case title.'); return; }
+    if (!editCase.title?.trim()) { setError(t('x_cs_please_enter_case_title')); return; }
     // Ref guard: a second tap before the re-render must not create a second case.
     if (saveGuard.current) return;
     saveGuard.current = true;
@@ -493,7 +502,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
       // The server plans court-date reminders whenever a court date is saved.
       const planned = unwrapList<{ deliver_at: string }>(res?.data?.reminders);
       if (planned.length) {
-        showToast(`Court reminders set: ${planned.map(r => formatReminderTime(r.deliver_at)).join(' · ')}`, 'success');
+        showToast(t('x_cs_court_reminders_set_3', { value: planned.map(r => formatReminderTime(r.deliver_at)).join(' · ') }), 'success');
         // The moment notifications matter: ask now, with the reason (never at app start).
         requestNotificationsInContext().catch(() => 'declined');
       }
@@ -515,7 +524,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
         } catch {}
       }
 
-      setError(apiErrorMessage(e, 'Could not save. Try again.'));
+      setError(apiErrorMessage(e, t('x_cs_could_not_save_try')));
     } finally {
       saveGuard.current = false;
       setSaving(false);
@@ -557,13 +566,13 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
             parsed.notes,
           ].filter(Boolean).join('\\n').trim()
         }));
-showToast('Fields have been pre-filled from the document. Review and edit before saving.', 'success');
+showToast(t('x_cs_fields_have_been_pre'), 'success');
       } else {
-showToast('Document read — specific fields could not be extracted. Check Notes for the full text.', 'warning');
+showToast(t('x_cs_document_read_specific_fields'), 'warning');
       }
     } catch (e: any) {
       __DEV__ && console.warn(e?.message);
-      showToast('Could not read the document. Make sure the image is clear.', 'error');
+      showToast(t('x_cs_could_not_read_document'), 'error');
     } finally {
       setScanning(false);
     }
@@ -575,8 +584,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
+          confirm(t('x_cs_camera_access_needed'), t('x_cs_scan_documents_go_settings'),
+      { confirmLabel: t('x_cs_open_settings') }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast(t('action_failed'), 'error')) });
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -586,8 +595,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
+          confirm(t('x_cs_photo_access_needed'), t('x_cs_attach_photos_go_settings'),
+      { confirmLabel: t('x_cs_open_settings') }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast(t('action_failed'), 'error')) });
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -608,8 +617,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
   const scanDocument = useCallback(async () => {
     try {
       // Ask: camera or library
-      confirm('Scan Document','Take a photo or choose from your library to scan this document.',
-      { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
+      confirm(t('x_cs_scan_document_2'),t('x_cs_take_photo_choose_from'),
+      { confirmLabel:t('x_cs_take_photo'), cancelLabel:t('x_cs_choose_library') }).then(ok=>{
         if(ok) pickScanSource('camera'); else pickScanSource('library');
       });
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
@@ -620,12 +629,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
     try {
       const res = await api.post(`/cases/${cas.id}/share`);
       const url  = res.data?.share_url || `justicegavel.app/case/${res.data?.token}`;
-      const msg  = `📁 ${cas.title}\n` +
-        (cas.next_court_date ? `📅 Court date: ${formatDate(cas.next_court_date)}\n` : '') +
-        `\nView this case (read-only, expires in 7 days):\n${url}\n\nSent via Justice Gavel`;
+      const msg  = t('x_cs_view_this_case_read', { title: cas.title, value: (cas.next_court_date ? t('x_cs_share_court_date', { date: formatDate(cas.next_court_date) }) + '\n' : ''), url });
       await RNShare.share({ message: msg, title: cas.title });
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'info');
+      showToast(apiErrorMessage(e, t('home_sos_failed')), 'info');
     }
   }, [showToast]);
 
@@ -660,26 +667,26 @@ showToast('Document read — specific fields could not be extracted. Check Notes
   // ── Calendar sync ──────────────────────────────────────────────────────────
   const addToCalendar = useCallback(async (cas: Case) => {
     if (!cas.next_court_date) {
-      showToast('Add a court date to this case first.');
+      showToast(t('x_cs_add_court_date_this'));
       return;
     }
     try {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
-        showToast('Allow calendar access in Settings to add court dates.');
+        showToast(t('x_cs_allow_calendar_access_settings'));
         return;
       }
       // Get default calendar
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
       const writeable  = calendars.find(cal => cal.allowsModifications && (cal.type as any) !== 'birthday');
       if (!writeable) {
-        showToast('Could not find a writable calendar on this device.');
+        showToast(t('x_cs_could_not_find_writable'));
         return;
       }
       const courtDate  = new Date(cas.next_court_date + 'T09:00:00');
       const endDate    = new Date(cas.next_court_date + 'T10:00:00');
       await Calendar.createEventAsync(writeable.id, {
-        title:     `⚖️ Court -- ${cas.title}`,
+        title:     t('x_cs_court_2', { title: cas.title }),
         startDate: courtDate,
         endDate:   endDate,
         alarms:    [
@@ -688,10 +695,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         ],
         notes: cas.notes || '',
         location: ''});
-      showToast(`"${cas.title}" court date added with reminders.`, 'success');
+      showToast(t('x_cs_court_date_added_with', { title: cas.title }), 'success');
     } catch (e: any) {
       __DEV__ && console.warn(e?.message);
-      showToast('Check your calendar permissions in Settings.');
+      showToast(t('x_cs_check_calendar_permissions_settings'));
     }
   }, [showToast]);
 
@@ -722,7 +729,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'messages' && styles.tabBtnTextActive]}>
-              Messages
+              {t('messages_title')}
             </Text>
             {unreadCount > 0 && (
               <View style={styles.unreadBadge}>
@@ -748,7 +755,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           accessibilityState={{ selected: false }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
-            Lawyers {savedLawyers.length > 0 ? `(${savedLawyers.length})` : ''}
+            {t('x_cs_lawyers', { value: savedLawyers.length > 0 ? `(${savedLawyers.length})` : '' })}
           </Text>
         </TouchableOpacity>
       </View>
@@ -766,10 +773,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerIcon}>📅</Text>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerTitle}>
-              {upcomingReminders.length} upcoming court reminder{upcomingReminders.length > 1 ? 's' : ''}
+              {t(upcomingReminders.length === 1 ? 'x_cs_upcoming_court_reminder_one' : 'x_cs_upcoming_court_reminder_other', { length: upcomingReminders.length })}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerSub} numberOfLines={1}>
-              Next: {upcomingReminders[0]?.title} -- {formatReminderTime(upcomingReminders[0]?.deliver_at)}
+              {t('x_cs_next', { title: upcomingReminders[0]?.title, deliver_at: formatReminderTime(upcomingReminders[0]?.deliver_at) })}
             </Text>
           </View>
         </View>
@@ -781,7 +788,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             refreshControl={<RefreshControl refreshing={lawyersLoading && savedLawyers.length > 0} onRefresh={loadSavedLawyers} tintColor={colors.textSecond} />}>
             {isOffline && (
               <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { marginBottom: 10 }]}>
-                📴 Offline: showing your saved lawyers from this device ({cacheAge}).
+                {t('x_cs_offline_showing_saved_lawyers', { cacheAge })}
               </Text>
             )}
             {lawyersLoading && savedLawyers.length === 0
@@ -789,27 +796,27 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               : isGuest
                 ? (
                   <View style={styles.empty}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Sign in to see saved lawyers</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Lawyers you save (☆) are kept in your account.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('x_cs_sign_see_saved_lawyers')}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_lawyers_save_kept_account')}</Text>
                   </View>
                 )
                 : savedLawyers.length === 0
                   ? (
                     <View style={styles.empty}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No saved lawyers yet</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap ☆ on a lawyer in Find a Lawyer to save them here.</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('saved_empty_title')}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_tap_lawyer_find_lawyer')}</Text>
                     </View>
                   )
                   : savedLawyers.map((l: any) => (
                     <TouchableOpacity
                       key={String(l.id)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Open profile of ${l.name || 'saved lawyer'}`}
+                      accessibilityLabel={t('x_cs_open_profile', { value: l.name || t('x_cs_saved_lawyer') })}
                       style={[styles.familyCaseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
                       onPress={() => navigation.navigate('LawyerProfile', { lawyerId: l.provider_id ?? l.id })}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{l.name || 'Saved lawyer'}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{l.name || t('x_cs_saved_lawyer_2')}</Text>
                         {!!(l.address || l.specialties?.length) && (
                           <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseSub, { color: colors.textMuted }]} numberOfLines={1}>
                             {[l.address, Array.isArray(l.specialties) ? l.specialties.slice(0, 2).join(', ') : null].filter(Boolean).join(' · ')}
@@ -827,10 +834,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           ? (
             <View testID="case-load-error" style={styles.empty}>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📶</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Could not load your cases</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Check your connection. Your cases are safe on the server.</Text>
-              <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={() => { load(); }} accessibilityLabel="Try again">
-                <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Try again</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('x_cs_could_not_load_cases')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_check_connection_cases_safe')}</Text>
+              <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={() => { load(); }} accessibilityLabel={t('try_again')}>
+                <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>{t('try_again')}</Text>
               </TouchableOpacity>
             </View>
           )
@@ -838,11 +845,11 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           ? (
             <View testID="case-empty-state" style={styles.empty}>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No cases yet</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap "+ New case" to start tracking your legal matter.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('case_empty_title')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_tap_new_case_start')}</Text>
               <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={openNew}
-               accessibilityLabel="Create first case">
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Create first case</Text>
+               accessibilityLabel={t('x_cs_create_first_case')}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>{t('x_cs_create_first_case')}</Text>
             </TouchableOpacity>
             </View>
           )
@@ -854,7 +861,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               keyExtractor={i => String(i.id)}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              No cases yet. Tap + to start tracking your first case.
+              {t('x_cs_no_cases_yet_tap')}
             </Text>
           }
               renderItem={({ item }) => <CaseCard item={item} testID="case-share-button" onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} onExport={exportCasePDF} />}
@@ -864,10 +871,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       }
       {casesState === 'offline' && activeTab === 'cases' && (
         <View testID="case-list-offline" style={styles.offlineBanner}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>📴 Offline: showing your court dates saved on this device ({casesCacheAge}). Pull to refresh when connected.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>{t('x_cs_offline_showing_court_dates', { casesCacheAge })}</Text>
         </View>
       )}
-      {offlineCases.length > 0 && <View testID="case-offline-message" style={styles.offlineBanner}><Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>📴 {offlineCases.length} case{offlineCases.length > 1 ? 's' : ''} saved offline — will sync when connected</Text></View>}
+      {offlineCases.length > 0 && <View testID="case-offline-message" style={styles.offlineBanner}><Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>{t(offlineCases.length === 1 ? 'x_cs_case_saved_offline_will_one' : 'x_cs_case_saved_offline_will_other', { length: offlineCases.length })}</Text></View>}
 
       {/* ── Family-shared cases ──────────────────────────────────────────── */}
       {familyCases.length > 0 && activeTab === 'cases' && (
@@ -965,12 +972,12 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             <TouchableOpacity
           accessibilityRole="button" onPress={() => setModal(false)}
             ><Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text></TouchableOpacity>
-            <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? 'Edit case' : 'New case'}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? t('x_cs_edit_case') : t('x_cs_new_case')}</Text>
             <TouchableOpacity
               accessibilityRole="button" activeOpacity={0.6} onPress={save} disabled={saving}
-             accessibilityLabel="Save"
-          accessibilityHint="Double-tap to activate">
-              {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>Save</Text>}
+             accessibilityLabel={t('case_save')}
+          accessibilityHint={t('cp_double_tap')}>
+              {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>{t('case_save')}</Text>}
             </TouchableOpacity>
           </View>
 
@@ -981,7 +988,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               style={[styles.scanBtn, scanning && { opacity: 0.6 }]}
               onPress={scanDocument}
               disabled={scanning}
-              accessibilityLabel="Scan a document to auto-fill case fields"
+              accessibilityLabel={t('x_cs_scan_document_auto_fill')}
             >
               {scanning ? (
                 <ActivityIndicator color={colors.bgCard} size="small" />
@@ -989,26 +996,26 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 <>
                   <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnIcon}>📷</Text>
                   <View>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnTitle}>Scan Document</Text>
-                    <Text testID="case-bail-amount" maxFontSizeMultiplier={1.4} style={styles.scanBtnSub}>Auto-fill from charging doc, bail slip, or police report</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnTitle}>{t('x_cs_scan_document_2')}</Text>
+                    <Text testID="case-bail-amount" maxFontSizeMultiplier={1.4} style={styles.scanBtnSub}>{t('x_cs_auto_fill_from_charging')}</Text>
                   </View>
                 </>
               )}
             </TouchableOpacity>
           )}
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Case title <Text maxFontSizeMultiplier={1.4} style={styles.required}>*</Text></Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Describe the matter briefly, e.g. "DUI charge -- Shelby County" or "Assault charge appeal"</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('case_title_label')}{' '}<Text maxFontSizeMultiplier={1.4} style={styles.required}>*</Text></Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>{t('x_cs_describe_matter_briefly_e')}</Text>
           <TextInput
-          accessibilityLabel="e.g. DUI arrest Memphis TN Oct 2025" testID="case-title-input"
+          accessibilityLabel={t('x_cs_e_g_dui_arrest')} testID="case-title-input"
             style={styles.textInput}
-            placeholder="e.g. DUI arrest Memphis TN Oct 2025"
+            placeholder={t('x_cs_e_g_dui_arrest')}
             placeholderTextColor={colors.textMuted}
             value={editCase.title || ''}
             onChangeText={v => setEditCase(p => ({ ...p, title: v }))}
             autoFocus
           />
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Status</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_cs_status')}</Text>
           <View style={styles.statusRow}>
             {STATUS_OPTIONS.map(s => (
               <TouchableOpacity
@@ -1017,20 +1024,20 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 style={[styles.statusChip, editCase.status === s && { backgroundColor: (STATUS_COLORS[s] || colors.textMuted) + '22', borderColor: STATUS_COLORS[s] || colors.textMuted }]}
                 onPress={() => setEditCase(p => ({ ...p, status: s }))}
               >
-                <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, editCase.status === s && { color: STATUS_COLORS[s] || colors.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' }]}>{s}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, editCase.status === s && { color: STATUS_COLORS[s] || colors.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' }]}>{statusLabel(s)}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Next court date</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Tap a quick option or type below. Format: YYYY-MM-DD</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_cs_next_court_date')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>{t('x_cs_tap_quick_option_type')}</Text>
           <View style={styles.dateQuickRow}>
             {[
-              { label: '+7 days',  days: 7  },
-              { label: '+14 days', days: 14 },
-              { label: '+30 days', days: 30 },
-              { label: '+60 days', days: 60 },
-              { label: '+90 days', days: 90 },
+              { label: t('x_cs_7_days'),  days: 7  },
+              { label: t('x_cs_14_days'), days: 14 },
+              { label: t('x_cs_30_days'), days: 30 },
+              { label: t('x_cs_60_days'), days: 60 },
+              { label: t('x_cs_90_days'), days: 90 },
             ].map(({ label, days }) => {
               const d = new Date(); d.setDate(d.getDate() + days);
               const iso = toLocalISODate(d);
@@ -1050,19 +1057,19 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           </View>
           <TextInput
             style={styles.textInput}
-            placeholder="YYYY-MM-DD (e.g. 2025-11-15)"
+            placeholder={t('x_cs_yyyy_mm_dd_e')}
             placeholderTextColor={colors.textMuted}
             value={editCase.next_court_date || ''}
             onChangeText={v => setEditCase(p => ({ ...p, next_court_date: v }))}
             keyboardType="numbers-and-punctuation"
           />
 
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>State (2-letter code)</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Used for expungement eligibility checks -- e.g. TN, CA, FL</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_cs_state_2_letter_code')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>{t('x_cs_used_expungement_eligibility_checks')}</Text>
           <TextInput
-          accessibilityLabel="e.g. TN"
+          accessibilityLabel={t('x_cs_e_g_tn')}
             style={styles.textInput}
-            placeholder="e.g. TN"
+            placeholder={t('x_cs_e_g_tn')}
             placeholderTextColor={colors.textMuted}
             value={editCase.state || ''}
             onChangeText={v => setEditCase(p => ({ ...p, state: v.toUpperCase().slice(0, 2) }))}
@@ -1072,18 +1079,18 @@ showToast('Document read — specific fields could not be extracted. Check Notes
 
           <View style={styles.notesLabelRow}>
             <View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Notes</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Attorney name, charges, hearing details, reminders</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_cs_notes')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>{t('x_cs_attorney_name_charges_hearing')}</Text>
             </View>
             <TouchableOpacity
               accessibilityRole="button" activeOpacity={0.6}
               style={[styles.micChip, { backgroundColor: colors.legalBg, borderColor: colors.legalDark }]}
               onPress={scanDocument}
               disabled={scanning}
-              accessibilityLabel="Scan a document"
+              accessibilityLabel={t('x_cs_scan_document_3')}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.micChipIcon}>📷</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: colors.legal }]}>Scan</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: colors.legal }]}>{t('x_cs_scan')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -1095,16 +1102,16 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 onSave:        (combined: string) => {
                   setEditCase(p => ({ ...p, notes: combined }));
                 }})}
-              accessibilityLabel="Record a voice note for this case"
+              accessibilityLabel={t('x_cs_record_voice_note_this')}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.micChipIcon}>🎙</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: COLORS.navy }]}>Voice note</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: COLORS.navy }]}>{t('x_cs_voice_note_2')}</Text>
             </TouchableOpacity>
           </View>
           <TextInput
-          accessibilityLabel="e.g. Attorney: John Smith, 615-555-0101. Charged with DUI first offense. Pre-trial hearing Nov 15."
+          accessibilityLabel={t('x_cs_e_g_attorney_john')}
             style={[styles.textInput, styles.textArea]}
-            placeholder={"e.g. Attorney: John Smith, 615-555-0101. Charged with DUI first offense. Pre-trial hearing Nov 15."}
+            placeholder={t('x_cs_e_g_attorney_john')}
             placeholderTextColor={colors.textMuted}
             value={editCase.notes || ''}
             onChangeText={v => { setEditCase(p => ({ ...p, notes: v })); autoSaveNotes(v); }}
@@ -1128,7 +1135,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 14 }}>
           {/* Section: Defender Tools */}
           <Text maxFontSizeMultiplier={1.4} style={[styles.toolsSectionLabel, { color: colors.textMuted }]}>
-            Defender Tools
+            {t('case_tools_section')}
           </Text>
 
           {/* {t('case_ai_title')} -- case-aware Defender Mode */}
@@ -1137,12 +1144,13 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             style={[styles.toolCard, styles.toolCard, { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}
             onPress={() => {
               const activeCase = (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status));
+              // i18n-exempt: context for the AI model (sent with the question, never shown) stays English
               const ctx = activeCase
                 ? [
                     `Case: ${activeCase.title}`,
                     `Status: ${activeCase.status}`,
-                    activeCase.next_court_date ? `Court date: ${activeCase.next_court_date}` : null,
-                    activeCase.notes ? `Attorney notes: ${activeCase.notes.slice(0, 500)}` : null,
+                    activeCase.next_court_date ? `Court date: ${activeCase.next_court_date}` : null, // i18n-exempt: AI context
+                    activeCase.notes ? `Attorney notes: ${activeCase.notes.slice(0, 500)}` : null, // i18n-exempt: AI context
                   ].filter(Boolean).join('\n')
                 : null;
               navigation.navigate('ChatTab', {
@@ -1151,7 +1159,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 caseTitle:   activeCase?.title || 'Active Case',
               });
             }}
-            accessibilityLabel="Discuss case with AI"
+            accessibilityLabel={t('x_cs_discuss_case_with_ai')}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
               <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
@@ -1180,7 +1188,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
-                Motion Library
+                {t('x_cs_motion_library')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 {t('case_motion_sub')}
@@ -1202,7 +1210,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
-                Discovery AI
+                {t('disc_title')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 {t('case_discovery_sub')}
@@ -1223,7 +1231,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
-                Legal Research
+                {t('legal_research')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 {t('case_research_sub')}
@@ -1245,7 +1253,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
-                Voice Notes
+                {t('x_cs_voice_notes')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 {t('case_voice_sub')}
@@ -1259,14 +1267,14 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Translator')}
-            accessibilityLabel="Attorney-client interpreter"
+            accessibilityLabel={t('x_cs_attorney_client_interpreter')}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🗣</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
-                Interpreter
+                {t('translator_title')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 {t('case_interpreter_sub')}
@@ -1285,9 +1293,9 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⏰</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>Deadline Calculator</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>{t('x_cs_deadline_calculator')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
-                Arraignment · Appeal · AEDPA · Speedy Trial -- all critical deadlines
+                {t('x_cs_arraignment_appeal_aedpa_speedy')}
               </Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardArrow, { color: colors.emergency }]}>›</Text>
@@ -1296,7 +1304,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {cases.length > 0 && (
             <>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolsSectionLabel, { color: colors.textMuted, marginTop: 14 }]}>
-                Analyze by case
+                {t('x_cs_analyze_by_case')}
               </Text>
               {(cases ?? []).filter((ca: any) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: any) => (
                 <TouchableOpacity accessibilityRole="button"
@@ -1308,7 +1316,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolTitle, { color: colors.steel }]}
                     numberOfLines={1}>📁 {String(ca.title)}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolCta, { color: COLORS.navy }]}>Analyze docs →</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolCta, { color: COLORS.navy }]}>{t('x_cs_analyze_docs')}</Text>
                 </TouchableOpacity>
               ))}
             </>

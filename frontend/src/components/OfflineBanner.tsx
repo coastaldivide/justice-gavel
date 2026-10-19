@@ -17,8 +17,10 @@ import React from 'react';
 import { COLORS } from '../constants/theme';
 import { Text, StyleSheet, Animated } from 'react-native';
 import { useNetwork } from '../store';
+import { t, useLang } from '../i18n';
 
 export function OfflineBanner() {
+  useLang();
   const isOnline = useNetwork();
   const opacity  = React.useRef(new Animated.Value(0)).current;
 
@@ -35,7 +37,7 @@ export function OfflineBanner() {
   return (
     <Animated.View style={[styles.banner, { opacity }]}>
       <Text style={styles.icon}>📵</Text>
-      <Text style={styles.text}>No internet connection — some features unavailable</Text>
+      <Text style={styles.text}>{t('x_offline_banner_no_internet_connection_some')}</Text>
     </Animated.View>
   );
 }

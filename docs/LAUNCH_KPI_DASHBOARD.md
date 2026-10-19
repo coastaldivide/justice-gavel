@@ -31,7 +31,7 @@ Target: 1,000 WAU by Day 90.
 - **AI hallucination reports**: <1 per 500 messages (user-flagged)
 - **App Store rating**: ≥4.3 stars within 60 days
 - **Crash-free sessions**: ≥99.5% (Sentry)
-- **P95 API response time**: <400ms (Railway metrics)
+- **P95 API response time**: <400ms (Render service Metrics tab)
 
 ### Monitoring Queries (run weekly)
 ```sql
@@ -48,8 +48,9 @@ SELECT
   AS conversion_pct;
 ```
 
-### Alerts (set in Railway + Sentry)
+### Alerts (Render + Sentry)
 - Sentry: crash-free session rate drops below 99%
-- Railway: P95 response time exceeds 500ms for 5 consecutive minutes
-- Railway: memory usage exceeds 400MB (approaching 512MB restart threshold)
+- Sentry (performance alert): P95 API transaction duration exceeds 500ms for 5 consecutive minutes
+- Render (service → Metrics; notifications for failed deploys / instance restarts): memory usage
+  above 400MB (approaching the 476MB graceful-restart threshold of the 512MB instance)
 - DB: push token failure rate exceeds 5% in a single batch

@@ -23,6 +23,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingVi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticSelection } from '../utils/webCompat';
+import { t, useLang } from '../i18n';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
@@ -37,6 +38,7 @@ interface AgeGateProps {
 }
 
 function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
+  useLang();
 
   const { showToast } = useToast();
   React.useEffect(() => {
@@ -59,11 +61,11 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
     const y = parseInt(year, 10);
 
     if (!year || year.length < 4 || isNaN(y)) {
-      setError('Please enter your birth year (4 digits).');
+      setError(t('x_age_gate_please_enter_birth_year'));
       return;
     }
     if (y < MIN_YEAR || y > CURRENT_YEAR) {
-      setError('Please enter a valid year (1900–present).');
+      setError(t('x_age_gate_please_enter_valid_year'));
       return;
     }
 
@@ -90,12 +92,12 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
       <TouchableOpacity
         onPress={() => { if (navigation) navigation.navigate('Emergency'); else Linking.openURL('tel:911').catch(() => {}); }}
         accessibilityRole="button"
-        accessibilityLabel="Emergency help — get immediate legal assistance without age verification"
+        accessibilityLabel={t('x_age_gate_emergency_help_get_immediate')}
         style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }}>🚨 Need help right now?</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.textOnNavy, fontSize: 12, marginTop: 2 }}>Emergency access — no setup required</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }}>{t('x_age_gate_need_help_right_now')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.textOnNavy, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
         </View>
         <Text style={{ color: COLORS.white, fontSize: 20 }}>→</Text>
       </TouchableOpacity>
@@ -103,12 +105,10 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
       <View style={styles.centered}>
         <Text maxFontSizeMultiplier={1.4} style={styles.underageEmoji}>👨‍👩‍👧</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.underageTitle}>
-          This app is for adults 18 and older.
+          {t('x_age_gate_this_app_adults_18')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.underageSub}>
-          If someone under 18 was arrested, a parent or guardian should use
-          this app to find help. Tap below to search for a bail agent and lawyer
-          on their behalf.
+          {t('x_age_gate_if_someone_under_18')}
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
@@ -131,15 +131,15 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
   }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.familyBtnText}>
-            I'm a parent or guardian -- get help now →
+            {t('x_age_gate_i_m_parent_guardian')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.backBtn}
-          accessibilityLabel={"\u2190 Go back"} onPress={() => { setPhase('entry'); setYear(''); }}
+          accessibilityLabel={t('x_age_gate_go_back')} onPress={() => { setPhase('entry'); setYear(''); }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>{t('x_age_gate_go_back')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -160,12 +160,12 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.title}>Justice Gavel</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subtitle}>Legal help at your fingertips</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.subtitle}>{t('x_age_gate_legal_help_at_fingertips')}</Text>
 
         <View style={styles.gateCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.gateTitle}>What year were you born?</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.gateTitle}>{t('x_age_gate_what_year_were_born')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.gateHint}>
-            You must be 18 or older to use this app.
+            {t('x_age_gate_must_be_18_older')}
           </Text>
 
           <TextInput
@@ -179,8 +179,8 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
             returnKeyType="done"
             onSubmitEditing={verify}
             autoFocus
-            accessibilityLabel="Enter your birth year"
-            accessibilityHint="Four digit year, for example 1985"
+            accessibilityLabel={t('x_age_gate_enter_birth_year')}
+            accessibilityHint={t('x_age_gate_four_digit_year_example')}
           />
 
           {!!error && (
@@ -190,26 +190,26 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
             style={[styles.continueBtn, year.length < 4 && styles.continueBtnDisabled]}
             onPress={verify}
             disabled={year.length < 4}
-            accessibilityLabel="Continue"
+            accessibilityLabel={t('continue')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.continueBtnText}>Continue →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.continueBtnText}>{t('x_age_gate_continue')}</Text>
           </TouchableOpacity>
         </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.legalNote}>
-          By continuing you agree to our{' '}
+          {t('x_age_gate_by_continuing_agree_our')}{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={styles.legalLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
+            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
           >
-            Terms of Service
+            {t('onb_terms_tos')}
           </Text>
-          {' '}and{' '}
+          {' '}{t('x_legal_disclaimer_modal_text')}{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={styles.legalLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => showToast('Action failed. Please try again.', 'error'))}
+            onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => showToast(t('action_failed'), 'error'))}
           >
-            Privacy Policy
+            {t('onb_terms_pp')}
           </Text>
           .
         </Text>

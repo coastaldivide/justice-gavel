@@ -19,6 +19,7 @@ import {
 import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
+import { t, useLang, perLang, locale } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ScheduleDay {
@@ -40,14 +41,14 @@ interface StudySchedule {
   estimated_study_mins: number;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  homicide: 'Homicide', theft_property: 'Theft & Property',
-  defenses: 'Defenses', criminal_procedure: 'Crim Procedure',
-  fifth_sixth_amendment: '5th & 6th Amendment',
-  fourth_amendment: '4th Amendment', due_process: 'Due Process',
-  equal_protection: 'Equal Protection', first_amendment: '1st Amendment',
-  incorporation_14th: 'Incorporation / 14th',
-};
+const CATEGORY_LABELS = perLang((): Record<string, string> => ({
+  homicide: t('x_bar_prep_home_homicide'), theft_property: t('x_bar_prep_home_theft_property'),
+  defenses: t('x_bar_prep_home_defenses'), criminal_procedure: t('x_bar_prep_home_crim_procedure'),
+  fifth_sixth_amendment: t('x_bar_prep_home_5th_6th_amendment'),
+  fourth_amendment: t('x_bar_prep_home_4th_amendment'), due_process: t('x_bar_prep_home_due_process'),
+  equal_protection: t('x_bar_prep_home_equal_protection'), first_amendment: t('x_bar_prep_home_1st_amendment'),
+  incorporation_14th: t('x_bar_prep_home_incorporation_14th'),
+}));
 
 function daysUntilColor(days: number): string {
   if (days <= 7)  return COLORS.bail;
@@ -57,6 +58,7 @@ function daysUntilColor(days: number): string {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPrepSchedule'>) {
+  useLang();
   const { colors }             = useTheme();
   const [schedule, setSchedule] = useState<StudySchedule | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -87,16 +89,16 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
 
   const saveExamDate = useCallback(async () => {
     if (!examDate || !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
-      Alert.alert('Invalid Date', 'Please enter a date in YYYY-MM-DD format.');
+      Alert.alert(t('x_bar_prep_schedule_invalid_date'), t('x_bar_prep_schedule_please_enter_date_yyyy'));
       return;
     }
     setSavingDate(true);
     try {
       await api.put('/bar-prep/progress', { exam_date: examDate });
       await load(examDate);
-      Alert.alert('Saved!', 'Exam date updated. Schedule recalculated.');
+      Alert.alert(t('x_bar_prep_schedule_saved'), t('x_bar_prep_schedule_exam_date_updated_schedule'));
     } catch {
-      Alert.alert('Error', 'Could not save exam date.');
+      Alert.alert(t('error'), t('x_bar_prep_schedule_could_not_save_exam'));
     } finally {
       setSavingDate(false);
     }
@@ -122,8 +124,8 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <GradientHeader
-        title="Study Schedule"
-        subtitle="Spaced Repetition Plan"
+        title={t('x_bar_prep_schedule_study_schedule')}
+        subtitle={t('x_bar_prep_schedule_spaced_repetition_plan')}
         onBack={() => navigation.goBack()}
       />
 
@@ -135,7 +137,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
       >
         {/* ── Exam Date ────────────────────────────────────────────── */}
         <View style={[styles.examCard, { backgroundColor: colors.card }]}>
-          <Text style={styles.examCardTitle}>📅 Bar Exam Date</Text>
+          <Text style={styles.examCardTitle}>{t('x_bar_prep_schedule_bar_exam_date')}</Text>
           <View style={styles.examInputRow}>
             <TextInput
               style={[styles.examInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
@@ -150,7 +152,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               onPress={saveExamDate}
               disabled={savingDate}
             >
-              <Text style={styles.saveBtnText}>{savingDate ? '…' : 'Save'}</Text>
+              <Text style={styles.saveBtnText}>{savingDate ? '…' : t('case_save')}</Text>
             </TouchableOpacity>
           </View>
           {schedule?.days_until_exam !== undefined && (
@@ -160,7 +162,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               }]}>
                 {schedule.days_until_exam}
               </Text>
-              <Text style={styles.countdownLabel}> days until exam</Text>
+              <Text style={styles.countdownLabel}>{' '}{t('x_bar_prep_schedule_days_until_exam')}</Text>
             </View>
           )}
         </View>
@@ -168,7 +170,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         {/* ── Today's Goal ─────────────────────────────────────────── */}
         <View style={[styles.goalCard, { backgroundColor: colors.card }]}>
           <View style={styles.goalHeader}>
-            <Text style={styles.goalTitle}>Today's Goal</Text>
+            <Text style={styles.goalTitle}>{t('x_bar_prep_schedule_today_s_goal')}</Text>
             <Text style={styles.goalFraction}>
               {schedule?.completed_today || 0} / {schedule?.daily_goal || 0} Q
             </Text>
@@ -184,11 +186,11 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
           </View>
           <View style={styles.goalMeta}>
             <Text style={styles.goalMetaText}>
-              ⏱ ~{schedule?.estimated_study_mins || 0} min to complete today's goal
+              {t('x_bar_prep_schedule_min_complete_today_s', { value: schedule?.estimated_study_mins || 0 })}
             </Text>
             {(schedule?.total_overdue || 0) > 0 && (
               <Text style={styles.overdueText}>
-                ⚠️ {schedule?.total_overdue} overdue
+                {t('x_bar_prep_schedule_overdue', { total_overdue: schedule?.total_overdue })}
               </Text>
             )}
           </View>
@@ -200,8 +202,8 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
           >
             <Text style={styles.startBtnText}>
               {(schedule?.completed_today || 0) >= (schedule?.daily_goal || 1)
-                ? '✓ Goal Complete — Study More?'
-                : `▶ Study ${(schedule?.daily_goal || 0) - (schedule?.completed_today || 0)} Remaining`}
+                ? t('x_bar_prep_schedule_goal_complete_study_more')
+                : t('x_bar_prep_schedule_study_remaining', { value: (schedule?.daily_goal || 0) - (schedule?.completed_today || 0) })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -209,13 +211,13 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         {/* ── Recommended Categories ───────────────────────────────── */}
         {(schedule?.recommended_categories || []).length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>📌 Focus Today</Text>
+            <Text style={styles.sectionTitle}>{t('x_bar_prep_schedule_focus_today')}</Text>
             <View style={styles.recommendList}>
               {(schedule?.recommended_categories || []).map((cat, i) => (
                 <View key={cat} style={[styles.recommendChip, { backgroundColor: colors.card }]}>
                   <Text style={styles.recommendRank}>{i + 1}</Text>
                   <Text style={styles.recommendName}>
-                    {CATEGORY_LABELS[cat] || cat}
+                    {CATEGORY_LABELS()[cat] || cat}
                   </Text>
                 </View>
               ))}
@@ -224,12 +226,12 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         )}
 
         {/* ── 14-Day Calendar ──────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>📆 14-Day Review Calendar</Text>
+        <Text style={styles.sectionTitle}>{t('x_bar_prep_schedule_14_day_review_calendar')}</Text>
         <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
           <View style={styles.calendarGrid}>
             {(schedule?.calendar || []).map(day => {
               const date  = new Date(day.date);
-              const label = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+              const label = date.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric' });
               const bg    = day.goal_met  ? COLORS.legal
                           : day.is_today  ? colors.primary
                           : day.due_count > 0 ? colors.primary + '44'
@@ -252,9 +254,9 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             })}
           </View>
           <View style={styles.calendarLegendRow}>
-            <LegendDot color={COLORS.legal} label="Goal met" />
-            <LegendDot color={colors.primary} label="Today" />
-            <LegendDot color={colors.primary + '44'} label="Due" />
+            <LegendDot color={COLORS.legal} label={t('x_bar_prep_schedule_goal_met')} />
+            <LegendDot color={colors.primary} label={t('x_attorney_inbox_today')} />
+            <LegendDot color={colors.primary + '44'} label={t('x_bar_prep_schedule_due')} />
           </View>
         </View>
 
@@ -265,6 +267,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
+  useLang();
   const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -277,7 +280,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
     </View>
   );

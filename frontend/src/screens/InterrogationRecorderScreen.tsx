@@ -38,6 +38,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, API_BASE_URL } from '../services/api';
 import { useTheme, COLORS } from '../constants/theme';
 import { getToken } from '../utils/secureStorage';
+import { t, useLang } from '../i18n';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 
@@ -48,9 +49,10 @@ type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'erro
 const TWO_PARTY_STATE_CODES = new Set([
   'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI',
 ]);
-const TWO_PARTY_STATE_NAMES = new Set([
-  'California','Connecticut','Florida','Illinois','Maryland','Massachusetts',
-  'Michigan','Montana','New Hampshire','Oregon','Pennsylvania','Washington','Wisconsin',
+// Region names as the device geocoder reports them (English) — matched, not shown.
+const TWO_PARTY_STATE_NAMES = new Set([ // i18n-exempt: matched against geocoder output
+  'California','Connecticut','Florida','Illinois','Maryland','Massachusetts', // i18n-exempt: geocoder names
+  'Michigan','Montana','New Hampshire','Oregon','Pennsylvania','Washington','Wisconsin', // i18n-exempt: geocoder names
 ]);
 // Normalize any region string to abbreviation for consistent checking
 const normalizeStateCode = (region: string): string => {
@@ -75,6 +77,7 @@ const TWO_PARTY_STATES = {
 };
 
 function InterrogationRecorderScreen(): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -123,7 +126,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   useEffect(() => {
     (async () => {
       try {
-        const answer = await requestLocationInContext('Recording-consent law depends on the state you are in right now. Justice Gavel checks your location once to show the right warning before you record.');
+        const answer = await requestLocationInContext(t('x_interrogation_recorder_recording_consent_law_depends'));
         if (answer === 'granted' && mountedRef.current) {
           const loc = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
@@ -180,8 +183,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const startRecording = async () => {
     // Two-party consent warning
     if (TWO_PARTY_STATES.has(userState) && !recordingLaw?.acknowledged) {
-      confirm('⚠️ Two-Party Consent Warning — Custodial Setting', (recordingLaw?.note || 'Your state may require all parties to consent.') + '\n\nCUSTODIAL INTERROGATION NOTE: You are likely in a police interview room, not a public space. First Amendment public-recording protections do NOT apply here. This recording is for YOUR PERSONAL RECORDS ONLY — consult an attorney before disclosing it to anyone.',
-      { confirmLabel: 'I Understand — Start Recording' }).then(ok => { if (ok) startRecording; });
+      confirm(t('x_interrogation_recorder_two_party_consent_warning'), t('x_interrogation_recorder_custodial_interrogation_note_likely', { value: (recordingLaw?.note || t('x_interrogation_recorder_state_may_require_all')) }),
+      { confirmLabel: t('x_interrogation_recorder_i_understand_start_recording') }).then(ok => { if (ok) startRecording; });
       return;
     }
     doStartRecording();
@@ -192,7 +195,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       hapticImpact();
       const { status } = await requestRecordingPermissionsAsync();
       if (status !== 'granted') {
-showToast('Allow microphone access in Settings.', 'warning');
+showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warning');
       }
 
       await setAudioModeAsync({
@@ -213,7 +216,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       }, 1000);
 
     } catch (e: any) {
-      showToast(e.message || 'Check microphone permissions.', 'error');
+      showToast(e.message || t('x_interrogation_recorder_check_microphone_permissions'), 'error');
     }
   };
 
@@ -265,7 +268,7 @@ showToast('Allow microphone access in Settings.', 'warning');
 
     } catch {
       if (!mountedRef.current) return;
-      setError('Could not process recording. Make sure you have internet access and try again.');
+      setError(t('x_interrogation_recorder_could_not_process_recording'));
       setPhase('error');
     }
   };
@@ -279,11 +282,11 @@ showToast('Allow microphone access in Settings.', 'warning');
       })) : null;
       await RNShare.share({
         url: path,
-        title: 'Police Encounter Transcript',
-        message: 'My police encounter transcript from Justice Gavel',
+        title: t('x_interrogation_recorder_police_encounter_transcript'),
+        message: t('x_interrogation_recorder_my_police_encounter_transcript'),
       });
     } catch {
-      showToast('Could not save PDF. Please try again.');
+      showToast(t('x_interrogation_recorder_could_not_save_pdf'));
     }
   };
 
@@ -302,7 +305,7 @@ showToast('Allow microphone access in Settings.', 'warning');
     return colors.textMuted;
   };
   const speakerLabel = (speaker: string) =>
-    speaker === 'SUSPECT' ? 'YOU' : speaker;
+    speaker === 'SUSPECT' ? t('x_interrogation_recorder_text') : speaker;
 
   return (
     <ScrollView
@@ -317,11 +320,10 @@ showToast('Allow microphone access in Settings.', 'warning');
       {/* ── Header ──────────────────────────────────── */}
       <View style={[styles.headerBox, { backgroundColor: colors.emergency }]}>
         <Text maxFontSizeMultiplier={1.2} style={styles.headerTitle}>
-          🎙 ENCOUNTER RECORDER
+          {t('x_interrogation_recorder_encounter_recorder')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerSub}>
-          Records, transcribes, and generates a PDF of your interaction with police.
-          You are innocent until proven guilty.
+          {t('x_interrogation_recorder_records_transcribes_generates_pdf')}
         </Text>
       </View>
 
@@ -330,16 +332,16 @@ showToast('Allow microphone access in Settings.', 'warning');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
-          accessibilityLabel="Call 911" onPress={() => Linking.openURL('tel:911').catch(() => showToast('Please dial 911.', 'error'))}
+          accessibilityLabel={t('x_emergency_call_911')} onPress={() => Linking.openURL('tel:911').catch(() => showToast(t('x_interrogation_recorder_please_dial_911'), 'error'))}
         >
-          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
+          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>{t('x_interrogation_recorder_call_911')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
-          accessibilityLabel={"\ud83d\udc99 CRISIS 988"} onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          accessibilityLabel={t('x_interrogation_recorder_crisis_988')} onPress={() => Linking.openURL('tel:988').catch(() => showToast(t('action_failed'), 'error'))}
         >
-          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>💙 CRISIS 988</Text>
+          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>{t('x_interrogation_recorder_crisis_988')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -351,7 +353,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         }]}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawTitle,
             { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
-            {recordingLaw.warn ? '⚠️ ' : '✅ '}{recordingLaw.consent === 'two-party' ? 'All-party consent state' : 'One-party consent state -- recording is legal'}
+            {recordingLaw.warn ? '⚠️ ' : '✅ '}{recordingLaw.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawNote, { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
             {recordingLaw.note}
@@ -365,16 +367,16 @@ showToast('Allow microphone access in Settings.', 'warning');
       {/* ── Rights reminder ──────────────────────────── */}
       <View style={[styles.rightsBox, { backgroundColor: colors.bgCard }]}>
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsTitle, { color: colors.textPrimary }]}>
-          Before you record -- say these words:
+          {t('x_interrogation_recorder_before_record_say_these')}
         </Text>
         <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.textBrand }]}>
-          "I am invoking my right to remain silent. I want a lawyer."
+          {t('x_interrogation_recorder_i_am_invoking_my')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsTitle, { color: colors.textPrimary, marginTop: 8 }]}>
-          If they ask to search:
+          {t('x_interrogation_recorder_if_they_ask_search')}
         </Text>
         <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.textBrand }]}>
-          "I do not consent to any searches."
+          {t('x_interrogation_recorder_i_do_not_consent')}
         </Text>
       </View>
 
@@ -384,11 +386,11 @@ showToast('Allow microphone access in Settings.', 'warning');
           style={styles.recordBtn}
           onPress={startRecording}
           activeOpacity={0.85}
-          accessibilityLabel="Start recording police encounter"
-          accessibilityHint="Records audio and generates a timestamped transcript PDF">
+          accessibilityLabel={t('x_interrogation_recorder_start_recording_police_encounter')}
+          accessibilityHint={t('x_interrogation_recorder_records_audio_generates_timestamped')}>
           <Text style={styles.recordBtnIcon}>🎙</Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.recordBtnText}>START RECORDING</Text>
-          <Text maxFontSizeMultiplier={1.3} style={styles.recordBtnSub}>Tap to begin -- tap again to stop</Text>
+          <Text maxFontSizeMultiplier={1.2} style={styles.recordBtnText}>{t('x_interrogation_recorder_start_recording')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.recordBtnSub}>{t('x_interrogation_recorder_tap_begin_tap_again')}</Text>
         </TouchableOpacity>
       )}
 
@@ -401,17 +403,17 @@ showToast('Allow microphone access in Settings.', 'warning');
             </Text>
           </View>
           <TouchableOpacity
-      accessibilityLabel="⏹ STOP & TRANSCRIBE" accessibilityRole="button"
+      accessibilityLabel={t('x_interrogation_recorder_stop_transcribe')} accessibilityRole="button"
             style={[styles.stopBtn, { backgroundColor: colors.bgCard, borderColor: colors.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.stopBtnText, { color: colors.emergency }]}>
-              ⏹  STOP & TRANSCRIBE
+              {t('x_interrogation_recorder_stop_transcribe_2')}
             </Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.3} style={[styles.hint, { color: colors.textMuted }]}>
-            Keep the app open. Your recording is saved on device.
+            {t('x_interrogation_recorder_keep_app_open_recording')}
           </Text>
         </>
       )}
@@ -420,22 +422,22 @@ showToast('Allow microphone access in Settings.', 'warning');
         <View style={[styles.processingBox, { backgroundColor: colors.bgCard }]}>
           <ActivityIndicator size="large" color={colors.blue} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.processingText, { color: colors.textPrimary }]}>
-            Transcribing and generating PDF…
+            {t('x_interrogation_recorder_transcribing_generating_pdf')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={[styles.processingNote, { color: colors.textMuted }]}>
-            This takes 30-90 seconds depending on length.
+            {t('x_interrogation_recorder_this_takes_30_90')}
           </Text>
         </View>
       )}
 
       {phase === 'error' && (
         <View style={[styles.errorBox, { backgroundColor: colors.emergencyBg }]}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.errorTitle}>Could not process</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.errorTitle}>{t('x_interrogation_recorder_could_not_process')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.errorMsg}>{error}</Text>
           <TouchableOpacity
             accessibilityRole="button" style={styles.retryBtn} onPress={reset}
-           accessibilityLabel="Try Again">
-            <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>Try Again</Text>
+           accessibilityLabel={t('help_now_error_retry')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>{t('help_now_error_retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -445,17 +447,17 @@ showToast('Allow microphone access in Settings.', 'warning');
           {/* Save PDF */}
           {pdfBase64 ? (
             <TouchableOpacity
-      accessibilityLabel="📄 Save & Share PDF"
+      accessibilityLabel={t('x_interrogation_recorder_save_share_pdf')}
               accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.legalDark }]}
               onPress={savePDF}
               activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.2} style={styles.saveBtnText}>
-                📄  Save & Share PDF
+                {t('x_interrogation_recorder_save_share_pdf_2')}
               </Text>
               <Text maxFontSizeMultiplier={1.3} style={styles.saveBtnSub}>
-                Send to your attorney immediately
+                {t('x_interrogation_recorder_send_attorney_immediately')}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -463,7 +465,7 @@ showToast('Allow microphone access in Settings.', 'warning');
           {/* Transcript */}
           <View style={[styles.transcriptBox, { backgroundColor: colors.bgCard }]}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.transcriptHeader, { color: colors.textPrimary }]}>
-              TRANSCRIPT
+              {t('x_interrogation_recorder_transcript')}
             </Text>
             {dialogue.length > 0 ? (
               dialogue.map((line, i) => (
@@ -489,13 +491,13 @@ showToast('Allow microphone access in Settings.', 'warning');
 
           {/* Record again */}
           <TouchableOpacity
-      accessibilityLabel="+ Record Another Encounter" accessibilityRole="button"
+      accessibilityLabel={t('x_interrogation_recorder_record_another_encounter')} accessibilityRole="button"
             style={[styles.recordAgainBtn, { backgroundColor: colors.bgElevated }]}
             onPress={reset}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.recordAgainText, { color: colors.textSecond }]}>
-              + Record Another Encounter
+              {t('x_interrogation_recorder_record_another_encounter')}
             </Text>
           </TouchableOpacity>
         </>
@@ -505,15 +507,15 @@ showToast('Allow microphone access in Settings.', 'warning');
       {phase === 'ready' && (
         <View style={[styles.infoBox, { backgroundColor: colors.bgCard }]}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.infoTitle, { color: colors.textPrimary }]}>
-            What this does:
+            {t('x_interrogation_recorder_what_this_does')}
           </Text>
           {[
-            '🎙 Records audio on your device',
-            '📝 Transcribes every word with timestamps',
-            '🏷 Identifies who said what (Officer vs. You)',
-            '📄 Generates a PDF with automated rights analysis',
-            '📤 Lets you share the PDF with your attorney instantly',
-            '🔒 Recording stays on your device until you share it',
+            t('x_interrogation_recorder_records_audio_device'),
+            t('x_interrogation_recorder_transcribes_every_word_with'),
+            t('x_interrogation_recorder_identifies_who_said_what'),
+            t('x_interrogation_recorder_generates_pdf_with_automated'),
+            t('x_interrogation_recorder_lets_share_pdf_with'),
+            t('x_interrogation_recorder_recording_stays_device_until'),
           ].map((item, i) => (
             <Text key={`item-${i}`} maxFontSizeMultiplier={1.3} style={[styles.infoItem, { color: colors.textSecond }]}>
               {item}
@@ -528,9 +530,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
           color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ General legal information only -- not legal advice. Laws vary by
-          jurisdiction and change frequently. Consult a licensed attorney for
-          advice specific to your situation.
+          {t('x_interrogation_recorder_general_legal_information_only')}
         </Text>
       </View>
       <AIDisclaimer variant="banner" />

@@ -8,7 +8,7 @@
  *
  *   1. config.js ALL_ENV_VARS lists exactly that set (nothing missing, nothing
  *      stale).
- *   2. RAILWAY_ENV_SETUP.md (the single env reference) names every one.
+ *   2. DEPLOY_ENV_SETUP.md (the single env reference) names every one.
  *   3. backend/.env.example has a `VAR=` (or commented `#VAR=`) line for every
  *      one, and no backend line for a variable the code never reads.
  *   4. The repo-root .env.example lists exactly the same variables.
@@ -88,8 +88,8 @@ describe('environment variable documentation matches the code', () => {
     expect(ALL_BLOCK.length).toBeGreaterThan(1000);
   });
 
-  test('RAILWAY_ENV_SETUP.md documents every variable the code reads', () => {
-    const doc = readFileSync(resolve(REPO, 'RAILWAY_ENV_SETUP.md'), 'utf8');
+  test('DEPLOY_ENV_SETUP.md documents every variable the code reads', () => {
+    const doc = readFileSync(resolve(REPO, 'DEPLOY_ENV_SETUP.md'), 'utf8');
     const missing = [...codeVars].filter(v => !new RegExp(`(^|[^A-Z0-9_])${v}([^A-Z0-9_]|$)`, 'm').test(doc));
     expect(sorted(missing)).toEqual([]);
     const missingFe = [...frontendVars].filter(v => !doc.includes(v));

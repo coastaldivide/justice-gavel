@@ -58,10 +58,12 @@ export function useLang(): Lang {
   return useSyncExternalStore(onLangChange, getLang, getLang);
 }
 
-const fill = (s: string, params?: Record<string, string | number>) =>
+/** Placeholder values; null / undefined leave the {placeholder} visible (a bug to fix at the call site). */
+export type TParams = Record<string, string | number | null | undefined>;
+const fill = (s: string, params?: TParams) =>
   (params ? s.replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined && params[k] !== null ? String(params[k]) : m)) : s);
 
-export function t(key: string, params?: Record<string, string | number>): string {
+export function t(key: string, params?: TParams): string {
   const primary = dict[lang] && dict[lang][key];
   if (primary) return fill(primary, params);
   // Fallback: English (a key added to en.json before the others — the parity test blocks release)
@@ -69,6 +71,27 @@ export function t(key: string, params?: Record<string, string | number>): string
   if (english) return fill(english, params);
   if (typeof __DEV__ !== 'undefined' && __DEV__) console.warn('[i18n] Missing translation for key:', key, '(lang:', lang, ')');
   return key;
+}
+
+/**
+ * Module-level text (option lists, tile tables, templates) must not call t()
+ * at import time — that freezes it in the start-up language. Wrap it:
+ *   const TILES = perLang(() => [{ label: t('home_tile_x') }]);   …   TILES()
+ * The value is built once per language and rebuilt after a switch (stable
+ * identity per language, so it is safe in hook dependency lists).
+ */
+export function perLang<T>(build: () => T): () => T {
+  const cache: Partial<Record<Lang, T>> = {};
+  return () => {
+    if (!(lang in cache)) cache[lang] = build();
+    return cache[lang] as T;
+  };
+}
+
+/** t() in a given language (a page that shows one language on request, e.g. English for an officer). */
+export function tl(l: Lang, key: string, params?: TParams): string {
+  const v = (dict[l] && dict[l][key]) || dict.en[key];
+  return v ? fill(v, params) : key;
 }
 
 // ── Device locale → one of our 4 languages ─────────────────────────────────────

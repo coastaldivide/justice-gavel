@@ -59,6 +59,6 @@ describe('render smoke', () => {
     render(<Probe />);
     const { error } = await api.presentPaymentSheet();
     expect(error.code).toBe('payments_unavailable');
-    expect(error.message).toBe(PAYMENTS_COMING_SOON);
+    expect(error.message).toBe(PAYMENTS_COMING_SOON());
   });
 });

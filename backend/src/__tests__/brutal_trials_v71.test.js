@@ -14,7 +14,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *
  * SRV   server.js — Production startup + graceful shutdown:
  *       Imports app from app.js, starts HTTP server on CONFIG.PORT
- *       SIGTERM/SIGINT handlers for graceful Railway/Docker shutdown
+ *       SIGTERM/SIGINT handlers for graceful Render/Docker shutdown
  *       Closes DB connections before exit
  *
  * PAY2  payments/ orchestration layer:
@@ -101,7 +101,7 @@ describe('DISC6. Discrepancy Fixes — SSO ACS + suite count', () => {
 
 // ── SRV. server.js — Production Startup ──────────────────────────────────
 describe('SRV. server.js — HTTP Server + Graceful Shutdown', () => {
-  test('SRV-02: SIGTERM + SIGINT handlers for graceful Railway/Docker shutdown', async () => {
+  test('SRV-02: SIGTERM + SIGINT handlers for graceful Render/Docker shutdown', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/server.js', 'utf8');
     expect(src).toContain('SIGTERM');

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v160
@@ -103,8 +104,7 @@ describe('FV_NULL. firm_verticals.js — All Null DB Results Handled', () => {
 // ── FE: Setup prompt for unconfigured firms ───────────────────────────────
 describe('FV_UX. FirmVerticalScreen — UX Preserved for Unconfigured Firms', () => {
   test('FV_UX-01: FirmVerticalScreen handles _unconfigured flag', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx','utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx');
     expect(src).toContain('_unconfigured');
     expect(src).toContain('Set Up Your Legal Vertical');
     // Unconfigured firm → guidance screen, not blank/error

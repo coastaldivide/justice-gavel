@@ -20,6 +20,7 @@ import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { toLocalISODate } from '../utils/dateUtils';
+import { t, useLang, perLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CategoryStat {
@@ -50,14 +51,14 @@ interface Dashboard {
   streak_calendar:   string[];   // ISO date strings with activity
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  homicide: 'Homicide', theft_property: 'Theft & Property',
-  defenses: 'Defenses', criminal_procedure: 'Crim Procedure',
-  fifth_sixth_amendment: '5th & 6th Amend.',
-  fourth_amendment: '4th Amendment', due_process: 'Due Process',
-  equal_protection: 'Equal Protection', first_amendment: '1st Amendment',
-  incorporation_14th: 'Incorporation / 14th',
-};
+const CATEGORY_LABELS = perLang((): Record<string, string> => ({
+  homicide: t('x_bar_prep_home_homicide'), theft_property: t('x_bar_prep_home_theft_property'),
+  defenses: t('x_bar_prep_home_defenses'), criminal_procedure: t('x_bar_prep_home_crim_procedure'),
+  fifth_sixth_amendment: t('x_bar_prep_progress_5th_6th_amend'),
+  fourth_amendment: t('x_bar_prep_home_4th_amendment'), due_process: t('x_bar_prep_home_due_process'),
+  equal_protection: t('x_bar_prep_home_equal_protection'), first_amendment: t('x_bar_prep_home_1st_amendment'),
+  incorporation_14th: t('x_bar_prep_home_incorporation_14th'),
+}));
 
 function getAccuracyColor(pct: number): string {
   if (pct >= 75) return COLORS.legal;
@@ -67,6 +68,7 @@ function getAccuracyColor(pct: number): string {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPrepProgress'>) {
+  useLang();
   const { colors }              = useTheme();
   const [data, setData]         = useState<Dashboard | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -105,8 +107,8 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
   return (
     <View style={styles.container}>
       <GradientHeader
-        title="Progress Dashboard"
-        subtitle="MBE Performance Analytics"
+        title={t('x_bar_prep_progress_progress_dashboard')}
+        subtitle={t('x_bar_prep_progress_mbe_performance_analytics')}
         onBack={() => navigation.goBack()}
       />
 
@@ -119,41 +121,41 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         <View style={styles.heroRow}>
           {/* Pass Probability */}
           <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>Pass Probability</Text>
+            <Text style={styles.heroLabel}>{t('x_bar_prep_progress_pass_probability')}</Text>
             <Text style={[styles.heroValue, {
               color: getAccuracyColor(data?.pass_probability || 0),
             }]}>
               {data?.pass_probability || 0}%
             </Text>
-            <Text style={styles.heroSub}>Target: 66%+</Text>
+            <Text style={styles.heroSub}>{t('x_bar_prep_progress_target_66')}</Text>
           </View>
 
           {/* Overall Accuracy */}
           <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>Overall Accuracy</Text>
+            <Text style={styles.heroLabel}>{t('x_bar_prep_progress_overall_accuracy')}</Text>
             <Text style={[styles.heroValue, { color: getAccuracyColor(overall) }]}>
               {overall}%
             </Text>
-            <Text style={styles.heroSub}>{data?.total_answered || 0} answered</Text>
+            <Text style={styles.heroSub}>{t('x_bar_prep_progress_answered', { value: data?.total_answered || 0 })}</Text>
           </View>
 
           {/* Streak + Peer */}
           <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>Streak</Text>
+            <Text style={styles.heroLabel}>{t('x_bar_prep_progress_streak')}</Text>
             <Text style={[styles.heroValue, { color: colors.primary }]}>
               🔥 {data?.streak_days || 0}d
             </Text>
-            <Text style={styles.heroSub}>Top {data?.peer_percentile || '--'}%</Text>
+            <Text style={styles.heroSub}>{t('x_bar_prep_progress_top', { value: data?.peer_percentile || '--' })}</Text>
           </View>
         </View>
 
         {/* ── Category Breakdown ──────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>Category Accuracy</Text>
+        <Text style={styles.sectionTitle}>{t('x_bar_prep_progress_category_accuracy')}</Text>
         <View style={styles.categoryList}>
           {(data?.category_stats || []).map(stat => (
             <View key={stat.category} style={[styles.categoryRow, { backgroundColor: colors.card }]}>
               <Text style={styles.categoryName} numberOfLines={1}>
-                {CATEGORY_LABELS[stat.category] || stat.category}
+                {CATEGORY_LABELS()[stat.category] || stat.category}
               </Text>
               <View style={styles.categoryBarTrack}>
                 <View style={[
@@ -171,12 +173,12 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             </View>
           ))}
           {(!data?.category_stats || data.category_stats.length === 0) && (
-            <Text style={styles.emptyText}>Answer some questions to see your breakdown.</Text>
+            <Text style={styles.emptyText}>{t('x_bar_prep_progress_answer_some_questions_see')}</Text>
           )}
         </View>
 
         {/* ── 30-Day Streak Calendar ──────────────────────────────── */}
-        <Text style={styles.sectionTitle}>30-Day Activity</Text>
+        <Text style={styles.sectionTitle}>{t('x_bar_prep_progress_30_day_activity')}</Text>
         <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
           <View style={styles.calendarGrid}>
             {Array.from({ length: 30 }, (_, i) => {
@@ -196,12 +198,12 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             })}
           </View>
           <Text style={styles.calendarLegend}>
-            {data?.streak_days || 0}-day current streak
+            {t('x_bar_prep_progress_day_current_streak', { value: data?.streak_days || 0 })}
           </Text>
         </View>
 
         {/* ── Recent Sessions ─────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>Recent Sessions</Text>
+        <Text style={styles.sectionTitle}>{t('x_bar_prep_progress_recent_sessions')}</Text>
         <View style={styles.sessionList}>
           {(data?.recent_sessions || []).slice(0, 8).map(ses => (
             <View key={ses.id} style={[styles.sessionRow, { backgroundColor: colors.card }]}>
@@ -227,7 +229,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             </View>
           ))}
           {(!data?.recent_sessions || data.recent_sessions.length === 0) && (
-            <Text style={styles.emptyText}>Complete a session to see your history.</Text>
+            <Text style={styles.emptyText}>{t('x_bar_prep_progress_complete_session_see_history')}</Text>
           )}
         </View>
 
@@ -236,7 +238,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('BarPrepHome')}
         >
-          <Text style={styles.ctaBtnText}>▶ Start New Session</Text>
+          <Text style={styles.ctaBtnText}>{t('x_bar_prep_progress_start_new_session')}</Text>
         </TouchableOpacity>
 
         {/* Bar prep disclaimer */}
@@ -245,7 +247,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
       </ScrollView>
     </View>

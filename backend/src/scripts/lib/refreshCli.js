@@ -9,7 +9,7 @@ import { assertPostgres } from '../../services/dataRefresh/runLog.js';
 export async function openRefreshDb() {
   if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
     throw new Error('DATABASE_URL is not set. These scripts write the main Postgres database the app serves; '
-      + 'run them with DATABASE_URL set (e.g. `railway run node src/scripts/<script>.js`).');
+      + 'run them with DATABASE_URL set (e.g. from the Render service Shell: `node src/scripts/<script>.js`).');
   }
   const db = await getDb();
   assertPostgres(db);

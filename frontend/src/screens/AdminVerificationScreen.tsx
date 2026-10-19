@@ -19,6 +19,7 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface PendingAtty {
   user_id:      number;
@@ -31,6 +32,7 @@ interface PendingAtty {
 }
 
 function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -66,7 +68,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
       const res = await api.get('/attorney/pending-verification');
       setPending(res.data?.pending || []);
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Could not load pending verifications.'));
+      setError(apiErrorMessage(e, t('x_admin_verification_could_not_load_pending')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -76,28 +78,28 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
   useEffect(() => { load(); }, [load]);
 
   const approve = async (userId: number, name: string) => {
-confirm(`Approve ${name}?`, 'Their bar number will be verified. They will appear with a ✓ Bar Verified badge.',
-      { confirmLabel: 'Approve' }).then(async ok => { if (!ok) return;
+confirm(t('x_admin_verification_approve', { name }), t('x_admin_verification_their_bar_number_will'),
+      { confirmLabel: t('x_admin_verification_approve_2') }).then(async ok => { if (!ok) return;
       setActing(userId);
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
-              showToast(`${name} is now bar verified.`, 'success');
+              showToast(t('x_admin_verification_now_bar_verified', { name }), 'success');
             } catch (e: any) {
-              showToast(apiErrorMessage(e, 'Could not approve the application.'), 'info');
+              showToast(apiErrorMessage(e, t('x_admin_verification_could_not_approve_application')), 'info');
             } finally { setActing(null); }
     })
   };
 
   const reject = async (userId: number, name: string) => {
-confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.',
-      { confirmLabel:'Reject', destructive:true }).then(async ok=>{ if(!ok) return;
+confirm(t('x_admin_verification_reject', { name }),t('x_admin_verification_their_submission_will_be'),
+      { confirmLabel:t('x_admin_verification_reject_2'), destructive:true }).then(async ok=>{ if(!ok) return;
       setActing(userId);
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
               setPending(p => p.filter(a => a.user_id !== userId));
             } catch (e: any) {
-              showToast(apiErrorMessage(e, 'Could not reject the application.'), 'info');
+              showToast(apiErrorMessage(e, t('x_admin_verification_could_not_reject_application')), 'info');
             } finally { setActing(null); }
     })
   };
@@ -111,9 +113,9 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.steel} />}
     >
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Bar Verification Queue</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_admin_verification_bar_verification_queue')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
-          Attorneys awaiting verification · {pending.length} pending
+          {t('x_admin_verification_attorneys_awaiting_verification_pend', { length: pending.length })}
         </Text>
       </View>
 
@@ -130,9 +132,9 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
       {!loading && pending.length === 0 && (
         <View style={[styles.empty, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-          <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No pending verifications</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_admin_verification_no_pending_verifications')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textSecond }]}>
-            All bar number submissions have been reviewed.
+            {t('x_admin_verification_all_bar_number_submissions')}
           </Text>
         </View>
       )}
@@ -154,34 +156,34 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
 
           {atty.office_id && (
             <Text maxFontSizeMultiplier={1.4} style={[styles.office, { color: colors.textSecond }]}>
-              Office: {atty.office_id}
+              {t('x_admin_verification_office', { office_id: atty.office_id })}
             </Text>
           )}
           <View style={styles.actions}>
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           activeOpacity={0.6}
               style={[styles.approveBtn, { opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => approve(atty.user_id, atty.name)}
               disabled={acting === atty.user_id}
-              accessibilityLabel={`Approve ${atty.name}`}
+              accessibilityLabel={t('x_admin_verification_approve_3', { name: atty.name })}
             >
               {acting === atty.user_id
                 ? <ActivityIndicator color={colors.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.approveBtnText}>✅ Approve</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.approveBtnText}>{t('x_admin_verification_approve_4')}</Text>
               }
             </TouchableOpacity>
 
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               style={[styles.rejectBtn, { borderColor: colors.emergency, opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => reject(atty.user_id, atty.name)}
               disabled={acting === atty.user_id}
-              accessibilityLabel={`Reject ${atty.name}`}
+              accessibilityLabel={t('x_admin_verification_reject_3', { name: atty.name })}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.rejectBtnText}>✕ Reject</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rejectBtnText}>{t('x_admin_verification_reject_4')}</Text>
             </TouchableOpacity>
           </View>
         </View>

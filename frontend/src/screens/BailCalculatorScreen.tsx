@@ -340,6 +340,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
 
 function Row({ label, value, text, sub, highlight, testID }:
   { label:string; value:string; text:string; sub:string; highlight?:string; testID?: string }) {
+  useLang();
   return (
     <View testID={testID} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, flex: 1 }}>{label}</Text>

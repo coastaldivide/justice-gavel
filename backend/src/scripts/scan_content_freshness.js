@@ -7,7 +7,7 @@
  *
  * Run manually:   node scripts/scan_content_freshness.js
  * Run in CI:      added to scheduler.js to run every Sunday at 7am
- * Run in Railway: set FRESHNESS_SCAN_CRON=0 7 * * 0
+ * Run on Render:  set FRESHNESS_SCAN_CRON=0 7 * * 0
  *
  * OUTPUT:
  *   - Console report with staleness by content type

@@ -32,44 +32,46 @@ import {
   type CourtFormSource} from '../data/courtFormsRegistry';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { api } from '../services/api';
+import { t, perLang, useLang } from '../i18n';
 
 // ── Form categories ───────────────────────────────────────────────────────────
-const FORM_CATEGORIES = [
+const FORM_CATEGORIES = perLang(() => [
   {
     key: 'criminal_defense',
-    label: 'Criminal Defense',
+    label: t('x_court_forms_criminal_defense'),
     icon: '⚖️',
-    description: 'Motions, responses, pro se appearances'},
+    description: t('x_court_forms_motions_responses_pro_se')},
   {
     key: 'expungement',
-    label: 'Expungement / Record Sealing',
+    label: t('x_court_forms_expungement_record_sealing'),
     icon: '🗂️',
-    description: 'Clear or seal criminal records'},
+    description: t('x_court_forms_clear_seal_criminal_records')},
   {
     key: 'bail_bond',
-    label: 'Bail & Bond',
+    label: t('x_court_forms_bail_bond'),
     icon: '🔓',
-    description: 'Bail reduction, bond review motions'},
+    description: t('x_court_forms_bail_reduction_bond_review')},
   {
     key: 'protective_order',
-    label: 'Protective Orders',
+    label: t('x_court_forms_protective_orders'),
     icon: '🛡️',
-    description: 'Restraining orders and protective orders'},
+    description: t('x_court_forms_restraining_orders_protective_orders')},
   {
     key: 'civil_rights',
-    label: 'Civil Rights',
+    label: t('x_practice_area_selector_civil_rights'),
     icon: '✊',
-    description: '§ 1983 claims, rights violations'},
+    description: t('x_court_forms_1983_claims_rights_violations')},
   {
     key: 'small_claims',
-    label: 'Small Claims',
+    label: t('x_court_forms_small_claims'),
     icon: '📋',
-    description: 'Claims under your state\'s monetary limit'},
-];
+    description: t('x_court_forms_claims_under_state_s')},
+]);
 
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
 function CourtFormsScreen(): React.JSX.Element | null {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(COLORS, FONT);
@@ -88,12 +90,12 @@ function CourtFormsScreen(): React.JSX.Element | null {
   const filteredStates = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return [
-      { state: 'FED', stateName: 'Federal Courts (All Districts)', aocName: FEDERAL_SOURCES.aocName, formsPortalUrl: FEDERAL_SOURCES.formsPortalUrl, fillablePdf: true, eFiling: true },
-      ...STATE_COURT_FORMS,
+      { state: 'FED', stateName: t('x_court_forms_federal_courts_all_districts'), aocName: FEDERAL_SOURCES().aocName, formsPortalUrl: FEDERAL_SOURCES().formsPortalUrl, fillablePdf: true, eFiling: true },
+      ...STATE_COURT_FORMS(),
     ];
     return [
-      { state: 'FED', stateName: 'Federal Courts (All Districts)', aocName: FEDERAL_SOURCES.aocName, formsPortalUrl: FEDERAL_SOURCES.formsPortalUrl, fillablePdf: true, eFiling: true },
-      ...STATE_COURT_FORMS,
+      { state: 'FED', stateName: t('x_court_forms_federal_courts_all_districts'), aocName: FEDERAL_SOURCES().aocName, formsPortalUrl: FEDERAL_SOURCES().formsPortalUrl, fillablePdf: true, eFiling: true },
+      ...STATE_COURT_FORMS(),
     ].filter(s =>
       (s.stateName || "").toLowerCase().includes(q) ||
       (s.state || "").toLowerCase().includes(q) ||
@@ -126,7 +128,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
   // ── Open official form URL ─────────────────────────────────────────────────
   const openFormUrl = useCallback((url: string) => {
     Linking.openURL(url).catch(() => {
-      showToast('Please visit the URL directly in your browser.', 'warning');
+      showToast(t('x_court_forms_please_visit_url_directly'), 'warning');
     });
   }, [showToast]);
 
@@ -144,19 +146,14 @@ function CourtFormsScreen(): React.JSX.Element | null {
     setAiLoading(true);
     setPhase('ai_guide');
     try {
-      const categoryLabel = FORM_CATEGORIES.find(c => c.key === selectedCategory)?.label ?? selectedCategory;
+      const categoryLabel = FORM_CATEGORIES().find(c => c.key === selectedCategory)?.label ?? selectedCategory;
       const res = await api.post('/chat/ask', {
-        message: `Explain what information someone needs to gather before completing a ${categoryLabel} form in ${selectedState.stateName}.
-
-          List the typical fields on these forms and explain what each field means in plain language.
-          Do NOT recommend what strategy to take or what to write. Only explain what each field is asking for.
-
-          Format as a numbered list. Start with the most important fields. Keep each explanation to 2-3 sentences.`,
+        message: t('x_court_forms_explain_what_information_someone', { categoryLabel, stateName: selectedState.stateName }),
         systemContext: 'court_forms_explainer',
         disclaimer: 'information_only'});
       if (mountedRef.current) setAiGuide(res.data?.response ?? res.data?.content ?? null);
     } catch {
-      if (mountedRef.current) setAiGuide('Unable to load field guide. Please refer to the official court form instructions for assistance.');
+      if (mountedRef.current) setAiGuide(t('x_court_forms_unable_load_field_guide'));
     } finally {
       if (mountedRef.current) setAiLoading(false);
     }
@@ -176,12 +173,12 @@ function CourtFormsScreen(): React.JSX.Element | null {
       <View style={s.stateBadges}>
         {item.fillablePdf && (
           <View style={[s.badge, { backgroundColor: colors.legalBg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.legal }]}>Fillable PDF</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.legal }]}>{t('x_court_forms_fillable_pdf')}</Text>
           </View>
         )}
         {item.eFiling && (
           <View style={[s.badge, { backgroundColor: colors.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>E-File</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>{t('x_court_forms_e_file')}</Text>
           </View>
         )}
       </View>
@@ -194,22 +191,22 @@ function CourtFormsScreen(): React.JSX.Element | null {
       <View style={s.root}
         testID="court-forms-screen">
         <View style={s.header}>
-          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>Official Court Forms</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>{t('x_court_forms_official_court_forms')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>
-            Select your state to find official government court forms
+            {t('x_court_forms_select_state_find_official')}
           </Text>
         </View>
         <View style={s.searchBox}>
           <TextInput
             style={s.searchInput}
-            placeholder="Search states..."
+            placeholder={t('x_court_forms_search_states')}
             placeholderTextColor={COLORS.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
             clearButtonMode="while-editing"
-            accessibilityLabel="Search states"
-          accessibilityHint="Double-tap to activate"
+            accessibilityLabel={t('x_court_forms_search_states_2')}
+          accessibilityHint={t('cp_double_tap')}
           blurOnSubmit
         />
         </View>
@@ -218,7 +215,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           ListEmptyComponent={
             <View style={{ padding:40, alignItems:'center' }}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>
-                📄 No states match your search. Try a different name or abbreviation.
+                {t('x_court_forms_no_states_match_search')}
               </Text>
             </View>
           }
@@ -228,8 +225,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           ListHeaderComponent={
             <View>
               <Text maxFontSizeMultiplier={1.4} style={s.disclaimerText}>
-                All forms link to official .gov and court websites. Government forms
-                are public domain (17 U.S.C. § 105).
+                {t('x_court_forms_all_forms_link_official')}
               </Text>
             </View>
           }
@@ -249,9 +245,9 @@ function CourtFormsScreen(): React.JSX.Element | null {
         <View style={s.subHeader}>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Back to states"
+            accessibilityLabel={t('x_court_forms_back_states')}
             onPress={() => { setSelectedState(null); setPhase('state_select'); }}>
-            <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← States</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>{t('x_court_forms_states')}</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{selectedState.stateName}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderSub}>{selectedState.aocName}</Text>
@@ -261,12 +257,12 @@ function CourtFormsScreen(): React.JSX.Element | null {
           style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={s.categoryList}>
           
-          {FORM_CATEGORIES.length === 0 && (
+          {FORM_CATEGORIES().length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
             </View>
           )}
-{FORM_CATEGORIES.map(cat => (
+{FORM_CATEGORIES().map(cat => (
             <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}
@@ -286,15 +282,13 @@ function CourtFormsScreen(): React.JSX.Element | null {
             backgroundColor: colors.warnBg, borderRadius: 12, padding: 16,
             borderWidth: 1, borderColor: colors.gold}}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight: '700', color: colors.warnDark, marginBottom: 4 }}>
-              ⚠️ Juvenile Records -- Different Process
+              {t('x_court_forms_juvenile_records_different_process')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.warnDark, lineHeight: 19 }}>
-              Juvenile records use separate courts, forms, and eligibility rules in every state.
-              The forms above apply to adult criminal records only. For juvenile records,
-              contact your state juvenile court clerk or visit{' '}
+              {t('x_court_forms_juvenile_records_use_separate')}{' '}
               <Text maxFontSizeMultiplier={1.4}
                 style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
-                onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'))}
+                onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast(t('action_failed'), 'error'))}
               >
                 juvenilelaw.org/find-help
               </Text>
@@ -306,11 +300,11 @@ function CourtFormsScreen(): React.JSX.Element | null {
   accessibilityRole="button"
             style={[s.categoryCard, s.selfHelpCard]}
             onPress={() => openFormUrl(selectedState.selfHelpUrl ?? selectedState.formsPortalUrl)}
-            accessibilityLabel="All forms -- open official state portal"
+            accessibilityLabel={t('x_court_forms_all_forms_open_official')}
           >
             <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>🌐</Text>
             <View style={s.categoryInfo}>
-              <Text maxFontSizeMultiplier={1.4} style={s.categoryLabel}>All Forms -- Official Portal</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.categoryLabel}>{t('x_court_forms_all_forms_official_portal')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.categoryDesc}>{selectedState.aocName}</Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={s.chevron}>↗</Text>
@@ -327,7 +321,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
   // ── Phase: Form display + links ────────────────────────────────────────────
   if (phase === 'form_display' && selectedState && selectedCategory) {
-    const categoryInfo = FORM_CATEGORIES.find(c => c.key === selectedCategory);
+    const categoryInfo = FORM_CATEGORIES().find(c => c.key === selectedCategory);
     const primaryUrl = getBestUrl(selectedState, selectedCategory);
     const selfHelpUrl = selectedState.selfHelpUrl ?? selectedState.formsPortalUrl;
 
@@ -336,7 +330,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
         <View style={s.subHeader}>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel={`Back to ${selectedState.stateName}`}
+            accessibilityLabel={t('x_court_forms_back', { stateName: selectedState.stateName })}
             onPress={() => { setSelectedCategory(null); setPhase('category_select'); }}>
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← {selectedState.stateName}</Text>
           </TouchableOpacity>
@@ -347,25 +341,23 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
           {/* Information notice */}
           <View style={s.infoNotice}>
-            <Text maxFontSizeMultiplier={1.4} style={s.infoNoticeTitle}>ℹ️ Legal Information Only</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.infoNoticeTitle}>{t('x_court_forms_legal_information_only')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.infoNoticeText}>
-              The links below open official government form portals. Justice Gavel
-              helps you understand what each form asks for. This is not legal advice.
-              Consult a licensed attorney before filing.
+              {t('x_court_forms_links_below_open_official')}
             </Text>
           </View>
 
           {/* Official form link */}
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>Official Government Forms</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>{t('x_court_forms_official_government_forms')}</Text>
           <TouchableOpacity
             accessibilityRole="link"
             style={s.formLink}
             onPress={() => openFormUrl(primaryUrl)}
-            accessibilityLabel={`Open ${selectedState.stateName} ${categoryInfo?.label} forms`}
+            accessibilityLabel={t('x_court_forms_open_forms', { stateName: selectedState.stateName, label: categoryInfo?.label })}
           >
             <View style={s.formLinkLeft}>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>
-                {selectedState.stateName} -- {categoryInfo?.label} Forms
+                {t('x_court_forms_forms', { stateName: selectedState.stateName, label: categoryInfo?.label })}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkUrl} numberOfLines={1}>{primaryUrl}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>{selectedState.aocName}</Text>
@@ -381,15 +373,15 @@ function CourtFormsScreen(): React.JSX.Element | null {
               accessibilityRole="link"
               style={[s.formLink, s.formLinkSecondary]}
               onPress={() => openFormUrl(selfHelpUrl)}
-              accessibilityLabel="Open self-help portal"
+              accessibilityLabel={t('x_court_forms_open_self_help_portal')}
             >
               <View style={s.formLinkLeft}>
-                <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>Self-Help Center</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>{t('x_court_forms_self_help_center')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.formLinkUrl} numberOfLines={1}>{selfHelpUrl}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>Plain-language guides and instructions</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>{t('x_court_forms_plain_language_guides_instructions')}</Text>
               </View>
               <View style={[s.govBadge, { backgroundColor: colors.bgSubtle }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>Self-Help</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>{t('x_court_forms_self_help')}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -398,16 +390,16 @@ function CourtFormsScreen(): React.JSX.Element | null {
           <TouchableOpacity
             accessibilityRole="link"
             style={[s.formLink, s.formLinkSecondary]}
-            onPress={() => openFormUrl(FEDERAL_SOURCES.formsPortalUrl)}
-            accessibilityLabel="Open federal court forms"
+            onPress={() => openFormUrl(FEDERAL_SOURCES().formsPortalUrl)}
+            accessibilityLabel={t('x_court_forms_open_federal_court_forms')}
           >
             <View style={s.formLinkLeft}>
-              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>Federal Court Forms</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>{t('x_court_forms_federal_court_forms')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkUrl}>uscourts.gov</Text>
-              <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>Administrative Office of the U.S. Courts</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>{t('x_court_forms_registry_administrative_office_u_s')}</Text>
             </View>
             <View style={[s.govBadge, { backgroundColor: colors.bgSubtle }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>Federal</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>{t('x_practice_area_selector_federal')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -416,51 +408,47 @@ function CourtFormsScreen(): React.JSX.Element | null {
             accessibilityRole="link"
             style={[s.formLink, s.formLinkSecondary]}
             onPress={() => openFormUrl('https://www.lawhelp.org/')}
-            accessibilityLabel="Open LawHelp.org free legal help"
+            accessibilityLabel={t('x_court_forms_open_lawhelp_org_free')}
           >
             <View style={s.formLinkLeft}>
-              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>LawHelp.org -- Free Legal Help</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>{t('x_court_forms_lawhelp_org_free_legal')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkUrl}>lawhelp.org</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>
-                Non-profit legal aid referrals and interactive forms -- all 50 states
+                {t('x_court_forms_non_profit_legal_aid')}
               </Text>
             </View>
           </TouchableOpacity>
 
           {/* AI field guide CTA */}
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>Understand the Form</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>{t('x_court_forms_understand_form')}</Text>
           <TouchableOpacity accessibilityRole="button"
             style={s.aiGuideBtn}
             onPress={loadAiGuide}
-            accessibilityLabel="Get AI field guide"
+            accessibilityLabel={t('x_court_forms_get_ai_field_guide')}
           >
             <AppIcon name="hardware-chip-outline" size={20} color={COLORS.navy} />
             <View style={s.aiGuideBtnInfo}>
               <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnTitle}>
-                AI Field Guide -- What Each Section Asks For
+                {t('x_court_forms_ai_field_guide_what')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnSub}>
-                Plain-language explanations of form fields. Not legal advice.
+                {t('x_court_forms_plain_language_explanations_form')}
               </Text>
             </View>
           </TouchableOpacity>
 
           {/* Filing reminder */}
           <View style={s.filingReminder}>
-            <Text maxFontSizeMultiplier={1.4} style={s.filingReminderTitle}>Before You File</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.filingReminderTitle}>{t('x_court_forms_before_file')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.filingReminderText}>
-              {'• '}Read all instructions on the official form carefully{'\n'}
-              {'• '}Complete every required field -- blank fields can result in rejection{'\n'}
-              {'• '}Make copies before filing{'\n'}
-              {'• '}Confirm filing fees and deadlines with the clerk's office{'\n'}
-              {'• '}Consider consulting a{' '}
+              {t('x_court_forms_read_all_instructions_official')}{' '}
               <Text maxFontSizeMultiplier={1.4}
                 style={s.link}
                 onPress={() => openFormUrl('https://www.lawhelp.org/')}
               >
-                free legal aid attorney
+                {t('x_court_forms_free_legal_aid_attorney')}
               </Text>
-              {' '}before filing
+              {' '}{t('x_court_forms_before_filing')}
             </Text>
           </View>
 
@@ -471,17 +459,17 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
   // ── Phase: AI field guide ─────────────────────────────────────────────────
   if (phase === 'ai_guide') {
-    const categoryInfo = FORM_CATEGORIES.find(c => c.key === selectedCategory);
+    const categoryInfo = FORM_CATEGORIES().find(c => c.key === selectedCategory);
     return (
       <View style={s.root}>
         <View style={s.subHeader}>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="Back to forms"
+            accessibilityLabel={t('x_court_forms_back_forms')}
             onPress={() => setPhase('form_display')}>
-            <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← Forms</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>{t('x_court_forms_forms_2')}</Text>
           </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>Field Guide</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{t('x_court_forms_field_guide')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderSub}>
             {selectedState?.stateName} · {categoryInfo?.label}
           </Text>
@@ -491,19 +479,16 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
           {/* Disclaimer banner -- always shown in AI phase */}
           <View style={s.aiDisclaimerBanner}>
-            <Text maxFontSizeMultiplier={1.4} style={s.aiDisclaimerTitle}>⚠️ NOT LEGAL ADVICE</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.aiDisclaimerTitle}>{t('x_court_forms_not_legal_advice')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.aiDisclaimerText}>
-              This AI explanation describes what form fields ask for. It does not
-              constitute legal advice, a legal strategy, or a recommendation of
-              what to write. Laws vary by jurisdiction. Consult a licensed attorney
-              before filing.
+              {t('x_court_forms_this_ai_explanation_describes')}
             </Text>
           </View>
 
           {aiLoading ? (
             <View style={s.loadingBox}>
               <ActivityIndicator size="large" color={COLORS.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={s.loadingText}>Loading field guide…</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.loadingText}>{t('x_court_forms_loading_field_guide')}</Text>
             </View>
           ) : aiGuide ? (
             <View style={s.aiGuideContent}>
@@ -520,9 +505,9 @@ function CourtFormsScreen(): React.JSX.Element | null {
             )}
           >
             <View style={s.formLinkLeft}>
-              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>Open Official Form</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.formLinkTitle}>{t('x_court_forms_open_official_form')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkSub}>
-                Always use the official government form when filing.
+                {t('x_court_forms_always_use_official_government')}
               </Text>
             </View>
             <View style={s.govBadge}>

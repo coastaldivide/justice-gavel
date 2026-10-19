@@ -20,7 +20,7 @@
 ## Transport Security ✅
 - [x] helmet.js: HSTS, CSP, X-Frame-Options, noSniff, referrer policy
 - [x] CORS locked to production domains (+ localhost dev origins)
-- [x] TLS handled by Railway (auto-renewed)
+- [x] TLS handled by Render (managed certificates, auto-renewed)
 
 ## Data ✅
 - [x] Cases soft-deleted (`deleted_at`)
@@ -64,9 +64,11 @@
 - [x] `openapi.json` regenerated from mounted routes; drift fails CI
 
 ## ⚠️ PENDING BEFORE LAUNCH
-- [ ] Set all Railway env vars (see RAILWAY_ENV_SETUP.md) — **rotate any
+- [ ] Create the Render Blueprint and set every `sync: false` env var (see
+      DEPLOY_ENV_SETUP.md; ENCRYPTION_KEY = the existing key) — **rotate any
       secret that ever appeared in git history**
-- [ ] Configure Sentry DSN
+- [ ] Sentry: server DSN is set in render.yaml (`SENTRY_DSN`); confirm the first event arrives
+- [ ] Set `TRUST_PROXY` from `GET /api/admin/diagnostics/client-ip` (RUNBOOK "Client IP / TRUST_PROXY")
 - [ ] Configure uptime monitor on /health (UPTIME_MONITORING.md)
 - [ ] Set STRIPE_WEBHOOK_SECRET from the Stripe dashboard (when enabling payments)
 - [ ] Test full payment flow in Stripe test mode (when enabling payments)

@@ -20,11 +20,12 @@ import { Alert, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { syncPushToken } from './push';
+import { t, perLang } from '../i18n';
 
 export type PermissionAnswer = 'granted' | 'denied' | 'declined';
 
 /** Our explainer dialog. Resolves true when the user chooses to continue. */
-export function explain(title: string, message: string, confirmLabel = 'Continue', cancelLabel = 'Not now'): Promise<boolean> {
+export function explain(title: string, message: string, confirmLabel = t('continue'), cancelLabel = t('cd_not_now')): Promise<boolean> {
   if (Platform.OS === 'web') {
     const ok = typeof window !== 'undefined' && typeof window.confirm === 'function' ? window.confirm(`${title}\n\n${message}`) : true;
     return Promise.resolve(ok);
@@ -37,14 +38,14 @@ export function explain(title: string, message: string, confirmLabel = 'Continue
   });
 }
 
-async function offerSettings(what: string, why: string): Promise<void> {
+async function offerSettings(title: string, why: string): Promise<void> {
   if (Platform.OS === 'web') return;
-  const open = await explain(`${what} is turned off`, `${why}\n\nYou can turn it on in Settings.`, 'Open Settings', 'Not now');
+  const open = await explain(title, t('x_permissions_can_turn_it_settings', { why }), t('x_cs_open_settings'), t('cd_not_now'));
   if (open) Linking.openSettings().catch(() => { /* no settings app (simulator) */ });
 }
 
 // ── Location ────────────────────────────────────────────────────────────────
-export const LOCATION_REASON = 'Justice Gavel uses your location only to show the lawyers, bail agents and courthouses nearest to you. It is not stored or shared. You can search by city instead.';
+export const LOCATION_REASON = perLang(() => t('x_permissions_justice_gavel_uses_location'));
 
 /** Current permission without prompting. */
 export async function locationGranted(): Promise<boolean> {
@@ -55,33 +56,33 @@ export async function locationGranted(): Promise<boolean> {
 }
 
 /** Ask for location in context (see header). */
-export async function requestLocationInContext(reason: string = LOCATION_REASON): Promise<PermissionAnswer> {
+export async function requestLocationInContext(reason: string = LOCATION_REASON()): Promise<PermissionAnswer> {
   const cur = await Location.getForegroundPermissionsAsync().catch(() => null);
   if (cur?.status === 'granted') return 'granted';
   if (cur && cur.status === 'denied' && cur.canAskAgain === false) {
-    await offerSettings('Location', reason);
+    await offerSettings(t('x_permissions_location_off'), reason);
     return 'denied';
   }
-  const go = await explain('Use your location?', reason, 'Use my location', 'Not now');
+  const go = await explain(t('x_permissions_use_location'), reason, t('hn_use_location'), t('cd_not_now'));
   if (!go) return 'declined';
   const { status } = await Location.requestForegroundPermissionsAsync();
   return status === 'granted' ? 'granted' : 'denied';
 }
 
 // ── Notifications ───────────────────────────────────────────────────────────
-export const REMINDER_REASON = 'Turn on notifications so Justice Gavel can remind you 7 days, 3 days, the evening before and the morning of your court date. Missing court can lead to a warrant.';
+export const REMINDER_REASON = perLang(() => t('x_permissions_turn_notifications_so_justice'));
 
 /** Ask for notifications in context; registers the push token when granted. */
-export async function requestNotificationsInContext(reason: string = REMINDER_REASON): Promise<PermissionAnswer> {
+export async function requestNotificationsInContext(reason: string = REMINDER_REASON()): Promise<PermissionAnswer> {
   if (Platform.OS === 'web') return 'declined';     // e-mail reminders cover web
   const cur = await Notifications.getPermissionsAsync().catch(() => null);
   let granted = cur?.status === 'granted';
   if (!granted) {
     if (cur && cur.status === 'denied' && cur.canAskAgain === false) {
-      await offerSettings('Notifications', reason);
+      await offerSettings(t('x_permissions_notifications_off'), reason);
       return 'denied';
     }
-    const go = await explain('Get court-date reminders?', reason, 'Turn on reminders', 'Not now');
+    const go = await explain(t('x_permissions_get_court_date_reminders'), reason, t('x_permissions_turn_reminders'), t('cd_not_now'));
     if (!go) return 'declined';
     const { status } = await Notifications.requestPermissionsAsync();
     granted = status === 'granted';

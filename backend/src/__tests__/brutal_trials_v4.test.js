@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -545,8 +546,7 @@ describe('10. api.ts — Timeout, Retry, Interceptors, Dedup', () => {
   });
 
   test('10-05: api.ts error normalisation returns user-friendly messages', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/api.ts', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/services/api.ts');
     expect(src).toContain('serverMsg');
     expect(src).toContain('Too many requests');
     expect(src).toContain('Network error');

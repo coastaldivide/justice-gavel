@@ -26,7 +26,7 @@ interface Props {
   feature?: string;  // e.g. "AI Legal Chat", "Legal Research", "Motion Generator"
 }
 
-export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis' }: Props) {
+export function AIDisclaimer({ variant = 'banner', feature = t('x_aidisclaimer_ai_legal_analysis') }: Props) {
   const { colors } = useTheme();
   useLang();
   const [showModal, setShowModal] = useState(false);
@@ -53,45 +53,34 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
         transparent
         animationType="fade"
         accessibilityViewIsModal
-        accessibilityLabel="Legal disclaimer"
+        accessibilityLabel={t('upl_a11y')}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.bg }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              ⚖️ Important Legal Notice
+              {t('x_aidisclaimer_important_legal_notice')}
             </Text>
             <ScrollView style={{ maxHeight: 280 }}>
               <Text style={[styles.modalBody, { color: colors.textMuted }]}>
-                <Text style={{ fontWeight: '700' }}>Justice Gavel provides legal information, not legal advice.</Text>
-                {'\n\n'}
-                The {feature} feature uses AI to provide general legal information
-                based on publicly available law. This is educational content only.
-                {'\n\n'}
-                <Text style={{ fontWeight: '600' }}>This is NOT:</Text>
-                {'\n'}
-                • Legal advice specific to your situation{'\n'}
-                • A substitute for an attorney{'\n'}
-                • A lawyer-client relationship{'\n\n'}
-                <Text style={{ fontWeight: '600' }}>Important limitations:</Text>
-                {'\n'}
-                • AI can make mistakes and may be out of date{'\n'}
-                • Laws vary by jurisdiction and change frequently{'\n'}
-                • Your situation may have facts that change the legal outcome{'\n\n'}
-                For matters with significant consequences, always consult a
-                licensed attorney in your jurisdiction.
+                <Text style={{ fontWeight: '700' }}>{t('x_aidisclaimer_justice_gavel_provides_legal')}</Text>
+                {' '}{t('x_aidisclaimer_feature_uses_ai_provide', { feature })}{' '}
+                <Text style={{ fontWeight: '600' }}>{t('x_aidisclaimer_this_not')}</Text>
+                {' '}{t('x_aidisclaimer_legal_advice_specific_situation')}{' '}
+                <Text style={{ fontWeight: '600' }}>{t('x_aidisclaimer_important_limitations')}</Text>
+                {' '}{t('x_aidisclaimer_ai_can_make_mistakes')}
               </Text>
             </ScrollView>
             <TouchableOpacity
               style={[styles.ackButton, { backgroundColor: colors.navy }]}
               onPress={acknowledge}
               accessibilityRole="button"
-              accessibilityLabel="I understand, continue"
-              accessibilityHint="Acknowledges the legal disclaimer and proceeds to the feature"
+              accessibilityLabel={t('x_aidisclaimer_i_understand_continue')}
+              accessibilityHint={t('x_aidisclaimer_acknowledges_legal_disclaimer_procee')}
             >
-              <Text style={styles.ackButtonText}>I Understand — Continue</Text>
+              <Text style={styles.ackButtonText}>{t('x_aidisclaimer_i_understand_continue_2')}</Text>
             </TouchableOpacity>
             <Text style={[styles.modalFooter, { color: colors.textMuted }]}>
-              This notice appears once per device. Review our Terms for full disclaimer.
+              {t('x_aidisclaimer_this_notice_appears_once')}
             </Text>
           </View>
         </View>

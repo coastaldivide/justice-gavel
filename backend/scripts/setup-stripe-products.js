@@ -115,7 +115,7 @@ for (const p of PRODUCTS) {
 }
 
 console.log("=" .repeat(60));
-console.log("ADD THESE TO backend/.env AND RAILWAY ENVIRONMENT VARS:");
+console.log("ADD THESE TO backend/.env AND THE RENDER ENVIRONMENT VARS (service → Environment):");
 console.log("=".repeat(60));
 envLines.forEach(l => console.log(l));
-console.log("\n✅ Done! Copy the price IDs above into Railway.");
+console.log("\n✅ Done! Copy the price IDs above into Render (service → Environment).");

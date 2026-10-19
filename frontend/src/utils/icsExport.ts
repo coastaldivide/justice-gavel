@@ -8,6 +8,7 @@
  */
 import { Platform } from 'react-native';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 /** 'court-date-YYYY-MM-DD.ics' from the event's DTSTART (not a VTIMEZONE's). */
 export function icsFilename(text: string): string {
@@ -41,6 +42,6 @@ export async function exportCourtDateIcs(id: number): Promise<'download' | 'shar
   file.write(text);
   const Sharing = await import('expo-sharing');
   if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
-  await Sharing.shareAsync(file.uri, { mimeType: 'text/calendar', UTI: 'public.calendar-event', dialogTitle: 'Add to calendar' });
+  await Sharing.shareAsync(file.uri, { mimeType: 'text/calendar', UTI: 'public.calendar-event', dialogTitle: t('x_ics_export_add_calendar') });
   return 'share';
 }

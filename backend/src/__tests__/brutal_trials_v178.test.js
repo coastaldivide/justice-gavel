@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v178
@@ -210,7 +211,7 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(bad).toBe(0);
   });
   test('JOURNEY-11: Attorney Dashboard — profile + cases + bar validation', async () => {
-    const fs=await import('fs');     const atty=fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
+    const atty=feSource(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx');
     expect(atty).toContain('/attorney/profile');
     expect(atty).toContain('/attorney/cases');
     expect(atty).toContain('saveProfile');

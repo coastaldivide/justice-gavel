@@ -99,6 +99,7 @@ export async function pollJob(
  * error             — string if failed
  */
 import { useState, useCallback, useRef } from 'react';
+import { t } from '../i18n';
 
 export function useJobPoller<T = any>() {
   const [loading,  setLoading]  = useState(false);
@@ -120,9 +121,9 @@ export function useJobPoller<T = any>() {
           if (abortRef.current) return;
           const sec = Math.round(elapsed / 1000);
           if (status === 'processing') {
-            setPhase(sec < 10 ? 'Thinking…' : sec < 30 ? 'Analyzing…' : 'Almost there…');
+            setPhase(sec < 10 ? t('x_job_poller_thinking') : sec < 30 ? t('x_job_poller_analyzing') : t('x_job_poller_almost_there'));
           } else {
-            setPhase('Waiting in queue…');
+            setPhase(t('x_job_poller_waiting_queue'));
           }
           opts.onProgress?.({ status, elapsed });
         },
@@ -133,7 +134,7 @@ export function useJobPoller<T = any>() {
       }
     } catch {
       if (!abortRef.current) {
-        setError('Something went wrong. Please try again.');
+        setError(t('x_error_state_something_went_wrong_please'));
         setPhase('');
       }
     } finally {

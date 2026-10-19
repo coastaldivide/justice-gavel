@@ -27,6 +27,7 @@ const ALLOW_SAME = {
   tier_legal_pro: LANGS,
   tier_esquire: LANGS,
   booking_min: ['es', 'pt'], // the unit abbreviation "min" is the same word
+  x_common_no: ['es'],       // Spanish "No" is the same word
 };
 
 const PLACEHOLDER = /\{\{?\w+\}?\}|%[sd]|\$\{[^}]*\}/g;
@@ -61,7 +62,7 @@ describe('i18n parity — es / pt / vi are complete translations of en', () => {
       });
 
       it('allowlist stays tiny and every entry is still identical (no stale entries)', () => {
-        expect(Object.keys(ALLOW_SAME).length).toBeLessThanOrEqual(7);
+        expect(Object.keys(ALLOW_SAME).length).toBeLessThanOrEqual(8);
         for (const [k, langs] of Object.entries(ALLOW_SAME)) {
           if (langs.includes(lang)) expect(d[k]).toBe(en[k]);
         }

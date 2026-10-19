@@ -19,6 +19,7 @@ import type {} from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { t, perLang, useLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,161 +32,162 @@ type ProcessStep = {
 };
 
 // ── Juvenile process steps ────────────────────────────────────────────────────
-const PROCESS_STEPS: ProcessStep[] = [
+const PROCESS_STEPS = perLang((): ProcessStep[] => [
   {
-    title:    'Arrest or Contact',
-    timeline: 'Immediate',
-    what:     'A juvenile can be taken into custody by police for a delinquent act (crime) or status offense (truancy, curfew, running away). Police must notify parents or guardians promptly -- usually within a few hours.',
-    rights:   'Miranda warnings apply to juveniles. A juvenile has the right to remain silent and the right to an attorney. In most states, a juvenile cannot waive Miranda rights without a parent or attorney present.',
-    tip:      'The most important thing a juvenile can do: say "I want my parent and a lawyer." Nothing else. Do not explain, justify, or apologize.',
+    title:    t('x_juvenile_justice_arrest_contact'),
+    timeline: t('x_juvenile_justice_immediate'),
+    what:     t('x_juvenile_justice_juvenile_can_be_taken'),
+    rights:   t('x_juvenile_justice_miranda_warnings_apply_juveniles'),
+    tip:      t('x_juvenile_justice_most_important_thing_juvenile'),
   },
   {
-    title:    'Intake & Decision',
-    timeline: 'Within 24-72 hours',
-    what:     'A probation officer or intake officer reviews the case. They can: release with a warning, release to parents with conditions, refer to diversion, or refer to court. Many cases end here -- especially first offenses.',
-    rights:   'Parents have the right to be present during intake questioning. The juvenile has the right to an attorney at all stages.',
-    tip:      'Cooperating with intake does not mean answering questions about the offense. It means being respectful and present. The attorney speaks for the juvenile.',
+    title:    t('x_juvenile_justice_intake_decision'),
+    timeline: t('x_juvenile_justice_within_24_72_hours'),
+    what:     t('x_juvenile_justice_probation_officer_intake_officer'),
+    rights:   t('x_juvenile_justice_parents_have_right_be'),
+    tip:      t('x_juvenile_justice_cooperating_with_intake_does'),
   },
   {
-    title:    'Detention Hearing',
-    timeline: 'Within 24-72 hours if held',
-    what:     'If the juvenile is held in detention (juvenile hall), a detention hearing must happen quickly -- usually within 24 to 72 hours. The judge decides whether detention continues or the juvenile is released to parents.',
-    rights:   'The right to an attorney applies at the detention hearing. This is In re Gault (1967) -- the Supreme Court established that juveniles have due process rights in juvenile court. Bail is not typically used in juvenile court; release is to parental custody.',
-    tip:      'The detention hearing is the first opportunity for an attorney to argue for release. A prepared attorney who knows the family situation significantly increases the odds of release.',
+    title:    t('x_juvenile_justice_detention_hearing'),
+    timeline: t('x_juvenile_justice_within_24_72_hours_2'),
+    what:     t('x_juvenile_justice_if_juvenile_held_detention'),
+    rights:   t('x_juvenile_justice_right_attorney_applies_at'),
+    tip:      t('x_juvenile_justice_detention_hearing_first_opportunity'),
   },
   {
-    title:    'Petition & Arraignment',
-    timeline: 'Days to weeks after arrest',
-    what:     'The prosecutor (or in some states the probation department) files a petition alleging the juvenile is delinquent. The juvenile enters an admission (equivalent to guilty plea) or denial (equivalent to not guilty). This is NOT a criminal complaint -- it is a petition in juvenile court.',
-    rights:   'The juvenile has the right to deny the petition and contest it at an adjudicatory hearing. No jury trial in most states -- a judge decides.',
-    tip:      'The language is different. The juvenile is not "convicted" -- they are "adjudicated delinquent." This distinction matters enormously for record sealing.',
+    title:    t('x_juvenile_justice_petition_arraignment'),
+    timeline: t('x_juvenile_justice_days_weeks_after_arrest'),
+    what:     t('x_juvenile_justice_prosecutor_some_states_probation'),
+    rights:   t('x_juvenile_justice_juvenile_has_right_deny'),
+    tip:      t('x_juvenile_justice_language_different_juvenile_not'),
   },
   {
-    title:    'Adjudicatory Hearing',
-    timeline: 'Weeks to months after petition',
-    what:     'This is the juvenile equivalent of a trial. A judge (not a jury in most states) hears evidence and decides whether the juvenile committed the alleged offense. The standard is still "beyond a reasonable doubt."',
-    rights:   'Full due process rights apply: right to notice of charges, right to an attorney, right to confront and cross-examine witnesses, right against self-incrimination. Established by In re Gault, 387 U.S. 1 (1967).',
-    tip:      'Hearings are typically closed to the public. Court records are confidential in most states. This is a fundamental difference from adult court.',
+    title:    t('x_juvenile_justice_adjudicatory_hearing'),
+    timeline: t('x_juvenile_justice_weeks_months_after_petition'),
+    what:     t('x_juvenile_justice_this_juvenile_equivalent_trial'),
+    rights:   t('x_juvenile_justice_full_due_process_rights'),
+    tip:      t('x_juvenile_justice_hearings_typically_closed_public'),
   },
   {
-    title:    'Disposition Hearing',
-    timeline: 'Follows adjudication',
-    what:     'If adjudicated delinquent, the judge holds a disposition hearing to determine consequences. Options range from informal probation to commitment to a juvenile facility. The court considers the juvenile\'s best interest -- rehabilitation, not punishment.',
-    rights:   'The right to present mitigating evidence. Probation reports are used -- the juvenile and family can challenge inaccuracies.',
-    tip:      'Disposition is where the attorney\'s work matters most. Community ties, school performance, family support, and demonstrated remorse all influence the outcome. A good attorney presents all of it.',
+    title:    t('x_juvenile_justice_disposition_hearing'),
+    timeline: t('x_juvenile_justice_follows_adjudication'),
+    what:     t('x_juvenile_justice_if_adjudicated_delinquent_judge'),
+    rights:   t('x_juvenile_justice_right_present_mitigating_evidence'),
+    tip:      t('x_juvenile_justice_disposition_where_attorney_s'),
   },
   {
-    title:    'Record Sealing',
-    timeline: 'At completion or age 18-21',
-    what:     'Juvenile records are confidential in most states and can be sealed -- meaning the record is hidden from background checks and the public. In many states this happens automatically. In others it requires a petition.',
-    rights:   'Sealed records cannot be used against the individual in most circumstances. In most states, after sealing, the individual can lawfully answer "no" when asked if they have been arrested or convicted.',
-    tip:      'See the Sealing tab for state-by-state details. Many juveniles and their families do not know records can be sealed. This is one of the most important things an attorney can do after disposition.',
+    title:    t('juv_tab_sealing'),
+    timeline: t('x_juvenile_justice_at_completion_age_18'),
+    what:     t('x_juvenile_justice_juvenile_records_confidential_most'),
+    rights:   t('x_juvenile_justice_sealed_records_cannot_be'),
+    tip:      t('x_juvenile_justice_see_sealing_tab_state'),
   },
-];
+]);
 
 // ── Rights sections ───────────────────────────────────────────────────────────
-const RIGHTS_SECTIONS = [
+const RIGHTS_SECTIONS = perLang(() => [
   {
-    heading: 'You have the right to remain silent',
-    body:    'Miranda warnings apply to juveniles. A minor cannot waive Miranda rights in many states without a parent or attorney present. Say: "I want my parent and a lawyer." Do not answer questions about the offense -- even if it feels like helping.',
+    heading: t('x_juvenile_justice_have_right_remain_silent'),
+    body:    t('x_juvenile_justice_miranda_warnings_apply_juveniles_2'),
     icon:    '🤫',
   },
   {
-    heading: 'Your parent must be notified',
-    body:    'Police must notify a parent or legal guardian promptly after taking a juvenile into custody. Most states require notification within a few hours. If no parent can be reached, a guardian or child protective services must be contacted.',
+    heading: t('x_juvenile_justice_parent_must_be_notified'),
+    body:    t('x_juvenile_justice_police_must_notify_parent'),
     icon:    '👨‍👩‍👧',
   },
   {
-    heading: 'You have the right to an attorney',
-    body:    'In re Gault (1967) -- the Supreme Court ruled that juveniles have the right to an attorney in delinquency proceedings. If you cannot afford one, the court must appoint a public defender. Exercise this right before answering any questions.',
+    heading: t('x_juvenile_justice_have_right_attorney'),
+    body:    t('x_juvenile_justice_re_gault_1967_supreme'),
     icon:    '⚖️',
   },
   {
-    heading: 'Your records are confidential',
-    body:    'Juvenile court records are not public in most states. Hearings are closed. Records are kept separate from adult criminal records. This is one of the most important protections in the juvenile system -- guard it by not discussing your case publicly.',
+    heading: t('x_juvenile_justice_records_confidential'),
+    body:    t('x_juvenile_justice_juvenile_court_records_not'),
     icon:    '🔒',
   },
   {
-    heading: 'You are not "convicted"',
-    body:    'The terminology is different and it matters. In juvenile court you are not "arrested" (you are "taken into custody"), not "convicted" (you are "adjudicated delinquent"), and not sentenced (you receive a "disposition"). These distinctions affect your ability to seal your record later.',
+    heading: t('x_juvenile_justice_not_convicted'),
+    body:    t('x_juvenile_justice_terminology_different_it_matters'),
     icon:    '📋',
   },
   {
-    heading: 'You can still be tried as an adult',
-    body:    'For serious offenses, prosecutors can transfer a case to adult court. This is called a "transfer," "waiver," or "certification." In adult court you lose juvenile protections. An attorney must fight any transfer motion immediately -- it is one of the most consequential decisions in the case.',
+    heading: t('x_juvenile_justice_can_still_be_tried'),
+    body:    t('x_juvenile_justice_serious_offenses_prosecutors_can'),
     icon:    '⚠️',
   },
   {
-    heading: 'Rehabilitation is the goal',
-    body:    'The juvenile justice system is designed for rehabilitation, not punishment. Courts consider the juvenile\'s best interest. Probation, counseling, community service, and education programs are the most common outcomes -- not incarceration. Use this to your advantage.',
+    heading: t('x_juvenile_justice_rehabilitation_goal'),
+    body:    t('x_juvenile_justice_juvenile_justice_system_designed'),
     icon:    '🌱',
   },
   {
-    heading: 'Your future is the priority',
-    body:    'A juvenile adjudication does not have to define your life. Most juvenile records can be sealed. Diversion programs exist for first offenses. Mental health and substance abuse treatment are available through the court. An experienced juvenile defense attorney knows how to protect your future at every stage.',
+    heading: t('x_juvenile_justice_future_priority'),
+    body:    t('x_juvenile_justice_juvenile_adjudication_does_not'),
     icon:    '🏆',
   },
-];
+]);
 
 // ── Sealing data ──────────────────────────────────────────────────────────────
 type SealingEntry = { state: string; automatic: boolean; when: string; notes: string };
-const SEALING_DATA: SealingEntry[] = [
-  { state:'AL', automatic:false, when:'Age 18 + petition required',    notes:'Misdemeanor adjudications only. Felonies require waiting period.' },
-  { state:'AK', automatic:false, when:'Age 18 + 2 years offense-free', notes:'Petition to court. All charges must be included.' },
-  { state:'AZ', automatic:false, when:'Age 18 + petition',             notes:'Superior court petition. Fee waiver available.' },
-  { state:'AR', automatic:false, when:'Age 21 or 5 years post-disposition', notes:'Petition required. Violent offenses excluded.' },
-  { state:'CA', automatic:true,  when:'Age 18 (most offenses)',        notes:'Automatic sealing under AB 1076. Some serious offenses require petition.' },
-  { state:'CO', automatic:true,  when:'Age 18 or upon completion',     notes:'Broad automatic sealing. Petition available for earlier sealing.' },
-  { state:'CT', automatic:true,  when:'Age 18',                        notes:'Records erased automatically for most offenses.' },
-  { state:'DE', automatic:false, when:'Age 18 + petition',             notes:'Must be offense-free since adjudication.' },
-  { state:'FL', automatic:false, when:'Age 21 + petition',             notes:'Petition required. Certain serious offenses ineligible.' },
-  { state:'GA', automatic:false, when:'Age 21 or 4 years post-completion', notes:'Petition to juvenile court. Fee required.' },
-  { state:'HI', automatic:true,  when:'Age 18',                        notes:'Records sealed automatically for most misdemeanor-equivalent offenses.' },
-  { state:'ID', automatic:false, when:'Age 18 + petition',             notes:'Petition to juvenile court. Some offenses excluded.' },
-  { state:'IL', automatic:true,  when:'Age 18 (minor offenses)',       notes:'Automatic expungement for minor offenses. Petition for others.' },
-  { state:'IN', automatic:false, when:'Age 18 or 1 year post-case',    notes:'Petition required. Restricted access, not full sealing.' },
-  { state:'IA', automatic:false, when:'Age 18',                        notes:'Records are confidential but not automatically expunged. Petition available.' },
-  { state:'KS', automatic:false, when:'Age 18 or 2 years post-discharge', notes:'Petition to district court.' },
-  { state:'KY', automatic:false, when:'Age 18 + 2 years offense-free', notes:'Petition required. Felony-equivalent offenses may be excluded.' },
-  { state:'LA', automatic:false, when:'Age 17 (in LA, adulthood) + petition', notes:'Louisiana raised adult age to 18 in 2020. Petition to juvenile court.' },
-  { state:'ME', automatic:false, when:'Age 18 + 3 years',              notes:'Petition to district court. Class A offenses excluded.' },
-  { state:'MD', automatic:true,  when:'Age 18 (most offenses)',        notes:'Broad automatic expungement. Petition for earlier action.' },
-  { state:'MA', automatic:true,  when:'Age 18 (most offenses)',        notes:'Records sealed automatically. Some serious offenses remain.' },
-  { state:'MI', automatic:false, when:'Age 17 + petition',             notes:'Petition to family court. Good standing required.' },
-  { state:'MN', automatic:true,  when:'Upon completion of sentence',   notes:'One of the most favorable states. Automatic expungement for most offenses.' },
-  { state:'MS', automatic:false, when:'Age 18 + petition',             notes:'Petition to youth court. Limited offenses eligible.' },
-  { state:'MO', automatic:false, when:'Age 17 or petition at any time', notes:'Records confidential. Petition for expungement available.' },
-  { state:'MT', automatic:false, when:'Age 18 + petition',             notes:'Youth court petition. Felony-equivalent excluded.' },
-  { state:'NE', automatic:false, when:'Age 17 or 3 years post-discharge', notes:'Petition to separate juvenile court system.' },
-  { state:'NV', automatic:true,  when:'Age 21 or 3 years post-completion', notes:'Automatic sealing if no subsequent offenses.' },
-  { state:'NH', automatic:false, when:'Age 17 + petition',             notes:'Petition to district court. Annual sealing windows.' },
-  { state:'NJ', automatic:true,  when:'Age 19 or 5 years post-completion', notes:'Automatic expungement for most adjudications.' },
-  { state:'NM', automatic:false, when:'Age 18 + 1 year offense-free',  notes:'Children\'s court petition. Broad eligibility.' },
-  { state:'NY', automatic:true,  when:'Age 18 (eligible youth)',       notes:'Youthful Offender (YO) designation seals records. Apply through attorney.' },
-  { state:'NC', automatic:false, when:'Age 18 + petition',             notes:'District court petition. Nonviolent misdemeanor-equivalent only.' },
-  { state:'ND', automatic:false, when:'Age 18 or 2 years post-completion', notes:'Petition to juvenile court.' },
-  { state:'OH', automatic:false, when:'Age 18 + 2 years offense-free', notes:'Juvenile court petition. Sealing, not expungement -- still accessible to courts.' },
-  { state:'OK', automatic:false, when:'Age 18 + petition',             notes:'Juvenile court petition. First offense non-violent recommended.' },
-  { state:'OR', automatic:true,  when:'Age 18 (most offenses)',        notes:'Broad automatic expungement. Measure 11 offenses excluded.' },
-  { state:'PA', automatic:false, when:'Age 18 + petition or age 21',   notes:'Petition to juvenile court. Act 91 (2016) expanded access.' },
-  { state:'RI', automatic:true,  when:'Age 18 (most offenses)',        notes:'Automatic expungement. Petition for serious offenses.' },
-  { state:'SC', automatic:false, when:'Age 18 or 5 years post-completion', notes:'Family court petition. Limited serious offenses excluded.' },
-  { state:'SD', automatic:false, when:'Age 18 + 1 year offense-free',  notes:'Circuit court petition.' },
-  { state:'TN', automatic:false, when:'Age 17 or petition after completion', notes:'Juvenile court petition. T.C.A. § 37-1-153. Broad eligibility for first offenses.' },
-  { state:'TX', automatic:false, when:'Age 17 or petition at 21',      notes:'Petition to juvenile court. Fam. Code § 58.003. Determinate sentence offenses excluded.' },
-  { state:'UT', automatic:true,  when:'Age 18 or 5 years post-adjudication', notes:'Automatic expungement for most. Petition for serious offenses.' },
-  { state:'VT', automatic:true,  when:'Age 18 (most offenses)',        notes:'Records expunged automatically. Strongest protections in New England.' },
-  { state:'VA', automatic:false, when:'Age 19 + 5 years offense-free', notes:'Circuit court petition. § 16.1-306. Good standing required.' },
-  { state:'WA', automatic:true,  when:'Upon completion (most offenses)', notes:'Some of the broadest automatic sealing in the US.' },
-  { state:'WV', automatic:false, when:'Age 18 + petition',             notes:'Circuit court petition. First offense most likely to succeed.' },
-  { state:'WI', automatic:false, when:'Age 17 + petition',             notes:'Circuit court petition. Expunged, not sealed -- more complete.' },
-  { state:'WY', automatic:false, when:'Age 19 + 2 years offense-free', notes:'District court petition.' },
-  { state:'DC', automatic:true,  when:'Age 21 or 2 years post-completion', notes:'Broad automatic sealing. Petition for earlier action.' },
-];
+const SEALING_DATA = perLang((): SealingEntry[] => [
+  { state:'AL', automatic:false, when:t('x_juvenile_justice_age_18_petition_required'),    notes:t('x_juvenile_justice_misdemeanor_adjudications_only_felon') },
+  { state:'AK', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_petition_court_all_charges') },
+  { state:'AZ', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_superior_court_petition_fee') },
+  { state:'AR', automatic:false, when:t('x_juvenile_justice_age_21_5_years'), notes:t('x_juvenile_justice_petition_required_violent_offenses') },
+  { state:'CA', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_automatic_sealing_under_ab') },
+  { state:'CO', automatic:true,  when:t('x_juvenile_justice_age_18_upon_completion'),     notes:t('x_juvenile_justice_broad_automatic_sealing_petition') },
+  { state:'CT', automatic:true,  when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_erased_automatically_most') },
+  { state:'DE', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_must_be_offense_free') },
+  { state:'FL', automatic:false, when:t('x_juvenile_justice_age_21_petition'),             notes:t('x_juvenile_justice_petition_required_certain_serious') },
+  { state:'GA', automatic:false, when:t('x_juvenile_justice_age_21_4_years'), notes:t('x_juvenile_justice_petition_juvenile_court_fee') },
+  { state:'HI', automatic:true,  when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_sealed_automatically_most') },
+  { state:'ID', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_petition_juvenile_court_some') },
+  { state:'IL', automatic:true,  when:t('x_juvenile_justice_age_18_minor_offenses'),       notes:t('x_juvenile_justice_automatic_expungement_minor_offenses') },
+  { state:'IN', automatic:false, when:t('x_juvenile_justice_age_18_1_year'),    notes:t('x_juvenile_justice_petition_required_restricted_access') },
+  { state:'IA', automatic:false, when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_confidential_but_not') },
+  { state:'KS', automatic:false, when:t('x_juvenile_justice_age_18_2_years_2'), notes:t('x_juvenile_justice_petition_district_court') },
+  { state:'KY', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_petition_required_felony_equivalent') },
+  { state:'LA', automatic:false, when:t('x_juvenile_justice_age_17_la_adulthood'), notes:t('x_juvenile_justice_louisiana_raised_adult_age') },
+  { state:'ME', automatic:false, when:t('x_juvenile_justice_age_18_3_years'),              notes:t('x_juvenile_justice_petition_district_court_class') },
+  { state:'MD', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_broad_automatic_expungement_petition') },
+  { state:'MA', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_records_sealed_automatically_some') },
+  { state:'MI', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_petition_family_court_good') },
+  { state:'MN', automatic:true,  when:t('x_juvenile_justice_upon_completion_sentence'),   notes:t('x_juvenile_justice_one_most_favorable_states') },
+  { state:'MS', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_petition_youth_court_limited') },
+  { state:'MO', automatic:false, when:t('x_juvenile_justice_age_17_petition_at'), notes:t('x_juvenile_justice_records_confidential_petition_expung') },
+  { state:'MT', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_youth_court_petition_felony') },
+  { state:'NE', automatic:false, when:t('x_juvenile_justice_age_17_3_years'), notes:t('x_juvenile_justice_petition_separate_juvenile_court') },
+  { state:'NV', automatic:true,  when:t('x_juvenile_justice_age_21_3_years'), notes:t('x_juvenile_justice_automatic_sealing_if_no') },
+  { state:'NH', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_petition_district_court_annual') },
+  { state:'NJ', automatic:true,  when:t('x_juvenile_justice_age_19_5_years'), notes:t('x_juvenile_justice_automatic_expungement_most_adjudicat') },
+  { state:'NM', automatic:false, when:t('x_juvenile_justice_age_18_1_year_2'),  notes:t('x_juvenile_justice_children_s_court_petition') },
+  { state:'NY', automatic:true,  when:t('x_juvenile_justice_age_18_eligible_youth'),       notes:t('x_juvenile_justice_youthful_offender_yo_designation') },
+  { state:'NC', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_district_court_petition_nonviolent') },
+  { state:'ND', automatic:false, when:t('x_juvenile_justice_age_18_2_years_3'), notes:t('x_juvenile_justice_petition_juvenile_court') },
+  { state:'OH', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_juvenile_court_petition_sealing') },
+  { state:'OK', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_juvenile_court_petition_first') },
+  { state:'OR', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_broad_automatic_expungement_measure') },
+  { state:'PA', automatic:false, when:t('x_juvenile_justice_age_18_petition_age'),   notes:t('x_juvenile_justice_petition_juvenile_court_act') },
+  { state:'RI', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_automatic_expungement_petition_serio') },
+  { state:'SC', automatic:false, when:t('x_juvenile_justice_age_18_5_years'), notes:t('x_juvenile_justice_family_court_petition_limited') },
+  { state:'SD', automatic:false, when:t('x_juvenile_justice_age_18_1_year_2'),  notes:t('x_juvenile_justice_circuit_court_petition') },
+  { state:'TN', automatic:false, when:t('x_juvenile_justice_age_17_petition_after'), notes:t('x_juvenile_justice_juvenile_court_petition_t') },
+  { state:'TX', automatic:false, when:t('x_juvenile_justice_age_17_petition_at_2'),      notes:t('x_juvenile_justice_petition_juvenile_court_fam') },
+  { state:'UT', automatic:true,  when:t('x_juvenile_justice_age_18_5_years_2'), notes:t('x_juvenile_justice_automatic_expungement_most_petition') },
+  { state:'VT', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_records_expunged_automatically_stron') },
+  { state:'VA', automatic:false, when:t('x_juvenile_justice_age_19_5_years_2'), notes:t('x_juvenile_justice_circuit_court_petition_16') },
+  { state:'WA', automatic:true,  when:t('x_juvenile_justice_upon_completion_most_offenses'), notes:t('x_juvenile_justice_some_broadest_automatic_sealing') },
+  { state:'WV', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_circuit_court_petition_first') },
+  { state:'WI', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_circuit_court_petition_expunged') },
+  { state:'WY', automatic:false, when:t('x_juvenile_justice_age_19_2_years'), notes:t('x_juvenile_justice_district_court_petition') },
+  { state:'DC', automatic:true,  when:t('x_juvenile_justice_age_21_2_years'), notes:t('x_juvenile_justice_broad_automatic_sealing_petition_2') },
+]);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
 function JuvenileJusticeScreen(): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -204,27 +206,27 @@ function JuvenileJusticeScreen(): React.JSX.Element {
     >
 {/* Heightened disclaimer for content involving minors */}
 <View style={{ backgroundColor: colors.legalBg, borderLeftWidth: 3, borderLeftColor: colors.legal, padding: 12, margin: 12, borderRadius: 6 }}>
-  <Text style={{ fontSize: 11, color: colors.legal, fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>CONTENT INVOLVING MINORS</Text>
+  <Text style={{ fontSize: 11, color: colors.legal, fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>{t('x_juvenile_justice_content_involving_minors')}</Text>
   <Text style={{ fontSize: 11, color: colors.legal, lineHeight: 16 }} maxFontSizeMultiplier={1.4}>
-    This information is for general education only. Juvenile law outcomes depend heavily on jurisdiction, individual circumstances, and judicial discretion. Never rely on this information for a specific child's case. Consult a licensed juvenile defense attorney.
+    {t('x_juvenile_justice_this_information_general_education')}
   </Text>
 </View>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Juvenile Justice</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Rights in the juvenile system</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('juv_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_juvenile_justice_rights_juvenile_system')}</Text>
       </View>
 
       <View style={{ paddingHorizontal: 12 }}>
       <InfoTabs
         testID="juvenile-tabs"
-        tabs={[{ key: 'rights', label: 'Rights' }, { key: 'process', label: 'The Process' }, { key: 'sealing', label: 'Record Sealing' }]}
+        tabs={[{ key: 'rights', label: t('x_juvenile_justice_rights') }, { key: 'process', label: t('x_juvenile_justice_process') }, { key: 'sealing', label: t('juv_tab_sealing') }]}
         active={tab}
         onChange={k => setTab(k as 'rights' | 'process' | 'sealing')}
       />
 
-      {tab === 'rights' && RIGHTS_SECTIONS.map(sec => (
+      {tab === 'rights' && RIGHTS_SECTIONS().map(sec => (
         <View key={sec.heading} style={[styles.rightCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.rightCardHeader}>
             <Text maxFontSizeMultiplier={1.4} style={styles.rightCardIcon}>{sec.icon}</Text>
@@ -234,7 +236,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
         </View>
       ))}
 
-      {tab === 'process' && PROCESS_STEPS.map((step, i) => (
+      {tab === 'process' && PROCESS_STEPS().map((step, i) => (
         <View key={step.title} style={[styles.stepCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.stepCardHeader}>
             <View style={[styles.stepNumBadge, { backgroundColor: colors.navy }]}>
@@ -245,20 +247,20 @@ function JuvenileJusticeScreen(): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={[styles.stepTimeline, { color: colors.textMuted }]}>{step.timeline}</Text>
             </View>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>What happens</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>{t('x_juvenile_justice_what_happens')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.what}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>Your rights</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>{t('tr_your_rights')}</Text>
           <View style={[styles.rightsBlock, { borderColor: colors.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.rights}</Text>
           </View>
           <View style={[styles.tipBlock, { borderColor: colors.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.tipLabel}>TIP</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.tipLabel}>{t('x_juvenile_justice_tip')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.tip}</Text>
           </View>
         </View>
       ))}
 
-      {tab === 'sealing' && SEALING_DATA.map(row => (
+      {tab === 'sealing' && SEALING_DATA().map(row => (
         <View key={row.state} style={[styles.sealingRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={[styles.stateBadge, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.textBrand }]}>{row.state}</Text>
@@ -268,7 +270,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={[styles.sealingWhen, { color: colors.textPrimary }]}>{row.when}</Text>
               <View style={[styles.autoChip, { backgroundColor: row.automatic ? colors.legalBg : colors.bgSubtle }]}>
                 <Text maxFontSizeMultiplier={1.2} style={[styles.autoChipText, { color: row.automatic ? colors.legalDark : colors.textMuted }]}>
-                  {row.automatic ? 'AUTOMATIC' : 'PETITION'}
+                  {row.automatic ? t('x_juvenile_justice_automatic') : t('x_juvenile_justice_petition')}
                 </Text>
               </View>
             </View>
@@ -281,8 +283,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textMuted }]}>
-          This information is for general education only and is not legal advice.
-          Laws vary by state. Consult a licensed attorney for advice about your situation.
+          {t('x_family_court_this_information_general_education')}
         </Text>
       </View>
     </ScrollView>

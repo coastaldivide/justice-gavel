@@ -24,8 +24,10 @@ import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
+import { t, useLang } from '../i18n';
 
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
@@ -69,7 +71,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
       );
       if (mountedRef.current) setCaptured(processed.uri);
     } catch {
-      showToast('Could not take photo. Please try again.');
+      showToast(t('x_document_scanner_could_not_take_photo'));
     }
   }, [showToast]);
 
@@ -96,10 +98,10 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
       await api.post('/messages/attachment', form, {
         headers: { 'Content-Type': 'multipart/form-data' } });
       await hapticNotification();
-      showToast(caseId ? 'Document attached to your case.' : 'Document uploaded.', 'success');
+      showToast(caseId ? t('x_document_scanner_document_attached_case') : t('x_document_scanner_document_uploaded'), 'success');
     } catch (err) {
       if (__DEV__) console.error(err);
-      showToast(apiErrorMessage(err, 'Could not upload the document. Check your connection and try again.'), 'error');
+      showToast(apiErrorMessage(err, t('x_document_scanner_could_not_upload_document')), 'error');
     } finally {
       if (mountedRef.current) setUploading(false);
     }
@@ -122,16 +124,16 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     )}
         <Text maxFontSizeMultiplier={1.4} style={s.permIcon}>📷</Text>
         <Text maxFontSizeMultiplier={1.4} style={[s.permTitle, { color: colors.textPrimary }]}>
-          Camera Access Needed
+          {t('x_cs_camera_access_needed')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[s.permSub, { color: colors.textMuted }]}>
-          Allow camera access to scan and attach documents.
+          {t('x_document_scanner_allow_camera_access_scan')}
         </Text>
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={[s.btn, { backgroundColor: colors.navy }]}
           onPress={requestPermission}>
-          <Text maxFontSizeMultiplier={1.4} style={s.btnText}>Allow Camera</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnText}>{t('x_document_scanner_allow_camera')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -141,30 +143,30 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
   if (captured) {
     return (
       <View style={[s.screen, { backgroundColor: colors.navy }]}>
-        <Image source={{ uri: captured }} style={s.preview} resizeMode="contain" accessibilityLabel="Scanned document preview" onError={() => setScanError("Could not display scanned image.")} />
+        <Image source={{ uri: captured }} style={s.preview} resizeMode="contain" accessibilityLabel={t('x_document_scanner_scanned_document_preview')} onError={() => setScanError(t('x_document_scanner_could_not_display_scanned'))} />
 
         <View style={s.previewActions}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
-            accessibilityLabel={"\u21a9 Retake"} onPress={() => setCaptured(null)}
+            accessibilityLabel={t('x_document_scanner_retake')} onPress={() => setCaptured(null)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>↩ Retake</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>{t('x_document_scanner_retake')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[s.previewBtn, { backgroundColor: colors.navy }]}
             onPress={usePhoto}
             disabled={uploading}
-            accessibilityLabel={caseId ? 'Attach to case' : 'Use this photo'}
+            accessibilityLabel={caseId ? t('x_document_scanner_attach_case') : t('x_document_scanner_use_this_photo')}
           >
             {uploading
               ? <ActivityIndicator color={colors.white} size="small" />
               : <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>
-                  {caseId ? '📎 Attach to Case' : '✓ Use Photo'}
+                  {caseId ? t('x_document_scanner_attach_case_2') : t('x_document_scanner_use_photo')}
                 </Text>
             }
           </TouchableOpacity>
@@ -172,8 +174,8 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
 
         <Text maxFontSizeMultiplier={1.4} style={s.previewHint}>
           {caseId
-            ? 'This document will be attached to your case.'
-            : 'Tap "Use Photo" to continue.'}
+            ? t('x_document_scanner_this_document_will_be')
+            : t('x_document_scanner_tap_use_photo_continue')}
         </Text>
       </View>
     );
@@ -192,16 +194,16 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         </View>
 
         <Text maxFontSizeMultiplier={1.4} style={s.guideText}>
-          Position the document within the frame
+          {t('x_document_scanner_position_document_within_frame')}
         </Text>
 
         {/* Shutter button */}
         <View style={s.shutterRow}>
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={s.shutter}
             onPress={capture}
-            accessibilityLabel="Take photo"
+            accessibilityLabel={t('x_document_scanner_take_photo')}
             activeOpacity={0.8}
           >
             <View style={s.shutterInner} />

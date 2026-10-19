@@ -23,7 +23,7 @@ import AsyncStorage          from '@react-native-async-storage/async-storage';
 import { ScreenCapture, StoreReview, hapticImpact, RNShare } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
-import { setLang, t } from '../i18n'  // t() already available;
+import { setLang, t, useLang } from '../i18n'  // t() already available;
 import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
 import { clearAuth, getToken } from '../utils/secureStorage';
 import { useInFlight } from '../hooks/useInFlight';
@@ -118,6 +118,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 function SettingsScreen({ navigation }: any) {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -149,7 +150,7 @@ function SettingsScreen({ navigation }: any) {
     setRefreshing(true);
     api.get('/auth/me')
       .then(r => { if (mountedRef.current && r.data?.user) setUser(r.data.user); })
-      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
+      .catch(() => showToast(t('x_consumer_subscription_could_not_refresh_check'), 'error'))
       .finally(() => { if (mountedRef.current) setRefreshing(false); });
   }, [showToast]);
 
@@ -188,7 +189,7 @@ function SettingsScreen({ navigation }: any) {
     if (val) {
       // Confirm the user can authenticate before enabling the lock
       try {
-        const res = await LocalAuthentication.authenticateAsync({ promptMessage: 'Enable biometric lock' });
+        const res = await LocalAuthentication.authenticateAsync({ promptMessage: t('x_st_enable_biometric_lock') });
         if (!res.success) return;
       } catch { return; }
     }
@@ -249,7 +250,7 @@ function SettingsScreen({ navigation }: any) {
     if (val && Platform.OS !== 'web') {
       // Turning reminders on is the moment to ask the OS (with the reason).
       const answer = await requestNotificationsInContext();
-      if (answer !== 'granted') { showToast('Notifications stay off. You can turn them on any time here.', 'info'); return; }
+      if (answer !== 'granted') { showToast(t('x_st_notifications_stay_off_can'), 'info'); return; }
     }
     setNotifMaster(val);
     await AsyncStorage.setItem('notifs', String(val)).catch(() => {}); // non-fatal storage write
@@ -269,7 +270,7 @@ function SettingsScreen({ navigation }: any) {
       .catch((e) => {
         // Not saved: put the switch back and say so (never a silent failure).
         setPrefs(prev);
-        showToast(apiErrorMessage(e, 'Could not save your notification setting. Try again.'), 'error');
+        showToast(apiErrorMessage(e, t('x_st_could_not_save_notification')), 'error');
       })
       .finally(() => setPrefsSaving(false));
   };
@@ -284,12 +285,12 @@ function SettingsScreen({ navigation }: any) {
   const [runExport, exporting] = useInFlight();
 
   const deleteAccount = () => runDelete(async () => {
-    if (!deletePassword) { setDeleteError('Enter your password to confirm.'); return; }
+    if (!deletePassword) { setDeleteError(t('x_st_enter_password_confirm')); return; }
     setDeleteError('');
     try {
       await api.delete('/auth/account', { data: { password: deletePassword } });
     } catch (e) {
-      setDeleteError(apiErrorMessage(e, 'Could not delete your account. Check your connection and try again.'));
+      setDeleteError(apiErrorMessage(e, t('x_st_could_not_delete_account')));
       return;
     }
     // The account is gone on the server: remove everything on this device too.
@@ -299,22 +300,22 @@ function SettingsScreen({ navigation }: any) {
     await clearAllCaches().catch(() => undefined);
     await AsyncStorage.multiRemove(['user', 'chat_session_id', 'has_browsed', 'last_push_token']).catch(() => undefined);
     import('../services/analytics').then(m => m.reset()).catch(() => undefined);
-    showToast('Your account and data were permanently deleted.', 'success');
+    showToast(t('x_st_account_data_were_permanently'), 'success');
     setAppAuth('guest');
   });
 
   const exportData = () => runExport(async () => {
     try {
       const res = await api.get('/auth/export');
-      await RNShare.share({ message: JSON.stringify(res.data, null, 2), title: 'My Justice Gavel Data Export' });
+      await RNShare.share({ message: JSON.stringify(res.data, null, 2), title: t('x_st_my_justice_gavel_data') });
     } catch (e) {
-      showToast(apiErrorMessage(e, 'Could not export your data. Please try again.'), 'error');
+      showToast(apiErrorMessage(e, t('x_st_could_not_export_data')), 'error');
     }
   });
 
   const logout = async () => {
-    const ok = await confirm('Sign out?', 'You can sign back in any time. Your data is saved.',
-      { confirmLabel: 'Sign out', destructive: true });
+    const ok = await confirm(t('x_st_sign_out'), t('x_st_can_sign_back_any'),
+      { confirmLabel: t('x_st_sign_out_2'), destructive: true });
     if (!ok) return;
     await clearAuth();
     await clearAllCaches().catch(() => {});
@@ -373,32 +374,32 @@ function SettingsScreen({ navigation }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
       {/* ── Account ──────────────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Account</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_account')}</Text>
       <View style={card}>
         <InfoRow icon="👤" label={t("settings.display_name")} value={user.displayName || user.name} />
-        {!!user.email && <InfoRow icon="✉️" label="Email" value={user.email} />}
+        {!!user.email && <InfoRow icon="✉️" label={t('email')} value={user.email} />}
         {goldenGavel
           ? <TouchableOpacity
               accessibilityRole="button"
               onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
             >
-              <InfoRow icon="🏆" label={t("settings.account_status")} value="Golden Gavel  ›" />
+              <InfoRow icon="🏆" label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
             </TouchableOpacity>
-          : <InfoRow icon="⚖️" label="Golden Gavel" value="Check eligibility  ›" />
+          : <InfoRow icon="⚖️" label={t('gg_title')} value={t('x_st_check_eligibility')} />
         }
-        {!!user.phone && <InfoRow icon="📱" label="Phone" value={user.phone} />}
+        {!!user.phone && <InfoRow icon="📱" label={t('phone')} value={user.phone} />}
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity accessibilityRole="button"
           style={styles.row}
           onPress={() => setShowStatePickerSettings(true)}
-          accessibilityLabel="Change your state preference"
+          accessibilityLabel={t('x_st_change_state_preference')}
         >
           <View style={styles.rowLeft}>
             <Text maxFontSizeMultiplier={1.4} style={styles.rowIcon}>🗺️</Text>
             <View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>Your State</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>{t('x_st_state')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
-                {userState ? STATE_NAMES[userState] || userState : 'Not set -- tap to select'}
+                {userState ? STATE_NAMES[userState] || userState : t('x_st_not_set_tap_select')}
               </Text>
             </View>
           </View>
@@ -411,8 +412,8 @@ function SettingsScreen({ navigation }: any) {
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <View style={{ flex:1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:colors.textBrand }}>Official Court Forms</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:colors.textMuted }}>Government forms -- all 50 states</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:colors.textBrand }}>{t('x_court_forms_official_court_forms')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:colors.textMuted }}>{t('x_st_government_forms_all_50')}</Text>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:colors.textMuted }}>›</Text>
       </TouchableOpacity>
@@ -423,8 +424,8 @@ function SettingsScreen({ navigation }: any) {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ maxHeight: '75%', backgroundColor: colors.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>Select your state</Text>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setShowStatePickerSettings(false)}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>{t('x_st_select_state')}</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('close')} onPress={() => setShowStatePickerSettings(false)}>
                 <Text style={{ fontSize: 18, color: colors.textMuted }}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -449,19 +450,19 @@ function SettingsScreen({ navigation }: any) {
       </Modal>
 
       {/* ── Appearance ───────────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Appearance</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_appearance')}</Text>
       <View style={card}>
 
         {/* Dark / Light Mode Toggle */}
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.textPrimary }]}>
-              {isDark ? 'Dark Mode' : 'Light Mode'}
+              {isDark ? t('x_st_dark_mode') : t('x_st_light_mode')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.switchHint, { color: colors.textMuted }]}>
               {isDark
-                ? 'Default. Easier on the eyes in low light.'
-                : 'High-contrast white -- better for document review.'}
+                ? t('x_st_default_easier_eyes_low')
+                : t('x_st_high_contrast_white_better')}
             </Text>
           </View>
           <Switch
@@ -470,17 +471,17 @@ function SettingsScreen({ navigation }: any) {
             trackColor={{ false: colors.surface, true: colors.blue }}
             thumbColor={isDark ? COLORS.steel : colors.bg}
             ios_backgroundColor={colors.surface}
-            accessibilityLabel="Toggle dark or light mode"
+            accessibilityLabel={t('x_st_toggle_dark_light_mode')}
           />
         </View>
 
       </View>
 
       {/* ── Language ─────────────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Language / Idioma</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_language_idioma')}</Text>
       <View style={card}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.cardHint, { color: colors.textMuted }]}>
-          Changes take effect immediately
+          {t('x_st_changes_take_effect_immediately')}
         </Text>
         <View style={styles.langRow}>
           {[{ code: 'en', label: 'English' }, { code: 'es', label: 'Español' }, { code: 'pt', label: 'Português' }, { code: 'vi', label: 'Tiếng Việt' }].map(l => (
@@ -492,7 +493,7 @@ function SettingsScreen({ navigation }: any) {
                 language === l.code && { borderColor: colors.borderFocus, backgroundColor: colors.bgElevated },
               ]}
               onPress={() => toggleLang(l.code)}
-              accessibilityLabel={`Switch language to ${l.label}`}
+              accessibilityLabel={t('x_st_switch_language', { label: l.label })}
               accessibilityState={{ selected: language === l.code }}>
               <Text maxFontSizeMultiplier={1.4} style={[
                 styles.langChipText,
@@ -507,11 +508,11 @@ function SettingsScreen({ navigation }: any) {
       {/* ── Security ─────────────────────────────────────────────────────── */}
       {biometricAvailable && (
         <>
-          <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Security</Text>
+          <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_security')}</Text>
           <View style={card}>
             <SwitchRow
-              label="🔒  Biometric Lock"
-              hint="Require Face ID or fingerprint to open Justice Gavel"
+              label={t('x_st_biometric_lock')}
+              hint={t('x_st_require_face_id_fingerprint')}
               value={biometricEnabled}
               onChange={toggleBiometric}
               trackOn={colors.legal}/>
@@ -520,13 +521,13 @@ function SettingsScreen({ navigation }: any) {
       )}
 
       {/* ── Notifications ────────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Notifications</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_notifications')}</Text>
       <View style={card}>
 
         {/* Master toggle */}
         <SwitchRow
-          label="Push notifications"
-          hint="Turn off all notifications at once"
+          label={t('x_st_push_notifications')}
+          hint={t('x_st_turn_off_all_notifications')}
           value={notifMaster}
           onChange={toggleMaster}/>
 
@@ -534,8 +535,8 @@ function SettingsScreen({ navigation }: any) {
         {notifMaster && (
           <View style={[styles.subPrefs, { borderTopColor: colors.surface }]}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.subPrefsLabel, { color: colors.textMuted }]}>
-              Choose what to receive
-              {prefsSaving && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted }}> · saving…</Text>}
+              {t('x_st_choose_what_receive')}
+              {prefsSaving && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted }}>{' '}{t('x_st_saving')}</Text>}
             </Text>
 
             {prefsLoading ? (
@@ -543,32 +544,32 @@ function SettingsScreen({ navigation }: any) {
             ) : (
               <>
                 <SwitchRow
-                  label="📅  Court date reminders"
-                  hint="7 days, 3 days, and day-of reminders"
+                  label={t('x_st_court_date_reminders')}
+                  hint={t('x_st_7_days_3_days')}
                   value={prefs.notif_court_reminders}
                   onChange={v => togglePref('notif_court_reminders', v)}
                 />
                 <SwitchRow
-                  label="💡  Daily legal tip"
-                  hint="One practical legal fact each day"
+                  label={t('x_st_daily_legal_tip')}
+                  hint={t('x_st_one_practical_legal_fact')}
                   value={prefs.notif_legal_tips}
                   onChange={v => togglePref('notif_legal_tips', v)}
                 />
                 <SwitchRow
-                  label="🔔  Arrest alerts"
-                  hint="When someone on your monitor list is booked"
+                  label={t('x_st_arrest_alerts')}
+                  hint={t('x_st_when_someone_monitor_list')}
                   value={prefs.notif_arrest_alerts}
                   onChange={v => togglePref('notif_arrest_alerts', v)}
                 />
                 <SwitchRow
-                  label="✓  Check-in reminders"
-                  hint="Daily reminder if you're enrolled in check-in"
+                  label={t('x_st_check_reminders')}
+                  hint={t('x_st_daily_reminder_if_re')}
                   value={prefs.notif_checkin_reminders}
                   onChange={v => togglePref('notif_checkin_reminders', v)}
                 />
                 <SwitchRow
-                  label="📣  Promotions & offers"
-                  hint="Occasional discounts and new features"
+                  label={t('x_st_promotions_offers')}
+                  hint={t('x_st_occasional_discounts_new_features')}
                   value={prefs.notif_marketing}
                   onChange={v => togglePref('notif_marketing', v)}
                   trackOn={COLORS.steel}
@@ -587,41 +588,41 @@ function SettingsScreen({ navigation }: any) {
     await hapticImpact();
 
           try {
-            await api.post('/push/test', { message: 'Justice Gavel push notifications are working ✓' });
-            showToast('Check your device notifications.');
+            await api.post('/push/test', { message: t('x_st_justice_gavel_push_notifications') });
+            showToast(t('x_st_check_device_notifications'));
           } catch (e: any) {
             showToast(apiErrorMessage(e), 'error');
           }
         }}
-        accessibilityLabel="Send a test push notification"
-          accessibilityHint="Double-tap to activate"
+        accessibilityLabel={t('x_st_send_test_push_notification')}
+          accessibilityHint={t('cp_double_tap')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textOnNavy }]}>Send test notification →</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textOnNavy }]}>{t('x_st_send_test_notification')}</Text>
       </TouchableOpacity>
 
       {/* Referral program removed (empty placeholder card) */}
 
       {/* ── My Tools -- quick access to all features ──────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>My Tools</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_my_tools')}</Text>
       <View style={card}>
         {[
-          { icon: '🏢', label: 'Firm Vertical Setup',   hint: 'Configure practice area, pricing tier, trackers', screen: 'FirmVertical' },
-          { icon: '🚀', label: 'Start Firm Trial',       hint: 'Self-serve onboarding — activate your 14-day trial',  screen: 'FirmAcquisition' },
-          { icon: '⭐', label: 'Saved Lawyers',         hint: 'Your personal attorney contact list',        screen: 'SavedLawyers' },
-          { icon: '⏰', label: 'Deadline Calculator',   hint: 'Arraignment, appeal, AEDPA -- all deadlines', screen: 'DeadlineCalculator' },
-          { icon: '🔔', label: 'Arrest Monitor',        hint: 'Get alerted when someone is booked',         screen: 'ArrestMonitor' },
-          { icon: '✓',  label: 'Daily Check-In',        hint: 'Court-ordered check-in compliance',          screen: 'CheckIn' },
-          { icon: '🤝', label: 'Diversion Checker',     hint: 'Could charges be dropped?',                  screen: 'Diversion' },
-          { icon: '🏆', label: 'Golden Gavel',           hint: 'Your path to elite status',                  screen: 'GoldenGavel' },
-          { icon: '🛡️', label: 'Legal Insurance',       hint: 'Monthly coverage plans',                    screen: 'Insurance' },
-          { icon: '🧒', label: 'Juvenile Justice',       hint: 'Rights, process, and record sealing',        screen: 'JuvenileJustice' },
-          { icon: '🧠', label: 'Mental Health & Law',    hint: 'MH courts, competency, diversion',           screen: 'MentalHealthDiversion' },
-          { icon: '👨\u200d👩\u200d👧', label: 'Family Court',        hint: 'Custody, protective orders, child support',   screen: 'FamilyCourt' },
-          { icon: '🌎', label: 'Immigration Consequences', hint: 'How a record affects immigration status',    screen: 'ImmigrationConsequences' },
-          { icon: '🏘️', label: 'Housing Rights',           hint: 'Criminal record & housing, eviction defense', screen: 'HousingRights' },
-          { icon: '⚖️', label: 'Attorney Dashboard',     hint: 'Cases, templates, CLE credits, profile',    screen: 'AttorneyDashboard' },
-          { icon: '📵', label: 'Offline Mode',           hint: 'What works without a connection',            screen: 'OfflineStatus' },
-          { icon: '📊', label: 'Advocacy',              hint: 'Criminal justice data and reform tools',     screen: 'Advocacy' },
+          { icon: '🏢', label: t('x_st_firm_vertical_setup'),   hint: t('x_st_configure_practice_area_pricing'), screen: 'FirmVertical' },
+          { icon: '🚀', label: t('x_st_start_firm_trial'),       hint: t('x_st_self_serve_onboarding_activate'),  screen: 'FirmAcquisition' },
+          { icon: '⭐', label: t('saved_title'),         hint: t('x_st_personal_attorney_contact_list'),        screen: 'SavedLawyers' },
+          { icon: '⏰', label: t('x_cs_deadline_calculator'),   hint: t('x_st_arraignment_appeal_aedpa_all'), screen: 'DeadlineCalculator' },
+          { icon: '🔔', label: t('x_st_arrest_monitor'),        hint: t('x_st_get_alerted_when_someone'),         screen: 'ArrestMonitor' },
+          { icon: '✓',  label: t('x_check_in_daily_check'),        hint: t('x_st_court_ordered_check_compliance'),          screen: 'CheckIn' },
+          { icon: '🤝', label: t('x_st_diversion_checker'),     hint: t('div_title'),                  screen: 'Diversion' },
+          { icon: '🏆', label: t('gg_title'),           hint: t('x_st_path_elite_status'),                  screen: 'GoldenGavel' },
+          { icon: '🛡️', label: t('x_insurance_legal_insurance'),       hint: t('x_st_monthly_coverage_plans'),                    screen: 'Insurance' },
+          { icon: '🧒', label: t('juv_title'),       hint: t('x_st_rights_process_record_sealing'),        screen: 'JuvenileJustice' },
+          { icon: '🧠', label: t('x_st_mental_health_law'),    hint: t('x_st_mh_courts_competency_diversion'),           screen: 'MentalHealthDiversion' },
+          { icon: '👨\u200d👩\u200d👧', label: t('civil_family_title'),        hint: t('x_st_custody_protective_orders_child'),   screen: 'FamilyCourt' },
+          { icon: '🌎', label: t('civil_imm_title'), hint: t('x_st_how_record_affects_immigration'),    screen: 'ImmigrationConsequences' },
+          { icon: '🏘️', label: t('civil_housing_title'),           hint: t('x_st_criminal_record_housing_eviction'), screen: 'HousingRights' },
+          { icon: '⚖️', label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
+          { icon: '📵', label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
+          { icon: '📊', label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
         ].map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
@@ -643,15 +644,15 @@ function SettingsScreen({ navigation }: any) {
       {/* ── Admin tools (only shown to admin users) ───────────────────── */}
       {isAdmin && (
         <>
-          <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Admin</Text>
+          <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_admin')}</Text>
           <View style={card}>
             <TouchableOpacity
   accessibilityRole="button"
               style={[styles.navRow, { borderBottomWidth: 0 }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'AdminVerification' })}
-              accessibilityLabel="Bar verification queue"
+              accessibilityLabel={t('x_st_bar_verification_queue')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.textPrimary }]}>⚖️  Bar Verification Queue</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.textPrimary }]}>{t('x_st_bar_verification_queue_2')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.navRowArrow, { color: colors.textMuted }]}>›</Text>
             </TouchableOpacity>
           </View>
@@ -659,14 +660,14 @@ function SettingsScreen({ navigation }: any) {
       )}
 
       {/* ── About ────────────────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>About</Text>
+      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_firm_public_profile_about')}</Text>
       <View style={card}>
         {[
-          { icon: '📄', label: 'Terms of Service',  nav: 'TermsOfService' },
-          { icon: '🔒', label: 'Privacy Policy',    nav: 'PrivacyPolicy' },
-          { icon: '💬', label: 'Send Feedback',     url: 'mailto:support@justicegavel.app' },
+          { icon: '📄', label: t('onb_terms_tos'),  nav: 'TermsOfService' },
+          { icon: '🔒', label: t('onb_terms_pp'),    nav: 'PrivacyPolicy' },
+          { icon: '💬', label: t('x_feedback_button_send_feedback'),     url: 'mailto:support@justicegavel.app' },
           { icon: '📸', label: 'Instagram',         url: 'https://instagram.com/yourjusticegavel', hint: '@yourjusticegavel' },
-          { icon: '🌐', label: 'Website',           url: 'https://justicegavel.app' },
+          { icon: '🌐', label: t('hn_website'),           url: 'https://justicegavel.app' },
         ].map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
@@ -684,7 +685,7 @@ function SettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
         <View style={styles.versionRow}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.version, { color: colors.textMuted }]}>Justice Gavel v{Constants.expoConfig?.version || '1.8.25'}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.version, { color: colors.textMuted }]}>{t('x_st_justice_gavel_v', { value: Constants.expoConfig?.version || '1.8.25' })}</Text>
         </View>
       </View>
 
@@ -692,9 +693,9 @@ function SettingsScreen({ navigation }: any) {
       <TouchableOpacity accessibilityRole="button"
         style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
         onPress={logout}
-        accessibilityLabel="Sign out"
+        accessibilityLabel={t('x_st_sign_out_2')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>Sign out</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>{t('x_st_sign_out_2')}</Text>
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
@@ -704,36 +705,35 @@ function SettingsScreen({ navigation }: any) {
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8,
           textTransform: 'uppercase', color: colors.emergency,
           fontFamily: 'Inter_800ExtraBold', marginBottom: 12 }}>
-          Danger Zone
+          {t('x_st_danger_zone')}
         </Text>
         <View style={[{ borderRadius: 12, borderWidth: 1, padding: 16 },
           { backgroundColor: colors.emergencyBg, borderColor: colors.emergency + '44' }]}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: colors.emergency, marginBottom: 6 }}>
-            Delete Account
+            {t('x_st_delete_account')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 16 }}>
-            Permanently deletes your account, all cases, messages, and data.
-            This cannot be undone.
+            {t('x_st_permanently_deletes_account_all')}
           </Text>
           {!signedIn ? (
             <Text testID="account-delete-signed-out" maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted }}>
-              Sign in to export or delete your account data. Nothing is stored for guests beyond this device.
+              {t('x_st_sign_export_delete_account')}
             </Text>
           ) : (<>
           <TouchableOpacity accessibilityRole="button" testID="account-delete-open"
             style={{ backgroundColor: colors.emergencyDark, borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
-            accessibilityLabel="Delete account permanently"
+            accessibilityLabel={t('x_st_delete_account_permanently')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             onPress={() => { setDeleteError(''); setDeletePassword(''); setDeleteOpen(true); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: colors.white }}>
-              Delete My Account
+              {t('x_st_delete_my_account')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="account-export"
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
-            accessibilityLabel="Export my data"
+            accessibilityLabel={t('x_st_export_my_data')}
             accessibilityState={{ disabled: exporting, busy: exporting }}
             disabled={exporting}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -741,7 +741,7 @@ function SettingsScreen({ navigation }: any) {
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textBrand,
               textDecorationLine: 'underline' }}>
-              {exporting ? 'Preparing your export…' : 'Export My Data (GDPR)'}
+              {exporting ? t('x_st_preparing_export') : t('x_st_export_my_data_gdpr')}
             </Text>
           </TouchableOpacity>
           </>)}
@@ -765,29 +765,29 @@ function SettingsScreen({ navigation }: any) {
             }}
           >
             <Text maxFontSizeMultiplier={1.3} style={{ color:colors.textPrimary, fontSize: 14, fontWeight:"600" }}>
-              ⭐ Rate Justice Gavel
+              {t('x_st_rate_justice_gavel')}
             </Text>
-            <Text style={{ color:colors.textMuted, fontSize:12 }}>Tell us what you think →</Text>
+            <Text style={{ color:colors.textMuted, fontSize:12 }}>{t('x_st_tell_us_what_think')}</Text>
           </TouchableOpacity>
 
       <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteOpen(false)}>
         <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.overlay }}>
           <View testID="account-delete-dialog" style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 20 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 }}>
-              Delete your account?
+              {t('x_st_delete_account_2')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 20, color: colors.textMuted, marginBottom: 14 }}>
-              This permanently deletes your account, cases, notes, messages, reminders and saved lawyers. It cannot be undone. Enter your password to confirm.
+              {t('x_st_this_permanently_deletes_account')}
             </Text>
             <TextInput
               secureTextEntry
               testID="account-delete-password"
-              accessibilityLabel="Password"
+              accessibilityLabel={t('password')}
               value={deletePassword}
               onChangeText={(v) => { setDeletePassword(v); if (deleteError) setDeleteError(''); }}
               autoCapitalize="none"
               autoComplete="password"
-              placeholder="Password"
+              placeholder={t('password')}
               placeholderTextColor={colors.textMuted}
               editable={!deleting}
               onSubmitEditing={deleteAccount}
@@ -799,16 +799,16 @@ function SettingsScreen({ navigation }: any) {
                 style={{ color: colors.danger, fontSize: 13, marginTop: 8 }}>{deleteError}</Text>
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cancel" disabled={deleting}
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('case_cancel')} disabled={deleting}
                 onPress={() => setDeleteOpen(false)} style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontWeight: '600' }}>Cancel</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontWeight: '600' }}>{t('case_cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button" testID="account-delete-confirm" accessibilityLabel="Delete account permanently"
+              <TouchableOpacity accessibilityRole="button" testID="account-delete-confirm" accessibilityLabel={t('x_st_delete_account_permanently')}
                 accessibilityState={{ disabled: deleting, busy: deleting }} disabled={deleting} onPress={deleteAccount}
                 style={{ backgroundColor: colors.emergencyDark, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}>
                 {deleting
                   ? <ActivityIndicator color={colors.white} />
-                  : <Text maxFontSizeMultiplier={1.4} style={{ color: colors.white, fontWeight: '700' }}>Delete forever</Text>}
+                  : <Text maxFontSizeMultiplier={1.4} style={{ color: colors.white, fontWeight: '700' }}>{t('x_st_delete_forever')}</Text>}
               </TouchableOpacity>
             </View>
           </View>

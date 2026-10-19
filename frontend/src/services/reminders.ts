@@ -12,6 +12,7 @@
  */
 import { api } from './api';
 import { parseLocalDate } from '../utils/dateUtils';
+import { locale } from '../i18n';
 
 export type PlannedReminder = {
   id: number; case_id: number | null; title: string; body?: string;
@@ -51,5 +52,5 @@ export async function scheduleReminder(opts: {
 /** "Mon, Oct 5, 9:00 AM" in the device's zone. */
 export function formatReminderTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleString(locale(), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }

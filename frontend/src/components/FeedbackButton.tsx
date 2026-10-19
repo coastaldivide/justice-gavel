@@ -11,12 +11,14 @@ import {
 import { api } from '../services/api';
 import { useToast } from './Toast';
 import { COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Props {
   screen: string;   // current screen name for logging
 }
 
 export default function FeedbackButton({ screen }: Props) {
+  useLang();
   const [visible, setVisible]     = useState(false);
   const [issue, setIssue]         = useState('');
   const [contact, setContact]     = useState('');
@@ -27,14 +29,14 @@ export default function FeedbackButton({ screen }: Props) {
   if (!__DEV__ && process.env.EXPO_PUBLIC_BETA !== 'true') return null;
 
   const submit = async () => {
-    if (!issue.trim()) { showToast('Please describe the issue before submitting.', 'warning'); return; }
+    if (!issue.trim()) { showToast(t('x_feedback_button_please_describe_issue_before'), 'warning'); return; }
     setLoading(true);
     try {
       await api.post('/feedback/ui', { screen, issue: issue.trim(), contact: contact.trim() });
-      showToast('Thank you — feedback received!', 'success');
+      showToast(t('x_feedback_button_thank_feedback_received'), 'success');
       setIssue(''); setContact(''); setVisible(false);
     } catch {
-      showToast('Could not submit. Please try again.', 'error');
+      showToast(t('x_feedback_button_could_not_submit_please'), 'error');
     } finally {
       setLoading(false);
     }
@@ -46,8 +48,8 @@ export default function FeedbackButton({ screen }: Props) {
         style={styles.fab}
         onPress={() => setVisible(true)}
         accessibilityRole="button"
-        accessibilityLabel="Submit feedback about this screen"
-        accessibilityHint="Opens feedback form for beta testers"
+        accessibilityLabel={t('x_feedback_button_submit_feedback_about_this')}
+        accessibilityHint={t('x_feedback_button_opens_feedback_form_beta')}
       >
         <Text style={styles.fabText}>?</Text>
       </TouchableOpacity>
@@ -55,28 +57,28 @@ export default function FeedbackButton({ screen }: Props) {
       <Modal visible={visible} transparent animationType="slide" onRequestClose={() => setVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.title}>Beta Feedback</Text>
-            <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>Screen: {screen}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('x_feedback_button_beta_feedback')}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>{t('x_feedback_button_screen', { screen })}</Text>
 
             <TextInput
               style={styles.input}
               value={issue}
               onChangeText={setIssue}
-              placeholder="What went wrong or felt confusing?"
+              placeholder={t('x_feedback_button_what_went_wrong_felt')}
               multiline
               numberOfLines={4}
               maxLength={2000}
               textAlignVertical="top"
-              accessibilityLabel="Describe the issue"
+              accessibilityLabel={t('x_feedback_button_describe_issue')}
             />
             <TextInput
               style={[styles.input, { height: 44 }]}
               value={contact}
               onChangeText={setContact}
-              placeholder="Your email or phone (optional)"
+              placeholder={t('x_feedback_button_email_phone_optional')}
               keyboardType="email-address"
               maxLength={200}
-              accessibilityLabel="Contact information (optional)"
+              accessibilityLabel={t('x_feedback_button_contact_information_optional')}
             />
 
             <View style={styles.buttons}>
@@ -84,20 +86,20 @@ export default function FeedbackButton({ screen }: Props) {
                 style={styles.cancel}
                 onPress={() => setVisible(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Cancel feedback"
+                accessibilityLabel={t('x_feedback_button_cancel_feedback')}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('case_cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.submit, loading && { opacity: 0.6 }]}
                 onPress={submit}
                 disabled={loading}
                 accessibilityRole="button"
-                accessibilityLabel="Submit feedback"
+                accessibilityLabel={t('x_feedback_button_submit_feedback')}
               >
                 {loading
                   ? <ActivityIndicator color={COLORS.white} size="small" />
-                  : <Text style={styles.submitText}>Send Feedback</Text>
+                  : <Text style={styles.submitText}>{t('x_feedback_button_send_feedback')}</Text>
                 }
               </TouchableOpacity>
             </View>

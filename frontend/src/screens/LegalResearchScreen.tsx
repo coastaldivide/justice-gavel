@@ -30,23 +30,23 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
-import { t }   from '../i18n';
+import { t, useLang, perLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticSelection, Clipboard } from '../utils/webCompat';
 
 // ── Quick research prompts ────────────────────────────────────────────────────
-const QUICK_PROMPTS = [
-  { label: 'Motion to suppress',  text: 'What are the legal standards for a successful motion to suppress? Cite key federal and state cases.' },
-  { label: 'Probable cause stops',text: 'Cases where a motion to suppress was granted for a traffic stop without probable cause. Cite the cases and holdings.' },
-  { label: 'Bail reduction',      text: 'What factors do courts consider when ruling on a motion for bail reduction? List the key cases.' },
-  { label: 'Brady violations',    text: 'What constitutes a Brady violation and what is the remedy? Cite Brady v. Maryland and subsequent cases.' },
-  { label: 'Speedy trial',        text: 'What are the Barker v. Wingo factors for speedy trial analysis? How do courts apply them?' },
-  { label: 'Miranda exception',   text: 'What are the exceptions to Miranda warnings? When can statements be admitted despite no warning?' },
-  { label: 'Search incident',     text: 'What is the scope of a search incident to arrest? Cite Chimel v. California and later developments.' },
-  { label: 'Stop and frisk',      text: 'What is the legal standard for a Terry stop? What justifies a pat-down for weapons?' },
-];
+const QUICK_PROMPTS = perLang(() => [
+  { label: t('x_legal_research_motion_suppress'),  text: t('x_legal_research_what_legal_standards_successful') },
+  { label: t('x_legal_research_probable_cause_stops'),text: t('x_legal_research_cases_where_motion_suppress') },
+  { label: t('x_legal_research_bail_reduction'),      text: t('x_legal_research_what_factors_do_courts') },
+  { label: t('x_legal_research_brady_violations'),    text: t('x_legal_research_what_constitutes_brady_violation') },
+  { label: t('x_legal_research_speedy_trial'),        text: t('x_legal_research_what_barker_v_wingo') },
+  { label: t('x_legal_research_miranda_exception'),   text: t('x_legal_research_what_exceptions_miranda_warnings') },
+  { label: t('x_legal_research_search_incident'),     text: t('x_legal_research_what_scope_search_incident') },
+  { label: t('x_legal_research_stop_frisk'),      text: t('x_legal_research_what_legal_standard_terry') },
+]);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; }
@@ -55,6 +55,7 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
 // ── Markdown + Citation renderer ─────────────────────────────────────────────
 function MarkdownText({ text, style }: { text: string; style?: object }) {
+  useLang();
   const { showToast } = useToast();
 
   const citationBlue = COLORS.blue;
@@ -62,7 +63,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 
   const openVerify = (citation: string) => {
     const q = encodeURIComponent(citation.trim());
-    Linking.openURL('https://www.courtlistener.com/?q=' + q + '&type=o&order_by=score+desc').catch(() => showToast('Action failed. Please try again.', 'error'));
+    Linking.openURL('https://www.courtlistener.com/?q=' + q + '&type=o&order_by=score+desc').catch(() => showToast(t('action_failed'), 'error'));
   };
 
   const renderInline = (line: string, baseKey: string) => {
@@ -132,6 +133,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
 function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithAI?: (content: string) => void }) {
+  useLang();
   const { colors } = useTheme();
   const { showToast } = useToast();
   const styles = makeStyles(colors);
@@ -159,15 +161,14 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
       <View style={styles.resultHeader}
         testID="legal-research-screen">
         <View style={[styles.resultDot, { backgroundColor: COLORS.legal }]} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: COLORS.legal }]}>Research Result</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: COLORS.legal }]}>{t('x_legal_research_research_result')}</Text>
       </View>
 
       {/* Knowledge cutoff banner -- every result, every time */}
       <View style={[styles.cutoffBanner, { backgroundColor: COLORS.warnBg,
         borderColor: COLORS.gold + '70' }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: COLORS.warnDark }]}>
-          ⚠️  Knowledge cutoff: August 2025 -- verify all citations before relying on them in court.
-          Tap any underlined citation to check on CourtListener.
+          {t('x_legal_research_knowledge_cutoff_august_2025')}
         </Text>
       </View>
 
@@ -181,9 +182,9 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
           activeOpacity={0.6}
           style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
           onPress={() => { hapticSelection(); Clipboard.setString(msg.content); }}
-          accessibilityLabel="Copy research result"
+          accessibilityLabel={t('x_legal_research_copy_research_result')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>Copy</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>{t('copy')}</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button"
           style={[styles.copyBtn, { borderColor: COLORS.navy, flex: 1 }]}
@@ -191,24 +192,24 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
             try {
               const Print = await import('expo-print');
               const Sharing = await import('expo-sharing');
-              const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+              const today = new Date().toLocaleDateString(locale(), { year:'numeric', month:'long', day:'numeric' });
               const bodyHtml = msg.content.split('\n').map((line: string) => {
                 if (!line.trim()) return '<p style="height:8px"></p>';
                 const esc = escapeHtml(line);
                 return '<p style="margin:0 0 10px">' + esc.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>') + '</p>';
               }).join('');
-              const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.8;padding:1in 1.25in;color:#000}.hdr{border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:20px;font-size:10pt;color:#555}.disc{background:#fff8e1;border:1px solid #f9a825;padding:8px;font-size:9pt;margin:16px 0}</style></head><body><div class="hdr">Justice Gavel Legal Research &middot; ' + today + '</div><div class="disc">AI research &mdash; verify all citations before relying on them in court. Knowledge cutoff August 2025.</div>' + bodyHtml + '</body></html>';
+              const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.8;padding:1in 1.25in;color:#000}.hdr{border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:20px;font-size:10pt;color:#555}.disc{background:#fff8e1;border:1px solid #f9a825;padding:8px;font-size:9pt;margin:16px 0}</style></head><body><div class="hdr">' + escapeHtml(t('x_legal_research_pdf_header', { date: today })) + '</div><div class="disc">' + escapeHtml(t('x_legal_research_pdf_disclaimer')) + '</div>' + bodyHtml + '</body></html>';
               const { uri } = await Print.printToFileAsync({ html, base64: false });
               const canShare = await Sharing.isAvailableAsync();
               if (canShare) {
-                await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Export Research', UTI: 'com.adobe.pdf' });
+                await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: t('x_legal_research_export_research'), UTI: 'com.adobe.pdf' });
               } else {
                 await Print.printAsync({ html });
               }
-            } catch { showToast('Could not generate PDF.'); }
+            } catch { showToast(t('x_legal_research_could_not_generate_pdf')); }
           }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>PDF Export</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>{t('x_legal_research_pdf_export')}</Text>
         </TouchableOpacity>
       </View>
       {/* Discuss with AI -- continue into Defender Mode chat with research context */}
@@ -217,9 +218,9 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
   accessibilityRole="button"
           style={[styles.copyBtn, { borderColor: COLORS.navy + '55', backgroundColor: COLORS.navy + '08' }]}
           onPress={() => onDiscussWithAI(msg.content)}
-          accessibilityLabel="Discuss this research with AI"
+          accessibilityLabel={t('x_legal_research_discuss_this_research_with')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>⚖️ Discuss with AI</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>{t('res_discuss_ai')}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -228,6 +229,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
 
 // ── Paywall screen ────────────────────────────────────────────────────────────
 function PaywallView({ onSubscribe, loading }: any) {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
@@ -239,17 +241,16 @@ function PaywallView({ onSubscribe, loading }: any) {
       }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: COLORS.textPrimary }]}>
-          AI Legal Research
+          {t('res_title')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: COLORS.textMuted }]}>
-          Westlaw costs $100-500/mo and hasn't changed since 2005.
-          Get case law, statutes, and legal standards in seconds.
+          {t('x_legal_research_westlaw_costs_100_500')}
         </Text>
 
         {/* Comparison table */}
         {[
           ['Casetext',          '$65/mo',      '❌'],
-          ['Justice Gavel Research', '$49.99/mo', '✅'],
+          [t('x_legal_research_justice_gavel_research'), '$49.99/mo', '✅'],
         ].map(([name, price, check]) => (
           <View key={name} style={[styles.compareRow, {
             backgroundColor: check === '✅'
@@ -267,13 +268,13 @@ function PaywallView({ onSubscribe, loading }: any) {
         {/* Features */}
         <View style={[styles.featureList, { borderColor: COLORS.border }]}>
           {[
-            'Case law with full citations',
-            'Jurisdiction-aware research',
-            'Motion precedent & standards',
-            'Constitutional law (4th, 5th, 6th)',
-            'Sentencing ranges & factors',
-            'Unlimited queries per month',
-            'Threaded research sessions',
+            t('x_legal_research_case_law_with_full'),
+            t('x_legal_research_jurisdiction_aware_research'),
+            t('x_legal_research_motion_precedent_standards'),
+            t('x_legal_research_constitutional_law_4th_5th'),
+            t('x_legal_research_sentencing_ranges_factors'),
+            t('x_legal_research_unlimited_queries_per_month'),
+            t('x_legal_research_threaded_research_sessions'),
           ].map(f => (
             <View key={f} style={styles.featureRow}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: COLORS.legal }]}>✓</Text>
@@ -289,7 +290,7 @@ function PaywallView({ onSubscribe, loading }: any) {
         >
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Start 14-Day Free Trial -- $49.99/mo</Text>}
+            : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>{t('x_legal_research_start_14_day_free')}</Text>}
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button"
           style={[styles.annualBtn, { borderColor: COLORS.navy + '55' }]}
@@ -297,11 +298,11 @@ function PaywallView({ onSubscribe, loading }: any) {
           disabled={loading}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
-            Annual -- $374.99/yr · Save $224/yr
+            {t('x_legal_research_annual_374_99_yr')}
           </Text>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: COLORS.textMuted }]}>
-          Cancel anytime. Verify all citations independently before filing.
+          {t('x_legal_research_cancel_anytime_verify_all')}
         </Text>
       </View>
       <AIDisclaimer variant="banner" />
@@ -404,6 +405,7 @@ const makeStyles = (colors: any = COLORS) => StyleSheet.create({
   cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
 function LegalResearchScreen({ route, navigation }: ScreenProps) {
+  useLang();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -450,9 +452,9 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         await api.post('/billing/subscribe', { tier, provider_type: 'addon' });
         setHasAccess(true);
         setPhase('home');
-        showToast('Your Legal Research trial is active. Start searching.');
+        showToast(t('x_legal_research_legal_research_trial_active'));
       } catch (e: any) {
-        const msg = apiErrorMessage(e, 'Could not start subscription.');
+        const msg = apiErrorMessage(e, t('x_legal_research_could_not_start_subscription'));
 showToast(msg, 'error');
         setSubLoading(false);
       }
@@ -506,13 +508,13 @@ showToast(msg, 'error');
       setMessages(prev => [...prev, assistantMsg]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (e: any) {
-      const errMsg = apiErrorMessage(e, 'Research failed. Check your connection.');
+      const errMsg = apiErrorMessage(e, t('x_legal_research_research_failed_check_connection'));
       if (e.response?.status === 402) {
         setPhase('paywall');
       } else {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: '⚠️ ' + errMsg + '\n\nPlease try again.',
+          content: t('x_legal_research_please_try_again', { errMsg }),
         }]);
       }
     } finally {
@@ -523,11 +525,11 @@ showToast(msg, 'error');
   // Header buttons (declared after loadHistory, which they call)
   useEffect(() => {
     navigation.setOptions({
-      title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
+      title: phase === 'history' ? t('x_legal_research_research_history') : t('x_nav_legal_research'),
       headerRight: () => hasAccess && phase !== 'paywall' ? (
         <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
-          <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel={t('x_discovery_history')}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{t('x_discovery_history')}</Text>
           </TouchableOpacity>
           {phase === 'thread' && (
             <TouchableOpacity
@@ -536,7 +538,7 @@ showToast(msg, 'error');
                 setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
               }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{t('x_discovery_new')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -577,12 +579,12 @@ showToast(msg, 'error');
         ? (
           <View style={styles.centreWrap}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📚</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No research yet</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('res_history_empty')}</Text>
             <TouchableOpacity
   accessibilityRole="button"
-              accessibilityLabel={"Start Researching \u2192"} onPress={() => setPhase('home')}
+              accessibilityLabel={t('res_history_start')} onPress={() => setPhase('home')}
               >
-              <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>Start Researching →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>{t('res_history_start')}</Text>
             </TouchableOpacity>
           </View>
         )
@@ -597,7 +599,7 @@ showToast(msg, 'error');
               <Text maxFontSizeMultiplier={1.4} style={[styles.histTitle, { color: colors.textPrimary }]}
                 numberOfLines={2}>{sess.title}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: colors.textMuted }]}>
-                {new Date(sess.updated_at ?? 0).toLocaleDateString('en-US', {
+                {new Date(sess.updated_at ?? 0).toLocaleDateString(locale(), {
                   month: 'short', day: 'numeric', year: 'numeric'
                 })}
               </Text>
@@ -632,10 +634,10 @@ showToast(msg, 'error');
         {phase === 'home' && (
           <>
             <Text maxFontSizeMultiplier={1.4} style={[styles.homeTitle, { color: colors.textPrimary }]}>
-              What do you need to research?
+              {t('res_home_title')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.homeSub, { color: colors.textMuted }]}>
-              Case law · Statutes · Constitutional standards · Sentencing
+              {t('res_home_sub')}
             </Text>
 
             {caseContext && (
@@ -650,11 +652,11 @@ showToast(msg, 'error');
 
             {/* Quick prompts */}
             <Text maxFontSizeMultiplier={1.4} style={[styles.quickLabel, { color: colors.textMuted }]}>
-              Common research queries
+              {t('x_legal_research_common_research_queries')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}
               style={styles.quickScroll} contentContainerStyle={{ gap: 8 }}>
-              {QUICK_PROMPTS.map(p => (
+              {QUICK_PROMPTS().map(p => (
                 <TouchableOpacity
   accessibilityRole="button"
                   key={p.label}
@@ -677,7 +679,7 @@ showToast(msg, 'error');
               borderColor: colors.gold + '55'
             }]}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]}>
-                ⚠️  Always verify citations before filing. AI research may miss recent decisions. Use Westlaw or Lexis for appellate work.
+                {t('x_legal_research_always_verify_citations_before')}
               </Text>
             </View>
           </>
@@ -699,7 +701,7 @@ showToast(msg, 'error');
           }]}>
             <ActivityIndicator size="small" color={COLORS.legal} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.searchingText, { color: colors.textMuted }]}>
-              Searching case law and statutes…
+              {t('x_legal_research_searching_case_law_statutes')}
             </Text>
           </View>
         )}
@@ -709,8 +711,7 @@ showToast(msg, 'error');
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
-          ⚖️ AI legal research is not legal advice. Analysis may miss key issues or
-          misinterpret jurisdiction-specific rules. Have an attorney review all documents.
+          {t('x_legal_research_ai_legal_research_not')}
         </Text>
       </View>
       </ScrollView>
@@ -728,7 +729,7 @@ showToast(msg, 'error');
           }]}
           placeholder={phase === 'thread'
             ? t('res_placeholder_follow')
-            : 'e.g. Tennessee cases suppressing traffic stop evidence…'}
+            : t('x_legal_research_e_g_tennessee_cases')}
           placeholderTextColor={COLORS.textSecond}
           value={query}
           onChangeText={setQuery}
@@ -746,7 +747,7 @@ showToast(msg, 'error');
           }]}
           onPress={() => runSearch(query)}
           disabled={!query.trim() || searching}
-          accessibilityLabel="Run legal research"
+          accessibilityLabel={t('x_legal_research_run_legal_research')}
         >
           {searching
             ? <ActivityIndicator color={colors.bgCard} size="small" />

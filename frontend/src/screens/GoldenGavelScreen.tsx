@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
-import { t } from '../i18n';
+import { t, useLang, perLang } from '../i18n';
 
 interface GavelCriteria {
   avg_rating?: number;
@@ -20,7 +20,7 @@ interface GavelCriteria {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GAVEL_EMOJI  = { 0: '',    1: '🥉', 2: '🥈', 3: '🏆' } as const;
-const GAVEL_LABEL  = { 0: 'None', 1: 'Bronze', 2: 'Silver', 3: 'Golden' } as const;
+const GAVEL_LABEL = perLang(() => ({ 0: t('x_firm_vertical_none'), 1: t('x_golden_gavel_bronze'), 2: t('x_golden_gavel_silver'), 3: t('x_golden_gavel_golden') } as const));
 const GAVEL_COLOR  = {
   0: { bg: COLORS.bg, text: COLORS.textMuted, border: COLORS.border, header: COLORS.textMuted },
   1: { bg: COLORS.bailBg, text: COLORS.bail, border: COLORS.bail, header: COLORS.bail },
@@ -75,6 +75,7 @@ interface HallEntry {
 
 // ── Criterion row ─────────────────────────────────────────────────────────────
 function CritRow({ label, met }: { label: string; met: boolean }) {
+  useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
@@ -89,6 +90,7 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
 
 // ── Journey bar ───────────────────────────────────────────────────────────────
 function JourneyBar({ level }: { level: GavelLevel }) {
+  useLang();
   const steps: GavelLevel[] = [1, 2, 3];
   return (
     <View style={styles.journeyRow}
@@ -103,7 +105,7 @@ function JourneyBar({ level }: { level: GavelLevel }) {
               borderColor:      level >= s ? GAVEL_COLOR[s].border : COLORS.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.journeyEmoji}>{level >= s ? GAVEL_EMOJI[s] : '○'}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.journeyLabel, { color: level >= s ? GAVEL_COLOR[s].text : COLORS.border }]}>
-              {GAVEL_LABEL[s]}
+              {GAVEL_LABEL()[s]}
             </Text>
           </View>
         </React.Fragment>
@@ -116,6 +118,7 @@ function JourneyBar({ level }: { level: GavelLevel }) {
 // ── Criteria section for one level ───────────────────────────────────────────
 function CriteriaSection({ title, progress, criteria, earned }:
   { title: string; progress: Progress; criteria: Record<string, unknown>; earned: boolean }) {
+  useLang();
   const { colors } = useTheme();
   if (!criteria) return null;
   const { user_type: ut } = progress;
@@ -124,18 +127,18 @@ function CriteriaSection({ title, progress, criteria, earned }:
     <View style={[styles.critSection, { borderColor: earned ? colors.legal : colors.border }]}>
       <View style={styles.critSectionHeader}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.critSectionTitle, { color: colors.textPrimary }]}>{title}</Text>
-        {earned && <Text maxFontSizeMultiplier={1.4} style={styles.earnedTag}>✓ Earned</Text>}
+        {earned && <Text maxFontSizeMultiplier={1.4} style={styles.earnedTag}>{t('x_golden_gavel_earned')}</Text>}
       </View>
 
       {ut === 'attorney' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          label={t('x_golden_gavel_active_months', { months_active: progress.months_active, value: ((criteria as GavelCriteria).months_active ?? 0) })}
           met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         <CritRow
-          label={`Consultations ${progress.consultations_booked ?? 0} / ${((criteria as GavelCriteria).consultations_booked ?? 0)}`}
+          label={t('x_golden_gavel_consultations', { value: progress.consultations_booked ?? 0, value2: ((criteria as GavelCriteria).consultations_booked ?? 0) })}
           met={(progress.consultations_booked ?? 0) >= ((criteria as GavelCriteria).consultations_booked ?? 0)} />
         <CritRow
-          label={`Rating ${progress.avg_rating ?? 0} / ${((criteria as GavelCriteria).avg_rating ?? 0)} min (${progress.review_count ?? 0} reviews, need ${((criteria as GavelCriteria).min_reviews ?? 0)})`}
+          label={t('x_golden_gavel_rating_min_reviews_need', { value: progress.avg_rating ?? 0, value2: ((criteria as GavelCriteria).avg_rating ?? 0), value3: progress.review_count ?? 0, value4: ((criteria as GavelCriteria).min_reviews ?? 0) })}
           met={(progress.avg_rating ?? 0) >= ((criteria as GavelCriteria).avg_rating ?? 0) && (progress.review_count ?? 0) >= ((criteria as GavelCriteria).min_reviews ?? 0)} />
         <CritRow label={t("golden_gavel.bar_verified")}  met={!!progress.bar_verified} />
         <CritRow label={t("golden_gavel.zero_flags")} met={progress.compliance_flags === 0} />
@@ -143,23 +146,23 @@ function CriteriaSection({ title, progress, criteria, earned }:
 
       {ut === 'consumer' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          label={t('x_golden_gavel_active_months', { months_active: progress.months_active, value: ((criteria as GavelCriteria).months_active ?? 0) })}
           met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         {((criteria as GavelCriteria).lessons_started ?? 0) && !((criteria as GavelCriteria).lessons_completed ?? 0) &&
-          <CritRow label="Started at least one lesson" met={!!progress.lessons_started} />}
+          <CritRow label={t('x_golden_gavel_started_at_least_one')} met={!!progress.lessons_started} />}
         {((criteria as GavelCriteria).lessons_completed ?? 0) &&
-          <CritRow label="All lessons completed" met={!!progress.lessons_completed} />}
+          <CritRow label={t('x_golden_gavel_all_lessons_completed')} met={!!progress.lessons_completed} />}
         <CritRow label={t("golden_gavel.zero_flags")} met={progress.compliance_flags === 0} />
       </>}
 
       {ut === 'bondsman' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          label={t('x_golden_gavel_active_months', { months_active: progress.months_active, value: ((criteria as GavelCriteria).months_active ?? 0) })}
           met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         <CritRow
-          label={`Leads accepted ${progress.leads_accepted ?? 0} / ${((criteria as GavelCriteria).leads_accepted ?? 0)}`}
+          label={t('x_golden_gavel_leads_accepted', { value: progress.leads_accepted ?? 0, value2: ((criteria as GavelCriteria).leads_accepted ?? 0) })}
           met={(progress.leads_accepted ?? 0) >= ((criteria as GavelCriteria).leads_accepted ?? 0)} />
-        <CritRow label="License verified"      met={!!progress.license_verified} />
+        <CritRow label={t('x_golden_gavel_license_verified')}      met={!!progress.license_verified} />
         <CritRow label={t("golden_gavel.zero_flags")} met={progress.compliance_flags === 0} />
       </>}
     </View>
@@ -168,6 +171,7 @@ function CriteriaSection({ title, progress, criteria, earned }:
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function GoldenGavelScreen(): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
@@ -198,9 +202,9 @@ function GoldenGavelScreen(): React.JSX.Element {
       if (s.data) setStatus(s.data);
       if (e.data) setElig(e.data);
       if (Array.isArray(h.data)) setHall(h.data);
-      if (failed === 3) setFetchError('Unable to load. Please check your connection and try again.');
+      if (failed === 3) setFetchError(t('x_golden_gavel_unable_load_please_check'));
     } catch (e: any) {
-      setFetchError('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
+      setFetchError(t('x_golden_gavel_unable_load_please_check')); __DEV__ && console.warn(e?.message); }
     refresh ? setRefreshing(false) : setLoading(false);
   }, []);
 
@@ -212,16 +216,16 @@ function GoldenGavelScreen(): React.JSX.Element {
     setOptingIn(true);
     try {
       await api.post('/golden-gavel/hall/opt-in', {});
-      showToast('Your name and impact are now publicly listed.');
+      showToast(t('x_golden_gavel_name_impact_now_publicly'));
       load(true);
     } catch {
       setLoading(false);
-      showToast('Check your connection and try again.');
+      showToast(t('home_sos_failed'));
     }
     setOptingIn(false);
   };
 
-  if (loading) return <SkeletonLoader count={5} label="Progress" />;
+  if (loading) return <SkeletonLoader count={5} label={t('x_golden_gavel_progress')} />;
 
   const level: GavelLevel = (status?.gavel_level ?? elig?.level ?? 0) as GavelLevel;
   const hasAny = level > 0;
@@ -235,18 +239,18 @@ function GoldenGavelScreen(): React.JSX.Element {
     >
       {fetchError && (
         <View style={{ margin: 16, padding: 14, backgroundColor: colors.bgCard, borderRadius: 10, borderWidth: 1, borderColor: colors.emergency }}>
-          <Text style={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>⚠ Unable to load</Text>
+          <Text style={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>{t('x_golden_gavel_unable_load')}</Text>
           <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
         </View>
       )}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: headerColor }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerIcon}>{hasAny ? GAVEL_EMOJI[level] : '⚖️'}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Gavel Program</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_golden_gavel_gavel_program')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
           {hasAny
-            ? `${GAVEL_LABEL[level]} Gavel · ${status?.awarded_at ? new Date(status.awarded_at).toLocaleDateString() : 'Earned'}`
-            : 'Elite status -- earned, not purchased'}
+            ? t('x_golden_gavel_gavel', { value: GAVEL_LABEL()[level], value2: status?.awarded_at ? new Date(status.awarded_at).toLocaleDateString() : t('gg_earned') })
+            : t('x_golden_gavel_elite_status_earned_not')}
         </Text>
       </View>
 
@@ -255,13 +259,12 @@ function GoldenGavelScreen(): React.JSX.Element {
         <JourneyBar level={level} />
         {level < 3 && elig?.next_level_label && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.textMuted }]}>
-            Next: {elig.next_level_label} Gavel
-            {elig.missing_for_next.length > 0 ? ` · ${elig.missing_for_next[0]}` : ' · Almost there!'}
+            {t('x_golden_gavel_next_gavel', { next_level_label: elig.next_level_label, value: elig.missing_for_next.length > 0 ? ` · ${elig.missing_for_next[0]}` : ' ' + t('x_golden_gavel_almost_there') })}
           </Text>
         )}
         {level === 3 && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.goldText }]}>
-            🏆 You have reached the highest level
+            {t('x_golden_gavel_have_reached_highest_level')}
           </Text>
         )}
       </View>
@@ -272,33 +275,33 @@ function GoldenGavelScreen(): React.JSX.Element {
           {status?.bronze_at && (
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥉</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Bronze awarded</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_bronze_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.bronze_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.silver_at && (
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥈</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Silver awarded</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_silver_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.silver_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.golden_at && (
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🏆</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Golden awarded</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_golden_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
             style={[styles.optInBtn, { backgroundColor: headerColor }, optingIn && { opacity: 0.6 }]}
             onPress={handleOptIn}
             disabled={optingIn}>
 
             {optingIn
               ? <ActivityIndicator color={colors.bgCard} size="small" />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.optInBtnText}>Add me to the Hall of Justice →</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={styles.optInBtnText}>{t('gg_opt_in')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -307,22 +310,22 @@ function GoldenGavelScreen(): React.JSX.Element {
       {/* ── Criteria cards -- all three levels ──────────────────────────────── */}
       {elig && (
         <>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Your progress</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('x_golden_gavel_progress_2')}</Text>
 
           <CriteriaSection
-            title="🥉  Bronze Gavel"
+            title={t('x_golden_gavel_bronze_gavel')}
             progress={elig.progress}
             criteria={(elig as any).criteria?.[(elig as any).user_type]?.bronze || (elig as any).criteria?.bronze}
             earned={level >= 1}
           />
           <CriteriaSection
-            title="🥈  Silver Gavel"
+            title={t('x_golden_gavel_silver_gavel')}
             progress={elig.progress}
             criteria={(elig as any).criteria?.[(elig as any).user_type]?.silver || (elig as any).criteria?.silver}
             earned={level >= 2}
           />
           <CriteriaSection
-            title="🏆  Golden Gavel"
+            title={t('x_golden_gavel_golden_gavel')}
             progress={elig.progress}
             criteria={(elig as any).criteria?.[(elig as any).user_type]?.golden || (elig as any).criteria?.golden}
             earned={level >= 3}
@@ -333,9 +336,9 @@ function GoldenGavelScreen(): React.JSX.Element {
       {/* ── Hall of Justice ─────────────────────────────────────────────────── */}
       {hall.length > 0 && (
         <>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Hall of Justice</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('gg_hall')}</Text>
           {hall.length === 0 ? (
-            <Text style={{color:colors.textSecond,textAlign:'center',marginTop:24}}>No Hall of Fame entries yet — case evaluations will appear here after attorney review.</Text>
+            <Text style={{color:colors.textSecond,textAlign:'center',marginTop:24}}>{t('x_golden_gavel_no_hall_fame_entries')}</Text>
           ) : hall.map((entry, i) => (
             <View key={`hall-${i}`} style={[styles.hallCard, {
               backgroundColor: entry.featured ? colors.warnBg : colors.bgCard,
@@ -348,14 +351,12 @@ function GoldenGavelScreen(): React.JSX.Element {
                     {entry.display_name}{entry.featured ? '  ★' : ''}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.hallMeta, { color: colors.textMuted }]}>
-                    {entry.level_label || GAVEL_LABEL[entry.gavel_level as GavelLevel]} Gavel
-                    {entry.tier === 'attorney' ? ' · Attorney' : entry.tier === 'bondsman' ? ' · Bondsman' : ' · Member'}
-                    {entry.state ? ` · ${entry.state}` : ''}
+                    {t('x_golden_gavel_gavel_2', { value: entry.level_label || GAVEL_LABEL()[entry.gavel_level as GavelLevel], value2: entry.tier === 'attorney' ? ' ' + t('x_golden_gavel_attorney') : entry.tier === 'bondsman' ? ' ' + t('x_golden_gavel_bondsman') : ' ' + t('x_golden_gavel_member'), value3: entry.state ? ` · ${entry.state}` : '' })}
                   </Text>
                 </View>
                 <View style={styles.helpedBadge}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.helpedNum}>{entry.people_helped}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.helpedLabel}>helped</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.helpedLabel}>{t('x_golden_gavel_helped')}</Text>
                 </View>
               </View>
             </View>
@@ -366,10 +367,7 @@ function GoldenGavelScreen(): React.JSX.Element {
       {!hasAny && (
         <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody, { color: colors.textSecond }]}>
-            The Gavel Program recognizes attorneys, advocates, and individuals who demonstrate
-            consistent excellence on the Justice Gavel platform.{'\n'}
-            Bronze Gavel is the entry point. Meet the criteria above and it is awarded
-            automatically every night. It is never purchased.
+            {t('x_golden_gavel_gavel_program_recognizes_attorneys')}
           </Text>
         </View>
       )}

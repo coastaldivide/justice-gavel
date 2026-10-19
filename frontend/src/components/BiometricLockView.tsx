@@ -10,6 +10,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Props {
   onUnlock: () => Promise<void>;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export const BiometricLockView = React.memo(function BiometricLockView({ onUnlock, unlocking }: Props) {
+  useLang();
   const { colors } = useTheme();
 
   return (
@@ -24,25 +26,24 @@ export const BiometricLockView = React.memo(function BiometricLockView({ onUnloc
       <Text style={styles.icon}>🔒</Text>
       <Text maxFontSizeMultiplier={1.4}
         style={[styles.title, { color: colors.textPrimary }]}>
-        Locked
+        {t('x_biometric_lock_view_locked')}
       </Text>
       <Text maxFontSizeMultiplier={1.4}
         style={[styles.sub, { color: colors.textMuted }]}>
-        This screen contains sensitive information.{'\n'}
-        Authenticate to continue.
+        {t('x_biometric_lock_view_this_screen_contains_sensitive')}
       </Text>
       <TouchableOpacity
         style={[styles.btn, { backgroundColor: colors.navy }]}
         onPress={onUnlock}
         disabled={unlocking}
         accessibilityRole="button"
-        accessibilityLabel="Unlock with biometric"
+        accessibilityLabel={t('x_biometric_lock_view_unlock_with_biometric')}
         activeOpacity={0.85}
       >
         {unlocking
           ? <ActivityIndicator color={colors.white} size="small" />
           : <Text maxFontSizeMultiplier={1.4} style={styles.btnText}>
-              Unlock
+              {t('x_biometric_lock_view_unlock')}
             </Text>
         }
       </TouchableOpacity>

@@ -25,8 +25,9 @@ backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             Email: Resend (emails are logged, not sent, until RESEND_API_KEY is set)
             Queue: BullMQ when REDIS_URL is set, in-process otherwise
 
-supabase/migrations/   PostgreSQL schema — 13 plain-SQL files (00…12), applied
-            in filename order with psql; idempotent; RLS enabled deny-all
+supabase/migrations/   PostgreSQL schema — plain-SQL files (00…23), applied
+            in filename order with psql (backend/scripts/migrate.sh, the
+            Render pre-deploy step); idempotent; RLS enabled deny-all
             (no policies — the Express backend is the only DB client)
 ```
 
@@ -34,7 +35,7 @@ supabase/migrations/   PostgreSQL schema — 13 plain-SQL files (00…12), appli
 `STRIPE_SECRET_KEY`, every charging/subscribing endpoint returns
 `503 payments_unavailable` and the app shows "Payments aren't available yet"
 (free features keep working). Setting the keys
-(see [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md)) re-enables Stripe
+(see [DEPLOY_ENV_SETUP.md](./DEPLOY_ENV_SETUP.md)) re-enables Stripe
 automatically — no code change.
 
 **Lead fees are flat — never scaled to bail amount or case value**
@@ -78,7 +79,7 @@ That boots with no API keys: dev secrets are generated per process, AI returns
 `503 ai_unavailable`, payments return `503 payments_unavailable`, emails are
 logged. Copy `backend/.env.example` to `backend/.env` and fill in keys to
 enable features (every variable is documented in
-[RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md)). Without `DATABASE_URL` the
+[DEPLOY_ENV_SETUP.md](./DEPLOY_ENV_SETUP.md)). Without `DATABASE_URL` the
 dev server falls back to in-memory SQLite (`demo.db`) — fine for poking at
 routes, not for real work.
 
@@ -130,11 +131,14 @@ clients: `node scripts/generate-sdk.mjs [language]`.
 
 ## Deploy
 
-Backend deploys to Railway from `backend/` (Dockerfile + `railway.json`,
-health check `GET /health`); Postgres lives on Supabase or Railway and
-migrations are applied manually with psql in filename order. Steps, required
-variables and verification: [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md)
-and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
+Backend deploys to **Render** from the Blueprint [`render.yaml`](./render.yaml):
+a production and a staging Docker web service built from `backend/Dockerfile`
+(repo-root context), health check `GET /health`, auto-deploy of `main` once CI
+passes. Postgres lives on Supabase; Render's pre-deploy step
+(`backend/scripts/migrate.sh`) applies new `supabase/migrations` files with
+psql before each deploy goes live. Steps, required variables and verification:
+[DEPLOY_ENV_SETUP.md](./DEPLOY_ENV_SETUP.md), [RUNBOOK.md → DEPLOY (Render)](./RUNBOOK.md#deploy-render)
+and `backend/scripts/go-live-checklist.md`. Mobile builds ship through EAS
 (`eas build` / `eas submit`); web exports with `npx expo export --platform web`.
 
 ## Data refresh
@@ -142,7 +146,7 @@ and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
 Provider scrapers (Google Places, Yelp, public state-bar listings), the DOI /
 CSV importers and the legal-reference updater write the main Postgres
 database through `backend/src/services/dataRefresh/` — nightly when
-`LIVE_REFRESH=true`, or by hand (`cd backend && railway run bash
+`LIVE_REFRESH=true`, or by hand (`cd backend && DATABASE_URL=… bash
 scripts/run-all-scrapes.sh --dry-run`). New providers are inserted; changes to
 providers already listed are staged in `provider_update_proposals` for an
 admin to apply or reject (`/api/admin/proposals`) — a scrape never overwrites,
@@ -153,7 +157,8 @@ hides or deletes a lawyer / bail-agent row. Each run is logged in
 
 | Doc | What it is |
 |---|---|
-| [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md) | **The** environment-variable reference + Railway deploy settings |
+| [DEPLOY_ENV_SETUP.md](./DEPLOY_ENV_SETUP.md) | **The** environment-variable reference + Render deploy settings |
+| [render.yaml](./render.yaml) | Render Blueprint: production + staging services |
 | [API_REFERENCE.md](./API_REFERENCE.md) / [openapi.json](./openapi.json) | API overview / generated full spec |
 | [QUICKSTART.md](./QUICKSTART.md) | Local setup + seeded-data overview |
 | [RUNBOOK.md](./RUNBOOK.md) | Incident response, monitoring, backups, scheduled jobs, data refresh |
@@ -163,7 +168,7 @@ hides or deletes a lawyer / bail-agent row. Each run is logged in
 | [FACT_CHECK_RUNBOOK.md](./FACT_CHECK_RUNBOOK.md) | Verifying legal reference data against official sources |
 | [docs/LEGAL_ACTION_ITEMS.md](./docs/LEGAL_ACTION_ITEMS.md) | Open legal/compliance items, incl. the lawyer review still required |
 | [PHASE_2_ROADMAP.md](./PHASE_2_ROADMAP.md) | Deferred feature territory (decision record) |
-| `backend/scripts/railway-checklist.md` | Step-by-step go-live checklist |
+| `backend/scripts/go-live-checklist.md` | Step-by-step go-live checklist (Render) |
 | [docs/](./docs/) | Privacy policy, ToS, store listing, SDK guide, legal action items |
 | [docs/fix-notes/](./docs/fix-notes/) | Historical fix/change logs (see its README) |
 | [docs/archive/](./docs/archive/) | Superseded docs kept for history — do not rely on them |

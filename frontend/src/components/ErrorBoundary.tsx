@@ -12,6 +12,7 @@ import { COLORS } from '../constants/theme';
  */
 import React, { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { t } from '../i18n';
 
 interface Props { children: ReactNode; fallback?: ReactNode; }
 interface State { hasError: boolean; error: Error | null; }
@@ -36,12 +37,12 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={styles.container}>
           <Text style={styles.icon}>⚠️</Text>
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{t('error_generic')}</Text>
           <Text style={styles.sub}>
-            {this.state.error?.message || 'An unexpected error occurred.'}
+            {this.state.error?.message || t('x_error_boundary_unexpected_error_occurred')}
           </Text>
           <TouchableOpacity style={styles.btn} onPress={this.reset} accessibilityRole="button">
-            <Text style={styles.btnText}>Try again</Text>
+            <Text style={styles.btnText}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>
       );

@@ -1,12 +1,13 @@
 /**
  * app_env.test.js — checklist item 46: configuration supports a staging
  * deployment cleanly (NODE_ENV=production + APP_ENV=staging) and refuses the
- * dangerous mixes. Before: the only staging config (railway.staging.json) set
- * NODE_ENV=staging — which silently turned OFF production hardening (secrets
+ * dangerous mixes. Before: the only staging config (the old host's staging
+ * service file) set NODE_ENV=staging — which silently turned OFF production hardening (secrets
  * not required, dev CORS, stack traces in errors) — and a 15-minute JWT the
  * mobile app cannot refresh.
  */
 import fs from 'fs';
+import yaml from 'js-yaml';
 import { checkAppEnv, APP_ENVS } from '../config.js';
 
 const REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname);
@@ -37,10 +38,17 @@ describe('APP_ENV', () => {
     expect(checkAppEnv({ NODE_ENV: 'production', STRIPE_SECRET_KEY: 'sk_live_xyz123' }).errors).toEqual([]);
   });
 
-  test('railway.staging.json no longer sets NODE_ENV=staging or a short JWT lifetime', () => {
-    const cfg = fs.readFileSync(`${REPO}/backend/railway.staging.json`, 'utf8');
-    expect(cfg).not.toMatch(/"NODE_ENV"\s*:\s*"staging"/);
-    expect(cfg).not.toMatch(/JWT_EXPIRES_IN/);
-    expect(JSON.parse(cfg).deploy.healthcheckPath).toBe('/health');
+  test('render.yaml staging: NODE_ENV=production + APP_ENV=staging, own DB, no short JWT lifetime', () => {
+    const bp = yaml.load(fs.readFileSync(`${REPO}/render.yaml`, 'utf8'));
+    const staging = bp.services.find(s => s.name.endsWith('-staging'));
+    const env = Object.fromEntries(staging.envVars.map(e => [e.key, e]));
+    expect(env.NODE_ENV.value).toBe('production');
+    expect(env.APP_ENV.value).toBe('staging');
+    expect(env.DATABASE_URL).toEqual({ key: 'DATABASE_URL', sync: false });
+    expect(env.JWT_EXPIRES_IN).toBeUndefined();
+    expect(staging.healthCheckPath).toBe('/health');
+    // and the env it declares passes the boot check
+    const plain = Object.fromEntries(staging.envVars.filter(e => 'value' in e).map(e => [e.key, e.value]));
+    expect(checkAppEnv({ ...plain, DATABASE_URL: 'postgres://staging' }).errors).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v165
@@ -253,8 +254,7 @@ describe('F7. Attorney Dashboard Flow', () => {
     expect(src).toContain('catch');
   });
   test('F7-02: FirmVerticalScreen loads config with _unconfigured fallback', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx','utf8');
+    const src=feSource(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx');
     expect(src).toContain('/firm-verticals/mine');
     expect(src).toContain('_unconfigured');
     expect(src).toContain('Set Up Your Legal Vertical');

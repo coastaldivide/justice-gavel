@@ -11,7 +11,7 @@ import aiCostsRouter from './routes/admin/aiCosts.js';
 import * as Sentry from '@sentry/node';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger, { runWithRequestContext } from './utils/logger.js';
-import { APP_VERSION } from './utils/version.js';
+import { APP_VERSION, GIT_COMMIT_SHORT } from './utils/version.js';
 import express from 'express';
 import helmet      from 'helmet';
 import morgan      from 'morgan';
@@ -107,9 +107,11 @@ const app = express();
 
 // ── Trust proxy — which X-Forwarded-For entry is the client (rate limits, guest
 // report keys). Default: one hop (the platform edge). TRUST_PROXY overrides it
-// with a hop count or a comma-separated list of trusted CIDRs (RUNBOOK
-// "Client IP"); the client can never pick its own IP because only entries
-// appended by trusted hops are used.
+// with a hop count or a comma-separated list of trusted CIDRs; the client can
+// never pick its own IP because only entries appended by trusted hops are used.
+// The host's proxy chain is not documented (Render), so the right value is
+// measured after deploy with GET /api/admin/diagnostics/client-ip (RUNBOOK
+// "Client IP / TRUST_PROXY").
 export function trustProxySetting(raw = process.env.TRUST_PROXY) {
   const v = String(raw ?? '').trim();
   if (!v) return 1;
@@ -241,7 +243,7 @@ app.use(responseTime((req, res, time) => {
 }));
 if (process.env.NODE_ENV !== 'test') {
   if (IS_PROD) {
-    // One JSON object per line (Railway/Datadog-friendly). Logs req.path, never
+    // One JSON object per line (Render log stream / Datadog-friendly). Logs req.path, never
     // the query string — search params can carry PII (names, emails, counties).
     app.use(morgan((tokens, req, res) => JSON.stringify({
       ts:         tokens.date(req, res, 'iso'),
@@ -320,6 +322,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
     db_cached:  health.cached,
     app:        'Justice Gavel',
     version:    APP_VERSION,
+    commit:     GIT_COMMIT_SHORT,          // deployed commit (Render: RENDER_GIT_COMMIT), null locally
     mode:       process.env.DEMO_MODE === 'true' ? 'demo' : 'live',
     env:        APP_ENV,
     disclaimer_ver: '2026-01-01.1',
@@ -344,7 +347,7 @@ async function reminderMetrics() {
 }
 
 // ── /metrics — machine-readable operational metrics ────────────────────────────
-// Used by: Uptime Robot, Datadog, Railway health checks, Prometheus scrapers
+// Used by: Uptime Robot, Datadog, Prometheus scrapers (the Render health check uses /health)
 // Returns JSON by default; ?format=prometheus for Prometheus text format
 app.get('/metrics', async (req, res) => {
   try {
@@ -363,6 +366,7 @@ app.get('/metrics', async (req, res) => {
       timestamp:       new Date().toISOString(),
       uptime_s:        Math.floor(process.uptime()),
       version:         APP_VERSION,
+      commit:          GIT_COMMIT_SHORT,
       node_version:    process.version,
       memory: {
         rss_mb:        (memUsage.rss        / 1024 / 1024).toFixed(1),

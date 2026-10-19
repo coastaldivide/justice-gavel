@@ -25,7 +25,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
-import { t }   from '../i18n';
+import { t, useLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
 interface SavedLawyer {
@@ -59,6 +59,7 @@ function SavedCard({
   onNoteChange: (id: number, note: string) => void;
   navigation: any;
 }) {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const styles = makeStyles();
@@ -77,14 +78,14 @@ function SavedCard({
       onNoteChange(lawyer.id, note.trim());
       setEditingNote(false);
     } catch {
-      showToast('Check your connection and try again.');
+      showToast(t('home_sos_failed'));
     } finally {
       setSaving(false);
     }
   }, [lawyer.id, note, onNoteChange, showToast]);
 
   const submitReview = async () => {
-    if (rating === 0) { showToast('Tap a star to rate before submitting.'); return; }
+    if (rating === 0) { showToast(t('x_saved_lawyers_tap_star_rate_before')); return; }
     setSubmitting(true);
     try {
       await api.post('/reviews', {
@@ -93,22 +94,22 @@ function SavedCard({
         rating,
         comment:     reviewText.trim(),
         anonymous:   0 });
-      showToast('Thank you -- your review helps others find good attorneys.');
+      showToast(t('x_saved_lawyers_thank_review_helps_others'));
       setReviewing(false);
       setRating(0);
       setReviewText('');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Try again.'), 'info');
+      showToast(apiErrorMessage(e, t('x_attorney_dashboard_try_again')), 'info');
     } finally { setSubmitting(false); }
   };
 
   const confirmRemove = () => {
-    confirm(`Remove ${lawyer.name}?`, 'They will be removed from your saved attorneys.', { confirmLabel: 'Remove', destructive: true })
+    confirm(t('x_check_in_manager_remove', { name: lawyer.name }), t('x_saved_lawyers_they_will_be_removed'), { confirmLabel: t('saved_remove'), destructive: true })
       .then(ok => { if (ok) onRemove(lawyer.id); });
   };
 
   const savedDate = lawyer.saved_at
-    ? new Date(lawyer.saved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(lawyer.saved_at).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
 
   return (
@@ -128,14 +129,14 @@ function SavedCard({
               ★ {lawyer.rating.toFixed(1)}
             </Text>
           )}
-          {(lawyer as import('../types/api').Lawyer).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
-          {(lawyer as import('../types/api').Lawyer).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
-          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.goldText, marginTop: 3 }}>🏆 Golden Gavel</Text>}
+          {(lawyer as import('../types/api').Lawyer).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>{t('x_match_bronze_gavel')}</Text>}
+          {(lawyer as import('../types/api').Lawyer).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>{t('x_match_silver_gavel')}</Text>}
+          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
         </View>
         <TouchableOpacity accessibilityRole="button"
           style={styles.removeBtn}
           onPress={confirmRemove}
-          accessibilityLabel={`Remove ${lawyer.name} from saved`}
+          accessibilityLabel={t('x_saved_lawyers_remove_from_saved', { name: lawyer.name })}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
         </TouchableOpacity>
@@ -158,7 +159,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.legal }]}
-            accessibilityLabel={"\ud83d\udcde {t('saved_call')}"} onPress={() => callPhone(String(lawyer.phone), () => showToast('Calling is unavailable on this device.', 'error'))}
+            accessibilityLabel={t('saved_call')} onPress={() => callPhone(String(lawyer.phone), () => showToast(t('x_bail_search_calling_unavailable_this_device'), 'error'))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 {t('saved_call')}</Text>
           </TouchableOpacity>
@@ -167,9 +168,9 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.blue }]}
-            accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(String(lawyer.phone), () => showToast('Texting is unavailable on this device.', 'error'))}
+            accessibilityLabel={t('x_match_text')} onPress={() => sendSMS(String(lawyer.phone), () => showToast(t('x_saved_lawyers_texting_unavailable_this_device'), 'error'))}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_match_text')}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -179,25 +180,25 @@ function SavedCard({
             screen: 'Booking',
             params: { lawyerName: lawyer.name, lawyerPhone: lawyer.phone || '', lawyerId: lawyer.provider_id } })}
           >
-          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📅 Book</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_saved_lawyers_book')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
-          accessibilityLabel="Write a review" onPress={() => setReviewing(r => !r)}
+          accessibilityLabel={t('x_lawyer_profile_write_review')} onPress={() => setReviewing(r => !r)}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>⭐ Review</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_saved_lawyers_review')}</Text>
         </TouchableOpacity>
       </View>
 
       {reviewing && (
         <View style={[styles.reviewBox, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.reviewTitle, { color: COLORS.textPrimary }]}>Leave a review</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.reviewTitle, { color: COLORS.textPrimary }]}>{t('x_saved_lawyers_leave_review')}</Text>
           <View style={styles.starRow}>
             {[1,2,3,4,5].map(s => (
               <TouchableOpacity
           accessibilityRole="button" key={s} onPress={() => setRating(s)}
-                accessibilityLabel={`${s} star`}
+                accessibilityLabel={t(s === 1 ? 'x_saved_lawyers_star_one' : 'x_saved_lawyers_star_other', { s })}
               >
                 <Text maxFontSizeMultiplier={1.4} style={[styles.star, { color: s <= rating ? COLORS.gold : COLORS.border }]}>★</Text>
               </TouchableOpacity>
@@ -205,7 +206,7 @@ function SavedCard({
           </View>
           <TextInput
             style={[styles.reviewInput, { backgroundColor: COLORS.bg, borderColor: COLORS.border, color: COLORS.textPrimary }]}
-            placeholder="Optional: describe your experience…"
+            placeholder={t('x_saved_lawyers_optional_describe_experience')}
             placeholderTextColor={COLORS.textMuted}
             value={reviewText}
             onChangeText={setReviewText}
@@ -220,12 +221,12 @@ function SavedCard({
             style={[styles.reviewSubmit, { backgroundColor: COLORS.warnDark, opacity: submitting ? 0.6 : 1 }]}
             onPress={submitReview}
             disabled={submitting}
-            accessibilityLabel="Submit review"
-          accessibilityHint="Double-tap to activate"
+            accessibilityLabel={t('x_saved_lawyers_submit_review')}
+          accessibilityHint={t('cp_double_tap')}
           >
             {submitting
               ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.reviewSubmitText}>Submit Review →</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={styles.reviewSubmitText}>{t('x_saved_lawyers_submit_review_2')}</Text>
             }
           </TouchableOpacity>
         </View>
@@ -254,15 +255,15 @@ function SavedCard({
                 style={[styles.notesBtn, { backgroundColor: COLORS.navy }]}
                 onPress={saveNote}
                 disabled={saving}
-               accessibilityLabel={saving ? 'Saving\u2026' : 'Save note'}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.notesBtnText}>{saving ? 'Saving…' : 'Save note'}</Text>
+               accessibilityLabel={saving ? t('x_attorney_dashboard_saving') : t('x_saved_lawyers_save_note')}>
+                <Text maxFontSizeMultiplier={1.4} style={styles.notesBtnText}>{saving ? t('x_attorney_dashboard_saving') : t('x_saved_lawyers_save_note')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 accessibilityRole="button"
                 style={[styles.notesBtn, { backgroundColor: COLORS.border }]}
-                accessibilityLabel="Cancel" onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
+                accessibilityLabel={t('case_cancel')} onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
               >
-                <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: COLORS.textSecond }]}>Cancel</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: COLORS.textSecond }]}>{t('case_cancel')}</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
@@ -289,6 +290,7 @@ function SavedCard({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -310,7 +312,7 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
       const res = await api.get('/saved/lawyers');
       setLawyers(unwrapList(res.data, 'lawyers'));
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Could not load saved lawyers.'));
+      setError(apiErrorMessage(e, t('x_saved_lawyers_could_not_load_saved')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -321,13 +323,13 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleRemove = useCallback((id: number) => {
-confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
-      { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
+confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_attorney_from'),
+      { confirmLabel: t('saved_remove'), destructive: true }).then(async ok => { if (!ok) return;
       try {
               await api.delete(`/saved/lawyers/${id}`);
               setLawyers(prev => prev.filter(l => l.id !== id));
             } catch {
-              showToast('Check your connection and try again.');
+              showToast(t('home_sos_failed'));
             }
     })
   }, [confirm, showToast]);
@@ -336,7 +338,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
     setLawyers(prev => prev.map(l => l.id === id ? { ...l, notes: note } : l));
   }, []);
 
-  if (loading) return <SkeletonLoader count={5} label="Saved Lawyers" />;
+  if (loading) return <SkeletonLoader count={5} label={t('saved_title')} />;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -344,9 +346,9 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
         <View style={styles.center}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: colors.emergency }]}>{error}</Text>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.retryBtn} accessibilityLabel="Try Again" onPress={() => load()}
+          accessibilityRole="button" style={styles.retryBtn} accessibilityLabel={t('help_now_error_retry')} onPress={() => load()}
             >
-            <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>{t('help_now_error_retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : lawyers.length === 0 ? (
@@ -382,7 +384,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
           }
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              💼 No saved attorneys. Browse attorneys and tap ⭐ to save them here.
+              {t('x_saved_lawyers_no_saved_attorneys_browse')}
             </Text>
           }
           renderItem={({ item }) => (
@@ -395,7 +397,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
           )}
           ListHeaderComponent={
             <Text maxFontSizeMultiplier={1.4} style={[styles.count, { color: colors.textMuted }]}>
-              {lawyers.length} saved {lawyers.length === 1 ? 'lawyer' : 'lawyers'}
+              {t(lawyers.length === 1 ? 'x_saved_lawyers_saved_one' : 'x_saved_lawyers_saved_other', { length: lawyers.length })}
             </Text>
           }
         />

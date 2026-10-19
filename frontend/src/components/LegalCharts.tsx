@@ -15,6 +15,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
 import { AppIcon, ICONS } from './AppIcon';
+import { t, useLang } from '../i18n';
 
 // ── Lethality Gauge ────────────────────────────────────────────────────────────
 interface LethalilyGaugeProps {
@@ -24,6 +25,7 @@ interface LethalilyGaugeProps {
 }
 
 export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGaugeProps) {
+  useLang();
   const pct      = Math.min(score / maxScore, 1);
   const r        = size * 0.38;
   const cx       = size / 2;
@@ -35,7 +37,7 @@ export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGa
 
   const level = score >= 8 ? 'extreme' : score >= 4 ? 'high' : score >= 2 ? 'moderate' : 'low';
   const colors = { extreme: COLORS.emergency, high: COLORS.warn, moderate: ART.amber, low: COLORS.legal };
-  const labels = { extreme: 'Extreme Risk', high: 'High Risk', moderate: 'Moderate', low: 'Low Risk' };
+  const labels = { extreme: t('x_legal_charts_extreme_risk'), high: t('x_legal_charts_high_risk'), moderate: t('x_pilead_moderate'), low: t('x_legal_charts_low_risk') };
   const color  = colors[level];
 
   // Arc path calculation
@@ -92,19 +94,20 @@ interface BailBreakdownProps {
 }
 
 export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownProps) {
+  useLang();
   const rate = typeof quotedRate === 'number' && quotedRate > 0 && quotedRate < 1 ? quotedRate : null;
   const cashFull = bailAmount;
   const fmt = (n: number) => '$' + n.toLocaleString('en-US');
 
   return (
     <View style={gc.bailCard}>
-      <Text style={gc.bailTitle}>Payment Options</Text>
+      <Text style={gc.bailTitle}>{t('x_legal_charts_payment_options')}</Text>
 
       {/* Cash bail */}
       <View style={gc.bailRow}>
         <View style={gc.bailLabelRow}>
           <AppIcon name={ICONS.bail} size={16} color={COLORS.navy} />
-          <Text style={gc.bailLabel}>Cash bail (full amount)</Text>
+          <Text style={gc.bailLabel}>{t('x_legal_charts_cash_bail_full_amount')}</Text>
         </View>
         <Text style={gc.bailAmount}>{fmt(cashFull)}</Text>
       </View>
@@ -116,14 +119,13 @@ export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownPr
       <View style={[gc.bailRow, { marginTop: 14 }]}>
         <View style={gc.bailLabelRow}>
           <AppIcon name={ICONS.receipt} size={16} color={COLORS.gold} />
-          <Text style={gc.bailLabel}>{rate ? `Bail agent (quoted fee ${Math.round(rate * 1000) / 10}%)` : 'Bail agent'}</Text>
+          <Text style={gc.bailLabel}>{rate ? t('x_legal_charts_bail_agent_quoted_fee', { value: Math.round(rate * 1000) / 10 }) : t('x_legal_charts_bail_agent')}</Text>
         </View>
-        <Text style={[gc.bailAmount, { color: COLORS.goldText }]}>{rate ? fmt(Math.round(bailAmount * rate)) : 'Ask the agent'}</Text>
+        <Text style={[gc.bailAmount, { color: COLORS.goldText }]}>{rate ? fmt(Math.round(bailAmount * rate)) : t('x_legal_charts_ask_agent')}</Text>
       </View>
 
       <Text style={gc.bailNote}>
-        Bail agents set their own fees — ask what they charge, and whether any of it is refundable, before you sign.
-        Cash bail paid to the court is generally returned when the case concludes.
+        {t('x_legal_charts_bail_agents_set_their')}
       </Text>
     </View>
   );
@@ -136,11 +138,12 @@ interface RiskMeterProps {
 }
 
 export function RiskMeter({ level, label }: RiskMeterProps) {
+  useLang();
   const config = {
-    low:      { pct: 0.20, color: COLORS.legal, bg: COLORS.legalBg, label: 'Low' },
-    medium:   { pct: 0.50, color: COLORS.warn, bg: COLORS.warnBg, label: 'Medium' },
-    high:     { pct: 0.75, color: COLORS.emergency, bg: COLORS.emergencyBg, label: 'High' },
-    critical: { pct: 1.00, color: ART.purple, bg: ART.lilacTint, label: 'Critical' },
+    low:      { pct: 0.20, color: COLORS.legal, bg: COLORS.legalBg, label: t('x_legal_charts_low') },
+    medium:   { pct: 0.50, color: COLORS.warn, bg: COLORS.warnBg, label: t('x_legal_charts_medium') },
+    high:     { pct: 0.75, color: COLORS.emergency, bg: COLORS.emergencyBg, label: t('x_legal_charts_high') },
+    critical: { pct: 1.00, color: ART.purple, bg: ART.lilacTint, label: t('x_legal_charts_critical') },
   };
   const { pct, color, bg, label: defaultLabel } = config[level];
 
@@ -166,6 +169,7 @@ interface AsylumClockProps {
 }
 
 export function AsylumClock({ daysInUS, deadline = 365 }: AsylumClockProps) {
+  useLang();
   const daysLeft = Math.max(0, deadline - daysInUS);
   const pct      = Math.min(daysInUS / deadline, 1);
   const urgent   = daysLeft <= 65;
@@ -177,18 +181,18 @@ export function AsylumClock({ daysInUS, deadline = 365 }: AsylumClockProps) {
       <View style={gc.clockHeader}>
         <AppIcon name={ICONS.clock} size={18} color={color} />
         <Text style={[gc.clockTitle, { color }]}>
-          {barred ? 'Asylum Bar Reached' : urgent ? 'Asylum Deadline Approaching' : 'Asylum Clock'}
+          {barred ? t('x_legal_charts_asylum_bar_reached') : urgent ? t('x_legal_charts_asylum_deadline_approaching') : t('x_legal_charts_asylum_clock')}
         </Text>
       </View>
       <View style={gc.clockNumbers}>
         <View style={gc.clockNum}>
           <Text style={[gc.clockBig, { color: COLORS.navy }]}>{daysInUS.toLocaleString()}</Text>
-          <Text style={gc.clockSub}>days in US</Text>
+          <Text style={gc.clockSub}>{t('x_legal_charts_days_us')}</Text>
         </View>
         <View style={gc.clockDivider} />
         <View style={gc.clockNum}>
           <Text style={[gc.clockBig, { color }]}>{barred ? '—' : daysLeft}</Text>
-          <Text style={gc.clockSub}>{barred ? 'barred' : 'days left'}</Text>
+          <Text style={gc.clockSub}>{barred ? 'barred' : t('x_legal_charts_days_left')}</Text>
         </View>
       </View>
       <View style={gc.clockTrack}>
@@ -196,10 +200,10 @@ export function AsylumClock({ daysInUS, deadline = 365 }: AsylumClockProps) {
       </View>
       <Text style={gc.clockNote}>
         {barred
-          ? 'Asylum filing deadline has passed. Withholding of removal or CAT may still apply.'
+          ? t('x_legal_charts_asylum_filing_deadline_has')
           : urgent
-          ? `File immediately. Only ${daysLeft} days remain before the one-year asylum bar.`
-          : `${daysLeft} days before the one-year asylum filing deadline (INA § 208).`}
+          ? t('x_legal_charts_file_immediately_only_days', { daysLeft })
+          : t('x_legal_charts_days_before_one_year', { daysLeft })}
       </Text>
     </View>
   );
@@ -212,6 +216,7 @@ interface SignalBadgeProps {
 }
 
 export function SignalBadge({ label, priority }: SignalBadgeProps) {
+  useLang();
   const config = {
     CRITICAL: { bg: COLORS.emergency, text: COLORS.white, icon: ICONS.alertCritical },
     HIGH:     { bg: COLORS.warn, text: COLORS.white, icon: ICONS.alertHigh },

@@ -33,6 +33,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Activit
 import { FileSystem, RNShare } from '../utils/webCompat';
 import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
@@ -47,6 +48,7 @@ interface StructuredNote {
 
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
+  useLang();
   const scale  = useRef(new Animated.Value(1)).current;
   const opac   = useRef(new Animated.Value(0)).current;
   const anim   = useRef<Animated.CompositeAnimation | null>(null);
@@ -104,6 +106,7 @@ function useTimer(running: boolean) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -139,8 +142,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     try {
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
-        confirm('Microphone needed', 'Allow microphone access to record voice notes, or type your note instead.',
-      { confirmLabel: 'Type instead', cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
+        confirm(t('x_voice_note_microphone_needed'), t('x_voice_note_allow_microphone_access_record'),
+      { confirmLabel: t('x_voice_note_type_instead'), cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
         return;
       }
       await setAudioModeAsync({
@@ -151,7 +154,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recorder.record();
       setPhase('recording');
     } catch (e: any) {
-      showToast(e.message || 'Try typing your note instead.', 'error');
+      showToast(e.message || t('x_voice_note_try_typing_note_instead'), 'error');
       setPhase('text_input');
     }
   }, [recorder, confirm, showToast]);
@@ -188,9 +191,9 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       // Clean up temp file
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (e: any) {
-      const msg = apiErrorMessage(e, 'Could not process audio.');
-      confirm('Processing error', msg + ' Would you like to type your note instead?',
-      { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
+      const msg = apiErrorMessage(e, t('x_voice_note_could_not_process_audio'));
+      confirm(t('x_voice_note_processing_error'), t('x_voice_note_would_like_type_note', { msg }),
+      { confirmLabel: t('x_voice_note_type_instead'), cancelLabel: t('try_again') }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }
   }, [recorder, confirm]);
 
@@ -205,7 +208,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       setEditText(formatNoteForCase(res.data?.note));
       setPhase('result');
     } catch {
-      showToast('Could not structure your note. Try again.');
+      showToast(t('x_voice_note_could_not_structure_note'));
       setPhase('text_input');
     }
   }, [textIn, showToast]);
@@ -225,7 +228,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       if (onSave) onSave(combined);
       navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab');
     } catch {
-      showToast('Check your connection and try again.');
+      showToast(t('home_sos_failed'));
     } finally {
       setSaving(false);
     }
@@ -236,11 +239,11 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     let out = `📝 ${n.date}\n\n`;
     out += `${n.summary}\n`;
     if (n.next_steps?.length) {
-      out += `\nNext steps:\n`;
+      out += '\n' + t('x_voice_note_next_steps') + '\n';
       n.next_steps.forEach(s => { out += `• ${s}\n`; });
     }
     if (n.flags?.length) {
-      out += `\n⚑ Flagged:\n`;
+      out += '\n' + t('x_voice_note_flagged_2') + '\n';
       n.flags.forEach(f => { out += `• ${f}\n`; });
     }
     return out.trim();
@@ -259,17 +262,16 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           </View>
         )}
         <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>
-          Voice note
+          {t('x_cs_voice_note_2')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.subline, { color: colors.textMuted }]}>
-          Speak for up to 5 minutes.{'\n'}
-          We'll transcribe and structure it for you.
+          {t('x_voice_note_speak_up_5_minutes')}
         </Text>
 
         {/* Big mic button */}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.micBtnWrap}
           onPress={startRecording}
           activeOpacity={0.85}
@@ -279,16 +281,16 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           </View>
         </TouchableOpacity>
 
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tapHint, { color: colors.textMuted }]}>Tap to start recording</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tapHint, { color: colors.textMuted }]}>{t('x_voice_note_tap_start_recording')}</Text>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.typeLink}
-          accessibilityLabel={"\u270f\ufe0f  Type instead"} onPress={() => setPhase('text_input')}
+          accessibilityLabel={t('x_voice_note_type_instead_2')} onPress={() => setPhase('text_input')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>
-            ✏️  Type instead
+            {t('x_voice_note_type_instead_2')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -300,25 +302,25 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.centreWrap}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.timer, { color: COLORS.emergency }]}>{timer}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.recordingLabel, { color: colors.textMuted }]}>Recording…</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.recordingLabel, { color: colors.textMuted }]}>{t('x_voice_note_recording')}</Text>
 
         {/* Pulsing stop button */}
         <View style={styles.micBtnWrap}>
           <PulseRing active />
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[styles.micBtn, { backgroundColor: COLORS.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
-            accessibilityLabel="Stop recording and process note"
+            accessibilityLabel={t('x_voice_note_stop_recording_process_note')}
           >
             <View style={styles.stopSquare} />
           </TouchableOpacity>
         </View>
 
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tapHint, { color: colors.textMuted }]}>Tap to stop</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tapHint, { color: colors.textMuted }]}>{t('x_voice_note_tap_stop')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.recordingTip, { color: colors.textMuted }]}>
-          Speak naturally -- mention client name, key facts, next steps, any deadlines
+          {t('x_voice_note_speak_naturally_mention_client')}
         </Text>
       </View>
     </View>
@@ -330,10 +332,10 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       <View style={styles.centreWrap}>
         <ActivityIndicator size="large" color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.processingLabel, { color: colors.textPrimary }]}>
-          Structuring your note…
+          {t('x_voice_note_structuring_note')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.subline, { color: colors.textMuted }]}>
-          Transcribing audio then extracting{'\n'}summary, next steps, and flags
+          {t('x_voice_note_transcribing_audio_then_extracting')}
         </Text>
       </View>
     </View>
@@ -353,9 +355,9 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
             </Text>
           </View>
         )}
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>Type your note</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>{t('x_voice_note_type_note')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.subline, { color: colors.textMuted }]}>
-          Describe the meeting, key facts, next steps -- we'll structure it automatically.
+          {t('x_voice_note_describe_meeting_key_facts')}
         </Text>
         <TextInput
           style={[styles.textArea, { backgroundColor: colors.bgCard,
@@ -363,7 +365,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           multiline
               maxLength={2000}
           numberOfLines={10}
-          placeholder={"e.g. Met with Johnson today in the jail lobby. He claims he was home all evening. Alibi is his girlfriend Maria Santos, needs to be interviewed. Police report lists wrong address. Motion to suppress may be viable. Next hearing is March 22 at 9am courtroom 4. Need to file discovery request by March 15."}
+          placeholder={t('x_voice_note_e_g_met_with')}
           placeholderTextColor={COLORS.textSecond}
           value={textIn}
           onChangeText={setTextIn}
@@ -374,21 +376,21 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         />
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
           style={[styles.processBtn, { backgroundColor: COLORS.navy },
             !textIn.trim() && { opacity: 0.45 }]}
           onPress={processText}
           disabled={!textIn.trim()}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.processBtnText}>Structure This Note →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.processBtnText}>{t('x_voice_note_structure_this_note')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.typeLink}
-          accessibilityLabel={"\u2190 Use voice instead"} onPress={() => setPhase('idle')}
+          accessibilityLabel={t('x_voice_note_use_voice_instead')} onPress={() => setPhase('idle')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>← Use voice instead</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>{t('x_voice_note_use_voice_instead')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -413,7 +415,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
             {note.next_steps?.length > 0 && (
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.legalBg : colors.legalBg, borderColor: colors.legal }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.legal }]}>Next steps</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.legal }]}>{t('x_voice_note_next_steps_2')}</Text>
                 {note.next_steps.map((s, i) => (
                   <View key={`next_ste-${i}`} style={styles.resultBulletRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.legal }]}>›</Text>
@@ -425,7 +427,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
             {note.flags?.length > 0 && (
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warn }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.bail }]}>⚑ Flagged</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.bail }]}>{t('x_voice_note_flagged')}</Text>
                 {note.flags.map((f, i) => (
                   <View key={`flags-${i}`} style={styles.resultBulletRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.bail }]}>!</Text>
@@ -439,7 +441,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         {/* Editable export */}
         <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>
-          Edit before saving
+          {t('x_voice_note_edit_before_saving')}
         </Text>
         <TextInput
           style={[styles.textArea, styles.editArea,
@@ -453,7 +455,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
           style={[styles.saveBtn, { backgroundColor: COLORS.navy }, saving && { opacity: 0.6 }]}
           onPress={saveToCase}
           disabled={saving}
@@ -461,29 +463,29 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           {saving
             ? <ActivityIndicator color={colors.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>
-                {caseId ? '💾  Save to Case' : '💾  Copy Note'}
+                {caseId ? t('x_voice_note_save_case') : t('x_voice_note_copy_note')}
               </Text>}
         </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
-            await RNShare.share({ message: editText, title: 'Case Note' });
+            await RNShare.share({ message: editText, title: t('x_voice_note_case_note') });
           } catch { /* ignore */ }
           }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: colors.textBrand }]}>↑  Share Note</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: colors.textBrand }]}>{t('x_voice_note_share_note')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.typeLink}
-          accessibilityLabel={"\ud83c\udf99  Record another note"} onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
+          accessibilityLabel={t('x_voice_note_record_another_note')} onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>🎙  Record another note</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>{t('x_voice_note_record_another_note')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />

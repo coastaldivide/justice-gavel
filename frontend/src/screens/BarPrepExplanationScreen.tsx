@@ -17,6 +17,7 @@ import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { useHaptics }     from '../hooks/useHaptics';
+import { t, useLang } from '../i18n';
 
 interface ExplanationData {
   question_id:   number;
@@ -38,6 +39,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 export default function BarPrepExplanationScreen({
   route, navigation
 }: ScreenProps<'BarPrepExplanation'>) {
+  useLang();
   const { question_id } = (route?.params ?? {}) as { question_id: number };
   const { colors }  = useTheme();
   const { impact }  = useHaptics();
@@ -56,7 +58,7 @@ export default function BarPrepExplanationScreen({
       }
       setData(expl);
     } catch {
-      Alert.alert('Error', 'Could not load explanation.');
+      Alert.alert(t('error'), t('x_bar_prep_explanation_could_not_load_explanation'));
     } finally {
       setLoading(false);
     }
@@ -68,9 +70,9 @@ export default function BarPrepExplanationScreen({
     setFlagging(true);
     try {
       await api.post(`/bar-prep/questions/${question_id}/flag`, { reason: 'confusing' });
-      Alert.alert('Thanks!', 'Question flagged for review.');
+      Alert.alert(t('x_bar_prep_explanation_thanks'), t('x_bar_prep_explanation_question_flagged_review'));
     } catch {
-      Alert.alert('Error', 'Could not flag question.');
+      Alert.alert(t('error'), t('x_bar_prep_explanation_could_not_flag_question'));
     } finally {
       setFlagging(false);
     }
@@ -80,8 +82,8 @@ export default function BarPrepExplanationScreen({
     if (!data) return;
     impact('light');
     await RNShare.share({
-      title: `MBE Explanation — ${data.rule_tested}`,
-      message: `Rule: ${data.rule_tested}\n\n${data.explanation}\n\n— Justice Gavel Bar Prep`,
+      title: t('x_bar_prep_explanation_mbe_explanation', { rule_tested: data.rule_tested }),
+      message: t('x_bar_prep_explanation_rule_justice_gavel_bar', { rule_tested: data.rule_tested, explanation: data.explanation }),
     });
   }, [data, impact]);
 
@@ -98,9 +100,9 @@ export default function BarPrepExplanationScreen({
   if (!data) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Text style={styles.errorText}>Explanation unavailable</Text>
+        <Text style={styles.errorText}>{t('x_bar_prep_explanation_explanation_unavailable')}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>← Go Back</Text>
+          <Text style={styles.backLink}>{t('x_bar_prep_explanation_go_back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -109,12 +111,12 @@ export default function BarPrepExplanationScreen({
   return (
     <View style={styles.container}>
       <GradientHeader
-        title="MBE Explanation"
+        title={t('x_bar_prep_explanation_mbe_explanation_2')}
         subtitle={data.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
         onBack={() => navigation.goBack()}
         rightAction={
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share explanation" onPress={shareExplanation}>
-            <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>↑ Share</Text>{/* design-audit-ignore: rendered inside the navy GradientHeader */}
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_bar_prep_explanation_share_explanation')} onPress={shareExplanation}>
+            <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>{t('x_bar_prep_explanation_share')}</Text>{/* design-audit-ignore: rendered inside the navy GradientHeader */}
           </TouchableOpacity>
         }
       />
@@ -145,7 +147,7 @@ export default function BarPrepExplanationScreen({
 
         {/* ── Rule Statement ──────────────────────────────────────── */}
         <SectionCard
-          title="⚖️ Rule Tested"
+          title={t('x_bar_prep_explanation_rule_tested')}
           colors={colors}
           accent={colors.primary}
         >
@@ -157,7 +159,7 @@ export default function BarPrepExplanationScreen({
 
         {/* ── Explanation ─────────────────────────────────────────── */}
         <SectionCard
-          title="💡 Why This Answer"
+          title={t('x_bar_prep_explanation_why_this_answer')}
           colors={colors}
           accent={COLORS.legal}
         >
@@ -167,7 +169,7 @@ export default function BarPrepExplanationScreen({
         {/* ── AI Deep-Dive (if available) ─────────────────────────── */}
         {data.ai_explanation && (
           <SectionCard
-            title="🤖 AI Deep-Dive"
+            title={t('x_bar_prep_explanation_ai_deep_dive')}
             colors={colors}
             accent={colors.blue}
           >
@@ -176,13 +178,13 @@ export default function BarPrepExplanationScreen({
         )}
 
         {/* ── Related Rules (if parseable from explanation) ────────── */}
-        <SectionCard title="📚 Study This" colors={colors} accent={colors.border}>
+        <SectionCard title={t('x_bar_prep_explanation_study_this')} colors={colors} accent={colors.border}>
           <Text style={styles.studyText}>
-            Look up: <Text style={styles.studyHighlight}>{data.rule_tested}</Text>
-            {data.case_citation ? ` — particularly ${data.case_citation}.` : '.'}
+            {t('x_bar_prep_explanation_look_up')}{' '}<Text style={styles.studyHighlight}>{data.rule_tested}</Text>
+            {data.case_citation ? ' ' + t('x_bar_prep_explanation_particularly', { case_citation: data.case_citation }) : '.'}
           </Text>
           <Text style={[styles.studyText, { marginTop: 8 }]}>
-            Category: <Text style={styles.studyHighlight}>
+            {t('x_bar_prep_explanation_category')}{' '}<Text style={styles.studyHighlight}>
               {data.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </Text>
           </Text>
@@ -196,14 +198,14 @@ export default function BarPrepExplanationScreen({
             disabled={flagging}
           >
             <Text style={styles.flagBtnText}>
-              {flagging ? 'Flagging…' : '🚩 Flag Question'}
+              {flagging ? t('x_bar_prep_explanation_flagging') : t('x_bar_prep_explanation_flag_question')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
             style={[styles.actionBtn, styles.doneBtn]}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.doneBtnText}>Done ✓</Text>
+            <Text style={styles.doneBtnText}>{t('x_bar_prep_explanation_done')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -214,6 +216,7 @@ export default function BarPrepExplanationScreen({
 function SectionCard({
   title, children, colors, accent,
 }: { title: string; children: React.ReactNode; colors: any; accent: string }) {
+  useLang();
   return (
     <View style={[cardStyles.card, { backgroundColor: colors.card, borderLeftColor: accent }]}>
       <Text style={[cardStyles.title, { color: (colors as any).text }] as any}>{title}</Text>
@@ -225,7 +228,7 @@ function SectionCard({
           style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
-          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
     </View>
   );

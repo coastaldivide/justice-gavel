@@ -24,8 +24,11 @@ reviewed by counsel. Before launch a licensed attorney should review:
 - **Privacy policy subprocessor list** — the in-app policy
   (`frontend/src/screens/PrivacyPolicyScreen.tsx`) named SendGrid; it now
   names Resend (the actual email provider). Counsel should confirm the full
-  list (hosting on Railway, database on Supabase/Railway Postgres, Daily.co
-  video, Mixpanel analytics, Google Places are not listed) and align
+  list (hosting on Render, database on Supabase, Daily.co
+  video, Mixpanel analytics, Google Places are not listed). The attorney
+  privacy screen's infrastructure line (i18n key
+  `x_attorney_privacy_data_at_rest_aes`) still names the previous host and
+  must say Render (confirm Render's current SOC 2 report before claiming it) and align
   `docs/PRIVACY_POLICY.md` with the in-app text.
 - **Marketing copy that implies paid placement** — the bondsman
   SubscriptionScreen lists "Top placement in all searches" and the

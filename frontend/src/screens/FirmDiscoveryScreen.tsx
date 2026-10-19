@@ -15,6 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../services/api';
 import { useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Firm {
   id: number;
@@ -28,6 +29,7 @@ interface Firm {
 }
 
 function FirmDiscoveryScreen() {
+  useLang();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
@@ -60,14 +62,14 @@ function FirmDiscoveryScreen() {
 
   const redeemCode = async () => {
     const c = code.trim().toUpperCase();
-    if (!c || c.length < 4) { showToast('Enter a referral code'); return; }
+    if (!c || c.length < 4) { showToast(t('x_firm_discovery_enter_referral_code')); return; }
     setCodeLoading(true);
     try {
       const res = await api.get(`/firms/referral/${c}`);
       const firm = res.data?.firm;
       if (firm) navigation.navigate('FirmPublicProfile', { firmId: firm.id, firmName: firm.name });
     } catch {
-      showToast('No firm found with that referral code. Check the code and try again.');
+      showToast(t('x_firm_discovery_no_firm_found_with'));
     } finally {
       setCodeLoading(false);
     }
@@ -78,8 +80,8 @@ function FirmDiscoveryScreen() {
       style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
       onPress={() => navigation.navigate('FirmPublicProfile', { firmId: item.id, firmName: item.name })}
       accessibilityRole="button"
-      accessibilityLabel={`View ${item.name} firm profile`}
-      accessibilityHint="Opens this firm's public profile and contact options"
+      accessibilityLabel={t('x_firm_discovery_view_firm_profile', { name: item.name })}
+      accessibilityHint={t('x_firm_discovery_opens_this_firm_s')}
     >
       <View style={s.cardHeader}>
         <Text maxFontSizeMultiplier={1.3} style={[s.firmName, { color: colors.textPrimary }]} numberOfLines={1}>
@@ -87,13 +89,13 @@ function FirmDiscoveryScreen() {
         </Text>
         {item.free_consultation && (
           <View style={s.badge}>
-            <Text style={s.badgeText}>Free consult</Text>
+            <Text style={s.badgeText}>{t('x_lawyer_card_free_consult')}</Text>
           </View>
         )}
       </View>
       <Text maxFontSizeMultiplier={1.3} style={[s.location, { color: colors.textMuted }]}>
         {[item.city, item.state].filter(Boolean).join(', ')}
-        {item.attorney_count > 0 ? ` · ${item.attorney_count} attorney${item.attorney_count > 1 ? 's' : ''}` : ''}
+        {item.attorney_count > 0 ? ' ' + t(item.attorney_count === 1 ? 'x_firm_discovery_attorney_one' : 'x_firm_discovery_attorney_other', { attorney_count: item.attorney_count }) : ''}
       </Text>
       {!!item.practice_areas && (
         <Text maxFontSizeMultiplier={1.3} style={[s.areas, { color: colors.textSecond }]} numberOfLines={2}>
@@ -102,7 +104,7 @@ function FirmDiscoveryScreen() {
       )}
       <View style={s.cardFooter}>
         <Text style={[s.status, { color: item.accepting_clients ? colors.legal : colors.textFaint }]}>
-          {item.accepting_clients ? '● Accepting clients' : '○ Not accepting clients'}
+          {item.accepting_clients ? t('x_firm_discovery_accepting_clients') : t('x_firm_discovery_not_accepting_clients')}
         </Text>
         <Text style={[s.arrow, { color: colors.textMuted }]}>›</Text>
       </View>
@@ -117,7 +119,7 @@ function FirmDiscoveryScreen() {
           style={[s.codeInput, { color: colors.textPrimary }]}
           value={code}
           onChangeText={setCode}
-          placeholder="Have a referral code?"
+          placeholder={t('x_firm_discovery_have_referral_code')}
           placeholderTextColor={colors.textMuted}
           autoCapitalize="characters"
           maxLength={12}
@@ -130,7 +132,7 @@ function FirmDiscoveryScreen() {
         >
           {codeLoading
             ? <ActivityIndicator color={colors.white} size="small" />
-            : <Text style={s.codeBtnText}>Find Firm</Text>}
+            : <Text style={s.codeBtnText}>{t('x_firm_discovery_find_firm')}</Text>}
         </TouchableOpacity>
       </View>
 
@@ -141,7 +143,7 @@ function FirmDiscoveryScreen() {
           value={stateFilter}
           onChangeText={setStateFilter}
           onEndEditing={() => load()}
-          placeholder="State (e.g. TN)"
+          placeholder={t('x_firm_discovery_state_e_g_tn')}
           placeholderTextColor={colors.textMuted}
           maxLength={2}
           autoCapitalize="characters"
@@ -151,9 +153,9 @@ function FirmDiscoveryScreen() {
           value={areaFilter}
           onChangeText={setAreaFilter}
           onEndEditing={() => load()}
-          placeholder="Practice area (e.g. criminal)"
+          placeholder={t('x_firm_discovery_practice_area_e_g')}
           placeholderTextColor={colors.textMuted}
-          accessibilityLabel="Filter by practice area"
+          accessibilityLabel={t('x_firm_discovery_filter_by_practice_area')}
         />
       </View>
 
@@ -169,9 +171,9 @@ function FirmDiscoveryScreen() {
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={[s.emptyIcon]}>🏛️</Text>
-              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textOnAccent }]}>No firms found</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textOnAccent }]}>{t('x_firm_discovery_no_firms_found')}</Text>
               <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textOnAccent }]}>
-                Try a different state or practice area, or ask your attorney for a referral code.
+                {t('x_firm_discovery_try_different_state_practice')}
               </Text>
             </View>
           }

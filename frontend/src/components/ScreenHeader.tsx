@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { COLORS, FONTS, SHADOW } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Props {
   title: string;
@@ -23,6 +24,7 @@ interface Props {
 function ScreenHeader({
   title, subtitle, rightIcon, onRightPress, rightLabel, accent, compact = false,
 }: Props) {
+  useLang();
   const bg = accent || COLORS.navy;
 
   return (
@@ -37,7 +39,7 @@ function ScreenHeader({
         </View>
         {!!rightIcon && !!onRightPress && (
           <TouchableOpacity style={styles.actionBtn} onPress={onRightPress} activeOpacity={0.7}
-            accessibilityLabel={rightLabel || "Action"} accessibilityRole="button">
+            accessibilityLabel={rightLabel || t('x_screen_header_action')} accessibilityRole="button">
             <Text style={styles.actionIcon}>{rightIcon}</Text>
           </TouchableOpacity>
         )}

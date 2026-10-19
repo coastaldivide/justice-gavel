@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v94
@@ -228,8 +229,7 @@ describe('EXP. expungement/check.js — Record Expungement Eligibility', () => {
 // ── EMPTY. Empty State Enhancement Documentation ──────────────────────────
 describe('EMPTY. Empty State Analysis — 10 Screens Need Enhancement', () => {
   test('EMPTY-02: GoldenGavelScreen — state machine phases cover empty naturally', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/GoldenGavelScreen.tsx','utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/GoldenGavelScreen.tsx');
     // Golden Gavel has eligibility check phase — empty = not yet eligible
     expect(src).toContain('Golden Gavel');
     expect(src.length).toBeGreaterThan(1000);

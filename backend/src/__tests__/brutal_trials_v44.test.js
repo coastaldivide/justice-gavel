@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -83,8 +84,7 @@ describe('A11Y. Component Accessibility — WCAG Roles & Hints', () => {
     expect(src).toContain('LawyersScreen, MatchScreen, and QuickConnectScreen');
   });
   test('A11Y-04: FloatingSOSButton has accessibilityHint="Activates emergency mode"', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/FloatingSOSButton.tsx');
     expect(src).toContain('Activates emergency mode');
     expect(src).toContain('accessibilityRole="button"');
   });

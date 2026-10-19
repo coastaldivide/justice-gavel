@@ -11,10 +11,12 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput 
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
+import { t, useLang } from '../i18n';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
 function InterrogationRecorderScreen(): React.JSX.Element {
+  useLang();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [step,       setStep]       = useState<Step>('idle');
@@ -50,8 +52,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     } catch {
       setError(
-        'Microphone access is required. Allow microphone access in your browser settings, ' +
-        'then refresh the page.'
+        t('x_interrogation_recorder_microphone_access_required_allow')
       );
     }
   }, []);
@@ -59,7 +60,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const stopAndProcess = useCallback(async () => {
     if (!mediaRef.current) return;
     mediaRef.current.stop();
-    mediaRef.current.stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    mediaRef.current.stream.getTracks().forEach((tItem: MediaStreamTrack) => tItem.stop());
     if (timerRef.current) clearInterval(timerRef.current);
     setStep('uploading');
 
@@ -79,7 +80,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       setTranscript(res.data?.transcript || res.data.text || '');
       setStep('done');
     } catch {
-      setError('Processing failed. Your recording was not lost -- try again.');
+      setError(t('x_interrogation_recorder_processing_failed_recording_was'));
       setStep('error');
     }
   }, [officerName, location]);
@@ -100,17 +101,16 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       >
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>{t('ja_back')}</Text>
       </TouchableOpacity>
 
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary }}>
-        Encounter Recorder
+        {t('x_interrogation_recorder_encounter_recorder_2')}
       </Text>
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors.textMuted, lineHeight: 20 }}>
-        Records your interaction with law enforcement and creates a time-stamped
-        transcript for your case file.
+        {t('x_interrogation_recorder_records_interaction_with_law')}
       </Text>
 
       {/* Context fields */}
@@ -119,22 +119,22 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           <TextInput
             value={officerName}
             onChangeText={setOfficerName}
-            placeholder="Officer name / badge number (optional)"
+            placeholder={t('x_interrogation_recorder_officer_name_badge_number')}
             placeholderTextColor={colors.textMuted}
             style={{ backgroundColor: colors.bgCard, borderRadius: 10, padding: 12,
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
-            accessibilityLabel="Officer name or badge number"
+            accessibilityLabel={t('x_interrogation_recorder_officer_name_badge_number_2')}
           returnKeyType="done" blurOnSubmit={true}
           keyboardType="numeric" maxLength={200}
           />
           <TextInput
             value={location}
             onChangeText={setLocation}
-            placeholder="Location (optional)"
+            placeholder={t('x_interrogation_recorder_location_optional')}
             placeholderTextColor={colors.textMuted}
             style={{ backgroundColor: colors.bgCard, borderRadius: 10, padding: 12,
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
-            accessibilityLabel="Location"
+            accessibilityLabel={t('x_interrogation_recorder_location')}
           returnKeyType="done" blurOnSubmit={true}
           />
         </View>
@@ -154,7 +154,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         {(step === 'idle' || step === 'recording') && (
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             onPress={step === 'idle' ? startRecording : stopAndProcess}
             style={{
               width: 88, height: 88, borderRadius: 44,
@@ -170,27 +170,27 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           </TouchableOpacity>
         )}
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
-          {step === 'idle'      ? 'Tap to begin recording' :
-           step === 'recording' ? 'Recording -- tap to stop and transcribe' :
-           step === 'uploading' ? 'Processing your recording…' :
-           step === 'done'      ? 'Recording complete' : 'An error occurred'}
+          {step === 'idle'      ? t('x_interrogation_recorder_tap_begin_recording') :
+           step === 'recording' ? t('x_interrogation_recorder_recording_tap_stop_transcribe') :
+           step === 'uploading' ? t('x_interrogation_recorder_processing_recording') :
+           step === 'done'      ? t('x_interrogation_recorder_recording_complete') : t('x_use_network_error_error_occurred')}
         </Text>
       </View>
 
       {step === 'uploading' && (
         <View style={{ alignItems: 'center', gap: 10 }}>
           <ActivityIndicator size="large" color={colors.navy} />
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>Transcribing with Whisper AI…</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>{t('x_interrogation_recorder_transcribing_with_whisper_ai')}</Text>
         </View>
       )}
 
       {error ? (
         <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 12, padding: 16, gap: 8 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 14, fontWeight: '600' }}>Error</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 14, fontWeight: '600' }}>{t('error')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 13 }}>{error}</Text>
           <TouchableOpacity onPress={reset} accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Try again">
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textBrand, fontSize: 13, fontWeight: '600' }}>Try again →</Text>
+          accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('try_again')}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textBrand, fontSize: 13, fontWeight: '600' }}>{t('x_interrogation_recorder_try_again')}</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -198,7 +198,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       {step === 'done' && transcript ? (
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, gap: 12 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: colors.textPrimary, fontSize: 15 }}>
-            Transcript
+            {t('disc_doc_transcript')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, lineHeight: 22, fontSize: 14 }}>
             {transcript}
@@ -206,31 +206,30 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           <TextInput
             value={notes}
             onChangeText={setNotes}
-            placeholder="Add your own notes…"
+            placeholder={t('x_interrogation_recorder_add_own_notes')}
             placeholderTextColor={colors.textMuted}
             multiline
               maxLength={4000}
             style={{ backgroundColor: colors.bg, borderRadius: 8, padding: 12,
               color: colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: colors.border,
               minHeight: 80 }}
-            accessibilityLabel="Additional notes"
+            accessibilityLabel={t('x_interrogation_recorder_additional_notes')}
           returnKeyType="done" blurOnSubmit={true}
           />
           <TouchableOpacity
             onPress={reset}
             style={{ backgroundColor: colors.navy, borderRadius: 10, padding: 14, alignItems: 'center' }}
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '600' }}>Record another</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '600' }}>{t('x_interrogation_recorder_record_another')}</Text>
           </TouchableOpacity>
         </View>
       ) : null}
       <Text maxFontSizeMultiplier={1.3} style={{
         fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 8,
       }}>
-        Important: Recording laws vary by state. In some states all parties must
-        consent to being recorded. Consult a local attorney if unsure.
+        {t('x_interrogation_recorder_important_recording_laws_vary')}
       </Text>
     </ScrollView>
   );

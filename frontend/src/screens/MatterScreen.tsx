@@ -10,10 +10,12 @@ import { formatDate } from '../utils/dateUtils';
 
 import { ScreenProps } from '../types/navigation';
 import { RouteParams } from '../types/api';
+import { t, useLang } from '../i18n';
 
 type Props = ScreenProps<'Matter'>;
 
 function MatterScreen({ route, navigation }: Props) {
+  useLang();
   const matterId = (route.params as RouteParams | undefined)?.matterId;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ function MatterScreen({ route, navigation }: Props) {
       const { data } = await api.get(`/matters/${matterId}`);
       setMatter(data.matter ?? data);
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Failed to load matter'));
+      setError(apiErrorMessage(e, t('x_matter_failed_load_matter')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,7 +43,7 @@ function MatterScreen({ route, navigation }: Props) {
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
   if (error)   return <View style={styles.center}><Text accessibilityRole="alert">{error}</Text></View>;
-  if (!matter) return <View style={styles.center}><Text>Matter not found</Text></View>;
+  if (!matter) return <View style={styles.center}><Text>{t('x_matter_matter_not_found')}</Text></View>;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}
@@ -50,14 +52,14 @@ function MatterScreen({ route, navigation }: Props) {
       <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>{matter.client_name}</Text>
 
       {[
-        ['Status',        matter.status],
-        ['Type',          matter.matter_type],
-        ['Jurisdiction',  matter.jurisdiction],
-        ['Court Date',    matter.court_date ? formatDate(String(matter.court_date)) : '—'],
-        ['Capital Case',  matter.capital_case ? 'Yes' : 'No'],
-        ['Co-defendants', matter.co_defendant_count ?? '0'],
-        ['Bail Amount',   matter.bail_amount ? `$${Number(matter.bail_amount).toLocaleString()}` : '—'],
-        ['Bail Status',   matter.bail_status ?? '—'],
+        [t('x_cs_status'),            matter.status],
+        [t('x_matter_type'),          matter.matter_type],
+        [t('x_matter_jurisdiction'),  matter.jurisdiction],
+        [t('nav_title_court_date'),    matter.court_date ? formatDate(String(matter.court_date)) : '—'],
+        [t('x_matter_capital_case'),  matter.capital_case ? t('x_common_yes') : t('x_common_no')],
+        [t('x_matter_co_defendants'), matter.co_defendant_count ?? '0'],
+        [t('x_matter_bail_amount'),   matter.bail_amount ? `$${Number(matter.bail_amount).toLocaleString()}` : '—'],
+        [t('x_matter_bail_status'),   matter.bail_status ?? '—'],
       ].map(([label, value]) => (
         <View key={`field-${label}`} style={styles.row}>
           <Text maxFontSizeMultiplier={1.3} style={styles.label}>{label}</Text>
@@ -67,15 +69,15 @@ function MatterScreen({ route, navigation }: Props) {
 
       {matter.notes && (
         <View style={styles.notes}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.label}>Notes</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.label}>{t('x_cs_notes')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.noteText}>{matter.notes}</Text>
         </View>
       )}
 
       <TouchableOpacity style={styles.btn} accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         onPress={() => navigation.navigate('VideoConsultation', { matterId })}>
-        <Text style={styles.btnText}>Schedule Video Consultation</Text>
+        <Text style={styles.btnText}>{t('x_matter_schedule_video_consultation')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

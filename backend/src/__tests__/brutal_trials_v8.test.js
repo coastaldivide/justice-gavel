@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -244,8 +245,7 @@ describe('2. ErrorBoundary — React Error Catching', () => {
   });
 
   test('2-06: fallback UI renders "Try again" button', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/ErrorBoundary.tsx');
     expect(src).toContain('Try again');
     expect(src).toContain('accessibilityRole');
   });
@@ -442,8 +442,7 @@ describe('6. BiometricLockView — Lock Screen UI', () => {
   });
 
   test('6-04: shows lock emoji 🔒 in UI', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/BiometricLockView.tsx');
     expect(src).toContain('🔒');
     expect(src).toContain('Locked');
   });

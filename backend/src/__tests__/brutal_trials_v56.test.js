@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -170,8 +171,7 @@ describe('ARM. ArrestMonitorScreen — Pro Subscription Watch Feature', () => {
 // ── BDS. BondsmanDashboardScreen Handler Depth ────────────────────────────
 describe('BDS. BondsmanDashboardScreen — Badge Subscribe/Cancel Handlers', () => {
   test('BDS-02: handleBadgeCancel shows Alert confirm before cancellation', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx');
     expect(src).toContain('handleBadgeCancel');
     expect(src).toContain("'Cancel Badge?'");
     expect(src).toContain('Verified by Justice Gavel');
@@ -181,8 +181,7 @@ describe('BDS. BondsmanDashboardScreen — Badge Subscribe/Cancel Handlers', () 
 // ── BKS. BookingScreen Handler Depth ──────────────────────────────────────
 describe('BKS. BookingScreen — Booking + Callback Handlers', () => {
   test('BKS-01: confirmBooking uses requireAuth → POST /consultations/book', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/BookingScreen.tsx');
     expect(src).toContain('confirmBooking');
     expect(src).toContain('requireAuth');
     expect(src).toContain('/consultations/book');

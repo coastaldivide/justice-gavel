@@ -13,10 +13,12 @@ const openBrowserAsync = (url: string) => Linking.openURL(url);
 import { api, apiErrorMessage } from '../services/api';
 import { ScreenProps } from '../types/navigation';
 import { RouteParams } from '../types/api';
+import { t, useLang } from '../i18n';
 
 type Props = ScreenProps<'VideoConsultation'>;
 
 function VideoConsultationScreen({ route, navigation }: Props) {
+  useLang();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -45,9 +47,9 @@ function VideoConsultationScreen({ route, navigation }: Props) {
       setInSession(true);
     } catch (e: any) {
       if (e?.response?.status === 403 && e?.response?.data?.upgrade) {
-        showToast('Video consultations are available on Legal Pro and Esquire plans.');
+        showToast(t('x_video_consultation_video_consultations_available_legal'));
       } else {
-        setError(apiErrorMessage(e, 'Could not start video session'));
+        setError(apiErrorMessage(e, t('x_video_consultation_could_not_start_video')));
       }
     } finally {
       setLoading(false);
@@ -56,7 +58,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
 
   const endSession = useCallback(async () => {
     if (roomName) {
-      await api.delete(`/video/session/${roomName}`).catch(() => showToast('Action failed. Please try again.', 'error'));
+      await api.delete(`/video/session/${roomName}`).catch(() => showToast(t('action_failed'), 'error'));
     }
     setInSession(false);
     setSessionUrl(null);
@@ -71,18 +73,18 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     return (
       <View style={[styles.screen, { backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }]}>
         <Text style={[styles.title, { color: colors.textPrimary, marginBottom: 16 }]}>
-          Session Ready
+          {t('x_video_consultation_session_ready')}
         </Text>
         <TouchableOpacity
           style={[styles.startBtn, { backgroundColor: colors.navy || COLORS.navy, marginBottom: 16 }]}
           onPress={() => openBrowserAsync(sessionUrl)}
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         >
-          <Text style={styles.startBtnText}>Open Video Call</Text>
+          <Text style={styles.startBtnText}>{t('x_video_consultation_open_video_call')}</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={endSession}>
-          <Text style={[styles.cancelText, { color: colors.textSecond }]}>End Session</Text>
+          <Text style={[styles.cancelText, { color: colors.textSecond }]}>{t('x_video_consultation_end_session')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -93,21 +95,21 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.3} style={[styles.title, { color: colors.textPrimary }]}>
-          Video Consultation
+          {t('x_nav_video_consultation')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={[styles.subtitle, { color: colors.textSecond }]}>
-          {topic || 'Attorney-Client Session'}
+          {topic || t('x_video_consultation_attorney_client_session')}
         </Text>
       </View>
 
       <View style={styles.infoCard}>
-        <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>Before you start</Text>
+        <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>{t('x_video_consultation_before_start')}</Text>
         {[
-          '🔒 End-to-end encrypted (Daily.co)',
-          '⚖️  Protected by attorney-client privilege',
-          '📱 Works on iOS, Android, and web',
-          '⏱  Session lasts up to 2 hours',
-          '🚫 Session is not recorded by default',
+          t('x_video_consultation_end_end_encrypted_daily'),
+          t('x_video_consultation_protected_by_attorney_client'),
+          t('x_video_consultation_works_ios_android_web'),
+          t('x_video_consultation_session_lasts_up_2'),
+          t('x_video_consultation_session_not_recorded_by'),
         ].map((item, i) => (
           <Text key={`info-${i}`} style={[styles.infoItem, { color: colors.textSecond }]}>
             {item}
@@ -126,17 +128,17 @@ function VideoConsultationScreen({ route, navigation }: Props) {
         onPress={startSession}
         disabled={loading}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
       >
         {loading
           ? <ActivityIndicator color={colors.white} />
-          : <Text style={styles.startBtnText}>Start Video Call</Text>
+          : <Text style={styles.startBtnText}>{t('x_video_consultation_start_video_call')}</Text>
         }
       </TouchableOpacity>
 
       <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.cancelBtn}>
-        <Text style={[styles.cancelText, { color: colors.textSecond }]}>Cancel</Text>
+        <Text style={[styles.cancelText, { color: colors.textSecond }]}>{t('case_cancel')}</Text>
       </TouchableOpacity>
     </View>
   );

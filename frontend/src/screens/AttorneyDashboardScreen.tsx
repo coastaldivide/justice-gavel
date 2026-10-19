@@ -25,6 +25,7 @@ import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { ScreenCapture } from '../utils/webCompat';
 import { daysUntil } from '../utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
+import { t, useLang, perLang } from '../i18n';
 
 type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 
@@ -38,6 +39,7 @@ const urgencyColor = (days: number | null) => {
 
 // ── CLE difficulty badge ──────────────────────────────────────────────────────
 const DiffBadge = ({ diff }: { diff: string }) => {
+  useLang();
   const map: Record<string, { bg: string; color: string }> = {
     beginner:     { bg: COLORS.legalBg, color: COLORS.legal },
     intermediate: { bg: COLORS.bgElevated, color: COLORS.steel },
@@ -58,10 +60,11 @@ const DiffBadge = ({ diff }: { diff: string }) => {
 // ── Availability grid component ───────────────────────────────────────────────
 const DAYS  = ['mon','tue','wed','thu','fri','sat','sun'] as const;
 const SLOTS = ['morning','afternoon','evening'] as const;
-const DAY_LABELS: Record<string, string>  = { mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun' };
-const SLOT_LABELS: Record<string, string> = { morning:'AM',afternoon:'PM',evening:'Eve' };
+const DAY_LABELS = perLang((): Record<string, string> => ({ mon:t('x_attorney_dashboard_mon'),tue:t('x_attorney_dashboard_tue'),wed:t('x_attorney_dashboard_wed'),thu:t('x_attorney_dashboard_thu'),fri:t('x_attorney_dashboard_fri'),sat:t('x_attorney_dashboard_sat'),sun:t('x_attorney_dashboard_sun') }));
+const SLOT_LABELS = perLang((): Record<string, string> => ({ morning:'AM',afternoon:'PM',evening:t('x_attorney_dashboard_eve') }));
 
 function AvailabilityGrid() {
+  useLang();
   const { colors } = useTheme();
   const { showToast } = useToast();
   const [schedule, setSchedule] = React.useState<Record<string, string[]>>({});
@@ -95,7 +98,7 @@ function AvailabilityGrid() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not save availability. Try again.'), 'error');
+      showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save_availability')), 'error');
     }
     finally { setSaving(false); }
   };
@@ -104,7 +107,7 @@ function AvailabilityGrid() {
     <View style={{ marginTop: 20 }}>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22,
         fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>
-        📅 Weekly Availability
+        {t('x_attorney_dashboard_weekly_availability')}
       </Text>
       {/* Grid */}
       <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -113,7 +116,7 @@ function AvailabilityGrid() {
           {SLOTS.map(s => (
             <Text key={s} maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 22,
               color: colors.textMuted, height: 30, textAlignVertical: 'center' }}>
-              {SLOT_LABELS[s]}
+              {SLOT_LABELS()[s]}
             </Text>
           ))}
         </View>
@@ -122,7 +125,7 @@ function AvailabilityGrid() {
           <View key={day} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 14,
               color: colors.textMuted, fontWeight: '700', marginBottom: 4 }}>
-              {DAY_LABELS[day]}
+              {DAY_LABELS()[day]}
             </Text>
             {SLOTS.map(slot => {
               const active = (schedule[day] || []).includes(slot);
@@ -137,7 +140,7 @@ function AvailabilityGrid() {
                   onPress={() => toggle(day, slot)}
                   hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                   accessibilityState={{ checked: active }}
-                  accessibilityLabel={`${DAY_LABELS[day]} ${SLOT_LABELS[slot]}`}
+                  accessibilityLabel={`${DAY_LABELS()[day]} ${SLOT_LABELS()[slot]}`}
                 />
               );
             })}
@@ -149,15 +152,15 @@ function AvailabilityGrid() {
         style={{ marginTop: 12, borderWidth: 1, borderColor: colors.inputBorder,
           borderRadius: 8, padding: 10, fontSize: 13, lineHeight: 19,
           color: colors.inputText, backgroundColor: colors.inputBg }}
-        placeholder="Availability note (e.g. 'Best to reach me Tuesday mornings')"
+        placeholder={t('x_attorney_dashboard_availability_note_e_g')}
         placeholderTextColor={colors.placeholder}
         value={note}
-        onChangeText={(t) => { setNote(t); setSaved(false); }}
+        onChangeText={(tItem) => { setNote(tItem); setSaved(false); }}
 
         maxLength={200}
         returnKeyType="done"
         blurOnSubmit
-        accessibilityLabel="Availability note"
+        accessibilityLabel={t('x_attorney_dashboard_availability_note')}
       />
       <TouchableOpacity
   accessibilityRole="button"
@@ -168,7 +171,7 @@ function AvailabilityGrid() {
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? colors.textMuted : colors.textOnNavy,
           fontWeight: '700', fontSize: 13, lineHeight: 19 }}>
-          {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Availability'}
+          {saved ? t('x_attorney_dashboard_saved') : saving ? t('x_attorney_dashboard_saving') : t('x_attorney_dashboard_save_availability')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -176,6 +179,7 @@ function AvailabilityGrid() {
 }
 
 function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
+  useLang();
   const { showToast } = useToast();
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
@@ -276,16 +280,16 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
     try {
       const res = await api.post(`/attorney/cle/${courseId}/complete`, {});
       const msg = res.data?.already_completed
-        ? 'Already completed -- credit on your transcript.'
+        ? t('x_attorney_dashboard_already_completed_credit_transcript')
         : `✓ ${res.data?.message}`;
       showToast(msg, 'info');
       loadAll();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not complete course'), 'info'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_complete_course')), 'info'); }
     setCompleting(null);
   };
 
   const saveProfile = async () => {
-      if (!barInput?.trim()) { showToast('Please enter your state bar number.'); return; }
+      if (!barInput?.trim()) { showToast(t('x_attorney_dashboard_please_enter_state_bar')); return; }
       setSavingProfile(true);
     try {
       await api.patch('/attorney/profile', { bar_number: barInput, is_defender: 1 });
@@ -295,9 +299,9 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
           office_name: officeNameInput.trim(),
         });
       }
-      showToast('Profile updated.');
+      showToast(t('x_attorney_dashboard_profile_updated'));
       loadAll();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not save'), 'info'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save')), 'info'); }
     setSavingProfile(false);
   };
 
@@ -313,8 +317,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         months: monthsSince,
         urgent: monthsSince >= 12,
         message: monthsSince >= 12
-          ? 'Your bar verification is over 1 year old -- consider re-verifying your license.'
-          : `Your bar verification is ${monthsSince} months old -- renewal may be approaching.`,
+          ? t('x_attorney_dashboard_bar_verification_over_1')
+          : t('x_attorney_dashboard_bar_verification_months_old', { monthsSince }),
       };
     }
     return null;
@@ -341,24 +345,23 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 20, fontWeight: '800',
-              color: colors.textPrimary, letterSpacing: -0.3 }}>⚖️ Dashboard</Text>
+              color: colors.textPrimary, letterSpacing: -0.3 }}>{t('x_attorney_dashboard_dashboard')}</Text>
             {cases.length > 0 && (
               <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                {cases.length} active {cases.length === 1 ? 'case' : 'cases'}
-                {(cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length > 0
-                  ? ` · ${(cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length} 🚨 critical`
-                  : ''}
+                {t('x_attorney_dashboard_active', { length: cases.length, value: cases.length === 1 ? 'case' : 'cases', value2: (cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length > 0
+                  ? ' ' + t('x_attorney_dashboard_critical', { length: (cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length })
+                  : '' })}
               </Text>
             )}
           </View>
           <TouchableOpacity
   accessibilityRole="button"
             onPress={() => navigation.navigate('MoreTab', { screen: 'MatterIntelligence' })}
-            accessibilityLabel='Open matter intelligence'
+            accessibilityLabel={t('x_attorney_dashboard_open_matter_intelligence')}
             style={{ backgroundColor: colors.navy, paddingHorizontal: 12,
               paddingVertical: 7, borderRadius: 8 }}>
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '700',
-              color: colors.textOnNavy, letterSpacing: 0.3 }}>🧠 Intelligence</Text>
+              color: colors.textOnNavy, letterSpacing: 0.3 }}>{t('x_attorney_dashboard_intelligence')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -366,22 +369,22 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       {/* Tab bar */}
       <View style={[styles.tabBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         {([
-          { key:'cases',     label:'Cases',     badge: cases.length },
-          { key:'templates', label:'Templates', badge: null },
+          { key:'cases',     label:t('nav_cases'),     badge: cases.length },
+          { key:'templates', label:t('atty_tab_templates'), badge: null },
           { key:'cle',       label:'CLE',       badge: null },
-          { key:'profile',   label:'Profile',   badge: null },
-        ] as { key: Tab; label: string; badge: number | null }[]).map(t => (
+          { key:'profile',   label:t('atty_tab_profile'),   badge: null },
+        ] as { key: Tab; label: string; badge: number | null }[]).map(tItem => (
           <TouchableOpacity
             accessibilityRole="tab"
-            key={t.key}
-            style={[styles.tabBtn, tab===t.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
-            onPress={() => setTab(t.key)}
-            accessibilityState={{ selected: tab === t.key }}
-            accessibilityLabel={t.label}
+            key={tItem.key}
+            style={[styles.tabBtn, tab===tItem.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
+            onPress={() => setTab(tItem.key)}
+            accessibilityState={{ selected: tab === tItem.key }}
+            accessibilityLabel={tItem.label}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===t.key ? colors.textPrimary : colors.textMuted }]}>
-              {t.label}
-              {t.badge !== null && t.badge > 0 ? ` (${t.badge})` : ''}
+            <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===tItem.key ? colors.textPrimary : colors.textMuted }]}>
+              {tItem.label}
+              {tItem.badge !== null && tItem.badge > 0 ? ` (${tItem.badge})` : ''}
             </Text>
           </TouchableOpacity>
         ))}
@@ -397,7 +400,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       {/* Attorney-client privilege notice */}
       <View style={{ backgroundColor: COLORS.navyLight, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
         <Text style={{ fontSize: 11, color: colors.textOnNavy, lineHeight: 15 }}>
-          🔏 All matter data is handled consistent with attorney-client privilege. Justice Gavel does not access, share, or use client data for any purpose other than delivering platform services to your firm.
+          {t('x_attorney_dashboard_all_matter_data_handled')}
         </Text>
       </View>
         {/* ── MY CASES ─────────────────────────────────────────────────── */}
@@ -406,9 +409,9 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {cases.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No assigned cases</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_no_assigned_cases')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
-                  Cases are assigned when a client adds you through the Lawyer Search or when a supervisor assigns cases through the office dashboard.
+                  {t('x_attorney_dashboard_cases_assigned_when_client')}
                 </Text>
               </View>
             ) : (
@@ -423,7 +426,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                     key={opt}
                     accessibilityRole="button"
                     accessibilityState={{ selected: sortBy === opt }}
-                    accessibilityLabel={`Sort cases by ${opt}`}
+                    accessibilityLabel={t('x_attorney_dashboard_sort_cases_by', { opt })}
                     onPress={() => setSortBy(opt)}
                     style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
                       borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
@@ -431,7 +434,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'600',
                       color:sortBy===opt?colors.bgCard:colors.textMuted }}>
-                      {opt==='date'?'📅 Soonest':opt==='name'?'🔤 Name':'⚡ Status'}
+                      {opt==='date'?t('x_attorney_dashboard_soonest'):opt==='name'?t('x_attorney_dashboard_name'):t('x_attorney_dashboard_status')}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -444,45 +447,45 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                   key={cas.id}
                   style={[styles.caseCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
                   onPress={() => navigation.navigate('Cases')}
-                  accessibilityLabel={`Open case: ${cas.title}`}
+                  accessibilityLabel={t('x_attorney_dashboard_open_case', { title: cas.title })}
                 >
                   <View style={styles.caseHeader}>
                     <View style={{ flex: 1 }}>
                       <Text maxFontSizeMultiplier={1.4} style={[styles.caseTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-                        {cas.title || `Case #${cas.id}`}
+                        {cas.title || t('x_attorney_dashboard_case', { id: cas.id })}
                       </Text>
                       <Text maxFontSizeMultiplier={1.4} style={[styles.caseMeta, { color: colors.textMuted }]}>
-                        {cas.client_name || 'Client'} · {cas.status || 'Active'}
+                        {cas.client_name || t('x_attorney_dashboard_client')} · {cas.status || t('case_status_active')}
                       </Text>
                     </View>
                     {cas.next_court_date && (
                       <View style={[styles.courtDateBadge, { backgroundColor: days !== null && days <= 7 ? colors.emergencyBg : colors.bgElevated }]}>
                         <Text maxFontSizeMultiplier={1.4} style={[styles.courtDateDays, { color: urgencyColor(days) }]}>
-                          {days !== null ? `${days}d` : '--'}
+                          {days !== null ? t('x_attorney_dashboard_days_short', { days }) : '--'}
                         </Text>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.courtDateLabel, { color: colors.textMuted }]}>court</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.courtDateLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_court')}</Text>
                       </View>
                     )}
                   </View>
                   {cas.assignment_notes ? (
                     <Text maxFontSizeMultiplier={1.4} style={[styles.caseNote, { color: colors.textSecond }]} numberOfLines={1}>
-                      Note: {cas.assignment_notes}
+                      {t('x_attorney_dashboard_note', { assignment_notes: cas.assignment_notes })}
                     </Text>
                   ) : null}
                   <View style={styles.caseActions}>
                     <TouchableOpacity accessibilityRole="button"
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
                       onPress={() => navigation.navigate('Messages', { caseId: cas.id, caseTitle: cas.title })}
-                      accessibilityLabel="Message client"
+                      accessibilityLabel={t('x_attorney_dashboard_message_client')}
                     >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>💬 Message</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>{t('x_attorney_dashboard_message')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button"
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
                       onPress={() => navigation.navigate('MotionLibrary', { caseId: cas.id })}
-                      accessibilityLabel="Draft a motion for this case"
+                      accessibilityLabel={t('x_attorney_dashboard_draft_motion_this_case')}
                     >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>📋 Motion</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>{t('x_attorney_dashboard_motion')}</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -498,7 +501,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {/* Cards / Table view toggle */}
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10, alignItems: 'center' }}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600',
-                color: colors.textMuted, marginRight: 4 }}>View:</Text>
+                color: colors.textMuted, marginRight: 4 }}>{t('x_attorney_dashboard_view')}</Text>
               {(['cards','table'] as const).map(mode => (
                 <TouchableOpacity accessibilityRole="button" key={mode}
                   onPress={() => setMotionViewMode(mode)}
@@ -508,7 +511,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                     backgroundColor: motionViewMode === mode ? colors.infoBg : colors.bgCard }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600',
                     color: motionViewMode === mode ? colors.blue : colors.textMuted }}>
-                    {mode === 'cards' ? 'Cards' : 'Table'}
+                    {mode === 'cards' ? t('x_attorney_dashboard_cards') : t('x_attorney_dashboard_table')}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -534,16 +537,16 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {templates.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                 <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No templates yet</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_no_templates_yet')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
-                  Generate a motion in the Motion Library, then save it as an office template for your colleagues to use.
+                  {t('x_attorney_dashboard_generate_motion_motion_library')}
                 </Text>
                 <TouchableOpacity accessibilityRole="button"
                   style={[styles.emptyBtn, { backgroundColor: colors.steel }]}
                   onPress={() => navigation.navigate('MotionLibrary')}
-                  accessibilityLabel="Go to Motion Library"
+                  accessibilityLabel={t('x_attorney_dashboard_go_motion_library')}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Open Motion Library →</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>{t('x_attorney_dashboard_open_motion_library')}</Text>
                 </TouchableOpacity>
               </View>
             ) : templates.map((tpl) => (
@@ -552,7 +555,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                   <View style={{ flex: 1 }}>
                     <Text maxFontSizeMultiplier={1.4} numberOfLines={2} ellipsizeMode="tail" style={[styles.tplTitle, { color: colors.textPrimary }]}>{tpl.title}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.tplMeta, { color: colors.textMuted }]}>
-                      {tpl.motion_type} · {tpl.created_by_name || 'Unknown'}
+                      {tpl.motion_type} · {tpl.created_by_name || t('x_attorney_dashboard_unknown')}
                       {tpl.approved_by_name ? ` · ✓ ${tpl.approved_by_name}` : ''}
                     </Text>
                   </View>
@@ -577,7 +580,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
           <>
             <View style={[styles.cleHeader, { backgroundColor: colors.bgElevated, borderColor: colors.steel }]}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.cleHours, { color: colors.info }]}>{cleTotal.toFixed(1)}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHoursLabel, { color: colors.textMuted }]}>CLE hours earned on Justice Gavel</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHoursLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_cle_hours_earned_justice')}</Text>
             </View>
 
             {courses.map((course) => {
@@ -620,19 +623,19 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                             completing === course.id && { opacity: 0.6 }]}
                           onPress={() => completeCLE(course.id)}
                           disabled={completing === course.id}
-                          accessibilityLabel={`Mark ${course.title} complete`}
+                          accessibilityLabel={t('x_attorney_dashboard_mark_complete', { title: course.title })}
                         >
                           {completing === course.id
                             ? <ActivityIndicator color={colors.bg} size="small" />
                             : <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>
-                                Mark Complete -- Earn {course.credit_hours}h CLE Credit
+                                {t('x_attorney_dashboard_mark_complete_earn_h', { credit_hours: course.credit_hours })}
                               </Text>
                           }
                         </TouchableOpacity>
                       ) : (
                         <View style={[styles.completedBanner, { backgroundColor: colors.legalBg, borderColor: colors.legalDark }]}>
                           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.legal, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
-                            ✓ Completed -- {course.credit_hours}h earned
+                            {t('x_attorney_dashboard_completed_h_earned', { credit_hours: course.credit_hours })}
                           </Text>
                         </View>
                       )}
@@ -644,10 +647,10 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             <TouchableOpacity
   accessibilityRole="button"
               style={[styles.transcriptBtn, { borderColor: colors.steel }]}
-              onPress={() => showToast(`${cleTotal.toFixed(1)} CLE hours earned on Justice Gavel.`, 'info')}
-              accessibilityLabel="View CLE transcript"
+              onPress={() => showToast(t('x_attorney_dashboard_cle_hours_earned_justice_2', { cleTotal: cleTotal.toFixed(1) }), 'info')}
+              accessibilityLabel={t('x_attorney_dashboard_view_cle_transcript')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.info }]}>View Full Transcript →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.info }]}>{t('atty_transcript')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -656,8 +659,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         {tab === 'profile' && !profile && !loading && (
           <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <AppIcon name="person-outline" size={20} color={COLORS.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>Profile not loaded</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>Pull to refresh or check your connection.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_profile_not_loaded')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>{t('x_attorney_dashboard_pull_refresh_check_connection')}</Text>
           </View>
         )}
         {tab === 'profile' && profile && (
@@ -680,14 +683,14 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
                   color: profile.bar_verified ? COLORS.legal : COLORS.steelMid
                 }]}>
-                  {profile.bar_verified ? '✓ Bar Verified -- JTB Badge Active' : '⏳ Bar Verification Pending'}
+                  {profile.bar_verified ? t('x_attorney_dashboard_bar_verified_jtb_badge') : t('x_attorney_dashboard_bar_verification_pending')}
                 </Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.barStatusSub}>
                   {profile.bar_verified
-                    ? ('Bar #' + (profile.bar_number || 'on file') + ' · ' + (profile.subscription_tier || 'Attorney') + ' plan')
+                    ? (t('x_attorney_dashboard_bar_plan', { value: (profile.bar_number || t('x_attorney_dashboard_file')), value2: (profile.subscription_tier || t('x_attorney_dashboard_attorney')) }))
                     : profile.bar_number
-                      ? ('Bar #' + profile.bar_number + ' submitted -- review within 1-2 business days')
-                      : 'Submit your bar number in the field below to get verified'}
+                      ? (t('x_attorney_dashboard_bar_submitted_review_within', { bar_number: profile.bar_number }))
+                      : t('x_attorney_dashboard_submit_bar_number_field')}
                 </Text>
               </View>
               {!profile.bar_verified && (
@@ -697,7 +700,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                   onPress={() => setTab('profile')}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.barStatusActionText}>
-                    {profile.bar_number ? 'View Status' : 'Verify Now'}
+                    {profile.bar_number ? t('x_attorney_dashboard_view_status') : t('x_attorney_dashboard_verify_now')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -716,10 +719,10 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 <View style={[styles.completionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.completionLabel, { color: colors.textPrimary }]}>
-                      Profile {pct}% complete
+                      {t('x_attorney_dashboard_profile_complete', { pct })}
                     </Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.completionLabel, { color: colors.textMuted }]}>
-                      {done}/{fields.length} fields
+                      {t('x_attorney_dashboard_fields', { done, length: fields.length })}
                     </Text>
                   </View>
                   <View style={[styles.completionBar, { backgroundColor: colors.border }]}>
@@ -728,9 +731,9 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                     }]} />
                   </View>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.completionHint, { color: colors.textMuted }]}>
-                    {!profile.bar_verified && '• Verify your bar number for the JTB badge'}
-                    {!profile.bio && '• Add a bio so clients can learn about you'}
-                    {!profile.office_name && !profile.office_id && '• Add your office name to appear in firm search'}
+                    {!profile.bar_verified && t('x_attorney_dashboard_verify_bar_number_jtb')}
+                    {!profile.bio && t('x_attorney_dashboard_add_bio_so_clients')}
+                    {!profile.office_name && !profile.office_id && t('x_attorney_dashboard_add_office_name_appear')}
                   </Text>
                 </View>
               ) : null;
@@ -739,13 +742,13 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {/* Stats */}
             <View style={[styles.statsGrid, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               {[
-                { label: 'Active Cases',  value: String(profile.stats?.active_cases      || 0), color: colors.blue },
-                { label: 'This Week',     value: String(profile.stats?.hearings_this_week || 0), color: colors.warn },
-                { label: 'Motions Filed', value: String(profile.stats?.motions_generated  || 0), color: colors.legal },
-                { label: 'Avg Rating',    value: profile.stats?.avg_rating ? profile.stats.avg_rating.toFixed(1) + '★' : 'N/A', color: colors.gold },
-                { label: 'Unread Msgs',   value: String(profile.stats?.unread_messages    || 0), color: colors.emergency },
-                { label: 'Response Rate', value: profile.stats?.response_rate ? profile.stats.response_rate + '%' : 'N/A', color: colors.steel },
-                { label: 'CLE Hours', value: (profile.stats?.cle_hours_earned || 0).toFixed(1) + 'h', color: colors.legal },
+                { label: t('x_attorney_dashboard_active_cases'),  value: String(profile.stats?.active_cases      || 0), color: colors.blue },
+                { label: t('x_attorney_dashboard_this_week'),     value: String(profile.stats?.hearings_this_week || 0), color: colors.warn },
+                { label: t('x_attorney_dashboard_motions_filed'), value: String(profile.stats?.motions_generated  || 0), color: colors.legal },
+                { label: t('x_attorney_dashboard_avg_rating'),    value: profile.stats?.avg_rating ? profile.stats.avg_rating.toFixed(1) + '★' : 'N/A', color: colors.gold },
+                { label: t('x_attorney_dashboard_unread_msgs'),   value: String(profile.stats?.unread_messages    || 0), color: colors.emergency },
+                { label: t('x_attorney_dashboard_response_rate'), value: profile.stats?.response_rate ? profile.stats.response_rate + '%' : 'N/A', color: colors.steel },
+                { label: t('x_attorney_dashboard_cle_hours'), value: (profile.stats?.cle_hours_earned || 0).toFixed(1) + 'h', color: colors.legal },
               ].map((s,i,arr) => (
                 <View key={s.label} style={[styles.statCell,
                   i < arr.length-1 && { borderRightWidth:1, borderRightColor: colors.border }]}>
@@ -759,27 +762,27 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {profile.gavel_level > 0 && (
               <View style={[styles.gavelBadge, { backgroundColor: colors.warnBg, borderColor: colors.gold }]}>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>
-                  {['','🥉 Bronze','🥈 Silver','🏆 Golden'][profile.gavel_level] || ''} Gavel Holder
+                  {t('x_attorney_dashboard_gavel_holder', { value: ['', t('x_attorney_dashboard_gavel_bronze'), t('x_attorney_dashboard_gavel_silver'), t('x_attorney_dashboard_gavel_golden')][profile.gavel_level] || '' })}
                 </Text>
               </View>
             )}
 
             {/* Edit fields */}
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>BAR NUMBER</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_bar_number')}</Text>
             <TextInput
                   maxLength={15}
               style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
               value={barInput}
               onChangeText={setBarInput}
-              placeholder="State bar number"
+              placeholder={t('x_attorney_dashboard_state_bar_number')}
               placeholderTextColor={colors.textMuted}
-              accessibilityLabel="State bar number"
+              accessibilityLabel={t('x_attorney_dashboard_state_bar_number')}
           returnKeyType="next"
           blurOnSubmit
         keyboardType="numeric"
         />
 
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>OFFICE ID (e.g. pd_davidson_tn)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_office_id_e_g')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
               value={officeInput}
@@ -787,19 +790,19 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               placeholder="office_id"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
-              accessibilityLabel="Office ID"
+              accessibilityLabel={t('atty_office_id')}
           returnKeyType="next"
           blurOnSubmit
         />
 
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>OFFICE NAME</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_office_name')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
               value={officeNameInput}
               onChangeText={setOfficeNameInput}
-              placeholder="Davidson County Public Defender"
+              placeholder={t('x_attorney_dashboard_davidson_county_public_defender')}
               placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Office name"
+              accessibilityLabel={t('x_attorney_dashboard_office_name_2')}
           returnKeyType="next"
           blurOnSubmit
         keyboardType="numeric"
@@ -810,12 +813,12 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               style={[styles.saveBtn, { backgroundColor: colors.steel }, savingProfile && { opacity: 0.6 }]}
               onPress={saveProfile}
               disabled={savingProfile}
-              accessibilityLabel="Save profile"
-          accessibilityHint="Double-tap to activate"
+              accessibilityLabel={t('x_attorney_dashboard_save_profile')}
+          accessibilityHint={t('cp_double_tap')}
             >
               {savingProfile
                 ? <ActivityIndicator color={colors.bg} />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>Save Profile</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{t('atty_save_profile')}</Text>
               }
             </TouchableOpacity>
 
@@ -825,36 +828,36 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               style={[styles.outlineBtn, { borderColor: colors.legalDark }]}
               onPress={async () => {
                 if (!barInput.trim()) {
-                  showToast('Enter your bar number in the field above, then tap Verify.', 'error');
+                  showToast(t('x_attorney_dashboard_enter_bar_number_field'), 'error');
                   return;
                 }
                 try {
                   await api.post('/attorney/verify-bar', { bar_number: barInput, state: officeInput.slice(0,2) || 'TN' });
-                  showToast('Your bar number has been submitted for verification. You will be notified when approved. Verified attorneys appear first in search results.');
+                  showToast(t('x_attorney_dashboard_bar_number_has_been'));
                 } catch (e: any) {
-                  showToast(apiErrorMessage(e, 'Try again.'), 'info');
+                  showToast(apiErrorMessage(e, t('x_attorney_dashboard_try_again')), 'info');
                 }
               }}
-              accessibilityLabel="Submit bar number for verification"
-          accessibilityHint="Double-tap to activate"
+              accessibilityLabel={t('x_attorney_dashboard_submit_bar_number_verification')}
+          accessibilityHint={t('cp_double_tap')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>✅  Submit Bar Number for Verification →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>{t('x_attorney_dashboard_submit_bar_number_verification_2')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
-              accessibilityLabel="View Gavel Program"
+              accessibilityLabel={t('x_attorney_dashboard_view_gavel_program')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>🏆  Gavel Program Status →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>{t('x_attorney_dashboard_gavel_program_status')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('Subscription')}
-              accessibilityLabel="Manage subscription"
+              accessibilityLabel={t('x_attorney_dashboard_manage_subscription')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>💎  Manage Subscription →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>{t('x_attorney_dashboard_manage_subscription_2')}</Text>
             </TouchableOpacity>
           </>
         )}

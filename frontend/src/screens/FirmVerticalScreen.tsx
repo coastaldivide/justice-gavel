@@ -39,23 +39,24 @@ import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { toLocalISODate } from '../utils/dateUtils';
+import { t, perLang, useLang } from '../i18n';
 
 type Tab = 'setup' | 'pricing' | 'trackers' | 'deadlines';
 
 // ─── Vertical metadata ────────────────────────────────────────────────────────
-const VERTICALS: { key: string; label: string; emoji: string; pitch: string }[] = [
-  { key: 'criminal_defense', label: 'Criminal Defense',   emoji: '⚖️',  pitch: 'Bail automation, expungement pipeline, speedy trial tracking.' },
-  { key: 'civil_rights',     label: 'Civil Rights § 1983',emoji: '✊',  pitch: 'Class action management, SOL calendar, damages modeling.' },
-  { key: 'white_collar',     label: 'White-Collar / Reg', emoji: '🏦',  pitch: 'DPA negotiation tracker, cooperation credit modeling, DOJ deadline stack.' },
-  { key: 'family',           label: 'Family Law',         emoji: '👨‍👩‍👧',  pitch: 'Emergency TRO flow, QDRO specialist matching, asset-tier routing.' },
-  { key: 'immigration',      label: 'Immigration',        emoji: '🛂',  pitch: 'Asylum clock surveillance, detained-client alerts, multi-language support.' },
-  { key: 'personal_injury',  label: 'Personal Injury',    emoji: '🏥',  pitch: 'Expert witness matching, damages model, emergency intake flow.' },
-  { key: 'public_defense',   label: 'Public Defense',     emoji: '🛡️',  pitch: 'Caseload dashboard, diversion tracker, expungement pipeline.' },
-  { key: 'appellate',        label: 'Appellate / PCR',    emoji: '📜',  pitch: 'AEDPA deadline tracking, capital case flagging, reversal scoring.' },
-  { key: 'military',         label: 'Military / UCMJ',    emoji: '🎖️',  pitch: 'UCMJ taxonomy, Article 32 deadlines, security clearance workflow.' },
-  { key: 'juvenile',         label: 'Juvenile & Dependency', emoji: '👦', pitch: 'Juvenile expungement, transfer monitor, diversion offering.' },
-  { key: 'general',          label: 'General Practice',   emoji: '📁',  pitch: 'Full platform access with no vertical-specific restrictions.' },
-];
+const VERTICALS = perLang((): { key: string; label: string; emoji: string; pitch: string }[] => [
+  { key: 'criminal_defense', label: t('x_court_forms_criminal_defense'),   emoji: '⚖️',  pitch: t('x_firm_vertical_bail_automation_expungement_pipeline') },
+  { key: 'civil_rights',     label: t('x_firm_acquisition_civil_rights_1983'),emoji: '✊',  pitch: t('x_firm_vertical_class_action_management_sol') },
+  { key: 'white_collar',     label: t('x_firm_acquisition_white_collar_reg'), emoji: '🏦',  pitch: t('x_firm_vertical_dpa_negotiation_tracker_cooperation') },
+  { key: 'family',           label: t('x_practice_area_selector_family_law'),         emoji: '👨‍👩‍👧',  pitch: t('x_firm_vertical_emergency_tro_flow_qdro') },
+  { key: 'immigration',      label: t('chat_cat_immigration'),        emoji: '🛂',  pitch: t('x_firm_vertical_asylum_clock_surveillance_detained') },
+  { key: 'personal_injury',  label: t('x_practice_area_selector_personal_injury'),    emoji: '🏥',  pitch: t('x_firm_vertical_expert_witness_matching_damages') },
+  { key: 'public_defense',   label: t('x_firm_acquisition_public_defense'),     emoji: '🛡️',  pitch: t('x_firm_vertical_caseload_dashboard_diversion_tracker') },
+  { key: 'appellate',        label: t('x_firm_acquisition_appellate_pcr'),    emoji: '📜',  pitch: t('x_firm_vertical_aedpa_deadline_tracking_capital') },
+  { key: 'military',         label: t('x_firm_acquisition_military_ucmj'),    emoji: '🎖️',  pitch: t('x_firm_vertical_ucmj_taxonomy_article_32') },
+  { key: 'juvenile',         label: t('x_firm_acquisition_juvenile_dependency'), emoji: '👦', pitch: t('x_firm_vertical_juvenile_expungement_transfer_monito') },
+  { key: 'general',          label: t('x_firm_acquisition_general_practice'),   emoji: '📁',  pitch: t('x_firm_vertical_full_platform_access_with') },
+]);
 
 const PRICING_COLORS: Record<string, string> = {
   standard:   COLORS.blue,
@@ -65,55 +66,56 @@ const PRICING_COLORS: Record<string, string> = {
 };
 
 // ─── Feature flag definitions per vertical ────────────────────────────────────
-const FEATURE_FLAGS: Record<string, { key: string; label: string; desc: string }[]> = {
+const FEATURE_FLAGS = perLang((): Record<string, { key: string; label: string; desc: string }[]> => ({
   criminal_defense: [
-    { key: 'bail_calc_enabled', label: 'Bail calculator',      desc: 'Automated bail bracket and hearing deadline.' },
-    { key: 'expunge_pipeline',  label: 'Expungement pipeline', desc: 'Auto-check eligibility for every closed matter.' },
+    { key: 'bail_calc_enabled', label: t('x_firm_vertical_bail_calculator'),      desc: t('x_firm_vertical_automated_bail_bracket_hearing') },
+    { key: 'expunge_pipeline',  label: t('x_firm_vertical_expungement_pipeline'), desc: t('x_firm_vertical_auto_check_eligibility_every') },
   ],
   civil_rights: [
-    { key: 'class_action_track', label: 'Class action tracker', desc: 'Certification status + aggregate damages.' },
-    { key: 'sol_calendar',       label: 'SOL calendar',         desc: '2-year § 1983 deadline per matter.' },
+    { key: 'class_action_track', label: t('x_firm_vertical_class_action_tracker'), desc: t('x_firm_vertical_certification_status_aggregate_damag') },
+    { key: 'sol_calendar',       label: t('x_firm_vertical_sol_calendar'),         desc: t('x_firm_vertical_2_year_1983_deadline') },
   ],
   white_collar: [
-    { key: 'dpa_tracker',       label: 'DPA tracker',           desc: 'Deferred prosecution negotiation + fine model.' },
-    { key: 'coop_credit_model', label: 'Cooperation credit',    desc: 'Filip Factors discount calculator.' },
+    { key: 'dpa_tracker',       label: t('x_firm_vertical_dpa_tracker'),           desc: t('x_firm_vertical_deferred_prosecution_negotiation_fin') },
+    { key: 'coop_credit_model', label: t('x_firm_vertical_cooperation_credit'),    desc: t('x_firm_vertical_filip_factors_discount_calculator') },
   ],
   family: [
-    { key: 'tro_alerts',    label: 'TRO alerts',      desc: 'Emergency DV TRO — 3-business-day deadline fire.' },
-    { key: 'qdro_matching', label: 'QDRO matching',   desc: 'Specialist attorney matching for pension division.' },
+    { key: 'tro_alerts',    label: t('x_firm_vertical_tro_alerts'),      desc: t('x_firm_vertical_emergency_dv_tro_3') },
+    { key: 'qdro_matching', label: t('x_firm_vertical_qdro_matching'),   desc: t('x_firm_vertical_specialist_attorney_matching_pension') },
   ],
   immigration: [
-    { key: 'asylum_clock',     label: 'Asylum clock',      desc: 'Per-client 1-year bar surveillance.' },
-    { key: 'detention_alerts', label: 'Detention alerts',  desc: 'Detained client urgency escalation.' },
+    { key: 'asylum_clock',     label: t('x_firm_vertical_asylum_clock'),      desc: t('x_firm_vertical_per_client_1_year') },
+    { key: 'detention_alerts', label: t('x_firm_vertical_detention_alerts'),  desc: t('x_firm_vertical_detained_client_urgency_escalation') },
   ],
   personal_injury: [
-    { key: 'expert_matching', label: 'Expert matching', desc: 'Domain-matched expert witness referral.' },
-    { key: 'damages_model',   label: 'Damages model',   desc: 'Net damages calculator with plaintiff fault.' },
+    { key: 'expert_matching', label: t('x_firm_vertical_expert_matching'), desc: t('x_firm_vertical_domain_matched_expert_witness') },
+    { key: 'damages_model',   label: t('x_firm_vertical_damages_model'),   desc: t('x_firm_vertical_net_damages_calculator_with') },
   ],
   public_defense: [
-    { key: 'caseload_dashboard', label: 'Caseload dashboard', desc: 'Per-attorney active case count + burn metrics.' },
-    { key: 'diversion_tracker',  label: 'Diversion tracker',  desc: 'Drug court, mental health, first-offender paths.' },
+    { key: 'caseload_dashboard', label: t('x_firm_vertical_caseload_dashboard'), desc: t('x_firm_vertical_per_attorney_active_case') },
+    { key: 'diversion_tracker',  label: t('x_firm_vertical_diversion_tracker'),  desc: t('x_firm_vertical_drug_court_mental_health') },
   ],
   appellate: [
-    { key: 'aedpa_tracker', label: 'AEDPA tracker',  desc: '365-day habeas deadline per matter.' },
-    { key: 'capital_flag',  label: 'Capital flagging', desc: 'Escalation workflow for death penalty matters.' },
+    { key: 'aedpa_tracker', label: t('x_firm_vertical_aedpa_tracker'),  desc: t('x_firm_vertical_365_day_habeas_deadline') },
+    { key: 'capital_flag',  label: t('x_firm_vertical_capital_flagging'), desc: t('x_firm_vertical_escalation_workflow_death_penalty') },
   ],
   military: [
-    { key: 'ucmj_taxonomy',      label: 'UCMJ taxonomy',       desc: 'Article-level charge classification.' },
-    { key: 'clearance_workflow', label: 'Clearance workflow',   desc: 'Security clearance revocation tracking.' },
+    { key: 'ucmj_taxonomy',      label: t('x_firm_vertical_ucmj_taxonomy'),       desc: t('x_firm_vertical_article_level_charge_classification') },
+    { key: 'clearance_workflow', label: t('x_firm_vertical_clearance_workflow'),   desc: t('x_firm_vertical_security_clearance_revocation_tracki') },
   ],
   juvenile: [
-    { key: 'juvenile_expunge', label: 'Juvenile expungement', desc: 'Auto-eligibility check on closed delinquency matters.' },
-    { key: 'transfer_monitor', label: 'Transfer monitor',     desc: 'Adult court transfer risk flag at age 16+.' },
+    { key: 'juvenile_expunge', label: t('x_firm_vertical_juvenile_expungement'), desc: t('x_firm_vertical_auto_eligibility_check_closed') },
+    { key: 'transfer_monitor', label: t('x_firm_vertical_transfer_monitor'),     desc: t('x_firm_vertical_adult_court_transfer_risk') },
   ],
   general: [],
-};
+}));
 
 // Date validation — module-level to avoid recreation per render
 const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
 function FirmVerticalScreen({ route }: any) {
+  useLang();
 
   const { confirm } = useConfirm();
   // react-hook-form: migrating from 5 individual useState form fields
@@ -230,7 +232,7 @@ function FirmVerticalScreen({ route }: any) {
           setSelectedV(v);
           if (mineRes.data.config) {
             const f: Record<string, boolean> = {};
-            const flags = FEATURE_FLAGS[v] || [];
+            const flags = FEATURE_FLAGS()[v] || [];
             flags.forEach(fl => { f[fl.key] = !!mineRes.data.config[fl.key]; });
             setFeatures(f);
           }
@@ -240,7 +242,7 @@ function FirmVerticalScreen({ route }: any) {
         setTiers(pricingResult.value.data?.tiers || []);
       }
     } catch (e: any) {
-      if (e?.response?.status !== 400) showToast('Could not load firm configuration.');
+      if (e?.response?.status !== 400) showToast(t('x_firm_vertical_could_not_load_firm'));
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -251,10 +253,10 @@ function FirmVerticalScreen({ route }: any) {
 
   // ── Load trackers ──────────────────────────────────────────────────────────
   const closeTracker = async (type: string, id: number, name: string) => {
-confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
-      { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
+confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolved_this', { name }),
+      { confirmLabel: t('x_firm_vertical_mark_resolved'), destructive: true }).then(async ok => { if (!ok) return;
       try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(apiErrorMessage(e, 'Could not resolve.'), 'error'); }
+         catch (e: any) { showToast(apiErrorMessage(e, t('x_firm_vertical_could_not_resolve')), 'error'); }
     })
   };
 
@@ -289,7 +291,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
     try {
       const res = await api.get(`/firm-verticals/deadlines?trigger_date=${trigDate}`);
       setDeadlines(res.data?.deadlines || []);
-    } catch { showToast('Could not compute deadlines.'); }
+    } catch { showToast(t('x_firm_vertical_could_not_compute_deadlines')); }
     finally { setDLLoading(false); }
   }, [firm, trigDate, showToast]);
 
@@ -303,16 +305,16 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       const payload: any = { vertical: selectedV };
       Object.keys(features).forEach(k => { payload[k] = features[k]; });
       await api.put('/firm-verticals/mine', payload);
-      showToast('Vertical configuration updated.');
+      showToast(t('x_firm_vertical_vertical_configuration_updated'));
       loadAll();
-    } catch { showToast('Could not save configuration.'); }
+    } catch { showToast(t('x_firm_vertical_could_not_save_configuration')); }
     finally { setSaving(false); }
   };
 
   // ── Mission verify submit ──────────────────────────────────────────────────
   const submitMission = async () => {
     if (!missionEIN.trim() && !missionWeb.trim()) {
-      showToast('Provide your EIN or organization website for verification.');
+      showToast(t('x_firm_vertical_provide_ein_organization_website'));
       return;
     }
     setSubMV(true);
@@ -320,18 +322,18 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       await api.post('/firm-verticals/mine/mission-verify', {
         org_type: missionOrg, ein: missionEIN.trim(), website: missionWeb.trim(),
       });
-      showToast('Mission pricing request received. Review takes 1–3 business days.');
+      showToast(t('x_firm_vertical_mission_pricing_request_received'));
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not submit request.'), 'error');
+      showToast(apiErrorMessage(e, t('x_firm_vertical_could_not_submit_request')), 'error');
     } finally { setSubMV(false); }
   };
 
   // ── Create asylum clock ────────────────────────────────────────────────────
   const createAC = async () => {
     if (creatingAC) return;
-    if (!acName.trim()) { showToast('Client name is required.'); return; }
-    if (!isValidDateFV(acStart)) { showToast('Clock start date must be YYYY-MM-DD (e.g. 2024-06-01).'); return; }
+    if (!acName.trim()) { showToast(t('x_firm_vertical_client_name_required')); return; }
+    if (!isValidDateFV(acStart)) { showToast(t('x_firm_vertical_clock_start_date_must')); return; }
     setCreatingAC(true);
     try {
       await api.post('/firm-verticals/asylum-clocks', {
@@ -343,21 +345,21 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setACName(''); setACStart(toLocalISODate(new Date()));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create clock.'), 'error'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, t('x_firm_vertical_could_not_create_clock')), 'error'); }
     finally { setCreatingAC(false); }
   };
 
   // ── Create DPA tracker ────────────────────────────────────────────────────
   const createDPA = async () => {
     if (creatingDPA) return;
-    if (!dpaName.trim()) { showToast('Client name is required.'); return; }
+    if (!dpaName.trim()) { showToast(t('x_firm_vertical_client_name_required')); return; }
     try {
-      if (dpaWellsDue.trim() && !isValidDateFV(dpaWellsDue.trim())) { showToast('Wells due must be YYYY-MM-DD.'); return; }
-      if (dpaSubDue.trim() && !isValidDateFV(dpaSubDue.trim())) { showToast('Subpoena due must be YYYY-MM-DD.'); return; }
-      if (dpaSignDue.trim() && !isValidDateFV(dpaSignDue.trim())) { showToast('DPA signing deadline must be YYYY-MM-DD.'); return; }
+      if (dpaWellsDue.trim() && !isValidDateFV(dpaWellsDue.trim())) { showToast(t('x_firm_vertical_wells_due_must_be')); return; }
+      if (dpaSubDue.trim() && !isValidDateFV(dpaSubDue.trim())) { showToast(t('x_firm_vertical_subpoena_due_must_be')); return; }
+      if (dpaSignDue.trim() && !isValidDateFV(dpaSignDue.trim())) { showToast(t('x_firm_vertical_dpa_signing_deadline_must')); return; }
       const cleanedFine = dpaFineM.replace(/,/g, '').trim();  // strip commas (e.g. '1,000' → '1000')
       const parsedFine  = parseFloat(cleanedFine);
-      if (cleanedFine && isNaN(parsedFine)) { showToast('Base fine must be a number (e.g. 12.5 for $12.5M).'); return; }
+      if (cleanedFine && isNaN(parsedFine)) { showToast(t('x_firm_vertical_base_fine_must_be')); return; }
       const fineC = cleanedFine && !isNaN(parsedFine) ? Math.round(parsedFine * 100) : 0;
       setCreatingDPA(true);
       await api.post('/firm-verticals/dpa', {
@@ -370,14 +372,14 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create tracker.'), 'error'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, t('x_firm_vertical_could_not_create_tracker')), 'error'); }
     finally { setCreatingDPA(false); }
   };
 
   // ── Create TRO tracker ────────────────────────────────────────────────────
   const createTRO = async () => {
     if (creatingTRO) return;
-    if (!troName.trim()) { showToast('Client name is required.'); return; }
+    if (!troName.trim()) { showToast(t('x_firm_vertical_client_name_required')); return; }
     try {
       setCreatingTRO(true);
       await api.post('/firm-verticals/tro', {
@@ -385,7 +387,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create TRO tracker.'), 'error'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, t('x_firm_vertical_could_not_create_tro')), 'error'); }
     finally { setCreatingTRO(false); }
   };
 
@@ -410,10 +412,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         testID="firm-vertical-screen">
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? COLORS.navy, marginBottom: 8, textAlign: 'center' }}>
-          Set Up Your Legal Vertical
+          {t('x_firm_vertical_set_up_legal_vertical')}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors?.textMuted ?? colors.textMuted, textAlign: 'center', marginBottom: 24 }}>
-          Your firm hasn't configured a practice area yet. Contact your firm administrator to get started.
+          {t('x_firm_vertical_firm_hasn_t_configured')}
         </Text>
       </View>
     );
@@ -429,26 +431,26 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       {(subscriptionStatus === 'grace' || subscriptionStatus === 'lapsed') && (
         <View style={s.graceBanner}>
           <Text maxFontSizeMultiplier={1.4} style={s.graceBannerTitle}>
-            {subscriptionStatus === 'grace' ? '⚠ Account Read-Only Mode' : '🔴 Subscription Inactive'}
+            {subscriptionStatus === 'grace' ? t('x_firm_vertical_account_read_only_mode') : t('x_firm_vertical_subscription_inactive')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={s.graceBannerBody}>
             {subscriptionStatus === 'grace' && graceUntil
-              ? `You can view all data until ${graceUntil}. Renew to create or update matters.`
-              : 'Your subscription is inactive. All data is preserved — renew to regain full access.'}
+              ? t('x_firm_vertical_can_view_all_data', { graceUntil })
+              : t('x_firm_vertical_subscription_inactive_all_data')}
           </Text>
         </View>
       )}
 
       {/* Tab bar */}
       <View style={s.tabBar}>
-        {(['setup','pricing','trackers','deadlines'] as Tab[]).map(t => (
+        {(['setup','pricing','trackers','deadlines'] as Tab[]).map(tItem => (
           <TouchableOpacity
-          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() => setTab(t)}
+          accessibilityRole="button" key={tItem} style={[s.tabBtn, tab===tItem && s.tabActive]} onPress={() => setTab(tItem)}
           accessibilityState={{  selected: false  }}
-            accessibilityLabel='Switch tab'
+            accessibilityLabel={t('x_firm_vertical_switch_tab')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
-              {t === 'setup' ? '⚙️ Setup' : t === 'pricing' ? '💳 Pricing' : t === 'trackers' ? '🔍 Trackers' : '📅 Deadlines'}
+            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===tItem && s.tabLabelActive]}>
+              {tItem === 'setup' ? t('x_firm_vertical_setup') : tItem === 'pricing' ? t('x_firm_vertical_pricing') : tItem === 'trackers' ? t('x_firm_vertical_trackers') : t('x_firm_vertical_deadlines')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -465,10 +467,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         {/* ──── SETUP TAB ──────────────────────────────────────────────────── */}
         {tab === 'setup' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Choose your practice vertical</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.hint}>This unlocks the correct feature set, deadline rules, and matcher weighting for your firm.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_vertical_choose_practice_vertical')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_this_unlocks_correct_feature')}</Text>
 
-            {VERTICALS.map(v => (
+            {VERTICALS().map(v => (
               <TouchableOpacity accessibilityRole="button"
                 key={v.key}
                 style={[s.vertCard, selectedV === v.key && s.vertCardSelected]}
@@ -476,7 +478,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                   setSelectedV(v.key);
                   // Preserve existing flag values; only initialise new flags to false
                   const f: Record<string, boolean> = {};
-                  (FEATURE_FLAGS[v.key] || []).forEach(fl => {
+                  (FEATURE_FLAGS()[v.key] || []).forEach(fl => {
                     f[fl.key] = features[fl.key] ?? (config ? !!config[fl.key] : false);
                   });
                   setFeatures(f);
@@ -494,10 +496,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
               </TouchableOpacity>
             ))}
 
-            {(FEATURE_FLAGS[selectedV] || []).length > 0 && (
+            {(FEATURE_FLAGS()[selectedV] || []).length > 0 && (
               <>
-                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>Feature flags — {VERTICALS.find(v => v.key === selectedV)?.label}</Text>
-                {(FEATURE_FLAGS[selectedV] || []).map(fl => (
+                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>{t('x_firm_vertical_feature_flags', { label: VERTICALS().find(v => v.key === selectedV)?.label })}</Text>
+                {(FEATURE_FLAGS()[selectedV] || []).map(fl => (
                   <View key={fl.key} style={s.flagRow}>
                     <View style={{ flex: 1, marginRight: 12 }}>
                       <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{fl.label}</Text>
@@ -515,11 +517,11 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             )}
 
             <TouchableOpacity style={s.saveBtn} onPress={saveConfig} disabled={saving}
-            accessibilityRole="button" accessibilityLabel="Save configuration"
-          accessibilityHint="Double-tap to activate">
+            accessibilityRole="button" accessibilityLabel={t('x_firm_vertical_save_configuration')}
+          accessibilityHint={t('cp_double_tap')}>
               {saving
                 ? <ActivityIndicator color={colors.navy} />
-                : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Save configuration</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>{t('x_firm_vertical_save_configuration')}</Text>
               }
             </TouchableOpacity>
           </>
@@ -528,32 +530,32 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         {/* ──── PRICING TAB ────────────────────────────────────────────────── */}
         {tab === 'pricing' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Pricing tiers</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.hint}>Choose the tier that matches your firm. Mission and Government pricing require verification.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_vertical_pricing_tiers')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_choose_tier_that_matches')}</Text>
 
-            {tiers.map((t: any) => (
-              <View key={t.tier_key} style={[s.tierCard, { borderLeftColor: PRICING_COLORS[t.tier_key] || colors.steel }]}>
+            {tiers.map((tItem: any) => (
+              <View key={tItem.tier_key} style={[s.tierCard, { borderLeftColor: PRICING_COLORS[tItem.tier_key] || colors.steel }]}>
                 <View style={s.tierHeader}>
-                  <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: PRICING_COLORS[t.tier_key] || colors.text }]}>{t.display_name}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((t.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>/mo</Text></Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: PRICING_COLORS[tItem.tier_key] || colors.text }]}>{tItem.display_name}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((tItem.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>{t('x_check_in_manager_mo')}</Text></Text>
                 </View>
-                <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{t.description}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{tItem.description}</Text>
                 <View style={s.tierStats}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>🪑 {t.seat_limit === 999 ? 'Unlimited' : t.seat_limit} seats</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>📁 {t.matter_limit >= 99999 ? 'Unlimited' : t.matter_limit} matters</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>🤖 {t.ai_calls_daily}/day AI calls</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_acquisition_seats', { value: tItem.seat_limit === 999 ? t('x_firm_vertical_unlimited') : tItem.seat_limit })}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_acquisition_matters_2', { value: tItem.matter_limit >= 99999 ? t('x_firm_vertical_unlimited') : tItem.matter_limit })}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_vertical_day_ai_calls', { ai_calls_daily: tItem.ai_calls_daily })}</Text>
                 </View>
-                {firm?.pricing_tier === t.tier_key && (
-                  <View style={s.currentBadge}><Text maxFontSizeMultiplier={1.4} style={s.currentBadgeText}>Current plan</Text></View>
+                {firm?.pricing_tier === tItem.tier_key && (
+                  <View style={s.currentBadge}><Text maxFontSizeMultiplier={1.4} style={s.currentBadgeText}>{t('x_firm_vertical_current_plan')}</Text></View>
                 )}
               </View>
             ))}
 
             <View style={s.missionBox}>
-              <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Apply for mission pricing</Text>
-              <Text maxFontSizeMultiplier={1.4} style={s.hint}>Nonprofit 501(c)(3), public defender offices, and legal aid organizations qualify for 75% off standard pricing.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_vertical_apply_mission_pricing')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_nonprofit_501_c_3')}</Text>
 
-              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Organization type</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_organization_type')}</Text>
               <View style={s.segRow}>
                 {['nonprofit','public_defender','government','legal_aid'].map(ot => (
                   <TouchableOpacity
@@ -563,13 +565,13 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                     onPress={() => setMissionOrg(ot)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, missionOrg === ot && s.segLabelActive]}>
-                      {ot === 'nonprofit' ? 'Nonprofit' : ot === 'public_defender' ? 'Public Def.' : ot === 'government' ? 'Government' : 'Legal Aid'}
+                      {ot === 'nonprofit' ? t('x_firm_vertical_nonprofit') : ot === 'public_defender' ? t('x_firm_vertical_public_def') : ot === 'government' ? t('x_firm_vertical_government') : t('x_firm_vertical_legal_aid')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>EIN / Tax ID</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_ein_tax_id')}</Text>
               <TextInput
                 style={s.input}
                 value={missionEIN}
@@ -578,7 +580,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                 placeholderTextColor={colors.textMuted}
                 keyboardType="numbers-and-punctuation"
               />
-              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Organization website</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_organization_website')}</Text>
               <TextInput
                 style={s.input}
                 value={missionWeb}
@@ -591,11 +593,11 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
               <View>
 
               <TouchableOpacity style={s.missionBtn} onPress={submitMission} disabled={submittingMV}
-            accessibilityRole="button" accessibilityLabel="Submit verification request"
-          accessibilityHint="Double-tap to activate">
+            accessibilityRole="button" accessibilityLabel={t('x_firm_vertical_submit_verification_request')}
+          accessibilityHint={t('cp_double_tap')}>
                 {submittingMV
                   ? <ActivityIndicator color={colors.white} />
-                  : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>Submit verification request</Text>
+                  : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>{t('x_firm_vertical_submit_verification_request')}</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -613,7 +615,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           accessibilityState={{  selected: false  }}
                         >
                   <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
-                    {tt === 'asylum' ? '🕐 Asylum Clock' : tt === 'dpa' ? '💰 DPA Tracker' : '🚨 TRO Tracker'}
+                    {tt === 'asylum' ? t('x_firm_vertical_asylum_clock_2') : tt === 'dpa' ? t('x_firm_vertical_dpa_tracker_2') : t('x_firm_vertical_tro_tracker')}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -626,24 +628,24 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                 {/* ASYLUM CLOCK */}
                 {trackerTab === 'asylum' && (
                   <>
-                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Track the 1-year asylum filing deadline for each client. Clients who pass 365 days without filing may be barred from asylum relief.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_track_1_year_asylum')}</Text>
 
                     <View style={s.formBox}>
-                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add asylum clock</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>{t('x_firm_vertical_add_asylum_clock')}</Text>
                       <Controller
           control={control}
           name="acName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next"
+            <TextInput style={s.input} placeholder={t('x_firm_vertical_client_name')} placeholderTextColor={colors.textMuted}  returnKeyType="next"
               maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
             />
           )}
         />
-                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Clock start date (when asylum application filed)</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_clock_start_date_when')}</Text>
                       <TextInput style={s.input} value={acStart} onChangeText={setACStart} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Relief type</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_relief_type')}</Text>
                       <View style={s.segRow}>
                         {[
         'asylum', 'cancellation', 'DACA', 'VAWA', 'U_visa',
@@ -657,17 +659,17 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                         ))}
                       </View>
                       <View style={s.flagRow}>
-                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Client is detained</Text>
-                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} accessibilityState={{ checked: acDetained }} />
+                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{t('x_firm_vertical_client_detained')}</Text>
+                        <Switch accessibilityLabel={t('x_firm_vertical_client_detained')} value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} accessibilityState={{ checked: acDetained }} />
                       </View>
-                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_country_conditions_optional')}</Text>
                       <View style={s.segRow}>
                         {(['crisis','deteriorating','stable'] as const).map(cc => (
                           <TouchableOpacity
           accessibilityRole="button" key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acCountry===cc && s.segLabelActive]}>
-                              {cc==='crisis'?'🔴 Crisis':cc==='deteriorating'?'🟡 Deteriorating':'🟢 Stable'}
+                              {cc==='crisis'?t('x_firm_vertical_crisis'):cc==='deteriorating'?t('x_firm_vertical_deteriorating'):t('x_firm_vertical_stable')}
                             </Text>
                           </TouchableOpacity>
                         ))}
@@ -676,7 +678,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           control={control}
           name="acNotes"
           render={({ field }) => (
-            <TextInput style={[s.input,{minHeight:56}]} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
+            <TextInput style={[s.input,{minHeight:56}]} placeholder={t('x_firm_vertical_notes_optional')} placeholderTextColor={colors.textMuted} multiline
               maxLength={2000}
               value={field.value}
               onChangeText={field.onChange}
@@ -684,7 +686,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           )}
         />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
-            accessibilityRole="button" accessibilityLabel={creatingAC ? 'Adding\u2026' : 'Add clock'}><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
+            accessibilityRole="button" accessibilityLabel={creatingAC ? t('x_firm_vertical_adding') : t('x_firm_vertical_add_clock')}><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? t('x_firm_vertical_adding') : t('x_firm_vertical_add_clock')}</Text></TouchableOpacity>
                     </View>
 
                     {asylumClocks.map((c: any) => {
@@ -694,65 +696,65 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                         <View key={c.id} style={s.clockCard}>
                           <View style={s.clockHeader}>
                             <Text maxFontSizeMultiplier={1.4} style={s.clockName}>{c.client_name}</Text>
-                            {c.detained && <View style={s.detBadge}><Text maxFontSizeMultiplier={1.4} style={s.detBadgeText}>Detained</Text></View>}
+                            {c.detained && <View style={s.detBadge}><Text maxFontSizeMultiplier={1.4} style={s.detBadgeText}>{t('x_firm_vertical_detained')}</Text></View>}
                           </View>
-                          <Text maxFontSizeMultiplier={1.4} style={s.clockSub}>{c.relief_type} · started {c.clock_start}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.clockSub}>{t('x_firm_vertical_started', { relief_type: c.relief_type, clock_start: c.clock_start })}</Text>
                           <View style={s.progressTrack}>
                             <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
                           </View>
                           <View style={s.clockFooter}>
                             <Text maxFontSizeMultiplier={1.4} style={[s.clockDays, { color: barColor }]}>
                               {c.one_year_barred
-                              ? '⚠️ 1-YEAR BAR EXCEEDED — verify with attorney'
+                              ? t('x_firm_vertical_1_year_bar_exceeded')
                               : c.approaching_bar
-                                ? `🟡 APPROACHING BAR — ${c.days_until_bar} days remaining`
-                                : `${c.elapsed_days} days elapsed · ${c.days_until_bar} days until bar`}
+                                ? t('x_firm_vertical_approaching_bar_days_remaining', { days_until_bar: c.days_until_bar })
+                                : t('x_firm_vertical_days_elapsed_days_until', { elapsed_days: c.elapsed_days, days_until_bar: c.days_until_bar })}
                             </Text>
                             <Text maxFontSizeMultiplier={1.4} style={s.clockPct}>{pct}%</Text>
                           </View>
                         </View>
                       );
                     })}
-                    {<EmptyState icon="📋" title="Nothing here yet" />}
+                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
                   </>
                 )}
 
                 {/* DPA TRACKER */}
                 {trackerTab === 'dpa' && (
                   <>
-                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Model fine reductions through DOJ/SEC cooperation credit and deferred prosecution agreements.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_model_fine_reductions_through')}</Text>
 
                     <View style={s.formBox}>
-                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add DPA tracker</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>{t('x_firm_vertical_add_dpa_tracker')}</Text>
                       <Controller
           control={control}
           name="dpaName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client / entity name" placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
+            <TextInput style={s.input} placeholder={t('x_firm_vertical_client_entity_name')} placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
             />
           )}
         />
-                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency" keyboardType="numeric" />
-                      <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder="Base fine ($M, e.g. 12.5)" placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
-                      <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder="Wells notice due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <TextInput style={s.input} value={dpaSubDue} onChangeText={setDPASubDue} placeholder="Subpoena response due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <TextInput style={s.input} value={dpaSignDue} onChangeText={setDPASignDue} placeholder="DPA signing deadline (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Cooperation level</Text>
+                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder={t('x_firm_vertical_agency')} keyboardType="numeric" />
+                      <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder={t('x_firm_vertical_base_fine_m_e')} placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
+                      <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder={t('x_firm_vertical_wells_notice_due_yyyy')} placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <TextInput style={s.input} value={dpaSubDue} onChangeText={setDPASubDue} placeholder={t('x_firm_vertical_subpoena_response_due_yyyy')} placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <TextInput style={s.input} value={dpaSignDue} onChangeText={setDPASignDue} placeholder={t('x_firm_vertical_dpa_signing_deadline_yyyy')} placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_cooperation_level')}</Text>
                       <View style={s.segRow}>
                         {['full_cooperation','limited_cooperation','proffer_agreement','no_cooperation'].map(cl => (
                           <TouchableOpacity
           accessibilityRole="button" key={cl} style={[s.segBtn, dpaCoop===cl && s.segBtnActive]} onPress={() => setDPACoop(cl)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, dpaCoop===cl && s.segLabelActive]}>
-                              {cl === 'full_cooperation' ? 'Full' : cl === 'limited_cooperation' ? 'Limited' : cl === 'proffer_agreement' ? 'Proffer' : 'None'}
+                              {cl === 'full_cooperation' ? t('x_firm_vertical_full') : cl === 'limited_cooperation' ? t('x_firm_vertical_limited') : cl === 'proffer_agreement' ? t('x_firm_vertical_proffer') : t('x_firm_vertical_none')}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                       <TouchableOpacity style={[s.addBtn, creatingDPA && { opacity: 0.6 }]} onPress={createDPA} disabled={creatingDPA}
-            accessibilityRole="button"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingDPA ? 'Adding…' : 'Add tracker'}</Text></TouchableOpacity>
+            accessibilityRole="button"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingDPA ? t('x_firm_vertical_adding') : t('x_firm_vertical_add_tracker')}</Text></TouchableOpacity>
                     </View>
 
                     {dpaList.map((d: any) => {
@@ -762,22 +764,22 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                       return (
                         <View key={d.id} style={s.dpaCard}>
                           <Text maxFontSizeMultiplier={1.4} style={s.dpaName}>{d.client_name}</Text>
-                          <Text maxFontSizeMultiplier={1.4} style={s.dpaSub}>{d.agency || 'Agency TBD'} · {d.dpa_status}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.dpaSub}>{d.agency || t('x_firm_vertical_agency_tbd')} · {d.dpa_status}</Text>
                           <View style={s.dpaRow}>
                             <View style={s.dpaMetric}>
-                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Base fine</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>{t('x_firm_vertical_base_fine')}</Text>
                               <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricVal}>${(base/1000000).toFixed(1)}M</Text>
                             </View>
                             <View style={s.dpaMetric}>
-                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Effective fine</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>{t('x_firm_vertical_effective_fine')}</Text>
                               <Text maxFontSizeMultiplier={1.4} style={[s.dpaMetricVal, { color: colors.legal }]}>${(eff/1000000).toFixed(1)}M</Text>
                             </View>
                             <View style={s.dpaMetric}>
-                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Saved</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>{t('saved_saved_on')}</Text>
                               <Text maxFontSizeMultiplier={1.4} style={[s.dpaMetricVal, { color: colors.gold }]}>{saved}%</Text>
                             </View>
                           </View>
-                          <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>{t('x_firm_vertical_cooperation', { value: d.cooperation_level.replace(/_/g, ' ') })}</Text>
                           <TouchableOpacity
                             accessibilityRole="button"
                             onPress={() => closeTracker('dpa', d.id, d.client_name)}
@@ -785,58 +787,58 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                             style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10,
                               backgroundColor: COLORS.infoBg, borderRadius: 6, marginTop: 8 }}
                           >
-                            <Text style={{ fontSize: 12, color: COLORS.navy }}>✓ Mark Resolved</Text>
+                            <Text style={{ fontSize: 12, color: COLORS.navy }}>{t('x_firm_vertical_mark_resolved_2')}</Text>
                           </TouchableOpacity>
                           {d.wells_due && (
                             <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.wells_overdue && { color: colors.emergency }]}>
-                              📋 Wells: {d.wells_overdue
-                                ? `OVERDUE by ${Math.abs(d.days_until_wells)}d`
-                                : `${d.days_until_wells}d remaining (${d.wells_due})`}
+                              {t('x_firm_vertical_wells', { value: d.wells_overdue
+                                ? t('x_firm_vertical_overdue_by_d', { days_until_wells: Math.abs(d.days_until_wells) })
+                                : t('x_firm_vertical_d_remaining', { days_until_wells: d.days_until_wells, wells_due: d.wells_due }) })}
                             </Text>
                           )}
                           {d.subpoena_due && (
                             <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.subpoena_overdue && { color: colors.emergency }]}>
-                              📎 Subpoena: {d.subpoena_overdue
-                                ? `OVERDUE by ${Math.abs(d.days_until_subpoena)}d`
-                                : `${d.days_until_subpoena}d remaining (${d.subpoena_due})`}
+                              {t('x_firm_vertical_subpoena', { value: d.subpoena_overdue
+                                ? t('x_firm_vertical_overdue_by_d_2', { days_until_subpoena: Math.abs(d.days_until_subpoena) })
+                                : t('x_firm_vertical_d_remaining_2', { days_until_subpoena: d.days_until_subpoena, subpoena_due: d.subpoena_due }) })}
                             </Text>
                           )}
                           {d.dpa_sign_due && (
                             <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.sign_overdue && { color: colors.emergency }]}>
-                              ✍️ Sign: {d.sign_overdue
-                                ? `OVERDUE by ${Math.abs(d.days_until_sign)}d`
-                                : `${d.days_until_sign}d remaining (${d.dpa_sign_due})`}
+                              {t('x_firm_vertical_sign', { value: d.sign_overdue
+                                ? t('x_firm_vertical_overdue_by_d_3', { days_until_sign: Math.abs(d.days_until_sign) })
+                                : t('x_firm_vertical_d_remaining_3', { days_until_sign: d.days_until_sign, dpa_sign_due: d.dpa_sign_due }) })}
                             </Text>
                           )}
                         </View>
                       );
                     })}
-                    {<EmptyState icon="📋" title="Nothing here yet" />}
+                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
                   </>
                 )}
 
                 {/* TRO TRACKER */}
                 {trackerTab === 'tro' && (
                   <>
-                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Emergency TRO tracking for domestic violence matters. Filing triggers a 3-business-day hearing deadline.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_emergency_tro_tracking_domestic')}</Text>
 
                     <View style={s.formBox}>
-                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add TRO tracker</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>{t('x_firm_vertical_add_tro_tracker')}</Text>
                       <Controller
           control={control}
           name="troName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
+            <TextInput style={s.input} placeholder={t('x_firm_vertical_client_name')} placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
             />
           )}
         />
                       <View style={s.flagRow}>
-                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
-                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
+                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{t('x_firm_vertical_domestic_violence_flag')}</Text>
+                        <Switch accessibilityLabel={t('x_firm_vertical_add_tro_tracker')} value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
-                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_asset_tier')}</Text>
                       <View style={s.segRow}>
                         {(['under_100k','100k_500k','500k_2m','2m_10m','over_10m'] as const).map(at => (
                           <TouchableOpacity
@@ -854,43 +856,43 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                       </View>
                       <TouchableOpacity accessibilityRole="button" style={[s.addBtn, troDV && { backgroundColor: colors.emergency }]} onPress={createTRO}
           >
-                        <Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{troDV ? '🚨 File emergency TRO' : 'Add TRO tracker'}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{troDV ? t('x_firm_vertical_file_emergency_tro') : t('x_firm_vertical_add_tro_tracker')}</Text>
                       </TouchableOpacity>
                     </View>
 
-                    {troList.map((t: any) => (
-                      <View key={t.id} style={s.troCard}>
+                    {troList.map((tItem: any) => (
+                      <View key={tItem.id} style={s.troCard}>
                         <View style={s.troHeader}>
-                          <Text maxFontSizeMultiplier={1.4} style={s.troName}>{t.client_name}</Text>
-                          {t.dv_flag ? <View style={s.dvBadge}><Text maxFontSizeMultiplier={1.4} style={s.dvBadgeText}>DV</Text></View> : null}
-                          {t.tro_granted ? <View style={s.grantedBadge}><Text maxFontSizeMultiplier={1.4} style={s.grantedBadgeText}>Granted</Text></View> : null}
+                          <Text maxFontSizeMultiplier={1.4} style={s.troName}>{tItem.client_name}</Text>
+                          {tItem.dv_flag ? <View style={s.dvBadge}><Text maxFontSizeMultiplier={1.4} style={s.dvBadgeText}>{t('x_firm_vertical_dv')}</Text></View> : null}
+                          {tItem.tro_granted ? <View style={s.grantedBadge}><Text maxFontSizeMultiplier={1.4} style={s.grantedBadgeText}>{t('x_firm_vertical_granted')}</Text></View> : null}
                         </View>
-                        {t.tro_hearing_due && (
+                        {tItem.tro_hearing_due && (
                           <Text maxFontSizeMultiplier={1.4} style={[
                             s.troDue,
-                            t.hearing_overdue && { color: colors.emergency }
+                            tItem.hearing_overdue && { color: colors.emergency }
                           ]}>
-                            ⏰ {t.hearing_overdue
-                              ? `Hearing OVERDUE by ${Math.abs(t.days_until_hearing)} day${Math.abs(t.days_until_hearing) === 1 ? '' : 's'}`
-                              : t.days_until_hearing !== null
-                                ? `Hearing in ${t.days_until_hearing} day${t.days_until_hearing === 1 ? '' : 's'} (${t.tro_hearing_due})`
-                                : `Hearing due: ${t.tro_hearing_due}`
+                            ⏰ {tItem.hearing_overdue
+                              ? t(Math.abs(tItem.days_until_hearing) === 1 ? 'x_firm_vertical_hearing_overdue_by_day_one' : 'x_firm_vertical_hearing_overdue_by_day_other', { days_until_hearing: Math.abs(tItem.days_until_hearing) })
+                              : tItem.days_until_hearing !== null
+                                ? t(tItem.days_until_hearing === 1 ? 'x_firm_vertical_hearing_day_one' : 'x_firm_vertical_hearing_day_other', { days_until_hearing: tItem.days_until_hearing, tro_hearing_due: tItem.tro_hearing_due })
+                                : t('x_firm_vertical_hearing_due', { tro_hearing_due: tItem.tro_hearing_due })
                             }
                           </Text>
                         )}
-                        {t.protective_order_due && (
-                          <Text maxFontSizeMultiplier={1.4} style={[s.troDue, t.po_overdue && { color: colors.emergency }]}>
-                            📋 PO: {t.po_overdue
-                              ? `OVERDUE by ${Math.abs(t.days_until_po)}d`
-                              : t.days_until_po !== null
-                                ? `${t.days_until_po}d remaining (${t.protective_order_due})`
-                                : t.protective_order_due}
+                        {tItem.protective_order_due && (
+                          <Text maxFontSizeMultiplier={1.4} style={[s.troDue, tItem.po_overdue && { color: colors.emergency }]}>
+                            {t('x_firm_vertical_po', { value: tItem.po_overdue
+                              ? t('x_firm_vertical_overdue_by_d_4', { days_until_po: Math.abs(tItem.days_until_po) })
+                              : tItem.days_until_po !== null
+                                ? t('x_firm_vertical_d_remaining_4', { days_until_po: tItem.days_until_po, protective_order_due: tItem.protective_order_due })
+                                : tItem.protective_order_due })}
                           </Text>
                         )}
-                        <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>Asset tier: {t.asset_tier.replace(/_/g, ' ')}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>{t('x_firm_vertical_asset_tier_2', { value: tItem.asset_tier.replace(/_/g, ' ') })}</Text>
                       </View>
                     ))}
-                    {<EmptyState icon="📋" title="Nothing here yet" />}
+                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
                   </>
                 )}
               </>
@@ -901,10 +903,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         {/* ──── DEADLINES TAB ──────────────────────────────────────────────── */}
         {tab === 'deadlines' && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Vertical deadline calculator</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.hint}>Enter a trigger date (arrest, filing, or notice date) to compute all deadlines for your vertical.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_vertical_vertical_deadline_calculator')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('x_firm_vertical_enter_trigger_date_arrest')}</Text>
 
-            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Trigger date</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_vertical_trigger_date')}</Text>
             <TextInput
               style={s.input}
               value={trigDate}
@@ -912,8 +914,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
               placeholder="YYYY-MM-DD"
               placeholderTextColor={colors.textMuted} returnKeyType="next" />
             <TouchableOpacity style={s.saveBtn} onPress={loadDeadlines} disabled={dlLoading}
-            accessibilityRole="button" accessibilityLabel="Calculate deadlines">
-              {dlLoading ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Calculate deadlines</Text>}
+            accessibilityRole="button" accessibilityLabel={t('x_firm_vertical_calculate_deadlines')}>
+              {dlLoading ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>{t('x_firm_vertical_calculate_deadlines')}</Text>}
             </TouchableOpacity>
 
             {deadlines.map((d: any) => {
@@ -930,14 +932,14 @@ return (
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text maxFontSizeMultiplier={1.4} style={[s.dlDue, overdue && { color: colors.emergency }]}>{d.due}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[s.dlDays, urgent && !overdue && { color: colors.warn }, overdue && { color: colors.emergency }]}>
-                      {overdue ? `${Math.abs(daysUntil)}d overdue` : `${daysUntil}d`}
+                      {overdue ? t('x_firm_vertical_d_overdue', { daysUntil: Math.abs(daysUntil) }) : `${daysUntil}d`}
                     </Text>
                   </View>
                 </View>
               );
             })}
             {deadlines.length === 0 && !dlLoading && (
-              <Text maxFontSizeMultiplier={1.4} style={s.empty}>Enter a trigger date and press Calculate to see deadlines for the {selectedV.replace(/_/g, ' ')} vertical.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>{t('x_firm_vertical_enter_trigger_date_press', { selectedV: selectedV.replace(/_/g, ' ') })}</Text>
             )}
           </>
         )}

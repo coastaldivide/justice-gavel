@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -340,10 +341,9 @@ describe('9. HousingRights + TenantRights — Legal Aid Screens', () => {
   });
 
   test('9-03: TenantRightsScreen has situation state (context-aware)', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/TenantRightsScreen.tsx');
     expect(src).toContain('situation');
-    expect(src).toContain('GUIDANCE[situation]');
+    expect(src).toMatch(/GUIDANCE(\(\))?\[situation\]/); // per-language table: GUIDANCE()[situation]
     expect(src).toContain('mountedRef');
   });
 });
@@ -614,8 +614,7 @@ describe('18. AuthGate + LegalDisclaimerModal — Auth UX', () => {
   });
 
   test('18-02: AuthGate has quick signup mode: phone + 4-digit PIN', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/components/AuthGate.tsx');
     expect(src).toContain('quickMode');
     expect(src).toContain('pin');
     expect(src).toContain('phone');

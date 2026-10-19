@@ -5,10 +5,12 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Activi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setContacts, getContacts } from '../services/storage';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 interface Contact { value: string; label: string; }
 
 function ContactsScreen(): React.JSX.Element {
+  useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -17,9 +19,9 @@ function ContactsScreen(): React.JSX.Element {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const [contacts, setLocalContacts] = useState<Contact[]>([
-    { value: '', label: 'Contact 1' },
-    { value: '', label: 'Contact 2' },
-    { value: '', label: 'Contact 3' },
+    { value: '', label: t('x_contacts_contact_1') },
+    { value: '', label: t('x_contacts_contact_2') },
+    { value: '', label: t('x_contacts_contact_3') },
   ]);
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,9 +31,9 @@ function ContactsScreen(): React.JSX.Element {
     (async () => {
       const stored = await getContacts() as string[];
       setLocalContacts([
-        { value: stored[0] || '', label: 'Contact 1' },
-        { value: stored[1] || '', label: 'Contact 2' },
-        { value: stored[2] || '', label: 'Contact 3' },
+        { value: stored[0] || '', label: t('x_contacts_contact_1') },
+        { value: stored[1] || '', label: t('x_contacts_contact_2') },
+        { value: stored[2] || '', label: t('x_contacts_contact_3') },
       ]);
       const userData = await AsyncStorage.getItem('user');
       if (userData) {
@@ -57,13 +59,13 @@ function ContactsScreen(): React.JSX.Element {
     await setContacts(values);
     setSaving(false);
     setSaved(true);
-    showToast('Your emergency contacts have been saved.');
+    showToast(t('x_contacts_emergency_contacts_have_been'));
   };
 
   const typeHint = (val: string) => {
     if (!val) return '';
-    if (val.includes('@')) return '📧 Email';
-    if (/\d{7,}/.test(val.replace(/\D/g, ''))) return '📱 Phone';
+    if (val.includes('@')) return t('x_contacts_email');
+    if (/\d{7,}/.test(val.replace(/\D/g, ''))) return t('x_contacts_phone');
     return '';
   };
 
@@ -77,17 +79,17 @@ function ContactsScreen(): React.JSX.Element {
       <View style={styles.infoCard}>
         <Text maxFontSizeMultiplier={1.4} style={styles.infoIcon}>ℹ️</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.infoText}>
-          When you tap SOS, these contacts receive an alert with your GPS location. Enter phone numbers or email addresses.
+          {t('x_contacts_when_tap_sos_these')}
         </Text>
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Your name (shown in alerts)</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('x_contacts_name_shown_alerts')}</Text>
       <View style={[styles.inputWrap, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <AppIcon name="person-outline" size={20} color={COLORS.navy} />
         <TextInput
-          accessibilityLabel="e.g. Jamie Smith"
+          accessibilityLabel={t('x_contacts_e_g_jamie_smith')}
           style={[styles.input, { color: colors.textPrimary }]}
-          placeholder="e.g. Jamie Smith"
+          placeholder={t('x_contacts_e_g_jamie_smith')}
           placeholderTextColor={colors.textMuted}
           value={displayName}
           onChangeText={v => { setDisplayName(v); setSaved(false); }}
@@ -98,8 +100,8 @@ function ContactsScreen(): React.JSX.Element {
         />
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Emergency contacts</Text>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHint, { color: colors.textMuted }]}>Enter a phone number or email address</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('x_contacts_emergency_contacts')}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHint, { color: colors.textMuted }]}>{t('x_contacts_enter_phone_number_email')}</Text>
 
       {contacts.map((c, i) => (
         <View key={`row-${i}`} style={styles.contactRow}>
@@ -107,7 +109,7 @@ function ContactsScreen(): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.numBadge}>{i + 1}</Text>
             <TextInput
               style={[styles.input, { color: colors.textPrimary }]}
-              placeholder={`Contact ${i + 1} phone or email`}
+              placeholder={t('x_contacts_contact_phone_email', { value: i + 1 })}
               placeholderTextColor={colors.textMuted}
               value={c.value}
               onChangeText={v => updateContact(i, v)}
@@ -117,8 +119,8 @@ function ContactsScreen(): React.JSX.Element {
           </View>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            accessibilityLabel={`Remove contact ${i + 1}`}
+          accessibilityHint={t('cp_double_tap')}
+            accessibilityLabel={t('x_contacts_remove_contact', { value: i + 1 })}
             onPress={() => removeContact(i)}
             style={{ padding: 8 }}
           >
@@ -128,25 +130,25 @@ function ContactsScreen(): React.JSX.Element {
         </View>
       ))}
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
-       accessibilityLabel={saved ? '\u2713 Saved' : 'Save contacts'}>
-        {saving ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{saved ? '✓ Saved' : 'Save contacts'}</Text>}
+          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
+       accessibilityLabel={saved ? t('x_attorney_dashboard_saved') : t('x_contacts_save_contacts')}>
+        {saving ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{saved ? t('x_attorney_dashboard_saved') : t('x_contacts_save_contacts')}</Text>}
       </TouchableOpacity>
 
       <View style={[styles.tipsCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tipsTitle, { color: colors.textPrimary }]}>Tips</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>• Phone numbers receive an SMS text with your location link</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>• Email addresses receive a detailed alert email</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>• Tell your contacts about Justice Gavel so they know what to expect</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>• Make sure contacts 1 and 2 are people who can act quickly</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tipsTitle, { color: colors.textPrimary }]}>{t('x_contacts_tips')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>{t('x_contacts_phone_numbers_receive_sms')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>{t('x_contacts_email_addresses_receive_detailed')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>{t('x_contacts_tell_contacts_about_justice')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.tipItem, { color: colors.textSecond }]}>{t('x_contacts_make_sure_contacts_1')}</Text>
       </View>
 
       {/* Empty state */}
       {contacts?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
           <Text style={{ fontSize: 40 }}>👥</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No contacts saved</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Add attorneys, bondsmen, or family members you want quick access to.</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>{t('x_contacts_no_contacts_saved')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>{t('x_contacts_add_attorneys_bondsmen_family')}</Text>
         </View>
       )}
       </ScrollView>

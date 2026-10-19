@@ -10,8 +10,10 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
+import { t, useLang } from '../i18n';
 
 function VoiceNoteScreen(): React.JSX.Element {
+  useLang();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [recording, setRecording] = useState(false);
@@ -36,14 +38,14 @@ function VoiceNoteScreen(): React.JSX.Element {
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     } catch {
-      setError('Microphone access denied. Allow microphone in browser settings.');
+      setError(t('x_voice_note_microphone_access_denied_allow'));
     }
   };
 
   const stopAndTranscribe = async () => {
     if (!mediaRef.current) return;
     mediaRef.current.stop();
-    mediaRef.current.stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+    mediaRef.current.stream.getTracks().forEach((tItem: MediaStreamTrack) => tItem.stop());
     if (timerRef.current) clearInterval(timerRef.current);
     setRecording(false);
     setUploading(true);
@@ -58,7 +60,7 @@ function VoiceNoteScreen(): React.JSX.Element {
       });
       setTranscript(res.data?.text || '');
     } catch {
-      setError('Transcription failed. Please try again.');
+      setError(t('x_voice_note_transcription_failed_please_try'));
     } finally {
       setUploading(false);
     }
@@ -72,13 +74,13 @@ function VoiceNoteScreen(): React.JSX.Element {
       <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
         >
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>{t('ja_back')}</Text>
       </TouchableOpacity>
 
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize:22, fontWeight:'700', color: colors.textPrimary }}>
-        Voice Note
+        {t('x_voice_note_voice_note')}
       </Text>
 
       <View style={{ alignItems:'center', paddingVertical:32, gap:20 }}>
@@ -89,7 +91,7 @@ function VoiceNoteScreen(): React.JSX.Element {
         )}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           onPress={recording ? stopAndTranscribe : startRecording}
           style={{
             width:80, height:80, borderRadius:40,
@@ -101,14 +103,14 @@ function VoiceNoteScreen(): React.JSX.Element {
         </TouchableOpacity>
 
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize:13 }}>
-          {recording ? 'Recording… tap to stop' : 'Tap to record a voice note'}
+          {recording ? t('x_voice_note_recording_tap_stop') : t('x_voice_note_tap_record_voice_note')}
         </Text>
       </View>
 
       {uploading && (
         <View style={{ alignItems:'center', gap:10 }}>
           <ActivityIndicator color={colors.navy} />
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>Transcribing…</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>{t('x_voice_note_transcribing')}</Text>
         </View>
       )}
 
@@ -120,7 +122,7 @@ function VoiceNoteScreen(): React.JSX.Element {
 
       {transcript ? (
         <View style={{ backgroundColor: colors.bgCard, borderRadius:14, padding:16, gap:10 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontWeight:'600', color: colors.textPrimary }}>Transcript:</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontWeight:'600', color: colors.textPrimary }}>{t('x_voice_note_transcript')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, lineHeight:22, fontSize:14 }}>{transcript}</Text>
         </View>
       ) : null}

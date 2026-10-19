@@ -11,6 +11,7 @@ import { ART, COLORS } from '../constants/theme';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppIcon, ICONS } from './AppIcon';
+import { t, useLang } from '../i18n';
 
 interface GradientHeaderProps {
   title:        string;
@@ -37,6 +38,7 @@ export function GradientHeader({
   title, subtitle, icon, iconName, badge, badgeColor,
   onBack, rightAction, variant = 'navy', compact = false,
 }: GradientHeaderProps) {
+  useLang();
   const gradColors = GRADIENTS[variant];
 
   return (
@@ -50,7 +52,7 @@ export function GradientHeader({
       {onBack && (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('x_gradient_header_go_back')}
           style={s.backBtn}
           onPress={onBack}
         >

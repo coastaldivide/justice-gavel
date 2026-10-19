@@ -9,7 +9,7 @@ import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
  * IMPORTANT: Mounted in billing/index.js with express.raw() body parser —
  * do NOT run express.json() before this route or signature verification will fail.
  *
- * Set STRIPE_WEBHOOK_SECRET in Railway environment from:
+ * Set STRIPE_WEBHOOK_SECRET as a Render environment variable from:
  *   Stripe dashboard → Developers → Webhooks → signing secret
  *
  * Local testing: stripe listen --forward-to localhost:4000/api/billing/webhook

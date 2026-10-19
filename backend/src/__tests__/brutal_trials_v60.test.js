@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -154,8 +155,7 @@ describe('DLC. DeadlineCalculatorScreen — urgentCount useMemo', () => {
 // ── FV3. FirmVerticalScreen — submitMission + saveConfig ──────────────────
 describe('FV3. FirmVerticalScreen — submitMission + saveConfig', () => {
   test('FV3-01: submitMission validates missionEIN or missionWeb before submission', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx');
     expect(src).toContain('submitMission');
     expect(src).toContain('missionEIN');
     expect(src).toContain('missionWeb');
@@ -240,11 +240,11 @@ describe('AGS. AgeGateScreen — handleYear Input Validator', () => {
 // ── ADV. AdvocacyScreen — formatDate ──────────────────────────────────────
 describe('ADV. AdvocacyScreen — formatDate Helper', () => {
   test('ADV-01: formatDate converts ISO string to US locale date string', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdvocacyScreen.tsx', 'utf8');
+    const src = feSource(__REPO + '/frontend/src/screens/AdvocacyScreen.tsx');
     expect(src).toContain('formatDate');
     expect(src).toContain('toLocaleString');
-    expect(src).toContain("'en-US'");
+    // dates follow the app language (en → en-US, es → es-US, pt → pt-BR, vi → vi-VN)
+    expect(src).toMatch(/toLocaleString\(locale\(\)/);
     expect(src).toContain('iso: string');
   });
 });

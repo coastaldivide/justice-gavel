@@ -20,80 +20,82 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { t, perLang, useLang } from '../i18n';
 
 
-const RECORD_SECTIONS = [
+const RECORD_SECTIONS = perLang(() => [
   {
     icon: '⚖️',
-    title: 'HUD and the Fair Housing Act',
-    body: 'The Department of Housing and Urban Development (HUD) issued guidance in 2016 stating that blanket policies refusing housing to people with criminal records may violate the Fair Housing Act (42 U.S.C. § 3604) because they have a disparate impact on protected classes -- particularly Black and Hispanic Americans. Landlords and housing providers must conduct an individualized assessment, not automatic rejection based on a record.',
+    title: t('x_housing_rights_hud_fair_housing_act'),
+    body: t('x_housing_rights_department_housing_urban_development'),
   },
   {
     icon: '🏠',
-    title: 'What landlords can and cannot do',
-    body: 'Landlords CAN: consider criminal history as one factor, use a policy that excludes people convicted of manufacturing or distributing controlled substances, and deny housing when the individual poses a demonstrable risk to others or property.\n\nLandlords CANNOT: automatically deny everyone with any criminal history, use criminal history as a pretext for race discrimination, or apply policies that have a disparate impact without a legitimate justification. A single arrest without conviction cannot be used as a basis for denial.',
+    title: t('x_housing_rights_what_landlords_can_cannot'),
+    body: t('x_housing_rights_landlords_can_consider_criminal'),
   },
   {
     icon: '📋',
-    title: 'Fair Chance Housing -- state and local laws',
-    body: 'Growing number of cities and states have enacted "Fair Chance Housing" laws that limit when and how criminal history can be used in housing decisions. These laws typically: prohibit asking about criminal history before a conditional offer is made (similar to ban-the-box in employment), require individualized assessment, and limit the lookback period for convictions. Cities with strong Fair Chance Housing laws include Seattle, San Francisco, Los Angeles, Chicago, and Washington DC. Check your city or county\'s housing authority website for local rules.',
+    title: t('x_housing_rights_fair_chance_housing_state'),
+    body: t('x_housing_rights_growing_number_cities_states'),
   },
   {
     icon: '🏘️',
-    title: 'Public housing and Section 8',
-    body: 'Public housing authorities (PHAs) have specific federal rules. Certain convictions are mandatory bars to public housing: lifetime sex offender registration, methamphetamine manufacture on federally assisted housing. All other criminal history is subject to PHA discretion. PHAs must use an individualized assessment and consider factors like: age at time of offense, nature and severity, evidence of rehabilitation, time elapsed, and whether the person poses a current risk.\n\nSection 8 (Housing Choice Vouchers) follows the same rules as public housing.',
+    title: t('x_housing_rights_public_housing_section_8'),
+    body: t('x_housing_rights_public_housing_authorities_phas'),
   },
   {
     icon: '🛑',
-    title: 'Challenging a denial',
-    body: 'If you are denied housing based on criminal history:\n1. Request a written explanation -- you have the right to know the specific reason.\n2. Request an individualized assessment if one was not conducted.\n3. Gather evidence of rehabilitation: employment, education, family ties, community ties, letters from counselors or employers.\n4. File a complaint with HUD if you believe the denial was discriminatory: hud.gov/program_offices/fair_housing_equal_opp.\n5. Contact a local fair housing organization -- most provide free advocacy.',
+    title: t('x_housing_rights_challenging_denial'),
+    body: t('x_housing_rights_if_denied_housing_based'),
   },
   {
     icon: '📝',
-    title: 'Expungement and housing',
-    body: 'A sealed or expunged record generally cannot be used in housing decisions. After sealing, you typically do not have to disclose the offense on rental applications. However, some housing providers -- particularly federally subsidized housing -- may have access to FBI records that reflect arrests even after state-level sealing. Private landlords running standard background checks generally see only state records, which reflect sealed records as sealed.',
+    title: t('x_housing_rights_expungement_housing'),
+    body: t('x_housing_rights_sealed_expunged_record_generally'),
   },
   {
     icon: '📞',
-    title: 'Resources',
-    body: 'National Fair Housing Alliance: nationalfairhousing.org. HUD Housing Discrimination Complaint: hud.gov. NLIHC (National Low Income Housing Coalition): nlihc.org. Reentry housing resources by state: reentrycouncil.org. Call 211 for local emergency housing assistance.',
+    title: t('resources'),
+    body: t('x_housing_rights_national_fair_housing_alliance'),
   },
-];
+]);
 
-const EVICTION_SECTIONS = [
+const EVICTION_SECTIONS = perLang(() => [
   {
     icon: '📋',
-    title: 'Types of eviction notices',
-    body: 'Pay or Quit: you have X days to pay overdue rent or vacate. Cure or Quit: you have X days to fix a lease violation or vacate. Unconditional Quit: you must vacate with no option to fix (usually reserved for serious violations or repeated offenses). The clock starts when you receive the notice -- count carefully.',
+    title: t('x_housing_rights_types_eviction_notices'),
+    body: t('x_housing_rights_pay_quit_have_x'),
   },
   {
     icon: '⏰',
-    title: 'Your timeline -- act immediately',
-    body: 'The moment you receive an eviction notice, your clock starts. Typical timelines: Pay or Quit notices give 3-5 days in most states. After the notice period, the landlord files an eviction lawsuit. After filing, you have a set time to respond (often 5-10 days). The hearing is usually 2-4 weeks after filing. A default judgment is entered if you don\'t respond or appear. A writ of possession allows physical removal -- usually 5-14 days after judgment.',
+    title: t('x_housing_rights_timeline_act_immediately'),
+    body: t('x_housing_rights_moment_receive_eviction_notice'),
   },
   {
     icon: '⚖️',
-    title: 'Your rights in an eviction proceeding',
-    body: 'You have the right to appear in court and contest the eviction. You have the right to raise defenses: the landlord did not follow proper notice procedures, the unit is uninhabitable (warranty of habitability), the eviction is retaliation for complaining about conditions, the landlord accepted rent after the notice (waiving the notice), or the eviction is discriminatory. You have the right to request a jury trial in most states. You do not have to leave until a court orders it and a sheriff or marshal executes the writ.',
+    title: t('x_housing_rights_rights_eviction_proceeding'),
+    body: t('x_housing_rights_have_right_appear_court'),
   },
   {
     icon: '🔑',
-    title: 'Self-help eviction is illegal',
-    body: 'A landlord cannot lock you out, remove your belongings, shut off utilities, or remove doors or windows to force you to leave. These actions are illegal in every state regardless of whether you owe rent. If a landlord does any of these, call the police and consult a tenant rights attorney immediately. You may be entitled to damages.',
+    title: t('x_housing_rights_self_help_eviction_illegal'),
+    body: t('x_housing_rights_landlord_cannot_lock_out'),
   },
   {
     icon: '💰',
-    title: 'Emergency rental assistance',
-    body: 'Emergency rental assistance (ERA) programs exist in most states and counties -- funded federally but administered locally. These programs can pay overdue rent directly to the landlord and stop an eviction. Apply immediately if you are behind on rent -- do not wait for an eviction notice. Find programs at: consumerfinance.gov/renthelp. Many programs also require the landlord to participate -- landlords must accept ERA funds in most jurisdictions with ERA programs.',
+    title: t('x_housing_rights_emergency_rental_assistance'),
+    body: t('x_housing_rights_emergency_rental_assistance_era'),
   },
   {
     icon: '🏘️',
-    title: 'After an eviction',
-    body: 'An eviction judgment appears on your rental history for 7 years and is visible to landlords on screening reports. This makes finding new housing very difficult. Options: seek housing through organizations that work with people who have eviction histories, look for private landlords who do their own screening rather than using third-party services, apply for public housing (PHAs must do individualized assessment), and work with a housing counselor (free through HUD-approved agencies: hud.gov/housingcounseling).',
+    title: t('x_housing_rights_after_eviction'),
+    body: t('x_housing_rights_eviction_judgment_appears_rental'),
   },
-];
+]);
 
 function HousingRightsScreen(): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -103,7 +105,7 @@ function HousingRightsScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [tab, setTab] = React.useState<'record' | 'eviction'>('record');
-  const sections = tab === 'record' ? RECORD_SECTIONS : EVICTION_SECTIONS;
+  const sections = tab === 'record' ? RECORD_SECTIONS() : EVICTION_SECTIONS();
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -114,13 +116,13 @@ function HousingRightsScreen(): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="home-outline" size={20} color={COLORS.navy} />
-        <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>Housing Rights</Text>
-        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Tenant rights & evictions</Text>
+        <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>{t('civil_housing_title')}</Text>
+        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>{t('x_housing_rights_tenant_rights_evictions')}</Text>
       </View>
 
       <InfoTabs
         testID="housing-rights-tabs"
-        tabs={[{ key: 'record', label: 'Criminal Record & Housing' }, { key: 'eviction', label: 'Eviction Defense' }]}
+        tabs={[{ key: 'record', label: t('x_housing_rights_criminal_record_housing') }, { key: 'eviction', label: t('x_housing_rights_eviction_defense') }]}
         active={tab}
         onChange={k => setTab(k as 'record' | 'eviction')}
       />
@@ -139,8 +141,7 @@ function HousingRightsScreen(): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
         <Text style={[styles.disclaimerText, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>
-          This information is for general education only and is not legal advice.
-          Laws vary by state. Consult a licensed attorney for advice about your situation.
+          {t('x_family_court_this_information_general_education')}
         </Text>
       </View>
     </ScrollView>

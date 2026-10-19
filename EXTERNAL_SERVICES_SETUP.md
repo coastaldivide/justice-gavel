@@ -4,7 +4,7 @@
 > **How it works:** every external service is gated on its own API key. With a
 > key absent, that one feature degrades gracefully (a "feature disabled" line
 > is logged at boot) and everything else keeps working. Full variable
-> reference: [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md).
+> reference: [DEPLOY_ENV_SETUP.md](./DEPLOY_ENV_SETUP.md).
 
 ---
 
@@ -323,11 +323,11 @@ MYCASE_CLIENT_SECRET=...
 
 ### PostgreSQL — **required in production** (listed here only because it's
 "external"). The server refuses to start in production without `DATABASE_URL`;
-the in-memory SQLite fallback exists for local development only. Apply
+the in-memory SQLite fallback exists for local development only. On Render
+the pre-deploy step (`backend/scripts/migrate.sh`) applies
 `supabase/migrations/*.sql` in filename order with psql before first boot.
 
 ```
-Railway: railway.app → New Project → PostgreSQL → Connect
 Supabase: supabase.com → New Project → Settings → Database → Connection string
 ```
 ```env
@@ -358,7 +358,8 @@ DAILY_API_KEY=<key>      # without it video-room creation returns 503
 
 ## Deployment: Required env vars summary
 
-Copy this block into your Railway / Fly.io / Heroku environment:
+Set these on the Render service (Environment tab; most are already declared
+in `render.yaml` and prompted for at Blueprint creation):
 
 ```
 # ── Security (generate all four with: openssl rand -hex 32; JWT_REFRESH_SECRET ≠ JWT_SECRET) ──

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, LayoutAnimation} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { t } from '../i18n';
+import { t, useLang, locale } from '../i18n';
 
 interface Stats {
   lawyerCount: number;
@@ -15,6 +15,7 @@ interface Stats {
 }
 
 function StatCard({ icon, value, label, color }: { icon: string; value: string | number; label: string; color: string }) {
+  useLang();
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
       <Text maxFontSizeMultiplier={1.4} style={styles.statIcon}>{icon}</Text>
@@ -25,6 +26,7 @@ function StatCard({ icon, value, label, color }: { icon: string; value: string |
 }
 
 function AdvocacyScreen(): React.JSX.Element {
+  useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -46,7 +48,7 @@ function AdvocacyScreen(): React.JSX.Element {
       const r = await api.get('/advocacy/stats');
       setStats(r.data || {});
     } catch (e: any) {
-      setError(apiErrorMessage(e, 'Could not load stats. Check your connection.'));
+      setError(apiErrorMessage(e, t('x_advocacy_could_not_load_stats')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -56,7 +58,7 @@ function AdvocacyScreen(): React.JSX.Element {
   useEffect(() => { load(); }, []);
 
   const formatDate = (iso: string) => {
-    try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    try { return new Date(iso).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
     catch { return iso; }
   };
 
@@ -68,8 +70,8 @@ function AdvocacyScreen(): React.JSX.Element {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} colors={[colors.navy]} />}
     >
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Advocacy Dashboard</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sub}>Justice Gavel network at a glance</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_advocacy_advocacy_dashboard')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sub}>{t('x_advocacy_justice_gavel_network_at')}</Text>
       </View>
 
       {loading && !stats ? (
@@ -79,28 +81,28 @@ function AdvocacyScreen(): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{error}</Text>
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.retryBtn} accessibilityLabel="Retry" onPress={() => load()}
+          accessibilityHint={t('cp_double_tap')} style={styles.retryBtn} accessibilityLabel={t('retry')} onPress={() => load()}
             >
-            <Text maxFontSizeMultiplier={1.4} style={styles.retryText}>Retry</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.retryText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : stats ? (
         <>
           {/* Key stats grid */}
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>Network stats</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_advocacy_network_stats')}</Text>
           <View style={styles.statsGrid}>
             <StatCard icon="⚖️" value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.navy} />
             <StatCard icon="🔓" value={stats.bailCount}      label={t("advocacy.stats.bail_agents")}       color={colors.warnDark} />
-            <StatCard icon="📍" value={stats.citiesCovered}  label="Cities covered"   color={colors.legalDark} />
-            <StatCard icon="🚨" value={stats.alertsSent}     label="SOS alerts sent"  color={colors.emergencyDark} />
-            <StatCard icon="👥" value={stats.userCount}      label="Registered users" color={colors.blue} />
-            <StatCard icon="🕐" value={formatDate(stats.lastUpdated)} label="Last updated" color={colors.textSecond} />
+            <StatCard icon="📍" value={stats.citiesCovered}  label={t('x_advocacy_cities_covered')}   color={colors.legalDark} />
+            <StatCard icon="🚨" value={stats.alertsSent}     label={t('x_advocacy_sos_alerts_sent')}  color={colors.emergencyDark} />
+            <StatCard icon="👥" value={stats.userCount}      label={t('x_advocacy_registered_users')} color={colors.blue} />
+            <StatCard icon="🕐" value={formatDate(stats.lastUpdated)} label={t('x_advocacy_last_updated')} color={colors.textSecond} />
           </View>
 
           {/* City coverage */}
           {stats.coverage && stats.coverage.length > 0 && (
             <>
-              <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>City coverage</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_advocacy_city_coverage')}</Text>
               <View style={styles.coverageCard}>
                 {stats.coverage.map((c, i) => (
                   <View key={c.city} style={[styles.coverageRow, i < stats.coverage.length - 1 && styles.coverageRowBorder]}>
@@ -108,7 +110,7 @@ function AdvocacyScreen(): React.JSX.Element {
                     <View style={styles.coverageBar}>
                       <View style={[styles.coverageFill, { width: `${Math.min(100, (c.n / 5) * 100)}%` as any }]} />
                     </View>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.coverageCount}>{c.n} lawyers</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.coverageCount}>{t('x_advocacy_lawyers', { n: c.n })}</Text>
                   </View>
                 ))}
               </View>
@@ -117,15 +119,15 @@ function AdvocacyScreen(): React.JSX.Element {
 
           {/* Mission statement */}
           <View style={styles.missionCard}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.missionTitle}>Our mission</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.missionTitle}>{t('x_advocacy_our_mission')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.missionText}>
-              Justice Gavel connects people in the criminal justice system with qualified defense attorneys, bail agents, and legal resources -- regardless of income, language, or location. Every alert sent, every lawyer found, and every lesson completed moves us toward a more equitable justice system.
+              {t('x_advocacy_justice_gavel_connects_people')}
             </Text>
           </View>
         </>
       ) : null}
 
-        <Text style={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>⚖️ This content is for general educational purposes only and does not constitute legal advice. Laws vary by jurisdiction. Consult a licensed attorney for advice specific to your situation.</Text>
+        <Text style={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>{t('x_advocacy_this_content_general_educational')}</Text>
         </ScrollView>
   );
 }

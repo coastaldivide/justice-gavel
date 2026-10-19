@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v161
@@ -172,8 +173,7 @@ describe('B. Frontend — All Crash Risks Eliminated', () => {
 
 
   test('B-04: FirmVerticalScreen shows setup prompt for unconfigured firms', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx','utf8');
+    const src=feSource(__REPO + '/frontend/src/screens/FirmVerticalScreen.tsx');
     expect(src).toContain('_unconfigured');
     expect(src).toContain('Set Up Your Legal Vertical');
     // Attorney sees guidance screen, not blank/error
@@ -272,10 +272,10 @@ describe('E. Config & Docs — Complete', () => {
     expect(vars.size).toBeGreaterThanOrEqual(80);
   });
 
-  test('E-02: the env reference (RAILWAY_ENV_SETUP.md) documents all required keys', async () => {
+  test('E-02: the env reference (DEPLOY_ENV_SETUP.md) documents all required keys', async () => {
     const fs=await import('fs');
-    // Step 10: ENVIRONMENT_VARS.md is now a pointer to RAILWAY_ENV_SETUP.md.
-    const src=fs.readFileSync(__REPO + '/RAILWAY_ENV_SETUP.md','utf8');
+    // Step 10: ENVIRONMENT_VARS.md is now a pointer to DEPLOY_ENV_SETUP.md.
+    const src=fs.readFileSync(__REPO + '/DEPLOY_ENV_SETUP.md','utf8');
     for(const k of ['ANTHROPIC_API_KEY','STRIPE_SECRET','JWT_SECRET','GOOGLE_PLACES_KEY'])
       expect(src).toContain(k);
   });
