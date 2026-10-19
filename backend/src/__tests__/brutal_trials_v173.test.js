@@ -130,13 +130,25 @@ describe('FLOW. All 11 Core Flows Pass', () => {
     expect(l).toContain('/auth/login');   expect(l).toContain('secureTextEntry');
   });
   test('FLOW-02: Emergency — JustArrested→HelpNow→Lawyers→Bail', async () => {
-    const fs=await import('fs');
-    const ja=fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    const hn=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(ja).toContain('find_help'); expect(ja).toContain('HelpNow');
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
     expect(hn).toContain("navigate('LawyersTab')");
-    expect(hn).toContain("navigate('BailCalculator')");
-    expect(hn).toContain('/providers/lawyers'); expect(hn).toContain('/courthouses');
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
   });
   test('FLOW-03: Case management — create→timeline→motions→messages→discovery', async () => {
     const fs=await import('fs');

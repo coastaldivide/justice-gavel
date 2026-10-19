@@ -19,10 +19,11 @@ import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
  * POST   /api/cases/:id/share                 — generate 7-day read share link
  * GET    /api/cases/shared/:token             — public read (no auth, token only)
  * DELETE /api/cases/:id/share                 — revoke share token
- * POST   /api/cases/:id/invite                — invite family member by email
- * GET    /api/cases/:id/family-access         — list who has access
- * DELETE /api/cases/:id/family-access/:mid    — revoke family access
- * GET    /api/cases/family                    — cases shared with me
+ * POST   /api/cases/:id/followers             — invite a family follower (owner consent required) → code
+ * GET    /api/cases/:id/followers             — who follows the case's court dates
+ * DELETE /api/cases/:id/followers/:fid        — stop sharing (revocable any time)
+ *        (/:id/invite, /:id/family-access[/:mid] = older names of the same three)
+ * GET    /api/cases/family                    — cases I follow (court dates only, no notes)
  */
 
 import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
@@ -35,9 +36,12 @@ import { randomBytes }                     from 'crypto';
 import logger                              from '../utils/logger.js';
 import { checkLegalHold }                  from '../services/retention.js';
 import {
-  scheduleCourtReminders, cancelCourtReminders, listPendingCourtReminders,
-  rememberTimeZone, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
+  cancelCourtReminders, listPendingCourtReminders, scheduleForCourtDate, syncLegacyCourtDate,
+  refreshNextCourtDate, rememberTimeZone, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
 } from '../services/courtReminders.js';
+import {
+  createInvite, listFollowers, revokeFollower, listFollowing, FollowError,
+} from '../services/followers.js';
 
 const router       = Router();
 const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many case operations. Slow down.' });
@@ -198,7 +202,7 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
     let reminders;
     if (next_court_date && rawRow) {
       reminders = await planReminders(db, req, {
-        caseId: r.lastID, caseTitle: safeTitle.trim(), courtDate: next_court_date, state: safeState,
+        caseId: r.lastID, oldDate: null, newDate: next_court_date,
       });
     }
 
@@ -283,23 +287,26 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
       triggerExpungementPush(db, req.user.id, updated).catch(logIgnored('routes/cases'));
     }
 
-    // Court reminders follow the case: re-plan when the date (or title/state,
-    // which appear in / time the reminder) changes; cancel when the date is
-    // cleared or the case is closed.
+    // Court reminders follow the case. The form edits the case's single "next
+    // court date": mirror it into court_dates (move / add / remove that
+    // hearing), then re-plan; closing the case cancels every hearing's
+    // reminders, re-opening it re-plans them.
     const finalStatus = updated.status || existing.status;
-    const finalDate   = updated.next_court_date ? String(updated.next_court_date).slice(0, 10) : null;
-    if (!finalDate || CLOSED_CASE_STATUSES.has(finalStatus)) {
-      await cancelCourtReminders(db, req.user.id, caseId, finalDate ? 'case_closed' : 'court_date_cleared')
-        .catch(e => logger.warn('[cases/update] cancel reminders:', e.message));
-    } else if (finalDate !== (existing.next_court_date ? String(existing.next_court_date).slice(0, 10) : null)
-            || (title !== undefined && updated.title !== existing.title)
-            || (state !== undefined && updated.state !== existing.state)
-            || CLOSED_CASE_STATUSES.has(existing.status)) {
-      const reminders = await planReminders(db, req, {
-        caseId, caseTitle: updated.title || existing.title, courtDate: finalDate, state: updated.state,
-      });
-      if (reminders) updated.reminders = reminders;
-    }
+    const oldDate = existing.next_court_date ? String(existing.next_court_date).slice(0, 10) : null;
+    const newDate = updated.next_court_date ? String(updated.next_court_date).slice(0, 10) : null;
+    try {
+      if (CLOSED_CASE_STATUSES.has(finalStatus)) {
+        await cancelCourtReminders(db, req.user.id, caseId, 'case_closed');
+      } else if (next_court_date !== undefined && newDate !== oldDate) {
+        const reminders = await planReminders(db, req, { caseId, oldDate, newDate });
+        if (reminders) updated.reminders = reminders;
+      } else if ((title !== undefined && updated.title !== existing.title)
+              || (state !== undefined && updated.state !== existing.state)
+              || CLOSED_CASE_STATUSES.has(existing.status)) {
+        const reminders = await replanCase(db, req, caseId);
+        if (reminders) updated.reminders = reminders;
+      }
+    } catch (e) { logger.warn('[cases/update] reminders:', e.message); }
 
     // Push to linked family members (non-blocking)
     notifyFamilyMembers(db, caseId, updated.title || existing.title).catch(logIgnored('routes/cases'));
@@ -496,94 +503,58 @@ router.delete('/:id/share', authRequired, async (req, res) => {
   }
 });
 
-// ── Family access ─────────────────────────────────────────────────────────────
+// ── Family followers (consented, revocable — services/followers.js) ─────────
+// POST   /:id/followers            { consent: true, email?, name?, share_reminders? } → invite code
+// GET    /:id/followers            who follows / is invited
+// DELETE /:id/followers/:followId  stop sharing
+// /:id/invite, /:id/family-access and GET /family are the older names of the
+// same endpoints (kept so existing app builds keep working). The follower's
+// side is /api/following.
 
-router.post('/:id/invite', authRequired, casesLimiter, async (req, res) => {
+function followFail(res, e, where) {
+  if (e instanceof FollowError) return res.status(e.status).json({ error: e.message, code: e.code });
+  logger.error({ err: e.message }, `[cases/followers${where}]`);
+  return res.status(500).json({ error: 'Could not update sharing. Please try again.' });
+}
+
+async function createFollowerHandler(req, res) {
   try {
-    const db  = await getDb();
-    const cas = await db.get('SELECT id, user_id FROM cases WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
-
-    const { email } = req.body || {};
-    if (!email?.trim()) return err400(res, 'email required.');
-
-    const invitee = await db.get(
-      'SELECT id, display_name FROM users WHERE LOWER(email)=LOWER(?)',
-      [email.trim().toLowerCase()]
-    );
-    if (!invitee) return err404(res, 'No Justice Gavel account found for that email. They must create an account first.');
-    if (invitee.id === req.user.id) return err400(res, 'You cannot invite yourself.');
-
-    const existing = await db.get(
-      'SELECT id FROM case_family_access WHERE case_id=? AND user_id=?',
-      [safeInt(req.params.id), invitee.id]
-    );
-    if (existing) return res.status(409).json({ error: 'This person already has access to this case.' });
-
-    await db.run(
-      'INSERT INTO case_family_access (case_id, user_id, invited_by, role, accepted) VALUES (?,?,?,?,0)',
-      [safeInt(req.params.id), invitee.id, req.user.id, 'family']
-    );
-    res.json({ ok: true, invitee_name: invitee.display_name || email, message: 'Invite sent.' });
-  } catch {
-    res.status(500).json({ error: 'Could not send invite.' });
-  }
-});
-
-router.get('/:id/family-access', authRequired, async (req, res) => {
+    const b = req.body && typeof req.body === 'object' ? req.body : {};
+    const out = await createInvite(await getDb(), {
+      ownerId: req.user.id, caseId: safeInt(req.params.id), email: b.email ?? null, name: b.name ?? null,
+      consent: b.consent, shareReminders: b.share_reminders !== false,
+    });
+    res.status(201).json({ ok: true, ...out, message: 'Invite created. Share the code with your family member.' });
+  } catch (e) { followFail(res, e, '/create'); }
+}
+async function listFollowersHandler(req, res) {
   try {
-    const db  = await getDb();
-    const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
-    if (!cas) return res.status(403).json({ error: 'Access denied.' });
-    const members = await db.all(
-      `SELECT cfa.id, cfa.role, cfa.accepted, cfa.invited_at,
-              u.display_name as name, u.email
-       FROM case_family_access cfa
-       LEFT JOIN users u ON u.id = cfa.user_id
-       WHERE cfa.case_id=?
-       ORDER BY cfa.invited_at DESC LIMIT 100`,
-      [safeInt(req.params.id)]
-    ).catch(() => []);
-    res.json(members);
-  } catch {
-    res.status(500).json({ error: 'Could not load family access.' });
-  }
-});
-
-router.delete('/:id/family-access/:memberId', authRequired, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(await listFollowers(await getDb(), req.user.id, safeInt(req.params.id)));
+  } catch (e) { followFail(res, e, '/list'); }
+}
+async function revokeFollowerHandler(req, res) {
   try {
-    const db  = await getDb();
-    const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
-    if (!cas) return res.status(403).json({ error: 'Access denied.' });
-    await db.run(
-      'DELETE FROM case_family_access WHERE id=? AND case_id=?',
-      [safeInt(req.params.memberId), safeInt(req.params.id)]
-    );
-    res.json({ ok: true });
-  } catch {
-    res.status(500).json({ error: 'Could not revoke access.' });
-  }
-});
+    res.json(await revokeFollower(await getDb(), req.user.id, safeInt(req.params.id), safeInt(req.params.memberId)));
+  } catch (e) { followFail(res, e, '/revoke'); }
+}
+
+router.post('/:id/followers', authRequired, casesLimiter, createFollowerHandler);
+router.get('/:id/followers', authRequired, listFollowersHandler);
+router.delete('/:id/followers/:memberId', authRequired, revokeFollowerHandler);
+router.post('/:id/invite', authRequired, casesLimiter, createFollowerHandler);
+router.get('/:id/family-access', authRequired, listFollowersHandler);
+router.delete('/:id/family-access/:memberId', authRequired, revokeFollowerHandler);
 
 router.get('/family', authRequired, async (req, res) => {
   try {
-    const db   = await getDb();
-    const rows = await db.all(
-      `SELECT c.id, c.title, c.status, c.next_court_date, c.created_at, c.state,
-              cfa.role, cfa.invited_at,
-              u.display_name as owner_name, u.email as owner_email
-       FROM cases c
-       JOIN case_family_access cfa ON cfa.case_id = c.id
-       LEFT JOIN users u ON u.id = c.user_id
-       WHERE cfa.user_id=? AND cfa.accepted=1
-       ORDER BY c.next_court_date ASC, c.created_at DESC
-       LIMIT 50`,
-      [req.user.id]
-    ).catch(() => []);
-    res.json(rows);
-  } catch {
-    res.status(500).json({ error: 'Could not load shared cases.' });
-  }
+    const rows = await listFollowing(await getDb(), req.user.id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(rows.map(r => ({
+      id: r.case_id, follow_id: r.follow_id, title: r.case_title, state: r.state,
+      next_court_date: r.next_court_date, owner_name: r.owner_first_name, role: 'follower', court_dates: r.court_dates,
+    })));
+  } catch (e) { followFail(res, e, '/family'); }
 });
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -592,7 +563,7 @@ async function notifyFamilyMembers(db, caseId, caseTitle) {
   const familyRows = await db.all(
     `SELECT u.push_token FROM case_family_access cfa
      JOIN users u ON u.id = cfa.user_id
-     WHERE cfa.case_id=? AND cfa.accepted=1 AND u.push_token IS NOT NULL`,
+     WHERE cfa.case_id=? AND cfa.status='active' AND u.push_token IS NOT NULL`,
     [caseId]
   ).catch(() => []);
   if (!familyRows.length) return;
@@ -623,20 +594,37 @@ async function triggerExpungementPush(db, userId, caseRow) {
 }
 
 /**
- * Plan the court reminders for one case, first remembering the device time
- * zone the app sent (X-Timezone). Returns the pending reminders, or undefined
+ * Mirror the case form's "next court date" into court_dates and plan that
+ * hearing's reminders, first remembering the device time zone the app sent
+ * (X-Timezone). Returns the pending reminders of that hearing, or undefined
  * when planning failed (logged; the backfill sweep retries later).
  */
-async function planReminders(db, req, { caseId, caseTitle, courtDate, state }) {
+async function planReminders(db, req, { caseId, oldDate, newDate }) {
   try {
     const tzChanged = await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
     if (tzChanged) await rescheduleUserCourtReminders(db, req.user.id);
-    const r = await scheduleCourtReminders(db, {
-      userId: req.user.id, caseId: Number(caseId), caseTitle, courtDate, state,
-    });
+    const courtDateId = await syncLegacyCourtDate(db, { caseId: Number(caseId), userId: req.user.id, oldDate, newDate });
+    await refreshNextCourtDate(db, Number(caseId));
+    if (!courtDateId) return [];
+    const r = await scheduleForCourtDate(db, courtDateId);
     return r.reminders;
   } catch (e) {
     logger.warn({ caseId, err: e.message }, '[cases] court reminders not planned');
+    return undefined;
+  }
+}
+
+/** Re-plan every upcoming hearing of a case; returns all pending owner reminders of the case. */
+async function replanCase(db, req, caseId) {
+  try {
+    await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
+    const rows = await db.all(
+      `SELECT id FROM court_dates WHERE case_id = ? AND user_id = ? AND deleted_at IS NULL AND status = 'scheduled'
+          AND court_date >= CURRENT_DATE - 1 ORDER BY court_date LIMIT 50`, [caseId, req.user.id]);
+    for (const r of rows) await scheduleForCourtDate(db, Number(r.id));
+    return (await listPendingCourtReminders(db, req.user.id, caseId)).filter(x => x.type === 'court_reminder');
+  } catch (e) {
+    logger.warn({ caseId, err: e.message }, '[cases] court reminders not re-planned');
     return undefined;
   }
 }
@@ -667,10 +655,12 @@ router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
     if (!cas.next_court_date) return err400(res, 'This case has no court date. Add one to get reminders.');
     if (CLOSED_CASE_STATUSES.has(cas.status)) return err400(res, 'This case is closed.');
     await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
-    const r = await scheduleCourtReminders(db, {
-      userId: req.user.id, caseId, caseTitle: cas.title,
-      courtDate: String(cas.next_court_date).slice(0, 10), state: cas.state,
-    });
+    // a case whose date predates court_dates gets its hearing row now
+    const nextDate = String(cas.next_court_date).slice(0, 10);
+    await syncLegacyCourtDate(db, { caseId, userId: req.user.id, oldDate: nextDate, newDate: nextDate });
+    const reminders = await replanCase(db, req, caseId);
+    const { resolveReminderTimeZone } = await import('../services/courtReminders.js');
+    const r = { reminders: reminders || [], time_zone: (await resolveReminderTimeZone(db, req.user.id, cas.state)).tz };
     if (!r.reminders.length) return err400(res, 'This court date has already passed.');
     res.json({ case_id: caseId, time_zone: r.time_zone, reminders: r.reminders });
   } catch (e) {

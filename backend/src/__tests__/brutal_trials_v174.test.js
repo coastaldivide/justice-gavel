@@ -68,36 +68,39 @@ describe('SESSION. Complete User Sessions', () => {
     const savesTok = reg.includes('setItem') || reg.includes('setToken') || reg.includes('secureStorage');
     expect(savesTok).toBe(true);
   });
-  test('SESSION-03: JustArrested step wizard — silence + bail + help', async () => {
+  test('SESSION-03: Just arrested — rights script, lawyer + bail, court dates', async () => {
     const fs = await import('fs');
-    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    expect(ja).toContain('silent');
-    expect(ja).toContain('bail');
-    expect(ja).toContain('find_help');
-    expect(ja).toContain('HelpNow');
-    // Step navigation works
-    expect(ja).toContain('prev');
-    expect(ja).toContain('next');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    expect(ja).toContain("goStep(");
   });
   test('SESSION-04: HelpNow — lawyers + bail + court + chat reachable', async () => {
     const fs = await import('fs');
-    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(hn).toContain('/providers/lawyers');
-    expect(hn).toContain('/providers/bail');
-    expect(hn).toContain('/courthouses');
-    expect(hn).toContain('988');
-    // All navigation targets exist
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
     expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
     expect(hn).toContain("navigate('ChatTab')");
-    expect(hn).toContain('BailCalculator');
+    expect(hn).toContain('988');
   });
-  test('SESSION-05: BailCalculator shows bondCost result in render', async () => {
+  test('SESSION-05: BailCalculator renders the fee note instead of a guessed cost', async () => {
     const fs = await import('fs');
-    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
-    // bondCost function defined and used in render
-    expect(bail).toContain('bondCost');
-    // Renders formatted cost string
-    expect(bail).toContain('fmt(bondCost');
+    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    // bail ranges only: no sourced per-state fee data → no invented 10% estimate
+    expect(bail).toContain('/help/bail-schedule');
+    expect(bail).toContain('bail-fee-note');
+    expect(bail).not.toContain('bondCost');
+    expect(bail).not.toMatch(/10\s?%/);
   });
   test('SESSION-06: Discovery uses 90s direct request (not job queue)', async () => {
     const fs = await import('fs');

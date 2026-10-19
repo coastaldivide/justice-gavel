@@ -322,6 +322,37 @@ identical tracked fields (0 to insert, 0 to propose).
 
 ---
 
+## CORE PATH ("Just arrested?") — queues, reminders, content
+
+**Rights content.** `backend/src/services/rightsContent.js` serves the card (general = the app's bundled
+card, state notes = the recorded state summaries) with source + "last reviewed" on every section. Lawyer-
+reviewed text goes in `rights_cards` (one row per state+topic+language, `source` REQUIRED, `reviewed_by`,
+`content_verified_at`); a row without a source is never shown. Check: `GET /api/rights/TN`.
+
+**Listing reports** (users tapping "Report a problem with this listing"). They never edit the listing.
+```bash
+curl -H "Authorization: Bearer $ADMIN_JWT" -H "X-Admin-Key: $ADMIN_KEY" $API/api/admin/listing-reports
+curl -X POST -H "Authorization: Bearer $ADMIN_JWT" -H "X-Admin-Key: $ADMIN_KEY" -H 'Content-Type: application/json' \
+     -d '{"status":"resolved","note":"phone fixed via proposal 123"}' $API/api/admin/listing-reports/42
+```
+A real fix goes through the normal provider edit / proposals review (DATA REFRESH above).
+
+**Listing claims** ("Is this your business? Claim this listing"). Check the bar / bail-agent license, then
+`POST /api/admin/listing-claims/:id {"decision":"approve"|"reject"}`. Approval links the claimant's own
+profile (`attorney_profiles.lawyer_id` / `bondsman_profiles.bail_agent_id`); in-app messages then reach
+lawyers (bail-agent messaging is not built yet). The listing row is never changed.
+
+**Court reminders.** One set per hearing (`court_dates`, `scheduled_pushes.court_date_id`): 7 d 09:00,
+3 d 09:00, 1 d 18:00, morning-of 06:30 in the user's zone; consented family followers get the same set
+(`follower_court_reminder`). Delivery chain: push → e-mail (needs `RESEND_API_KEY`) → SMS (needs all of
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, and the user's opt-in) → logged e-mail
+(`channel = 'email_log_only'`). Each missing provider is skipped, never an error.
+```sql
+SELECT status, channel, error, count(*) FROM scheduled_pushes
+ WHERE notification_type IN ('court_reminder','follower_court_reminder') AND created_at > now() - interval '1 day'
+ GROUP BY 1,2,3;
+```
+
 ## API RESPONSE SHAPE (for quick triage)
 
 Errors are `{ "error": "message", "code"? }`; validation errors are

@@ -22,14 +22,12 @@ const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
 
 describe('NAV. Navigation — Zero Dead Ends', () => {
   test('NAV-01: HelpNow uses correct route names (BailCalculator not BailCalculatorScreen)', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).not.toContain("navigate('BailCalculatorScreen')");
-    expect(src).not.toContain("navigate('CourtLocatorScreen')");
-    expect(src).toContain("navigate('BailCalculator')");
-    expect(src).toContain("navigate('CourtLocator')");
-    // Before: users tapped "Bail Calculator" and got no screen transition
-    // After: tapping navigates correctly to the BailCalculator route
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).not.toContain("navigate('BailCalculatorScreen'");
+    expect(hn).not.toContain("navigate('CourtLocatorScreen'");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
   });
 
   test('NAV-02: HagueContactScreen registered in AppNavigator', async () => {

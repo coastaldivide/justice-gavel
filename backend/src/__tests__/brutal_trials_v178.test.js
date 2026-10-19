@@ -113,17 +113,25 @@ describe('OTA. Over-The-Air Updates and Push', () => {
 // ── USER JOURNEY SIMULATION ───────────────────────────────────────────────
 describe('JOURNEY. All 12 User Journeys', () => {
   test('JOURNEY-01: Emergency — JustArrested → HelpNow → Lawyers/Bail/Chat', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const scr=__REPO + '/frontend/src/screens';
-    const ja =fs.readFileSync(path.join(scr,'JustArrestedScreen.tsx'),'utf8');
-    const hn =fs.readFileSync(path.join(scr,'HelpNowScreen.tsx'),'utf8');
-    expect(ja).toMatch(/remain silent|Miranda/i);
-    expect(ja).toMatch(/attorney|lawyer/i);
-    expect(ja).toContain('HelpNow');
-    expect(hn).toContain('/providers/lawyers');
-    expect(hn).toContain('988');
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
     expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
     expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
   });
   test('JOURNEY-02: Find Lawyer → Book Consultation', async () => {
     const fs=await import('fs'); const path=await import('path');
@@ -168,15 +176,16 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(chat).toMatch(/not legal advice|disclaimer/i);
     expect(chat).toContain('keyExtractor');
   });
-  test('JOURNEY-06: Bail Calculator — fetches schedules via /legaldata/bail', async () => {
-    const fs=await import('fs');     const bail=fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
-    // Uses cachedGet('/legaldata/bail?state=...')
-    expect(bail).toContain('/legaldata/bail');
-    expect(bail).toContain('bondCost');
-    expect(bail).toContain('fmt(bondCost');
-    // Backend has the route
-    const ld=fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js','utf8');
-    expect(ld).toContain('bail');
+  test('JOURNEY-06: Bail Calculator — public sourced ranges via /help/bail-schedule', async () => {
+    const fs = await import('fs');
+    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    // bail ranges only: no sourced per-state fee data → no invented 10% estimate
+    expect(bail).toContain('/help/bail-schedule');
+    expect(bail).toContain('bail-fee-note');
+    expect(bail).not.toContain('bondCost');
+    expect(bail).not.toMatch(/10\s?%/);
+    const help=fs.readFileSync(__REPO + '/backend/src/routes/help.js','utf8');
+    expect(help).toContain("router.get('/bail-schedule'");
   });
   test('JOURNEY-07: Expungement → petition generation', async () => {
     const fs=await import('fs');     const exp=fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx','utf8');

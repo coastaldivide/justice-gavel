@@ -67,7 +67,7 @@ export type RootStackParamList = {
   QuickConnect:             { lawyerId?: number };
 
   // ── Bail & Bonds ─────────────────────────────────────────────────────────
-  BailCalculator:           { amount?: number; state?: string; chargeType?: string };
+  BailCalculator:           { amount?: number; state?: string; chargeType?: string; caseTitle?: string };
   BailSearch:               { county?: string; state?: string };
   BondsmanDashboard:        undefined;
   RecoveryAgents:           { state?: string };
@@ -90,6 +90,8 @@ export type RootStackParamList = {
   ConflictCheck:            undefined;
   Docket:                   { matterId?: number };
   CourtLocator:             { state?: string; county?: string };
+  CourtDates:               { add?: boolean; guidance?: 'missed'; caseId?: number };
+  CourtDateDetail:          { id: number };
   CourtForms:               { state?: string; chargeType?: string };
 
   // ── Subscriptions & Payments ─────────────────────────────────────────────

@@ -87,6 +87,10 @@ SUPABASE_URL + SUPABASE_SERVICE_KEY      Supabase Storage (attachments) + RAG he
 EXPO_ACCESS_TOKEN=<...>                  Expo push notifications
 EXPO_PUSH_API_URL=<url>                  Expo push endpoint override (default https://exp.host/--/api/v2;
                                           point at a mock for staging/tests)
+TWILIO_ACCOUNT_SID=<AC...>               SMS court reminders (optional; needs all three Twilio vars;
+TWILIO_AUTH_TOKEN=<...>                   unset → texts skipped, push + e-mail still sent)
+TWILIO_FROM_NUMBER=<+1...>               Twilio sender number, E.164
+TWILIO_API_BASE=<url>                    Twilio API host override (default https://api.twilio.com)
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     web push (npx web-push generate-vapid-keys)
 VAPID_EMAIL=admin@justicegavel.app       web push contact
 ```

@@ -60,18 +60,27 @@ describe('QC. QuickConnect File Integrity', () => {
 
 // ── CRITICAL USER JOURNEY VERIFICATION ────────────────────────────────────
 describe('JOURNEY. 10 Critical User Journeys', () => {
-  test('JOURNEY-01: Just Arrested → SOS + HelpNow provider search', async () => {
+  test('JOURNEY-01: Just Arrested → HelpNow combined provider search', async () => {
     const fs = await import('fs');
-    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
     const em = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx','utf8');
-    // JA navigates to Emergency and HelpNow
-    expect(ja).toMatch(/Emergency|HelpNow|Help/);
-    // HelpNow loads providers via Promise.all (parallel, faster)
-    expect(hn).toContain('Promise.all');
-    expect(hn).toContain('/providers/bail');
-    expect(hn).toContain('/providers/lawyers');
-    // Emergency is SOS/panic — loads /alerts (correct for that screen)
     expect(em).toContain('/alerts');
     expect(em).toMatch(/911|emergency/i);
   });

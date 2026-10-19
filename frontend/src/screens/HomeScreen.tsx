@@ -13,6 +13,8 @@ import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
 import { t, initLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { getCoreProgress, consumePendingRoute, prefetchRights } from '../services/corePath';
+import { getUserState } from '../utils/userState';
 import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
 
@@ -96,6 +98,24 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [tipCategory, setTipCategory] = useState('');
   const [tipQuery, setTipQuery]       = useState('');
   const [visitCount, setVisitCount]   = useState(0);
+
+  const [coreStep, setCoreStep] = useState(1);
+  // Core path: resume where the person left off; open a screen queued before the
+  // main tabs existed (first screen after install); keep the rights card offline-ready.
+  useEffect(() => {
+    const refresh = () => {
+      getCoreProgress().then(p => { if (mountedRef.current) setCoreStep(p.done.rights || p.done.help || p.current > 1 ? p.current : 1); }).catch(() => {});
+    };
+    refresh();
+    const unsub = (navigation as any)?.addListener?.('focus', refresh);
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [navigation]);
+  useEffect(() => {
+    consumePendingRoute().then(screen => {
+      if (screen && mountedRef.current) (navigation as any).navigate('MoreTab', { screen });
+    }).catch(() => {});
+    getUserState().then(st => prefetchRights(st?.code)).catch(() => {});
+  }, [navigation]);
 
   const [nearbyCounts, setNearbyCounts] = useState<{bail?: number; lawyers?: number}>({});
   const [upcomingCase, setUpcomingCase] = useState<{title:string; date:string; daysLeft:number} | null>(null);
@@ -261,6 +281,24 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         }
       >
       <EmergencyStrip compact={false} />
+
+        {/* ── "Just arrested?" core path — first thing on Home ───────────── */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          testID="home-just-arrested"
+          accessibilityLabel={`Just arrested? ${coreStep > 1 ? `Continue at step ${coreStep} of 3` : 'Start: know your rights, find a lawyer and a bail agent, never miss a court date'}`}
+          style={styles.coreCard}
+          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'JustArrested' })}
+          activeOpacity={0.85}
+        >
+          <Text maxFontSizeMultiplier={1.3} style={styles.coreTitle}>🚨 {t('ja_title')}</Text>
+          {[t('ja_s1'), t('ja_s2'), t('ja_s3')].map((label, i) => (
+            <Text key={label} maxFontSizeMultiplier={1.3} style={styles.coreStep}>{i + 1}) {label}</Text>
+          ))}
+          <Text maxFontSizeMultiplier={1.3} style={styles.coreCta}>
+            {coreStep > 1 ? `Continue — ${t('ja_step_of').replace('{n}', String(coreStep))} →` : 'Start now — no account needed →'}
+          </Text>
+        </TouchableOpacity>
 
           {/* County analytics preview for non-Pro users — drives Intel tier subscriptions */}
           {!isPro && (
@@ -506,6 +544,10 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
+  coreCard: { backgroundColor: colors.emergencyDark, borderRadius: 16, padding: 16, marginBottom: 14, minHeight: 56 },
+  coreTitle: { color: colors.white, fontSize: 24, fontWeight: '900', marginBottom: 6 },
+  coreStep: { color: colors.white, fontSize: 16, fontWeight: '700', lineHeight: 23 },
+  coreCta: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
   screen: { flex: 1, backgroundColor: colors.bg },
 
   header: {

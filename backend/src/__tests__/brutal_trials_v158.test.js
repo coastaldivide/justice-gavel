@@ -83,13 +83,14 @@ describe('TODO_3F_3G. CourtLocator + BailCalculator Built + Wired', () => {
     const nav=fs.readFileSync(__REPO + '/frontend/src/navigation/AppNavigator.tsx','utf8');
     expect(nav).toContain('CourtLocatorScreen');
   });
-  test('3G-01: BailCalculatorScreen calls /legaldata/bail', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
-    expect(src).toContain('BailCalculatorScreen');
-    expect(src).toContain('/legaldata/bail');
-    expect(src.length).toBeGreaterThan(13000);
-    // Fetches bail ranges by state, shows bondsman cost at 10%
+  test('3G-01: BailCalculatorScreen calls /help/bail-schedule', async () => {
+    const fs = await import('fs');
+    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    // bail ranges only: no sourced per-state fee data → no invented 10% estimate
+    expect(bail).toContain('/help/bail-schedule');
+    expect(bail).toContain('bail-fee-note');
+    expect(bail).not.toContain('bondCost');
+    expect(bail).not.toMatch(/10\s?%/);
   });
   test('3G-02: BailCalculatorScreen in AppNavigator', async () => {
     const fs=await import('fs');
@@ -110,15 +111,19 @@ describe('TODO_3H. Probation in legaldata TABLE_MAP', () => {
 
 // ── 3I: HelpNowScreen ────────────────────────────────────────────────────
 describe('TODO_3I. HelpNowScreen — All Data Sources Wired', () => {
-  test('3I-01: HelpNow queries courthouse + public defender + crisis + treatment', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).toContain('/courthouses');
-    expect(src).toContain('PUBLIC_DEFENDER');
-    expect(src).toContain('CRISIS_LINE');
-    expect(src).toContain('TREATMENT');
-    expect(src.length).toBeGreaterThan(30000);
-    // 34,546 chars; the most comprehensive emergency screen in the app
+  test('3I-01: HelpNow shows public defender + inmate lookup + crisis line', async () => {
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
+    expect(hn).toContain('public_defender');
+    expect(hn).toContain('inmate_lookup');
   });
 });
 

@@ -258,11 +258,14 @@ describe('6. Route Coverage — Analytics / Cases / Matters / Contracts / Motion
     expect(src).toContain('AES-256-GCM encrypted at rest');
   });
 
-  test('6-04: cases.js — invite family by email, family-access list/revoke', async () => {
+  test('6-04: cases.js — consented family followers, list/revoke', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/cases.js', 'utf8');
-    expect(src).toContain('invite family member by email');
-    expect(src).toContain('family-access');
+    // consented, revocable family followers (older invite/family-access names kept)
+    expect(src).toContain('POST   /api/cases/:id/followers');
+    expect(src).toContain("router.post('/:id/invite', authRequired, casesLimiter, createFollowerHandler)");
+    expect(src).toContain("router.delete('/:id/family-access/:memberId', authRequired, revokeFollowerHandler)");
+    expect(src).toContain('revokeFollower');
     expect(src).toContain('status-history');
   });
 

@@ -50,6 +50,10 @@ import savedRouter        from './routes/saved.js';
 import consultationsRouter from './routes/consultations.js';
 import checkinsRouter      from './routes/checkins.js';
 import familyRouter       from './routes/family.js';
+import rightsRouter       from './routes/rights.js';
+import helpRouter         from './routes/help.js';
+import courtDatesRouter   from './routes/courtDates.js';
+import followingRouter    from './routes/following.js';
 import expungementRouter   from './routes/expungement/index.js';
 import immigrationRouter   from './routes/immigration.js';
 import piLeadsRouter    from './routes/pi_leads.js';
@@ -438,6 +442,10 @@ app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
 app.use('/api/consultations', consultationsRouter);
 app.use('/api/family', familyRouter);
+app.use('/api/rights',      rightsRouter);      // core path step 1 (public)
+app.use('/api/help',        helpRouter);        // core path step 2 (public)
+app.use('/api/court-dates', courtDatesRouter);  // core path step 3
+app.use('/api/following',   followingRouter);   // family followers
 app.use('/api/checkins',      checkinsRouter);
 app.use('/api/expungement',   expungementRouter);
 app.use('/api/immigration',   immigrationRouter);

@@ -468,6 +468,114 @@ router.post('/proposals/:id/reject', async (req, res) => {
   } catch (e) { proposalError(res, e, '/:id/reject'); }
 });
 
+// ── Listing reports ("Report a problem with this listing") ───────────────────
+// GET  /api/admin/listing-reports?status=pending|resolved|dismissed|all&limit=
+// POST /api/admin/listing-reports/:id  { status: 'resolved'|'dismissed', note? }
+// Deciding a report never edits the provider row: a fix goes through the
+// normal provider edit / proposals flow by a person who has checked it.
+router.get('/listing-reports', async (req, res) => {
+  try {
+    const db = await openDb();
+    const status = ['pending', 'resolved', 'dismissed', 'all'].includes(req.query.status) ? req.query.status : 'pending';
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 100, 1), 500);
+    const rows = await db.all(
+      `SELECT r.id, r.table_name, r.record_id, r.reason, r.details, r.status, r.created_at,
+              r.reviewed_at, r.review_note,
+              COALESCE(l.name, b.name) AS listing_name, COALESCE(l.phone, b.phone) AS listing_phone,
+              COALESCE(l.city, b.city) AS listing_city, COALESCE(l.state, b.state) AS listing_state
+         FROM listing_reports r
+         LEFT JOIN lawyers l     ON r.table_name = 'lawyers'     AND l.id = r.record_id
+         LEFT JOIN bail_agents b ON r.table_name = 'bail_agents' AND b.id = r.record_id
+        WHERE (? = 'all' OR r.status = ?)
+        ORDER BY r.created_at DESC
+        LIMIT ?`, [status, status, limit]);
+    res.json({ reports: rows, count: rows.length });
+  } catch (e) {
+    logger.error({ msg: '[admin/listing-reports]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+router.post('/listing-reports/:id', async (req, res) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10);
+    const status = req.body?.status;
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'Bad report id.' });
+    if (!['resolved', 'dismissed'].includes(status)) return res.status(400).json({ error: "status must be 'resolved' or 'dismissed'." });
+    const note = req.body?.note == null ? null : String(req.body.note).slice(0, 500);
+    const db = await openDb();
+    const row = await db.get(
+      `UPDATE listing_reports SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = NOW()
+        WHERE id = ? AND status = 'pending' RETURNING id, status`, [status, note, req.user.id, id]);
+    if (!row) return res.status(404).json({ error: 'No pending report with that id.' });
+    res.json({ ok: true, id: Number(row.id), status: row.status });
+  } catch (e) {
+    logger.error({ msg: '[admin/listing-reports/:id]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Listing claims ("Claim your listing") ────────────────────────────────────
+// GET  /api/admin/listing-claims?status=pending|approved|rejected|all
+// POST /api/admin/listing-claims/:id  { decision: 'approve'|'reject', note? }
+// Approval links the CLAIMANT's own profile to the listing
+// (attorney_profiles.lawyer_id / bondsman_profiles.bail_agent_id) so in-app
+// messages reach them. The lawyers / bail_agents row is never modified.
+router.get('/listing-claims', async (req, res) => {
+  try {
+    const db = await openDb();
+    const status = ['pending', 'approved', 'rejected', 'all'].includes(req.query.status) ? req.query.status : 'pending';
+    const rows = await db.all(
+      `SELECT c.id, c.table_name, c.record_id, c.status, c.license_number, c.license_state, c.contact_phone, c.note,
+              c.created_at, c.decided_at, c.decision_note, u.email AS claimant_email, u.display_name AS claimant_name,
+              COALESCE(l.name, b.name) AS listing_name, COALESCE(l.phone, b.phone) AS listing_phone,
+              COALESCE(l.state, b.state) AS listing_state, l.bar_number AS listing_bar_number, b.license_number AS listing_license
+         FROM listing_claims c
+         JOIN users u ON u.id = c.user_id
+         LEFT JOIN lawyers l     ON c.table_name = 'lawyers'     AND l.id = c.record_id
+         LEFT JOIN bail_agents b ON c.table_name = 'bail_agents' AND b.id = c.record_id
+        WHERE (? = 'all' OR c.status = ?)
+        ORDER BY c.created_at DESC LIMIT 200`, [status, status]);
+    res.json({ claims: rows, count: rows.length });
+  } catch (e) {
+    logger.error({ msg: '[admin/listing-claims]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+router.post('/listing-claims/:id', async (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  const decision = req.body?.decision;
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'Bad claim id.' });
+  if (!['approve', 'reject'].includes(decision)) return res.status(400).json({ error: "decision must be 'approve' or 'reject'." });
+  const note = req.body?.note == null ? null : String(req.body.note).slice(0, 500);
+  try {
+    const db = await openDb();
+    const out = await db.transaction(async (tx) => {
+      const c = await tx.get(`SELECT id, table_name, record_id, user_id, license_number, license_state FROM listing_claims WHERE id = ? AND status = 'pending' FOR UPDATE`, [id]);
+      if (!c) return { status: 404, body: { error: 'No pending claim with that id.' } };
+      if (decision === 'approve') {
+        if (c.table_name === 'lawyers') {
+          const taken = await tx.get('SELECT user_id FROM attorney_profiles WHERE lawyer_id = ?', [c.record_id]);
+          if (taken && Number(taken.user_id) !== Number(c.user_id)) return { status: 409, body: { error: 'This listing is already linked to another account.' } };
+          const mine = await tx.get('SELECT id FROM attorney_profiles WHERE user_id = ? ORDER BY id LIMIT 1', [c.user_id]);
+          if (mine) await tx.run('UPDATE attorney_profiles SET lawyer_id = ? WHERE id = ?', [c.record_id, mine.id]);
+          else await tx.run('INSERT INTO attorney_profiles (user_id, lawyer_id, bar_number, bar_state) VALUES (?, ?, ?, ?)', [c.user_id, c.record_id, c.license_number, c.license_state]);
+        } else {
+          const taken = await tx.get('SELECT user_id FROM bondsman_profiles WHERE bail_agent_id = ?', [c.record_id]);
+          if (taken && Number(taken.user_id) !== Number(c.user_id)) return { status: 409, body: { error: 'This listing is already linked to another account.' } };
+          const mine = await tx.get('SELECT id FROM bondsman_profiles WHERE user_id = ? ORDER BY id LIMIT 1', [c.user_id]);
+          if (mine) await tx.run('UPDATE bondsman_profiles SET bail_agent_id = ? WHERE id = ?', [c.record_id, mine.id]);
+          else await tx.run('INSERT INTO bondsman_profiles (user_id, bail_agent_id, license_number, license_state) VALUES (?, ?, ?, ?)', [c.user_id, c.record_id, c.license_number, c.license_state]);
+        }
+      }
+      await tx.run(`UPDATE listing_claims SET status = ?, decided_by = ?, decided_at = NOW(), decision_note = ? WHERE id = ?`,
+        [decision === 'approve' ? 'approved' : 'rejected', req.user.id, note, id]);
+      return { status: 200, body: { ok: true, id, status: decision === 'approve' ? 'approved' : 'rejected' } };
+    });
+    res.status(out.status).json(out.body);
+  } catch (e) {
+    logger.error({ msg: '[admin/listing-claims/:id]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
 // ─── HEALTH SCAN ENDPOINTS ─────────────────────────────────────────────────────
 // POST /api/admin/health-scan/run    — trigger scan immediately
 // GET  /api/admin/health-scan/latest — get most recent scan result

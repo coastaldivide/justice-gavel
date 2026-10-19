@@ -173,25 +173,26 @@ describe('FV3. FirmVerticalScreen — submitMission + saveConfig', () => {
 
 // ── JAR. JustArrestedScreen — handleAction ────────────────────────────────
 describe('JAR. JustArrestedScreen — handleAction Step Navigation', () => {
-  test('JAR-01: handleAction fires hapticImpact then routes based on current.action', async () => {
+  test('JAR-01: openScreen fires hapticImpact then routes (guest stack → browse mode first)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
-    expect(src).toContain('handleAction');
-    expect(src).toContain('hapticImpact');
-    expect(src).toContain("'find_help'");
-    expect(src).toContain('navigation');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    expect(ja).toContain('const openScreen');
+    expect(ja).toContain('hapticImpact');
+    expect(ja).toContain('setPendingRoute');
+    expect(ja).toContain('navigation');
   });
 });
 
 // ── BCA. BailCalculatorScreen — bondCost ──────────────────────────────────
 describe('BCA. BailCalculatorScreen — bondCost Calculator', () => {
-  test('BCA-01: bondCost(bail) = Math.round(bail * bondPct / 100)', async () => {
+  test('BCA-01: bail calculator shows ranges only (no unsourced fee estimate)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
-    expect(src).toContain('bondCost');
-    expect(src).toContain('Math.round');
-    expect(src).toContain('bondPct');
-    expect(src).toContain('100');
+    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    // bail ranges only: no sourced per-state fee data → no invented 10% estimate
+    expect(bail).toContain('/help/bail-schedule');
+    expect(bail).toContain('bail-fee-note');
+    expect(bail).not.toContain('bondCost');
+    expect(bail).not.toMatch(/10\s?%/);
   });
 });
 
@@ -288,17 +289,20 @@ describe('S12. UX — New Internal Logic Patterns', () => {
     expect(src).toContain('useMemo');
     expect(src).toContain('urgentCount');
   });
-  test('S12-03: JustArrestedScreen handleAction routes based on step action type', async () => {
+  test('S12-03: JustArrestedScreen steps are resumable (saved progress)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
-    expect(src).toContain('handleAction');
-    expect(src).toContain("current.action");
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    expect(ja).toContain('saveCoreProgress({ current: n })');
+    expect(ja).toContain('getCoreProgress');
   });
-  test('S12-04: BailCalculator bondCost = Math.round(bail * bondPct / 100)', async () => {
+  test('S12-04: BailCalculator — ranges with sources, no fee math', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
-    expect(src).toContain('bondCost');
-    expect(src).toContain('bondPct');
+    const bail = fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    // bail ranges only: no sourced per-state fee data → no invented 10% estimate
+    expect(bail).toContain('/help/bail-schedule');
+    expect(bail).toContain('bail-fee-note');
+    expect(bail).not.toContain('bondCost');
+    expect(bail).not.toMatch(/10\s?%/);
   });
   test('S12-05: ExpungementScreen checkEligibility 400ms debounce prevents spam', async () => {
     const fs = await import('fs');

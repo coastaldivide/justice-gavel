@@ -1,512 +1,240 @@
-import { useToast } from '../components/ToastProvider';
 /**
- * RightsCardScreen -- "Know Your Rights" wallet card generator
+ * RightsCardScreen — "Know your rights" card for the person's state.
  *
- * Flow:
- *   1. Detect user's state from GPS (or manual picker)
- *   2. Fetch state-specific rights card data from backend
- *   3. Render a beautiful wallet-sized card using React Native
- *   4. User taps "Share" → native share sheet (image + text)
- *   5. Also "Save to Camera Roll" option
- *
- * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
- * Designed for TikTok virality: "Print this before you go out tonight"
+ *  - Free, no account needed (core path step 1). The old subscription blur is
+ *    gone: rights information is never behind a paywall.
+ *  - Order of truth: the bundled general card (translated, always available,
+ *    airplane mode included) → this phone's saved copy of the state's card →
+ *    the server's sourced card (GET /api/rights/:state), saved for offline use.
+ *  - Every section shows its source and "last reviewed" date; nothing claims a
+ *    lawyer review until one is recorded. A state without sourced notes shows
+ *    the general card plus "State-specific details not yet available for X".
+ *  - State picked by GPS (once, with an explanation) or from the list.
  */
-import { Linking, LayoutAnimation, InteractionManager } from 'react-native';
-import EmergencyStrip from '../components/EmergencyStrip';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
-import { api } from '../services/api';
-import { t }   from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import EmergencyStrip from '../components/EmergencyStrip';
+import { useToast } from '../components/ToastProvider';
+import { useTheme } from '../constants/theme';
+import { t } from '../i18n';
 import { RNShare } from '../utils/webCompat';
-import { getUserState, setUserState} from '../utils/userState';
+import { getUserState, setUserState, STATE_LIST, STATE_NAMES } from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
-import * as secureStorage from '../utils/secureStorage';
-const C_064E3B = ('\x23' + '064e3b') as string; // hex color
-const C_DC2626 = ('\x23' + 'dc2626') as string; // hex color
+import {
+  fetchRightsCard, getCachedRightsCard, type RightsCardData, type RightsSection,
+} from '../services/corePath';
 
-const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
-  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
-  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
-  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC',
-];
-
-type CardData = {
-  state: string; title: string; subtitle: string;
-  brandLine: string; rights: { heading: string; body: string }[];
-  emergency: string[]; footer: string; generatedAt: string;
+const GENERAL_SOURCES: Record<number, string> = {
+  1: 'U.S. Constitution, 5th Amendment (as summarized in the Justice Gavel rights card)',
+  2: 'U.S. Constitution, 6th Amendment (as summarized in the Justice Gavel rights card)',
+  3: 'U.S. Constitution, 4th Amendment (as summarized in the Justice Gavel rights card)',
 };
+const CARD_SOURCE = 'Justice Gavel rights card — based on published state statutes and case law (as recorded April 2026)';
+const BUNDLED_REVIEWED = '2026-04';
+const SAY_KEYS = ['rs_say_1', 'rs_say_2', 'rs_say_3', 'rs_say_4', 'rs_say_5'];
 
-const _HEX_RIGHTSCARD = {
-  _c0: C_064E3B,
-  _c1: C_DC2626,
-} as const;
-
-// ── Full static rights card -- complete constitutional rights, no network needed ──
-// This renders immediately from the app bundle. fetchCard() overlays API content
-// when available but this is always the baseline -- jail lobby, no signal, no problem.
-function buildFallbackCard(st: string): CardData {
-  return {
-  state: st,
-  title: t('rc_title'),
-  subtitle: t('rc_subtitle'),
-  brandLine: t('rc_brand'),
-  rights: [
-    { heading: t('rc_h1'), body: t('rc_b1') },
-    { heading: t('rc_h2'), body: t('rc_b2') },
-    { heading: t('rc_h3'), body: t('rc_b3') },
-    { heading: t('rc_h4'), body: t('rc_b4') },
-    { heading: t('rc_h5'), body: t('rc_b5') },
-    { heading: t('rc_h6'), body: t('rc_b6') },
-    { heading: t('rc_h7'), body: t('rc_b7') },
-    { heading: t('rc_h8'), body: t('rc_b8') },
-  ],
-  emergency: [t('rc_emergency_1'), t('rc_emergency_2')],
-  footer: t('rc_footer'),
-  generatedAt: new Date().toISOString().split('T')[0] };
+/** The bundled general card in the app's language (works with no network). */
+export function bundledGeneral(): RightsSection[] {
+  return [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({
+    key: `rc_${i}`, heading: t(`rc_h${i}`), body: t(`rc_b${i}`),
+    source: GENERAL_SOURCES[i] || CARD_SOURCE, last_reviewed: BUNDLED_REVIEWED, lawyer_reviewed: false,
+  }));
 }
 
-function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
-  const { showToast } = useToast();
+function monthLabel(d: string | null): string {
+  if (!d) return '';
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(d);
+  if (!m) return d;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 15))).toLocaleDateString('en-US',
+    m[3] ? { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } : { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    });
-    return () => { mountedRef.current = false; _task.cancel(); };
+  const { showToast } = useToast();
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
+
+  const [stateCode, setStateCode] = useState('');
+  const [card, setCard] = useState<RightsCardData | null>(null);
+  const [source, setSource] = useState<'bundled' | 'device' | 'live'>('bundled');
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [picker, setPicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const english = t('rc_title') === 'Know Your Rights';
+
+  const load = useCallback(async (code: string) => {
+    setStateCode(code);
+    const cached = await getCachedRightsCard(code || 'US');
+    if (!mounted.current) return;
+    if (cached) { setCard(cached.card); setSource('device'); setSavedAt(cached.at); }
+    else { setCard(null); setSource('bundled'); setSavedAt(null); }
+    try {
+      const fresh = await fetchRightsCard(code || 'US');
+      if (mounted.current) { setCard(fresh); setSource('live'); setSavedAt(null); }
+    } catch { /* offline — bundled / saved copy stays on screen */ }
   }, []);
 
-  const [state, setState]       = useState('');
-  const [card, setCard]         = useState<CardData | null>(null);
-
-  const [sharing, setSharing]   = useState(false);
-  const [isSubscriber, setIsSubscriber] = useState(false);
-  const [showPicker, setShowPicker]     = useState(false);
-
-  // Show the bundled card for `st` immediately, then upgrade to the API version
-  // when it is richer. Offline / API errors keep the static card.
-  const loadCard = useCallback(async (st: string) => {
-    setState(st);
-    setCard(buildFallbackCard(st));
-    try {
-      const res = await api.get('/lessons/rights-card', { params: { state: st } });
-      if (mountedRef.current && res.data?.rights?.length > 0) setCard(res.data);
-    } catch {
-      // Offline or API unavailable -- static card already displayed
-    }
-  }, []);
-
-  // Check subscription status, then load the card for the saved (or detected) state -- once.
   useEffect(() => {
-    secureStorage.getToken().then(async token => {
-      if (!token) return;
-      try {
-        const res = await api.get('/billing/consumer/subscription');
-        const sub = res.data?.subscription;
-        if (sub && ['advisor','legal_pro','legal_radar',
-                    'starter_annual','pro_annual','legal_radar_annual'].includes(sub.tier)) {
-          setIsSubscriber(true);
-        }
-      } catch (e: any) {
-      __DEV__ && console.warn(e?.message); }
-    });
-
-    // Load user's saved state preference -- set during onboarding or Settings
-      getUserState().then(async saved => {
-        // If no state saved yet, try to auto-detect from GPS silently
-        const code = saved?.code || '';
-        // Show the card right away; the state question never blocks it.
-        loadCard(code);
-        if (!code) {
-          const detected = await detectAndSaveUserState({ prompt: true, reason: 'Your rights and court rules depend on your state. Justice Gavel uses your location once to pick your state — you can also choose it from the list.' }).catch(() => null);
-          if (detected) loadCard(detected);
-        }
-      }).catch(() => {
-        loadCard('');
-      });
-  }, [loadCard]);
-
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await loadCard(state);
-    if (mountedRef.current) setRefreshing(false);
-  }, [loadCard, state]);
-
-
-  const shareCard = async () => {
-    if (!card) return;
-    setSharing(true);
-    try {
-      const shareText = buildShareText(card);
-      await RNShare.share(
-        {
-          title: `Know Your Rights -- ${card.state}`,
-          message: shareText },
-        { dialogTitle: 'Share Your Rights Card' }
-      );
-    } catch (e: any) {
-      if (e.message !== 'User did not share') {
-        showToast(e.message, 'error');
+    (async () => {
+      const fromRoute = (route?.params as { state?: string } | undefined)?.state;
+      const saved = await getUserState();
+      const code = fromRoute || saved?.code || '';
+      await load(code);
+      if (!code) {
+        const detected = await detectAndSaveUserState({
+          prompt: true,
+          reason: 'Your rights and court rules depend on your state. Justice Gavel uses your location once to pick your state — you can also choose it from the list.',
+        }).catch(() => null);
+        if (detected && mounted.current) load(detected);
       }
-    } finally {
-      setSharing(false);
-    }
+    })();
+  }, [load, route?.params]);
+
+  const onRefresh = async () => { setRefreshing(true); await load(stateCode); if (mounted.current) setRefreshing(false); };
+
+  const choose = async (code: string) => {
+    setPicker(false);
+    await setUserState(code);
+    load(code);
   };
 
-  const buildShareText = (c: CardData): string => {
-    const lines: string[] = [
-      `📋 KNOW YOUR RIGHTS -- ${c.state}`,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      '',
-      ...c.rights.map(r => `${r.heading}\n${r.body}`).join('\n\n').split('\n'),
-      '',
-      '━━━━━━━━━━━━━━━━━━━━━━━━━',
-      ...c.emergency,
-      '',
-      c.brandLine,
-      '',
-      c.footer,
+  // General sections: translated bundled text, with the server's source / review
+  // metadata (and any reviewed database replacement) when we have it.
+  const general: RightsSection[] = bundledGeneral().map(b => {
+    const s = card?.general.find(x => x.key === b.key);
+    if (!s) return b;
+    // A database row (recorded source) that changes the text wins in English; in
+    // other languages only a lawyer-reviewed replacement overrides the translation.
+    const replaced = english ? (s.body !== b.body || s.heading !== b.heading) : s.lawyer_reviewed;
+    return { ...b, ...(replaced ? { heading: s.heading, body: s.body } : {}), source: s.source, source_url: s.source_url, last_reviewed: s.last_reviewed, lawyer_reviewed: s.lawyer_reviewed, reviewed_by: s.reviewed_by };
+  });
+  const specific = card?.state_specific || [];
+  const stateName = stateCode ? (STATE_NAMES[stateCode] || card?.state_name || stateCode) : '';
+  const notice = !stateCode ? t('ja_choose_state')
+    : card ? card.state_notice
+      : `State details for ${stateName} load the first time you are online; they are then saved on this phone.`;
+
+  const share = async () => {
+    const lines = [
+      `${t('rc_title')}${stateName ? ` — ${stateName}` : ''}`, '',
+      ...SAY_KEYS.map(k => `“${t(k)}”`), '',
+      ...general.map(s => `${s.heading}\n${s.body}\n(${t('rc_source')}: ${s.source})`),
+      ...specific.map(s => `${s.heading}\n${s.body}\n(${t('rc_source')}: ${s.source})`),
+      '', t('rc_footer'), 'https://justicegavel.app/rights',
     ];
-    return lines.join('\n');
+    try { await RNShare.share({ title: t('rc_title'), message: lines.join('\n\n') }); }
+    catch (e: any) { if (e?.message && e.message !== 'User did not share') showToast('Sharing is not available on this device.', 'error'); }
   };
+
+  const Section = ({ s, testID }: { s: RightsSection; testID: string }) => (
+    <View style={styles.section} testID={testID}>
+      <Text maxFontSizeMultiplier={1.5} style={styles.sectionHeading}>{s.heading.replace(/^\d+\.\s*/, '')}</Text>
+      <Text maxFontSizeMultiplier={1.6} style={styles.sectionBody}>{s.body}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.sourceText} testID="rights-source">
+        {t('rc_source')}: {s.source || '—'}
+        {s.last_reviewed ? ` · ${t('rc_last_reviewed')}: ${monthLabel(s.last_reviewed)}` : ''}
+        {s.lawyer_reviewed ? ` · Reviewed by ${s.reviewed_by}` : ` · ${t('rc_lawyer_pending')}`}
+      </Text>
+      {!!s.source_url && (
+        <TouchableOpacity accessibilityRole="link" accessibilityLabel={`Open source for ${s.heading}`} onPress={() => Linking.openURL(String(s.source_url)).catch(() => {})}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.link}>{String(s.source_url)}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-      testID="rights-card-screen"
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <EmergencyStrip compact={true} />
+    <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="rights-card-screen"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <EmergencyStrip compact />
+      <Text maxFontSizeMultiplier={1.4} style={styles.title} accessibilityRole="header">{t('rc_page_title')}</Text>
+      <TouchableOpacity accessibilityRole="button" testID="rights-state-picker" style={styles.stateBtn}
+        accessibilityLabel={`${t('ja_state')}: ${stateName || t('ja_choose_state')}. Change`} onPress={() => setPicker(true)}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>📍 {stateName || t('ja_choose_state')}  ▾</Text>
+      </TouchableOpacity>
 
-      {/* ── Not legal advice disclaimer ──────────────────────── */}
-      <View style={styles.disclaimer}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.disclaimerText}>
-          ⚖️ General legal information only -- not legal advice.
-          Laws vary by jurisdiction and change over time.
-          Always consult a licensed attorney for advice specific to your situation.
+      {source === 'device' && (
+        <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="rights-offline">
+          📴 {t('rc_offline_copy')}{savedAt ? ` (${monthLabel(savedAt.slice(0, 10))})` : ''}
         </Text>
+      )}
+      {!!notice && <Text maxFontSizeMultiplier={1.4} style={styles.notice} testID="rights-state-notice">ℹ️ {notice}</Text>}
+
+      <View style={styles.scriptBox} testID="rights-script">
+        <Text maxFontSizeMultiplier={1.2} style={styles.scriptLabel}>🗣 {t('ja_say')}</Text>
+        {SAY_KEYS.map(k => <Text key={k} maxFontSizeMultiplier={1.6} style={styles.scriptLine}>“{t(k)}”</Text>)}
       </View>
 
-      {/* Header */}
-      <View style={styles.pageHeader}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.pageTitle}>{t('rc_page_title')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.pageSub}>
-          Free wallet card for your state -- share before you go out tonight
-        </Text>
-      </View>
+      {specific.length > 0 && (
+        <View testID="rights-state-sections">
+          <Text maxFontSizeMultiplier={1.4} style={styles.groupTitle}>{t('rc_state_section')}: {stateName}</Text>
+          {!english && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('rc_english_only')}</Text>}
+          {specific.map(s => <Section key={s.key} s={s} testID="rights-state-section" />)}
+        </View>
+      )}
 
-      {/* State picker */}
-      <View style={styles.stateRow}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.stateLabel}>State:</Text>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          style={styles.statePicker}
-          accessibilityLabel={"{state}  \u25be"} onPress={() => setShowPicker(p => !p)}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.statePickerText}>{state}  ▾</Text>
-        </TouchableOpacity>
-        {showPicker && (
-          <View style={styles.stateDropdown}>
-            <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled>
-              {US_STATES.map(st => (
-                <TouchableOpacity
-                  accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-                  key={st}
-                  style={[styles.stateDropdownRow, state === st && styles.stateDropdownRowActive]}
-                  onPress={() => { setUserState(st).catch(()=>{}); setShowPicker(false); loadCard(st); }}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.stateDropdownText, state === st && styles.stateDropdownTextActive]}>
-                    {st}
-                  </Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.groupTitle}>{t('rc_subtitle')}</Text>
+      {general.map(s => <Section key={s.key} s={s} testID="rights-section" />)}
+
+      <TouchableOpacity accessibilityRole="button" testID="rights-share" style={styles.primaryBtn} onPress={share}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>📤 Share this card</Text>
+      </TouchableOpacity>
+      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>⚖️ {t('rc_footer')}</Text>
+
+      <Modal visible={picker} transparent animationType="slide" onRequestClose={() => setPicker(false)} accessibilityViewIsModal>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('ja_choose_state')}</Text>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {STATE_LIST.map(s => (
+                <TouchableOpacity key={s.code} accessibilityRole="button" testID={`rights-state-${s.code}`}
+                  style={[styles.stateRow, s.code === stateCode && styles.stateRowActive]} onPress={() => choose(s.code)}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.stateRowText}>{s.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        )}
-      </View>
-
-      {/* Subscription gate -- preview for free users */}
-      {!isSubscriber && (
-        <View style={styles.gateBanner}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.gateBannerTitle}>{t('rc_gate_title')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.gateBannerBody}>
-            Start a free 30-day trial to unlock your rights card, unlimited AI chat, full lawyer search, and more.
-          </Text>
-          <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            style={styles.gateBtn}
-            accessibilityLabel={"Start Free Trial \u2192"} onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.gateBtnText}>Start Free Trial →</Text>
-          </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={styles.gatePreviewNote}>↓ Preview your rights card below</Text>
-        </View>
-      )}
-
-      {/* The card itself */}
-      {card ? (
-        <View style={[styles.card, !isSubscriber && styles.cardBlurred]}>
-
-          {/* Card header */}
-          <View style={styles.cardHeader}>
-            <View style={styles.cardBrand}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.cardBrandText}>⚖️ JUSTICE GAVEL</Text>
-            </View>
-            <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800',
-                  color: colors.gold, letterSpacing: 1.5, textAlign: 'center',
-                  marginBottom: 6 }}>
-                INNOCENT UNTIL PROVEN GUILTY
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>{card.title}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cardSubtitle}>{card.subtitle}</Text>
-            <View style={styles.cardStateBadge}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.cardStateBadgeText}>STATE: {card.state}</Text>
-            </View>
-          </View>
-
-          {/* Rights */}
-          <View style={styles.cardBody}>
-            {card.rights.map((right, i) => (
-              <View key={`rights-${i}`} style={styles.rightRow}>
-                <View style={styles.rightNumberBadge}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.rightNumberText}>{i + 1}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.rightHeading}>{right.heading.replace(/^\d+\.\s*/, '')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.rightBody}>{right.body}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Emergency footer */}
-          <View style={styles.cardFooter}>
-            {card.emergency.map((line, i) => (
-              <Text maxFontSizeMultiplier={1.4} key={`emergenc-${i}`} style={styles.emergencyLine}>{line}</Text>
-            ))}
-            <Text maxFontSizeMultiplier={1.4} style={styles.cardBrandLine}>{card.brandLine}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cardLegalNote}>{card.footer}</Text>
-          </View>
-
-          {/* Blur overlay for non-subscribers — covers the card preview */}
-          {!isSubscriber && (
-            <View style={styles.blurOverlay} pointerEvents="none">
-              <Text maxFontSizeMultiplier={1.4} style={styles.blurOverlayText}>🔒 Subscribe to unlock full card + share</Text>
-            </View>
-          )}
-        </View>
-      ) : null}
-
-
-      {/* Emergency quick-call strip */}
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          style={{ flex: 1, backgroundColor: (colors.blue), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action unavailable.', 'error'))}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Text style={{ color: colors.textOnNavy, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+12125492660').catch(() => showToast('Action unavailable.', 'error'))}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          style={{ flex: 1, backgroundColor: colors.legal, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action unavailable.', 'error'))}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Action buttons */}
-      {card && (
-        <View style={styles.actions}>
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            style={[styles.shareBtn, (!isSubscriber || sharing) && styles.shareBtnDisabled]}
-            onPress={isSubscriber ? shareCard : () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-            disabled={sharing}
-            activeOpacity={0.85}
-          >
-            {sharing
-              ? <ActivityIndicator color={colors.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>
-                  {isSubscriber ? '📤  Share This Card' : '🔒  Subscribe to Share'}
-                </Text>
-            }
-          </TouchableOpacity>
-
-          {isSubscriber && (
-            <TouchableOpacity
-              accessibilityRole="button"
- style={styles.textShareBtn} onPress={shareCard}
-             accessibilityLabel="Share as text (for SMS / iMessage)"
-          accessibilityHint="Shares this information">
-              <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
+            <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setPicker(false)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Close</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            style={styles.stateChangeBtn}
-            accessibilityLabel={"\ud83d\uddfa  Change State"} onPress={() => setShowPicker(p => !p)}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.stateChangeBtnText}>🗺  Change State</Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      )}
-
-      {/* Social share prompt */}
-      <View style={styles.tiktokCard}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.tiktokTitle}>{t('rc_tiktok_title')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.tiktokBody}>
-          "Print this before you go out tonight -- these are your rights if you get stopped."
-        </Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.tiktokBody}>
-          Tag us @yourjusticegavel and we'll reshare. This card has helped thousands of people stay calm during a stop.
-        </Text>
-      </View>
-
-      <View style={{ height: 40 }} />
-
-      </ScrollView>
+      </Modal>
+    </ScrollView>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
-  scroll: { padding: 16 },
-
-  pageHeader: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.xl,
-    padding: 20, marginBottom: 16, ...SHADOW.md },
-  pageTitle: { fontSize: 22, ...FONTS.black, color: COLORS.bgCard, marginBottom: 4 },
-  pageSub:   { fontSize: 12, color: COLORS.steel, lineHeight: 18 },
-
-  stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, zIndex: 100 },
-  stateLabel: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textBrand },
-  statePicker: {
-    borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: RADIUS.md,
-    paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.bgCard },
-  statePickerText: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy },
-  stateDropdown: {
-    position: 'absolute', top: 44, left: 60, zIndex: 200,
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md,
-    borderWidth: 1, borderColor: COLORS.border, ...SHADOW.lg,
-    width: 100 },
-  stateDropdownRow:       { paddingVertical: 10, paddingHorizontal: 16 },
-  stateDropdownRowActive: { backgroundColor: COLORS.bg },
-  stateDropdownText:      { fontSize: 14, lineHeight: 21, color: COLORS.textPrimary },
-  stateDropdownTextActive:{ ...FONTS.heavy, color: COLORS.navy },
-
-  gateBanner: {
-    backgroundColor: COLORS.infoBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: COLORS.steelMid },
-  gateBannerTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
-  gateBannerBody:  { fontSize: 12, color: COLORS.textSecond, lineHeight: 18, marginBottom: 12 },
-  gateBtn: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.md,
-    paddingVertical: 11, alignItems: 'center', marginBottom: 8 },
-  gateBtnText:      { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
-  gatePreviewNote:  { fontSize: 11, color: COLORS.textMuted, textAlign: 'center' },
-
-  // Card
-  card: {
-    borderRadius: RADIUS.xl, overflow: 'hidden',
-    ...SHADOW.lg, marginBottom: 4 },
-  cardBlurred: { opacity: 0.35 },
-
-  cardHeader: {
-    backgroundColor: COLORS.navy, padding: 16, alignItems: 'center' },
-  cardBrand: {
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: RADIUS.pill,
-    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
-  cardBrandText: { color: COLORS.bgCard, fontSize: 11, ...FONTS.black, letterSpacing: 1.5 },
-  cardTitle:     { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, textAlign: 'center', marginBottom: 4 },
-  cardSubtitle:  { fontSize: 11, color: COLORS.steel, textAlign: 'center', marginBottom: 10 },
-  cardStateBadge: {
-    backgroundColor: COLORS.bail, borderRadius: RADIUS.pill,
-    paddingHorizontal: 16, paddingVertical: 10 },
-  cardStateBadgeText: { color: COLORS.bgCard, fontSize: 12, ...FONTS.black, letterSpacing: 1 },
-
-  cardBody: { backgroundColor: COLORS.bgCard, padding: 14 },
-  rightRow: {
-    flexDirection: 'row', gap: 8, marginBottom: 12,
-    paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  rightNumberBadge: {
-    width: 24, height: 24, borderRadius: 12,
-    backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center',
-    marginTop: 1, flexShrink: 0 },
-  rightNumberText: { color: COLORS.bgCard, fontSize: 11, ...FONTS.black },
-  rightHeading:    { fontSize: 11, ...FONTS.black, color: COLORS.navy, marginBottom: 3, letterSpacing: 0.3 },
-  rightBody:       { fontSize: 11, color: COLORS.textSecond, lineHeight: 16 },
-
-  cardFooter: {
-    backgroundColor: colors.bg, padding: 16 },
-  emergencyLine:  { fontSize: 11, color: colors.info, marginBottom: 3, ...FONTS.semi },
-  cardBrandLine:  { fontSize: 11, color: colors.textMuted, marginTop: 8, textAlign: 'center' },
-  cardLegalNote:  { fontSize: 11, color: colors.info, marginTop: 4, textAlign: 'center', lineHeight: 13 },
-
-  blurOverlay: {
-    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-    backgroundColor: colors.overlay,
-    borderRadius: RADIUS.lg,
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 20 },
-  blurOverlayText: { fontSize: 12, lineHeight: 20, color: colors.white, ...FONTS.heavy },
-
-  actions: { marginBottom: 16, gap: 8 },
-  shareBtn: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.lg,
-    paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
-  shareBtnDisabled: { backgroundColor: COLORS.textMuted },
-  shareBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
-  textShareBtn:     { alignItems: 'center', paddingVertical: 10 },
-  textShareBtnText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
-  stateChangeBtn:   { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, paddingVertical: 12, alignItems: 'center' },
-  stateChangeBtnText: { fontSize: 14, lineHeight: 21, color: colors.textMuted, ...FONTS.semi },
-
-  tiktokCard: {
-    backgroundColor: colors.bgCard, borderRadius: RADIUS.lg,
-    padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.bgCard },
-  tiktokTitle: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 8 },
-  tiktokBody:  { fontSize: 12, color: colors.info, lineHeight: 17, marginBottom: 6 },
-
-  disclaimer: {
-    backgroundColor: COLORS.bgSubtle,
-    borderRadius: RADIUS.md,
-    padding: 12,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warnDark,
-  },
-  disclaimerText: {
-    fontSize: 11,
-    lineHeight: 17,
-    color: COLORS.textMuted,
-    fontStyle: 'italic',
-  },
+const makeStyles = (c: any) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
+  scroll: { padding: 16, paddingBottom: 48 },
+  title: { color: c.textPrimary, fontSize: 24, fontWeight: '900', marginTop: 8, marginBottom: 8 },
+  stateBtn: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, minHeight: 44, marginBottom: 10 },
+  stateBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
+  offline: { color: c.warnDark, backgroundColor: c.warnBg, borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 8 },
+  notice: { color: c.textPrimary, backgroundColor: c.infoBg, borderRadius: 10, padding: 10, fontSize: 14, marginBottom: 8 },
+  scriptBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginVertical: 8 },
+  scriptLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 6 },
+  scriptLine: { color: c.textPrimary, fontSize: 22, lineHeight: 30, fontWeight: '800', marginBottom: 6 },
+  groupTitle: { color: c.textPrimary, fontSize: 18, fontWeight: '800', marginTop: 14, marginBottom: 6 },
+  muted: { color: c.textMuted, fontSize: 13, marginBottom: 6 },
+  section: { backgroundColor: c.bgCard, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border },
+  sectionHeading: { color: c.textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 6 },
+  sectionBody: { color: c.textSecond, fontSize: 16, lineHeight: 23 },
+  sourceText: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 8 },
+  link: { color: c.textBrand, fontSize: 12, textDecorationLine: 'underline', marginTop: 4 },
+  primaryBtn: { backgroundColor: c.navy, borderRadius: 14, paddingVertical: 16, alignItems: 'center', minHeight: 52, marginTop: 12 },
+  primaryBtnText: { color: c.white, fontSize: 17, fontWeight: '900' },
+  secondaryBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 8 },
+  secondaryBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
+  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 12, fontStyle: 'italic' },
+  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
+  sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 8 },
+  stateRow: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, borderBottomWidth: 1, borderBottomColor: c.border },
+  stateRowActive: { backgroundColor: c.infoBg },
+  stateRowText: { color: c.textPrimary, fontSize: 16 },
 });
+
 export default React.memo(RightsCardScreen);

@@ -78,19 +78,21 @@ describe('H12 — bail calculator renders the { data: [...] } envelope', () => {
     { id: 12, state: 'TN', charge: 'Aggravated assault', charge_class: 'Felony', bail_min: 10000, bail_max: 50000 },
   ];
 
-  it('lists the schedule and shows the bondsman cost for a selected charge', async () => {
-    on('get', /\/legaldata\/bail/, { data: ROWS, count: 2 });
+  it('lists the schedule; a selected charge shows the range and an honest fee note (no invented %)', async () => {
+    on('get', /\/help\/bail-schedule/, { data: ROWS, count: 2 });
     wrap(<BailCalculatorScreen navigation={makeNavigation()} route={{ params: {} } as any} />);
     const rows = await screen.findAllByTestId('bail-schedule-row');
     expect(rows).toHaveLength(2);
     expect(screen.queryByText(/Something went wrong/i)).toBeNull();
     fireEvent.press(rows[0]);
-    expect(await screen.findByTestId('bail-bond-cost')).toBeTruthy();
-    expect(screen.getByText('$100 - $250')).toBeTruthy();   // 10% of $1,000 – $2,500
+    expect(await screen.findByTestId('bail-fee-note')).toBeTruthy();
+    expect(screen.getAllByText('$1,000 - $2,500').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/10%/)).toBeNull();
+    expect(screen.queryByText('$100 - $250')).toBeNull();
   });
 
   it('a bare-array body (older API) still works', async () => {
-    on('get', /\/legaldata\/bail/, ROWS);
+    on('get', /\/help\/bail-schedule/, ROWS);
     wrap(<BailCalculatorScreen navigation={makeNavigation()} route={{ params: {} } as any} />);
     expect(await screen.findAllByTestId('bail-schedule-row')).toHaveLength(2);
   });

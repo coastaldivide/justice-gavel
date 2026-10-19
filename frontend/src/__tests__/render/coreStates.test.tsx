@@ -111,15 +111,31 @@ describe('LawyerProfileScreen', () => {
 
 describe('BailCalculatorScreen', () => {
   it('a state with no schedule on file says so', async () => {
-    on('get', /\/legaldata\/bail/, { data: [] });
+    on('get', /\/help\/bail-schedule/, { data: [] });
     wrap(<BailCalculatorScreen navigation={makeNavigation()} route={{ key: 'b', name: 'BailCalculator' } as any} />);
     expect(await screen.findByTestId('bail-no-schedules')).toBeTruthy();
   });
 
-  it('a guest (401) is told to sign in, not that loading failed', async () => {
-    on('get', /\/legaldata\/bail/, () => Promise.reject(reject(401, { error: 'unauthorized' })));
+  it('works signed out (public ranges); a failure is an honest error with retry', async () => {
+    mockToken = null;
+    on('get', /\/help\/bail-schedule/, () => netErr());
     wrap(<BailCalculatorScreen navigation={makeNavigation()} route={{ key: 'b', name: 'BailCalculator' } as any} />);
-    expect(await screen.findByText(/Sign in \(free\) to see the bail schedule/)).toBeTruthy();
+    expect(await screen.findByText(/Could not load bail schedules/)).toBeTruthy();
+    expect(screen.getByText('Tap to retry')).toBeTruthy();
+  });
+
+  it('linked to a case: the case\'s state and charge are pre-filled', async () => {
+    on('get', /\/help\/bail-schedule\?state=CA/, { data: [
+      { id: 1, state: 'CA', charge: 'DUI/DWI First Offense', charge_type: 'misdemeanor', severity: 'Misdemeanor', bail_min: 500, bail_max: 10000, source: 'NIJ_Vera_state_court_data', last_reviewed: null },
+      { id: 2, state: 'CA', charge: 'Burglary', charge_type: 'felony', severity: 'Felony', bail_min: 20000, bail_max: 50000 },
+    ] });
+    wrap(<BailCalculatorScreen navigation={makeNavigation()} route={{ key: 'b', name: 'BailCalculator', params: { state: 'CA', chargeType: 'DUI', caseTitle: 'My DUI case' } } as any} />);
+    expect(await screen.findByTestId('bail-case-link')).toBeTruthy();
+    const rows = await screen.findAllByTestId('bail-schedule-row');
+    expect(rows).toHaveLength(1);
+    fireEvent.press(rows[0]);
+    expect(await screen.findByTestId('bail-source')).toBeTruthy();
+    expect(screen.getByText(/Review date not recorded/)).toBeTruthy();
   });
 });
 

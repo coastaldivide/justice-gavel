@@ -31,19 +31,24 @@ describe('NAV1. All navigate() calls are valid', () => {
     expect(dead).toBe(0);
   });
   test('N1-02: HelpNow uses correct route names (BailCalculator, CourtLocator)', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).toContain("navigate('BailCalculator')");
-    expect(src).toContain("navigate('CourtLocator')");
-    expect(src).not.toContain("navigate('BailCalculatorScreen')");
-    expect(src).not.toContain("navigate('CourtLocatorScreen')");
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).not.toContain("navigate('BailCalculatorScreen'");
+    expect(hn).not.toContain("navigate('CourtLocatorScreen'");
   });
-  test('N1-03: JustArrested routes to HelpNow (find_help action)', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    expect(src).toContain("action: 'find_help'");
-    expect(src).toContain("HelpNow");
-    // find_help → HelpNow → LawyersTab: 2-step emergency flow (intentional UX design)
+  test('N1-03: JustArrested routes to HelpNow (step 2)', async () => {
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
   });
   test('N1-06: TermsAcceptanceModal wired into RegisterScreen', async () => {
     const fs=await import('fs');

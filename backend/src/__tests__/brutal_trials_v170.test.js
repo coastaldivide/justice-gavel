@@ -60,24 +60,29 @@ describe('S1. Registration & Onboarding Flow', () => {
 
 // ══ SESSION 2: EMERGENCY FLOW ════════════════════════════════════════════
 describe('S2. Emergency → Find Lawyer → Book Flow', () => {
-  test('S2-01: JustArrested routes to HelpNow via find_help action', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    expect(src).toContain("action: 'find_help'");
-    expect(src).toContain('HelpNow');
-    expect(src.toLowerCase()).toContain('bail');
-    expect(src.toLowerCase()).toContain('right');
+  test('S2-01: JustArrested routes to HelpNow (step 2)', async () => {
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
   });
-  test('S2-02: HelpNow loads 4 service types + 4 navigate targets', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).toContain('/providers/lawyers');
-    expect(src).toContain('/providers/bail');
-    expect(src).toContain('/courthouses');
-    expect(src).toContain("navigate('LawyersTab')");
-    expect(src).toContain("navigate('BailCalculator')");
-    expect(src).toContain("navigate('CourtLocator')");
-    expect(src).toContain("navigate('ChatTab')");
+  test('S2-02: HelpNow combined results + navigate targets', async () => {
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
   });
   test('S2-04: LawyerProfile has Call + Book + Message + error handling', async () => {
     const fs=await import('fs');

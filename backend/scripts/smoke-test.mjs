@@ -341,6 +341,93 @@ async function main() {
     return `${r.json.length} agents`;
   });
 
+  // ── "Just arrested?" core path ─────────────────────────────────────────────
+  const ipFrom = (ip) => ({ 'X-Forwarded-For': ip });
+  await check('core path 1: rights card is public, sourced and dated; unsourced state → notice', async () => {
+    const r = await call('GET', '/api/rights/TN');
+    assert(r.status === 200 && r.json?.general?.length === 8 && r.json.state_specific?.length > 0, `rights TN: ${brief(r)}`);
+    const all = [...r.json.general, ...r.json.state_specific];
+    assert(all.every(s => s.source && s.last_reviewed), 'a rights section has no source / last-reviewed date');
+    assert(!/10\s?%/.test(r.text), 'unsourced bail-fee estimate in the rights card');
+    const pr = await call('GET', '/api/rights/PR');
+    assert(pr.status === 200 && pr.json?.state_notice === 'State-specific details not yet available for Puerto Rico.', `PR: ${brief(pr)}`);
+    return `${all.length} sourced sections for TN`;
+  });
+
+  await check('core path 2: guest lawyer + bail results with filters; report a listing never edits it', async () => {
+    const r = await call('GET', '/api/help/nearby?lat=36.1627&lng=-86.7816&limit=5');
+    assert(r.status === 200 && r.json?.lawyers?.length > 0 && r.json?.bail_agents?.length > 0, `nearby: ${brief(r)}`);
+    assert(/Never by payment/.test(r.json.meta?.ranking || ''), 'ranking note missing');
+    const f = await call('GET', '/api/help/nearby?lat=36.1627&lng=-86.7816&h24=1&limit=5');
+    assert(f.status === 200 && [...f.json.lawyers, ...f.json.bail_agents].every(p => p.is_24_7), `24/7 filter: ${brief(f)}`);
+    const target = r.json.bail_agents[0];
+    const before = await q('SELECT md5(t::text) AS h FROM bail_agents t WHERE id = $1', [target.id]);
+    const rep = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours', details: 'smoke test' }, headers: ipFrom('10.250.1.1') });
+    assert(rep.status === 201 && rep.json?.report_id, `report: ${brief(rep)}`);
+    const dup = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours' }, headers: ipFrom('10.250.1.1') });
+    assert(dup.status === 200 && dup.json?.duplicate === true, `duplicate report: ${brief(dup)}`);
+    if (before) {
+      const after = await q('SELECT md5(t::text) AS h FROM bail_agents t WHERE id = $1', [target.id]);
+      assert(after[0].h === before[0].h, 'the reported bail-agent row changed');
+      await q('DELETE FROM listing_reports WHERE id = $1', [rep.json.report_id]);
+    }
+    const claim = await call('POST', '/api/help/claims', { token, body: { provider_type: 'bail_agent', provider_id: target.id, license_number: 'SMOKE-123' } });
+    assert(claim.status === 201 && claim.json?.status === 'pending', `claim: ${brief(claim)}`);
+    if (before) {
+      const after2 = await q('SELECT md5(t::text) AS h FROM bail_agents t WHERE id = $1', [target.id]);
+      assert(after2[0].h === before[0].h, 'the claimed bail-agent row changed');
+    }
+    return `${r.json.lawyers.length} lawyers + ${r.json.bail_agents.length} bail agents; report + claim queued, listing unchanged`;
+  });
+
+  let courtDateId = null; let coreCaseId = null;
+  await check('core path 3: court date → 7d/3d/1d/morning-of reminders; .ics; guidance', async () => {
+    const day = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+    const r = await call('POST', '/api/court-dates', { token, headers: { 'X-Timezone': 'America/Chicago' }, body: { case_title: 'Smoke court date', court_date: day, court_time: '09:00', state: 'TN' } });
+    assert(r.status === 201 && r.json?.id, `create: ${brief(r)}`);
+    courtDateId = r.json.id; coreCaseId = r.json.case_id;
+    const days = (r.json.reminders || []).map(x => x.days_before).sort().join(',');
+    assert(days === '0,1,3,7', `reminder plan ${days}`);
+    const ics = await call('GET', `/api/court-dates/${courtDateId}/ics`, { token });
+    assert(ics.status === 200 && /^text\/calendar/.test(ics.headers.get('content-type') || ''), `ics: ${ics.status}`);
+    assert(ics.text.includes(`DTSTART;TZID=America/Chicago:${day.replace(/-/g, '')}T090000`) && ics.text.includes('BEGIN:VTIMEZONE'), 'ics DTSTART/VTIMEZONE wrong');
+    const g = await call('GET', '/api/court-dates/guidance');
+    assert(g.status === 200 && g.json?.missed?.steps?.at(-1)?.text === 'Call your lawyer or the court clerk.', `guidance: ${brief(g)}`);
+    const anon = await call('GET', '/api/court-dates');
+    assert(anon.status === 401, `court dates without sign-in: ${anon.status}`);
+    return `court date ${courtDateId} on ${day}, 4 reminders, .ics ok`;
+  });
+
+  await check('core path 4: family follower (consent, code) sees court dates but not notes; revocable', async () => {
+    assert(coreCaseId, 'no case from the court-date check');
+    await call('PUT', `/api/cases/${coreCaseId}`, { token, body: { notes: 'SMOKE PRIVATE NOTE' } });
+    const noConsent = await call('POST', `/api/cases/${coreCaseId}/followers`, { token, body: {} });
+    assert(noConsent.status === 400 && noConsent.json?.code === 'consent_required', `no consent: ${brief(noConsent)}`);
+    const inv = await call('POST', `/api/cases/${coreCaseId}/followers`, { token, body: { consent: true, name: 'Smoke Mom' } });
+    assert(inv.status === 201 && inv.json?.invite_code, `invite: ${brief(inv)}`);
+    const famEmail = `smoke-family-${crypto.randomBytes(4).toString('hex')}@smoke.example.test`;
+    const fam = await call('POST', '/api/auth/register', { body: { identifier: famEmail, password, displayName: 'Smoke Family' }, headers: ipFrom('10.250.1.2') });
+    assert(fam.status === 201 || fam.status === 200, `family sign-up: ${brief(fam)}`);
+    const famToken = fam.json.token;
+    try {
+      const acc = await call('POST', '/api/following/accept', { token: famToken, body: { code: inv.json.invite_code } });
+      assert(acc.status === 201, `accept: ${brief(acc)}`);
+      const f = await call('GET', '/api/following', { token: famToken });
+      const c = (f.json?.following || []).find(x => x.case_id === coreCaseId);
+      assert(c && c.court_dates.some(d => d.id === courtDateId), `follower list: ${brief(f)}`);
+      assert(!/SMOKE PRIVATE NOTE/.test(f.text), 'follower can see case notes');
+      const peek = await call('GET', `/api/court-dates/${courtDateId}`, { token: famToken });
+      assert(peek.status === 404, `follower reads owner court date directly: ${peek.status}`);
+      const rev = await call('DELETE', `/api/cases/${coreCaseId}/followers/${acc.json.following.follow_id}`, { token });
+      assert(rev.status === 200, `revoke: ${brief(rev)}`);
+      const after = await call('GET', '/api/following', { token: famToken });
+      assert(!(after.json?.following || []).some(x => x.case_id === coreCaseId), 'still following after revoke');
+    } finally {
+      await call('DELETE', '/api/auth/account', { token: famToken, body: { password } });
+    }
+    return 'consent required, code accepted, notes hidden, revoke works';
+  });
+
   await check('POST /api/messages/bulk (LawyersScreen payload) reports who was messaged / skipped', async () => {
     assert(lawyerIds.length === 2, 'no lawyer ids from the search check');
     const r = await call('POST', '/api/messages/bulk', { token, body: { lawyer_ids: lawyerIds, message: 'Smoke: are you available for a consultation?' } });

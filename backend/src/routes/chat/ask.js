@@ -11,6 +11,7 @@ import { getDb }          from '../../db/index.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
+import { rightsRefsFor }  from '../../services/rightsContent.js';
 import rateLimit          from 'express-rate-limit';
 import {
   getHistory, saveMessage, detectLawyerHandoff, callClaude, classifyIntent,
@@ -112,6 +113,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
         role: 'assistant', reply: r,
         suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, r),
         intent: classifyIntent(trimmedMsg),
+        rights_refs: isDefender ? [] : rightsRefsFor(trimmedMsg, r),
       };
     }, req.user.id);
 

@@ -182,20 +182,25 @@ describe('RWD. RewardsScreen — loadPoints + redeemReferral', () => {
 
 // ── RCC. RightsCardScreen — fetchCard + shareCard ─────────────────────────
 describe('RCC. RightsCardScreen — fetchCard + shareCard', () => {
-  test('RCC-01: fetchCard is mountedRef-guarded GET /lessons/rights-card', async () => {
+  test('RCC-01: rights card load is mounted-guarded and cached per state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain('fetchCard');
-    expect(src).toContain('mountedRef');
-    expect(src).toContain('rights-card');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // free (no subscription gate), sourced, cached per state for offline use
+    expect(rc).not.toContain('/billing/consumer/subscription');
+    expect(rc).toContain('fetchRightsCard');
+    expect(rc).toContain('getCachedRightsCard');
+    expect(rc).toContain("t('rc_source')");
+    expect(rc).toContain('mounted');
+    expect(en.rc_b1.toLowerCase()).toContain('silent');
+    expect(en.rc_h2).toMatch(/lawyer/i);
   });
-  test('RCC-02: shareCard shares card content via Share.share with date stamp', async () => {
+  test('RCC-02: share exports the card text with sources', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain('shareCard');
-    expect(src).toContain('setSharing');
-    expect(src).toContain('Share');
-    expect(src).toContain("split('T')[0]");
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    expect(rc).toContain('RNShare.share');
+    expect(rc).toContain("t('rc_source')");
+    expect(rc).toContain("t('rc_footer')");
   });
 });
 

@@ -54,11 +54,11 @@ const mkMatter = (v, o = {}) => ({
 
 // ── S1. Zero-hit Endpoints (28) ───────────────────────────────────────────
 describe('S1. Route Zero-Hit Endpoints — All 28 Documented', () => {
-  test('S1-01: cases.js DELETE events + family-access documented', async () => {
+  test('S1-01: cases.js DELETE events + follower revoke documented', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/cases.js', 'utf8');
     expect(src).toContain('DELETE /api/cases/:id/events/:eventId');
-    expect(src).toContain('DELETE /api/cases/:id/family-access/:mid');
+    expect(src).toContain('DELETE /api/cases/:id/followers/:fid');
     expect(src).toContain('AES-256-GCM encrypted at rest');
   });
   test('S1-02: privilege.js PDF + CSV export + review endpoints', async () => {
@@ -219,12 +219,18 @@ describe('S6. Screens — UX Weakness Audit (Flags Documented)', () => {
     // FIX APPLIED (v55): CourtFormsScreen now has mountedRef guard
     expect(src).toContain('mountedRef');
   });
-  test('S6-06: RightsCardScreen — subscription + rights-card APIs, mountedRef', async () => {
+  test('S6-06: RightsCardScreen — free sourced card, offline copy, mounted guard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain('/billing/consumer/subscription');
-    expect(src).toContain('/lessons/rights-card');
-    expect(src).toContain('mountedRef');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // free (no subscription gate), sourced, cached per state for offline use
+    expect(rc).not.toContain('/billing/consumer/subscription');
+    expect(rc).toContain('fetchRightsCard');
+    expect(rc).toContain('getCachedRightsCard');
+    expect(rc).toContain("t('rc_source')");
+    expect(rc).toContain('mounted');
+    expect(en.rc_b1.toLowerCase()).toContain('silent');
+    expect(en.rc_h2).toMatch(/lawyer/i);
   });
   test('S6-07: RecoveryAgentsScreen — /recovery-agents, mountedRef', async () => {
     const fs = await import('fs');

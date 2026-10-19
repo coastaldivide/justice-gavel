@@ -12,6 +12,7 @@ import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import { getDb }          from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 import rateLimit          from 'express-rate-limit';
+import { rightsPromptBlock, rightsRefsFor } from '../../services/rightsContent.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION } from './_prompts.js';
 import {
   getHistory, saveMessage, detectLawyerHandoff, classifyIntent,
@@ -109,7 +110,9 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
     if (cityTrimmed) locationContext = `City: ${cityTrimmed}`;
     if (Number.isFinite(lat) && Number.isFinite(lng)) locationContext = `${locationContext ? locationContext + ' ' : ''}Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT)
+    // Consumer answers about rights are grounded in the verified rights card
+    // (services/rightsContent.js) and cite its sections; "talk to a lawyer" otherwise.
+    const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rightsPromptBlock(user_state))
       + RESPONSE_FOOTER_INSTRUCTION;
 
     // Build jurisdiction note — delegates to shared buildJurisdictionNote() in _helpers.js
@@ -227,6 +230,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
         partial: !!upstreamError,
         intent: classifyIntent(trimmedMsg),
         suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, fullText),
+        rights_refs: isDefender ? [] : rightsRefsFor(trimmedMsg, fullText),
       });
     } catch (err) {
       if (upstream.signal.aborted && !timedOut) return; // client disconnected — nothing to send

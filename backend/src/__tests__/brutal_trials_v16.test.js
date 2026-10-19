@@ -292,12 +292,17 @@ describe('7. FirmAcquisitionScreen — Firm Self-Serve Onboarding', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('8. HelpNowScreen — Emergency Help Finder', () => {
 
-  test('8-01: fetches bail, lawyers, courthouses, resources', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain("'/providers/bail'");
-    expect(src).toContain("'/providers/lawyers'");
-    expect(src).toContain("'/courthouses'");
+  test('8-01: fetches lawyers + bail agents together', async () => {
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
   });
 
   test('8-02: has phase, isOffline, bail, lawyer states', async () => {
@@ -309,12 +314,13 @@ describe('8. HelpNowScreen — Emergency Help Finder', () => {
     expect(src).toContain('lawyer');
   });
 
-  test('8-03: has Share, Linking, PTR, mounted guard', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('Linking');
-    expect(src).toContain('RefreshControl');
-    expect(src).toContain('mountedRef');
+  test('8-03: has Linking, PTR, mounted guard, report modal', async () => {
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain('Linking');
+    expect(hn).toContain('RefreshControl');
+    expect(hn).toContain('mounted');
+    expect(hn).toContain('report-modal');
   });
 });
 
@@ -490,33 +496,41 @@ describe('14. RecoveryAgents + Search — Specialized Searches', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('15. RightsCardScreen — Rights Wallet Card', () => {
 
-  test('15-01: fetches /lessons/rights-card for state-specific rights', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain("'/lessons/rights-card'");
+  test('15-01: fetches the sourced state card (/rights/:state) and caches it', async () => {
+    const fs = await import('fs');
+    const cp = fs.readFileSync(__REPO + '/frontend/src/services/corePath.ts', 'utf8');
+    expect(cp).toContain('`/rights/${encodeURIComponent(code)}`');
+    expect(cp).toContain('cacheRightsCard');
   });
 
-  test('15-02: has state, card, sharing states + PTR + mounted guard', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain('state');
-    expect(src).toContain('card');
-    expect(src).toContain('sharing');
-    expect(src).toContain('RefreshControl');
-    expect(src).toContain('mountedRef');
+  test('15-02: has state, card, PTR + mounted guard', async () => {
+    const fs = await import('fs');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    expect(rc).toContain('stateCode');
+    expect(rc).toContain('card');
+    expect(rc).toContain('RefreshControl');
+    expect(rc).toContain('mounted');
   });
 
-  test('15-03: Share export for virality — designed for TikTok', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain('Share');
-    expect(src).toContain('TikTok');
+  test('15-03: Share export (free, sourced)', async () => {
+    const fs = await import('fs');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    expect(rc).toContain('Share');
+    expect(rc).not.toMatch(/thousands of people/i);
   });
 
-  test('15-04: subscription check — free for Starter+ subscribers', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
-    expect(src).toContain("'/billing/consumer/subscription'");
+  test('15-04: rights card is free — no subscription check', async () => {
+    const fs = await import('fs');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // free (no subscription gate), sourced, cached per state for offline use
+    expect(rc).not.toContain('/billing/consumer/subscription');
+    expect(rc).toContain('fetchRightsCard');
+    expect(rc).toContain('getCachedRightsCard');
+    expect(rc).toContain("t('rc_source')");
+    expect(rc).toContain('mounted');
+    expect(en.rc_b1.toLowerCase()).toContain('silent');
+    expect(en.rc_h2).toMatch(/lawyer/i);
   });
 });
 

@@ -43,6 +43,11 @@ export const IDEMPOTENT_POST_PATHS = [
   '/api/arrests/monitors',
   '/api/consultations/book',
   '/api/consultations/callback-request',
+  '/api/court-dates',
+  '/api/cases/:id/followers',
+  '/api/following/accept',
+  '/api/help/reports',
+  '/api/help/claims',
 ];
 
 const PATH_RES = IDEMPOTENT_POST_PATHS.map(p => new RegExp(`^${p.replace(/:[A-Za-z]+/g, '[^/]+')}/?$`));

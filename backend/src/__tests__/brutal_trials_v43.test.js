@@ -232,10 +232,10 @@ describe('S12. UX — Final Remaining Gaps', () => {
     expect(src).toContain('onAccept');
     expect(src).toContain('agreed');
   });
-  test('S12-03: OnboardingScreen showSituationPicker + situation + selectedState', async () => {
+  test('S12-03: OnboardingScreen "Just arrested?" entry + situation + state detection', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
-    expect(src).toContain('showSituationPicker');
+    expect(src).toContain('startJustArrested');
     expect(src).toContain('situation');
     expect(src).toContain('detectAndSaveUserState');
     expect(src).toContain('First-time user intro');

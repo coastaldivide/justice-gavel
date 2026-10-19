@@ -27,6 +27,9 @@ import LoginScreen from '../screens/LoginScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import RightsCardScreen from '../screens/RightsCardScreen';
+import CourtDatesScreen from '../screens/CourtDatesScreen';
+import HelpNowScreen from '../screens/HelpNowScreen';
+import CourtDateDetailScreen from '../screens/CourtDateDetailScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import { Analytics } from '../services/analytics';
 import AgeGateScreen            from '../screens/AgeGateScreen';
@@ -96,7 +99,7 @@ const ExpungementScreen = withSuspense(React.lazy(() => import('../screens/Expun
 const FamilyConnectScreen = withSuspense(React.lazy(() => import('../screens/FamilyConnectScreen')));
 const FamilyCourtScreen = withSuspense(React.lazy(() => import('../screens/FamilyCourtScreen')));
 const GoldenGavelScreen = withSuspense(React.lazy(() => import('../screens/GoldenGavelScreen')));
-const HelpNowScreen = withSuspense(React.lazy(() => import('../screens/HelpNowScreen')));
+
 const HomeScreen = withSuspense(React.lazy(() => import('../screens/HomeScreen')));
 const HousingRightsScreen = withSuspense(React.lazy(() => import('../screens/HousingRightsScreen')));
 const IceDetentionScreen = withSuspense(React.lazy(() => import('../screens/IceDetentionScreen')));
@@ -199,6 +202,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: '🚨 Get Help Now', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: '📅 Book a Consultation' }} />
       <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: '📋 Know Your Rights Card' }} />
+      <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: '📅 My Court Dates' }} />
+      <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: '📅 Court Date' }} />
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />

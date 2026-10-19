@@ -1083,3 +1083,73 @@ All 50 rows now have a status + evidence (a test name, file or command that was 
 4. Frontend: tsc 0; eslint --max-warnings 0 → 0/0; npm test logic 49 suites/709 + render 8/56 pass; design-audit --ci 0; nav-targets 250/0; `expo export --platform web` OK; headless web smoke vs live prod backend **166 checks / 0 failed / 0 page errors / 0 console errors / 0 storms** (351 API requests).
 5. ci.yml: new step "Postgres client tools present" before the integration suite (backup test must not skip); new tests run inside existing steps; valid YAML.
 - Did NOT commit. Scratch DBs dropped, scratch servers stopped.
+
+# STEP 14 — "Just arrested?" core path (docs/strategy/CORE_PATH_PLAN.md, order 0→4)
+
+Every "Build" item implemented and marked ✅ in CORE_PATH_PLAN.md (with data limits noted inline).
+Running log: notes/core_path_progress.md.
+
+## Built
+- **Migration 20** (`00000000000020_core_path.sql`, idempotent, RLS on): rights_cards +source_url/reviewed_by/
+  language/sort_order (NULL, unique per state+topic+lang); `listing_reports`; `listing_claims` (+
+  bondsman_profiles.bail_agent_id); `court_dates` (many per case, backfilled from cases.next_court_date);
+  scheduled_pushes.court_date_id; case_family_access consent/invite-code/status/revocation cols; users.sms_reminders.
+- **0 Entry**: first screen "Just arrested?" button (dead situation-picker block in Onboarding removed), Home card
+  with "Continue — step N of 3", `JustArrestedScreen` rewritten as the 3-step hub (progress saved/resumed,
+  911/988 + family alert on every step; old unsourced DMV/"always plead not guilty" text dropped).
+- **1 Rights**: `services/rightsContent.js` (general = app's bundled card text, drift-tested against en.json;
+  state notes moved from lessons.js) with source + "last reviewed 2026-04" + lawyer_reviewed=false on every
+  section; DB rows with a source override, rows without one are never shown; "State-specific details not yet
+  available for X" (territories). Public `GET /api/rights/states|/:state`. RightsCardScreen rewritten: free
+  (subscription blur, fake "thousands" claim and an unverified "Bail" phone number removed), offline per state.
+  30-sec script (es/pt/vi too). AI chat: verified card injected into the prompt + "not sure → talk to a lawyer"
+  rule; `rights_refs` → "From your rights card →" links. Emergency Share now sends who/where held/booking/charges.
+  Unsourced "~10%" bail-fee line removed from the card in all 4 languages.
+- **2 Lawyer + bail**: public `GET /api/help/nearby` (both lists, filters charge/language/free/open-now/24-7/
+  distance, open-now & 24/7 parsed from stored hours in the provider's zone, ranking distance+completeness —
+  paid flags never read), public defender + inmate lookup; `POST /api/help/reports` (dedup, never edits rows)
+  + admin queue; `POST /api/help/claims` + admin approve (links the claimant's own profile; lawyers then get
+  in-app messages); public `GET /api/help/bail-schedule` (sourced ranges, `fee_estimate_available:false`).
+  HelpNowScreen rewritten; BailCalculator ranges only (all 10% fee math removed), pre-filled from a case.
+- **3 Court dates**: `routes/courtDates.js` (CRUD, archive, duplicates 409, courthouse join, .ics with
+  TZID+VTIMEZONE or all-day, reminders, guidance, SMS prefs); `courtReminders.js` rewritten per hearing;
+  dispatcher re-checks hearing/follow at send time, chain push → email (Resend) → SMS (Twilio, opt-in) →
+  logged e-mail, each skipped when unconfigured (`services/sms.js`, TWILIO_* optional, documented).
+  CourtDatesScreen + CourtDateDetailScreen (checklist + missed guidance from existing content, ends "Call your
+  lawyer or the court clerk."). Case form edits still work (mirrored into court_dates).
+- **4 Family**: `services/followers.js` + `/api/cases/:id/followers` (old /invite, /family-access names kept),
+  `/api/following` — owner consent required, hashed one-time code (14 d), revocable both sides, follower sees
+  court dates only, follower reminders in their own zone.
+- App: icon font preloaded (offline NetworkError found by the journey), idempotency keys for new POSTs.
+
+## Not built / limits (why)
+- Bail-agent fee estimate: no sourced per-state premium data (fee_percent=10 on every row = default).
+- Filters are honest but data-limited: all lawyer rows = "Criminal Defense", English, free_consultation=1.
+- Bail-agent in-app messaging doesn't exist; claims link the profile only.
+- AI grounding is a prompt instruction + refs, not a guarantee of model behaviour.
+- Owner: lawyer review of rights/checklist/missed text (rights_cards.reviewed_by), native review of es/pt/vi
+  (existing card translations are shorter and sections 5/8 differ from English), TWILIO_*/RESEND keys,
+  listing-claim outreach, data enrichment (languages, practice areas).
+- Journeys still local-only (CI has no browser step).
+
+## Tests
+backend `core_path_units` (21), PG `integration/core_path.int` (21: sources/notice/DB override, filters, ranking,
+report+claim with provider md5 unchanged, IDOR matrix, reminders 7/3/1/0 in zone, multi-hearing, stale rows,
+.ics, missed, SMS chain via mock Twilio, consent/accept/no-notes/revoke/leave); 47 stale source-pin legacy
+tests updated to the new truth; frontend render `corePath` (27) + chat refs + bail tests, `icsFilename`;
+smoke-test +4 core checks; web-journeys CORE journey (13 steps incl. airplane mode).
+
+## Gate
+1. Fresh DB, all 21 migrations (00..20) ON_ERROR_STOP applied twice — OK; 196 base tables, 0 without RLS;
+   lawyers 2,046 / bail_agents 1,262; provider md5 identical between a pristine DB and the gate DB after smoke +
+   all journeys (reports/claims made).
+2. Backend npm ci OK, audit (prod, high) 0, import smoke OK, lint 0/0; prod boot (TZ=UTC, generated secrets, no
+   Stripe, mock Anthropic): smoke-test **39/39** (4 new core-path checks); 0 error log lines, e-mails masked.
+3. Full backend jest: **334 suites passed / 30 PG-gated skipped; 27,997 passed / 233 skipped / 0 failed.**
+   PG-gated on a fresh DB: pg trio 3/40, integration 17/138, security 12/95, refresh 4/26 → **36 suites / 299 tests, 0 failed.**
+4. Frontend: tsc 0; eslint --max-warnings 0 → 0; npm test logic 50/712 + render 9/85; design-audit --ci 0 in all
+   categories; nav-targets 237/0; expo export web OK. Headless journeys (live prod backend) **21/0** incl.
+   CORE 13 steps; web smoke **170 checks / 0 failed / 0 page errors / 0 console errors / 0 storms**.
+5. openapi.json regenerated (511 paths / 602 ops; drift test passes); ci.yml integration-step comment updated
+   (new suites run inside existing steps); valid YAML.
+- Did NOT commit. Scratch DBs dropped, scratch servers stopped.

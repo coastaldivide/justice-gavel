@@ -18,9 +18,15 @@ const STATES = [
 type Schedule = {
   id: number; state: string; charge: string; charge_type: string;
   severity: string; bail_min: number; bail_max: number | null; bail_note?: string;
+  source?: string | null; last_reviewed?: string | null;
 };
 
-function BailCalculatorScreen({ navigation }: ScreenProps) {
+// Bail ranges only. There is no sourced per-state bail-agent fee data in the
+// app yet, so no fee estimate is shown (owner rule) — the agent sets the fee.
+const FEE_NOTE = 'Bail agents set their own fees. Justice Gavel has no sourced fee data for your state yet — ask the agent what they charge before you sign.';
+
+function BailCalculatorScreen({ navigation, route }: ScreenProps) {
+  const params = (route?.params || {}) as { state?: string; chargeType?: string; caseTitle?: string };
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -30,15 +36,14 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
 
   const { colors, isDark } = useTheme();
   const [refreshTick, setRefreshTick] = React.useState(0);
-  const [state, setState] = useState('TN');
+  const [state, setState] = useState(params.state && STATES.includes(params.state) ? params.state : 'TN');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [needsSignIn, setNeedsSignIn] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
-  const [bondPct] = useState(10);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState(params.chargeType || '');
 
   const bg   = colors.bg;
   const card = isDark ? colors.surface : colors.bgCard;
@@ -48,7 +53,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
   useEffect(() => {
     let cancel = false;
     setLoading(true);
-    cachedGet(`/legaldata/bail?state=${state}&limit=200`)
+    cachedGet(`/help/bail-schedule?state=${state}`)
       .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setFetchError(false); setNeedsSignIn(false); } })
       .catch((e: { response?: { status?: number } }) => { if (!cancel) { setSchedules([]); setFetchError(true); setNeedsSignIn(e?.response?.status === 401); } })
       .finally(() => { if (!cancel) { setLoading(false); setRefreshing(false); } });
@@ -59,7 +64,6 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
     !filter || (s.charge || "").toLowerCase().includes(filter.toLowerCase())
   );
 
-  const bondCost = (bail: number) => Math.round(bail * bondPct / 100);
   const fmt = (n: number) => '$' + n.toLocaleString();
 
   const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
@@ -80,11 +84,16 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             💰 Bail Amount Estimator
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 13, marginTop: 4 }}>
-            Select a state and charge type to see typical bail ranges and bondsman costs.
-            These are estimates -- actual bail is set by a judge.
+            Select a state and charge type to see typical bail ranges.
+            These are general ranges -- actual bail is set by a judge.
           </Text>
         </View>
 
+        {!!params.caseTitle && (
+          <Text testID="bail-case-link" maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14, marginBottom: 10 }}>
+            For your case: {params.caseTitle}{params.chargeType ? ` (${params.chargeType})` : ''}
+          </Text>
+        )}
         {/* State selector */}
         <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontWeight: '600', fontSize: 12, marginBottom: 6, letterSpacing: 0.8 }}>
           STATE
@@ -209,14 +218,17 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
                         s.bail_max ? `${fmt(s.bail_min)} - ${fmt(s.bail_max)}` : `${fmt(s.bail_min)}+`
                       } text={text} sub={sub} />
                       <Row label="Cash bail (pay full)" value={`${fmt(s.bail_min)} - ${s.bail_max ? fmt(s.bail_max) : '???'}`} text={text} sub={sub} />
-                      <Row testID="bail-bond-cost" label={`Bondsman cost (${bondPct}% non-refundable)`}
-                        value={s.bail_max
-                          ? `${fmt(bondCost(s.bail_min))} - ${fmt(bondCost(s.bail_max))}`
-                          : `${fmt(bondCost(s.bail_min))}+`}
-                        text={text} sub={sub} highlight={colors.primary} />
+                      <Text testID="bail-fee-note" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, lineHeight: 17 }}>
+                        Bail agent fee: {FEE_NOTE}
+                      </Text>
                     </>
                   )}
 
+                  {!!s.source && (
+                    <Text testID="bail-source" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>
+                      Source: {s.source.replace(/_/g, ' ')}{s.last_reviewed ? ` · Last reviewed: ${s.last_reviewed}` : ' · Review date not recorded'}
+                    </Text>
+                  )}
                   {s.bail_note ? (
                     <View style={{
                       backgroundColor: isDark ? colors.surface : colors.bgCard,
@@ -238,10 +250,10 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
                       How bail bondsmen work
                     </Text>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.legal : colors.legalDark, fontSize: 12, marginTop: 4 }}>
-                      You pay the bondsman 10% of the bail amount. This fee is non-refundable
-                      regardless of the case outcome. The bondsman then posts the full bail with
-                      the court. If you miss a court date, the bondsman must pay the full amount
-                      and will pursue you to recover it.
+                      A bail agent posts the full bail with the court for a fee they set — ask
+                      what it is and whether any of it is refundable before you sign. If you miss
+                      a court date, the bondsman must pay the full amount and will pursue you to
+                      recover it.
                     </Text>
                   </View>
                 </View>
@@ -281,7 +293,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
               textAlign:'center', marginTop:4 }}>
-              Bondsmen typically charge about 10% (non-refundable). Find bail agents in your city.
+              Find bail agents in your city — ask each one what they charge.
             </Text>
           </TouchableOpacity>
         </View>

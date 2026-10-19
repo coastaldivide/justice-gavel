@@ -58,6 +58,7 @@ const OPTIONAL_FEATURES = {
   STRIPE_SECRET_KEY:     'Payments disabled (billing endpoints return 503 payments_unavailable; everyone is on the free tier)',
   STRIPE_WEBHOOK_SECRET: 'Stripe webhooks cannot be verified (webhook returns 400)',
   RESEND_API_KEY:        'Email disabled — emails are logged instead of sent',
+  TWILIO_ACCOUNT_SID:    'Text-message court reminders disabled (push and e-mail still go out)',
   REDIS_URL:             'BullMQ queue disabled — AI jobs run in-process',
   SENTRY_DSN:            'Error tracking disabled',
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled',
@@ -287,6 +288,12 @@ export const ALL_ENV_VARS = {
   EXPO_ACCESS_TOKEN:        process.env.EXPO_ACCESS_TOKEN          || '',
   EXPO_PUSH_API_URL:        process.env.EXPO_PUSH_API_URL          || '',    // default https://exp.host/--/api/v2 (services/expoPush.js)
   REMINDERS_ENABLED:        process.env.REMINDERS_ENABLED          || 'true', // 'false' stops reminder delivery in this process
+
+  // ── SMS court reminders (optional; services/sms.js) ──────────────────────
+  TWILIO_ACCOUNT_SID:       process.env.TWILIO_ACCOUNT_SID         || '',    // all three set → SMS is the last step of push → email → SMS
+  TWILIO_AUTH_TOKEN:        process.env.TWILIO_AUTH_TOKEN          || '',
+  TWILIO_FROM_NUMBER:       process.env.TWILIO_FROM_NUMBER         || '',    // E.164 sender, e.g. +16155550123
+  TWILIO_API_BASE:          process.env.TWILIO_API_BASE            || '',    // default https://api.twilio.com (tests / regional edge)
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',
   VAPID_PRIVATE_KEY:        process.env.VAPID_PRIVATE_KEY          || '',
   VAPID_EMAIL:              process.env.VAPID_EMAIL                || '',

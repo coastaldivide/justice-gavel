@@ -67,6 +67,8 @@ export const linking: LinkingOptions<any> = {
               DeadlineCalculator: 'deadlines',
               Expungement:        'expungement',
               RightsCard:         'rights',
+              CourtDates:         'court-dates',
+              CourtDateDetail:    'court-dates/:id',
               DUILaws:            'dui-laws',
               DrugPenalties:      'drug-penalties',
               BailCalculator:     'bail-calculator',

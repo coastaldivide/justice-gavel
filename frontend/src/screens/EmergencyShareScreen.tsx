@@ -22,7 +22,7 @@ import { AppIcon } from '../components/AppIcon';
  *   3. HelpNowScreen bottom CTA
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -56,6 +56,15 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   const [lawyer, setLawyer]     = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [sharedTo, setSharedTo] = useState(0);
+  // Arrest details the family needs to make calls (kept on this phone only).
+  const [arrest, setArrest] = useState({ who: '', where: '', booking: '', charges: '' });
+  const setArrestField = (k: keyof typeof arrest, v: string) => {
+    setArrest(prev => {
+      const next = { ...prev, [k]: v.slice(0, 120) };
+      AsyncStorage.setItem('arrest_info_v1', JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
 
   // ── Quick Exit (Silent / Discreet Mode) ──────────────────────────────────────
   // Domestic violence app design guidelines: a visible "Emergency" screen
@@ -110,6 +119,10 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
       }
     }).catch(() => {});
     getContacts().then(c => setContacts((c as string[]).filter(Boolean))).catch(() => {});
+    AsyncStorage.getItem('arrest_info_v1').then(v => {
+      if (!v) return;
+      try { const a = JSON.parse(v); setArrest(prev => ({ ...prev, ...a })); } catch { /* ignore a damaged copy */ }
+    }).catch(() => {});
   }, []);
 
   const buildMessage = (
@@ -121,12 +134,15 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   ): string => {
     const mapsLink = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
     const lines: string[] = [
-      `🚨 ${name} needs legal help right now.`,
-      ``,
-      `📍 Their location:`,
-      mapsLink,
+      `🚨 ${arrest.who.trim() || name} needs legal help right now.`,
       ``,
     ];
+    if (arrest.who.trim()) lines.push(`👤 Arrested: ${arrest.who.trim()}`);
+    if (arrest.where.trim()) lines.push(`🏢 Held at: ${arrest.where.trim()}`);
+    if (arrest.booking.trim()) lines.push(`🔢 Booking number: ${arrest.booking.trim()}`);
+    if (arrest.charges.trim()) lines.push(`📄 Charges: ${arrest.charges.trim()}`);
+    if (arrest.who.trim() || arrest.where.trim() || arrest.booking.trim() || arrest.charges.trim()) lines.push(``);
+    if (lat || lng) lines.push(`📍 Their location:`, mapsLink, ``);
     if (bondsmanPhone) {
       lines.push(`🔓 Bail bondsman (call now):`);
       lines.push(bondsmanPhone);
@@ -177,8 +193,9 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   };
 
   const sendShare = async () => {
-    if (!coords && !bondsman && !lawyer) {
-      showToast('No location or contacts found.');
+    const hasArrestInfo = !!(arrest.who.trim() || arrest.where.trim() || arrest.booking.trim() || arrest.charges.trim());
+    if (!coords && !bondsman && !lawyer && !hasArrestInfo) {
+      showToast('Add the arrest details or allow location so the message has something to send.');
       return;
     }
 
@@ -235,9 +252,6 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
     }
   };
 
-  const mapsUrl = coords
-    ? `https://maps.google.com/?q=${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`
-    : null;
 
   // ── Ready ─────────────────────────────────────────────────────────────────
 
@@ -301,6 +315,23 @@ if (phase === 'ready') return (
           ))}
         </View>
       )}
+      <View style={styles.whatIncluded} testID="arrest-info">
+        <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>Arrest details (optional — saved only on this phone)</Text>
+        {([
+          ['who', 'Who was arrested', 'Full name'],
+          ['where', 'Where they are held', 'Jail or police station'],
+          ['booking', 'Booking number', 'From the jail or inmate lookup'],
+          ['charges', 'Charges', 'e.g. DUI, possession'],
+        ] as const).map(([k, label, ph]) => (
+          <View key={k} style={{ marginBottom: 8 }}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.whatItem}>{label}</Text>
+            <TextInput accessibilityLabel={label} testID={`arrest-${k}`} value={arrest[k]} onChangeText={v => setArrestField(k, v)}
+              placeholder={ph} placeholderTextColor={colors.textMuted} maxLength={120}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, minHeight: 44, color: colors.textPrimary, fontSize: 15 }} />
+          </View>
+        ))}
+      </View>
+
       <View style={styles.whatIncluded}>
         <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>What's included</Text>
         {[
@@ -308,14 +339,15 @@ if (phase === 'ready') return (
           '🔓  Nearest bail bondsman phone number',
           '⚖️  Nearest criminal defense lawyer phone number',
           '👤  Your name so contacts know who sent it',
+          '🏢  The arrest details you typed above (who, where held, booking number, charges)',
         ].map(item => <Text maxFontSizeMultiplier={1.4} key={item} style={styles.whatItem}>{item}</Text>)}
       </View>
 
       <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-        style={[styles.goBtn, contacts.length === 0 && styles.goBtnDisabled]}
+        style={styles.goBtn}
         onPress={gatherInfo}
-        disabled={contacts.length === 0}
+        testID="emergency-share-go"
         activeOpacity={0.85}
        accessibilityLabel={"\ud83d\udea8  Get Info & Preview Message"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>🚨  Get Info & Preview Message</Text>
@@ -481,13 +513,9 @@ if (phase === 'ready') return (
 
       {/* Message preview */}
       <View style={styles.messagePreview}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.messageText}>
-          🚨 {userName || 'Someone'} needs legal help right now.{'\n\n'}
-          📍 Their location:{'\n'}
-          {mapsUrl || '(Location unavailable)'}{'\n\n'}
-          {bondsman?.phone ? `🔓 Bail bondsman (call now):\n${bondsman.phone}\n\n` : ''}
-          {lawyer?.phone   ? `⚖️ Criminal defense lawyer:\n${lawyer.phone}\n\n` : ''}
-          Sent via Justice Gavel -- justicegavel.app
+        {/* exactly the text that will be sent */}
+        <Text maxFontSizeMultiplier={1.4} style={styles.messageText} testID="emergency-share-preview">
+          {buildMessage(userName || 'Someone', coords?.lat ?? 0, coords?.lng ?? 0, bondsman?.phone ?? null, lawyer?.phone ?? null)}
         </Text>
       </View>
 

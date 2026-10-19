@@ -99,6 +99,13 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
       </TouchableOpacity>
       <TouchableOpacity
+        accessibilityRole="button" testID="case-court-dates"
+        style={styles.shareBtn}
+        onPress={() => navigation.navigate('CourtDates', { caseId: item.id })}
+      >
+        <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>📅  Court dates & reminders</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
         accessibilityRole="button"
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
         onPress={() => onInvite(item)}
@@ -403,6 +410,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
   const [invitingCase,  setInvitingCase]  = useState<Case|null>(null);
   const [inviting,      setInviting]      = useState(false);
   const [inviteError,   setInviteError]   = useState('');
+  const [inviteConsent, setInviteConsent] = useState(false);
+  const [inviteCode,    setInviteCode]    = useState<string | null>(null);
   const [error, setError]       = useState('');
   // Case list could not be loaded: 'offline' = showing this device's copy,
   // 'error' = nothing to show (never pretend there are "no cases").
@@ -624,21 +633,28 @@ showToast('Document read — specific fields could not be extracted. Check Notes
     setInvitingCase(cas);
     setInviteEmail('');
     setInviteError('');
+    setInviteConsent(false);
+    setInviteCode(null);
     setInviteModal(true);
   };
 
+  // Family follower: the owner must tick consent; the server returns a one-time
+  // code the family member enters (and e-mails it when an address is given).
+  // The follower sees court dates only — never notes. Revocable any time.
   const sendInvite = useCallback(async () => {
-    if (!inviteEmail.trim() || !invitingCase) return;
+    if (!inviteConsent || !invitingCase) return;
     setInviting(true);
     setInviteError('');
     try {
-      const res = await api.post(`/cases/${invitingCase.id}/invite`, { email: inviteEmail.trim().toLowerCase() });
-      setInviteModal(false);
-      showToast(res.data?.message || 'Family member can now see this case.', 'info');
+      const res = await api.post(`/cases/${invitingCase.id}/followers`, {
+        consent: true, email: inviteEmail.trim() ? inviteEmail.trim().toLowerCase() : undefined,
+      });
+      setInviteCode(res.data?.invite_code || null);
+      showToast('Invite created. Share the code with your family member.', 'success');
     } catch (e: any) {
-      setInviteError(apiErrorMessage(e, 'Could not invite. Check the email address.'));
+      setInviteError(apiErrorMessage(e, 'Could not create the invite.'));
     } finally { setInviting(false); }
-  }, [inviteEmail, invitingCase, showToast]);
+  }, [inviteConsent, inviteEmail, invitingCase, showToast]);
 
   // ── Calendar sync ──────────────────────────────────────────────────────────
   const addToCalendar = useCallback(async (cas: Case) => {
@@ -863,13 +879,13 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               accessibilityRole="button"
               key={fc.id}
               style={[styles.familyCaseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-              onPress={() => navigation.navigate('Messages', { caseId: fc.id, caseTitle: fc.title })}
-              accessibilityLabel={`Open shared case ${fc.title}`}
+              onPress={() => navigation.navigate('CourtDates')}
+              accessibilityLabel={`Court dates of ${fc.title}, shared with you`}
             >
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{fc.title}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseSub, { color: colors.textMuted }]}>
-                  From {fc.owner_name || fc.owner_email || 'family member'}
+                  From {fc.owner_name || 'family member'}
                   {fc.next_court_date ? ` · Court: ${formatDate(fc.next_court_date, { month: 'short', day: 'numeric' })}` : ''}
                 </Text>
               </View>
@@ -892,9 +908,17 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             <View style={{ width: 40 }} />
           </View>
           <View style={{ padding: 16 }}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>Their Justice Gavel email address</Text>
+            {inviteCode ? (
+              <View testID="case-invite-code">
+                <Text maxFontSizeMultiplier={1.4} style={[styles.fieldHint, { color: colors.textSecond }]}>
+                  Give them this code. They open Justice Gavel → My court dates → “Follow”. You can stop sharing any time from the court date.
+                </Text>
+                <Text selectable maxFontSizeMultiplier={1.2} style={{ color: colors.textPrimary, fontSize: 28, fontWeight: '900', letterSpacing: 3, marginVertical: 12 }}>{inviteCode}</Text>
+              </View>
+            ) : (<>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>Their e-mail (optional — we e-mail them the code)</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.fieldHint, { color: colors.textSecond }]}>
-              They must have a Justice Gavel account. Once invited, they can view "{invitingCase?.title}" and send messages to your attorney.
+              They will see the court dates of "{invitingCase?.title}" (day, time, courthouse) and can get the same reminders — never your notes.
             </Text>
             <TextInput
               style={[styles.textInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
@@ -904,24 +928,30 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               onChangeText={setInviteEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoFocus
           returnKeyType="next"
           blurOnSubmit
         maxLength={254}
         />
+            <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: inviteConsent }} testID="case-invite-consent"
+              style={{ flexDirection: 'row', gap: 8, paddingVertical: 10, minHeight: 44 }} onPress={() => setInviteConsent(v => !v)}>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontSize: 14, lineHeight: 20, flex: 1 }}>
+                {inviteConsent ? '☑' : '☐'} I agree to share this case's court dates with this person. I can stop sharing at any time.
+              </Text>
+            </TouchableOpacity>
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.emptyBtn, { backgroundColor: colors.blue, opacity: inviting ? 0.6 : 1 }]}
               onPress={sendInvite}
-              disabled={inviting || !inviteEmail.trim()}
-              accessibilityLabel="Send invite"
+              disabled={inviting || !inviteConsent}
+              accessibilityLabel="Create invite code"
           accessibilityHint="Double-tap to activate"
             >
               {inviting
                 ? <ActivityIndicator color={colors.bg} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>👨‍👩‍👧  Grant Access</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>👨‍👩‍👧  Create invite code</Text>
               }
             </TouchableOpacity>
+            </>)}
           </View>
         </View>
       </Modal>

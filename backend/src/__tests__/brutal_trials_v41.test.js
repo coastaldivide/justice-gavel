@@ -196,14 +196,14 @@ describe('S6a. EmergencyScreen — SOS Phase State Machine', () => {
 });
 
 describe('S6b. JustArrestedScreen + AgeGateScreen + LessonsScreen', () => {
-  test('S6b-01: JustArrestedScreen — one step at a time, giant text, no API calls', async () => {
+  test('S6b-01: JustArrestedScreen — one step at a time, big text, progress saved', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
-    expect(src).toContain('One step at a time');
-    expect(src).toContain('Linking');
-    expect(src).toContain('step');
-    expect(src).not.toContain('api.get(');
-    expect(src).not.toContain('api.post(');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    expect(ja).toMatch(/one step at a time/i);
+    expect(ja).toContain('Linking');
+    expect(ja).toContain('step');
+    expect(ja).toContain('getCoreProgress');
+    expect(ja).not.toContain('api.post(');
   });
   test('S6b-02: AgeGateScreen — year-of-birth 18+ check for bail+Stripe+juvenile', async () => {
     const fs = await import('fs');

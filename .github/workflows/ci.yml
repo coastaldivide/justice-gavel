@@ -150,7 +150,10 @@ jobs:
         # account export/deletion (no orphans), idempotency + list bounds + AI
         # budget, transactions, malformed-input fuzz, backup/restore round trip,
         # messages, billing/consultations, bail/legaldata/expungement, push,
-        # saved/reviews) exercised end-to-end against the migrated database.
+        # saved/reviews, and the "Just arrested?" core path: rights card, combined
+        # lawyer + bail search, listing reports/claims, court dates + reminders,
+        # .ics, family followers with consent) exercised end-to-end against the
+        # migrated database.
         # These suites skip themselves in the in-memory jest run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}

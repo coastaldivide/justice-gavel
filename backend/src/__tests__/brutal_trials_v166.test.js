@@ -36,12 +36,12 @@ describe('SCREEN. All 75 Screens — Zero Defects', () => {
 // ══ NAVIGATION — every screen reachable ═══════════════════════════════════
 describe('NAV. All 76 Screens Reachable', () => {
   test('NAV-03: HelpNow→BailCalculator, HelpNow→CourtLocator correct names', async () => {
-    const fs=await import('fs');
-    const hns=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(hns).toContain("navigate('BailCalculator')");
-    expect(hns).toContain("navigate('CourtLocator')");
-    expect(hns).not.toContain("navigate('BailCalculatorScreen')");
-    expect(hns).not.toContain("navigate('CourtLocatorScreen')");
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).not.toContain("navigate('BailCalculatorScreen'");
+    expect(hn).not.toContain("navigate('CourtLocatorScreen'");
   });
   test('NAV-05: AgeGate navigates to Onboarding on success', async () => {
     const fs=await import('fs');
@@ -192,17 +192,25 @@ describe('FLOW. Core User Journeys', () => {
     expect(log).toContain("navigate('Register')");
   });
   test('FLOW-02: Emergency flow chain — JustArrested→HelpNow→Lawyers', async () => {
-    const fs=await import('fs');
-    const ja=fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    const hn=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(ja).toContain('HelpNow'); // find_help action routes to HelpNow
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
     expect(hn).toContain("navigate('LawyersTab')");
-    expect(hn).toContain("navigate('BailCalculator')");
-    expect(hn).toContain("navigate('CourtLocator')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
     expect(hn).toContain("navigate('ChatTab')");
-    expect(hn).toContain('/providers/lawyers');
-    expect(hn).toContain('/providers/bail');
-    expect(hn).toContain('/courthouses');
+    expect(hn).toContain('988');
   });
   test('FLOW-04: AI features — discovery + motions + research chain', async () => {
     const fs=await import('fs');

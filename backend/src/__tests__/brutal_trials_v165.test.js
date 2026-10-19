@@ -58,29 +58,33 @@ describe('F1. Registration & Login Flow', () => {
 
 // ══ FLOW 2: JUST ARRESTED → EMERGENCY HUB ════════════════════════════════
 describe('F2. Just Arrested Emergency Flow', () => {
-  test('F2-01: JustArrestedScreen has emergency steps + routes to HelpNow', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx','utf8');
-    // Core actions present
-    expect(src).toContain("action: 'find_help'");  // → HelpNow emergency hub
-    expect(src).toContain('HelpNow');
-    // Key content: bail, rights, emergency all present as text/keywords
-    expect(src.toLowerCase()).toContain('bail');
-    expect(src.toLowerCase()).toContain('right');
-    expect(src.toLowerCase()).toContain('emergency');
+  test('F2-01: JustArrestedScreen has the three steps + routes to HelpNow', async () => {
+    const fs = await import('fs');
+    const ja = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // core path hub: rights → lawyer + bail (HelpNow) → court dates; resumable
+    expect(ja).toContain("openScreen('HelpNow')");
+    expect(ja).toContain('saveCoreProgress');
+    expect(ja).toContain("t('ja_s2')");
+    expect(en.ja_s2).toMatch(/lawyer and a bail agent/i);
+    expect(en.rs_say_1).toMatch(/remain silent/i);
+    expect(ja).toContain('rs_say_1');
+    expect(ja.toLowerCase()).toContain('emergency');
   });
-  test('F2-02: HelpNowScreen has all 5 emergency services wired', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).toContain('/providers/lawyers');  // find attorney
-    expect(src).toContain('/providers/bail');      // find bondsman
-    expect(src).toContain('/courthouses');         // find courthouse
-    expect(src).toContain('CRISIS_LINE');          // crisis hotline
-    expect(src).toContain('TREATMENT');            // treatment resources
-    expect(src).toContain("navigate('LawyersTab')");
-    expect(src).toContain("navigate('BailCalculator')");
-    expect(src).toContain("navigate('CourtLocator')");
-    expect(src).toContain("navigate('ChatTab')");  // AI legal chat
+  test('F2-02: HelpNowScreen wires lawyers, bail, public defender, inmate lookup, reports', async () => {
+    const fs = await import('fs');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
+    expect(hn).toContain('public_defender');
+    expect(hn).toContain('inmate_lookup');
+    expect(hn).toContain("'/help/reports'");
   });
   test('F2-03: LawyerProfileScreen has Call + Book + Message + error handling', async () => {
     const fs=await import('fs');
@@ -208,12 +212,19 @@ describe('F6. Know Your Rights Flow', () => {
     expect(src).toContain('/lessons');
     expect(src).toContain('loading');
   });
-  test('F6-02: RightsCardScreen has Miranda rights content + error handling', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx','utf8');
-    expect(src.toLowerCase()).toContain('silent');  // right to remain silent
-    expect(src.toLowerCase()).toContain('attorney'); // right to attorney
-    expect(src).toContain('catch');  // was MISSING — now fixed
+  test('F6-02: RightsCardScreen has Miranda rights content + offline fallback', async () => {
+    const fs = await import('fs');
+    const rc = fs.readFileSync(__REPO + '/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    // free (no subscription gate), sourced, cached per state for offline use
+    expect(rc).not.toContain('/billing/consumer/subscription');
+    expect(rc).toContain('fetchRightsCard');
+    expect(rc).toContain('getCachedRightsCard');
+    expect(rc).toContain("t('rc_source')");
+    expect(rc).toContain('mounted');
+    expect(en.rc_b1.toLowerCase()).toContain('silent');
+    expect(en.rc_h2).toMatch(/lawyer/i);
+    expect(rc).toContain('catch');
   });
   test('F6-04: ExpungementScreen has check + petition flow', async () => {
     const fs=await import('fs');

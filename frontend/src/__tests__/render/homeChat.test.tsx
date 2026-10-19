@@ -132,6 +132,25 @@ describe('ChatScreen', () => {
     expect(mockPollJob).toHaveBeenCalledWith('job-1', expect.any(Object));
   });
 
+  it('an answer grounded in the rights card links back to it, with its source', async () => {
+    on('get', '/chat/history/', []);
+    on('post', '/chat/ask', { jobId: 'job-2', status: 'pending', async: true });
+    mockPollJob.mockResolvedValue({
+      status: 'done',
+      result: { reply: 'You can say you do not consent (see your rights card: rc_3).', suggestLawyerSearch: false, intent: 'know_rights',
+        rights_refs: [{ key: 'rc_3', heading: '3. RIGHT AGAINST UNLAWFUL SEARCH  (4th Amendment)', source: 'U.S. Constitution, 4th Amendment (as summarized in the Justice Gavel rights card)', last_reviewed: '2026-04' }] },
+    });
+    const nav = makeNavigation();
+    wrap(<ChatScreen navigation={nav} route={{ params: {} }} />);
+    await screen.findByText('Know your rights');
+    await sendViaInput('Can police search my car?');
+    expect(await screen.findByTestId('chat-rights-refs')).toBeTruthy();
+    expect(screen.getByText(/From your rights card: RIGHT AGAINST UNLAWFUL SEARCH/)).toBeTruthy();
+    expect(screen.getByText(/Source: U.S. Constitution, 4th Amendment/)).toBeTruthy();
+    fireEvent.press(screen.getByLabelText(/From your rights card/));
+    expect(nav.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'RightsCard' });
+  });
+
   it('loads an existing session history on mount', async () => {
     await AsyncStorage.setItem('chat_session_id', 'sess-9');
     on('get', '/chat/history/sess-9', [

@@ -205,11 +205,12 @@ describe('LES. lessons.js — Legal Education Progress Tracking', () => {
     expect(src).toContain('progress');
     expect(src).toContain('authRequired');
   });
-  test('LES-02: lessons.js is comprehensive legal education engine (19,957 chars)', async () => {
-    const fs=await import('fs');
+  test('LES-02: lessons.js + rightsContent.js are the legal education engine', async () => {
+    const fs = await import('fs');
     const src=fs.readFileSync(__REPO + '/backend/src/routes/lessons.js','utf8');
-    expect(src.length).toBeGreaterThan(18000);
-    // Full legal rights curriculum: know your rights, bail, court process
+    const rights=fs.readFileSync(__REPO + '/backend/src/services/rightsContent.js','utf8');
+    expect(src.length + rights.length).toBeGreaterThan(18000);
+    expect(src).toContain('buildLegacyRightsCard');
     const handlers=(src.match(/router\.(get|post)\(/g)||[]).length;
     expect(handlers).toBeGreaterThanOrEqual(4);
   });

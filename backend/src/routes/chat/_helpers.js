@@ -14,6 +14,7 @@ import { safeJson } from '../../utils/routeHelpers.js';
 import { anthropicFetch } from '../../services/aiClient.js';
 import logger               from '../../utils/logger.js';
 import { randomUUID }       from 'crypto';
+import { rightsPromptBlock } from '../../services/rightsContent.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
   from './_prompts.js';
 
@@ -120,7 +121,9 @@ export async function callClaude(opts) {
   const caseNote = buildCaseNote(caseContext, mode);
 
   const isDefender   = mode === 'defender';
-  const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT) + RESPONSE_FOOTER_INSTRUCTION;
+  // Consumer answers about rights are grounded in the verified rights card and cite it.
+  const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rightsPromptBlock(user_state))
+    + RESPONSE_FOOTER_INSTRUCTION;
 
   // ── Jurisdiction awareness — delegates to shared buildJurisdictionNote() ──
   const jurisdictionNote = buildJurisdictionNote(user_state, user_state_name);

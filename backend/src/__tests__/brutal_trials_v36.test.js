@@ -130,11 +130,15 @@ describe('S1b. cases.js — 1-Hit Endpoints Documented', () => {
     expect(src).toContain('7-day');
     expect(src).toContain('no auth');
   });
-  test('S1b-04: POST /:id/invite — invite family member via token', async () => {
+  test('S1b-04: POST /:id/invite — consented family follower invite (code)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/cases.js', 'utf8');
-    expect(src).toContain("'/:id/invite'");
-    expect(src).toContain('invite family member');
+    // consented, revocable family followers (older invite/family-access names kept)
+    expect(src).toContain('POST   /api/cases/:id/followers');
+    expect(src).toContain("router.post('/:id/invite', authRequired, casesLimiter, createFollowerHandler)");
+    expect(src).toContain("router.delete('/:id/family-access/:memberId', authRequired, revokeFollowerHandler)");
+    expect(src).toContain('revokeFollower');
+    expect(src).toContain('status-history');
   });
   test('S1b-05: POST /:id/share — generate 7-day read share link', async () => {
     const fs = await import('fs');

@@ -241,14 +241,18 @@ describe('S6. Screens at 5–7 Hits — Pattern Verification', () => {
     expect(src).toContain('/firm-acquisition/checklist');
     expect(src).toContain('/firm-acquisition/plans');
   });
-  test('S6-10: HelpNowScreen — emergency bypass, 4 APIs: bail+lawyers+courthouses+resources', async () => {
+  test('S6-10: HelpNowScreen — combined lawyer + bail results, mounted guard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('Emergency bypass screen');
-    expect(src).toContain('/providers/bail');
-    expect(src).toContain('/providers/lawyers');
-    expect(src).toContain('/courthouses');
-    expect(src).toContain('mountedRef');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    // combined lawyer + bail results from one public endpoint
+    expect(hn).toContain("'/help/nearby'");
+    expect(hn).toContain('bail_agents');
+    expect(hn).toContain("navigate('LawyersTab')");
+    expect(hn).toContain("navigate('BailCalculator'");
+    expect(hn).toContain("navigate('CourtLocator'");
+    expect(hn).toContain("navigate('ChatTab')");
+    expect(hn).toContain('988');
+    expect(hn).toContain('mounted');
   });
 });
 

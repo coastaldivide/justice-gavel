@@ -237,19 +237,19 @@ describe('FAM. FamilyConnectScreen — $28.99 Emergency Family Connection', () =
 
 // ── HNS. HelpNowScreen Multi-Source Architecture ───────────────────────────
 describe('HNS. HelpNowScreen — Multi-Source Lawyer/Bondsman Fetching', () => {
-  test('HNS-01: fetchBoth loads lawyers+bondsmen concurrently for current location', async () => {
+  test('HNS-01: one search loads lawyers + bail agents for GPS / city / state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('fetchBoth');
-    expect(src).toContain('fetchForCity');
-    expect(src).toContain('setShowCityPicker');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain('const search = useCallback');
+    expect(hn).toContain('searchCity');
+    expect(hn).toContain('useMyLocation');
   });
-  test('HNS-02: saveCache stores data to AsyncStorage with 24h TTL', async () => {
+  test('HNS-02: last results saved on the phone for offline use', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('saveCache');
-    expect(src).toContain('AsyncStorage');
-    expect(src).toContain('24 hours');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain('CACHE_KEY');
+    expect(hn).toContain('AsyncStorage');
+    expect(hn).toContain('help-offline');
   });
 });
 
@@ -307,12 +307,11 @@ describe('S12. UX — Final Internal Logic Patterns', () => {
     expect(src).toContain('$28.99');
     expect(src).toContain('requireAuth');
   });
-  test('S12-02: HelpNowScreen 24h cache prevents redundant GPS+API calls', async () => {
+  test('S12-02: HelpNowScreen offline copy of the last results', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('24 hours');
-    expect(src).toContain('AsyncStorage');
-    expect(src).toContain('saveCache');
+    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    expect(hn).toContain('AsyncStorage');
+    expect(hn).toContain('isOfflineError');
   });
   test('S12-03: LawyersScreen useMemo sortedLawyers prevents re-sort on every keypress', async () => {
     const fs = await import('fs');

@@ -158,11 +158,11 @@ describe('SCRF. Screen-Level Functions — Low Corpus Hits', () => {
     // scrollToBottom: useCallback with setTimeout for chat scroll after new message
     // handleLongPress: copy message text on long press — accessibility feature
   });
-  test('SCRF-03: HelpNowScreen fetchForCity — city-specific legal resources', async () => {
+  test('SCRF-03: HelpNowScreen searchCity — city search returns local help incl. public defender', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    expect(src).toContain('fetchForCity');
-    // fetchForCity: loads local legal aid, clinics, public defenders for selected city
+    expect(src).toContain('searchCity');
+    expect(src).toContain('public_defender');
   });
 });
 

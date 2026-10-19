@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import 'react-native-gesture-handler';
 import OfflineBanner from './src/components/OfflineBanner';
 /**
@@ -377,6 +378,10 @@ function App() {
   // blocked: until (or if) loading fails, text falls back to the system font.
   useEffect(() => {
     Font.loadAsync(INTER_FONTS).catch(() => {});
+    // Load the icon font up front too: @expo/vector-icons otherwise loads it on
+    // the first icon render and does not catch the failure — offline (a police
+    // station, airplane mode) that surfaced as an unhandled NetworkError.
+    Font.loadAsync(Ionicons.font).catch(() => {});
   }, []);
 
   return (

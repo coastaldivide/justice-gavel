@@ -9,6 +9,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList, NativeModules, Platform } from 'react-native';
+import { setPendingRoute } from '../services/corePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { t, initLang, setLang } from '../i18n';
@@ -40,16 +41,6 @@ const SITUATION_PATHS = {
     { key:'free',       icon:'✅', titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: COLORS.legal },
   ] };
 
-// Situation picker slide -- shown first to all users
-const SITUATION_SLIDE = {
-  key:'situation', icon:'⚖️', accent: COLORS.navy,
-  situations: [
-    { key:'arrested', icon:'🔒', label:'I was just arrested' },
-    { key:'family',   icon:'👪', label:'My family member was arrested' },
-    { key:'record',   icon:'📋', label:'I need to clear my record' },
-    { key:'general',  icon:'ℹ️',  label:'I just want to learn' },
-  ] };
-
 // Default slides for 'general' / no situation selected
 const SLIDES = [
   { key: 'welcome', icon: '🔓', titleKey: 'onboard_slide1_title', bodyKey: 'onboard_slide1_body', accent: COLORS.navy },
@@ -72,8 +63,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
   return () => { mountedRef.current = false; }; }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [situation, setSituation] = React.useState<string | null>(null);
-  const [showSituationPicker, setShowSituationPicker] = React.useState(true);
+  const [situation] = React.useState<string | null>(null);
   // Active slides -- changes based on situation selected
   const activeSlides = React.useMemo(() =>
     situation && situation !== 'general'
@@ -82,71 +72,6 @@ function OnboardingScreen({ navigation }: ScreenProps) {
     [situation]
   );
 
-      {/* Situation picker -- shown on first open */}
-      {showSituationPicker && (
-        <View style={{ position:'absolute', top:0, left:0, right:0, bottom:0,
-          backgroundColor:colors.bg, zIndex:10, padding:24,
-          justifyContent:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:26, lineHeight:36,
-            fontWeight:'900', color:colors.textPrimary, marginBottom:8, textAlign:'center' }}>
-            ⚖️ Justice Gavel
-          </Text>
-          
-        {/* ── Emergency fast-track — top of onboarding, no account required ── */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: COLORS.bail,
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-          onPress={() => navigation.navigate('Emergency')}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-          accessibilityRole="button"
-          accessibilityLabel="Just arrested - get immediate help now"
-          accessibilityHint="Opens emergency screen without requiring sign up"
-        >
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '700', fontSize: 16 }}>
-              🚨 Just arrested or detained?
-            </Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontSize: 13, marginTop: 2 }}>
-              Get immediate help — no sign-up required
-            </Text>
-          </View>
-          <Text style={{ color: colors.textOnNavy, fontSize: 22 }}>→</Text>
-        </TouchableOpacity>
-<Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
-            color:colors.textMuted, textAlign:'center', marginBottom:32 }}>
-            What brings you here today?
-          </Text>
-          {SITUATION_SLIDE.situations.map(sit => (
-            <TouchableOpacity
-              accessibilityRole="button"
-              key={sit.key}
-              style={{ backgroundColor:colors.bgCard, borderRadius:14, padding:18,
-                marginBottom:12, flexDirection:'row', alignItems:'center', gap:14,
-                borderWidth:1, borderColor:colors.border }}
-              onPress={() => {
-                setSituation(sit.key);
-                setShowSituationPicker(false);
-              }}
-              accessibilityLabel={sit.label}
-              activeOpacity={0.8}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:28 }}>{sit.icon}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
-                fontWeight:'600', color:colors.textPrimary, flex:1 }}>
-                {sit.label}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textMuted, fontSize:18 }}>›</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
   const flatRef  = useRef<FlatList<(typeof SLIDES)[0]>>(null);
   const scrollX  = useRef(new Animated.Value(0)).current;
@@ -185,6 +110,14 @@ function OnboardingScreen({ navigation }: ScreenProps) {
   const browseNow = async () => {
     // The user's state is auto-detected on mount (detectAndSaveUserState).
     AsyncStorage.setItem('onboarding_done', 'true').catch(() => {});
+    await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
+    setAppAuth('browsing');
+  };
+
+  // "Just arrested?" — straight into the three-step path, no account needed.
+  const startJustArrested = async () => {
+    AsyncStorage.setItem('onboarding_done', 'true').catch(() => {});
+    await setPendingRoute('JustArrested');
     await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
     setAppAuth('browsing');
   };
@@ -243,6 +176,23 @@ function OnboardingScreen({ navigation }: ScreenProps) {
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>AI Legal Help</Text>
         </View>
       </View>
+
+      {/* ── "Just arrested?" — the core path, no account required ── */}
+      <TouchableOpacity
+        style={styles.justArrestedBtn}
+        onPress={startJustArrested}
+        testID="onboarding-just-arrested"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Just arrested? Get help now, no sign up"
+        accessibilityHint="Opens three steps: know your rights, find a lawyer and a bail agent, never miss a court date"
+      >
+        <View style={{ flex: 1 }}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.justArrestedTitle}>🚨 {t('ja_title')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.justArrestedSub}>1) {t('ja_s1')} · 2) {t('ja_s2')} · 3) {t('ja_s3')}</Text>
+        </View>
+        <Text style={styles.justArrestedTitle}>→</Text>
+      </TouchableOpacity>
 
       {/* Slides */}
       <Animated.FlatList
@@ -340,6 +290,9 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
+  justArrestedBtn: { backgroundColor: colors.emergencyDark, borderRadius: 14, padding: 16, marginHorizontal: 20, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 },
+  justArrestedTitle: { color: colors.white, fontSize: 18, fontWeight: '900' },
+  justArrestedSub: { color: colors.white, fontSize: 13, marginTop: 2 },
   screen: {
     flex: 1, backgroundColor: colors.bg,
     alignItems: 'center', paddingBottom: 32 },

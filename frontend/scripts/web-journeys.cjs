@@ -18,11 +18,19 @@
  *        event) AND 390×844 (must scroll); the backend must then report the ToS
  *        AND the AI disclaimer as accepted.
  *   M6   chat answers through /chat/stream; no "Cannot set headers" in the log.
- *   H12  bail calculator lists the schedule, a row opens the bond breakdown.
+ *   H12  bail calculator lists the schedule, a row opens the breakdown (range +
+ *        fee note; no unsourced 10% estimate).
  *   H11  create a case with a court date → reminders are planned (toast + API),
  *        "Remind me" re-plans without the old 400.
  *   M1   a message with quotes / < / ' renders exactly as typed.
  *   M7   /welcome at 1280: each slide is exactly as wide as the carousel.
+ *   CORE "Just arrested?" end to end at 390×844 in America/Chicago: guest →
+ *        Just arrested → state rights card (sources) → combined lawyer + bail
+ *        results with a filter → report a listing → sign up → add a court date
+ *        (courthouse) → .ics download (content checked) → reminders at 7d / 3d /
+ *        1d / morning-of (schedule rows checked) → share with a family follower
+ *        (consent + code) → the follower's account sees the court date but not
+ *        the case notes → airplane mode: rights card + court date still shown.
  * Exit 1 on any failure.
  */
 const http = require('http');
@@ -96,6 +104,13 @@ async function registerAndAcceptTerms(page, base, label, { mustScroll }) {
   await byTid(page, 'register-password-input').fill(password);
   await page.getByPlaceholder('How should we address you?').fill('Journey User').catch(() => {});
   await byTid(page, 'register-submit-button').click();
+  const disabledBefore = await acceptTerms(page, label, { mustScroll });
+  const login = await apiCall('POST', '/auth/login', { body: { identifier: email, password }, ip: freshIp() });
+  return { email, password, token: login.body && login.body.token, disabledBefore };
+}
+
+/** Pass the Terms gate that opens after sign-up. Returns aria-disabled before scrolling. */
+async function acceptTerms(page, label, { mustScroll }) {
   const accept = byTid(page, 'tos-accept-button');
   await accept.waitFor({ timeout: 20000 });
   await page.screenshot({ path: path.join(OUT, `${label}-tos-open.png`) });
@@ -117,8 +132,249 @@ async function registerAndAcceptTerms(page, base, label, { mustScroll }) {
     if (await accept.isVisible()) throw new Error(`${label}: Terms modal still open after "I Agree"`);
   });
   await page.screenshot({ path: path.join(OUT, `${label}-after-accept.png`) });
-  const login = await apiCall('POST', '/auth/login', { body: { identifier: email, password }, ip: freshIp() });
-  return { email, password, token: login.body && login.body.token, disabledBefore };
+  return disabledBefore;
+}
+
+
+// ── CORE: the "Just arrested?" path end to end ───────────────────────────────
+const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+/** Client-side navigation (no reload) — used once the network is off. */
+async function spaGo(page, pathname) {
+  await page.evaluate((p) => { window.history.pushState({}, '', p); window.dispatchEvent(new PopStateEvent('popstate', { state: null })); }, pathname);
+  await page.waitForTimeout(1200);
+  if (process.env.JOURNEY_DEBUG) console.log('SPA', pathname);
+}
+const bodyText = (page) => page.locator('body').innerText().catch(() => '');
+
+async function coreJourney(browser, base) {
+  const ID = 'CORE';
+  const step = async (name, fn) => {
+    try { const d = await fn(); pass(`${ID} ${name}`, d || 'ok'); return true; }
+    catch (e) { fail(`${ID} ${name}`, e.message); await ctx.page.screenshot({ path: path.join(OUT, `FAIL-CORE-${name.replace(/\W+/g, '-')}.png`) }).catch(() => {}); return false; }
+  };
+  const ip = freshIp();
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'America/Chicago', acceptDownloads: true,
+    serviceWorkers: 'block', extraHTTPHeaders: { 'X-Forwarded-For': ip } });
+  const page = await context.newPage();
+  const ctx = { page };
+  const errors = [];
+  page.on('pageerror', e => { errors.push(String(e && e.message || e)); if (process.env.JOURNEY_DEBUG) console.log('PAGEERROR', e && e.stack); });
+  if (process.env.JOURNEY_DEBUG) {
+    await page.addInitScript(() => {
+      window.addEventListener('unhandledrejection', (ev) => { console.log('UNHANDLED', String(ev.reason && (ev.reason.stack || ev.reason.message || ev.reason)), ev.reason && ev.reason.name); });
+      window.addEventListener('error', (ev) => { console.log('WINERROR', ev.message, ev.filename, ev.lineno, ev.error && ev.error.stack); });
+    });
+    page.on('console', m => { if (/UNHANDLED|WINERROR/.test(m.text())) console.log(m.text().slice(0, 1500)); });
+  }
+  const state = {};
+
+  let ok = await step('1 guest opens the app → "Just arrested?" → step 1 of 3', async () => {
+    await page.goto(base + '/', { waitUntil: 'networkidle' });
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem('age_verified', '1'); });
+    await page.goto(base + '/', { waitUntil: 'networkidle' });
+    await byTid(page, 'onboarding-just-arrested').click({ timeout: 15000 });
+    await byTid(page, 'core-step-rights').waitFor({ timeout: 20000 });
+    const t = await byTid(page, 'core-step-label').innerText();
+    if (!/STEP 1 OF 3/.test(t)) throw new Error(`step label "${t}"`);
+    if (await boundary(page)) throw new Error('ErrorBoundary');
+    return 'first screen → Just arrested hub, no account';
+  });
+
+  if (ok) ok = await step('2 rights card for the state, every section sourced', async () => {
+    await byTid(page, 'core-state-button').click();
+    await byTid(page, 'core-state-TN').click({ timeout: 10000 });
+    await page.getByText('“I am invoking my right to remain silent.”').first().waitFor({ timeout: 10000 });
+    const src = await byTid(page, 'core-script-source').innerText();
+    if (!/Source:.*Last reviewed: April 2026/.test(src)) throw new Error(`script source line: "${src}"`);
+    await byTid(page, 'core-open-rights-card').click();
+    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 15000 });
+    const sources = await byTid(page, 'rights-source').count();
+    const sections = await byTid(page, 'rights-section').count() + await byTid(page, 'rights-state-section').count();
+    if (sources < sections || sections < 9) throw new Error(`${sections} sections but ${sources} source lines`);
+    const txt = await bodyText(page);
+    if (/Subscribe|10%/.test(txt)) throw new Error('paywall or unsourced fee text on the rights card');
+    await page.screenshot({ path: path.join(OUT, 'CORE-2-rights-TN.png') });
+    return `${sections} sections for Tennessee, each with source + last reviewed; no paywall`;
+  });
+
+  if (ok) ok = await step('3 combined lawyer + bail results with a filter', async () => {
+    await page.goto(base + '/just-arrested', { waitUntil: 'networkidle' });
+    await byTid(page, 'core-step-body').waitFor({ timeout: 15000 });
+    if (await byTid(page, 'core-next-1').count()) await byTid(page, 'core-next-1').click();
+    await byTid(page, 'core-find-help').click({ timeout: 10000 });
+    await byTid(page, 'help-lawyer-card').first().waitFor({ timeout: 20000 });
+    const lawyers = await byTid(page, 'help-lawyer-card').count();
+    const bail = await byTid(page, 'help-bail-card').count();
+    if (!lawyers || !bail) throw new Error(`lawyers=${lawyers} bail=${bail}`);
+    await byTid(page, 'help-filter-24').click();
+    await page.waitForTimeout(2500);
+    const cards = await byTid(page, 'help-bail-card').count() + await byTid(page, 'help-lawyer-card').count();
+    const badges = await byTid(page, 'help-247-badge').count();
+    if (!cards || badges !== cards) throw new Error(`24/7 filter: ${cards} cards but ${badges} 24/7 badges`);
+    const note = await byTid(page, 'help-ranking-note').innerText();
+    if (!/Never by payment/.test(note)) throw new Error('ranking note missing');
+    await page.screenshot({ path: path.join(OUT, 'CORE-3-help-24-7.png') });
+    return `${lawyers} lawyers + ${bail} bail agents together; 24/7 filter → ${cards} listings, all 24/7`;
+  });
+
+  if (ok) ok = await step('4 report a listing → queued (twice = one report)', async () => {
+    await byTid(page, 'help-report').first().click();
+    await byTid(page, 'report-modal').waitFor({ timeout: 5000 });
+    await byTid(page, 'report-reason-wrong_hours').click();
+    await byTid(page, 'report-submit').click();
+    await page.getByText(/our team will check this listing/).first().waitFor({ timeout: 10000 });
+    await page.waitForTimeout(800);
+    await byTid(page, 'help-report').first().click();
+    await byTid(page, 'report-reason-wrong_hours').click();
+    await byTid(page, 'report-submit').click();
+    await page.getByText(/You already reported this/).first().waitFor({ timeout: 10000 });
+    return 'report accepted; a repeat is recognised as the same report';
+  });
+
+  if (ok) ok = await step('5 court dates need an account — clear prompt for a guest', async () => {
+    await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
+    await byTid(page, 'court-dates-sign-in').waitFor({ timeout: 15000 });
+    return 'guest sees "Sign in to save your court date…"';
+  });
+
+  if (ok) ok = await step('6 sign up', async () => {
+    state.email = `core-${Date.now().toString(36)}@journeys.test`; state.password = 'CorrectHorse9!';
+    await byTid(page, 'court-dates-register').click();
+    await byTid(page, 'register-email-input').fill(state.email, { timeout: 15000 });
+    await byTid(page, 'register-password-input').fill(state.password);
+    await page.getByPlaceholder('How should we address you?').fill('Casey Journey').catch(() => {});
+    await byTid(page, 'register-submit-button').click();
+    await acceptTerms(page, 'CORE-6', { mustScroll: true });
+    const login = await apiCall('POST', '/auth/login', { body: { identifier: state.email, password: state.password }, ip: freshIp() });
+    state.token = login.body && login.body.token;
+    if (!state.token) throw new Error(`login after sign-up: ${login.status}`);
+    return 'registered in the app, Terms accepted';
+  });
+
+  if (ok) ok = await step('7 add a court date with its courthouse → detail with 4 reminders', async () => {
+    state.day = dayPlus(15);
+    await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
+    await byTid(page, 'court-date-add').click({ timeout: 15000 });
+    await byTid(page, 'court-form-date').waitFor({ timeout: 10000 });
+    if (await byTid(page, 'court-form-title').count()) await byTid(page, 'court-form-title').fill('DUI — Davidson County');
+    await byTid(page, 'court-form-date').fill(state.day);
+    await byTid(page, 'court-form-time').fill('09:30');
+    await byTid(page, 'court-form-hearing-arraignment').click();
+    await byTid(page, 'court-form-courthouse-q').fill('Davidson');
+    await byTid(page, 'court-form-courthouse-search').click();
+    await byTid(page, 'court-form-courthouse-option').first().click({ timeout: 10000 });
+    await byTid(page, 'court-form-save').click();
+    await byTid(page, 'court-date-detail-screen').waitFor({ timeout: 20000 });
+    await byTid(page, 'court-date-courthouse').waitFor({ timeout: 10000 });
+    await byTid(page, 'court-reminder-row').nth(3).waitFor({ timeout: 10000 });
+    const rows = await byTid(page, 'court-reminder-row').count();
+    if (rows !== 4) throw new Error(`${rows} reminder rows`);
+    state.cdId = Number((page.url().match(/court-dates\/(\d+)/) || [])[1]);
+    if (!state.cdId) {
+      const list = await apiCall('GET', '/court-dates', { token: state.token });
+      state.cdId = list.body.upcoming[0].id;
+    }
+    await page.screenshot({ path: path.join(OUT, 'CORE-7-court-date.png') });
+    return `court date ${state.day} 09:30 saved (id ${state.cdId}) with courthouse; 4 reminders listed`;
+  });
+
+  if (ok) ok = await step('8 .ics downloads with a correct VEVENT in America/Chicago', async () => {
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), byTid(page, 'court-date-ics').click()]);
+    const file = path.join(OUT, dl.suggestedFilename());
+    await dl.saveAs(file);
+    const ics = fs.readFileSync(file, 'utf8');
+    const ymd = state.day.replace(/-/g, '');
+    const need = ['BEGIN:VCALENDAR', 'BEGIN:VTIMEZONE', 'TZID:America/Chicago', `DTSTART;TZID=America/Chicago:${ymd}T093000`, `DTEND;TZID=America/Chicago:${ymd}T103000`, 'SUMMARY:Court: DUI — Davidson County', 'LOCATION:', 'END:VEVENT', 'END:VCALENDAR'];
+    const missing = need.filter(n => !ics.includes(n));
+    if (missing.length) throw new Error(`.ics missing ${missing.join(', ')}`);
+    if (dl.suggestedFilename() !== `court-date-${state.day}.ics`) throw new Error(`filename ${dl.suggestedFilename()}`);
+    return `${dl.suggestedFilename()} (${ics.length} bytes): DTSTART;TZID=America/Chicago:${ymd}T093000, VTIMEZONE, LOCATION`;
+  });
+
+  if (ok) ok = await step('9 reminders scheduled at 7d / 3d / 1d / morning-of (schedule rows)', async () => {
+    const r = await apiCall('GET', `/court-dates/${state.cdId}/reminders`, { token: state.token });
+    const fmt = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
+    const minus = (d, n) => new Date(Date.parse(`${d}T12:00:00Z`) - n * 86400000).toISOString().slice(0, 10);
+    const got = Object.fromEntries((r.body.reminders || []).map(x => [x.days_before, fmt(x.deliver_at)]));
+    const want = { 7: `${minus(state.day, 7)}, 09:00`, 3: `${minus(state.day, 3)}, 09:00`, 1: `${minus(state.day, 1)}, 18:00`, 0: `${state.day}, 06:30` };
+    for (const k of Object.keys(want)) if (got[k] !== want[k]) throw new Error(`days_before ${k}: got ${got[k]}, want ${want[k]} (zone ${r.body.time_zone})`);
+    if (r.body.time_zone !== 'America/Chicago') throw new Error(`zone ${r.body.time_zone}`);
+    return `4 rows: ${Object.values(want).join(' · ')} (America/Chicago)`;
+  });
+
+  if (ok) ok = await step('10 share with a family follower (consent + code)', async () => {
+    const cd = await apiCall('GET', `/court-dates/${state.cdId}`, { token: state.token });
+    state.caseId = cd.body.case_id;
+    await apiCall('PUT', `/cases/${state.caseId}`, { token: state.token, body: { notes: 'JOURNEY SECRET NOTE: talked to the officer' } });
+    await byTid(page, 'court-date-share-family').click();
+    await byTid(page, 'family-name').fill('Mom');
+    const create = byTid(page, 'family-create-invite');
+    if ((await create.getAttribute('aria-disabled')) !== 'true') throw new Error('invite possible without consent');
+    await byTid(page, 'family-consent').click();
+    await create.click();
+    state.code = (await byTid(page, 'family-code-text').innerText({ timeout: 10000 })).trim();
+    if (!/^[A-Z2-9]{10}$/.test(state.code)) throw new Error(`code "${state.code}"`);
+    return `consent required; code ${state.code.slice(0, 3)}… created`;
+  });
+
+  let follower;
+  if (ok) ok = await step('11 follower account sees the court date but not the notes', async () => {
+    follower = await newContext(browser, { width: 1280, height: 900 });
+    const u = await registerAndAcceptTerms(follower.page, base, 'CORE-11-follower', { mustScroll: false });
+    await follower.page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
+    await byTid(follower.page, 'follow-code-input').fill(state.code, { timeout: 15000 });
+    await byTid(follower.page, 'follow-code-submit').click();
+    await byTid(follower.page, 'following-court-date').first().waitFor({ timeout: 15000 });
+    const txt = await bodyText(follower.page);
+    if (!/DUI — Davidson County/.test(txt)) throw new Error('followed case title not shown');
+    if (/JOURNEY SECRET NOTE|talked to the officer/.test(txt)) throw new Error('follower sees the case notes');
+    const api = await apiCall('GET', '/following', { token: u.token });
+    const blob = JSON.stringify(api.body);
+    if (/JOURNEY SECRET NOTE/.test(blob) || !blob.includes(state.day)) throw new Error('follower API leaks notes or misses the date');
+    const peek = await apiCall('GET', `/court-dates/${state.cdId}`, { token: u.token });
+    if (peek.status !== 404) throw new Error(`follower can open the owner's court date directly: ${peek.status}`);
+    const rem = await apiCall('GET', '/push/reminders', { token: u.token });
+    const fr = (rem.body || []).filter(x => x.type === 'follower_court_reminder' && x.court_date === state.day).length;
+    if (fr !== 4) throw new Error(`follower reminders: ${fr}`);
+    await follower.page.screenshot({ path: path.join(OUT, 'CORE-11-follower.png') });
+    return 'follower sees the date + courthouse, gets the same 4 reminders; notes hidden; direct read → 404';
+  });
+
+  if (ok) ok = await step('12 airplane mode: rights card, court date and saved contacts still shown', async () => {
+    // visit them once online (the app keeps a copy), then cut the network
+    await page.evaluate(() => localStorage.setItem('contacts', JSON.stringify(['6155550101', '', ''])));
+    await page.goto(base + '/emergency-share', { waitUntil: 'networkidle' });
+    await page.getByText('6155550101').first().waitFor({ timeout: 15000 });
+    await page.goto(base + '/rights', { waitUntil: 'networkidle' });
+    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 15000 });
+    await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
+    await byTid(page, 'court-date-row').first().waitFor({ timeout: 15000 });
+    if (process.env.JOURNEY_DEBUG) console.log('OFFLINE ON');
+    await context.setOffline(true);
+    await spaGo(page, '/rights');
+    await byTid(page, 'rights-offline').waitFor({ timeout: 15000 });
+    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 5000 });
+    await page.screenshot({ path: path.join(OUT, 'CORE-12-offline-rights.png') });
+    await spaGo(page, '/court-dates');
+    await byTid(page, 'court-dates-offline').waitFor({ timeout: 15000 });
+    const txt = await bodyText(page);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(state.day);
+    const label = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    if (!txt.includes(label)) throw new Error(`offline court dates do not show ${label}`);
+    await page.screenshot({ path: path.join(OUT, 'CORE-12-offline-court-dates.png') });
+    await spaGo(page, '/emergency-share');
+    await page.getByText('6155550101').first().waitFor({ timeout: 10000 });
+    await spaGo(page, '/just-arrested');
+    await byTid(page, 'core-step-1').click({ timeout: 10000 });   // the hub resumes at the saved step
+    await page.getByText('“I am invoking my right to remain silent.”').first().waitFor({ timeout: 10000 });
+    await context.setOffline(false);
+    return `offline: rights card (Tennessee, saved copy), court date ${label}, saved emergency contact and the step-1 script shown`;
+  });
+
+  const pe = errors.filter(Boolean);
+  if (pe.length) fail(`${ID} no uncaught page errors`, pe.slice(0, 5).join(' | ')); else pass(`${ID} no uncaught page errors`, 'core journey session');
+  if (follower) await follower.ctx.close();
+  await context.close();
 }
 
 (async () => {
@@ -127,6 +383,16 @@ async function registerAndAcceptTerms(page, base, label, { mustScroll }) {
   const browser = await chromium.launch();
   const logBefore = SERVER_LOG && fs.existsSync(SERVER_LOG) ? fs.statSync(SERVER_LOG).size : 0;
   let desk;
+
+  // ── CORE: "Just arrested?" end to end ──────────────────────────────────────
+  if (!process.argv.includes('--skip-core')) await coreJourney(browser, base).catch(e => fail('CORE journey', e.message));
+  if (process.argv.includes('--only-core')) {
+    await browser.close(); server.close();
+    fs.writeFileSync(path.join(OUT, 'web-journeys-report.json'), JSON.stringify(results, null, 2));
+    const badC = results.filter(r => !r.ok);
+    console.log(`\nJOURNEYS: ${results.length}  FAILED: ${badC.length}`);
+    process.exit(badC.length ? 1 : 0);
+  }
 
   // ── H10 on desktop (and the rest of the journeys in the same session) ─────
   try {
@@ -183,8 +449,9 @@ async function registerAndAcceptTerms(page, base, label, { mustScroll }) {
     await page.getByPlaceholder('e.g. DUI, assault, theft…').fill('DUI');
     await page.waitForTimeout(400);
     await byTid(page, 'bail-schedule-row').first().click();
-    await byTid(page, 'bail-bond-cost').first().waitFor({ timeout: 5000 });
-    const cost = await byTid(page, 'bail-bond-cost').first().innerText();
+    await byTid(page, 'bail-fee-note').first().waitFor({ timeout: 5000 });
+    const cost = await byTid(page, 'bail-fee-note').first().innerText();
+    if (/10\s?%/.test(await page.locator('body').innerText())) throw new Error('unsourced "10%" bail-agent fee estimate shown');
     // the explanation box must be readable (text colour differs from its background)
     const contrastOk = await byTid(page, 'bail-how-bondsmen-work').first().evaluate(el => {
       const bg = getComputedStyle(el).backgroundColor; const fg = getComputedStyle(el.querySelector('div[dir]') || el).color;
@@ -193,7 +460,7 @@ async function registerAndAcceptTerms(page, base, label, { mustScroll }) {
     if (!contrastOk) throw new Error('"How bail bondsmen work" text is the same colour as its background');
     await page.waitForTimeout(800);
     await page.screenshot({ path: path.join(OUT, 'H12-bail-calculator.png') });
-    if (!(await boundary(page)) && desk.errors.filter(e => /filter is not a function/.test(e)).length === 0) pass('H12 bail calculator', `${n} schedule rows; breakdown shown ("${cost.replace(/\s+/g, ' ').trim()}")`);
+    if (!(await boundary(page)) && desk.errors.filter(e => /filter is not a function/.test(e)).length === 0) pass('H12 bail calculator', `${n} schedule rows; breakdown shows the range + honest fee note ("${cost.replace(/\s+/g, ' ').trim().slice(0, 60)}…"), no 10% estimate`);
     else fail('H12 bail calculator', 'ErrorBoundary / crash after data load');
   } catch (e) { fail('H12 bail calculator', e.message); await page.screenshot({ path: path.join(OUT, 'FAIL-H12.png') }).catch(() => {}); }
 

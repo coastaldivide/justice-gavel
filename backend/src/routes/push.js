@@ -188,7 +188,7 @@ router.get('/reminders', authRequired, async (req, res) => {
       `SELECT id, title, body, deliver_at, notification_type, case_id, data
          FROM scheduled_pushes
         WHERE user_id = ? AND status = 'pending'
-          AND notification_type IN ('court_reminder','reminder')
+          AND notification_type IN ('court_reminder','follower_court_reminder','reminder')
           AND deliver_at > NOW()
         ORDER BY deliver_at ASC
         LIMIT 50`,
@@ -202,6 +202,8 @@ router.get('/reminders', authRequired, async (req, res) => {
         deliver_at: r.deliver_at instanceof Date ? r.deliver_at.toISOString() : r.deliver_at,
         type: r.notification_type, case_id: r.case_id == null ? null : Number(r.case_id),
         court_date: data.court_date || null,
+        court_date_id: data.court_date_id ?? null,
+        days_before: data.days_before ?? null,
       };
     }));
   } catch (e) { logger.error('[push/reminders]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }

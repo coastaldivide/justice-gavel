@@ -94,11 +94,15 @@ describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
     expect(src).toContain("'/bondsman/verified-badge/status'");
     expect(src).toContain("'/bondsman/verified-badge/cancel'");
   });
-  test('S1-06: cases.js DELETE family-access/:memberId revokes family access', async () => {
+  test('S1-06: cases.js — revoke a family follower', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/cases.js', 'utf8');
-    expect(src).toContain("'/:id/family-access/:memberId'");
-    expect(src).toContain('revoke family access');
+    // consented, revocable family followers (older invite/family-access names kept)
+    expect(src).toContain('POST   /api/cases/:id/followers');
+    expect(src).toContain("router.post('/:id/invite', authRequired, casesLimiter, createFollowerHandler)");
+    expect(src).toContain("router.delete('/:id/family-access/:memberId', authRequired, revokeFollowerHandler)");
+    expect(src).toContain('revokeFollower');
+    expect(src).toContain('status-history');
   });
   test('S1-07: firm_verticals.js PATCH handlers use getFirmMembership + associate+', async () => {
     const fs = await import('fs');

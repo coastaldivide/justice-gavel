@@ -22,16 +22,12 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('BODY. Async Handler Function Bodies', () => {
   test('BODY-01: Promise.all usage correctly awaits multiple api.get calls', async () => {
     const fs = await import('fs');
-    // EmergencyShareScreen.gatherInfo and HelpNowScreen.fetchBoth
-    // use Promise.all([api.get(...), api.get(...)]) — both correctly awaited
     const em = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyShareScreen.tsx','utf8');
-    const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx','utf8');
-    // Both use Promise.all pattern
+    const cd = fs.readFileSync(__REPO + '/frontend/src/screens/CourtDatesScreen.tsx','utf8');
     expect(em).toContain('Promise.all');
-    expect(hn).toContain('Promise.all');
-    // Both have try/catch
+    expect(cd).toContain('Promise.all');
     expect(em).toContain('catch');
-    expect(hn).toContain('catch');
+    expect(cd).toContain('catch');
   });
   test('BODY-02: SettingsScreen.togglePref optimistic UI with .finally loading cleanup', async () => {
     const fs = await import('fs');

@@ -8,9 +8,13 @@
  * a claim older than 10 minutes (a crashed process) is retried.
  *
  * Per row, by notification_type:
- *   court_reminder  re-validated against the case (still open, same court date,
- *                   not deleted); respects users.notif_court_reminders.
- *                   Push → email fallback.
+ *   court_reminder  re-validated against the hearing (court_dates row still
+ *                   scheduled, same date, case open and not deleted) — or, for
+ *                   legacy rows without court_date_id, against the case;
+ *                   respects users.notif_court_reminders.
+ *                   Push → email → SMS (each skipped when not configured).
+ *   follower_court_reminder  the same check plus: the family follow is still
+ *                   active (consented, not revoked) with reminders on.
  *   reminder        a reminder the user set (deadlines, follow-ups). Push → email.
  *   expungement     push only; respects users.notif_expungement.
  *   engagement      marketing-style nudges; push only and ONLY when the user
@@ -26,10 +30,13 @@ import { getDb } from '../db/index.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtReminders.js';
+import { sendSms, smsLive } from './sms.js';
 
 const BATCH = 50;
 const STALE_CLAIM_MINUTES = 10;
-const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'reminder']);
+const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder']);
+const SMS_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
+const COURT_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
 const DISABLED_ACCOUNT = new Set(['suspended', 'deleted', 'disabled', 'banned']);
 
 function parseData(raw) {
@@ -48,6 +55,25 @@ async function finish(db, id, fields) {
 /** Why a court reminder must not go out any more (or null when it still should). */
 async function courtReminderStale(db, row, data) {
   if (!row.case_id) return 'no_case';
+  const follower = row.notification_type === 'follower_court_reminder';
+  if (row.court_date_id) {
+    const cd = await db.get(
+      `SELECT cd.court_date, cd.status, cd.deleted_at, cd.case_id, c.user_id, c.status AS case_status, c.deleted_at AS case_deleted
+         FROM court_dates cd JOIN cases c ON c.id = cd.case_id WHERE cd.id = ?`, [row.court_date_id]);
+    if (!cd || Number(cd.case_id) !== Number(row.case_id)) return 'court_date_missing';
+    if (cd.deleted_at) return 'court_date_deleted';
+    if (cd.case_deleted) return 'case_deleted';
+    if (CLOSED_CASE_STATUSES.has(cd.case_status)) return 'case_closed';
+    if (cd.status !== 'scheduled') return 'court_date_not_scheduled';
+    if (data.court_date && dateOnly(cd.court_date) !== data.court_date) return 'court_date_changed';
+    if (!follower) return Number(cd.user_id) === Number(row.user_id) ? null : 'case_missing';
+    const f = await db.get(
+      `SELECT id FROM case_family_access
+        WHERE case_id = ? AND user_id = ? AND status = 'active' AND share_reminders = 1 AND owner_consent_at IS NOT NULL
+        LIMIT 1`, [row.case_id, row.user_id]);
+    return f ? null : 'follow_revoked';
+  }
+  if (follower) return 'court_date_missing';
   const c = await db.get('SELECT user_id, next_court_date, status, deleted_at FROM cases WHERE id = ?', [row.case_id]);
   if (!c || Number(c.user_id) !== Number(row.user_id)) return 'case_missing';
   if (c.deleted_at) return 'case_deleted';
@@ -58,7 +84,7 @@ async function courtReminderStale(db, row, data) {
 
 function preferenceBlocks(type, user) {
   const on = v => v === null || v === undefined || Number(v) === 1;
-  if (type === 'court_reminder') return !on(user.notif_court_reminders);
+  if (COURT_TYPES.has(type)) return !on(user.notif_court_reminders);
   if (type === 'expungement')    return !on(user.notif_expungement);
   if (type === 'engagement')     return Number(user.notif_marketing) !== 1;
   return false;
@@ -72,7 +98,7 @@ async function userPushTokens(db, userId, user) {
 
 async function sendReminderEmail(user, row, data) {
   const { sendEmail, emailLive } = await import('./email.js');
-  const isCourt = row.notification_type === 'court_reminder';
+  const isCourt = COURT_TYPES.has(row.notification_type);
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
       <h2 style="color:#042C53;margin:0 0 12px">${escapeHtml(row.title)}</h2>
@@ -92,12 +118,12 @@ async function deliverOne(db, row, now) {
   const type = row.notification_type || 'reminder';
 
   const user = await db.get(
-    `SELECT id, email, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing
+    `SELECT id, email, phone, sms_reminders, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing
        FROM users WHERE id = ?`, [row.user_id]);
   if (!user || DISABLED_ACCOUNT.has(String(user.account_status || '').toLowerCase())) {
     return finish(db, row.id, { status: 'cancelled', error: 'user_unavailable' }).then(() => 'cancelled');
   }
-  if (type === 'court_reminder') {
+  if (COURT_TYPES.has(type)) {
     const stale = await courtReminderStale(db, row, data);
     if (stale) return finish(db, row.id, { status: 'cancelled', error: stale }).then(() => 'cancelled');
   }
@@ -112,7 +138,7 @@ async function deliverOne(db, row, now) {
     const payload = { ...data, type, case_id: row.case_id ?? data.case_id ?? null, push_id: Number(row.id) };
     const tickets = await sendExpoPush(tokens.map(to => ({
       to, title: row.title, body: row.body || '', data: payload,
-      sound: 'default', priority: 'high', channelId: type === 'court_reminder' ? 'court_reminders' : 'default',
+      sound: 'default', priority: 'high', channelId: COURT_TYPES.has(type) ? 'court_reminders' : 'default',
     })));
     const ok = tickets.find(t => t?.status === 'ok');
     if (ok) {
@@ -132,8 +158,29 @@ async function deliverOne(db, row, now) {
     }
   }
 
-  // ── Email fallback ──────────────────────────────────────────────────────
-  if (EMAIL_FALLBACK_TYPES.has(type) && looksLikeEmail(user.email)) {
+  // ── Fallback chain: email (when Resend is configured) → SMS (when Twilio
+  //    is configured and the user opted in) → logged e-mail (dev / no
+  //    provider: recorded as 'email_log_only' so nobody mistakes it for delivery).
+  const canEmail = EMAIL_FALLBACK_TYPES.has(type) && looksLikeEmail(user.email);
+  const { emailLive } = await import('./email.js');
+  if (canEmail && emailLive()) {
+    try {
+      const channel = await sendReminderEmail(user, row, data);
+      await finish(db, row.id, { status: 'sent', channel, delivered: 1, sent_at: now.toISOString(), error: pushError });
+      return 'sent';
+    } catch (e) {
+      pushError = `${pushError}; email: ${e.message}`;
+    }
+  }
+  if (SMS_FALLBACK_TYPES.has(type) && smsLive() && Number(user.sms_reminders) === 1 && user.phone) {
+    const r = await sendSms({ to: user.phone, body: `${row.title} — ${row.body || ''} Reply STOP to opt out.` });
+    if (r.ok) {
+      await finish(db, row.id, { status: 'sent', channel: 'sms', delivered: 1, sent_at: now.toISOString(), error: pushError });
+      return 'sent';
+    }
+    pushError = `${pushError}; sms: ${r.error || r.reason}`;
+  }
+  if (canEmail && !emailLive()) {
     try {
       const channel = await sendReminderEmail(user, row, data);
       await finish(db, row.id, { status: 'sent', channel, delivered: 1, sent_at: now.toISOString(), error: pushError });
@@ -172,7 +219,7 @@ export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit 
          ORDER BY deliver_at ASC
          LIMIT ?
          FOR UPDATE SKIP LOCKED)
-      RETURNING id, user_id, title, body, data, deliver_at, notification_type, case_id, retry_count, max_retries`,
+      RETURNING id, user_id, title, body, data, deliver_at, notification_type, case_id, court_date_id, retry_count, max_retries`,
     [nowIso, nowIso, staleIso, limit]
   );
   const counts = { claimed: claimed.length, sent: 0, failed: 0, cancelled: 0, skipped: 0, retry: 0 };

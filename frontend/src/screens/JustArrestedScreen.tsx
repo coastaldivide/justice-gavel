@@ -1,408 +1,361 @@
-import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
 /**
- * JustArrestedScreen -- Step-by-step arrest guide
- * For panicked, possibly impaired users.
- * One step at a time. Giant text. Big buttons. No confusion.
+ * JustArrestedScreen — the "Just arrested?" core path, one step at a time:
+ *
+ *   1) Know your rights      — the 30-second "say / do not" script for the
+ *                               person's state (big text), from the sourced
+ *                               rights card; works offline and signed out.
+ *   2) Find a lawyer AND a bail agent — opens the combined results (Help Now).
+ *   3) Never miss a court date — signed in: add the date (reminders 7d/3d/1d/
+ *                               morning-of, phone calendar); guest: a clear
+ *                               "sign in to save it" prompt.
+ *
+ * Progress ("Step 2 of 3") is saved on the device and restored, so an
+ * interrupted person comes back to the same step. 911 / 988 and "alert family"
+ * stay on every step. Nothing here is new legal content: the script comes from
+ * services/corePath (server: services/rightsContent.js) with its source.
  */
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet } from 'react-native';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useToast } from '../components/ToastProvider';
+import { useTheme } from '../constants/theme';
+import { t } from '../i18n';
+import { getUserState, setUserState, STATE_LIST, STATE_NAMES } from '../utils/userState';
+import { getToken } from '../utils/secureStorage';
+import { hapticImpact, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
-import { hapticImpact, RNShare } from '../utils/webCompat';
-
-const STEPS = [
-  {
-    id: 1, icon: '🤐', title: 'STOP TALKING',
-    color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
-    body: 'Do not say ANYTHING except these exact words:',
-    script: '"I am invoking my right to remain silent.\nI want a lawyer."',
-    warning: 'Do NOT explain yourself. Do NOT answer questions. Do NOT try to be helpful. ANYTHING you say will be used against you.',
-    action: null, actionLabel: null,
-  },
-  {
-    id: 2, icon: '📵', title: 'DO NOT CONSENT',
-    color: COLORS.warnDark, bg: COLORS.warnBg,
-    body: 'If they ask to search your phone, car, or bag -- say:',
-    script: '"I do not consent to any searches."',
-    warning: 'Even if you have nothing to hide. Even if they say they will get a warrant. Even if they seem friendly. DO NOT CONSENT.',
-    action: null, actionLabel: null,
-  },
-  {
-    id: 3, icon: '📞', title: 'USE YOUR CALL',
-    color: COLORS.blue, bg: COLORS.infoBg,
-    body: 'Ask to make a phone call. Most states allow it -- use it to call:',
-    script: '1. A criminal defense attorney\n2. A bail bondsman\n3. A trusted family member\n\n💡 Use the Encounter Recorder to document any ongoing interaction.',
-    warning: 'Jail calls are RECORDED. Do not discuss your case. Only arrange help.',
-    action: 'find_help', actionLabel: '⚖️ Find a Lawyer or Bondsman Now',
-  },
-  {
-    id: 4, icon: '⏰', title: 'KNOW YOUR DEADLINES',
-    color: COLORS.legalDark, bg: COLORS.legalBg,
-    body: 'After a DUI arrest -- act FAST. DMV hearing deadlines vary by state (often 7-15 days):',
-    script: '• Request a DMV hearing to keep your license\n• This is SEPARATE from your criminal case\n• Missing this = automatic license suspension',
-    warning: 'Your first court date is usually within 24 to 72 hours. ALWAYS plead NOT GUILTY at arraignment -- even if you plan to make a deal later.',
-    action: 'deadline', actionLabel: '⏰ Calculate My Deadlines',
-  },
-  {
-    id: 5, icon: '✅', title: 'YOU CAN DO THIS',
-    color: COLORS.blue, bg: COLORS.infoBg,
-    body: 'The most important things:',
-    script: '✓ Stay silent -- only say you want a lawyer\n✓ Do not consent to searches\n✓ Use your phone call to get help\n✓ Plead NOT GUILTY at arraignment\n✓ Ask for a public defender if you cannot afford a lawyer\n\n⚖️ You are INNOCENT until proven guilty.\nThe state must prove their case. Not you.',
-    warning: null,
-    action: 'home', actionLabel: '🏠 Get More Help',
-  },
-];
-
 import { IllustrationRights } from '../components/Illustrations';
+import {
+  getCoreProgress, saveCoreProgress, setPendingRoute, fetchRightsCard, getCachedRightsCard, prefetchRights,
+  type CoreStep, type RightsCardData,
+} from '../services/corePath';
+
+// Bundled script (same lines and keys as the server's SCRIPT) so step 1 works
+// with no network on first open.
+const SAY_KEYS = ['rs_say_1', 'rs_say_2', 'rs_say_3', 'rs_say_4', 'rs_say_5'];
+const DONT_KEYS = ['rs_dont_1', 'rs_dont_2', 'rs_dont_3', 'rs_dont_4', 'rs_dont_5'];
+const BUNDLED_SCRIPT_SOURCE = 'Summarized from the Justice Gavel rights card (sections 1–6) and its Just Arrested guidance';
+const BUNDLED_LAST_REVIEWED = '2026-04';
+
+/** Haptic tap; a device without haptics (or a test) must never break a step. */
+function buzz() {
+  try { Promise.resolve(hapticImpact()).catch(() => {}); } catch { /* no haptics here */ }
+}
+
+function reviewedLabel(d: string | null): string {
+  if (!d) return '';
+  const m = /^(\d{4})-(\d{2})/.exec(d);
+  if (!m) return d;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 15)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles();
-  const [step, setStep] = useState(0);
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
-  const current = STEPS[step];
+  const [step, setStep] = useState<CoreStep>(1);
+  const [done, setDone] = useState({ rights: false, help: false, court: false });
+  const [stateCode, setStateCode] = useState<string>('');
+  const [picker, setPicker] = useState(false);
+  const [card, setCard] = useState<RightsCardData | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
-  const bg   = isDark ? colors.bg : current.bg;
-  const card = isDark ? colors.bgCard : colors.surface;
-  const text = isDark ? colors.textPrimary : colors.bg;
+  const inMainApp = !!navigation.getParent?.()?.getState?.()?.routeNames?.includes('MoreTab');
 
-  const next = () => {
-    hapticImpact();
-    if (step < STEPS.length - 1) setStep(s => s + 1);
+  const loadCard = useCallback(async (code: string) => {
+    const cached = await getCachedRightsCard(code || 'US');
+    if (cached && mounted.current) setCard(cached.card);
+    try {
+      const fresh = await fetchRightsCard(code || 'US');
+      if (mounted.current) setCard(fresh);
+    } catch { /* offline: bundled script / cached copy stays */ }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const p = await getCoreProgress();
+      if (!mounted.current) return;
+      setStep(p.current); setDone(p.done);
+      const st = await getUserState();
+      const code = st?.code || '';
+      if (mounted.current) setStateCode(code);
+      loadCard(code);
+      prefetchRights(code).catch(() => {});
+      const tok = await getToken().catch(() => null);
+      if (mounted.current) setSignedIn(!!tok);
+    })();
+  }, [loadCard]);
+
+  const goStep = (n: CoreStep) => {
+    buzz();
+    setStep(n);
+    saveCoreProgress({ current: n }).catch(() => {});
   };
-  const prev = () => {
-    hapticImpact();
-    if (step > 0) setStep(s => s - 1);
-  };
-  const handleAction = async () => {
-    hapticImpact();
-    // This screen is also mounted in the guest (signed-out) stack, where the
-    // main tabs don't exist yet. Enter browse mode first in that case.
-    const inMainApp = !!navigation.getParent()?.getState()?.routeNames?.includes('MoreTab');
+
+  /** Open a MoreTab screen — from the guest stack, enter browse mode first and open it there. */
+  const openScreen = async (screen: string, params?: Record<string, unknown>) => {
+    buzz();
     if (!inMainApp) {
+      await setPendingRoute(screen);
       await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
       setAppAuth('browsing');
       return;
     }
-    if (current.action === 'find_help')    navigation.navigate('MoreTab', { screen: 'HelpNow' });
-    else if (current.action === 'bail')     navigation.navigate('BailTab');
-    else if (current.action === 'rights')   navigation.navigate('MoreTab', { screen: 'RightsCard' });
-    else if (current.action === 'emergency') navigation.navigate('MoreTab', { screen: 'Emergency' });
-    else if (current.action === 'deadline') navigation.navigate('MoreTab', { screen: 'DeadlineCalculator' });
-    else if (current.action === 'home')     navigation.navigate('HomeTab');
+    (navigation as any).navigate('MoreTab', { screen, params });
   };
+
+  const pickState = async (code: string) => {
+    setPicker(false);
+    setStateCode(code);
+    await setUserState(code);
+    loadCard(code);
+  };
+
+  const finishStep = async (mark: 'rights' | 'help' | 'court', next?: CoreStep) => {
+    const p = await saveCoreProgress({ mark, current: next ?? step });
+    if (mounted.current) { setDone(p.done); if (next) setStep(next); }
+  };
+
   const call = (num: string) => {
-    hapticImpact();
-    Linking.openURL(`tel:${num.replace(/\D/g, "")}`).catch(() =>
-      showToast(`Please dial ${num} manually.`, 'warning')
-    );
+    buzz();
+    Linking.openURL(`tel:${num}`).catch(() => showToast(`Please dial ${num} manually.`, 'warning'));
   };
+
+  const alertFamily = () => {
+    const msg = 'I was just arrested and need help. Please open Justice Gavel (free) to find a lawyer and a bail agent: https://justicegavel.app/just-arrested';
+    const enc = encodeURIComponent(msg);
+    Linking.openURL(`whatsapp://send?text=${enc}`)
+      .catch(() => Linking.openURL(`https://wa.me/?text=${enc}`))
+      .catch(() => RNShare.share({ message: msg, title: 'I need help' }).catch(() => {}));
+  };
+
+  const script = card?.script;
+  const sayLines = SAY_KEYS.map(k => t(k));
+  const dontLines = DONT_KEYS.map(k => t(k));
+  const scriptSource = script?.source || BUNDLED_SCRIPT_SOURCE;
+  const scriptReviewed = script ? script.last_reviewed : BUNDLED_LAST_REVIEWED;
+  const stateName = stateCode ? (STATE_NAMES[stateCode] || stateCode) : '';
+  const stepTitles = [t('ja_s1'), t('ja_s2'), t('ja_s3')];
 
   return (
-    <View style={{ flex: 1, backgroundColor: bg }}
-      testID="just-arrested-screen">
-      {/* ── Header ─────────────────────────────── */}
-      <View style={[styles.header, { backgroundColor: current.color }]}>
-        <Text maxFontSizeMultiplier={1.2} style={styles.stepLabel}>
-          STEP {current.id} OF {STEPS.length}
-        </Text>
-        <View style={styles.titleRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.titleIcon}>{current.icon}</Text>
-          <Text maxFontSizeMultiplier={1.2} style={styles.title}>{current.title}</Text>
-        </View>
-        {/* Progress bar */}
-        <View style={styles.progressRow}>
-          {STEPS.map((_, i) => (
-            <View key={`STEPS-${i}`} style={[
-              styles.progressDot,
-              { backgroundColor: i <= step ? colors.bgCard : 'rgba(255,255,255,0.3)' }
-            ]} />
-          ))}
+    <View style={styles.screen} testID="just-arrested-screen">
+      <View style={styles.header}>
+        <Text maxFontSizeMultiplier={1.3} style={styles.headerTitle} accessibilityRole="header">{t('ja_title')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.stepOf} testID="core-step-label">{t('ja_step_of').replace('{n}', String(step))}</Text>
+        <View style={styles.stepRow} accessibilityRole="tablist">
+          {([1, 2, 3] as CoreStep[]).map(n => {
+            const isDone = n === 1 ? done.rights : n === 2 ? done.help : done.court;
+            const active = n === step;
+            return (
+              <TouchableOpacity
+                key={n}
+                testID={`core-step-${n}`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Step ${n} of 3: ${stepTitles[n - 1]}${isDone ? ', done' : ''}`}
+                style={[styles.stepPill, active && styles.stepPillActive]}
+                onPress={() => goStep(n)}
+              >
+                <Text maxFontSizeMultiplier={1.2} style={[styles.stepPillText, active && styles.stepPillTextActive]}>
+                  {isDone ? '✓ ' : `${n}. `}{stepTitles[n - 1]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-      <View style={{ alignItems: 'center' }}>
-        <IllustrationRights width={110} height={99} />
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll} testID="core-step-body">
+        {step === 1 && (
+          <View testID="core-step-rights">
+            <View style={{ alignItems: 'center' }}><IllustrationRights width={90} height={81} /></View>
+            <Text maxFontSizeMultiplier={1.3} style={styles.stepTitle}>1. {t('ja_s1')}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="core-state-button" style={styles.stateBtn}
+              accessibilityLabel={`${t('ja_state')}: ${stateName || t('ja_choose_state')}. Change`} onPress={() => setPicker(true)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.stateBtnText}>📍 {t('ja_state')}: {stateName || t('ja_choose_state')}  ▾</Text>
+            </TouchableOpacity>
 
-
-        {/* Body text */}
-        <Text maxFontSizeMultiplier={1.3} style={[styles.bodyText, { color: text }]}>
-          {current.body}
-        </Text>
-
-        {/* Script box -- what to say */}
-        <View style={[styles.scriptBox, { backgroundColor: card, borderLeftColor: current.color }]}>
-          <Text maxFontSizeMultiplier={1.2} style={[styles.scriptLabel, { color: current.color }]}>
-            {current.id <= 2 ? 'SAY THESE EXACT WORDS:' : 'REMEMBER:'}
-          </Text>
-          <Text maxFontSizeMultiplier={1.2} style={[
-            styles.scriptText,
-            { color: text, fontSize: current.id <= 2 ? 24 : 18, lineHeight: current.id <= 2 ? 34 : 28 }
-          ]}>
-            {current.script}
-          </Text>
-        </View>
-
-        {/* Warning box */}
-        {current.warning ? (
-          <View style={[styles.warningBox, { backgroundColor: isDark ? colors.surface : colors.bgCard }]}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.warningText, { color: isDark ? colors.gold : colors.textMuted }]}>
-              ⚠️  {current.warning}
+            <View style={styles.sayBox} testID="core-script">
+              <Text maxFontSizeMultiplier={1.2} style={styles.sayLabel}>🗣 {t('ja_say')}</Text>
+              {sayLines.map((l, i) => (
+                <Text key={SAY_KEYS[i]} maxFontSizeMultiplier={1.6} style={styles.sayLine}>“{l}”</Text>
+              ))}
+            </View>
+            <View style={styles.dontBox}>
+              <Text maxFontSizeMultiplier={1.2} style={styles.dontLabel}>✋ {t('ja_dont')}</Text>
+              {dontLines.map((l, i) => (
+                <Text key={DONT_KEYS[i]} maxFontSizeMultiplier={1.6} style={styles.dontLine}>• {l}</Text>
+              ))}
+            </View>
+            <Text maxFontSizeMultiplier={1.4} style={styles.sourceLine} testID="core-script-source">
+              {t('rc_source')}: {scriptSource}{scriptReviewed ? ` · ${t('rc_last_reviewed')}: ${reviewedLabel(scriptReviewed)}` : ''} · {t('rc_lawyer_pending')}
             </Text>
+            {!!card?.state_notice && stateCode && (
+              <Text maxFontSizeMultiplier={1.4} style={styles.notice} testID="core-state-notice">ℹ️ {card.state_notice}</Text>
+            )}
+
+            <TouchableOpacity accessibilityRole="button" testID="core-open-rights-card" style={styles.secondaryBtn}
+              onPress={() => { finishStep('rights'); openScreen('RightsCard'); }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>📋 {t('ja_full_card')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="core-next-1" style={styles.primaryBtn}
+              onPress={() => finishStep('rights', 2)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ja_next')}</Text>
+            </TouchableOpacity>
           </View>
-        ) : null}
+        )}
 
-        {/* Action button */}
-        {current.action ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            style={[styles.actionBtn, { backgroundColor: current.color }]}
-            onPress={handleAction}
-            activeOpacity={0.85}
-            accessibilityLabel={current.actionLabel || ''}
-          >
-            <Text maxFontSizeMultiplier={1.2} style={styles.actionBtnText}>
-              {current.actionLabel}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+        {step === 2 && (
+          <View testID="core-step-help">
+            <Text maxFontSizeMultiplier={1.3} style={styles.stepTitle}>2. {t('ja_s2')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.body}>{t('ja_step2_body')}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="core-find-help" style={styles.primaryBtn}
+              onPress={() => { finishStep('help'); openScreen('HelpNow'); }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>⚖️ {t('ja_find_help')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="core-share-family" style={styles.secondaryBtn}
+              onPress={() => openScreen('EmergencyShare')}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>👨‍👩‍👧 {t('ja_share_family')}</Text>
+            </TouchableOpacity>
+            <View style={styles.navRow}>
+              <TouchableOpacity accessibilityRole="button" style={styles.navBtn} onPress={() => goStep(1)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.navBtnText}>{t('ja_back')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" testID="core-next-2" style={[styles.navBtn, styles.navBtnPrimary]}
+                onPress={() => finishStep('help', 3)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.navBtnPrimaryText}>{t('ja_next')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
-        {/* 911 / 988 -- always visible */}
+        {step === 3 && (
+          <View testID="core-step-court">
+            <Text maxFontSizeMultiplier={1.3} style={styles.stepTitle}>3. {t('ja_s3')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.body}>{t('ja_step3_body')}</Text>
+            {signedIn ? (
+              <TouchableOpacity accessibilityRole="button" testID="core-add-court-date" style={styles.primaryBtn}
+                onPress={() => { finishStep('court'); openScreen('CourtDates', { add: true }); }}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>📅 {t('ja_add_court')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.signInBox} testID="core-court-sign-in">
+                <Text maxFontSizeMultiplier={1.4} style={styles.signInText}>🔐 {t('ja_court_signin')}</Text>
+                <TouchableOpacity accessibilityRole="button" testID="core-sign-up" style={styles.primaryBtn} onPress={() => openScreen('Register')}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ja_create')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" testID="core-sign-in" style={styles.secondaryBtn} onPress={() => openScreen('Login')}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('ja_sign_in')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {signedIn && (
+              <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => openScreen('CourtDates')}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🗓 {t('ja_my_court_dates')}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity accessibilityRole="button" testID="core-missed" style={styles.secondaryBtn}
+              onPress={() => openScreen('CourtDates', { guidance: 'missed' })}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>❓ {t('ja_missed')}</Text>
+            </TouchableOpacity>
+            <View style={styles.navRow}>
+              <TouchableOpacity accessibilityRole="button" style={styles.navBtn} onPress={() => goStep(2)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.navBtnText}>{t('ja_back')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Always there: emergency numbers and the family alert */}
         <View style={styles.emergencyRow}>
-          <TouchableOpacity
-            accessibilityRole="button"
-
-            style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
-            onPress={() => call('911')}
-            activeOpacity={0.85}
-            accessibilityLabel="Call 911 emergency services"
-          accessibilityHint="Dials this phone number"
-          >
-            <AppIcon name="flash" size={20} color={COLORS.emergency} />
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CALL 911</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 911 emergency services" style={styles.btn911} onPress={() => call('911')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>📞 CALL 911</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-
-            style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
-            onPress={() => call('988')}
-            activeOpacity={0.85}
-            accessibilityLabel="Call 988 crisis line"
-          accessibilityHint="Dials this phone number"
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyIcon}>💙</Text>
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CRISIS 988</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 988 crisis line" style={styles.btn988} onPress={() => call('988')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>💙 CRISIS 988</Text>
           </TouchableOpacity>
         </View>
-
-
-      {/* ── 1-tap path to defense lawyer ──────────────────────────────
-          ROUTE CORRECTED: this CTA originally targeted
-          navigate('Main', { screen: 'LawyersTab' }), but no route named
-          'Main' is registered in AppNavigator -- the tap would have thrown
-          at runtime. Bail Calculator, Emergency, Expungement, Diversion and
-          CheckIn all navigate with the bare 'LawyersTab'; matched to that. */}
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="Find a criminal defense lawyer"
-        style={{ backgroundColor: colors.navyMid, borderRadius: 12, padding: 14,
-                 marginTop: 12, flexDirection: 'row', alignItems: 'center',
-                 justifyContent: 'center', gap: 10 }}
-        onPress={() => navigation.navigate('LawyersTab')}
-      >
-        <Text style={{ fontSize: 18 }}>⚖️</Text>
-        <Text style={{ color: colors.white, fontWeight: '700', fontSize: 15 }}>
-          Find a Criminal Defense Lawyer
-        </Text>
-      </TouchableOpacity>
-
-      {/* ── Not legal advice disclaimer ──────────────────────── */}
-      <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
-        borderLeftWidth: 4, borderLeftColor: colors.warn,
-        padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ Information only -- not legal advice -- not legal advice. Laws vary by
-          jurisdiction and change frequently. Consult a licensed attorney for
-          advice specific to your situation.
-        </Text>
-      </View>
-
-      {/* Share this app -- step 5 moment */}
-      {step === 4 && (
-        <TouchableOpacity
-      accessibilityLabel="📲 Share this app -- it might help someone you know"
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-          style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
-            gap:8, paddingVertical:10, paddingHorizontal:16, marginTop:8 }}
-          onPress={() => {
-          try {
-          RNShare.share({
-            message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
-            title: 'Justice Gavel -- Free legal help if you get arrested',
-          });
-        } catch {
-          // Share failed (unsupported browser) — silently ignore
-        }}
-        }
-        >
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
-            📲 Share this app -- it might help someone you know
-          </Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send an alert to family on WhatsApp or text" style={styles.familyBtn} onPress={alertFamily}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.familyBtnText}>💬 Alert family (WhatsApp / text)</Text>
         </TouchableOpacity>
-      )}
-
-
-      {/* ── WhatsApp family alert — available on every step ────────────────── */}
-      {/* This is the most critical feature for Spanish/Portuguese-speaking
-          defendants. Their families use WhatsApp as the primary messaging app.
-          No app download required for the recipient — opens directly. */}
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="Send emergency message to family via WhatsApp"
-        style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-          gap: 8, paddingVertical: 11, paddingHorizontal: 16, marginTop: 8,
-          backgroundColor: colors.legal, borderRadius: 10,
-        }}
-        onPress={() => {
-          // Pre-written message in the device's current language
-          // Defendant selects family contact inside WhatsApp — we just open it
-          const msg = encodeURIComponent(
-            'I need urgent legal help. I was just arrested. ' +
-            'Please open Justice Gavel (free) to find a lawyer: https://justicegavel.app/rights'
-          );
-          Linking.openURL(`whatsapp://send?text=${msg}`).catch(() => {
-            // WhatsApp not installed — try wa.me web link
-            Linking.openURL(`https://wa.me/?text=${msg}`).catch(() => {
-              // Final fallback: native share
-              RNShare.share({
-                message: 'I need urgent help. I was just arrested. Find legal resources at https://justicegavel.app/rights',
-                title: 'Urgent: Legal Help Needed',
-              }).catch(() => {});
-            });
-          });
-        }}
-      >
-        <Text style={{ fontSize: 18 }}>💬</Text>
-        <Text style={{ color: colors.textOnAccent, fontWeight: '700', fontSize: 14 }}>
-          Alert Family via WhatsApp
+        <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
+          ⚖️ General information only — not legal advice. Laws vary by state. Talk to a licensed attorney or a public defender about your situation.
         </Text>
-      </TouchableOpacity>
-
-      
-
-  {/* What Happens Next — absorbed from WhatHappensNextScreen */}
-  <View style={[styles.sectionCard, { backgroundColor: colors.card ?? colors.bg, marginTop: 16 }]}>
-    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-      📅 What Happens Next
-    </Text>
-    {[
-      { time: 'Within 24–48 hours', title: 'Arraignment', desc: 'You will appear before a judge who will read the charges and set bail. This is when you enter your plea.' },
-      { time: 'First 30 days', title: 'Discovery', desc: 'Your attorney reviews evidence. Prosecution must share all evidence they plan to use against you.' },
-      { time: '1–6 months', title: 'Pre-trial Motions', desc: 'Your attorney may file motions to suppress evidence or dismiss charges.' },
-      { time: 'Varies', title: 'Plea Deal or Trial', desc: 'Most cases resolve with a plea agreement. If not, a trial is scheduled before a judge or jury.' },
-      { time: 'After verdict', title: 'Sentencing', desc: 'If convicted, sentencing may follow immediately or be scheduled for a later date.' },
-    ].map((step, i) => (
-      <View key={i} style={styles.timelineStep}>
-        <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
-        {i < 4 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
-        <View style={styles.timelineContent}>
-          <Text style={[styles.timelineTime, { color: colors.primary }]}>{step.time}</Text>
-          <Text style={[styles.timelineTitle, { color: colors.text }]}>{step.title}</Text>
-          <Text style={[styles.timelineDesc, { color: (colors as any).subtext ?? COLORS.textMuted }]}>{step.desc}</Text>
-        </View>
-      </View>
-    ))}
-  </View>
-
       </ScrollView>
 
-      {/* ── Bottom nav ─────────────────────────── */}
-      <View style={[styles.navBar, { backgroundColor: card, borderTopColor: colors.border }]}>
-        {step > 0 ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            onPress={prev}
-            style={[styles.navBtn, { backgroundColor: isDark ? colors.bgElevated : colors.bgCard, flex: 1 }]}
-            activeOpacity={0.85}
-            accessibilityLabel="Previous step"
-          >
-            <Text maxFontSizeMultiplier={1.2} style={[styles.navBtnText, { color: text }]}>← Back</Text>
-          </TouchableOpacity>
-        ) : null}
-        {step < STEPS.length - 1 ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            onPress={next}
-            style={[styles.navBtn, { backgroundColor: current.color, flex: step > 0 ? 2 : 1 }]}
-            activeOpacity={0.85}
-            accessibilityLabel="Next step"
-          >
-            <Text maxFontSizeMultiplier={1.2} style={[styles.navBtnText, { color: colors.bgCard }]}>
-              Next Step →
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <Modal visible={picker} transparent animationType="slide" onRequestClose={() => setPicker(false)} accessibilityViewIsModal>
+        <View style={styles.overlay}>
+          <View style={styles.sheet} testID="core-state-picker">
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('ja_choose_state')}</Text>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {STATE_LIST.map(s => (
+                <TouchableOpacity key={s.code} accessibilityRole="button" testID={`core-state-${s.code}`}
+                  style={[styles.stateRow, s.code === stateCode && styles.stateRowActive]} onPress={() => pickState(s.code)}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.stateRowText}>{s.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setPicker(false)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const makeStyles = () => StyleSheet.create({
-    sectionCard:    { borderRadius: 12, padding: 16, marginHorizontal: 0 },
-    sectionTitle:   { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-    timelineStep:   { flexDirection: 'row', marginBottom: 0, position: 'relative', paddingLeft: 28 },
-    timelineDot:    { width: 10, height: 10, borderRadius: 5, position: 'absolute', left: 0, top: 4 },
-    timelineLine:   { width: 2, position: 'absolute', left: 4, top: 14, bottom: -8 },
-    timelineContent:{ flex: 1, paddingBottom: 16 },
-    timelineTime:   { fontSize: 11, fontWeight: '700', marginBottom: 2 },
-    timelineTitle:  { fontSize: 14, fontWeight: '600', marginBottom: 3 },
-    timelineDesc:   { fontSize: 13, lineHeight: 18 },
-
-  header:      { paddingHorizontal: 20, paddingTop: 48, paddingBottom: 20 },
-  stepLabel:   { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
-  titleRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  titleIcon:   { fontSize: 48 },
-  title:       { color: COLORS.bgCard, fontSize: 30, fontWeight: '900', flex: 1, lineHeight: 36 },
-  progressRow: { flexDirection: 'row', gap: 6, marginTop: 18 },
-  progressDot: { flex: 1, height: 5, borderRadius: 3 },
-
-  scroll:      { padding: 20, gap: 16, paddingBottom: 20 },
-  bodyText:    { fontSize: 20, fontWeight: '600', lineHeight: 28 },
-
-  scriptBox: {
-    borderRadius: 16, padding: 20,
-    borderLeftWidth: 6,
-    shadowColor: COLORS.textPrimary, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
-  },
-  scriptLabel: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
-  scriptText:  { fontWeight: '800' },
-
-  warningBox:  { borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
-  warningText: { fontSize: 15, lineHeight: 22 },
-
-  actionBtn:     { borderRadius: 14, paddingVertical: 20, alignItems: 'center' },
-  actionBtnText: { color: COLORS.bgCard, fontSize: 18, fontWeight: '900' },
-
-  emergencyRow: { flexDirection: 'row', gap: 12 },
-  emergencyBtn: { flex: 1, borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  emergencyIcon: { fontSize: 24, marginBottom: 4 },
-  emergencyLabel: { color: COLORS.bgCard, fontWeight: '900', fontSize: 15 },
-
-  navBar:    { flexDirection: 'row', gap: 12, padding: 16, paddingBottom: 32, borderTopWidth: 1 },
-  navBtn:    { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  navBtnText:{ fontSize: 18, fontWeight: '900' },
+const makeStyles = (c: any) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
+  header: { backgroundColor: c.emergencyDark, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
+  headerTitle: { color: c.white, fontSize: 28, fontWeight: '900' },
+  stepOf: { color: c.white, fontSize: 13, fontWeight: '800', letterSpacing: 1.5, marginTop: 4 },
+  stepRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  stepPill: { borderRadius: 18, paddingHorizontal: 12, paddingVertical: 10, minHeight: 44, justifyContent: 'center', backgroundColor: c.navy },
+  stepPillActive: { backgroundColor: c.bgCard },
+  stepPillText: { color: c.white, fontSize: 13, fontWeight: '700' },
+  stepPillTextActive: { color: c.textPrimary },
+  scroll: { padding: 16, paddingBottom: 40, gap: 12 },
+  stepTitle: { color: c.textPrimary, fontSize: 24, fontWeight: '900', marginBottom: 8 },
+  body: { color: c.textSecond, fontSize: 17, lineHeight: 25, marginBottom: 12 },
+  stateBtn: { backgroundColor: c.bgCard, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 12, minHeight: 44, marginBottom: 12 },
+  stateBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
+  sayBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginBottom: 12 },
+  sayLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+  sayLine: { color: c.textPrimary, fontSize: 24, lineHeight: 32, fontWeight: '800', marginBottom: 8 },
+  dontBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.emergencyDark, marginBottom: 8 },
+  dontLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+  dontLine: { color: c.textPrimary, fontSize: 19, lineHeight: 27, fontWeight: '700', marginBottom: 4 },
+  sourceLine: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 8 },
+  notice: { color: c.textPrimary, backgroundColor: c.infoBg, borderRadius: 10, padding: 10, fontSize: 14, marginBottom: 8 },
+  primaryBtn: { backgroundColor: c.navy, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center', minHeight: 52, marginTop: 8 },
+  primaryBtnText: { color: c.white, fontSize: 18, fontWeight: '900', textAlign: 'center' },
+  secondaryBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center', minHeight: 48, marginTop: 8 },
+  secondaryBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  navRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  navBtn: { flex: 1, backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
+  navBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
+  navBtnPrimary: { backgroundColor: c.navy, borderColor: c.navy },
+  navBtnPrimaryText: { color: c.white, fontSize: 16, fontWeight: '900' },
+  signInBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: c.border },
+  signInText: { color: c.textPrimary, fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  emergencyRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  btn911: { flex: 1, backgroundColor: c.emergencyDark, borderRadius: 14, paddingVertical: 16, alignItems: 'center', minHeight: 52 },
+  btn988: { flex: 1, backgroundColor: c.blue, borderRadius: 14, paddingVertical: 16, alignItems: 'center', minHeight: 52 },
+  emergencyText: { color: c.white, fontWeight: '900', fontSize: 16 },
+  familyBtn: { backgroundColor: c.legalDark, borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
+  familyBtnText: { color: c.white, fontWeight: '800', fontSize: 15 },
+  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 12, fontStyle: 'italic' },
+  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
+  sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 8 },
+  stateRow: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, borderBottomWidth: 1, borderBottomColor: c.border },
+  stateRowActive: { backgroundColor: c.infoBg },
+  stateRowText: { color: c.textPrimary, fontSize: 16 },
 });
 
-// Module-level fallback for helper components
 export default React.memo(JustArrestedScreen);

@@ -84,12 +84,15 @@ import { hapticImpact, RNShare } from '../utils/webCompat';
 // (useTheme() is hook-only; these mirror the dark-navy design system values)
 
 // ── Message shape ──────────────────────────────────────────────────────────────
+/** A rights-card section the answer is grounded in (server: rightsRefsFor). */
+interface RightsRef { key: string; heading: string; source: string; last_reviewed: string | null }
 interface Message {
   id:                  string;
   role:                'user' | 'assistant';
   text:                string;
   suggestLawyerSearch?: boolean;
   intent?:             string;
+  rightsRefs?:         RightsRef[];
   showUpgrade?:        boolean;
 }
 
@@ -146,9 +149,10 @@ interface BubbleProps {
   isDefender:   boolean;
   onFindLawyer: () => void;
   onUpgrade:    () => void;
+  onOpenRights?: () => void;
 }
 
-function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
+function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: BubbleProps) {
   const { showToast } = useToast();
   const isUser = msg.role === 'user';
 
@@ -179,6 +183,17 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
         >
           {msg.text}
         </Text>
+        {!isUser && !!msg.rightsRefs?.length && (
+          <View testID="chat-rights-refs" style={styles.rightsRefs}>
+            {msg.rightsRefs.map(r => (
+              <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={`From your rights card: ${r.heading}`}
+                style={styles.rightsRef} onPress={onOpenRights}>
+                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>📋 From your rights card: {r.heading.replace(/^\d+\.\s*/, '')} →</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>Source: {r.source}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         {msg.suggestLawyerSearch && !isUser && (
           <TouchableOpacity
             accessibilityRole="button"
@@ -614,6 +629,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                           text:                event.full_text,
                           intent:              event.intent,
                           suggestLawyerSearch: event.suggestLawyerSearch,
+                          rightsRefs:          Array.isArray(event.rights_refs) ? event.rights_refs : undefined,
                         } : m
                       ));
                       scrollToBottom();
@@ -686,6 +702,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                   text:                (d.reply as string) || (d.answer as string) || 'Done.',
                   suggestLawyerSearch: d.suggestLawyerSearch as boolean,
                   intent:              d.intent as string,
+                  rightsRefs:          Array.isArray(d.rights_refs) ? (d.rights_refs as RightsRef[]) : undefined,
                 }
               : m
           ));
@@ -859,6 +876,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
               isDefender={isDefender}
               onFindLawyer={onFindLawyer}
               onUpgrade={onUpgrade}
+              onOpenRights={() => (navigation as any).navigate('MoreTab', { screen: 'RightsCard' })}
             />
           )}
           ListEmptyComponent={
@@ -975,6 +993,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   bubbleUser:       { backgroundColor: COLORS.navy, borderBottomRightRadius: 4 },
   bubbleText:       { fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   bubbleTextUser:   { color: COLORS.bgCard },
+  rightsRefs:       { marginTop: 10, gap: 6 },
+  rightsRef:        { backgroundColor: colors.infoBg, borderRadius: 8, padding: 10, minHeight: 44 },
+  rightsRefText:    { fontSize: 13, lineHeight: 19, color: colors.textPrimary, fontWeight: '700' },
+  rightsRefSource:  { fontSize: 11, lineHeight: 15, color: colors.textSecond, marginTop: 2 },
   lawyerCta:        { marginTop: 10, backgroundColor: colors.legal, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.legal },
   lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   upgradeCta:       { marginTop: 10, backgroundColor: COLORS.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },

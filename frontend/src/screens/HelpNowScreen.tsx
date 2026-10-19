@@ -1,695 +1,505 @@
-import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
 /**
- * HelpNowScreen -- Emergency bypass screen
+ * HelpNowScreen — core path step 2: lawyers AND bail agents together.
  *
- * Fix #7: The slowest 10% of users (P90 = 201s) are in the most distress.
- * This screen gives them ONE button that searches for BOTH a bail bondsman
- * AND a lawyer simultaneously -- no account, no navigation, no tiles.
- *
- * Accessible via a persistent "HELP NOW" button in the HomeScreen header.
- * Zero friction path: tap header button → GPS fires → both contacts appear.
+ *  - One search (GET /api/help/nearby): location from GPS only when already
+ *    allowed or when the person taps "Use my location" (explained first);
+ *    otherwise the saved state or a typed city. Works signed out.
+ *  - Filters: charge, language, free consultation (as listed), open now,
+ *    24/7, distance. "Open now" / "24/7" come from each listing's stored hours.
+ *  - Ranking is the server's: distance + completeness, never payment.
+ *  - One tap to call, text or get directions; "Report a problem with this
+ *    listing" goes to the admin review queue (the listing itself is never
+ *    edited from the app).
+ *  - Public defender office + county inmate lookup links for the state, and
+ *    the bail calculator (bail ranges only — no invented fee estimate).
+ *  - Offline: the last results saved on this phone, clearly labelled.
  */
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
-import { useLatestRef } from '../hooks/useLatestRef';
-import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation } from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
 import { getLocation } from '../services/location';
-import { t, initLang } from '../i18n';
+import { locationGranted } from '../services/permissions';
+import { useToast } from '../components/ToastProvider';
+import { useTheme } from '../constants/theme';
 import { hapticCall } from '../services/haptics';
-import { api } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { getUserState, STATE_NAMES } from '../utils/userState';
+import { isOfflineError, saveCoreProgress } from '../services/corePath';
+import { getToken } from '../utils/secureStorage';
 
-// Module-level link helpers: no hooks; failures reported via onError.
-function callPhone(p: string, onError?: () => void) {
-  hapticCall();
-  Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => onError?.());
+export interface Provider {
+  id: number; kind: 'lawyer' | 'bail_agent'; name: string; organization: string | null; phone: string | null;
+  website: string | null; address: string | null; city: string; state: string; lat: number | null; lng: number | null;
+  distance_km: number | null; hours: string | null; hours_known: boolean; is_24_7: boolean; open_now: boolean | null;
+  rating: number | null; review_count: number | null; languages: string[]; free_consultation: boolean | null;
+  license_number: string | null; completeness: number;
 }
-function openDir(lat: number, lng: number, name: string, onError?: () => void) {
-  const url = Platform.OS === 'ios'
-    ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => onError?.());
+interface HelpResult {
+  lawyers: Provider[]; bail_agents: Provider[];
+  public_defender: { name: string; phone: string | null; url: string | null; eligibility: string | null; about: string | null; note: string } | null;
+  inmate_lookup: { id: number; name: string; phone: string | null; url: string | null }[];
+  meta: { state: string | null; ranking: string; hours_note: string; charge_note: string | null };
 }
+interface Filters { charge: string; language: string; free: boolean; open: boolean; h24: boolean; miles: number | null }
 
-function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
-  const isBail  = type === 'bail';
-  const color   = isBail ? COLORS.bail   : COLORS.legal; // static light accents: dark enough for white text in both modes
+const CHARGES = ['DUI', 'Drug Offenses', 'Assault', 'Domestic Violence', 'Theft', 'Weapons', 'Traffic'];
+const LANGUAGES = ['Spanish', 'Vietnamese', 'Portuguese', 'Chinese'];
+const DISTANCES = [10, 25, 50];
+const REASONS: { code: string; label: string }[] = [
+  { code: 'wrong_phone', label: 'Wrong or disconnected phone number' },
+  { code: 'closed', label: 'Closed / out of business' },
+  { code: 'wrong_address', label: 'Wrong address' },
+  { code: 'wrong_hours', label: 'Wrong hours' },
+  { code: 'not_this_service', label: 'Does not offer this service' },
+  { code: 'other', label: 'Something else' },
+];
+const CACHE_KEY = 'helpnow_cache_v2';
+const EMPTY_FILTERS: Filters = { charge: '', language: '', free: false, open: false, h24: false, miles: null };
+
+const miles = (km: number | null) => (km == null ? null : km / 1.609);
+const fmtMiles = (km: number | null) => {
+  const m = miles(km);
+  return m == null ? '' : m < 10 ? `${m.toFixed(1)} mi` : `${Math.round(m)} mi`;
+};
+
+type Where = { lat: number; lng: number } | { city: string } | { state: string };
+
+function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
-  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
-  const bg = isBail ? colors.bailBg : colors.legalBg;
-  const label   = isBail ? t('help_now_bail_label') : t('help_now_lawyer_label');
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
-  return (
-    <View style={[{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 14, borderLeftColor: color, borderLeftWidth: 5 }]}>
-      {/* ── ALWAYS VISIBLE emergency strip -- top of every state ────── */}
-      <View style={{
-        flexDirection: 'row', gap: 8, padding: 10,
-        backgroundColor: COLORS.emergencyDark,
-      }}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
-            paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:911').catch(() => showToast('Please dial 911 manually.', 'error'))}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-        >
-          <AppIcon name="flash" size={20} color={COLORS.emergency} />
-          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: colors.textPrimary }}>CALL 911</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="CRISIS 988"
-          style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
-            paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>💙</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: colors.textBrand }}>CRISIS 988</Text>
-        </TouchableOpacity>
-      </View>
+  const [where, setWhere] = useState<Where | null>(null);
+  const [cityInput, setCityInput] = useState('');
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [result, setResult] = useState<HelpResult | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [offlineAt, setOfflineAt] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [report, setReport] = useState<Provider | null>(null);
+  const [reason, setReason] = useState('');
+  const [details, setDetails] = useState('');
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
+  const [claim, setClaim] = useState<Provider | null>(null);
+  const [license, setLicense] = useState('');
+  const [claimPhone, setClaimPhone] = useState('');
 
-      <View style={[styles.contactTypeBadge, { backgroundColor: bg }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color }]}>{label}</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{contact.name}</Text>
-        {contact.jtb_verified && (
-          <View style={{ backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.steel, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>✓ Verified</Text>
-          </View>
-        )}
-      </View>
-      {!!contact.address && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactAddress} numberOfLines={2}>{contact.address}</Text>
-      )}
-      {contact.license_number && (
-        <View style={styles.licensePill}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.licensePillText}>
-            🪪 Lic {contact.license_state ? `${contact.license_state} ` : ''}{contact.license_number}
-          </Text>
-        </View>
-      )}
-      {contact.rating > 0 && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {contact.rating?.toFixed(1)}</Text>
-      )}
-
-      {/* Big call button -- always visible */}
-      {contact.phone ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.callBtn, { backgroundColor: color }]}
-          onPress={() => callPhone(contact.phone, onLinkError)}
-            activeOpacity={0.85}
-          accessibilityLabel={`Call ${contact.name}`}
-          accessibilityHint="Opens your phone dialer to call this contact"
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_call')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnPhone}>{contact.phone}</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.callBtnText, { color: colors.textMuted }]}>{t('help_now_no_phone')}</Text>
-        </View>
-      )}
-
-      {contact.lat && contact.lng && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.dirBtn, { borderColor: color }]}
-          onPress={() => openDir(contact.lat, contact.lng, contact.name, onLinkError)}
-            activeOpacity={0.85}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.dirBtnText, { color }]}>{t('help_now_directions')}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
-
-const TOP_CITIES = [
-    'Memphis, TN','Nashville, TN','Knoxville, TN','Chattanooga, TN',
-    'Houston, TX','Dallas, TX','Austin, TX','San Antonio, TX',
-    'Detroit, MI','Grand Rapids, MI',
-    'Kansas City, MO','St. Louis, MO',
-    'Oakland, CA','Los Angeles, CA','San Diego, CA',
-    'Baltimore, MD','Washington, DC',
-    'Denver, CO','Colorado Springs, CO',
-    'Atlanta, GA','Savannah, GA',
-    'Louisville, KY','Lexington, KY',
-    'Indianapolis, IN','Fort Wayne, IN',
-    'Birmingham, AL','Montgomery, AL',
-    'Oklahoma City, OK','Tulsa, OK',
-    'New Orleans, LA','Baton Rouge, LA',
-    'Charlotte, NC','Raleigh, NC',
-    'Phoenix, AZ','Tucson, AZ',
-    'Las Vegas, NV','Reno, NV',
-    'Albuquerque, NM','Santa Fe, NM',
-    'Milwaukee, WI','Madison, WI',
-  ].sort();
-
-
-
-function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
-  const [isOffline, setIsOffline] = React.useState(false);
-
-  // ── Offline detection ──────────────────────────────────────
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const unsub = NetInfo.addEventListener(state => {
-      setIsOffline(!(state.isConnected && state.isInternetReachable));
-    });
-    return () => unsub();
+  const search = useCallback(async (w: Where, f: Filters) => {
+    setPhase('loading'); setErrorMsg('');
+    const params: Record<string, unknown> = { limit: 10 };
+    if ('lat' in w) { params.lat = w.lat; params.lng = w.lng; }
+    else if ('city' in w) params.city = w.city;
+    else params.state = w.state;
+    if (f.charge) params.charge = f.charge;
+    if (f.language) params.language = f.language;
+    if (f.free) params.free_consult = 1;
+    if (f.open) params.open_now = 1;
+    if (f.h24) params.h24 = 1;
+    if (f.miles) params.max_km = Math.round(f.miles * 1.609);
+    try {
+      const res = await api.get<HelpResult>('/help/nearby', { params });
+      if (!mounted.current) return;
+      setResult(res.data); setPhase('ok'); setOfflineAt(null);
+      AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ result: res.data, at: new Date().toISOString() })).catch(() => {});
+      saveCoreProgress({ mark: 'help' }).catch(() => {});
+    } catch (e) {
+      if (!mounted.current) return;
+      if (isOfflineError(e)) {
+        const raw = await AsyncStorage.getItem(CACHE_KEY).catch(() => null);
+        const cached = raw ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : null;
+        if (cached?.result) { setResult(cached.result); setOfflineAt(cached.at); setPhase('ok'); return; }
+      }
+      setErrorMsg(isOfflineError(e) ? 'You are offline and no results are saved on this phone yet. Call 911 in an emergency.' : apiErrorMessage(e, 'Could not search right now.'));
+      setPhase('error');
+    }
   }, []);
 
-  // ── Cache helpers ──────────────────────────────────────────
-  const CACHE_KEY = 'helpnow_cache';
-  const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-
-  const saveCache = async (data: Record<string, unknown>) => {
-    try {
-      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-    } catch { /* cache write failed -- non-critical */ }
-  };
-
-  const loadCache = async (): Promise<any | null> => {
-    try {
-      const raw = await AsyncStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      const { data, ts } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL) return null;
-      return data;
-    } catch { return null; }
-  };
-
-
-  // Mounted guard -- prevents setState after unmount (crash in strict mode)
-  const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
-
-  const { colors } = useTheme();
-  const [phase, setPhase]     = useState<'loading' | 'results' | 'error'>('loading');
-  const [bail, setBail]       = useState<any>(null);
-  const [lawyer, setLawyer]   = useState<any>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [loadMsg, setLoadMsg]       = useState(t('help_now_loading_gps'));
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [cityQuery, setCityQuery]           = useState('');
-  const [courthouse, setCourthouse]         = useState<any>(null);
-  const [publicDefender, setPublicDefender] = useState<any>(null);
-  const [crisisLine, setCrisisLine]         = useState<any>(null);
-
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = () => {
-    setRefreshing(true);
-    Promise.resolve(fetchBoth()).catch(() => {}).finally(() => setRefreshing(false));
-  };
-
-  const filteredCities = cityQuery.length >= 2
-    ? TOP_CITIES.filter(city => city.toLowerCase().includes(cityQuery.toLowerCase())).slice(0, 8)
-    : TOP_CITIES.slice(0, 10);
-
-  // Mount-only initial load; fetchBoth is re-created every render, so call it via a ref.
-  const fetchBothRef = useLatestRef(() => fetchBoth());
-  useEffect(() => { Promise.resolve(initLang()).then(() => fetchBothRef.current()).catch(() => {}); }, [fetchBothRef]);
-
-  // Offline: show the last results saved on this device (24h) instead of empty cards.
-  const applyCached = async (): Promise<boolean> => {
-    const cached = await loadCache();
-    if (!cached) return false;
-    setBail(cached.bail ?? null);
-    setLawyer(cached.lawyer ?? null);
-    setCourthouse(cached.courthouse ?? null);
-    setPublicDefender(cached.publicDefender ?? null);
-    setCrisisLine(cached.crisisLine ?? null);
-    setPhase('results');
-    return true;
-  };
-
-  const fetchBoth = async () => {
-    if (isOffline && await applyCached()) return;
-    setPhase('loading');
-    setLoadMsg('Finding help near you…');
-    // Rotate messages to show progress -- reduces abandonment by 30% (Zeigarnik effect)
-    const msgs=['Finding help near you…','Checking availability…','Connecting you with options…'];
-    let msgIdx=0;
-    const msgInterval=setInterval(()=>{ msgIdx=(msgIdx+1)%msgs.length; setLoadMsg(msgs[msgIdx]); },1800);
-    setTimeout(()=>clearInterval(msgInterval),8000);
-
-    try {
-      let lat: number | undefined, lng: number | undefined;
-
-      try {
-        const loc = await getLocation();
-        lat = loc.lat; lng = loc.lng;
-        setLoadMsg(t('help_now_loading_search'));
-      } catch {
-        // GPS denied -- show city picker immediately instead of a silent fallback
-        setPhase('results'); // switch out of loading so city picker renders
-        setShowCityPicker(true);
-        setBail(null);
-        setLawyer(null);
-        return; // exit -- will re-run once user picks a city
+  // Start: GPS only if already allowed, else the saved state; else ask for a city.
+  useEffect(() => {
+    (async () => {
+      let w: Where | null = null;
+      if (await locationGranted().catch(() => false)) {
+        const c = await getLocation({ prompt: false }).catch(() => null);
+        if (c) w = { lat: c.lat, lng: c.lng };
       }
+      if (!w) {
+        const st = await getUserState();
+        if (st?.code) w = { state: st.code };
+      }
+      if (!mounted.current) return;
+      if (w) { setWhere(w); search(w, EMPTY_FILTERS); }
+    })();
+  }, [search]);
 
-      const params: Record<string, unknown> = { limit: 1 };
-      if (lat && lng) { params.lat = lat; params.lng = lng; }
-
-      // Fetch bail and lawyers in parallel
-      const [bailSettled, lawyerSettled] = await Promise.allSettled([
-        api.get('/providers/bail',    { params: { ...params, radiusKm: 80 } }),
-        api.get('/providers/lawyers', { params }),
-      ]);
-      // Both lookups failed = we could not reach the server. That is an error
-      // (or the offline copy), never "no help in your area".
-      if (bailSettled.status === 'rejected' && lawyerSettled.status === 'rejected') throw bailSettled.reason;
-      const bailRes   = bailSettled.status === 'fulfilled' ? bailSettled.value : { data: [] };
-      const lawyerRes = lawyerSettled.status === 'fulfilled' ? lawyerSettled.value : { data: [] };
-
-      const bailResult   = Array.isArray(bailRes.data)   ? bailRes.data[0]   : null;
-      const lawyerResult = Array.isArray(lawyerRes.data) ? lawyerRes.data[0] : null;
-
-      setBail(bailResult);
-      setLawyer(lawyerResult);
-
-      // Fetch courthouse, public defender, and crisis line in parallel
-      try {
-        const city = lawyerResult?.city || bailResult?.city || '';
-        const stateCode = lawyerResult?.state || bailResult?.state || '';
-        const [chRes, pdRes, crRes] = await Promise.all([
-          city ? api.get('/courthouses', { params: { city, limit: 1 } }).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
-          stateCode ? api.get('/resources', { params: { category: 'PUBLIC_DEFENDER', state: stateCode, limit: 1 } }).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
-          api.get('/resources', { params: { category: 'CRISIS_LINE', limit: 1 } }).catch(() => ({ data: [] })),
-    api.get('/resources', { params: { category: 'TREATMENT', state: stateCode, limit: 3 } }).catch(() => ({ data: [] })),
-        ]);
-        const ch = Array.isArray(chRes.data) ? chRes.data[0] || null : null;
-        const pd = Array.isArray(pdRes.data) ? pdRes.data[0] || null : null;
-        const cr = Array.isArray(crRes.data) ? crRes.data[0] || null : null;
-        setCourthouse(ch);
-        setPublicDefender(pd);
-        setCrisisLine(cr);
-        saveCache({ bail: bailResult, lawyer: lawyerResult, courthouse: ch, publicDefender: pd, crisisLine: cr });
-      } catch { /* non-fatal */ }
-
-      setPhase('results');
-    } catch (e: any) {
-      if (await applyCached()) return;
-      setErrorMsg(e.message || 'Could not load contacts. Check your connection.');
-      setPhase('error');
-    }
-  };
-
-  const fetchForCity = async (city: string) => {
-    setShowCityPicker(false);
-    setCityQuery('');
-    setPhase('loading');
-    setLoadMsg(`Finding help in ${city}…`);
+  const useMyLocation = async () => {
     try {
-      const params = { city, limit: 1 };
-      const [bailRes2, lawyerRes] = await Promise.all([
-        api.get('/providers/bail',    { params: { ...params, radiusKm: 200 } }).catch(() => ({ data: [] })),
-        api.get('/providers/lawyers', { params }).catch(() => ({ data: [] })),
-      ]);
-      setBail(Array.isArray(bailRes2.data)   ? bailRes2.data[0]   : null);
-      setLawyer(Array.isArray(lawyerRes.data) ? lawyerRes.data[0] : null);
-      setPhase('results');
-    } catch (e: any) {
-      setErrorMsg(e.message || 'Could not load. Check your connection.');
-      setPhase('error');
+      const c = await getLocation({ prompt: true });
+      const w = { lat: c.lat, lng: c.lng };
+      setWhere(w); search(w, filters);
+    } catch {
+      showToast('Location is off — type your city instead.', 'warning');
     }
   };
+  const searchCity = () => {
+    const c = cityInput.trim();
+    if (c.length < 2) { showToast('Type a city, e.g. Nashville, TN', 'warning'); return; }
+    const w = { city: c }; setWhere(w); search(w, filters);
+  };
+  const applyFilters = (patch: Partial<Filters>) => {
+    const f = { ...filters, ...patch }; setFilters(f);
+    if (where) search(where, f);
+  };
+  const onRefresh = async () => { if (!where) return; setRefreshing(true); await search(where, filters); setRefreshing(false); };
 
-  // ── Loading ────────────────────────────────────────────────────────────────
-  if (phase === 'loading') {
-    return (
-      <View style={styles.loadingScreen}
-        testID="help-now-screen">
-        <ActivityIndicator size="large" color={COLORS.steel} />
-        <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>{loadMsg}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.loadingSub}>This takes 2-3 seconds</Text>
+  const call = (p: Provider) => { if (!p.phone) return; hapticCall(); Linking.openURL(`tel:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(`Please dial ${p.phone} manually.`, 'warning')); };
+  const text = (p: Provider) => { if (!p.phone) return; Linking.openURL(`sms:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast('Texting is not available on this device.', 'warning')); };
+  const directions = (p: Provider) => {
+    const dest = p.lat != null && p.lng != null ? `${p.lat},${p.lng}` : encodeURIComponent(p.address || `${p.name} ${p.city} ${p.state}`);
+    const url = Platform.OS === 'ios' ? `maps://maps.apple.com/?daddr=${dest}` : `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+    Linking.openURL(url).catch(() => showToast('Maps are not available on this device.', 'warning'));
+  };
+
+  const submitReport = async () => {
+    if (!report || !reason || sendingRef.current) return;
+    sendingRef.current = true; setSending(true);
+    try {
+      const r = await api.post<{ message: string }>('/help/reports', {
+        provider_type: report.kind, provider_id: report.id, reason, details: details.trim() || undefined,
+      });
+      showToast(r.data?.message || 'Thanks — our team will check this listing.', 'success');
+      setReport(null); setReason(''); setDetails('');
+    } catch (e) {
+      showToast(apiErrorMessage(e, 'Could not send the report. Please try again.'), 'error');
+    } finally { sendingRef.current = false; if (mounted.current) setSending(false); }
+  };
+
+  const openClaim = async (p: Provider) => {
+    const tok = await getToken().catch(() => null);
+    if (!tok) {
+      showToast('Sign in with your professional account to claim a listing.', 'info');
+      (navigation as any).navigate('Login');
+      return;
+    }
+    setClaim(p); setLicense(''); setClaimPhone('');
+  };
+  const submitClaim = async () => {
+    if (!claim || license.trim().length < 3 || sendingRef.current) return;
+    sendingRef.current = true; setSending(true);
+    try {
+      const r = await api.post<{ message: string }>('/help/claims', {
+        provider_type: claim.kind, provider_id: claim.id, license_number: license.trim(),
+        license_state: claim.state, contact_phone: claimPhone.trim() || undefined,
+      });
+      showToast(r.data?.message || 'Thanks — we will check your license.', 'success');
+      setClaim(null);
+    } catch (e) {
+      showToast(apiErrorMessage(e, 'Could not send the claim.'), 'error');
+    } finally { sendingRef.current = false; if (mounted.current) setSending(false); }
+  };
+
+  const Chip = ({ label, active, onPress, testID }: { label: string; active: boolean; onPress: () => void; testID: string }) => (
+    <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`${label} filter${active ? ', on' : ''}`}
+      testID={testID} style={[styles.chip, active && styles.chipOn]} onPress={onPress}>
+      <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, active && styles.chipTextOn]}>{active ? '✓ ' : ''}{label}</Text>
+    </TouchableOpacity>
+  );
+
+  const Card = ({ p }: { p: Provider }) => (
+    <View style={styles.card} testID={p.kind === 'lawyer' ? 'help-lawyer-card' : 'help-bail-card'}>
+      <View style={styles.cardTop}>
+        <Text maxFontSizeMultiplier={1.2} style={[styles.kind, p.kind === 'lawyer' ? styles.kindLawyer : styles.kindBail]}>
+          {p.kind === 'lawyer' ? '⚖️ LAWYER' : '🔓 BAIL AGENT'}
+        </Text>
+        {!!p.distance_km && <Text maxFontSizeMultiplier={1.3} style={styles.distance}>{fmtMiles(p.distance_km)}</Text>}
       </View>
-    );
-  }
-
-  // ── Error ──────────────────────────────────────────────────────────────────
-  if (phase === 'error') {
-    return (
-      <View style={styles.loadingScreen}>
-        <AppIcon name="warning-outline" size={20} color={colors.warn} />
-        <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
-        <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={fetchBoth}
-          accessibilityLabel="Try Again"
-          activeOpacity={0.85}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.name}>{p.name}</Text>
+      {!!p.organization && p.organization !== p.name && <Text maxFontSizeMultiplier={1.4} style={styles.org}>{p.organization}</Text>}
+      {!!p.address && <Text maxFontSizeMultiplier={1.4} style={styles.address} numberOfLines={2}>{p.address}</Text>}
+      <View style={styles.badges}>
+        {p.is_24_7 ? <Text testID="help-247-badge" maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeOpen]}>24/7</Text>
+          : p.open_now === true ? <Text testID="help-open-badge" maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeOpen]}>Open now</Text>
+            : p.open_now === false ? <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeClosed]}>Closed now</Text>
+              : <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Hours not listed</Text>}
+        {p.kind === 'lawyer' && p.free_consultation && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Free consultation (as listed)</Text>}
+        {!!p.license_number && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Lic. {p.license_number}</Text>}
+        {p.rating != null && p.rating > 0 && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>★ {p.rating.toFixed(1)}{p.review_count ? ` (${p.review_count})` : ''}</Text>}
+      </View>
+      <View style={styles.actions}>
+        <TouchableOpacity accessibilityRole="button" testID="help-call" disabled={!p.phone} accessibilityLabel={p.phone ? `Call ${p.name}` : 'No phone listed'}
+          style={[styles.actionBtn, styles.actionCall, !p.phone && styles.actionDisabled]} onPress={() => call(p)}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 Call</Text>
+        </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" testID="help-text" disabled={!p.phone} accessibilityLabel={`Text ${p.name}`}
+          style={[styles.actionBtn, !p.phone && styles.actionDisabled]} onPress={() => text(p)}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 Text</Text>
+        </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" testID="help-directions" accessibilityLabel={`Directions to ${p.name}`}
+          style={styles.actionBtn} onPress={() => directions(p)}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🧭 Directions</Text>
         </TouchableOpacity>
       </View>
-    );
-  }
+      <TouchableOpacity accessibilityRole="button" testID="help-report" accessibilityLabel={`Report a problem with the listing for ${p.name}`}
+        style={styles.reportLink} onPress={() => { setReport(p); setReason(''); setDetails(''); }}>
+        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>⚑ Report a problem with this listing</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" testID="help-claim" accessibilityLabel={`Claim the listing for ${p.name} (for the business owner)`}
+        style={styles.reportLink} onPress={() => openClaim(p)}>
+        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>Is this your business? Claim this listing</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
-  // ── Results ────────────────────────────────────────────────────────────────
+  const st = result?.meta?.state;
   return (
-    <View style={styles.screen}>
-      {isOffline && (
-        <View testID="help-now-offline" style={{ backgroundColor: COLORS.warnBg, padding: 8 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.warnDark, fontSize: 12, textAlign: 'center' }}>
-            📴 You're offline -- showing contacts saved on this device. Call 911 in an emergency.
-          </Text>
-        </View>
-      )}
+    <View style={styles.screen} testID="help-now-screen">
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">Lawyers and bail agents near you</Text>
 
-      {/* City picker modal -- shown when GPS is denied */}
-      <Modal accessibilityViewIsModal={true} visible={showCityPicker} transparent animationType="slide"
-        onRequestClose={() => {}}>
-        <View style={styles.cityOverlay}>
-          <View style={styles.citySheet}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cityTitle}>{t('help_now_city_title')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.citySub}>{t('help_now_city_sub')}</Text>
-            <TextInput
-              style={styles.cityInput}
-              placeholder="Type your city -- e.g. Nashville"
-              placeholderTextColor={colors.textMuted}
-              value={cityQuery}
-              onChangeText={setCityQuery}
-              autoFocus
-              returnKeyType="next"
-              blurOnSubmit
-            />
-            <ScrollView style={{ maxHeight: 280 }} keyboardShouldPersistTaps="handled"
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-              {filteredCities.map(city => (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  key={city}
-                  style={styles.cityRow}
-                  accessibilityLabel={"\ud83d\udccd  {city}"} onPress={() => fetchForCity(city)}
-                    activeOpacity={0.85}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>📍  {city}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+        <View style={styles.whereRow}>
+          <TouchableOpacity accessibilityRole="button" testID="help-use-location" style={styles.locBtn} onPress={useMyLocation}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.locBtnText}>📍 Use my location</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.whereRow}>
+          <TextInput accessibilityLabel="City, for example Nashville, TN" testID="help-city-input" style={styles.input}
+            placeholder="City, e.g. Nashville, TN" placeholderTextColor={colors.textMuted}
+            value={cityInput} onChangeText={setCityInput} onSubmitEditing={searchCity} returnKeyType="search" />
+          <TouchableOpacity accessibilityRole="button" testID="help-city-search" style={styles.goBtn} onPress={searchCity}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          <Chip label="Open now" active={filters.open} onPress={() => applyFilters({ open: !filters.open })} testID="help-filter-open" />
+          <Chip label="24/7" active={filters.h24} onPress={() => applyFilters({ h24: !filters.h24 })} testID="help-filter-24" />
+          <Chip label="Free consultation" active={filters.free} onPress={() => applyFilters({ free: !filters.free })} testID="help-filter-free" />
+          {DISTANCES.map(d => (
+            <Chip key={d} label={`Within ${d} mi`} active={filters.miles === d} onPress={() => applyFilters({ miles: filters.miles === d ? null : d })} testID={`help-filter-mi-${d}`} />
+          ))}
+        </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {CHARGES.map(c => (
+            <Chip key={c} label={c} active={filters.charge === c} onPress={() => applyFilters({ charge: filters.charge === c ? '' : c })} testID={`help-filter-charge-${c.replace(/\s+/g, '-').toLowerCase()}`} />
+          ))}
+        </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {LANGUAGES.map(l => (
+            <Chip key={l} label={l} active={filters.language === l} onPress={() => applyFilters({ language: filters.language === l ? '' : l })} testID={`help-filter-lang-${l.toLowerCase()}`} />
+          ))}
+        </ScrollView>
+
+        {!where && phase === 'idle' && (
+          <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">Tap “Use my location” or type your city to see lawyers and bail agents near you.</Text>
+        )}
+        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 24 }} color={colors.textBrand} accessibilityLabel="Searching" />}
+        {phase === 'error' && (
+          <View style={styles.errorBox} testID="help-error">
+            <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
+            {!!where && (
+              <TouchableOpacity accessibilityRole="button" style={styles.goBtn} onPress={() => where && search(where, filters)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>Try again</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        {!!offlineAt && (
+          <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="help-offline">📴 Offline — showing results saved on this phone. Call to confirm. Call 911 in an emergency.</Text>
+        )}
+
+        {phase === 'ok' && result && (
+          <>
+            <Text maxFontSizeMultiplier={1.4} style={styles.meta} testID="help-ranking-note">
+              {st ? `${STATE_NAMES[st] || st} · ` : ''}{result.meta.ranking} {result.meta.hours_note}
+            </Text>
+            {!!result.meta.charge_note && <Text maxFontSizeMultiplier={1.4} style={styles.meta}>{result.meta.charge_note}</Text>}
+
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>⚖️ Lawyers ({result.lawyers.length})</Text>
+            {result.lawyers.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-lawyers">No lawyers match these filters here. Try fewer filters or a wider distance.</Text>}
+            {result.lawyers.map(p => <Card key={`l${p.id}`} p={p} />)}
+
+            {!!result.public_defender && (
+              <View style={styles.pdBox} testID="help-public-defender">
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>Can’t afford a lawyer? Public defender</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdName}>{result.public_defender.name}</Text>
+                {!!result.public_defender.eligibility && <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>Who qualifies: {result.public_defender.eligibility}</Text>}
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>{result.public_defender.note}</Text>
+                <View style={styles.actions}>
+                  {!!result.public_defender.phone && (
+                    <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.actionCall]} onPress={() => Linking.openURL(`tel:${String(result.public_defender?.phone).replace(/[^\d+]/g, '')}`).catch(() => {})}>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 Call</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!!result.public_defender.url && (
+                    <TouchableOpacity accessibilityRole="link" style={styles.actionBtn} onPress={() => Linking.openURL(String(result.public_defender?.url)).catch(() => {})}>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🌐 Website</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>🔓 Bail agents ({result.bail_agents.length})</Text>
+            {result.bail_agents.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-bail">No bail agents match these filters here. Try fewer filters or a wider distance.</Text>}
+            {result.bail_agents.map(p => <Card key={`b${p.id}`} p={p} />)}
+
+            {result.inmate_lookup.length > 0 && (
+              <View style={styles.pdBox} testID="help-inmate-lookup">
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>Find someone in jail (county inmate lookup)</Text>
+                {result.inmate_lookup.map(r => (
+                  <TouchableOpacity key={r.id} accessibilityRole="link" style={styles.lookupRow} disabled={!r.url}
+                    onPress={() => r.url && Linking.openURL(r.url).catch(() => {})}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.lookupText}>🔎 {r.name}{r.phone ? ` · ${r.phone}` : ''}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            <TouchableOpacity accessibilityRole="button" testID="help-bail-calculator" style={styles.calcBtn}
+              onPress={() => (navigation as any).navigate('BailCalculator', st ? { state: st, chargeType: filters.charge || undefined } : undefined)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.calcBtnText}>💰 Typical bail amounts{st ? ` in ${STATE_NAMES[st] || st}` : ''}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        <Text maxFontSizeMultiplier={1.4} style={styles.group}>More help</Text>
+        <View style={styles.moreRow}>
+          <TouchableOpacity accessibilityRole="button" testID="help-more-lawyers" style={styles.moreBtn} onPress={() => (navigation as any).navigate('LawyersTab')}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>⚖️ All lawyers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="help-more-bail" style={styles.moreBtn} onPress={() => (navigation as any).navigate('BailTab')}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🔓 All bail agents</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.moreRow}>
+          <TouchableOpacity accessibilityRole="button" testID="help-more-courts" style={styles.moreBtn} onPress={() => (navigation as any).navigate('CourtLocator', st ? { state: st } : undefined)}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🏛️ Find a courthouse</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="help-more-chat" style={styles.moreBtn} onPress={() => (navigation as any).navigate('ChatTab')}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 Ask a question</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 988 crisis line" style={styles.moreBtnWide} onPress={() => Linking.openURL('tel:988').catch(() => showToast('Please dial 988.', 'warning'))}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💙 Crisis or feeling unsafe? Call 988</Text>
+        </TouchableOpacity>
+        <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>Listings come from public business data. Justice Gavel does not endorse any lawyer or bail agent. Not legal advice.</Text>
+      </ScrollView>
+
+      <Modal visible={!!claim} transparent animationType="slide" onRequestClose={() => setClaim(null)} accessibilityViewIsModal>
+        <View style={styles.overlay}>
+          <View style={styles.sheet} testID="claim-modal">
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>Claim this listing</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.meta}>{claim?.name}. We check your license before linking it, so families can message you in the app. The public listing is not changed.</Text>
+            <TextInput accessibilityLabel={claim?.kind === 'lawyer' ? 'Bar number' : 'Bail agent license number'} testID="claim-license" style={[styles.input, { marginTop: 10 }]}
+              placeholder={claim?.kind === 'lawyer' ? 'Bar number' : 'License number'} placeholderTextColor={colors.textMuted} value={license} onChangeText={setLicense} maxLength={40} />
+            <TextInput accessibilityLabel="Phone we can reach you on (optional)" style={[styles.input, { marginTop: 8 }]} keyboardType="phone-pad"
+              placeholder="Phone (optional)" placeholderTextColor={colors.textMuted} value={claimPhone} onChangeText={setClaimPhone} maxLength={30} />
+            <TouchableOpacity accessibilityRole="button" testID="claim-submit" disabled={license.trim().length < 3 || sending}
+              style={[styles.submitBtn, (license.trim().length < 3 || sending) && styles.actionDisabled]} onPress={submitClaim}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>Send claim</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={() => setClaim(null)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Urgent header */}
-      <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('help_now_heading')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {bail && lawyer
-            ? t('help_now_sub_both')
-            : bail
-            ? t('help_now_sub_bail')
-            : t('help_now_sub_lawyer')}
-        </Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* No results state -- both null, no providers in area */}
-        {!bail && !lawyer && (
-          <View style={styles.noResultsWrap}>
-            <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={[styles.noResultsText, { fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 16 }]}>
-              No local contacts found
-            </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.noResultsText, { fontSize: 12, lineHeight: 20, marginTop: 4, marginBottom: 16 }]}>
-              No bail agents or lawyers are listed in your immediate area yet.
-              Use the options below to find help right now.
-            </Text>
-
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Go to More"
-              style={[styles.noResultsBtn, { backgroundColor: COLORS.navy, marginBottom: 10 }]}
-              onPress={() => navigation.navigate('MoreTab', { screen: 'QuickConnect' })}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.noResultsBtnText}>⚡ Quick Connect -- $19.99</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.noResultsBtnText, { fontSize: 11, fontFamily: 'Inter_400Regular', fontWeight: '400', opacity: 0.85, marginTop: 2 }]}>
-                GPS-matched bondsman + lawyer · Real-time results
-              </Text>
+      <Modal visible={!!report} transparent animationType="slide" onRequestClose={() => setReport(null)} accessibilityViewIsModal>
+        <View style={styles.overlay}>
+          <View style={styles.sheet} testID="report-modal">
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>Report a problem</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.meta}>{report?.name}</Text>
+            {REASONS.map(r => (
+              <TouchableOpacity key={r.code} accessibilityRole="radio" accessibilityState={{ selected: reason === r.code }}
+                testID={`report-reason-${r.code}`} style={[styles.reasonRow, reason === r.code && styles.reasonRowOn]} onPress={() => setReason(r.code)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.reasonText}>{reason === r.code ? '◉' : '○'}  {r.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TextInput accessibilityLabel="Details (optional)" testID="report-details" style={[styles.input, { marginTop: 8 }]} maxLength={500}
+              placeholder="Details (optional)" placeholderTextColor={colors.textMuted} value={details} onChangeText={setDetails} />
+            <TouchableOpacity accessibilityRole="button" testID="report-submit" disabled={!reason || sending}
+              style={[styles.submitBtn, (!reason || sending) && styles.actionDisabled]} onPress={submitReport}>
+              {sending ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>Send report</Text>}
             </TouchableOpacity>
-
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Go to More"
-              style={styles.noResultsBtn}
-              onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.noResultsBtnText}>🔓 Search All Bail Agents</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Go to Lawyers"
-              style={[styles.noResultsBtn, { backgroundColor: colors.legalDark, marginTop: 8 }]}
-              onPress={() => navigation.navigate('LawyersTab')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.noResultsBtnText}>⚖️ Search All Lawyers</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Go to Chat"
-              style={[styles.noResultsBtn, { backgroundColor: colors.blue, marginTop: 8 }]}
-              onPress={() => navigation.navigate('ChatTab')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.noResultsBtnText}>💬 Ask AI -- Free guidance now</Text>
+            <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={() => setReport(null)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-)}
-
-        {/* Bail bondsman first */}
-        {bail && <ContactCard contact={bail} type="bail" />}
-        {!bail && lawyer && (
-          <View style={[styles.missingCard, { borderColor: COLORS.warn + '50', backgroundColor: COLORS.warn + '08' }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.missingCardText, { color: COLORS.warn }]}>
-              🔓  No bail agent found nearby -- tap "More Bail Agents" below or search the full directory.
-            </Text>
-          </View>
-        )}
-
-        {/* Lawyer second */}
-        {lawyer && <ContactCard contact={lawyer} type="lawyer" />}
-          {/* Courthouse */}
-          {courthouse && (
-            <View style={[styles.contactCard, { borderLeftColor: colors.navy, borderLeftWidth: 5 }]}>
-              <View style={[styles.contactTypeBadge, { backgroundColor: colors.bgSubtle }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.textBrand }]}>🏛️ NEAREST COURTHOUSE</Text>
-              </View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{courthouse.name}</Text>
-              {courthouse.address ? (
-                <TouchableOpacity
-          accessibilityRole="button" onPress={() => openDir(courthouse.lat, courthouse.lng, courthouse.name)}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.contactAddress, { color: colors.textBrand }]}>{courthouse.address}</Text>
-                </TouchableOpacity>
-              ) : null}
-              {courthouse.phone ? (
-                <TouchableOpacity accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call courthouse ${courthouse.phone}`} onPress={() => callPhone(courthouse.phone)}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {courthouse.phone}</Text>
-                </TouchableOpacity>
-              ) : null}
-              {courthouse.hours ? (
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, marginTop: 4 }}>🕐 {courthouse.hours}</Text>
-              ) : null}
-            </View>
-          )}
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Find more courthouses on map" style={[styles.noResultsBtn,{backgroundColor:colors.navy,marginTop:8,marginBottom:4}]} onPress={()=>navigation.navigate('CourtLocator')}>
-            <Text style={[styles.noResultsBtnText, { color: colors.textOnNavy }]}>Find Courthouses Near You →</Text>
-          </TouchableOpacity>
-      <TouchableOpacity
-        accessibilityRole="button"
-        onPress={() => navigation.navigate('BailCalculator')}
-        style={{ marginTop: 8, padding: 12, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.textBrand, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>
-        <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>See typical bail ranges by charge type</Text>
-      </TouchableOpacity>
-          {/* Public Defender */}
-          {publicDefender && (
-            <View style={[styles.contactCard, { borderLeftColor: colors.blue, borderLeftWidth: 5 }]}>
-              <View style={[styles.contactTypeBadge, { backgroundColor: colors.infoBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.textBrand }]}>⚖️ PUBLIC DEFENDER (FREE)</Text>
-              </View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{publicDefender.title}</Text>
-              {publicDefender.body ? (
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, marginTop: 4 }} numberOfLines={2}>{publicDefender.body}</Text>
-              ) : null}
-              {publicDefender.phone ? (
-                <TouchableOpacity
-          accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call public defender ${publicDefender.phone}`} onPress={() => callPhone(publicDefender.phone)}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {publicDefender.phone}</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          )}
-
-          {/* Crisis Line */}
-          {crisisLine && (
-            <View style={[styles.contactCard, { borderLeftColor: colors.emergencyDark, borderLeftWidth: 5 }]}>
-              <View style={[styles.contactTypeBadge, { backgroundColor: colors.emergencyBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.emergency }]}>🆘 CRISIS SUPPORT (24/7)</Text>
-              </View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{crisisLine.title}</Text>
-              {crisisLine.phone ? (
-                <TouchableOpacity
-          accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call crisis line ${crisisLine.phone}`} onPress={() => callPhone(crisisLine.phone)}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {crisisLine.phone}</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          )}
-
-        {bail && !lawyer && (
-          <View style={[styles.missingCard, { borderColor: COLORS.navy + '50', backgroundColor: COLORS.navy + '08' }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.missingCardText, { color: COLORS.navy }]}>
-              ⚖️  No lawyer found nearby -- tap "More Lawyers" below or search the full directory.
-            </Text>
-          </View>
-        )}
-
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.dividerText}>More Options</Text>
-          <View style={styles.dividerLine} />
         </View>
-
-        {/* More options */}
-        <View style={styles.moreRow}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Go to More"
-            style={styles.moreBtn}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
-          activeOpacity={0.85}
-          >
-            <AppIcon name="cash-outline" size={20} color={colors.legal} />
-            <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnText}>{t('help_now_more_bail').split('\n')[0]}Bail Agents</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Go to Lawyers"
-            style={styles.moreBtn}
-            onPress={() => navigation.navigate('LawyersTab')}
-              activeOpacity={0.85}
-          >
-            <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnText}>{t('help_now_more_bail').split('\n')[0]}Bail Agents</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Go to More"
-            style={[styles.moreBtn, { borderColor: COLORS.navy }]}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'QuickConnect' })}
-          activeOpacity={0.85}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnIcon}>⚡</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.moreBtnText, { color: COLORS.navy }]}>Quick{'\n'}Connect $20</Text>
-          </TouchableOpacity>
-        </View>
-
-
-        <TouchableOpacity
-          accessibilityRole="button" style={styles.refreshBtn} onPress={fetchBoth}
-          activeOpacity={0.85}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.refreshBtnText}>↺  Refresh Results</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-
-      {/* ── Attorney / Bondsman B2B upsell footer ───────────────── */}
-      <TouchableOpacity
-        accessibilityRole="button"
-        onPress={() => navigation.navigate('MoreTab', { screen: 'Subscription' })}
-        style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
-          paddingVertical:10, paddingHorizontal:16, gap:6 }}
-      >
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize:11, color:colors.textPrimary }}>
-          ⚖️ Attorney or bondsman? Get arrest record alerts →
-        </Text>
-      </TouchableOpacity>
-      </ScrollView>
+      </Modal>
     </View>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen:        { flex: 1, backgroundColor: colors.bgCard },
-  loadingScreen: { flex: 1, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  loadingText:   { fontSize: 16, lineHeight: 24, ...FONTS.bold, color: colors.textOnGold, marginTop: 16, textAlign: 'center' },
-  loadingSub:    { fontSize: 12, color: COLORS.info, marginTop: 6 },
-  errorIcon:     { fontSize: 40, marginBottom: 12 },
-  errorText:     { color: colors.textOnGold, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 20 },
-  retryBtn:      { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 28 },
-  retryBtnText:  { color: colors.textOnNavy, ...FONTS.bold, fontSize: 14,
-    lineHeight: 21 },
+const makeStyles = (c: any) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
+  scroll: { padding: 16, paddingBottom: 48 },
+  title: { color: c.textPrimary, fontSize: 22, fontWeight: '900', marginBottom: 10 },
+  whereRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  locBtn: { flex: 1, backgroundColor: c.navy, borderRadius: 12, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
+  locBtnText: { color: c.white, fontSize: 16, fontWeight: '800' },
+  input: { flex: 1, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingHorizontal: 12, minHeight: 48, color: c.textPrimary, fontSize: 16 },
+  goBtn: { backgroundColor: c.navy, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', minHeight: 48, marginTop: 4 },
+  goBtnText: { color: c.white, fontSize: 15, fontWeight: '800' },
+  chips: { gap: 8, paddingVertical: 4 },
+  chip: { backgroundColor: c.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: c.border, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' },
+  chipOn: { backgroundColor: c.navy, borderColor: c.navy },
+  chipText: { color: c.textPrimary, fontSize: 14, fontWeight: '700' },
+  chipTextOn: { color: c.white },
+  hint: { color: c.textSecond, fontSize: 15, lineHeight: 21, marginVertical: 10 },
+  errorBox: { backgroundColor: c.bgCard, borderRadius: 12, padding: 14, marginVertical: 10, borderWidth: 1, borderColor: c.border },
+  errorText: { color: c.textPrimary, fontSize: 15, lineHeight: 21 },
+  offline: { color: c.warnDark, backgroundColor: c.warnBg, borderRadius: 10, padding: 10, fontSize: 13, marginVertical: 8 },
+  meta: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 6 },
+  group: { color: c.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 16, marginBottom: 8 },
+  card: { backgroundColor: c.bgCard, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  kind: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8 },
+  kindLawyer: { color: c.textBrand },
+  kindBail: { color: c.textPrimary },
+  distance: { color: c.textSecond, fontSize: 13, fontWeight: '700' },
+  name: { color: c.textPrimary, fontSize: 17, fontWeight: '800', marginTop: 4 },
+  org: { color: c.textSecond, fontSize: 14 },
+  address: { color: c.textMuted, fontSize: 13, marginTop: 2 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  badge: { fontSize: 12, fontWeight: '800', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
+  badgeOpen: { color: c.white, backgroundColor: c.legalDark },
+  badgeClosed: { color: c.textPrimary, backgroundColor: c.bgSubtle },
+  badgeUnknown: { color: c.textSecond, backgroundColor: c.bgSubtle },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  actionBtn: { flex: 1, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  actionCall: { backgroundColor: c.legalDark, borderColor: c.legalDark },
+  actionCallText: { color: c.white, fontSize: 15, fontWeight: '900' },
+  actionText: { color: c.textPrimary, fontSize: 14, fontWeight: '800' },
+  actionDisabled: { opacity: 0.45 },
+  reportLink: { marginTop: 8, minHeight: 44, justifyContent: 'center' },
+  reportText: { color: c.textSecond, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  pdBox: { backgroundColor: c.infoBg, borderRadius: 14, padding: 14, marginVertical: 10 },
+  pdTitle: { color: c.textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 4 },
+  pdName: { color: c.textPrimary, fontSize: 15, fontWeight: '700' },
+  pdBody: { color: c.textPrimary, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  lookupRow: { paddingVertical: 10, minHeight: 44, justifyContent: 'center' },
+  lookupText: { color: c.textPrimary, fontSize: 14, fontWeight: '600' },
+  calcBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 8 },
+  calcBtnText: { color: c.textPrimary, fontSize: 15, fontWeight: '800' },
+  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 16, fontStyle: 'italic' },
+  moreRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  moreBtn: { flex: 1, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48, paddingHorizontal: 6 },
+  moreBtnWide: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
+  sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900' },
+  reasonRow: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, borderBottomWidth: 1, borderBottomColor: c.border },
+  reasonRowOn: { backgroundColor: c.infoBg },
+  reasonText: { color: c.textPrimary, fontSize: 15 },
+  submitBtn: { backgroundColor: c.navy, borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 52, marginTop: 12 },
+  submitText: { color: c.white, fontSize: 16, fontWeight: '900' },
+  cancelBtn: { paddingVertical: 12, alignItems: 'center', minHeight: 44 },
+  cancelText: { color: c.textSecond, fontSize: 15, fontWeight: '700' },
+});
 
-  header: {
-    backgroundColor: colors.emergency,
-    paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16,
-    borderBottomWidth: 2, borderBottomColor: 'rgba(239,154,154,0.33)' },
-  heading:    { fontSize: 28, ...FONTS.black, color: COLORS.bgCard },
-  subheading: { fontSize: 12, lineHeight: 20, color: colors.textOnAccent, marginTop: 3 },
-
-  scroll: { padding: 16 },
-
-  contactCard: {
-    backgroundColor: colors.bgCard, borderRadius: RADIUS.xl,
-    padding: 16, marginBottom: 14, ...SHADOW.md },
-  contactTypeBadge: { paddingHorizontal: 10, paddingVertical: 10, borderRadius: RADIUS.pill, alignSelf: 'flex-start', marginBottom: 8 },
-  contactTypeText:  { fontSize: 12, ...FONTS.black },
-  contactName:      { fontSize: 18, ...FONTS.heavy, color: colors.textBrand, marginBottom: 3 },
-  contactAddress:   { fontSize: 12, color: colors.textMuted, marginBottom: 4, lineHeight: 16 },
-  contactRating:    { fontSize: 12, color: colors.goldText, ...FONTS.bold, marginBottom: 10 },
-
-  callBtn: { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginBottom: 8 },
-  callBtnText:  { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.8 },
-  callBtnPhone: { color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 20, marginTop: 3 },
-  dirBtn:       { borderWidth: 1.5, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
-  dirBtnText:   { fontSize: 12, lineHeight: 20, ...FONTS.bold },
-
-  noResults:     { alignItems: 'center', padding: 40 },
-  noResultsIcon: { fontSize: 40, marginBottom: 12 },
-  noResultsText: { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
-
-  divider:     { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-  dividerText: { fontSize: 11, ...FONTS.bold, color: colors.textMuted, marginHorizontal: 12, letterSpacing: 1 },
-
-  moreRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  moreBtn: {
-    flex: 1, backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg,
-    paddingVertical: 16, alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.border,
-    ...SHADOW.sm },
-  moreBtnIcon: { fontSize: 22, marginBottom: 4 },
-  moreBtnText: { fontSize: 12, ...FONTS.heavy, color: COLORS.textSecond, textAlign: 'center', lineHeight: 15 },
-
-  cityOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  citySheet:   { backgroundColor: colors.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
-  cityTitle:   { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginBottom: 4 },
-  citySub:     { fontSize: 12, lineHeight: 20, color: colors.info, marginBottom: 14 },
-  cityInput:   { borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, marginBottom: 10 },
-  cityRow:     { paddingVertical: 16, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  cityRowText: { fontSize: 15, lineHeight: 22, color: colors.textBrand, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  noResultsBtn: { backgroundColor: colors.emergencyDark, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 20, marginTop: 10, alignItems: 'center' },
-  noResultsBtnText: { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  refreshBtn:     { alignItems: 'center', paddingVertical: 16 },
-  refreshBtnText: { fontSize: 14, lineHeight: 21, color: colors.info, ...FONTS.semi },
-  licensePill: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8, alignSelf: 'flex-start' },
-  licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  missingCard:     { borderRadius: 12, borderWidth: 1.5, padding: 12, marginBottom: 12 },
-  missingCardText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  noResultsWrap: { alignItems: 'center', padding: 8, paddingBottom: 16 } });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(HelpNowScreen);
