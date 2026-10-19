@@ -7,7 +7,8 @@
     "base": {
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://api.justicegavel.app/api",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": ""
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://1a13bfd33e0e462e378d384a94a5e986@o4511570018041856.ingest.us.sentry.io/4512283129085952"
       }
     },
     "development": {
