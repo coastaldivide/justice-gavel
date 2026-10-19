@@ -77,7 +77,8 @@ export const schemas = {
     create_monitor: z.object({
       watch_name: nonEmptyStr(200),
       county:     z.string().max(100).default('All'),
-      state:      stateCode.default('TN'),
+      // a 2-letter state, or '' / 'ALL' / omitted = any state
+      state:      z.union([stateCode, z.literal(''), z.literal('ALL'), z.literal('all')]).optional(),
     }),
     warrant_check: z.object({
       name:  z.string().trim().min(2).max(200),

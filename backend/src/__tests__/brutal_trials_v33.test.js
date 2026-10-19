@@ -394,9 +394,9 @@ describe('S12. UX — Final Coverage', () => {
   test('S12-01: OfflineBanner uses Animated.Value + Animated.timing with useNativeDriver', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/OfflineBanner.tsx', 'utf8');
-    expect(src).toContain('Animated.Value');
-    expect(src).toContain('Animated.timing');
-    expect(src).toContain('useNativeDriver: true');
+    // a plain banner now (the animated copy was never shown: nothing set its store flag)
+    expect(src).toContain('TouchableOpacity');
+    expect(src).toContain('useLang()');
   });
   test('S12-04: theme.ts isDark defaults to true (dark-mode-first design)', async () => {
     const fs = await import('fs');

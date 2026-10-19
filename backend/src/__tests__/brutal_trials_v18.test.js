@@ -453,7 +453,9 @@ describe('8. EmergencyScreen — SOS Alert System', () => {
   test('8-01: fetches /alerts for emergency alert configuration', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
-    expect(src).toContain("'/alerts'");
+    const sos = fs.readFileSync(__REPO + '/frontend/src/services/sos.ts','utf8');
+    expect(src).toContain('sendSos(');
+    expect(sos).toContain("'/alerts'");
   });
 
   test('8-02: has phase, countdown, sendingSOS, contacts, result states', async () => {

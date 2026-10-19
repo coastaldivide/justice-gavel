@@ -12,8 +12,8 @@ function SkeletonCard({ colors }: { colors: any }) {
   React.useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true, isInteraction: false }),
       ])
     ).start();
     return () => shimmer.stopAnimation();

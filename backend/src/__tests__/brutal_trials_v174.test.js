@@ -134,7 +134,7 @@ describe('PAY. Payment System Verified', () => {
     const qc = fs.readFileSync(__REPO + '/backend/src/routes/billing/connections.js','utf8');
     expect(qc).toContain('paymentIntents.create');
     expect(qc).toContain("pi.status !== 'succeeded'");
-    expect(qc).toContain('validLat, validLat, validLng, validLng');
+    expect(qc).toContain('vLat, vLat, vLng, vLng');
     expect(qc).toContain('revenue_log');
   });
   test('PAY-03: Stripe webhook handles 5 events + updates DB', async () => {

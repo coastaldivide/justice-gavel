@@ -26,9 +26,10 @@ describe('QC. QuickConnect File Integrity', () => {
     // The orphaned .then(r => setCredit(r.data?.credit_cents)) never fired
     // Credit balance always displayed as 0 regardless of actual subscription
     expect(src).not.toContain("import('../services/api').then");
-    expect(src).toContain("api.get('/billing/subscription')");
+    // price, credit and amount due come from the server's quote
+    expect(src).toContain("'/billing/quickconnect/quote'");
     expect(src).toContain('credit_cents');
-    expect(src).toContain('setCredit');
+    expect(src).toContain('setQuote');
   });
   test('QC-02: useTheme destructure is complete (no truncated const)', async () => {
     const fs = await import('fs');
@@ -44,8 +45,7 @@ describe('QC. QuickConnect File Integrity', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/QuickConnectScreen.tsx','utf8');
     const refreshIdx = src.indexOf('const onRefresh');
     const body = src.slice(refreshIdx, refreshIdx+300);
-    expect(body).toContain("api.get('/billing/subscription')");
-    expect(body).toContain('setCredit');
+    expect(body).toContain('loadQuote()');
     expect(body).toMatch(/finally|setRefreshing/);
   });
   test('QC-04: brace balance intact after fixes', async () => {
@@ -81,7 +81,9 @@ describe('JOURNEY. 10 Critical User Journeys', () => {
     expect(hn).toContain("navigate('ChatTab')");
     expect(hn).toContain('988');
     const em = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx','utf8');
-    expect(em).toContain('/alerts');
+    const sos = fs.readFileSync(__REPO + '/frontend/src/services/sos.ts','utf8');
+    expect(em).toContain('sendSos(');
+    expect(sos).toContain("'/alerts'");
     expect(em).toMatch(/911|emergency/i);
   });
   test('JOURNEY-02: Login → token storage → app routing → biometric gate', async () => {

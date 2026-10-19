@@ -29,8 +29,9 @@ import {
 import React, {
   useState, useEffect, useRef, useCallback
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, TextInput, Platform, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
-import { FileSystem, RNShare } from '../utils/webCompat';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, TextInput, Platform, KeyboardAvoidingView, LayoutAnimation } from 'react-native';
+import { FileSystem, RNShare, Clipboard } from '../utils/webCompat';
+import { appendCaseNote } from '../services/caseNotes';
 import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
@@ -110,22 +111,17 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
+  // Any active recording is stopped and the microphone released by the
+  // useAudioRecorder hook when this screen unmounts.
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      // Any active recording is stopped and the microphone released by the
-      // useAudioRecorder hook when this screen unmounts.
-    };
-    });
-    return () => _task.cancel();
+    return () => { mountedRef.current = false; };
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles();
 
-  const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
+  const { caseId, caseTitle, onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,    setPhase]    = useState<Phase>('idle');
   const [note,     setNote]     = useState<StructuredNote | null>(null);
@@ -143,7 +139,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
         confirm(t('x_voice_note_microphone_needed'), t('x_voice_note_allow_microphone_access_record'),
-      { confirmLabel: t('x_voice_note_type_instead'), cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
+      { confirmLabel: t('x_voice_note_type_instead'), cancelLabel: t('home_offline_ok') }).then(ok => { if (ok) setPhase('text_input'); });
         return;
       }
       await setAudioModeAsync({
@@ -213,29 +209,30 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     }
   }, [textIn, showToast]);
 
-  // ── Save to case ─────────────────────────────────────────────────────────────
+  // ── Save to case (appended to the notes on the server) / copy ───────────────
   const saveToCase = useCallback(async () => {
     if (!editText.trim()) return;
     setSaving(true);
     try {
-      const combined = existingNotes
-        ? existingNotes + '\n\n' + editText.trim()
-        : editText.trim();
-
       if (caseId) {
-        await api.put(`/cases/${caseId}`, { notes: combined });
+        const combined = await appendCaseNote(caseId, editText);
+        if (onSave) onSave(combined);
+        showToast(t('vn_saved_to_case'), 'success');
+        navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab');
+      } else {
+        await Clipboard.setString(editText.trim());
+        showToast(t('vn_copied'), 'success');
       }
-      if (onSave) onSave(combined);
-      navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab');
-    } catch {
-      showToast(t('home_sos_failed'));
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('vn_save_failed')), 'error');
     } finally {
-      setSaving(false);
+      if (mountedRef.current) setSaving(false);
     }
-  }, [editText, existingNotes, caseId, onSave, navigation, showToast]);
+  }, [editText, caseId, onSave, navigation, showToast]);
 
   // ── Format note for case notes field ─────────────────────────────────────────
-  function formatNoteForCase(n: StructuredNote): string {
+  function formatNoteForCase(n: StructuredNote | undefined): string {
+    if (!n) return '';
     let out = `📝 ${n.date}\n\n`;
     out += `${n.summary}\n`;
     if (n.next_steps?.length) {

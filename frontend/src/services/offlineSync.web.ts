@@ -8,6 +8,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { api } from './api';
+import { isRetryableSyncError } from './syncErrors';
 
 const CASES_KEY = 'jg_offline_cases';
 const QUEUE_KEY = 'jg_sync_queue';
@@ -54,15 +55,26 @@ export async function getOfflineCases(): Promise<unknown[]> {
   return cases.filter(c => !c.synced).map(c => c.data);
 }
 
-/** Process the sync queue — call when connectivity is restored. */
-export async function processSyncQueue(
+let _inFlight: Promise<{ synced: number; failed: number }> | null = null;
+
+/** Same contract as offlineSync.ts: one run at a time; retryable failures stay queued. */
+export function processSyncQueue(
+  onCaseSynced?: (tempId: string, serverId: number) => void
+): Promise<{ synced: number; failed: number }> {
+  if (_inFlight) return _inFlight;
+  _inFlight = runSyncQueue(onCaseSynced).finally(() => { _inFlight = null; });
+  return _inFlight;
+}
+
+async function runSyncQueue(
   onCaseSynced?: (tempId: string, serverId: number) => void
 ): Promise<{ synced: number; failed: number }> {
   let synced = 0, failed = 0;
-  const queue = await read<QueueItem>(QUEUE_KEY);
+  const queue = (await read<QueueItem>(QUEUE_KEY)).map(i => (i.status === 'syncing' ? { ...i, status: 'pending' as const } : i));
   for (const item of queue) {
     if (item.status !== 'pending') continue;
     try {
+      item.status = 'syncing';
       const res = await api.post(item.endpoint, JSON.parse(item.body));
       item.status = 'synced';
       const cases = await read<OfflineCase>(CASES_KEY);
@@ -70,23 +82,25 @@ export async function processSyncQueue(
       if (item.endpoint === '/cases' && res.data?.id && onCaseSynced) onCaseSynced(item.temp_id, res.data.id);
       synced++;
     } catch (e) {
-      item.status = 'failed';
-      item.error = String(e);
       failed++;
+      const retry = isRetryableSyncError(e);
+      item.status = retry ? 'pending' : 'failed';
+      item.error = String((e as Error)?.message || e);
+      if (retry) break;
     }
   }
   await write(QUEUE_KEY, queue.filter(i => i.status !== 'synced'));
   return { synced, failed };
 }
 
-/** Start NetInfo listener — auto-syncs queue on reconnect. */
+/** Start NetInfo listener — syncs the queue when the app is (or comes back) online. */
 export function startSyncListener(
   onCaseSynced?: (tempId: string, serverId: number) => void
 ): () => void {
-  let wasOffline = false;
+  let wasOnline: boolean | null = null;
   return NetInfo.addEventListener(state => {
     const nowOnline = state.isConnected === true;
-    if (wasOffline && nowOnline) processSyncQueue(onCaseSynced).catch(() => {});
-    wasOffline = !nowOnline;
+    if (nowOnline && wasOnline !== true) processSyncQueue(onCaseSynced).catch(() => {});
+    wasOnline = nowOnline;
   });
 }

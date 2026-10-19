@@ -132,7 +132,7 @@ describe('WEB. Web Platform Screen Variants', () => {
   test('WEB-02: VoiceNoteScreen.web.tsx posts to /transcribe/audio (exists)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/VoiceNoteScreen.web.tsx','utf8');
-    expect(src).toContain('/transcribe/audio');
+    expect(src).toContain('/transcribe/note');   // transcribed + structured, free (the paid /audio was a 403)
     expect(src).toContain('catch');
     // /api/transcribe is mounted in app.js
     const app = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');

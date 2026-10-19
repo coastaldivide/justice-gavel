@@ -18,7 +18,7 @@ import EmergencyStrip from '../components/EmergencyStrip';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
 import { t, useLang, getLang } from '../i18n';
-import { RNShare } from '../utils/webCompat';
+import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { getUserState, setUserState, localizedStateList, stateName as localStateName } from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import {
@@ -128,7 +128,10 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       ...specific.map(s => `${s.heading}\n${s.body}\n(${t('rc_source')}: ${s.source})`),
       '', t('rc_footer'), 'https://justicegavel.app/rights',
     ];
-    try { await RNShare.share({ title: t('rc_title'), message: lines.join('\n\n') }); }
+    try {
+      const r = await RNShare.share({ title: t('rc_title'), message: lines.join('\n\n') });
+      if (r?.action === COPIED_ACTION) showToast(t('rc_copied'), 'success');
+    }
     catch (e: any) { if (e?.message && e.message !== 'User did not share') showToast(t('cp_share_unavailable'), 'error'); }
   };
 

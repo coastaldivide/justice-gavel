@@ -37,7 +37,7 @@ import { FileSystem, hapticImpact, hapticNotification, RNShare } from '../utils/
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, API_BASE_URL } from '../services/api';
 import { useTheme, COLORS } from '../constants/theme';
-import { getToken } from '../utils/secureStorage';
+import { getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { t, useLang } from '../i18n';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
@@ -83,12 +83,11 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    try {
-    await fetchLaw(''); } catch {}
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
-  }, []);
+    await fetchLaw(userState);
+    if (mountedRef.current) setRefreshing(false);
+  };
 
   const [phase, setPhase]         = useState<Phase>('ready');
   const [elapsed, setElapsed]     = useState(0);
@@ -100,23 +99,24 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const [docId, setDocId]         = useState('');
   const [error, setError]         = useState('');
   const [location, setLocation]   = useState('');
+  const [failedUri, setFailedUri] = useState<string | null>(null);
 
   const recorder   = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const timerRef   = useRef<any>(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
+    const _task = InteractionManager.runAfterInteractions(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    });
     return () => {
+      _task.cancel();
       mountedRef.current = false;
       clearInterval(timerRef.current);
       // Any active recording is stopped and the microphone released by the
       // useAudioRecorder hook when this screen unmounts.
     };
-    });
-    return () => _task.cancel();
   }, []);
 
   // Determine consent law from CURRENT LOCATION at mount time — not stored profile.
@@ -159,10 +159,11 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   }, []);
 
   const fetchLaw = async (state: string) => {
+    if (!state) return;
     try {
-      const res = await api.get(`/interrogation/recording-law?state=${state}`);
+      const res = await api.get(`/interrogation/recording-law?state=${encodeURIComponent(state)}`);
       if (mountedRef.current) setLaw(res.data || null);
-    } catch { /* use default */ }
+    } catch { /* offline: the general warning below still shows */ }
   };
 
   const formatTime = (secs: number) => {
@@ -182,9 +183,9 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
   const startRecording = async () => {
     // Two-party consent warning
-    if (TWO_PARTY_STATES.has(userState) && !recordingLaw?.acknowledged) {
+    if (TWO_PARTY_STATES.has(userState) || recordingLaw?.consent === 'two-party') {
       confirm(t('x_interrogation_recorder_two_party_consent_warning'), t('x_interrogation_recorder_custodial_interrogation_note_likely', { value: (recordingLaw?.note || t('x_interrogation_recorder_state_may_require_all')) }),
-      { confirmLabel: t('x_interrogation_recorder_i_understand_start_recording') }).then(ok => { if (ok) startRecording; });
+      { confirmLabel: t('x_interrogation_recorder_i_understand_start_recording') }).then(ok => { if (ok) doStartRecording(); });
       return;
     }
     doStartRecording();
@@ -195,7 +196,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       hapticImpact();
       const { status } = await requestRecordingPermissionsAsync();
       if (status !== 'granted') {
-showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warning');
+        showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warning');
+        return;
       }
 
       await setAudioModeAsync({
@@ -231,7 +233,7 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
       if (!uri) throw new Error('No recording found');
 
 
-      let userData: any = {}; try { const _u = await AsyncStorage.getItem('user'); if (_u) userData = JSON.parse(_u); } catch {}
+      let userData: any = {}; try { const _u = await getSecureItem('user'); if (_u) userData = JSON.parse(_u); } catch {}
 
       // Build FormData
       const formData = new FormData();
@@ -256,8 +258,16 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
         }
       );
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Processing failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (mountedRef.current) {
+          setFailedUri(uri);
+          setError(res.status === 401 ? t('ir_sign_in_to_transcribe') : res.status === 503 ? t('ir_transcription_unavailable')
+            : (data.error || t('x_interrogation_recorder_could_not_process_recording')));
+          setPhase('error');
+        }
+        return;
+      }
 
       if (!mountedRef.current) return;
       setTranscript(data.transcript || '');
@@ -268,9 +278,17 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
 
     } catch {
       if (!mountedRef.current) return;
+      setFailedUri(recorder.uri || null);
       setError(t('x_interrogation_recorder_could_not_process_recording'));
       setPhase('error');
     }
+  };
+
+  // The audio stays on the phone when processing fails: let the person keep it.
+  const saveRecording = async () => {
+    if (!failedUri) return;
+    try { await RNShare.share({ url: failedUri, title: t('x_interrogation_recorder_police_encounter_transcript') }); }
+    catch { showToast(t('x_interrogation_recorder_could_not_save_pdf'), 'error'); }
   };
 
   const savePDF = async () => {
@@ -291,6 +309,7 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
   };
 
   const reset = () => {
+    setFailedUri(null);
     setPhase('ready');
     setElapsed(0);
     setTranscript('');
@@ -305,7 +324,7 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
     return colors.textMuted;
   };
   const speakerLabel = (speaker: string) =>
-    speaker === 'SUSPECT' ? t('x_interrogation_recorder_text') : speaker;
+    speaker === 'SUSPECT' ? t('x_interrogation_recorder_text') : speaker === 'OFFICER' ? t('ir_officer') : t('ir_unknown_speaker');
 
   return (
     <ScrollView
@@ -434,6 +453,12 @@ showToast(t('x_interrogation_recorder_allow_microphone_access_settings'), 'warni
         <View style={[styles.errorBox, { backgroundColor: colors.emergencyBg }]}>
           <Text maxFontSizeMultiplier={1.3} style={styles.errorTitle}>{t('x_interrogation_recorder_could_not_process')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.errorMsg}>{error}</Text>
+          {!!failedUri && (
+            <TouchableOpacity accessibilityRole="button" style={[styles.retryBtn, { marginBottom: 8 }]} onPress={saveRecording}
+              accessibilityLabel={t('ir_save_recording')}>
+              <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>{t('ir_save_recording')}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             accessibilityRole="button" style={styles.retryBtn} onPress={reset}
            accessibilityLabel={t('help_now_error_retry')}>

@@ -184,7 +184,7 @@ describe('PAY. Payment System — All 29 Checks', () => {
     expect(src).toContain("'/quickconnect'");
     expect(src).toContain('bail_agents');
     expect(src).toContain('FROM lawyers');
-    expect(src).toContain('validLat, validLat, validLng, validLng'); // geospatial params
+    expect(src).toContain('vLat, vLat, vLng, vLng'); // geospatial params
     expect(src).toContain('paymentIntents.create');
     expect(src).toContain("pi.status !== 'succeeded'");
     expect(src).toContain('revenue_log');

@@ -908,7 +908,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
     const home = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     // HomeScreen calls /cases, /messages/unread/count, /push/tip, /providers/bail
     // All of these are data that users expect to be fresh when they pull down
-    const hasApiCalls  = home.includes("api.get('/cases')");
+    const hasApiCalls  = home.includes("'/court-dates'");
     const hasScrollView= home.includes('ScrollView');
     const hasPTR       = home.includes('RefreshControl') || home.includes('onRefresh');
     // Document the gap: HomeScreen has live data + ScrollView but no PTR

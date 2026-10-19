@@ -1,6 +1,6 @@
 import { apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getItem as getSecureItem } from '../utils/secureStorage';
 import { AppIcon } from '../components/AppIcon';
 /**
  * AttorneyDashboardScreen -- Practice Management Hub
@@ -202,7 +202,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       if (navigation.canGoBack()) navigation.goBack();
       else (navigation as any).navigate('HomeTab');
     };
-    AsyncStorage.getItem('user').then(raw => {
+    getSecureItem('user').then(raw => {
       if (raw) {
         const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
         const allowed = ['attorney','defender','admin'].includes(u?.role);

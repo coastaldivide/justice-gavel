@@ -172,7 +172,9 @@ router.get('/monitors', authMiddleware, async (req, res) => {
 });
 
 router.post('/monitors', authMiddleware, validate(schemas.arrests.create_monitor), async (req, res) => {
-  let { watch_name, county = 'All', state = 'TN' } = req.body;
+  let { watch_name, county = 'All' } = req.body;
+  // No state (or 'ALL') = watch every state; stored as NULL, which the matcher treats as any.
+  const state = /^[A-Za-z]{2}$/.test(String(req.body.state || '')) ? String(req.body.state).toUpperCase() : null;
 
   if (watch_name) watch_name = truncateStr(watch_name, 200);  if (!watch_name) return err400(res, 'watch_name required');
   try {
@@ -182,7 +184,7 @@ router.post('/monitors', authMiddleware, validate(schemas.arrests.create_monitor
     if ((count?.n ?? 0) >= 5) return res.status(429).json({ error: 'Monitor limit reached (5 max)' });
     const r = await db.run(
       'INSERT INTO arrest_monitors (user_id, watch_name, name, county, state, active) VALUES (?,?,?,?,?,1)',
-      [req.user.id, watch_name.trim(), watch_name.trim(), String(county).trim(), String(state).trim()]
+      [req.user.id, watch_name.trim(), watch_name.trim(), String(county).trim() || 'All', state]
     );
     res.status(201).json({ created: true, id: r?.lastID });
   } catch (e) {
@@ -194,7 +196,8 @@ router.delete('/monitors/:id', authMiddleware, async (req, res) => {
     if (!idVal) return res.status(400).json({ error: 'Invalid id' });
   try {
     const db = await getDb();
-    await db.run('UPDATE arrest_monitors SET active=0 WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
+    const r = await db.run('UPDATE arrest_monitors SET active=0 WHERE id=? AND user_id=? AND COALESCE(active, 1) = 1', [idVal, req.user.id]);
+    if (!r?.changes) return res.status(404).json({ error: 'Monitor not found' });
     res.json({ removed: true });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }

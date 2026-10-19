@@ -179,6 +179,7 @@ export const BUSINESS_CONSTANTS = {
   LEGAL_PRO_ANNUAL_CENTS:  29900,   // $299/year
   ESQUIRE_ANNUAL_CENTS:    41000,   // $410/year
   BONDSMAN_BADGE_CENTS:     4900,   // $49/month
+  QUICKCONNECT_PRICE_CENTS: 2000,   // $20 one-time: $10 bondsman contact + $10 lawyer contact
   // Feature limits
   MAX_FREE_AI_MSGS:         5,
   FREE_CASE_LIMIT:          3,

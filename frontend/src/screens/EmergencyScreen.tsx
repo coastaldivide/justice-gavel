@@ -18,10 +18,8 @@ import {
   RefreshControl,
   LayoutAnimation,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getLocation } from '../services/location';
-import { getContacts } from '../services/storage';
-import { api } from '../services/api';
+import { activeContacts, sendSos, reportSosResult } from '../services/sos';
+import { useConfirm } from '../hooks/useConfirm';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 
@@ -37,6 +35,7 @@ const RIGHTS_CARDS = perLang(() => [
 function EmergencyScreen({ navigation }: ScreenProps) {
   useLang();
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -59,21 +58,24 @@ function EmergencyScreen({ navigation }: ScreenProps) {
   const [sendingSOS, setSendingSOS] = useState(false);
   const timerRef = useRef<any>(null);
 
+  // Reload on focus: coming back from "Add emergency contacts" must enable the alert.
   useEffect(() => {
-    getContacts().then(c => setContacts((c as string[]).filter(Boolean))).catch(() => {});
-    return () => clearInterval(timerRef.current);
-  }, []);
+    const load = () => { activeContacts().then(c => { if (mountedRef.current) setContacts(c); }).catch(() => {}); };
+    load();
+    const unsub = navigation?.addListener?.('focus', load);
+    return () => { clearInterval(timerRef.current); if (typeof unsub === 'function') unsub(); };
+  }, [navigation]);
 
   const startCountdown = () => {
     if (sendingSOS) return;
     hapticImpact();
     setPhase('countdown');
     setCount(5);
+    let left = 5;
     timerRef.current = setInterval(() => {
-      setCount(n => {
-        if (n <= 1) { clearInterval(timerRef.current); doSend(); return 0; }
-        return n - 1;
-      });
+      left -= 1;
+      setCount(left);
+      if (left <= 0) { clearInterval(timerRef.current); doSend(); }
     }, 1000);
   };
 
@@ -88,27 +90,13 @@ function EmergencyScreen({ navigation }: ScreenProps) {
     setSendingSOS(true);
     setPhase('sending');
     try {
-      const { lat, lng } = await getLocation();
-      const userData = await AsyncStorage.getItem('user');
-      const user = userData ? JSON.parse(userData) : {};
-      const active = contacts.filter(Boolean);
-      if (active.length === 0) {
-        setResult(t('x_emergency_no_emergency_contacts_saved'));
-        setPhase('error');
-        setSendingSOS(false);
-        return;
-      }
-      const res = await api.post('/alerts', {
-        userName: user.displayName || user.name || 'User',
-        contacts: active, lat, lng,
-      });
-      setResult(t('x_emergency_alert_sent_contact_s', { value: res.data?.results?.length ?? active.length }));
-      setPhase('done');
-    } catch {
-      setResult(t('x_emergency_could_not_send_alert'));
-      setPhase('error');
+      const r = await sendSos(contacts);
+      const line = await reportSosResult(r, confirm, showToast);
+      if (!mountedRef.current) return;
+      setResult(line);
+      setPhase(r.total > 0 && r.sent === r.total ? 'done' : 'error');
     } finally {
-      setSendingSOS(false);
+      if (mountedRef.current) setSendingSOS(false);
     }
   };
 
@@ -258,7 +246,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
           { icon: '🔓', label: t('x_emergency_bail_agent'),      onPress: () => navigation.navigate('BailTab') },
           { icon: '💬', label: t('x_emergency_ai_help'),         onPress: () => navigation.navigate('ChatTab') },
           { icon: '🏛️', label: t('x_emergency_court_locator'),  onPress: () => navigation.navigate('MoreTab', { screen: 'CourtLocator' }) },
-          { icon: '📋', label: t('x_emergency_just_arrested'), onPress: () => navigation.navigate('MoreTab', { screen: 'HelpNow' }) },
+          { icon: '📋', label: t('x_emergency_just_arrested'), onPress: () => navigation.navigate('MoreTab', { screen: 'JustArrested' }) },
           { icon: '🧠', label: t('x_emergency_crisis_help'),    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
         ].map(item => (
           <TouchableOpacity accessibilityRole="button"

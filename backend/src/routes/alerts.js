@@ -49,62 +49,72 @@ import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import { googleMapsLink } from '../services/geolink.js';
-const sendSms = () => Promise.resolve(null);
-import { sendEmail } from '../services/email.js';
+import { sendSms, toE164 } from '../services/sms.js';
+import { sendEmail, emailLive } from '../services/email.js';
+import { resolveLang, msg as i18nMsg } from '../i18n/index.js';
 import logger from '../utils/logger.js';
 
 const alertsLimiter = makeUserLimiter({ windowMs: 60000, max: 3, message: 'Too many alerts. Please wait 1 minute.' });
 const router = Router();
-router.post('/', authRequired, alertsLimiter, async (req,res)=>{
-  try{
-    const { userName, contacts=[], lat, lng } = req.body || {};
-    if(!userName || !Array.isArray(contacts) || contacts.length===0 || lat==null || lng==null){
-      return err400(res, 'userName, contacts[], lat, lng required');
+
+const ALERT_CATEGORIES = ['emergency', 'court_reminder', 'missed_checkin', 'arrest'];
+const MAX_ALERT_CONTACTS = 3;   // the app saves up to three emergency contacts
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Send one alert to one contact. Never throws: { contact, method, delivered, reason? }. */
+async function deliverAlert(contact, text, subject) {
+  if (EMAIL_RE.test(contact)) {
+    if (!emailLive()) return { contact, method: 'email', delivered: false, reason: 'email_not_configured' };
+    try {
+      await sendEmail({ to: contact, subject, text });
+      return { contact, method: 'email', delivered: true };
+    } catch {
+      return { contact, method: 'email', delivered: false, reason: 'send_failed' };
     }
-    const db   = await getDb();
-    const link = googleMapsLink(lat, lng);
-    const category = ['emergency','court_reminder','missed_checkin','arrest'].includes(req.body.category)
-      ? req.body.category : 'emergency';
+  }
+  if (!toE164(contact)) return { contact, method: 'sms', delivered: false, reason: 'invalid_contact' };
+  const r = await sendSms({ to: contact, body: text });
+  if (r.ok) return { contact, method: 'sms', delivered: true };
+  return { contact, method: 'sms', delivered: false, reason: r.skipped ? r.reason : 'send_failed' };
+}
 
-    const templates = {
-      emergency:       `🚨 EMERGENCY: ${userName} needs immediate help. Location: ${link}`,
-      court_reminder:  `⚖️ COURT REMINDER: ${userName} has a court appearance. Please provide support. Location: ${link}`,
-      missed_checkin:  `⚠️ MISSED CHECK-IN: ${userName} missed their scheduled check-in. Location last known: ${link}`,
-      arrest:          `🔴 ARREST ALERT: ${userName} has been arrested and needs assistance. Location: ${link}`,
-    };
-    const msg = templates[category] || templates.emergency;
+// POST /api/alerts — text / e-mail the person's emergency contacts.
+// The answer says, per contact, whether the alert actually went out: with no
+// SMS provider (Twilio) or e-mail provider (Resend) configured nothing is sent,
+// and the app then opens the phone's own messages app with `message`.
+// Location is optional (permission denied must never block an SOS).
+router.post('/', authRequired, alertsLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const lang = resolveLang(req);
+    const userName = typeof body.userName === 'string' ? sanitizeStr(body.userName, 80).trim() : '';
+    const contacts = Array.isArray(body.contacts)
+      ? [...new Set(body.contacts.filter(c => typeof c === 'string').map(c => c.trim()).filter(Boolean))].slice(0, MAX_ALERT_CONTACTS)
+      : [];
+    if (!contacts.length) return err400(res, i18nMsg(lang, 'alerts.contacts_required'));
+    const lat = Number(body.lat), lng = Number(body.lng);
+    const hasLoc = body.lat != null && body.lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+      && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    const category = ALERT_CATEGORIES.includes(body.category) ? body.category : 'emergency';
+    const name = userName || i18nMsg(lang, 'alerts.someone');
+    const text = i18nMsg(lang, `alerts.${category}${hasLoc ? '' : '_no_location'}`,
+      { name, link: hasLoc ? googleMapsLink(lat, lng) : '' });
+    const subject = i18nMsg(lang, 'alerts.subject');
 
-    // Log alert to database (non-fatal if fails)
+    const db = await getDb();
     db.run(
       `INSERT INTO alert_log (user_id, category, message, lat, lng, contact_count, sent_at)
        VALUES (?,?,?,?,?,?,NOW())`,
-      [req.user?.id || null, category, msg, lat, lng, contacts.length]
+      [req.user.id, category, text, hasLoc ? lat : null, hasLoc ? lng : null, contacts.length]
     ).catch(logIgnored('routes/alerts'));
-    // Send to both contacts in parallel — each is independent
-    // Promise.allSettled ensures both fire even if one fails, and preserves order
-    const settled = await Promise.allSettled(
-      contacts.slice(0, 2).filter(Boolean).map(async c => {
-        if (c.includes('@')) {
-          const r = await sendEmail({ to: c, subject: 'Emergency Alert', text: msg });
-          await db.run(
-            'INSERT INTO alerts (user_name,lat,lng,contact,method,status,message) VALUES (?,?,?,?,?,?,?)',
-            [userName, lat, lng, c, 'email', 'sent', msg]
-          );
-          return { contact: c, method: 'email', mock: !!r.mock };
-        } else {
-          const r = await sendSms({ to: c, body: msg });
-          await db.run(
-            'INSERT INTO alerts (user_name,lat,lng,contact,method,status,message) VALUES (?,?,?,?,?,?,?)',
-            [userName, lat, lng, c, 'sms', 'sent', msg]
-          );
-          return { contact: c, method: 'sms', mock: !!r.mock };
-        }
-      })
-    );
-    const results = settled
-      .filter(s => s.status === 'fulfilled')
-      .map(s => s.value);
-    res.json({ ok:true, results });
+
+    const results = await Promise.all(contacts.map(c => deliverAlert(c, text, subject)));
+    await Promise.all(results.map(r => db.run(
+      'INSERT INTO alerts (user_name,lat,lng,contact,method,status,message) VALUES (?,?,?,?,?,?,?)',
+      [name, hasLoc ? lat : null, hasLoc ? lng : null, r.contact, r.method, r.delivered ? 'sent' : (r.reason || 'not_sent'), text]
+    ).catch(logIgnored('routes/alerts'))));
+    const sent = results.filter(r => r.delivered).length;
+    res.json({ ok: sent > 0, sent, total: results.length, results, message: text, language: lang });
   } catch (e) { logger.error('[alerts]', e.message); res.status(500).json({ error: 'Alert failed' }); }
 });
 

@@ -4,6 +4,7 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getItem as getSecureItem } from '../utils/secureStorage';
 import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
@@ -41,7 +42,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
 
   useEffect(() => {
     (async () => {
-      const u = await AsyncStorage.getItem('user');
+      const u = await getSecureItem('user');
       if (u) { try { const user = JSON.parse(u); if (user?.id) setUserId(user.id); } catch {} }
       const done = await AsyncStorage.getItem('completed_lessons');
       if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }

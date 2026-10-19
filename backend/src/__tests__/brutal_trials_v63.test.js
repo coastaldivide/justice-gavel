@@ -158,8 +158,8 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
     expect(src).toContain('MediaRecorder');
-    expect(src).toContain('Web version');
-    expect(src).toContain('transcription');
+    expect(src).toContain('web version');
+    expect(src).toContain('/interrogation/transcribe');
   });
   test('WEB-02: DocumentScannerScreen.web.tsx uses file input with drag-drop (not camera)', async () => {
     const fs = await import('fs');
@@ -173,8 +173,8 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
     expect(src).toContain('MediaRecorder');
-    expect(src).toContain('Web platform');
-    expect(src).toContain('transcription');
+    expect(src).toContain('web version');
+    expect(src).toContain('/transcribe/note');
   });
   test('WEB-04: all 3 web variants are functionally identical to native counterparts', async () => {
     const fs = await import('fs');
@@ -182,9 +182,9 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
     const doc = fs.readFileSync(__REPO + '/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
     const vn  = fs.readFileSync(__REPO + '/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
     // Each web variant documents its functional equivalence
-    expect(int).toContain('Functionally identical');
+    expect(int).toContain('Same job as the native screen');
     expect(doc).toContain('file system');
-    expect(vn).toContain('same flow as native');
+    expect(vn).toContain('Same flow as native');
   });
 });
 
@@ -227,7 +227,7 @@ describe('S12. UX — Platform Variants + Legal Compliance', () => {
     const fs = await import('fs');
     const int = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
     expect(int).toContain('MediaRecorder');
-    expect(int).toContain('Web version');
+    expect(int).toContain('web version');
   });
   test('S12-02: shareMotion attorney acknowledgment = legal compliance gate', async () => {
     const fs = await import('fs');

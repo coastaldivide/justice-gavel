@@ -18,10 +18,7 @@
  * and are silently no-ops in production (no crash risk).
  */
 
-import { getLang } from '../i18n';
-import { API_BASE_URL } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getToken } from '../utils/secureStorage';
 
 // ── Event schema ───────────────────────────────────────────────────────────────
 type EventName =  'sign_up'
@@ -87,19 +84,7 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
       mp.init().then(() => mp.track(event, payload)).catch(() => {});
     }
 
-    // ── Fallback: send to own backend for basic event logging ─────────────────
-    // The user's session token (not the Mixpanel project token) authenticates the event.
-    const authToken = await getToken().catch(() => null);
-    const _ac = new AbortController(); setTimeout(() => _ac.abort(), 5000);
-    fetch(API_BASE_URL + '/analytics/event', { signal: _ac.signal,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept-Language': getLang(),
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    }).catch(() => {}); // fire-and-forget, never crash on analytics failure
+    // No Mixpanel token → nothing leaves the device (the API has no event endpoint).
   } catch {
     // analytics must never crash the app
   }

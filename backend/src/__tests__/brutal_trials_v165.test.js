@@ -306,7 +306,9 @@ describe('F9. Monitoring & Emergency Flow', () => {
   test('F9-04: EmergencyScreen posts alert + has 911 link', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx','utf8');
-    expect(src).toContain('/alerts');
+    const sos = fs.readFileSync(__REPO + '/frontend/src/services/sos.ts','utf8');
+    expect(src).toContain('sendSos(');
+    expect(sos).toContain("'/alerts'");
     expect(src).toContain('911');
     expect(src).toContain('catch');
   });

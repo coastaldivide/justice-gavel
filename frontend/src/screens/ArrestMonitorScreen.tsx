@@ -12,15 +12,20 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { t, useLang } from '../i18n';
+import { t, useLang, locale } from '../i18n';
+import { stateName } from '../utils/userState';
+import { getToken } from '../utils/secureStorage';
 
 const MAX_WATCHES = 5;
+// Plans that include arrest monitoring (billing TIERS keys) and the statuses that count as paid.
+const PRO_TIERS = ['legal_pro', 'pro_annual', 'esquire', 'esquire_annual'];
+const PRO_STATUSES = ['active', 'trialing'];
 
 interface Watch {
   id: number;
   watch_name: string;
   county: string;
-  state: string;
+  state: string | null;
   last_checked: string | null;
   last_result: string | null;
   active: number;
@@ -46,19 +51,34 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [watches,   setWatches]   = useState<Watch[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [isPro,     setIsPro]     = useState(false);
+  const [proPrice,  setProPrice]  = useState('');
   const [name,      setName]      = useState('');
   const [county,    setCounty]    = useState('');
   const [state,     setState]     = useState('');
   const [adding,    setAdding]    = useState(false);
   const [showForm,  setShowForm]  = useState(false);
 
+  // The Legal Pro price as the server lists it, in the app's language.
+  const showProPrice = (tiers?: { key: string; monthly_cents?: number }[]) => {
+    const cents = Number((tiers || []).find(x => x.key === 'legal_pro')?.monthly_cents);
+    setProPrice(cents > 0 ? t('am_per_month', { price: (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' }) }) : '');
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
+    // Signed out: the plan description (nothing to load — the API needs an account).
+    if (!(await getToken().catch(() => null))) {
+      const tiers = await api.get<{ tiers: { key: string; monthly_cents?: number }[] }>('/billing/tiers?audience=consumer').catch(() => null);
+      showProPrice(tiers?.data?.tiers);
+      setIsPro(false); setLoading(false); return;
+    }
     try {
-      // Check subscription tier
-      const subRes = await api.get('/billing/subscription').catch(() => ({ data: { tier: 'free' } }));
-      const tier = subRes.data?.tier || 'free';
-      setIsPro(['legal_pro', 'intel', 'attorney_alert', 'attorney_featured'].includes(tier));
+      // Check subscription tier: GET /billing/subscription → { subscription: { tier, status } | null, tiers }
+      const subRes = await api.get<{ subscription: { tier?: string; status?: string } | null; tiers?: { key: string; monthly_cents?: number }[] }>('/billing/subscription')
+        .catch(() => ({ data: { subscription: null, tiers: [] } }));
+      const sub = subRes.data?.subscription;
+      setIsPro(!!sub && PRO_STATUSES.includes(String(sub.status)) && PRO_TIERS.includes(String(sub.tier)));
+      showProPrice(subRes.data?.tiers);
 
       // Load existing watches
       const res = await api.get('/arrests/monitors').catch(() => ({ data: [] }));
@@ -83,15 +103,17 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
     }
     setAdding(true);
     try {
+      const st = state.trim().toUpperCase().slice(0, 2);
       await api.post('/arrests/monitors', {
         watch_name: name.trim(),
         county:     county.trim() || 'All',
-        state:      state.trim().toUpperCase().slice(0,2) || 'ALL'});
-      setName(''); setCounty(''); setShowForm(false);
+        ...(st.length === 2 ? { state: st } : {}),   // no state = every state
+      });
+      setName(''); setCounty(''); setState(''); setShowForm(false);
       await load();
     } catch (e: any) {
       setLoading(false);
-      showToast(apiErrorMessage(e, t('x_arrest_monitor_could_not_add_monitor')), 'info');
+      showToast(apiErrorMessage(e, t('x_arrest_monitor_could_not_add_monitor')), 'error');
     }
     setAdding(false);
   };
@@ -133,9 +155,10 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={styles.upsellBtn}
+            testID="arrest-monitor-upgrade"
             onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>{t('x_arrest_monitor_upgrade_legal_pro_14')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>{proPrice ? t('am_upgrade_price', { price: proPrice }) : t('am_upgrade')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
           accessibilityRole="button"
@@ -161,7 +184,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
+        <ScrollView testID="arrest-monitor-list" keyboardShouldPersistTaps='handled' contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
@@ -190,7 +213,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchName}>{w.watch_name}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchLocation}>
-                    {w.county !== 'All' ? `${w.county}, ` : t('x_arrest_monitor_all_counties') + ' '}{w.state}
+                    {[w.county && w.county !== 'All' ? w.county : t('am_all_counties'), w.state ? stateName(w.state) : t('am_all_states')].join(' · ')}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.watchStatus}>
                     {w.last_checked

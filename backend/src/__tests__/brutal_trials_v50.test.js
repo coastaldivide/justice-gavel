@@ -146,12 +146,12 @@ describe('S6b. HomeScreen — SOS + Alert Patterns', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('sendQuickSOS');
-    expect(src).toContain('Alert.alert');
+    expect(src).toContain("confirm(t('home_sos_none_title')");
     // localized: the title is t('home_sos_none_title') ("No emergency contacts" in en.json)
     expect(src).toContain("t('home_sos_none_title')");
     const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
     expect(en.home_sos_none_title).toBe('No emergency contacts');
-    expect(src).toContain('getContacts');
+    expect(src).toContain('activeContacts()');   // services/sos.ts → storage getContacts()
   });
   test('S6b-02: HomeScreen uses mountedRef + finally cleanup pattern', async () => {
     const fs = await import('fs');

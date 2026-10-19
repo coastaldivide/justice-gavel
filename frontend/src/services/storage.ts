@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { t } from '../i18n';
+import { getItem as getSecureItem } from '../utils/secureStorage';
 
 export async function setContacts(c: string[]): Promise<void> {
   try {
@@ -18,22 +18,22 @@ export async function getContacts(): Promise<string[]> {
   }
 }
 
+/** The name the person typed for their alerts (Emergency contacts screen). */
 export async function setUserName(n: string): Promise<void> {
   try {
-    await AsyncStorage.setItem('userName', n);
+    await AsyncStorage.setItem('userName', n.trim());
   } catch { /* storage unavailable */ }
 }
 
+/** Name shown in alerts: the account's name, else the one typed on the contacts screen, else ''. */
 export async function getUserName(): Promise<string> {
   try {
-    // Prefer display name from user token
-    const userData = await AsyncStorage.getItem('user');
+    const userData = await getSecureItem('user');
     if (userData) {
       const user = JSON.parse(userData);
-      if (user.displayName || user.name) return user.displayName || user.name;
+      const n = user?.displayName || user?.display_name || user?.name;
+      if (n) return String(n);
     }
-    return (await AsyncStorage.getItem('userName')) || t('x_storage_user');
-  } catch {
-    return t('x_storage_user');
-  }
+  } catch { /* corrupt stored user: fall back to the typed name */ }
+  try { return (await AsyncStorage.getItem('userName')) || ''; } catch { return ''; }
 }

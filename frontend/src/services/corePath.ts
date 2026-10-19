@@ -53,15 +53,22 @@ export async function saveCoreProgress(update: Partial<CoreProgress> & { mark?: 
   return next;
 }
 
-/** Queue a MoreTab screen to open once the main app is mounted. */
-export async function setPendingRoute(screen: string): Promise<void> {
-  try { await AsyncStorage.setItem(PENDING_KEY, screen); } catch { /* non-critical */ }
+export interface PendingRoute { screen: string; params?: Record<string, unknown> }
+
+/** Queue a MoreTab screen (and its params) to open once the main app is mounted. */
+export async function setPendingRoute(screen: string, params?: Record<string, unknown>): Promise<void> {
+  try { await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(params ? { screen, params } : { screen })); } catch { /* non-critical */ }
 }
-export async function consumePendingRoute(): Promise<string | null> {
+export async function consumePendingRoute(): Promise<PendingRoute | null> {
   try {
     const v = await AsyncStorage.getItem(PENDING_KEY);
-    if (v) await AsyncStorage.removeItem(PENDING_KEY);
-    return v;
+    if (!v) return null;
+    await AsyncStorage.removeItem(PENDING_KEY);
+    try {
+      const p = JSON.parse(v) as Partial<PendingRoute>;
+      if (p && typeof p.screen === 'string') return { screen: p.screen, params: p.params };
+    } catch { /* a plain screen name (saved by an older version) */ }
+    return { screen: v };
   } catch { return null; }
 }
 

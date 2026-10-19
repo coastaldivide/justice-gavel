@@ -145,7 +145,17 @@ describe('JustArrestedScreen — the three-step path', () => {
     wrap(<JustArrestedScreen navigation={guestNav} route={{} as any} />);
     fireEvent.press(await screen.findByTestId('core-open-rights-card'));
     await waitFor(() => expect(mockSetAppAuth).toHaveBeenCalledWith('browsing'));
-    expect(await AsyncStorage.getItem('core_path_pending_route')).toBe('RightsCard');
+    expect(JSON.parse(String(await AsyncStorage.getItem('core_path_pending_route')))).toEqual({ screen: 'RightsCard' });
+  });
+
+  it('a queued screen keeps its params (signed out → "Missed a court date?" opens the guidance)', async () => {
+    await AsyncStorage.setItem('core_path_progress', JSON.stringify({ current: 3, done: { rights: true, help: true, court: false } }));
+    wrap(<JustArrestedScreen navigation={makeNavigation()} route={{} as any} />);
+    fireEvent.press(await screen.findByTestId('core-missed'));
+    await waitFor(() => expect(mockSetAppAuth).toHaveBeenCalledWith('browsing'));
+    const { consumePendingRoute } = jest.requireActual<typeof import('../../services/corePath')>('../../services/corePath');
+    expect(await consumePendingRoute()).toEqual({ screen: 'CourtDates', params: { guidance: 'missed' } });
+    expect(await AsyncStorage.getItem('core_path_pending_route')).toBeNull();
   });
 });
 

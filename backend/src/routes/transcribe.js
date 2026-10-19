@@ -57,8 +57,7 @@ router.post('/audio', authRequired, transcribeLimiter, requirePaidTranscription,
     
     const form = new FormData();
     form.append('file', fileStream(file), { filename: 'audio.m4a', contentType: file.mimetype, knownLength: file.size });
-    form.append('model', 'whisper-1');
-    form.append('language', 'en');
+    form.append('model', 'whisper-1');   // no language pin: Whisper detects es / pt / vi speech
     
     const resp = await fetchWithTimeout('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -137,6 +136,7 @@ async function structureNote(text) {
 
 // POST /api/transcribe/text { text } → { note }
 router.post('/text', authRequired, async (req, res) => {
+  if (req.body?.text != null && typeof req.body.text !== 'string') return res.status(400).json({ error: 'text must be a string' });
   const text = String(req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'text is required' });
   if (text.length > 20_000) return res.status(413).json({ error: 'Note too long (max 20,000 characters).' });

@@ -217,26 +217,28 @@ describe('2. CORS Resolver — Origin Whitelist Model', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('3. OfflineBanner — Animation & Accessibility', () => {
 
-  test('3-01: OfflineBanner uses Animated.timing with 300ms duration', async () => {
+  test('3-01: OfflineBanner is the one tappable banner (App.tsx passes visible + onPress)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/OfflineBanner.tsx', 'utf8');
-    expect(src).toContain('Animated.timing');
-    expect(src).toMatch(/duration:\s*300/);
-    expect(src).toContain('useNativeDriver: true');
+    const app = fs.readFileSync(__REPO + '/frontend/App.tsx', 'utf8');
+    expect(src).toContain('TouchableOpacity');
+    expect(src).toContain("accessibilityLabel={t('home_offline_a11y')}");
+    expect(app).toContain('<OfflineBanner');
+    expect(app).not.toContain('No internet connection');
   });
 
-  test('3-02: OfflineBanner uses opacity 0→1 when offline', async () => {
+  test('3-02: OfflineBanner renders nothing while online', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/OfflineBanner.tsx', 'utf8');
-    expect(src).toMatch(/toValue:\s*isOnline \? 0 : 1/);
+    expect(src).toMatch(/if \(!visible\) return null;/);
   });
 
 
 
-  test('3-05: OfflineBanner shows 📵 emoji and descriptive text', async () => {
+  test('3-05: OfflineBanner shows 📡 and its text in the app language', async () => {
     const src = feSource(__REPO + '/frontend/src/components/OfflineBanner.tsx');
-    expect(src).toContain('📵');
-    expect(src).toContain('No internet connection');
+    expect(src).toContain('📡');
+    expect(src).toContain('No internet connection');   // en.json no_internet, resolved by feSource
   });
 
 

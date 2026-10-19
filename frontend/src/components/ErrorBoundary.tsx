@@ -11,10 +11,16 @@ import { COLORS } from '../constants/theme';
  * On error: shows a safe fallback UI and reports to Sentry if configured.
  */
 import React, { Component, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { t } from '../i18n';
 
 interface Props { children: ReactNode; fallback?: ReactNode; }
+
+/** "Loading module … failed" / ChunkLoadError: a lazy screen's code could not be fetched. */
+export function isChunkLoadError(e: Error | null | undefined): boolean {
+  return !!e && (e.name === 'ChunkLoadError' || /Loading (CSS )?(module|chunk) .* failed/i.test(String(e.message || '')));
+}
+const reloadPage = () => { if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.reload(); };
 interface State { hasError: boolean; error: Error | null; }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -34,14 +40,17 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+      // A screen whose code could not be downloaded (web, offline): say so, and
+      // retry with a reload — React.lazy keeps the failed import otherwise.
+      const chunk = isChunkLoadError(this.state.error);
       return (
-        <View style={styles.container}>
-          <Text style={styles.icon}>⚠️</Text>
-          <Text style={styles.title}>{t('error_generic')}</Text>
+        <View style={styles.container} testID="error-boundary">
+          <Text style={styles.icon}>{chunk ? '📡' : '⚠️'}</Text>
+          <Text style={styles.title}>{chunk ? t('no_internet') : t('error_generic')}</Text>
           <Text style={styles.sub}>
-            {this.state.error?.message || t('x_error_boundary_unexpected_error_occurred')}
+            {chunk ? t('eb_needs_connection') : t('x_error_boundary_unexpected_error_occurred')}
           </Text>
-          <TouchableOpacity style={styles.btn} onPress={this.reset} accessibilityRole="button">
+          <TouchableOpacity style={styles.btn} onPress={chunk ? reloadPage : this.reset} accessibilityRole="button">
             <Text style={styles.btnText}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>

@@ -16,6 +16,7 @@ import logger from '../utils/logger.js';
 
 import { getDb } from '../db/index.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
+import { msg, userLang } from '../i18n/index.js';
 
 
 // Charge keywords mapped to practice areas
@@ -107,7 +108,7 @@ export function monitorMatches(monitor, arrest) {
   if (mCounty && mCounty !== 'all' &&
       mCounty !== String(arrest.county || '').trim().toLowerCase()) return false;
   const mState = String(monitor.state || '').trim().toUpperCase();
-  if (mState && arrest.state && mState !== String(arrest.state).toUpperCase()) return false;
+  if (mState && mState !== 'ALL' && arrest.state && mState !== String(arrest.state).toUpperCase()) return false;
   return true;
 }
 
@@ -130,9 +131,12 @@ async function checkArrestMonitors(db, newArrests, { dryRun = false } = {}) {
       if (!dryRun) {
         try {
           const { sendPushToUser } = await import('./pushDelivery.js');
+          const lang = await userLang(db, m.user_id);
           await sendPushToUser(m.user_id, {
-            title: '🔔 Arrest monitor match',
-            body: `A new public arrest record matches "${m.watch_name}"${hits[0].county ? ` in ${hits[0].county} County` : ''}. Open Arrest Monitor to review.`,
+            title: msg(lang, 'push.monitor_match.title'),
+            body: hits[0].county
+              ? msg(lang, 'push.monitor_match.body_county', { name: m.watch_name, county: hits[0].county })
+              : msg(lang, 'push.monitor_match.body', { name: m.watch_name }),
             data: { screen: 'ArrestMonitor' },
             channelId: 'case_updates',
           });

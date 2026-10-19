@@ -303,7 +303,7 @@ describe('S8. FE Services — offlineCache + webCompat Full Coverage', () => {
     expect(src).toContain('startSyncListener');
     expect(src).toContain('NetInfo.addEventListener');
     expect(src).toContain('processSyncQueue');
-    expect(src).toContain('wasOffline');
+    expect(src).toContain('wasOnline');
   });
   test('S8-04: webCompat Print shim — printAsync falls back on web', async () => {
     const fs = await import('fs');

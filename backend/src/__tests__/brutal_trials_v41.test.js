@@ -184,7 +184,7 @@ describe('S6a. EmergencyScreen — SOS Phase State Machine', () => {
     const src = feSource(__REPO + '/frontend/src/screens/EmergencyScreen.tsx');
     expect(src).toContain('RIGHTS_CARDS');
     expect(src).toContain("I am invoking my right to remain");
-    expect(src).toContain('/alerts');
+    expect(src).toContain('sendSos(');
   });
   test('S6a-03: EmergencyScreen is SOS alert + quick actions + rights cards', async () => {
     const fs = await import('fs');

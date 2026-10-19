@@ -17,11 +17,10 @@ import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW } from '../constants/theme';
-import { getToken, setToken } from '../utils/secureStorage';
+import { getToken, setToken, setItem as setSecureItem } from '../utils/secureStorage';
 import { t } from '../i18n';
 
 export function useAuthGate(navigation: any, quickMode = false) {
@@ -74,7 +73,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
       });
       if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
       await setToken(res.data.token);
-      try { await AsyncStorage.setItem('user', JSON.stringify(res.data?.user)); } catch {} // storage failure is non-fatal
+      try { await setSecureItem('user', JSON.stringify(res.data?.user)); } catch {} // storage failure is non-fatal
       setAppAuth('authed');
       setVisible(false);
       // Execute the pending action

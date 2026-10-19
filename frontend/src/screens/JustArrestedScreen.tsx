@@ -15,14 +15,14 @@
  * services/corePath (server: services/rightsContent.js) with its source.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { getUserState, setUserState, localizedStateList, stateName as localStateName } from '../utils/userState';
 import { getToken } from '../utils/secureStorage';
-import { hapticImpact, RNShare } from '../utils/webCompat';
+import { hapticImpact, RNShare, COPIED_ACTION } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { IllustrationRights } from '../components/Illustrations';
@@ -100,7 +100,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const openScreen = async (screen: string, params?: Record<string, unknown>) => {
     buzz();
     if (!inMainApp) {
-      await setPendingRoute(screen);
+      await setPendingRoute(screen, params);
       await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
       setAppAuth('browsing');
       return;
@@ -125,9 +125,16 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
     Linking.openURL(`tel:${num}`).catch(() => showToast(t('cp_dial_manually', { num }), 'warning'));
   };
 
-  const alertFamily = () => {
+  const alertFamily = async () => {
     const msg = t('ja_alert_msg', { url: 'https://justicegavel.app/just-arrested' });
     const enc = encodeURIComponent(msg);
+    if (Platform.OS === 'web') {
+      // A browser can't open the WhatsApp app: the share sheet, else a copy to paste.
+      const r = await RNShare.share({ message: msg, title: t('ja_alert_title') }).catch(() => null);
+      if (r?.action === COPIED_ACTION) showToast(t('es_copied'), 'info');
+      else if (r?.action !== 'sharedAction') showToast(t('cp_share_unavailable'), 'warning');
+      return;
+    }
     Linking.openURL(`whatsapp://send?text=${enc}`)
       .catch(() => Linking.openURL(`https://wa.me/?text=${enc}`))
       .catch(() => RNShare.share({ message: msg, title: t('ja_alert_title') }).catch(() => {}));

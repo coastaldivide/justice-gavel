@@ -35,6 +35,15 @@ import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import { Analytics } from '../services/analytics';
 import AgeGateScreen            from '../screens/AgeGateScreen';
 import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
+// Bundled with the app (not lazy chunks): Home and every screen the app
+// promises works offline must open with no network on the web, too.
+import HomeScreen from '../screens/HomeScreen';
+import EmergencyScreen from '../screens/EmergencyScreen';
+import ContactsScreen from '../screens/ContactsScreen';
+import CrisisResourcesScreen from '../screens/CrisisResourcesScreen';
+import DeadlineCalculatorScreen from '../screens/DeadlineCalculatorScreen';
+import CaseScreen from '../screens/CaseScreen';
+import OfflineStatusScreen from '../screens/OfflineStatusScreen';
 
 // ── Lazy-loaded screens (non-critical path) ─────────────────────────────────
 // ── Suspense boundary for lazy screens ──────────────────────────────────────
@@ -78,7 +87,6 @@ const BailCalculatorScreen = withSuspense(React.lazy(() => import('../screens/Ba
 const BailSearchScreen = withSuspense(React.lazy(() => import('../screens/BailSearchScreen')));
 const BondsmanDashboardScreen = withSuspense(React.lazy(() => import('../screens/BondsmanDashboardScreen')));
 const BookingScreen = withSuspense(React.lazy(() => import('../screens/BookingScreen')));
-const CaseScreen = withSuspense(React.lazy(() => import('../screens/CaseScreen')));
 const CaseTimelineScreen = withSuspense(React.lazy(() => import('../screens/CaseTimelineScreen')));
 const ChatScreen = withSuspense(React.lazy(() => import('../screens/ChatScreen')));
 const CheckInManagerScreen = withSuspense(React.lazy(() => import('../screens/CheckInManagerScreen')));
@@ -87,22 +95,17 @@ const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/Con
 const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
 const CheckInScreen = withSuspense(React.lazy(() => import('../screens/CheckInScreen')));
 const ConsumerSubscriptionScreen = withSuspense(React.lazy(() => import('../screens/ConsumerSubscriptionScreen')));
-const ContactsScreen = withSuspense(React.lazy(() => import('../screens/ContactsScreen')));
 const CourtFormsScreen = withSuspense(React.lazy(() => import('../screens/CourtFormsScreen')));
 const CourtLocatorScreen = withSuspense(React.lazy(() => import('../screens/CourtLocatorScreen')));
-const CrisisResourcesScreen = withSuspense(React.lazy(() => import('../screens/CrisisResourcesScreen')));
 const LegalPenaltiesScreen = withSuspense(React.lazy(() => import('../screens/LegalPenaltiesScreen')));
-const DeadlineCalculatorScreen = withSuspense(React.lazy(() => import('../screens/DeadlineCalculatorScreen')));
 const DiscoveryScreen = withSuspense(React.lazy(() => import('../screens/DiscoveryScreen')));
 const DiversionScreen = withSuspense(React.lazy(() => import('../screens/DiversionScreen')));
 const DocumentScannerScreen = withSuspense(React.lazy(() => import('../screens/DocumentScannerScreen')));
-const EmergencyScreen = withSuspense(React.lazy(() => import('../screens/EmergencyScreen')));
 const ExpungementScreen = withSuspense(React.lazy(() => import('../screens/ExpungementScreen')));
 const FamilyConnectScreen = withSuspense(React.lazy(() => import('../screens/FamilyConnectScreen')));
 const FamilyCourtScreen = withSuspense(React.lazy(() => import('../screens/FamilyCourtScreen')));
 const GoldenGavelScreen = withSuspense(React.lazy(() => import('../screens/GoldenGavelScreen')));
 
-const HomeScreen = withSuspense(React.lazy(() => import('../screens/HomeScreen')));
 const HousingRightsScreen = withSuspense(React.lazy(() => import('../screens/HousingRightsScreen')));
 const IceDetentionScreen = withSuspense(React.lazy(() => import('../screens/IceDetentionScreen')));
 const ImmigrationConsequencesScreen = withSuspense(React.lazy(() => import('../screens/ImmigrationConsequencesScreen')));
@@ -139,7 +142,6 @@ const MatterIntelligenceScreen = withSuspense(React.lazy(() => import('../screen
 const HagueContactScreen = withSuspense(React.lazy(() => import('../screens/HagueContactScreen')));
 const AttorneyPrivacyScreen = withSuspense(React.lazy(() => import('../screens/AttorneyPrivacyScreen')));
 const ChildSupportScreen = withSuspense(React.lazy(() => import('../screens/ChildSupportScreen')));
-const OfflineStatusScreen = withSuspense(React.lazy(() => import('../screens/OfflineStatusScreen')));
 
 
 

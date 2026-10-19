@@ -21,7 +21,6 @@ import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, apiErrorMessage } from '../services/api';
 import * as secureStorage from '../utils/secureStorage';
 import { t, useLang, locale } from '../i18n';
@@ -107,7 +106,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // ── Who am I (for own-bubble alignment) ────────────────────────────────────
   useEffect(() => {
-    AsyncStorage.getItem('user').then(u => {
+    secureStorage.getItem('user').then(u => {
       if (!u || !mountedRef.current) return;
       try {
         const id = JSON.parse(u)?.id;

@@ -418,10 +418,11 @@ describe('12. LawyerProfileScreen — Full Attorney Profile', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('13. QuickConnectScreen — $19.99 One-Tap', () => {
 
-  test('13-01: QuickConnect is $19.99 one-time package', async () => {
+  test('13-01: QuickConnect is a $20 one-time package (the server charges 2000 cents)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
-    expect(src).toContain('$19.99');
+    expect(src).toContain('const QC_PRICE_CENTS = 2000;');
+    expect(src).not.toContain('$19.99');
   });
 
   test('13-02: uses /billing/quickconnect and /push/retention/post-purchase', async () => {

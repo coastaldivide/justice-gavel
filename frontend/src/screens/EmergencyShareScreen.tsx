@@ -1,4 +1,4 @@
-import { RNShare } from '../utils/webCompat';
+import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
@@ -22,13 +22,14 @@ import { AppIcon } from '../components/AppIcon';
  *   3. HelpNowScreen bottom CTA
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getLocation } from '../services/location';
-import { getContacts } from '../services/storage';
+import { activeContacts, openSmsComposer, isPhoneContact, smsUrl } from '../services/sos';
+import { getUserName } from '../services/storage';
 import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t, useLang } from '../i18n';
@@ -58,6 +59,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   const [lawyer, setLawyer]     = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [sharedTo, setSharedTo] = useState(0);
+  const [doneHow, setDoneHow] = useState<'sms' | 'share'>('sms');
   // Arrest details the family needs to make calls (kept on this phone only).
   const [arrest, setArrest] = useState({ who: '', where: '', booking: '', charges: '' });
   const setArrestField = (k: keyof typeof arrest, v: string) => {
@@ -79,15 +81,22 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
   const quickExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCoverScreen, setShowCoverScreen] = React.useState(false);
 
+  // In the signed-out stack (age gate → "Need help right now?") there is no
+  // Home tab or Contacts screen: quick exit goes back, and the contacts links hide.
+  const routeNames: string[] = (navigation as any)?.getState?.()?.routeNames || [];
+  const inMainApp = !!(navigation as any)?.getParent?.()?.getState?.()?.routeNames?.includes('HomeTab');
+  const canEditContacts = routeNames.includes('Contacts');
+
   const triggerQuickExit = React.useCallback(() => {
     // Navigate immediately to a neutral screen (Home tab)
     // This replaces the navigation stack so back button doesn't return here
     setShowCoverScreen(true);
     setTimeout(() => {
-      (navigation as any).navigate('HomeTab');
+      if (inMainApp) (navigation as any).navigate('HomeTab');
+      else if (navigation.canGoBack()) navigation.goBack();
       setShowCoverScreen(false);
     }, 80);
-  }, [navigation]);
+  }, [navigation, inMainApp]);
 
   const handleQuickExitTap = React.useCallback(() => {
     quickExitCountRef.current += 1;
@@ -112,15 +121,17 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
     return () => sub.remove();
   }, [triggerQuickExit]);
 
+  // Contacts reload on focus: coming back from "Add emergency contacts" shows them.
+  useEffect(() => {
+    const load = () => { activeContacts().then(c => { if (mountedRef.current) setContacts(c); }).catch(() => {}); };
+    load();
+    const unsub = (navigation as any)?.addListener?.('focus', load);
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [navigation]);
+
   useEffect(() => {
     // Pre-load user data
-    AsyncStorage.getItem('user').then(u => {
-      if (u) {
-        const user = (() => { try { return JSON.parse(u); } catch { return null; } })();
-        setUserName(user.displayName || user.name || 'Someone');
-      }
-    }).catch(() => {});
-    getContacts().then(c => setContacts((c as string[]).filter(Boolean))).catch(() => {});
+    getUserName().then(n => { if (mountedRef.current) setUserName(n); }).catch(() => {});
     AsyncStorage.getItem('arrest_info_v1').then(v => {
       if (!v) return;
       try { const a = JSON.parse(v); setArrest(prev => ({ ...prev, ...a })); } catch { /* ignore a damaged copy */ }
@@ -139,23 +150,15 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
       t('x_emergency_share_needs_legal_help_right', { value: arrest.who.trim() || name }),
       ``,
     ];
-    if (arrest.who.trim()) lines.push(`👤 Arrested: ${arrest.who.trim()}`);
-    if (arrest.where.trim()) lines.push(`🏢 Held at: ${arrest.where.trim()}`);
-    if (arrest.booking.trim()) lines.push(`🔢 Booking number: ${arrest.booking.trim()}`);
-    if (arrest.charges.trim()) lines.push(`📄 Charges: ${arrest.charges.trim()}`);
+    if (arrest.who.trim()) lines.push(t('es_msg_arrested', { value: arrest.who.trim() }));
+    if (arrest.where.trim()) lines.push(t('es_msg_held_at', { value: arrest.where.trim() }));
+    if (arrest.booking.trim()) lines.push(t('es_msg_booking', { value: arrest.booking.trim() }));
+    if (arrest.charges.trim()) lines.push(t('es_msg_charges', { value: arrest.charges.trim() }));
     if (arrest.who.trim() || arrest.where.trim() || arrest.booking.trim() || arrest.charges.trim()) lines.push(``);
-    if (lat || lng) lines.push(`📍 Their location:`, mapsLink, ``);
-    if (bondsmanPhone) {
-      lines.push(`🔓 Bail bondsman (call now):`);
-      lines.push(bondsmanPhone);
-      lines.push(``);
-    }
-    if (lawyerPhone) {
-      lines.push(`⚖️ Criminal defense lawyer:`);
-      lines.push(lawyerPhone);
-      lines.push(``);
-    }
-    lines.push(`Sent via Justice Gavel -- justicegavel.app`);
+    if (lat || lng) lines.push(t('es_msg_location'), mapsLink, ``);
+    if (bondsmanPhone) lines.push(t('es_msg_bail'), bondsmanPhone, ``);
+    if (lawyerPhone) lines.push(t('es_msg_lawyer'), lawyerPhone, ``);
+    lines.push(t('es_msg_footer'));
     return lines.join('\n');
   };
 
@@ -205,50 +208,35 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
     setPhase('sharing');
 
     const message = buildMessage(
-      userName || 'Someone',
+      userName || t('sos_someone'),
       coords?.lat ?? 0,
       coords?.lng ?? 0,
       bondsman?.phone ?? null,
       lawyer?.phone ?? null,
     );
 
-    // If we have phone contacts, open SMS; otherwise use Share sheet
-    const phoneContacts = contacts.filter(c => /\d{7,}/.test(c.replace(/\D/g, '')));
-    const firstPhone = phoneContacts[0];
-
+    // Phone contacts: the messages app with the text for all of them; otherwise the share sheet.
+    const phones = contacts.filter(isPhoneContact);
     try {
-      if (firstPhone) {
-        // Try to open SMS to first contact with message pre-filled (iOS/Android)
-        const smsUrl = `sms:${firstPhone.replace(/\D/g, '')}${
-          Platform.OS === 'ios' ? '&' : '?'
-        }body=${encodeURIComponent(message)}`;
-
-        const canOpen = await Linking.canOpenURL(smsUrl).catch(() => false);
-        if (canOpen) {
-          await Linking.openURL(smsUrl).catch(() => showToast(t('action_failed'), 'error'));
-          setSharedTo(contacts.length);
-          setPhase('done');
-          hapticSuccess();
-          return;
-        }
+      if (phones.length && await openSmsComposer(phones, message)) {
+        setSharedTo(phones.length);
+        setDoneHow('sms');
+        setPhase('done');
+        hapticSuccess();
+        return;
       }
-
-      // Fallback: native share sheet
-      let result;
-      try {
-        result = await RNShare.share({ message, title: t('x_emergency_share_needs_help', { userName }) });
-      } catch {
-        // Share sheet unavailable — fallback already handled above
-      }
+      const result = await RNShare.share({ message, title: t('x_emergency_share_needs_help', { userName: userName || t('sos_someone') }) });
       if (result?.action === Share.sharedAction) {
-        setSharedTo(contacts.length);
+        setSharedTo(0);
+        setDoneHow('share');
         setPhase('done');
         hapticSuccess();
       } else {
+        if (result?.action === COPIED_ACTION) showToast(t('es_copied'), 'info');
         setPhase('confirm');
       }
     } catch (e: any) {
-      setErrorMsg(e.message || t('x_emergency_share_could_not_send_message'));
+      setErrorMsg(e?.message || t('x_emergency_share_could_not_send_message'));
       setPhase('error');
       hapticWarn();
     }
@@ -294,14 +282,16 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={styles.noContactsBody}>
             {t('x_emergency_share_add_contacts_first_so')}
           </Text>
-          <TouchableOpacity
-  accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-            style={styles.addContactsBtn}
-            accessibilityLabel={t('x_emergency_share_add_emergency_contacts')} onPress={() => navigation.navigate('Contacts')}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>{t('x_emergency_share_add_emergency_contacts')}</Text>
-          </TouchableOpacity>
+          {canEditContacts && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityHint={t('cp_double_tap')}
+              style={styles.addContactsBtn}
+              accessibilityLabel={t('x_emergency_share_add_emergency_contacts')} onPress={() => navigation.navigate('Contacts')}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>{t('x_emergency_share_add_emergency_contacts')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -354,14 +344,16 @@ if (phase === 'ready') return (
         <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-  accessibilityRole="button"
+      {canEditContacts && (
+        <TouchableOpacity
+          accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-        style={styles.editContactsLink}
-        onPress={() => navigation.navigate('Contacts')}
-       accessibilityLabel={t('x_emergency_share_edit_emergency_contacts')}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>{t('x_emergency_share_edit_emergency_contacts')}</Text>
-      </TouchableOpacity>
+          style={styles.editContactsLink}
+          onPress={() => navigation.navigate('Contacts')}
+          accessibilityLabel={t('x_emergency_share_edit_emergency_contacts')}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>{t('x_emergency_share_edit_emergency_contacts')}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* ── Crisis & Mental Health Resources ───────────────────────────────
            Apple App Store §1.4.1 requires emergency resource links in apps
@@ -391,7 +383,7 @@ if (phase === 'ready') return (
         <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => showToast(t('action_failed'), 'error'))}
+          onPress={() => Linking.openURL(smsUrl('741741', 'HOME')).catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>💬</Text>
@@ -490,7 +482,7 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.doneIcon}>✓</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>{t('x_emergency_share_message_sent')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>
-        {t('x_emergency_share_message_was_handed', { value: sharedTo > 1 ? t('x_emergency_share_emergency_contacts', { sharedTo }) : t('x_emergency_share_emergency_contact') })}
+        {doneHow === 'sms' ? t('es_done_sms', { n: sharedTo }) : t('es_done_share')}
       </Text>
       <TouchableOpacity
   accessibilityRole="button"
@@ -516,7 +508,7 @@ if (phase === 'ready') return (
       <View style={styles.messagePreview}>
         {/* exactly the text that will be sent */}
         <Text maxFontSizeMultiplier={1.4} style={styles.messageText} testID="emergency-share-preview">
-          {buildMessage(userName || 'Someone', coords?.lat ?? 0, coords?.lng ?? 0, bondsman?.phone ?? null, lawyer?.phone ?? null)}
+          {buildMessage(userName || t('sos_someone'), coords?.lat ?? 0, coords?.lng ?? 0, bondsman?.phone ?? null, lawyer?.phone ?? null)}
         </Text>
       </View>
 

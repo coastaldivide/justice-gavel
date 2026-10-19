@@ -9,19 +9,22 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
   const pulse = useRef(new Animated.Value(1)).current;
   const ring  = useRef(new Animated.Value(1)).current;
 
+  // isInteraction: false — an endless loop would otherwise hold an interaction
+  // handle forever and every InteractionManager.runAfterInteractions() task in
+  // the app (Home's data load among them) would never run.
   useEffect(() => {
     // Inner button pulse
     const pAnim = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1,    duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.08, duration: 800, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(pulse, { toValue: 1,    duration: 800, useNativeDriver: true, isInteraction: false }),
       ])
     );
     // Outer ring expand + fade
     const rAnim = Animated.loop(
       Animated.sequence([
-        Animated.timing(ring, { toValue: 1.5, duration: 1200, useNativeDriver: true }),
-        Animated.timing(ring, { toValue: 1,   duration: 0,    useNativeDriver: true }),
+        Animated.timing(ring, { toValue: 1.5, duration: 1200, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(ring, { toValue: 1,   duration: 0,    useNativeDriver: true, isInteraction: false }),
       ])
     );
     pAnim.start();

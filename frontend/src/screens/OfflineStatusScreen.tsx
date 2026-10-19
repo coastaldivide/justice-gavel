@@ -16,7 +16,8 @@ const OFFLINE_FEATURES = perLang((): { icon: string; label: string; hint: string
   { icon: '📋', label: t('rc_page_title'), hint: t('x_offline_status_rights_during_stop_arrest'),     screen: 'RightsCard' },
   { icon: '⏰', label: t('x_cs_deadline_calculator'),   hint: t('x_offline_status_arraignment_appeal_filing_deadlines'), screen: 'DeadlineCalculator' },
   { icon: '🚨', label: t('x_offline_status_just_arrested_guide'),   hint: t('x_offline_status_step_by_step_what'),      screen: 'JustArrested' },
-  { icon: '💰', label: t('bail_calculator'),       hint: t('x_offline_status_typical_bail_ranges_by'),             screen: 'BailCalculator' },
+  { icon: '📅', label: t('ja_my_court_dates'),     hint: t('os_court_dates_hint'),                                   screen: 'CourtDates' },
+  { icon: '👨‍👩‍👧', label: t('os_emergency_share'), hint: t('os_emergency_share_hint'),                            screen: 'EmergencyShare' },
   { icon: '📁', label: t('case_tab_cases'),              hint: t('x_offline_status_saved_cases_sync_when'),     screen: 'Cases' },
 ]);
 
@@ -43,6 +44,7 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
       {OFFLINE_FEATURES().map(f => (
         <TouchableOpacity
           key={f.screen}
+          testID={`offline-open-${f.screen}`}
           accessibilityRole="button"
           accessibilityLabel={t('x_offline_status_open', { label: f.label })}
           style={[styles.row, { backgroundColor: colors.bgCard, borderColor: colors.border }]}

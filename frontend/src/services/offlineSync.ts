@@ -8,6 +8,7 @@
 import * as SQLite from 'expo-sqlite';
 import NetInfo from '@react-native-community/netinfo';
 import { api } from './api';
+import { isRetryableSyncError } from './syncErrors';
 
 let _db: SQLite.SQLiteDatabase | null = null;
 
@@ -69,13 +70,29 @@ async function markSynced(tempId: string): Promise<void> {
     ['synced', new Date().toISOString(), tempId]);
 }
 
-/** Process the sync queue — call when connectivity is restored. */
-export async function processSyncQueue(
+let _inFlight: Promise<{ synced: number; failed: number }> | null = null;
+
+/**
+ * Process the sync queue — on reconnect and on app start. One run at a time
+ * (App.tsx and CaseScreen both listen for reconnects): a second caller gets
+ * the run already in progress instead of posting the same case twice.
+ */
+export function processSyncQueue(
+  onCaseSynced?: (tempId: string, serverId: number) => void
+): Promise<{ synced: number; failed: number }> {
+  if (_inFlight) return _inFlight;
+  _inFlight = runSyncQueue(onCaseSynced).finally(() => { _inFlight = null; });
+  return _inFlight;
+}
+
+async function runSyncQueue(
   onCaseSynced?: (tempId: string, serverId: number) => void
 ): Promise<{ synced: number; failed: number }> {
   let synced = 0, failed = 0;
   try {
     const d = await getDb();
+    // A run cut short (app killed mid-request) left rows in 'syncing'.
+    await d.runAsync('UPDATE sync_queue SET status=? WHERE status=?', ['pending', 'syncing']);
     const pending = await d.getAllAsync<{
       id: number; temp_id: string; endpoint: string; method: string; body: string;
     }>('SELECT * FROM sync_queue WHERE status=? ORDER BY id ASC', ['pending']);
@@ -89,27 +106,26 @@ export async function processSyncQueue(
           onCaseSynced(item.temp_id, res.data.id);
         }
         synced++;
-      } catch (e: any) {
+      } catch (e: unknown) {
         failed++;
-        const d2 = await getDb();
-        await d2.runAsync('UPDATE sync_queue SET status=?,error=? WHERE id=?',
-          ['failed', String(e), item.id]);
+        const retry = isRetryableSyncError(e);
+        await d.runAsync('UPDATE sync_queue SET status=?,error=? WHERE id=?',
+          [retry ? 'pending' : 'failed', String((e as Error)?.message || e), item.id]);
+        if (retry) break;   // still offline / server down: try the rest on the next reconnect
       }
     }
-  } catch {}
+  } catch { /* the local database is unavailable — nothing queued can be read */ }
   return { synced, failed };
 }
 
-/** Start NetInfo listener — auto-syncs queue on reconnect. */
+/** Start NetInfo listener — syncs the queue when the app is (or comes back) online. */
 export function startSyncListener(
   onCaseSynced?: (tempId: string, serverId: number) => void
 ): () => void {
-  let wasOffline = false;
+  let wasOnline: boolean | null = null;
   return NetInfo.addEventListener(state => {
     const nowOnline = state.isConnected === true;
-    if (wasOffline && nowOnline) {
-      processSyncQueue(onCaseSynced).catch(() => {});
-    }
-    wasOffline = !nowOnline;
+    if (nowOnline && wasOnline !== true) processSyncQueue(onCaseSynced).catch(() => {});
+    wasOnline = nowOnline;
   });
 }

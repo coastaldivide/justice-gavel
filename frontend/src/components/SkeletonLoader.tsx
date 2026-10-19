@@ -23,8 +23,8 @@ function usePulseOpacity(): Animated.Value {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 1,   duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(opacity, { toValue: 1,   duration: 800, useNativeDriver: true, isInteraction: false }),
       ])
     );
     loop.start();

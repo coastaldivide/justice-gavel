@@ -49,7 +49,7 @@ describe('NULL_GUARDS. FE Null Access Fixed on API Responses', () => {
   });
   test('NULL-03: EmergencyScreen res.data?.results', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyScreen.tsx','utf8');
+    const src=fs.readFileSync(__REPO + '/frontend/src/services/sos.ts','utf8');   // EmergencyScreen → sendSos()
     expect(src).toContain('res.data?.results');
   });
   test('NULL-04: EmergencyShare .data?.[0]', async () => {
@@ -60,7 +60,7 @@ describe('NULL_GUARDS. FE Null Access Fixed on API Responses', () => {
   test('NULL-05: HomeScreen (res.data || []).slice', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
-    expect(src).toContain('(Array.isArray(res.data) ? res.data : [])');
+    expect(src).toContain('(res.data?.upcoming || [])');
   });
   test('NULL-06: CheckInManager res.data?.message', async () => {
     const fs=await import('fs');

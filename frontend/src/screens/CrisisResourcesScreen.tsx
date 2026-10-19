@@ -14,6 +14,8 @@ import { AppIcon } from '../components/AppIcon';
  *   4. ResourcesScreen "Crisis Support" category
  */
 import { unwrapList, api } from '../services/api';
+import { smsUrl } from '../services/sos';
+import { getToken } from '../utils/secureStorage';
 import React, { useMemo } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation, ActivityIndicator } from 'react-native';
@@ -21,63 +23,30 @@ import { t, perLang, useLang }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
 // ── Hotlines ──────────────────────────────────────────────────────────────────
-const CRISIS_LINES = perLang(() => [
-  { name: '211 — Social Services',     number: '211',              desc: t('x_crisis_resources_housing_food_utilities_crisis') },
-  { name: 'RAINN Sexual Assault',      number: '1-800-656-4673',   desc: t('x_crisis_resources_national_sexual_assault_hotline') },
-  { name: 'Human Trafficking',         number: '1-888-373-7888',   desc: t('x_crisis_resources_national_human_trafficking_hotline') },
-  { name: 'Veterans Crisis Line',      number: '988 (then 1)',     desc: t('x_crisis_resources_crisis_support_veterans_service') },
-  { name: 'Trans Lifeline',            number: '1-877-565-8860',   desc: t('x_crisis_resources_peer_support_by_trans') },
-  { name: 'Crisis Text Line',          number: 'Text HOME to 741741', desc: t('x_crisis_resources_text_based_crisis_support') },
-  {
-    key: '988',
-    name: '988 Suicide & Crisis Lifeline',
-    number: '988',
-    description: t('x_crisis_resources_free_confidential_support_24'),
-    forWhom: t('x_crisis_resources_suicidal_thoughts_emotional_distress'),
-    primary: true,
-    color: COLORS.blue,
-    bg:    COLORS.bgSubtle,
-  },
-  {
-    key: 'samhsa',
-    name: 'SAMHSA Helpline',
-    number: '1-800-662-4357',
-    description: t('x_crisis_resources_substance_abuse_mental_health'),
-    forWhom: t('x_crisis_resources_substance_abuse_addiction_mental'),
-    primary: false,
-    color: COLORS.legalDark,
-    bg:    COLORS.legalBg,
-  },
-  {
-    key: 'domestic',
-    name: 'National DV Hotline',
-    number: '1-800-799-7233',
-    description: t('x_crisis_resources_domestic_violence_support_24'),
-    forWhom: t('x_crisis_resources_domestic_violence_intimate_partner'),
-    primary: false,
-    color: COLORS.emergencyDark,
-    bg:    COLORS.emergencyBg,
-  },
-  {
-    key: 'veterans',
-    name: 'Veterans Crisis Line',
-    number: '1-800-273-8255',
-    description: t('x_crisis_resources_press_1_after_dialing'),
-    forWhom: t('x_crisis_resources_veterans_service_members_their'),
-    primary: false,
-    color: COLORS.blue,
-    bg:    COLORS.bgSubtle,
-  },
-  {
-    key: 'trevor',
-    name: 'The Trevor Project',
-    number: '1-866-488-7386',
-    description: t('x_crisis_resources_lgbtq_youth_crisis_support'),
-    forWhom: t('x_crisis_resources_lgbtq_young_people_crisis'),
-    primary: false,
-    color: COLORS.legalDark,
-    bg:    COLORS.legalBg,
-  },
+// `dial` is what the phone dials; `sms` lines are text-only (Crisis Text Line);
+// `number` is what the card shows. Organisation names are official names in
+// the app's language where the organisation publishes one.
+interface CrisisLine {
+  key: string; name: string; number: string; dial?: string; sms?: { to: string; body: string };
+  desc: string; primary?: boolean; color?: string; bg?: string;
+}
+const CRISIS_LINES = perLang((): CrisisLine[] => [
+  { key: '988', name: t('x_emergency_share_988_suicide_crisis_lifeline'), number: '988', dial: '988',
+    desc: t('x_crisis_resources_suicidal_thoughts_emotional_distress'), primary: true, color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: '211', name: t('crisis_line_211'), number: '211', dial: '211', desc: t('x_crisis_resources_housing_food_utilities_crisis') },
+  { key: 'rainn', name: t('crisis_line_rainn'), number: '1-800-656-4673', dial: '18006564673', desc: t('x_crisis_resources_national_sexual_assault_hotline') },
+  { key: 'trafficking', name: t('crisis_line_trafficking'), number: '1-888-373-7888', dial: '18883737888', desc: t('x_crisis_resources_national_human_trafficking_hotline') },
+  { key: 'trans', name: 'Trans Lifeline', number: '1-877-565-8860', dial: '18775658860', desc: t('x_crisis_resources_peer_support_by_trans') },
+  { key: 'text', name: 'Crisis Text Line', number: t('crisis_text_home'), sms: { to: '741741', body: 'HOME' }, desc: t('x_crisis_resources_text_based_crisis_support') },
+  { key: 'samhsa', name: t('x_emergency_share_samhsa_national_helpline'), number: '1-800-662-4357', dial: '18006624357',
+    desc: t('x_crisis_resources_substance_abuse_addiction_mental'), color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'domestic', name: t('x_emergency_share_national_domestic_violence_hotline'), number: '1-800-799-7233', dial: '18007997233',
+    desc: t('x_crisis_resources_domestic_violence_intimate_partner'), color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+  // The Veterans Crisis Line is reached through 988, then pressing 1.
+  { key: 'veterans', name: t('crisis_line_veterans'), number: t('crisis_988_press_1'), dial: '988',
+    desc: `${t('x_crisis_resources_veterans_service_members_their')} ${t('x_crisis_resources_press_1_after_dialing')}`, color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'trevor', name: 'The Trevor Project', number: '1-866-488-7386', dial: '18664887386',
+    desc: t('x_crisis_resources_lgbtq_young_people_crisis'), color: COLORS.legalDark, bg: COLORS.legalBg },
 ]);
 
 // ── Self-help grounding tips ──────────────────────────────────────────────────
@@ -87,10 +56,11 @@ const GROUNDING = perLang(() => [
   { icon: '📍', title: t('crisis_safe_title'), body: t('crisis_safe_body') },
 ]);
 
-// Plain helper (no hooks): dial a crisis line; report failure via onError so
-// the caller can show the number to dial manually.
-function callLine(number: string, onError?: (number: string) => void) {
-  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => onError?.(number));
+// Plain helper (no hooks): call (or text) a crisis line; report failure via
+// onError so the caller can show the number to dial manually.
+function callLine(line: Pick<CrisisLine, 'number' | 'dial' | 'sms'>, onError?: (number: string) => void) {
+  const url = line.sms ? smsUrl(line.sms.to, line.sms.body) : `tel:${(line.dial || line.number).replace(/[^0-9]/g, '')}`;
+  Linking.openURL(url).catch(() => onError?.(line.number));
 }
 
 
@@ -108,15 +78,22 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [dbLines, setDbLines] = React.useState<any[]>([]);
-  React.useEffect(() => {
-    api.get('/resources?category=CRISIS_LINE&limit=20')
-      .then(r => { const lines = unwrapList(r.data, 'resources'); if (lines.length) setDbLines(lines); })
-      .catch(() => {}).finally(() => setIsLoading(false));
+  // The resources directory is for signed-in accounts; a guest sees the built-in lines only.
+  const loadDirectory = React.useCallback(async () => {
+    if (!(await getToken().catch(() => null))) return;
+    try {
+      const r = await api.get('/resources?category=CRISIS_LINE&limit=20');
+      const lines = unwrapList(r.data, 'resources');
+      if (lines.length && mountedRef.current) setDbLines(lines);
+    } catch { /* offline: the built-in lines above stay */ }
   }, []);
+  React.useEffect(() => {
+    loadDirectory().finally(() => { if (mountedRef.current) setIsLoading(false); });
+  }, [loadDirectory]);
   // Crisis lines from the resources directory that are not already listed above.
   const directoryLines = useMemo(() => {
     const digits = (v: unknown) => String(v ?? '').replace(/[^0-9]/g, '');
-    const known = new Set(CRISIS_LINES().map(l => digits(l.number)));
+    const known = new Set(CRISIS_LINES().flatMap(l => [digits(l.dial), digits(l.number), digits(l.sms?.to)]).filter(Boolean));
     return dbLines.filter(r => r?.name && digits(r.phone) && !known.has(digits(r.phone)));
   }, [dbLines]);
   const { colors } = useTheme();
@@ -124,11 +101,8 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/resources?category=CRISIS_LINE&limit=20')
-      .then(r => { const lines = unwrapList(r.data, 'resources'); if (lines.length) setDbLines(lines); })
-      .catch(() => {});
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
-  }, []);
+    loadDirectory().finally(() => { if (mountedRef.current) setRefreshing(false); });
+  }, [loadDirectory]);
 
 
   return (
@@ -153,7 +127,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
       <TouchableOpacity
         accessibilityRole="button"
         style={styles.primaryBtn}
-        onPress={() => callLine('988', onDialError)}
+        onPress={() => callLine({ number: '988', dial: '988' }, onDialError)}
         activeOpacity={0.88}
         accessibilityLabel={t('x_crisis_resources_call_988_suicide_crisis')}
         accessibilityHint={t('x_crisis_resources_opens_phone_call_free')}
@@ -192,12 +166,13 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
       {CRISIS_LINES().filter(l => !l.primary).map(line => (
         <TouchableOpacity
           accessibilityRole="button"
-          key={line.key ?? line.name}
+          key={line.key}
+          testID={`crisis-line-${line.key}`}
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
-          onPress={() => callLine(line.number, onDialError)}
+          onPress={() => callLine(line, onDialError)}
           activeOpacity={0.85}
-          accessibilityLabel={t('hn_call_a11y', { name: line.name })}
-          accessibilityHint={line.forWhom ?? line.desc}
+          accessibilityLabel={line.sms ? t('crisis_text_a11y', { name: line.name }) : t('hn_call_a11y', { name: line.name })}
+          accessibilityHint={line.desc}
         >
           <View style={[styles.lineDot, { backgroundColor: line.bg ?? COLORS.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color={colors.legal} />
@@ -205,7 +180,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{line.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: line.color ?? COLORS.blue }]}>{line.number}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{line.forWhom ?? line.desc}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{line.desc}</Text>
           </View>
         </TouchableOpacity>
       ))}
@@ -218,7 +193,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           key={`db-${r.id ?? r.name}`}
           testID="crisis-directory-line"
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
-          onPress={() => callLine(String(r.phone), onDialError)}
+          onPress={() => callLine({ number: String(r.phone) }, onDialError)}
           activeOpacity={0.85}
           accessibilityLabel={t('hn_call_a11y', { name: r.name })}
           accessibilityHint={r.description || undefined}

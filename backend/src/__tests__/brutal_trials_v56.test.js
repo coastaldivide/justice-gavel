@@ -133,7 +133,9 @@ describe('CONT. ContactsScreen — Local AsyncStorage Emergency Contacts', () =>
   test('CONT-01: ContactsScreen uses AsyncStorage (NOT expo-contacts) for local storage', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ContactsScreen.tsx', 'utf8');
-    expect(src).toContain('AsyncStorage');
+    const store = fs.readFileSync(__REPO + '/frontend/src/services/storage.ts', 'utf8');
+    expect(src).toContain("from '../services/storage'");
+    expect(store).toContain('AsyncStorage');
     expect(src).not.toContain('expo-contacts');
   });
   test('CONT-02: updateContact updates specific index in contacts array', async () => {
@@ -226,7 +228,9 @@ describe('S12. UX — Final Architecture', () => {
   test('S12-02: ContactsScreen is purely local — emergency contacts never sent to server', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ContactsScreen.tsx', 'utf8');
-    expect(src).toContain('AsyncStorage');
+    const store = fs.readFileSync(__REPO + '/frontend/src/services/storage.ts', 'utf8');
+    expect(src).toContain("from '../services/storage'");
+    expect(store).toContain('AsyncStorage');
     const apis = (src.match(/api\.(get|post|put|delete)\(/g) || []).length;
     expect(apis).toBe(0);
   });

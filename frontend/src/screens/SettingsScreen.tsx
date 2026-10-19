@@ -25,7 +25,7 @@ import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
 import { setLang, t, useLang } from '../i18n'  // t() already available;
 import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
-import { clearAuth, getToken } from '../utils/secureStorage';
+import { clearAuth, getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { useInFlight } from '../hooks/useInFlight';
 import { setAppAuth } from '../services/auth';
 import { clearAllCaches } from '../services/offlineCache';
@@ -205,7 +205,7 @@ function SettingsScreen({ navigation }: any) {
 
   useEffect(() => {
     (async () => {
-      const u = await AsyncStorage.getItem('user');
+      const u = await getSecureItem('user');
       if (u) {
         try {
           const parsed = JSON.parse(u);

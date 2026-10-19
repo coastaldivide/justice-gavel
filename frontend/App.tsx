@@ -30,7 +30,7 @@ import * as Sentry from '@sentry/react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { processSyncQueue } from './src/services/offlineSync';
 
-import { initLang, getLang } from './src/i18n';
+import { initLang, getLang, t, useLang } from './src/i18n';
 import { registerAuthSetter, AuthState, canBrowse } from './src/services/auth';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
@@ -116,6 +116,7 @@ function installDesktopBridge() {
 const RootStack = createNativeStackNavigator();
 
 function AppInner() {
+  useLang(); // the shell's own text (lock screen, offline banner) follows the language
   const [authState, setAuthState]     = useState<AuthState>('loading');
   const authStateRef = React.useRef<AuthState>('loading');
   authStateRef.current = authState;
@@ -133,15 +134,13 @@ function AppInner() {
 
   // ── Network status ──────────────────────────────────────────────────────────
   useEffect(() => {
-    let wasOffline = false;
+    let wasOnline: boolean | null = null;
     const unsub = NetInfo.addEventListener(state => {
       const offline = state.isConnected === false;
       setIsOffline(offline);
-      // Process sync queue when connectivity is restored
-      if (wasOffline && !offline) {
-        processSyncQueue().catch(() => {});
-      }
-      wasOffline = offline;
+      // Send cases saved offline: on start (left from an earlier session) and on every reconnect
+      if (!offline && wasOnline !== true) processSyncQueue().catch(() => {});
+      wasOnline = !offline;
     });
     return unsub;
   }, []);
@@ -161,7 +160,7 @@ function AppInner() {
           const enrolled = await LocalAuthentication.isEnrolledAsync();
           if (enrolled) {
             const result = await LocalAuthentication.authenticateAsync({
-              promptMessage: 'Unlock Justice Gavel',
+              promptMessage: t('app_unlock_prompt'),
               disableDeviceFallback: false,
               cancelLabel: 'Use Passcode',
             });
@@ -272,10 +271,10 @@ function AppInner() {
         backgroundColor: colors.bg }}>
         <Text style={{ fontSize:48, marginBottom:24 }}>🔒</Text>
         <Text style={{ fontSize:18, color:colors.textPrimary, fontWeight:'700',
-          marginBottom:8 }}>Justice Gavel is locked</Text>
+          marginBottom:8 }}>{t('app_locked_title')}</Text>
         <Text style={{ fontSize:14, color:colors.textMuted, marginBottom:32,
           textAlign:'center', paddingHorizontal:40, lineHeight:21 }}>
-          Use your biometric or device passcode to unlock.
+          {t('app_locked_body')}
         </Text>
         <TouchableOpacity
           style={{ backgroundColor:colors.navy, borderRadius:12,
@@ -283,17 +282,17 @@ function AppInner() {
           onPress={async () => {
             try {
               const r = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Unlock Justice Gavel',
+                promptMessage: t('app_unlock_prompt'),
                 disableDeviceFallback: false,
               });
               if (r.success) setBioLocked(false);
             } catch {}
           }}
           accessibilityRole="button"
-          accessibilityLabel="Unlock with biometric"
+          accessibilityLabel={t('x_biometric_lock_view_unlock_with_biometric')}
         >
-          <Text style={{ color:'#fff', fontWeight:'700', fontSize:16 }}>
-            Unlock
+          <Text style={{ color:colors.white, fontWeight:'700', fontSize:16 }}>
+            {t('x_biometric_lock_view_unlock')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -308,7 +307,6 @@ function AppInner() {
   return (
     <ErrorBoundary>
       <>
-      <OfflineBanner />
       <ToastProvider>
       <NavigationContainer linking={linking}
           ref={navigationRef}
@@ -328,28 +326,11 @@ function AppInner() {
             } catch {}
           }}
         >
-        {/* Global offline banner */}
-        {isOffline && (
-          <TouchableOpacity
-            style={{ backgroundColor:'#2C1800', flexDirection:'row',
-              alignItems:'center', paddingHorizontal:16, paddingVertical:10,
-              gap:8, borderBottomWidth:1, borderBottomColor:'#E65100' }}
-            onPress={() => { if (navigationRef.isReady()) navigationRef.navigate('MoreTab', { screen: 'OfflineStatus' }); }}
-            accessibilityRole="button"
-            accessibilityLabel="No internet — tap to see what works offline"
-          >
-            <Text style={{ fontSize:14 }}>📡</Text>
-            <View style={{ flex:1 }}>
-              <Text style={{ fontSize:13, fontWeight:'700', color:'#FFA726' }}>
-                No internet connection
-              </Text>
-              <Text style={{ fontSize:11, color:'#8FA3B1', lineHeight:16 }}>
-                Rights card, deadline calculator, and guides still work offline
-              </Text>
-            </View>
-            <Text style={{ color:'#FFA726', fontSize:12 }}>See what works →</Text>
-          </TouchableOpacity>
-        )}
+        {/* The one offline banner (translated; tap → what still works offline) */}
+        <OfflineBanner
+          visible={isOffline}
+          onPress={() => { if (navigationRef.isReady()) navigationRef.navigate('MoreTab', { screen: 'OfflineStatus' }); }}
+        />
         <RootStack.Navigator screenOptions={{ headerShown:false, animation:'fade' }}>
           {canBrowse(authState) ? (
             <RootStack.Screen name="MainTabs" component={MainTabs} />

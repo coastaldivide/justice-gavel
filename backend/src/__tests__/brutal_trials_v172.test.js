@@ -113,7 +113,7 @@ describe('PAY. Payment System — All Routes and Logic', () => {
     expect(src).toContain('paymentIntents.create');
     expect(src).toContain("pi.status !== 'succeeded'");
     expect(src).toContain('revenue_log');
-    expect(src).toContain('validLat, validLat, validLng, validLng'); // geospatial params
+    expect(src).toContain('vLat, vLat, vLng, vLng'); // geospatial params
   });
   test('PAY-03: Stripe webhook verifies HMAC + handles 5 events + updates DB', async () => {
     const fs=await import('fs');

@@ -208,7 +208,7 @@ describe('S6. Web Screen Variants — Platform Replacements', () => {
   test('S6-02: InterrogationRecorderScreen.web — MediaRecorder API for browser recording', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
-    expect(src).toContain('Web version');
+    expect(src).toContain('web version');
     expect(src).toContain('MediaRecorder');
     expect(src).toContain('/interrogation/transcribe');
     expect(src).toContain('useCallback');
@@ -216,9 +216,9 @@ describe('S6. Web Screen Variants — Platform Replacements', () => {
   test('S6-03: VoiceNoteScreen.web — MediaRecorder API, same flow as native', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
-    expect(src).toContain('Web platform using MediaRecorder API');
-    expect(src).toContain('same flow as native');
-    expect(src).toContain('/transcribe/audio');
+    expect(src).toContain('web version of the voice note (MediaRecorder)');
+    expect(src).toContain('Same flow as native');
+    expect(src).toContain('/transcribe/note');
     expect(src).toContain('useTheme');
   });
   test('S6-04: all 3 web screens use useTheme for design consistency', async () => {

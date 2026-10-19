@@ -30,47 +30,56 @@ import PDFDocument from 'pdfkit';
 import { authRequired } from '../middleware/auth.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
+import { msg, resolveLang } from '../i18n/index.js';
+import { STATE_NAMES } from '../services/rightsContent.js';
 
 const router = express.Router();
 
 // ── Recording consent law by state ───────────────────────────────────────────
-const RECORDING_LAWS = {
-  // Two-party / all-party consent states
-  CA: { consent: 'two-party', law: 'California Penal Code § 632', warn: true,
-    note: 'California requires ALL parties to consent to being recorded. Recording without consent is a crime. However, you have the right to record police in PUBLIC spaces.' },
-  CT: { consent: 'two-party', law: 'Conn. Gen. Stat. § 52-570d', warn: true,
-    note: 'Connecticut requires all-party consent for private conversations. Police in public may be recorded.' },
-  FL: { consent: 'two-party', law: 'Fla. Stat. § 934.03', warn: true,
-    note: 'Florida requires all-party consent. Exception: recording police performing official duties in public is generally protected.' },
-  IL: { consent: 'two-party', law: '720 ILCS 5/14-2', warn: true,
-    note: 'Illinois requires all-party consent. Recording police in public is legal under People v. ACLU of Ill.' },
-  MD: { consent: 'two-party', law: 'Md. Code Ann., Cts. & Jud. Proc. § 10-402', warn: true,
-    note: 'Maryland requires all-party consent for private conversations.' },
-  MA: { consent: 'two-party', law: 'Mass. Gen. Laws ch. 272, § 99', warn: true,
-    note: 'Massachusetts requires all-party consent. Recording in public spaces generally protected.' },
-  MI: { consent: 'two-party', law: 'MCL § 750.539c', warn: true,
-    note: 'Michigan requires all-party consent for private conversations.' },
-  MT: { consent: 'two-party', law: 'Mont. Code Ann. § 45-8-213', warn: true,
-    note: 'Montana requires all-party consent.' },
-  NH: { consent: 'two-party', law: 'RSA § 570-A:2', warn: true,
-    note: 'New Hampshire requires all-party consent.' },
-  OR: { consent: 'two-party', law: 'ORS § 165.540', warn: true,
-    note: 'Oregon requires all-party consent. Exception for public officials.' },
-  PA: { consent: 'two-party', law: '18 Pa. Cons. Stat. § 5703', warn: true,
-    note: 'Pennsylvania requires all-party consent.' },
-  WA: { consent: 'two-party', law: 'RCW § 9.73.030', warn: true,
-    note: 'Washington requires all-party consent.' },
-  WI: { consent: 'two-party', law: 'Wis. Stat. § 968.31', warn: true,
-    note: 'Wisconsin requires all-party consent for private conversations.' },
+// Statute citations stay as written; the plain-language notes are in the
+// server catalogs (i18n/messages/*.js, keys reclaw.note.<STATE>) so the app
+// shows them in the person's language.
+const TWO_PARTY_LAWS = {
+  CA: 'California Penal Code § 632',
+  CT: 'Conn. Gen. Stat. § 52-570d',
+  FL: 'Fla. Stat. § 934.03',
+  IL: '720 ILCS 5/14-2',
+  MD: 'Md. Code Ann., Cts. & Jud. Proc. § 10-402',
+  MA: 'Mass. Gen. Laws ch. 272, § 99',
+  MI: 'MCL § 750.539c',
+  MT: 'Mont. Code Ann. § 45-8-213',
+  NH: 'RSA § 570-A:2',
+  OR: 'ORS § 165.540',
+  PA: '18 Pa. Cons. Stat. § 5703',
+  WA: 'RCW § 9.73.030',
+  WI: 'Wis. Stat. § 968.31',
 };
 
-function getRecordingLaw(state) {
-  const upper = (state || '').toUpperCase();
-  return RECORDING_LAWS[upper] || {
+/**
+ * 'CA' / 'ca' / 'California' (the iOS geocoder reports full names) → 'CA';
+ * anything else → null. Without this, a full name fell through to the
+ * one-party default and the app told a Californian "only you need to consent".
+ */
+export function recordingStateCode(state) {
+  const raw = String(state ?? '').trim();
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+  if (STATE_NAMES[upper]) return upper;
+  const byName = Object.keys(STATE_NAMES).find(code => STATE_NAMES[code].toUpperCase() === upper);
+  return byName || null;
+}
+
+export function getRecordingLaw(state, lang = 'en') {
+  const code = recordingStateCode(state);
+  if (code && TWO_PARTY_LAWS[code]) {
+    return { state: code, consent: 'two-party', law: TWO_PARTY_LAWS[code], warn: true, note: msg(lang, `reclaw.note.${code}`) };
+  }
+  return {
+    state: code,
     consent: 'one-party',
-    law: 'First Amendment / one-party consent',
+    law: msg(lang, 'reclaw.one_party_law'),
     warn: false,
-    note: 'In your state, only one party (you) needs to consent to recording. You have the right to record police performing their duties in public spaces.',
+    note: msg(lang, 'reclaw.note.one_party'),
   };
 }
 
@@ -236,6 +245,7 @@ function generatePDF(dialogue, meta) {
       ['Location', meta.location || 'Not available'],
       ['Duration', meta.duration ? `${Math.floor(meta.duration / 60)}m ${Math.floor(meta.duration % 60)}s` : 'Unknown'],
       ['Recorded By', meta.userName || 'Justice Gavel User'],
+      ...(meta.officer ? [['Officer (name / badge)', meta.officer]] : []),
       ['Recording Law', meta.recordingLaw],
       ['Generated', new Date().toLocaleString('en-US', { timeZoneName: 'short' })],
     ];
@@ -397,6 +407,7 @@ router.post('/transcribe', authRequired, perUserAiLimit, requireWhisper, uploadA
     if (!req.file) return err400(res, 'Audio file required');
 
     const { state = 'US', userName = '', location = '', dateTime } = req.body;
+    const officer = typeof req.body.officer_name === 'string' ? req.body.officer_name.trim().slice(0, 200) : '';
     const law = getRecordingLaw(state);
 
     // Step 1: Whisper
@@ -432,6 +443,7 @@ router.post('/transcribe', authRequired, perUserAiLimit, requireWhisper, uploadA
       location,
       duration,
       userName,
+      officer,
       recordingLaw: `${law.consent === 'two-party' ? 'All-party consent' : 'One-party consent'} state — ${law.law}`,
       consentNote: law.note,
       docId: `JG-${Date.now()}`,
@@ -471,8 +483,7 @@ router.post('/transcribe', authRequired, perUserAiLimit, requireWhisper, uploadA
 // ── GET /api/interrogation/recording-law ─────────────────────────────────────
 // Returns recording law for a given state (call before showing the recorder)
 router.get('/recording-law', asyncRoute((req, res) => {
-  const { state } = req.query;
-  res.json(getRecordingLaw(state));
+  res.json(getRecordingLaw(req.query.state, resolveLang(req)));
 
 }));
 export default router;

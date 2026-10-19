@@ -2,8 +2,7 @@ import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setContacts, getContacts } from '../services/storage';
+import { setContacts, getContacts, getUserName, setUserName } from '../services/storage';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
@@ -35,11 +34,7 @@ function ContactsScreen(): React.JSX.Element {
         { value: stored[1] || '', label: t('x_contacts_contact_2') },
         { value: stored[2] || '', label: t('x_contacts_contact_3') },
       ]);
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) {
-        const user = (() => { try { return JSON.parse(userData); } catch { return null; } })();
-        setDisplayName(user.displayName || user.name || '');
-      }
+      setDisplayName(await getUserName());
     })();
   }, []);
 
@@ -57,6 +52,7 @@ function ContactsScreen(): React.JSX.Element {
     setSaving(true);
     const values = contacts.map(c => c.value?.trim() || '');
     await setContacts(values);
+    await setUserName(displayName);
     setSaving(false);
     setSaved(true);
     showToast(t('x_contacts_emergency_contacts_have_been'));

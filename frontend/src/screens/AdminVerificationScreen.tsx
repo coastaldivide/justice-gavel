@@ -13,7 +13,7 @@ import { AppIcon } from '../components/AppIcon';
  *
  * Works offline: shows cached pending list from last load.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getItem as getSecureItem } from '../utils/secureStorage';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, LayoutAnimation } from 'react-native';
@@ -42,7 +42,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
   const [isAuthorized, setIsAuthorized] = React.useState<boolean>(false);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    AsyncStorage.getItem('user').then(raw => {
+    getSecureItem('user').then(raw => {
       if (raw) {
         const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
         if (u?.is_admin || u?.role === 'admin') { setIsAuthorized(true); return; }

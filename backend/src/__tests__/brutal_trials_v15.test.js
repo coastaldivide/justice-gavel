@@ -183,7 +183,9 @@ describe('3. ContactsScreen — 3-Slot Emergency Contacts', () => {
   test('3-05: contacts are stored in AsyncStorage via storage.ts', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ContactsScreen.tsx', 'utf8');
-    expect(src).toContain('AsyncStorage');
+    const store = fs.readFileSync(__REPO + '/frontend/src/services/storage.ts', 'utf8');
+    expect(src).toContain("from '../services/storage'");
+    expect(store).toContain('AsyncStorage');
   });
 
   test('3-06: 3-slot model — contacts array always has 3 entries', () => {

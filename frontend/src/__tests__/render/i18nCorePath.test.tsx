@@ -236,8 +236,7 @@ describe.each(['es', 'pt', 'vi'] as Lang[])('core path in %s — no English left
 
   it('Home: tiles, banners, court countdown, legal tip, guest nudge', async () => {
     mockToken = 'jwt';
-    const soon = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
-    on('get', '/cases', [{ id: 2, title: 'Caso 2', next_court_date: soon }]);
+    on('get', '/court-dates', { upcoming: [{ id: 7, case_id: 2, case_title: 'Caso 2', court_date: '2026-11-07', court_time: null }], past: [], today: '2026-11-05', time_zone: 'America/Chicago' });
     on('get', '/push/tip', { tip: tx(lang, 'rs_say_1'), category: 'Criminal', lesson_query: 'rights', language: lang });
     wrap(<HomeScreen navigation={makeNavigation()} route={{} as any} />);
     expect(await screen.findByText(tx(lang, 'rs_say_1'))).toBeTruthy();

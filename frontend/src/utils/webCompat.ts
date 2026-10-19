@@ -350,14 +350,17 @@ export const Clipboard = {
 
 // ── RNShare shim ──────────────────────────────────────────────────────────────
 // React Native's Share.share() is native-only.
-// On web, use navigator.share() if available, otherwise copy to clipboard.
+// On web, use navigator.share() if available, otherwise copy to clipboard and
+// say so ('copiedAction') — a copy is not a share, and screens that report
+// "sent" must not claim it.
+export const COPIED_ACTION = 'copiedAction';
 
 export const RNShare = {
   share: async (content: { message?: string; url?: string; title?: string },
                 _options?: unknown): Promise<{ action: string }> => {
     if (isWeb) {
       const text = content.message || content.url || '';
-      if (navigator.share && (content.url || content.title)) {
+      if (navigator.share) {
         try {
           await navigator.share({
             title:  content.title,
@@ -365,11 +368,17 @@ export const RNShare = {
             url:    content.url,
           });
           return { action: 'sharedAction' };
-        } catch { /* fall through to clipboard */ }
+        } catch (e) {
+          if ((e as Error)?.name === 'AbortError') return { action: 'dismissedAction' };
+          /* share sheet unavailable: fall through to the clipboard */
+        }
       }
-      // Fallback: copy to clipboard
-      await navigator.clipboard?.writeText(text).catch(() => {});
-      return { action: 'sharedAction' };
+      try {
+        await navigator.clipboard.writeText(text);
+        return { action: COPIED_ACTION };
+      } catch {
+        return { action: 'dismissedAction' };
+      }
     }
     const { Share } = await import('react-native');
     return Share.share(content as never);

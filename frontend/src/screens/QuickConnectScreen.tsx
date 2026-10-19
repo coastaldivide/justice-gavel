@@ -4,16 +4,19 @@ import type { ScreenProps } from '../types/navigation';
 import { t, useLang } from '../i18n';
 import { hapticSuccess, hapticWarn } from '../services/haptics';
 /**
- * QuickConnectScreen -- $19.99 one-time package
+ * QuickConnectScreen -- $20 one-time package
  *
  * $10 for one bail bondsman + $10 for one criminal defense lawyer
  * nearest to the user's location. Single charge, instant delivery.
  * No subscription. No forms. One tap.
  *
  * Flow:
- *   1. Screen loads → GPS fires → "Pay Now $19.99" button ready
- *   2. Tap → requireAuth → charge $19.99
+ *   1. Screen loads → GPS + the price quote (price, account credit, amount due)
+ *   2. Tap → requireAuth → POST /billing/quickconnect creates the payment →
+ *      Stripe payment sheet → POST /billing/quickconnect/confirm
+ *      (credit covering the whole price skips the sheet)
  *   3. Result: bondsman card + lawyer card, both with direct Call buttons
+ * Without Stripe (no key, or web) the button explains payments aren't available.
  */
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
@@ -21,6 +24,16 @@ import { getLocation } from '../services/location';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
+import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
+import { getUserState } from '../utils/userState';
+import { getToken } from '../utils/secureStorage';
+import { locale } from '../i18n';
+
+const QC_PRICE_CENTS = 2000;   // shown until the server's quote arrives (signed out)
+const usd = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' });
+interface Quote { price_cents: number; credit_cents: number; amount_cents: number }
+interface QcContact { id: number; name: string; phone: string | null; address?: string | null; rating?: number | null; lat?: number | null; lng?: number | null; specialties?: string[] | string | null; free_consultation?: number | boolean | null }
+interface QcResult { charged: string; credit_applied_cents?: number; bondsman: QcContact | null; lawyer: QcContact | null }
 
 // Module-level link helpers: no hooks; failures reported via onError.
 function callPhone(phone: string, onError?: () => void) {
@@ -35,19 +48,19 @@ function openDirections(lat: number, lng: number, name: string, onError?: () => 
 }
 
 // ── Contact result card ────────────────────────────────────────────────────────
-function ResultCard({ contact, type, price }: { contact: Record<string,any>; type: 'bondsman' | 'lawyer'; price: string }) {
+function ResultCard({ contact, type, price }: { contact: QcContact; type: 'bondsman' | 'lawyer'; price: string }) {
   useLang();
   const { showToast } = useToast();
   const onLinkError = () => showToast(t('x_match_action_unavailable_this_device'), 'error');
   const isBail  = type === 'bondsman';
   const accent  = isBail ? COLORS.bail : COLORS.legal;
   const bg      = isBail ? COLORS.bailBg   : COLORS.legalBg;
-  const typeLabel = isBail ? '🔓 Bail Bondsman' : '⚖️ Criminal Defense Lawyer';
+  const typeLabel = isBail ? `🔓 ${t('qc_type_bondsman')}` : `⚖️ ${t('qc_type_lawyer')}`;
 
   let specialties: string[] = [];
   if (contact.specialties) {
     try {
-      specialties = Array.isArray(contact.specialties) ? contact.specialties : JSON.parse(contact.specialties);
+      specialties = Array.isArray(contact.specialties) ? contact.specialties : JSON.parse(String(contact.specialties));
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
   }
 
@@ -70,8 +83,8 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
       )}
 
       {/* Rating */}
-      {contact.rating && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {contact.rating.toFixed(1)}</Text>
+      {!!contact.rating && (
+        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {Number(contact.rating).toFixed(1)}</Text>
       )}
 
       {/* Specialties */}
@@ -86,7 +99,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
       )}
 
       {/* Free consult badge */}
-      {contact.free_consultation === 1 && (
+      {(contact.free_consultation === 1 || contact.free_consultation === true) && (
         <View style={styles.freeConsultBadge}>
           <Text maxFontSizeMultiplier={1.4} style={styles.freeConsultText}>{t('x_quick_connect_free_consultation')}</Text>
         </View>
@@ -97,7 +110,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.callBtn, { backgroundColor: accent }]}
-          onPress={() => callPhone(contact.phone, onLinkError)}
+          onPress={() => callPhone(String(contact.phone), onLinkError)}
             activeOpacity={0.85}
           accessibilityHint={t('x_bail_search_opens_phone_dialer')}
         >
@@ -111,11 +124,11 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
       )}
 
       {/* Directions */}
-      {contact.lat && contact.lng && (
+      {contact.lat != null && contact.lng != null && (
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(contact.lat, contact.lng, contact.name, onLinkError)}
+          accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(Number(contact.lat), Number(contact.lng), contact.name, onLinkError)}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>{t('help_now_directions')}</Text>
@@ -129,7 +142,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
   const { showToast } = useToast();
-  const [credit, setCredit] = React.useState<number>(0);
+  const [quote, setQuote] = React.useState<Quote>({ price_cents: QC_PRICE_CENTS, credit_cents: 0, amount_cents: QC_PRICE_CENTS });
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -141,72 +154,110 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
+  // Price, this account's credit and the amount due come from the server (signed out: the list price).
+  const loadQuote = React.useCallback(async () => {
+    if (!(await getToken().catch(() => null))) return;
+    try {
+      const r = await api.get<Quote>('/billing/quickconnect/quote');
+      if (mountedRef.current && Number.isFinite(r.data?.amount_cents)) setQuote(r.data);
+    } catch { /* offline: the list price stays */ }
+  }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/billing/subscription')
-      .then(r => { if (mountedRef.current) setCredit(Number(r.data?.credit_cents) || 0); })
-      .catch(() => {})
-      .finally(() => { if (mountedRef.current) setRefreshing(false); });
-  }, []);
+    loadQuote().finally(() => { if (mountedRef.current) setRefreshing(false); });
+  }, [loadQuote]);
   const [locReady, setLocReady]   = useState(false);
   const [locError, setLocError]   = useState(false);
   const [coords, setCoords]       = useState<{ lat: number; lng: number } | null>(null);
   const [paying, setPaying]       = useState(false);
-  const [result, setResult]       = useState<any>(null);
+  const [result, setResult]       = useState<QcResult | null>(null);
   const [error, setError]         = useState('');
+  const { available: sheetAvailable, initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+  // A payment that went through whose contacts could not be loaded yet (lost connection) — retried, never re-charged.
+  const [paidPi, setPaidPi] = useState<string | null>(null);
 
   const { requireAuth, AuthGateModal } = useAuthGate(navigation, true); // quick phone+PIN mode
 
   // Get GPS on mount
   useEffect(() => {
-    api.get('/billing/subscription')
-      .then(r => { if (mountedRef.current) setCredit(Number(r.data?.credit_cents) || 0); })
-      .catch(() => {});
+    loadQuote();
     getLocation()
       .then(({ lat, lng }) => {
+        if (!mountedRef.current) return;
         setCoords({ lat, lng });
         setLocReady(true);
       })
       .catch(() => {
+        if (!mountedRef.current) return;
         setLocReady(true);
         setLocError(true);
       });
-  }, []);
+  }, [loadQuote]);
 
   const handlePay = () => {
     requireAuth(() => doPay());
+  };
+
+  const fail = (msg: string) => {
+    if (!mountedRef.current) return;
+    setError(msg);
+    hapticWarn();
+    showToast(msg, 'error');
+    setPaying(false);
+  };
+
+  /** Load the contacts for a payment that succeeded. null (with a retry message) when that fails. */
+  const confirmPaid = async (piId: string): Promise<QcResult | null> => {
+    try {
+      const r = await api.post<QcResult>('/billing/quickconnect/confirm', { payment_intent_id: piId });
+      if (mountedRef.current) setPaidPi(null);
+      return r.data;
+    } catch {
+      fail(t('qc_paid_retry'));
+      return null;
+    }
+  };
+  const retryConfirm = async () => {
+    if (!paidPi) return;
+    setPaying(true); setError('');
+    const done = await confirmPaid(paidPi);
+    if (done && mountedRef.current) { setResult(done); setPaying(false); hapticSuccess(); }
   };
 
   const doPay = async () => {
     setPaying(true);
     setError('');
     try {
-          const res = await api.post('/billing/quickconnect', {
-        lat:          (coords as any)?.lat,
-        lng:          (coords as any)?.lng,
-        state:        (coords as any)?.state || '',  // derived from GPS reverse-geocode in backend
+      const st = await getUserState().catch(() => null);
+      const res = await api.post<QcResult & { requires_payment?: boolean; client_secret?: string; payment_intent_id?: string }>('/billing/quickconnect', {
+        lat: coords?.lat, lng: coords?.lng, state: st?.code || undefined,
       });
-      setResult(res.data || null);
+      let done: QcResult | null = res.data?.requires_payment ? null : res.data;
+      if (!done) {
+        // The card is collected by Stripe's payment sheet; nothing is revealed until it succeeds.
+        if (!sheetAvailable || !res.data?.client_secret || !res.data?.payment_intent_id) return fail(PAYMENTS_COMING_SOON());
+        const init = await initPaymentSheet({ paymentIntentClientSecret: res.data.client_secret, merchantDisplayName: 'Justice Gavel' });
+        if (init.error) return fail(init.error.message || t('x_booking_payment_setup_failed_please'));
+        const paid = await presentPaymentSheet();
+        if (paid.error) {
+          if (paid.error.code === 'Canceled') { if (mountedRef.current) setPaying(false); return; }
+          return fail(paid.error.message || t('x_quick_connect_card_was_declined_please'));
+        }
+        if (mountedRef.current) setPaidPi(res.data.payment_intent_id);
+        done = await confirmPaid(res.data.payment_intent_id);
+        if (!done) return;
+      }
+      if (!mountedRef.current) return;
+      setResult(done);
       hapticSuccess();
       // Fire post-purchase retention trigger (48hr arrest monitoring upsell)
       api.post('/push/retention/post-purchase', { purchase_type: 'quickconnect' }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
-      const errMsg   = apiErrorMessage(e, '');
-      const status   = e.response?.status;
-      let userMsg = errMsg;
-
-      if (isPaymentsUnavailable(e) || status === 503) {
-        userMsg = t('x_common_payments_aren_t_available');
-      } else if (status === 402 && errMsg.toLowerCase().includes('payment')) {
-        userMsg = t('x_quick_connect_card_was_declined_please');
-      } else if (!e.response) {
-        userMsg = t('x_ch_no_connection_check_internet');
-      }
-
-      setError(userMsg);
-      hapticWarn();
-      showToast(userMsg, 'error');
-      setPaying(false);
+      const status = e?.response?.status;
+      if (isPaymentsUnavailable(e) || status === 503) return fail(t('x_common_payments_aren_t_available'));
+      if (status === 402) return fail(t('x_quick_connect_card_was_declined_please'));
+      if (!e?.response) return fail(t('x_ch_no_connection_check_internet'));
+      fail(apiErrorMessage(e, t('x_quick_connect_could_not_connect')));
     }
   };
 
@@ -238,7 +289,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>{t('qc_bondsman')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>{t('qc_bondsman_sub')}</Text>
               </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.bail }]}>$10</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.bail }]}>{usd(quote.price_cents / 2)}</Text>
             </View>
 
             <View style={styles.priceDivider} />
@@ -251,22 +302,23 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>{t('qc_lawyer')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemSub}>{t('qc_lawyer_sub')}</Text>
               </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.legal }]}>$10</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.priceAmount, { color: COLORS.legal }]}>{usd(quote.price_cents / 2)}</Text>
             </View>
 
             <View style={styles.totalRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.totalLabel}>{t('qc_total')}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.totalAmount}>$19.99</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.totalAmount} testID="qc-total">{usd(quote.price_cents)}</Text>
             </View>
-            {credit > 0 && (
+            {quote.credit_cents > 0 && (
               <View style={styles.creditRow}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.creditAmount}>-${((credit ?? 0) / 100).toFixed(2)}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.creditLabel}>{t('qc_credit_label')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.creditAmount}>-{usd(quote.credit_cents)}</Text>
               </View>
             )}
-            {credit > 0 && (
+            {quote.credit_cents > 0 && (
               <View style={[styles.totalRow, { borderTopWidth: 1.5, borderTopColor: colors.legal, marginTop: 6, paddingTop: 8 }]}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.totalLabel, { color: colors.legalDark }]}>{t('qc_you_pay')}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.totalAmount, { color: colors.legalDark }]}>${Math.max(0, (2000 - credit) / 100).toFixed(2)}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.totalAmount, { color: colors.legalDark }]}>{usd(quote.amount_cents)}</Text>
               </View>
             )}
             <Text maxFontSizeMultiplier={1.4} style={styles.accountNote}>{t('x_quick_connect_free_account_required_takes')}</Text>
@@ -278,7 +330,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={styles.stepsCard}>
             <Text maxFontSizeMultiplier={1.4} style={styles.stepsTitle}>{t('qc_how_it_works')}</Text>
             {[
-              { n: '1', text: t('x_quick_connect_tap_pay_now_one') },
+              { n: '1', text: t('qc_step1_price', { price: usd(quote.amount_cents) }) },
               { n: '2', text: t('qc_step2') },
               { n: '3', text: t('qc_step3') },
               { n: '4', text: t('x_quick_connect_call_them_directly_they') },
@@ -333,7 +385,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
               styles.payNowBtn,
               (!locReady || paying) && styles.payNowBtnDisabled,
             ]}
-            testID="pay-button" onPress={handlePay}
+            testID="pay-button" onPress={paidPi ? retryConfirm : handlePay}
             disabled={!locReady || paying}
             activeOpacity={0.88}
           >
@@ -344,7 +396,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
               </>
             ) : (
               <>
-                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>{credit > 0 ? t('x_quick_connect_pay_now', { value: Math.max(0,(2000-credit)/100).toFixed(2) }) : `${t('qc_pay_btn')} -- $19.99`}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnText}>{paidPi ? t('qc_load_contacts') : `${t('qc_pay_btn')} — ${usd(quote.amount_cents)}`}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.payNowBtnSub}>{t('x_quick_connect_1_bondsman_1_lawyer')}</Text>
               </>
             )}
@@ -370,7 +422,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
         <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_family_connect_re_connected')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {result.mock ? t('x_family_connect_demo_mode_no_real_2') : t('x_quick_connect_charged', { charged: result.charged })}
+          {t('x_quick_connect_charged', { charged: result.charged })}
         </Text>
       </View>
 
@@ -382,7 +434,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Bondsman result */}
         {result.bondsman ? (
-          <ResultCard contact={result.bondsman} type="bondsman" price="$10" />
+          <ResultCard contact={result.bondsman} type="bondsman" price={usd(quote.price_cents / 2)} />
         ) : (
           <View style={styles.noResult}>
             <Text maxFontSizeMultiplier={1.4} style={styles.noResultText}>
@@ -393,7 +445,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Lawyer result */}
         {result.lawyer ? (
-          <ResultCard contact={result.lawyer} type="lawyer" price="$10" />
+          <ResultCard contact={result.lawyer} type="lawyer" price={usd(quote.price_cents / 2)} />
         ) : (
           <View style={styles.noResult}>
             <Text maxFontSizeMultiplier={1.4} style={styles.noResultText}>
@@ -405,19 +457,22 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
         {/* Receipt */}
         <View style={styles.receiptCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>{t('x_quick_connect_receipt')}</Text>
-          {(result.breakdown || []).map((b: any) => (
-            <View key={b.item} style={styles.receiptRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.receiptItem}>{b.item}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.receiptPrice}>{b.price}</Text>
+          {[t('qc_receipt_bondsman'), t('qc_receipt_lawyer')].map(item => (
+            <View key={item} style={styles.receiptRow}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.receiptItem}>{item}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.receiptPrice}>{usd(quote.price_cents / 2)}</Text>
             </View>
           ))}
+          {!!result.credit_applied_cents && (
+            <View style={styles.receiptRow}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.receiptItem}>{t('qc_credit_label')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.receiptPrice}>-{usd(result.credit_applied_cents)}</Text>
+            </View>
+          )}
           <View style={styles.receiptTotal}>
             <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalLabel}>{t('x_quick_connect_total_charged')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalAmount}>{result.charged || '$19.99'}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.receiptTotalAmount}>{result.charged}</Text>
           </View>
-          {result.mock && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>{t('x_family_connect_demo_mode_no_real_2')}</Text>
-          )}
         </View>
 
         {/* Back to home */}
@@ -468,7 +523,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   creditRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingTop: 6, paddingHorizontal: 2 },
-  creditLabel: { fontSize: 12, lineHeight: 20, color: colors.legal, fontWeight: '600' },
+  creditLabel: { fontSize: 12, lineHeight: 20, color: COLORS.legal, fontWeight: '600' },
   creditAmount: { fontSize: 14, lineHeight: 21, color: colors.legalDark, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   totalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -574,7 +629,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   receiptTotal:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: COLORS.steel + '30', paddingTop: 12, marginTop: 4 },
   receiptTotalLabel:  { fontSize: 14, lineHeight: 21, color: colors.textOnGold, ...FONTS.bold },
   receiptTotalAmount: { fontSize: 22, color: colors.textOnGold, ...FONTS.black },
-  receiptMock: { fontSize: 11, color: COLORS.info, textAlign: 'center', marginTop: 8 },
 
   homeBtn: { alignItems: 'center', paddingVertical: 16 },
   homeBtnText: { fontSize: 14, lineHeight: 21, color: colors.info, ...FONTS.bold } });

@@ -64,17 +64,20 @@ describe('HomeScreen', () => {
     expect(api.get).not.toHaveBeenCalledWith('/cases');
   });
 
-  it('signed in: shows the court-date countdown from /cases', async () => {
+  it('signed in: the countdown counts calendar days in the person\'s zone (/court-dates `today`) and opens that hearing', async () => {
     mockToken = 'jwt';
-    const soon = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
     on('get', '/push/tip', { tip: 'Tip.' });
-    on('get', '/cases', [
-      { id: 1, title: 'State v. Me', next_court_date: soon },
-      { id: 2, title: 'No date case' },
-    ]);
-    wrap(<HomeScreen navigation={makeNavigation()} />);
+    // 23:30 in Chicago on Nov 1 is already Nov 2 in UTC: the hearing on Nov 6 is 5 days away, not 4.
+    on('get', '/court-dates', { upcoming: [
+      { id: 41, case_id: 1, case_title: 'State v. Me', court_date: '2026-11-06', court_time: '09:00' },
+      { id: 42, case_id: 2, case_title: 'Later case', court_date: '2026-12-30', court_time: null },
+    ], past: [], today: '2026-11-01', time_zone: 'America/Chicago' });
+    const navigation = makeNavigation();
+    wrap(<HomeScreen navigation={navigation} />);
     expect(await screen.findByText('State v. Me')).toBeTruthy();
-    expect(screen.getByLabelText(/Court date in \d+ days/)).toBeTruthy();
+    expect(screen.getByLabelText(/Court date in 5 days/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('home-court-countdown'));
+    expect(navigation.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'CourtDateDetail', params: { id: 41 } });
   });
 
   it('a failing API leaves the static tiles usable (no crash, no tip)', async () => {

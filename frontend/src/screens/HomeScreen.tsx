@@ -5,24 +5,26 @@ import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
-import { getContacts } from '../services/storage';
+import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
 import { t, initLang, useLang, perLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { getCoreProgress, consumePendingRoute, prefetchRights } from '../services/corePath';
+import { getCoreProgress, consumePendingRoute, prefetchRights, type CourtDatesList } from '../services/corePath';
 import { getUserState } from '../utils/userState';
-import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
 
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
 // Labels use plain 3rd-grade functional language -- what the button DOES, not what it IS
 // `label` is the English reference; the tile shows t(`home_tile_${key}`) (es/pt/vi in i18n/*.json).
-const TILES = perLang(() => [
+// `roles`: shown only to those roles (the attorney dashboard sends everyone else straight back).
+const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
+interface Tile { key: string; icon: string; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[] }
+const TILES = perLang((): Tile[] => [
   { key: 'just_arrested', icon: '🚨', label: t('home_tile_just_arrested'), nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
   { key: 'Emergency', label: t('home_tile_Emergency'), icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
@@ -34,7 +36,7 @@ const TILES = perLang(() => [
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
   { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: '📋', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
-  { key: 'Cases',     label: t('home_tile_Cases'),           icon: '📁', color: COLORS.steel, bg: COLORS.bgCard, nav: 'HomeTab',        primary: false },
+  { key: 'Cases',     label: t('home_tile_Cases'),           icon: '📁', color: COLORS.steel, bg: COLORS.bgCard, nav: 'More:Cases',     primary: false },
   { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: '🗂️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
   { key: 'court_locator',  icon: '🏛️', label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
   { key: 'bail_calc',      icon: '💰', label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
@@ -44,7 +46,7 @@ const TILES = perLang(() => [
   // ── Extended features — professional / specialty ──────────────────────────
   { key: 'Advocacy',      icon: '📢', label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'ArrestMonitor', icon: '🔔', label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'AttyDash',      icon: '⚖️', label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+  { key: 'AttyDash',      icon: '⚖️', label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false, roles: ATTORNEY_ROLES },
   { key: 'CheckIn',       icon: '✅', label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'Diversion',     icon: '🔄', label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'FamilyConn',    icon: '👨‍👩‍👧', label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
@@ -63,6 +65,17 @@ const TILES = perLang(() => [
   { key: 'BarPrep',       icon: '📖', label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
 ]);
 
+/** Local calendar day 'YYYY-MM-DD'. */
+function localDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+/** Whole days from one 'YYYY-MM-DD' to another (null when either is not a date). */
+export function daysBetween(from: string, to: string): number | null {
+  const a = /^(\d{4})-(\d{2})-(\d{2})/.exec(from || ''); const b = /^(\d{4})-(\d{2})-(\d{2})/.exec(to || '');
+  if (!a || !b) return null;
+  return Math.round((Date.UTC(+b[1], +b[2] - 1, +b[3]) - Date.UTC(+a[1], +a[2] - 1, +a[3])) / 86400000);
+}
+
 function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang(); // re-render in the chosen language
   const { confirm } = useConfirm();
@@ -74,21 +87,12 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   return () => { mountedRef.current = false; };
   }, []);
 
-  // Network status -- passive detection, no permissions needed
-
   // Subscription tier for analytics preview
   const [isPro, setIsPro] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem('user_subscription')
       .then(tier => setIsPro(!!tier && tier !== 'free'))
       .catch(() => {});
-  }, []);
-  const [isOffline, setIsOffline] = React.useState(false);
-  React.useEffect(() => {
-    const unsub = NetInfo.addEventListener(state => {
-      setIsOffline(state.isConnected === false);
-    });
-    return unsub;  // cleanup on unmount
   }, []);
 
   const [refreshing, setRefreshing] = React.useState(false);
@@ -113,41 +117,43 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [navigation]);
   useEffect(() => {
-    consumePendingRoute().then(screen => {
-      if (screen && mountedRef.current) (navigation as any).navigate('MoreTab', { screen });
+    consumePendingRoute().then(p => {
+      if (p && mountedRef.current) (navigation as any).navigate('MoreTab', { screen: p.screen, params: p.params });
     }).catch(() => {});
     getUserState().then(st => prefetchRights(st?.code)).catch(() => {});
   }, [navigation]);
 
   const [nearbyCounts, setNearbyCounts] = useState<{bail?: number; lawyers?: number}>({});
-  const [upcomingCase, setUpcomingCase] = useState<{title:string; date:string; daysLeft:number} | null>(null);
+  const [upcomingCase, setUpcomingCase] = useState<{ id: number; title: string; daysLeft: number } | null>(null);
+  const [role, setRole] = useState('');
 
   // Pull-to-refresh and mount loader
   const loadAll = React.useCallback(async () => {
     // Load all home data; show skeleton until primary data arrives
     const primaryFetches: Promise<unknown>[] = [];
 
-    // Court date countdown -- soonest upcoming court date across the user's cases
+    // Court date countdown — the next hearing within 30 days. Days are counted
+    // between calendar dates in the person's own time zone (the server's
+    // `today`), never from a UTC-midnight timestamp.
     primaryFetches.push(
       secureStorage.getToken().then(token => {
-        if (!token) return;
-        return api.get('/cases').then(res => {
-          const withDate = (Array.isArray(res.data) ? res.data : [])
-            .filter((ca: Record<string, unknown>) => ca.next_court_date)
-            .map((ca: Record<string, unknown>) => ({
-              title: String(ca.title ?? t('home_your_case')),
-              date: String(ca.next_court_date),
-              daysLeft: Math.ceil((new Date(String(ca.next_court_date)).getTime() - Date.now()) / 86400000),
-            }))
-            .filter(c => !isNaN(c.daysLeft) && c.daysLeft >= 0 && c.daysLeft <= 30)
-            .sort((a, b) => a.daysLeft - b.daysLeft);
-          if (mountedRef.current) setUpcomingCase(withDate[0] ?? null);
+        if (!token) { if (mountedRef.current) setUpcomingCase(null); return; }
+        return api.get<CourtDatesList>('/court-dates').then(res => {
+          const today = res.data?.today || localDay(new Date());
+          const next = (res.data?.upcoming || [])
+            .map(cd => ({ id: cd.id, title: cd.case_title || t('home_your_case'), daysLeft: daysBetween(today, cd.court_date) }))
+            .filter(c => c.daysLeft != null && c.daysLeft >= 0 && c.daysLeft <= 30)
+            .sort((a, b) => Number(a.daysLeft) - Number(b.daysLeft))[0];
+          if (mountedRef.current) setUpcomingCase(next ? { id: next.id, title: next.title, daysLeft: Number(next.daysLeft) } : null);
         });
       }).catch(() => {})
     );
 
-    AsyncStorage.getItem('user').then(u => {
-      if (u) { const user = (() => { try { return JSON.parse(u); } catch { return null; } })(); setDisplayName(user?.displayName || user?.name || ''); }
+    secureStorage.getItem('user').then(u => {
+      const user = u ? (() => { try { return JSON.parse(u); } catch { return null; } })() : null;
+      if (!mountedRef.current) return;
+      setDisplayName(user?.displayName || user?.display_name || user?.name || '');
+      setRole(String(user?.role || ''));
     }).catch(() => {});
 
     // Track visits for the personalised greeting (UI-only, non-critical)
@@ -181,35 +187,26 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     });
   }, []);
 
+  // Loaded right away, not after interactions: the SOS pulse and skeletons are
+  // endless animations, so "after interactions" could mean never.
   useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-      initLang();
-      loadAll();
-    });
-    return () => _task.cancel();
+    initLang();
+    loadAll();
   }, [loadAll]);
 
   const sendQuickSOS = async () => {
-    const contacts = await getContacts();
-    const active = (contacts as string[]).filter((c: string) => c?.trim());
+    const active = await activeContacts();
     if (active.length === 0) {
       confirm(t('home_sos_none_title'), t('home_sos_none_body'),
-      { confirmLabel: t('home_sos_add') }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
+        { confirmLabel: t('home_sos_add') }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
       return;
     }
-confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
-      { confirmLabel: t('home_sos_send') }).then(async ok => { if (!ok) return;
-      setSosSending(true);
-        try {
-          const { lat, lng } = await getLocation({ reason: t('home_sos_reason') }).catch(() => ({ lat: undefined, lng: undefined }));
-          const userData = await AsyncStorage.getItem('user');
-          const user = userData ? JSON.parse(userData) : {};
-          await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
-          showToast(t('home_sos_sent'));
-        } catch (e: any) {
-          showToast(e?.message ? `${t('home_sos_failed')} (${e.message})` : t('home_sos_failed'), 'error');
-        } finally { setSosSending(false); }
-    })
+    const ok = await confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }), { confirmLabel: t('home_sos_send') });
+    if (!ok) return;
+    setSosSending(true);
+    try {
+      await reportSosResult(await sendSos(active, t('home_sos_reason')), confirm, showToast);
+    } finally { if (mountedRef.current) setSosSending(false); }
   };
 
   const navigate = (nav: string) => {
@@ -228,17 +225,17 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
           <View style={styles.logoMark}>
             <JTBLogo size={40} />
           </View>
-          <View>
-            <Text maxFontSizeMultiplier={1.4} style={styles.brand}>{t('app_name')}</Text>
+          <View style={styles.headerText}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.brand} numberOfLines={1}>{t('app_name')}</Text>
             {!!displayName
-              ? <Text maxFontSizeMultiplier={1.4} style={styles.welcome}>{
+              ? <Text maxFontSizeMultiplier={1.4} style={styles.welcome} numberOfLines={2}>{
                   visitCount <= 1
                     ? t('home_welcome_1', { name: displayName })
                     : visitCount <= 5
                     ? t('home_welcome_2', { name: displayName })
                     : t('home_welcome_3', { name: displayName })
                 }</Text>
-              : <Text maxFontSizeMultiplier={1.4} style={styles.welcome}>{
+              : <Text maxFontSizeMultiplier={1.4} style={styles.welcome} numberOfLines={2}>{
                   visitCount <= 1
                     ? t('home_sub_1')
                     : visitCount <= 5
@@ -396,7 +393,8 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
                 ? { backgroundColor: COLORS.bail, borderColor: COLORS.bail }
                 : { backgroundColor: COLORS.navy, borderColor: COLORS.steel },
             ]}
-            onPress={() => (navigation as any).navigate('HomeTab')}
+            testID="home-court-countdown"
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'CourtDateDetail', params: { id: upcomingCase.id } })}
             activeOpacity={0.88}
             accessibilityLabel={t('home_court_a11y', { n: upcomingCase.daysLeft })}
           >
@@ -442,7 +440,7 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES().map((tile: any) => (
+          {TILES().filter(tile => !tile.roles || tile.roles.includes(role)).map(tile => (
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
@@ -487,7 +485,8 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={styles.nudgeCard}
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
+            testID="home-create-account"
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Register' })}
             activeOpacity={0.85}
           >
             <AppIcon name="person-outline" size={20} color={COLORS.navy} />
@@ -513,33 +512,6 @@ confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
       </ScrollView>
 
       <FloatingSOSButton onPress={sendQuickSOS} sending={sosSending} />
-      {/* Offline banner -- shown when device has no connection */}
-      {isOffline && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={{ backgroundColor: colors.infoBg, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
-            flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          onPress={() => Alert.alert(
-              t('offline_title'),
-              t('home_offline_body'),
-              [{ text: t('home_offline_ok') }]
-            )}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-          accessibilityLabel={t('home_offline_a11y')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.info }}>
-              {t('no_internet')}
-            </Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
-              {t('home_offline_sub')}
-            </Text>
-          </View>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.info, fontSize: 12 }}>{t('home_offline_see')}</Text>
-        </TouchableOpacity>
-      )}
     </View>
 
   );
@@ -557,11 +529,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 14,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     borderBottomWidth: 2, borderBottomColor: COLORS.steel },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
+  headerText: { flex: 1, minWidth: 0 },
   logoMark: { width: 42, height: 42, borderRadius: RADIUS.sm, overflow: 'hidden' },
   brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 8 },
   helpNowBtn: {
     backgroundColor: COLORS.emergency,
     paddingHorizontal: 10, paddingVertical: 10,
