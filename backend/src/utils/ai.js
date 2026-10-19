@@ -31,7 +31,12 @@ export function sendAiUnavailable(res) {
  * Express middleware: short-circuits with 503 ai_unavailable when no API key.
  * Mount AFTER auth/disclaimer so those still apply.
  */
-export function requireAi(req, res, next) {
+export async function requireAi(req, res, next) {
   if (!aiConfigured()) return sendAiUnavailable(res);
+  // Global daily spend cap (services/aiBudget.js): refuse before any work.
+  try {
+    const { budgetStatus, AI_BUDGET_BODY } = await import('../services/aiBudget.js');
+    if ((await budgetStatus()).exhausted) return res.status(503).json({ ...AI_BUDGET_BODY });
+  } catch { /* accounting unavailable — the per-call check in aiClient still applies */ }
   next();
 }

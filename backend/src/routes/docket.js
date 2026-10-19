@@ -548,7 +548,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
        LEFT JOIN users u ON u.id = de.assigned_to
        WHERE de.matter_id=?
          AND (de.firm_id IS NULL OR de.firm_id=?)
-       ORDER BY de.due_date ASC`,
+       ORDER BY de.due_date ASC LIMIT 1000`,
       [matterId, matterCtx?.firm_id ?? null]
     );
 

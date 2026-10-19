@@ -9,6 +9,7 @@
  * User text is stored as typed (control characters stripped, never HTML-encoded);
  * it is escaped only where it is rendered into another format (the Slack ping).
  */
+import { fetchWithTimeout } from '../utils/http.js';
 import { Router }    from 'express';
 import rateLimit     from 'express-rate-limit';
 
@@ -105,7 +106,7 @@ router.post('/ui', feedbackLimiter, optionalAuth, async (req, res) => {
   // Notify Slack (non-blocking)
   const webhookUrl = process.env.ALERT_WEBHOOK_URL;
   if (webhookUrl) {
-    fetch(webhookUrl, {
+    fetchWithTimeout(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

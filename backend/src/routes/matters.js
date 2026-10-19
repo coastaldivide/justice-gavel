@@ -355,7 +355,7 @@ router.get('/:id', authRequired, requireMatterAccess('id', 'viewer'), async (req
        FROM matter_teams mt
        JOIN users u ON u.id = mt.user_id
        WHERE mt.matter_id=? AND mt.active=1
-       ORDER BY mt.added_at ASC`,
+       ORDER BY mt.added_at ASC LIMIT 200`,
       [matter.id]
     ).catch(() => []);
 
@@ -533,7 +533,7 @@ router.get('/:id/team', authRequired, requireMatterAccess('id', 'viewer'), async
            WHEN 'viewer'        THEN 6
            ELSE 7
          END,
-         mt.added_at ASC`,
+         mt.added_at ASC LIMIT 200`,
       [matterIdVal]
     );
     if (!members) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
@@ -717,7 +717,7 @@ router.get('/:id/events', authRequired, requireMatterAccess('id', 'viewer'), asy
        FROM matter_events me
        LEFT JOIN users u ON u.id = me.user_id
        WHERE me.matter_id=?
-       ORDER BY COALESCE(me.event_date, me.created_at) DESC`,
+       ORDER BY COALESCE(me.event_date, me.created_at) DESC LIMIT 500`,
       [safeInt(req.params.id)]
     );
     res.json({ events });

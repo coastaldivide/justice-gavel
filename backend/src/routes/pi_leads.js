@@ -204,7 +204,7 @@ router.post('/:id/accept', authRequired, requireLeadAttorney, async (req, res) =
     let stripePiId;
     try {
       const Stripe = (await import('stripe')).default;
-      const stripe = new Stripe(stripeKey());
+      const stripe = new Stripe(stripeKey(), { timeout: 20_000, maxNetworkRetries: 2 });
       const pi = await stripe.paymentIntents.create(
         {
           amount:               lead.lead_fee_cents,

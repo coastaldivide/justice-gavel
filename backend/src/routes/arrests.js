@@ -163,7 +163,7 @@ router.get('/monitors', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all(
-      'SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, name, county, state, notify_email, notify_sms, active, last_checked, last_result, created_at FROM arrest_monitors WHERE user_id=? AND COALESCE(active, 1) = 1 ORDER BY id DESC',
+      'SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, name, county, state, notify_email, notify_sms, active, last_checked, last_result, created_at FROM arrest_monitors WHERE user_id=? AND COALESCE(active, 1) = 1 ORDER BY id DESC LIMIT 100',
       [req.user.id]
     );
     res.json({ monitors: rows, count: rows.length });
@@ -235,7 +235,7 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
 
     // Check arrest_monitors table — return monitors for this user watching this name
     const monitors = await db.all(
-      'SELECT id, watch_name, county, state, created_at FROM arrest_monitors WHERE user_id = ? AND active = 1',
+      'SELECT id, watch_name, county, state, created_at FROM arrest_monitors WHERE user_id = ? AND active = 1 LIMIT 100',
       [req.user.id]
     ).catch(() => []);
 

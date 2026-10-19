@@ -19,6 +19,7 @@
  * a paid DMS subscription.
  */
 
+import { fetchWithTimeout } from '../../utils/http.js';
 import { getDb }     from '../../db/index.js';
 import { safeInt, err400, err404 } from '../../utils/routeHelpers.js';
 import logger        from '../../utils/logger.js';
@@ -55,7 +56,7 @@ async function imanageRequest(conn, method, path, body = null) {
   // instance_url is firm-supplied: never let it reach internal addresses (SSRF, H9 class).
   const urlErr = conn.instance_url ? await publicUrlError(`${base}${path}`) : null;
   if (urlErr) throw new Error(`iManage URL rejected: ${urlErr}`);
-  const resp = await fetch(`${base}${path}`, { ...opts, redirect: 'manual' });
+  const resp = await fetchWithTimeout(`${base}${path}`, { ...opts, redirect: 'manual' });
   if (!resp.ok) {
     const err = await resp.text().catch(() => resp.statusText);
     throw new Error(`iManage API ${resp.status}: ${err.slice(0, 200)}`);
@@ -81,7 +82,7 @@ async function netdocsRequest(conn, method, path, body = null) {
 
   const urlErr = conn.instance_url ? await publicUrlError(`${base}${path}`) : null;
   if (urlErr) throw new Error(`NetDocuments URL rejected: ${urlErr}`);
-  const resp = await fetch(`${base}${path}`, { ...opts, redirect: 'manual' });
+  const resp = await fetchWithTimeout(`${base}${path}`, { ...opts, redirect: 'manual' });
   if (!resp.ok) {
     const err = await resp.text().catch(() => resp.statusText);
     throw new Error(`NetDocuments API ${resp.status}: ${err.slice(0, 200)}`);
@@ -443,7 +444,7 @@ router.get('/map', authRequired, requireFirmRole('partner'), async (req, res) =>
       `SELECT dsm.*, m.title AS matter_title
        FROM document_sync_map dsm
        LEFT JOIN matters m ON m.id = dsm.matter_id
-       WHERE dsm.connection_id=? ORDER BY dsm.created_at DESC`,
+       WHERE dsm.connection_id=? ORDER BY dsm.created_at DESC LIMIT 500`,
       [conn.id]
     ).catch(() => []);
 

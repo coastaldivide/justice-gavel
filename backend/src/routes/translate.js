@@ -1,3 +1,4 @@
+import { anthropicFetch } from '../services/aiClient.js';
 import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { translateLimiter } from '../utils/rateLimiters.js';
 // AI route — general guidance only, not legal advice
@@ -26,7 +27,7 @@ import { translateLimiter } from '../utils/rateLimiters.js';
  */
 
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
-import { err400, err404, safeInt, API_URLS } from '../utils/routeHelpers.js';
+import { err400, err404, safeInt } from '../utils/routeHelpers.js';
 import express from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired, optionalAuth } from '../middleware/auth.js';
@@ -121,7 +122,7 @@ async function translate(text, srcLang, tgtLang) {
   const srcName = LANG_NAMES[srcLang] || srcLang;
   const tgtName = LANG_NAMES[tgtLang] || tgtLang;
 
-  const res = await fetch(API_URLS.ANTHROPIC, {
+  const res = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -142,7 +143,7 @@ Text to translate:
 ${text}`,
       }],
     }),
-  });
+  }, { route: 'translate' });
 
   if (!res.ok) throw new Error(`Translation error ${res.status}`);
   const data = await res.json();

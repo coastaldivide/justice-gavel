@@ -1,4 +1,5 @@
-import { safeJson, err400, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
+import { anthropicFetch } from '../services/aiClient.js';
+import { safeJson, err400, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * /api/match — Two-stage Claude-powered lawyer matching
@@ -249,7 +250,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
 
   const prompt = `User context:\n${userContext || 'Not specified'}\n\nAttorney profiles:\n${JSON.stringify(profiles, null, 2)}\n\nWrite match reports for each attorney.`;
 
-  const response = await fetch(API_URLS.ANTHROPIC, {
+  const response = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -263,7 +264,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
       system: MATCH_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     })
-  });
+  }, { route: 'match' });
 
   if (!response.ok) {
     const errText = await response.text();
@@ -450,7 +451,7 @@ router.get('/profile/:lawyerId', async (req, res) => {
     const booked = await appDb.all(
       `SELECT date_slot, time_slot FROM consultation_bookings
         WHERE lawyer_id = ? AND status NOT IN ('cancelled')
-          AND date_slot >= CURRENT_DATE`,
+          AND date_slot >= CURRENT_DATE LIMIT 500`,
       [lawyerId]
     ).catch(() => []);
 

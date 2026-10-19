@@ -438,7 +438,7 @@ router.get('/waivers/:firmId', authRequired, requireFirmRole('partner'), async (
       `SELECT cw.*, u.display_name AS authorized_by_name
        FROM conflict_waivers cw
        LEFT JOIN users u ON u.id = cw.authorized_by
-       WHERE cw.firm_id=? ORDER BY cw.created_at DESC`,
+       WHERE cw.firm_id=? ORDER BY cw.created_at DESC LIMIT 500`,
       [firmId]
     );
     res.json({ waivers, count: waivers.length });
@@ -491,7 +491,7 @@ router.get('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), a
          AND ewl.action IN ('set','auto_set')
        LEFT JOIN users setter ON setter.id = ewl.set_by
        WHERE mt.case_id=?
-       ORDER BY mt.ethics_wall DESC, u.display_name ASC`,
+       ORDER BY mt.ethics_wall DESC, u.display_name ASC LIMIT 500`,
       [matterId]
     ).catch(async () => {
       // Fallback: try matter_teams table
@@ -500,7 +500,7 @@ router.get('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), a
                 u.display_name, u.email
          FROM matter_teams mt
          JOIN users u ON u.id = mt.user_id
-         WHERE mt.matter_id=? AND mt.active=1`,
+         WHERE mt.matter_id=? AND mt.active=1 LIMIT 500`,
         [matterId]
       ).catch(() => []);
     });

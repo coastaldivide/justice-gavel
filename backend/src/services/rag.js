@@ -1,4 +1,5 @@
-import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../utils/ai.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
+import { anthropicFetch } from './aiClient.js';
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
 // Embedding model: Supabase gte-small (384 dimensions, no API key needed)
@@ -35,7 +36,6 @@ import logger from '../utils/logger.js';
 
 const SUPABASE_URL     = process.env.SUPABASE_URL;
 const SUPABASE_KEY     = process.env.SUPABASE_SERVICE_KEY;
-const ANTHROPIC_KEY    = process.env.ANTHROPIC_API_KEY;
 const EMBED_URL        = `${SUPABASE_URL}/functions/v1/embed`;
 const SUPABASE_REST    = `${SUPABASE_URL}/rest/v1/rpc/search_legal_docs`;
 
@@ -106,19 +106,14 @@ Instructions:
 
 // ── Step 4: Generate answer with Claude ───────────────────────────────────
 async function generateAnswer(prompt) {
-  const res = await fetchWithTimeout(ANTHROPIC_MESSAGES_URL, {
-    method:  'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-    },
+  // Budget check, timeout/retries and metering: services/aiClient.js
+  const res = await anthropicFetch({
     body: JSON.stringify({
       model:      CLAUDE_MODEL,
       max_tokens: 2048,
       messages:   [{ role: 'user', content: prompt }],
     }),
-  });
+  }, { route: 'research_rag' });
   if (!res.ok) throw new Error(`Claude error ${res.status}`);
   const data = await res.json();
   return data.content?.[0]?.text || '';

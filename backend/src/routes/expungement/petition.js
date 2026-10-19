@@ -1,4 +1,5 @@
-import { requireAi, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { anthropicFetch } from '../../services/aiClient.js';
+import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
 /**
  * expungement/petition.js — POST /petition — AI expungement petition
  */
@@ -50,7 +51,7 @@ Include: caption, statement of facts, legal basis with specific ${state} statute
 Format as a formal legal document.
 Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY AN ATTORNEY — VERIFY ALL INFORMATION AND STATUTES BEFORE FILING.`;
 
-    const response = await fetch(ANTHROPIC_MESSAGES_URL, {
+    const response = await anthropicFetch({
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -63,7 +64,7 @@ Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY A
         max_tokens:  4000,
         messages: [{ role: 'user', content: prompt }],
       }),
-    });
+    }, { route: 'expungement_petition' });
 
     const data    = await response.json();
     const draft   = data.content?.[0]?.text || '';

@@ -30,6 +30,7 @@ async function fetchNotify(url, opts) {
 import logger from '../utils/logger.js';
 import { APP_VERSION } from '../utils/version.js';
 import { Sentry, captureCritical } from './sentry.js';
+import { redact, redactString } from '../utils/redact.js';
 
 // ── In-memory dedup: code → last_alerted_ts ──────────────────────────────────
 const ALERT_COOLDOWN_MS = 5 * 60 * 1000;  // 5 minutes between same alert
@@ -102,7 +103,10 @@ async function pingWebhook(payload) {
  * SEV-1: System-critical failure. Pages on-call immediately.
  * Use for: DB down, auth broken, payment system offline, mass user lockout.
  */
-export async function notifyCritical(message, extras = {}) {
+export async function notifyCritical(rawMessage, rawExtras = {}) {
+  // Alerts leave the process (e-mail, webhook, Sentry): scrub them first.
+  const message = redactString(String(rawMessage));
+  const extras  = redact(rawExtras) || {};
   const code = extras.code || message.slice(0, 40);
   logger.error(`[SEV-1 CRITICAL] ${message}`, extras);
   captureCritical(message, extras);
@@ -137,7 +141,9 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
  * SEV-2: Significant error affecting some users.
  * Use for: AI down, payment failures, auth errors spiking.
  */
-export async function notifyError(message, extras = {}) {
+export async function notifyError(rawMessage, rawExtras = {}) {
+  const message = redactString(String(rawMessage));
+  const extras  = redact(rawExtras) || {};
   const code = extras.code || message.slice(0, 40);
   logger.error(`[SEV-2 ERROR] ${message}`, extras);
   Sentry?.captureMessage?.(message, 'error');
@@ -157,7 +163,8 @@ export async function notifyError(message, extras = {}) {
 /**
  * SEV-3: Warning. Logged for daily digest, no immediate alert.
  */
-export function notifyWarn(message, extras = {}) {
+export function notifyWarn(rawMessage, extras = {}) {
+  const message = redactString(String(rawMessage));
   logger.warn(`[SEV-3 WARN] ${message}`, extras);
   Sentry?.captureMessage?.(message, 'warning');
 }

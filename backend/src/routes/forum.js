@@ -55,7 +55,7 @@ router.get('/categories', async (_req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all(
-      'SELECT DISTINCT category FROM forum_posts ORDER BY category ASC'
+      'SELECT DISTINCT category FROM forum_posts ORDER BY category ASC LIMIT 200'
     );
     res.json({ categories: rows.map(r => r.category) });
   } catch (err) {

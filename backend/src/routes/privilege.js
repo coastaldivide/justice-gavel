@@ -1,3 +1,4 @@
+import { anthropicFetch } from '../services/aiClient.js';
 import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * routes/privilege.js — Privilege Log Generator
@@ -28,7 +29,7 @@ import { authRequired }    from '../middleware/auth.js';
 import { loadFirmContext, requireFirmRole, getFirmMembership, resolveMatterAccess, hasMinRole } from '../middleware/rbac.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../services/aiQueue.js';
-import { err400, err403, err404, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
+import { err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 
 const router     = Router();
@@ -227,7 +228,7 @@ For each document, generate a privilege log entry. Respond ONLY with valid JSON 
 
 CRITICAL: The description must NOT reveal privileged content. It must only describe the general nature, date, author, recipient, and document type — never the substance of legal advice or litigation strategy.`;
 
-        const resp = await fetch(API_URLS.ANTHROPIC, {
+        const resp = await anthropicFetch({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -240,7 +241,7 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
             max_tokens:  4000,
             messages:    [{ role: 'user', content: prompt }],
           }),
-        });
+        }, { route: 'privilege' });
 
         const data = await resp.json();
         const raw  = data.content?.[0]?.text || '[]';
@@ -479,7 +480,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
     const entries  = await db.all(
       `SELECT pl.*, u.display_name AS reviewed_by_name
        FROM privilege_log pl LEFT JOIN users u ON u.id=pl.reviewed_by
-       WHERE pl.matter_id=? AND pl.${scope.sql} ORDER BY pl.doc_number ASC`,
+       WHERE pl.matter_id=? AND pl.${scope.sql} ORDER BY pl.doc_number ASC LIMIT 1000`,
       [matterId, ...scope.params]
     );
 

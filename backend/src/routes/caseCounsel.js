@@ -74,7 +74,7 @@ router.get('/:caseId/counsel', authRequired, async (req, res) => {
          FROM case_assignments ca
          LEFT JOIN users u ON u.id = ca.defender_id
         WHERE ca.case_id = ? AND ca.status IN ('pending', 'active')
-        ORDER BY ca.assigned_at DESC NULLS LAST`, [cas.id]);
+        ORDER BY ca.assigned_at DESC NULLS LAST LIMIT 50`, [cas.id]);
     res.json({ case_id: cas.id, counsel: rows });
   } catch (e) {
     logger.error('[cases/counsel/list]', e?.message);

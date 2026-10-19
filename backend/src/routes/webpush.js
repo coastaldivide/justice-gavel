@@ -128,7 +128,8 @@ router.post('/send', authRequired, requireFirmRole('firm_admin'), async (req, re
       try {
         await wp.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload
+          payload,
+          { timeout: 10_000 }   // ms — a slow push service must not stall the loop
         );
         sent++;
       } catch (e) {

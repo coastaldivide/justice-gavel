@@ -72,7 +72,7 @@ router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, uplo
       }
       try {
         const Stripe = (await import('stripe')).default;
-        const stripe = new Stripe(STRIPE_SECRET);
+        const stripe = new Stripe(STRIPE_SECRET, { timeout: 20_000, maxNetworkRetries: 2 });
         const pi = await stripe.paymentIntents.create(
       {
           amount:   1999,

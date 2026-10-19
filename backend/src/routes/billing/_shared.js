@@ -3,7 +3,7 @@ import Stripe           from 'stripe';
 import logger           from '../../utils/logger.js';
 
 const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
-const stripe    = stripeKey ? new Stripe(stripeKey) : null;
+const stripe    = stripeKey ? new Stripe(stripeKey, { timeout: 20_000, maxNetworkRetries: 2 }) : null;
 const LIVE      = !!stripeKey;
 
 // ── Billing rate limiter ───────────────────────────────────────────────────────

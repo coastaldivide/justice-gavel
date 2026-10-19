@@ -4,6 +4,7 @@
  * Without RESEND_API_KEY (or with LIVE_EMAIL=false) emails are logged, not sent.
  */
 
+import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger.js';
 import { escapeHtml as e, safeUrl, headerSafe } from '../utils/html.js';
 
@@ -19,6 +20,9 @@ const FROM_NAME = 'Justice Gavel';
 export function emailLive() {
   return !!process.env.RESEND_API_KEY && process.env.LIVE_EMAIL !== 'false';
 }
+
+const EMAIL_TIMEOUT_MS = 10_000;
+const EMAIL_RETRIES = 2;
 
 let _resend = null;
 async function resendClient() {
@@ -38,22 +42,34 @@ async function send({ to, subject, html, text }) {
     logger.info(`[email] (not sent — RESEND_API_KEY not set) "${subject}" → ${Array.isArray(to) ? to.join(',') : to}`);
     return { id: 'log-only', to, subject, mock: true };
   }
-  try {
-    const resend = await resendClient();
-    const result = await resend.emails.send({
-      from:    `${FROM_NAME} <${FROM}>`,
-      to:      Array.isArray(to) ? to : [to],
-      subject: headerSafe(subject),
-      html:    html || `<p>${e(String(text || '')).replace(/\n/g, '<br>')}</p>`,
-      text:    text || String(html || '').replace(/<[^>]+>/g, ''),
-    });
-    if (result?.error) throw new Error(result.error.message || 'resend error');
-    logger.info(`[email] sent "${subject}" — id: ${result.data?.id}`);
-    return result.data;
-  } catch (err) {
-    logger.error('[email] send failed:', err.message);
-    throw err;
+  const resend = await resendClient();
+  const payload = {
+    from:    `${FROM_NAME} <${FROM}>`,
+    to:      Array.isArray(to) ? to : [to],
+    subject: headerSafe(subject),
+    html:    html || `<p>${e(String(text || '')).replace(/\n/g, '<br>')}</p>`,
+    text:    text || String(html || '').replace(/<[^>]+>/g, ''),
+  };
+  // Each send is bounded (EMAIL_TIMEOUT_MS) and retried on transient failures
+  // (network/timeout/429/5xx). The Resend idempotency key makes a retry of a
+  // request that actually got through deliver only one e-mail.
+  const idempotencyKey = randomUUID();
+  let lastErr = null;
+  for (let attempt = 0; attempt <= EMAIL_RETRIES; attempt++) {
+    const result = await resend.emails.send(payload, { idempotencyKey, signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS) })
+      .catch(err => ({ error: { message: err.message, statusCode: null } }));
+    if (!result?.error) {
+      logger.info(`[email] sent "${subject}" — id: ${result?.data?.id}`);
+      return result?.data;
+    }
+    lastErr = result.error;
+    const sc = result.error.statusCode;
+    const transient = sc == null || sc === 429 || sc >= 500;
+    if (!transient || attempt === EMAIL_RETRIES) break;
+    await new Promise(r => { setTimeout(r, 500 * 2 ** attempt).unref?.(); });
   }
+  logger.error('[email] send failed:', lastErr?.message || 'resend error');
+  throw new Error(lastErr?.message || 'resend error');
 }
 
 // ── Transactional emails ───────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
-import { safeJson, err400, API_URLS, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
+import { safeJson, err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
+import { anthropicFetch, streamUsageMeter } from '../../services/aiClient.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 /**
  * chat/stream.js — POST /stream — Server-Sent Events streaming
@@ -147,15 +148,13 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
     res.on('close', onClientClose);
 
     let fullText = '';
+    let metered = null;
     try {
-      const response = await fetch(API_URLS.ANTHROPIC, {
-        method: 'POST',
+      // Budget check, connect timeout and transient retries: aiClient. The
+      // stream itself is bounded by the 120 s timer above; usage is metered
+      // from the stream's message_start / message_delta events.
+      const response = await anthropicFetch({
         signal: upstream.signal,
-        headers: {
-          'Content-Type':      'application/json',
-          'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
-          'anthropic-version': '2023-06-01',
-        },
         body: JSON.stringify({
           model:       CLAUDE_MODEL,
           temperature: isDefender ? 0.3 : 0.4,  // defenders: precise; consumers: conversational
@@ -164,7 +163,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
           system:      systemPrompt,
           messages,
         }),
-      });
+      }, { route: isDefender ? 'chat_stream_defender' : 'chat_stream', userId: req.user.id, stream: true });
 
       if (!response.ok || !response.body) {
         const errDetail = response.ok ? 'no body' : `HTTP ${response.status}`;
@@ -175,6 +174,8 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
 
       // ── Stream token chunks to client ─────────────────────────────────────
       // SSE lines can be split across network reads: keep the incomplete tail.
+      const meter   = streamUsageMeter();
+      metered = meter;
       const reader  = response.body.getReader();
       const decoder = new TextDecoder();
       let pending = '';
@@ -185,6 +186,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
         if (!data || data === '[DONE]') return;
         const parsed = safeJson(data);
         if (!parsed || typeof parsed !== 'object') return;
+        meter.onEvent(parsed);
         if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
           const token = parsed.delta.text ?? '';
           fullText += token;
@@ -232,6 +234,10 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
     } finally {
       clearTimeout(stTimer);
       res.off('close', onClientClose);
+      if (metered) {
+        metered.record({ route: isDefender ? 'chat_stream_defender' : 'chat_stream', userId: req.user.id, status: fullText ? 'completed' : 'failed' })
+          .catch((e) => logger.warn({ err: e.message }, '[chat/stream] usage metering failed'));
+      }
       if (!res.writableEnded) res.end();
     }
 

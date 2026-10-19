@@ -15,6 +15,7 @@
  *   POST   /api/integrations/oauth/callback           — OAuth2 callback handler
  */
 
+import { fetchWithTimeout } from '../../utils/http.js';
 import { Router }          from 'express';
 import { getDb }           from '../../db/index.js';
 import { authRequired }    from '../../middleware/auth.js';
@@ -169,7 +170,7 @@ export async function refreshTokenIfNeeded(db, conn) {
   if (!clientId || !clientSecret) return conn;
 
   try {
-    const resp = await fetch(p.token_url, {
+    const resp = await fetchWithTimeout(p.token_url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
       body: new URLSearchParams({
@@ -242,7 +243,7 @@ router.get('/', authRequired, requireFirmRole('partner'), async (req, res) => {
     const conns = await db.all(
       `SELECT id, provider, status, instance_url, customer_id, scope,
               last_sync_at, last_error, created_at, updated_at
-       FROM integration_connections WHERE firm_id=? ORDER BY provider ASC`,
+       FROM integration_connections WHERE firm_id=? ORDER BY provider ASC LIMIT 100`,
       [ctx.firm_id]
     );
 
@@ -477,7 +478,7 @@ router.get('/oauth/callback', async (req, res) => {
 
     if (clientId && clientSecret && p.token_url) {
       try {
-        const tokenResp = await fetch(p.token_url, {
+        const tokenResp = await fetchWithTimeout(p.token_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
           body: new URLSearchParams({

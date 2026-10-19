@@ -14,7 +14,7 @@ import logger from '../utils/logger.js';
 
 const key = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 const webhookSecret = () => process.env.STRIPE_WEBHOOK_SECRET || '';
-export const stripe = key ? new Stripe(key, { apiVersion: '2024-06-20' }) : null;
+export const stripe = key ? new Stripe(key, { apiVersion: '2024-06-20', timeout: 20_000, maxNetworkRetries: 2 }) : null;
 export const STRIPE_LIVE = !!key;
 
 // Stripe fee: 2.9% + $0.30

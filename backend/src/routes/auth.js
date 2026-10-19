@@ -27,6 +27,7 @@ import { CONFIG } from '../config.js';
 import jwt from 'jsonwebtoken';
 import { authRequired } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
+import { purgeAccount, exportAccount } from '../services/accountDeletion.js';
 import logger from '../utils/logger.js';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -431,44 +432,12 @@ router.delete('/account', authRequired, async (req, res) => {
     if (!valid) return err401(res, 'Incorrect password.');
 
     const uid = req.user.id;
+    // Every table that references the user is handled by one registry
+    // (services/accountDeletion.js): own rows deleted, other people's records
+    // de-linked, owned firms handed to a remaining member — no orphans.
     let attachmentKeys = [];
     await db.transaction(async (tx) => {
-      // Child rows first. A missing table/column (schema drift) is skipped via
-      // a SAVEPOINT so it cannot abort the whole transaction.
-      const purge = async (sql, params) => {
-        await tx.run('SAVEPOINT purge_step');
-        try { await tx.run(sql, params); await tx.run('RELEASE SAVEPOINT purge_step'); }
-        catch (e) {
-          await tx.run('ROLLBACK TO SAVEPOINT purge_step');
-          if (!['42P01', '42703'].includes(e.code)) throw e;
-        }
-      };
-      await purge('DELETE FROM case_messages WHERE user_id = ? OR sender_id = ?', [uid, uid]);
-      await purge('DELETE FROM messages WHERE sender_id = ? OR recipient_id = ?', [uid, uid]);
-      await tx.run('SAVEPOINT purge_step');
-      try {
-        attachmentKeys = await tx.all('SELECT storage, storage_key FROM message_attachments WHERE uploader_id = ?', [uid]);
-        await tx.run('RELEASE SAVEPOINT purge_step');
-      } catch (e) {
-        await tx.run('ROLLBACK TO SAVEPOINT purge_step');
-        if (!['42P01', '42703'].includes(e.code)) throw e;
-      }
-      await purge('DELETE FROM message_attachments WHERE uploader_id = ?', [uid]);
-      await purge('DELETE FROM case_events WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM cases WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM push_tokens WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM scheduled_pushes WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM subscriptions WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM saved_lawyers WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM consultations WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM motions WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM ai_jobs WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM chat_messages WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM refresh_tokens WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM password_resets WHERE user_id = ?', [uid]);
-      await purge('DELETE FROM user_disclaimer_acceptance WHERE user_id = ?', [uid]);
-      await tx.run('DELETE FROM users WHERE id = ?', [uid]);
-      await purge('INSERT INTO account_deletion_log (deleted_at, reason) VALUES (NOW(), ?)', ['user_request']);
+      ({ attachmentKeys } = await purgeAccount(tx, uid, { email: user.email }));
     });
     try { (await import('../middleware/auth.js')).invalidateUserCache?.(uid); } catch { /* ignore */ }
     // Remove the user's encrypted attachment files (best effort, after commit).
@@ -488,27 +457,39 @@ router.delete('/account', authRequired, async (req, res) => {
 });
 
 // ── GET /export — GDPR/CCPA data export ───────────────────────────────────────
-router.get('/export', authRequired, async (req, res) => {
+// Everything the account holds (same registry as account deletion), secrets
+// omitted, encrypted notes/messages decrypted for their owner.
+async function sendExport(req, res) {
   try {
     const db = await getDb();
-    const opt = (p) => p.catch(() => []);
-    const [user, cases_, motions, consultations, savedLawyers] = await Promise.all([
-      db.get('SELECT id, email, name, display_name, phone, role, created_at FROM users WHERE id = ?', [req.user.id]),
-      opt(db.all('SELECT id, title, status, created_at, updated_at FROM cases WHERE user_id = ? ORDER BY created_at DESC LIMIT 500', [req.user.id])),
-      opt(db.all('SELECT * FROM motions WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
-      opt(db.all('SELECT * FROM consultations WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
-      opt(db.all('SELECT * FROM saved_lawyers WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
-    ]);
+    const { profile, data, truncated } = await exportAccount(db, req.user.id);
+    await audit('compliance.data_export_requested', { userId: req.user.id, req }).catch(() => {});
+    res.setHeader('Content-Disposition', 'attachment; filename="justice-gavel-export.json"');
     res.json({
       exported_at: new Date().toISOString(),
-      notice: 'This export contains all personal data Justice Gavel holds for your account.',
-      data: { profile: user, cases: cases_, motions, consultations, savedLawyers },
+      format:      'json',
+      version:     '2.0',
+      notice:      'This export contains all personal data Justice Gavel holds for your account. Handle it securely.',
+      ...(truncated.length ? { truncated_tables: truncated } : {}),
+      data: {
+        profile,
+        // Stable keys the app and older clients read:
+        cases:         data.cases || [],
+        messages:      [...(data.case_messages || []), ...(data.messages || [])],
+        motions:       data.motions || [],
+        consultations: [...(data.consultations || []), ...(data.consultation_bookings || [])],
+        savedLawyers:  data.saved_lawyers || [],
+        chat:          data.chat_sessions || [],
+        // Every other table, by name:
+        tables:        data,
+      },
     });
   } catch (e) {
     logger.error('[auth/export]', e.message);
     res.status(500).json({ error: 'Could not export data. Please try again.' });
   }
-});
+}
+router.get('/export', authRequired, sendExport);
 
 // ── POST /logout ──────────────────────────────────────────────────────────────
 router.post('/logout', authRequired, async (req, res) => {
@@ -669,39 +650,7 @@ router.get('/disclaimer/status', authRequired, async (req, res) => {
 });
 
 
-// GET /api/auth/data/export — GDPR/CCPA data portability
-// Returns all user data as a downloadable JSON
-router.get('/data/export', authRequired, async (req, res) => {
-  try {
-    const db = await getDb();
-    const userId = req.user.id;
-
-    const [user, cases, checkins, messages, subscriptions, auditLog] = await Promise.all([
-      db.get('SELECT id, display_name, email, role, created_at FROM users WHERE id=?', [userId]),
-      db.all('SELECT * FROM cases WHERE user_id=? AND deleted_at IS NULL', [userId]),
-      db.all('SELECT * FROM checkins WHERE user_id=? LIMIT 500', [userId]),
-      db.all('SELECT role, content, created_at FROM chat_messages WHERE user_id=? LIMIT 1000', [userId]),
-      db.all('SELECT tier, status, created_at FROM subscriptions WHERE user_id=?', [userId]),
-      db.all('SELECT action, entity_type, created_at FROM audit_log WHERE user_id=? LIMIT 200', [userId]),
-    ]).catch(() => [null, [], [], [], [], []]);
-
-    await audit('compliance.data_export_requested', { userId, req });
-
-    res.json({
-      export_date:   new Date().toISOString(),
-      format:        'json',
-      version:       '1.0',
-      user,
-      cases,
-      checkins,
-      chat_messages: messages,
-      subscriptions,
-      audit_log:     auditLog,
-      disclaimer:    'This export contains all personal data associated with your account. Handle securely.',
-    });
-  } catch {
-    res.status(500).json({ error: 'Export failed.' });
-  }
-});
+// GET /api/auth/data/export — same export (older clients)
+router.get('/data/export', authRequired, sendExport);
 
 export default router;

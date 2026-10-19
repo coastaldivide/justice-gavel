@@ -540,7 +540,7 @@ router.get('/:id/family-access', authRequired, async (req, res) => {
        FROM case_family_access cfa
        LEFT JOIN users u ON u.id = cfa.user_id
        WHERE cfa.case_id=?
-       ORDER BY cfa.invited_at DESC`,
+       ORDER BY cfa.invited_at DESC LIMIT 100`,
       [safeInt(req.params.id)]
     ).catch(() => []);
     res.json(members);
@@ -690,7 +690,7 @@ router.get('/family/contacts', authRequired, async (req, res) => {
        LEFT JOIN users u ON u.id = cfa.user_id
        LEFT JOIN cases c ON c.id = cfa.case_id
        WHERE cfa.case_id IN (SELECT id FROM cases WHERE user_id = ?)
-       ORDER BY cfa.created_at DESC`,
+       ORDER BY cfa.created_at DESC LIMIT 200`,
       [req.user.id]
     );
     res.json(contacts || []);

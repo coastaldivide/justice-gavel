@@ -314,7 +314,7 @@ router.get('/progress/:userId', authRequired, async (req, res, next) => {
   }
   try {
     const db = await getDb();
-    const rows = await db.all('SELECT lesson_id FROM lesson_progress WHERE user_id=? AND completed=1', [req.params.userId]);
+    const rows = await db.all('SELECT lesson_id FROM lesson_progress WHERE user_id=? AND completed=1 LIMIT 1000', [req.params.userId]);
     const rewards = await db.get('SELECT points FROM rewards WHERE user_id=?', [req.params.userId]);
     return res.json({ completed: rows.map(r => r.lesson_id), points: rewards?.points || 0 });
   } catch (e) {
@@ -419,7 +419,7 @@ router.get('/progress/me', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const completed = await db.all(
-      'SELECT lesson_id, completed_at FROM lesson_progress WHERE user_id=? AND completed=1 ORDER BY completed_at DESC',
+      'SELECT lesson_id, completed_at FROM lesson_progress WHERE user_id=? AND completed=1 ORDER BY completed_at DESC LIMIT 1000',
       [req.user.id]
     );
     // Calculate streak

@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../utils/http.js';
+import { anthropicFetch } from '../services/aiClient.js';
 import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * interrogation.js — Police Encounter Recorder
@@ -104,11 +106,11 @@ async function transcribeAudio(file, mimetype, filename) {
   form.append('response_format', 'verbose_json'); // includes timestamps per segment
   form.append('language', 'en');
 
-  const res = await fetch(API_URLS.OPENAI_STT, {
+  const res = await fetchWithTimeout(API_URLS.OPENAI_STT, {
     method: 'POST',
     headers: { Authorization: `Bearer ${OPENAI_KEY}`, ...form.getHeaders() },
     body: form,
-  });
+  }, { timeoutMs: 120_000, fetchImpl: fetch });   // audio up to 25 MB; node-fetch streams form-data
   if (!res.ok) throw new Error(`Whisper ${res.status}: ${await res.text()}`);
   const data = await res.json();
   return {
@@ -165,7 +167,7 @@ Format:
 Speaker labels MUST be exactly one of: OFFICER, SUSPECT, UNKNOWN
 The label SUSPECT is the legal term for the person being questioned — it carries no implication of guilt.`;
 
-  const res = await fetch(API_URLS.ANTHROPIC, {
+  const res = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -178,7 +180,7 @@ The label SUSPECT is the legal term for the person being questioned — it carri
       temperature: 0.1,
       messages: [{ role: 'user', content: prompt }],
     }),
-  });
+  }, { route: 'interrogation' });
 
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const data = await res.json();

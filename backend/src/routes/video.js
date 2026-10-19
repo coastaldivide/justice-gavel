@@ -16,6 +16,7 @@
  *   DAILY_API_KEY    — from dashboard.daily.co → developers → API keys
  */
 
+import { fetchWithTimeout } from '../utils/http.js';
 import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
@@ -30,7 +31,7 @@ const DAILY_BASE = 'https://api.daily.co/v1';
 
 async function dailyRequest(method, path, body = null) {
   if (!DAILY_KEY) throw new Error('DAILY_API_KEY not configured');
-  const res = await fetch(`${DAILY_BASE}${path}`, {
+  const res = await fetchWithTimeout(`${DAILY_BASE}${path}`, {
     method,
     headers: {
       'Content-Type':  'application/json',

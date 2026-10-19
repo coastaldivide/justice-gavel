@@ -1,7 +1,8 @@
+import { fetchWithTimeout } from '../../utils/http.js';
 const key = process.env.COINBASE_COMMERCE_API_KEY || '';
 export async function createCoinbaseCharge({ amount, currency='USD', user, meta }){
   if(!key){ return { provider:'coinbase-mock', url:'https://commerce.coinbase.com/checkout/mock', mock:true }; }
-  const r = await fetch('https://api.commerce.coinbase.com/charges', {
+  const r = await fetchWithTimeout('https://api.commerce.coinbase.com/charges', {
     method:'POST',
     headers:{ 'Content-Type':'application/json', 'X-CC-Api-Key': key, 'X-CC-Version':'2018-03-22' },
     body: JSON.stringify({

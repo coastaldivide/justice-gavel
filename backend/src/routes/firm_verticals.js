@@ -1172,7 +1172,7 @@ router.get('/voluntary-departure', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM voluntary_departure WHERE firm_id=? ORDER BY departure_deadline ASC",  /* intentional: full record for vertical UI */
+      "SELECT * FROM voluntary_departure WHERE firm_id=? ORDER BY departure_deadline ASC LIMIT 500",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1291,7 +1291,7 @@ router.get('/vop', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM vop_trackers WHERE firm_id=? ORDER BY vop_hearing_date ASC NULLS LAST, violation_date DESC",  /* intentional: full record for vertical UI */
+      "SELECT * FROM vop_trackers WHERE firm_id=? ORDER BY vop_hearing_date ASC NULLS LAST, violation_date DESC LIMIT 500",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1418,7 +1418,7 @@ router.get('/dv-firearms', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM dv_firearm_surrender WHERE firm_id=? ORDER BY surrender_deadline ASC",  /* intentional: full record for vertical UI */
+      "SELECT * FROM dv_firearm_surrender WHERE firm_id=? ORDER BY surrender_deadline ASC LIMIT 500",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1523,7 +1523,7 @@ router.get('/bop-exhaustion', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM bop_exhaustion WHERE firm_id=? ORDER BY thirty_day_lapse_date ASC NULLS LAST",  /* intentional: full record for vertical UI */
+      "SELECT * FROM bop_exhaustion WHERE firm_id=? ORDER BY thirty_day_lapse_date ASC NULLS LAST LIMIT 500",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 

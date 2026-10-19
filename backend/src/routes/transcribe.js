@@ -2,12 +2,14 @@
  * routes/transcribe.js — Audio transcription via OpenAI Whisper
  * POST /api/transcribe/audio
  */
+import { fetchWithTimeout } from '../utils/http.js';
+import { anthropicFetch } from '../services/aiClient.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { transcribeLimiter } from '../utils/rateLimiters.js';
 import { uploadGuard, fileStream, MB } from '../middleware/uploads.js';
 import logger from '../utils/logger.js';
-import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL, ANTHROPIC_VERSION } from '../utils/ai.js';
+import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_VERSION } from '../utils/ai.js';
 
 const router = Router();
 // 25 MB Whisper limit; streamed to a temp file, never buffered (C5).
@@ -58,14 +60,14 @@ router.post('/audio', authRequired, transcribeLimiter, requirePaidTranscription,
     form.append('model', 'whisper-1');
     form.append('language', 'en');
     
-    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const resp = await fetchWithTimeout('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${OPENAI_KEY}`,
         ...form.getHeaders()
       },
       body: form
-    });
+    }, { timeoutMs: 120_000, fetchImpl: fetch });   // audio up to 25 MB; node-fetch streams form-data
     
     if (!resp.ok) {
       const err = await resp.text();
@@ -106,7 +108,7 @@ async function structureNote(text) {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30_000);
-    const r = await fetch(ANTHROPIC_MESSAGES_URL, {
+    const r = await anthropicFetch({
       method: 'POST', signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': ANTHROPIC_VERSION },
       body: JSON.stringify({
@@ -116,7 +118,7 @@ async function structureNote(text) {
           + 'Do not give legal advice and do not invent facts.',
         messages: [{ role: 'user', content: String(text).slice(0, 8000) }],
       }),
-    }).finally(() => clearTimeout(t));
+    }, { route: 'transcribe_summary' }).finally(() => clearTimeout(t));
     if (!r.ok) throw new Error('Anthropic ' + r.status);
     const data = await r.json();
     const txt  = data.content?.[0]?.text || '';
@@ -159,9 +161,9 @@ router.post('/note', authRequired, transcribeLimiter, requireWhisper, uploadAudi
     const form = new FormData();
     form.append('file', fileStream(req.file), { filename: 'note.m4a', contentType: req.file.mimetype || 'audio/m4a', knownLength: req.file.size });
     form.append('model', 'whisper-1');
-    const resp = await nodeFetch('https://api.openai.com/v1/audio/transcriptions', {
+    const resp = await fetchWithTimeout('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST', headers: { Authorization: `Bearer ${OPENAI_KEY}`, ...form.getHeaders() }, body: form,
-    });
+    }, { timeoutMs: 120_000, fetchImpl: nodeFetch });
     if (!resp.ok) {
       logger.error('[transcribe/note] whisper', resp.status, (await resp.text()).slice(0, 200));
       return res.status(502).json({ error: 'Transcription failed' });

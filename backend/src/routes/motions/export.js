@@ -1,5 +1,6 @@
+import { anthropicFetch } from '../../services/aiClient.js';
 import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
-import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr, API_URLS } from '../../utils/routeHelpers.js';
+import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 /**
  * routes/motions/export.js — PDF Motion Export
  *
@@ -130,7 +131,7 @@ ${motion.draft.slice(0, 8000)}
 
 OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
 
-      const resp = await fetch(API_URLS.ANTHROPIC, {
+      const resp = await anthropicFetch({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +144,7 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
           max_tokens:  8000,
           messages:    [{ role: 'user', content: cleanPrompt }],
         }),
-      });
+      }, { route: 'motions_export' });
 
       const data    = await resp.json();
       const refined = data.content?.[0]?.text || motion.draft;

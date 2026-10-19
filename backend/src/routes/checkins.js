@@ -439,7 +439,7 @@ router.get('/compliance-report/:enrollmentId', authRequired, async (req, res) =>
 
     const records = await db.all(
       `SELECT status, checked_in_at FROM checkin_records
-       WHERE enrollment_id = ? ORDER BY checked_in_at ASC`,
+       WHERE enrollment_id = ? ORDER BY checked_in_at ASC LIMIT 1000`,
       [eid]
     ).catch(() => []);
 
@@ -490,7 +490,7 @@ router.get('/family-contacts', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const contacts = await db.all(
-      'SELECT * FROM family_contacts WHERE user_id = ? ORDER BY created_at ASC',
+      'SELECT * FROM family_contacts WHERE user_id = ? ORDER BY created_at ASC LIMIT 100',
       [req.user.id]
     ).catch(() => []);
     res.json({ contacts });

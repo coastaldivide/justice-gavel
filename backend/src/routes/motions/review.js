@@ -1,4 +1,5 @@
-import { requireAi, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { anthropicFetch } from '../../services/aiClient.js';
+import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
 /**
  * motions/review.js — Motion status updates and AI quality review
  */
@@ -78,7 +79,7 @@ ${draft.slice(0, 6000)}
 
 Respond ONLY with the JSON object. No other text.`;
 
-    const response = await fetch(ANTHROPIC_MESSAGES_URL, {
+    const response = await anthropicFetch({
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -91,7 +92,7 @@ Respond ONLY with the JSON object. No other text.`;
         max_tokens:  800,
         messages: [{ role: 'user', content: REVIEW_PROMPT }],
       }),
-    });
+    }, { route: 'motions_review' });
     const data = await response.json();
     const raw  = data.content?.[0]?.text || '{}';
     let result;

@@ -184,7 +184,7 @@ router.get('/:id', authRequired, async (req, res) => {
 
     // Load execution status
     const signers = await db.all(
-      'SELECT signer_name, signer_email, status, signed_at FROM contract_executions WHERE contract_id=?',
+      'SELECT signer_name, signer_email, status, signed_at FROM contract_executions WHERE contract_id=? LIMIT 100',
       [row.id]
     ).catch(() => []);
 

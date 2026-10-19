@@ -10,7 +10,8 @@ import { CLAUDE_MODEL } from '../../utils/ai.js';
  * detectLawyerHandoff()   — detect when user should be referred to a human attorney
  * classifyIntent()        — classify message intent for routing
  */
-import { API_URLS, safeJson } from '../../utils/routeHelpers.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { anthropicFetch } from '../../services/aiClient.js';
 import logger               from '../../utils/logger.js';
 import { randomUUID }       from 'crypto';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
@@ -132,28 +133,17 @@ export async function callClaude(opts) {
   const maxTokens   = isDefender ? 1500 : 600;  // defenders get fuller responses
   const temperature = isDefender ? 0.3  : 0.4;  // defenders: precise; consumers: conversational
 
-  const _chatAC = new AbortController();
-  const _chatTO = setTimeout(() => _chatAC.abort(), 45_000);
-  let response;
-  try {
-    response = await fetch(API_URLS.ANTHROPIC, {
-      signal: _chatAC.signal,
-    method: 'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
-      'anthropic-version': '2023-06-01',
-    },
+  // Timeout (45 s), transient-failure retries, budget check and metering:
+  // services/aiClient.js.
+  const response = await anthropicFetch({
     body: JSON.stringify({
       model:       CLAUDE_MODEL,
       max_tokens:  maxTokens,
       temperature,
       system:      systemPrompt,
       messages,
-    })
-  });
-
-  } finally { clearTimeout(_chatTO); }
+    }),
+  }, { route: isDefender ? 'chat_defender' : 'chat', userId: opts.userId ?? null, timeoutMs: 45_000 });
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');

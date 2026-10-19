@@ -303,7 +303,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
        FROM time_entries te
        LEFT JOIN users u ON u.id = te.user_id
        WHERE te.matter_id=? AND ${scope.sql}
-       ORDER BY te.entry_date DESC, te.created_at DESC`,
+       ORDER BY te.entry_date DESC, te.created_at DESC LIMIT 1000`,
       [matterId, scope.val]
     );
 

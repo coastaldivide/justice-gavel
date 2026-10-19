@@ -1,4 +1,5 @@
 import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
+import { sdkMessagesCreate } from './aiClient.js';
 /**
  * services/questionExplainer.js — AI explanation pipeline via BullMQ
  * [I-04]
@@ -11,14 +12,11 @@ import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
  *  - All generations logged to ai_usage_log for cost tracking
  */
 
-import Anthropic    from '@anthropic-ai/sdk';
 import { Queue, Worker } from 'bullmq';
 import Redis        from 'ioredis';
 import { db }       from '../db/index.js';
 import logger       from '../utils/logger.js';
 
-let _anthropic = null;
-const anthropicClient = () => (_anthropic ||= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }));
 const CLAUDE = CLAUDE_MODEL;
 // BullMQ needs its own ioredis connection with maxRetriesPerRequest: null
 const connection = (process.env.REDIS_URL && process.env.NODE_ENV !== 'test')
@@ -65,8 +63,15 @@ export async function getExplanation(questionId, userId) {
     return { explanation: q.explanation ?? null, status: 'generating' };
   } else {
     // Synchronous fallback (no Redis)
-    const result = await generateExplanation(q, questionId, userId);
-    return { explanation: result, status: 'cached' };
+    try {
+      const result = await generateExplanation(q, questionId, userId);
+      return { explanation: result, status: 'cached' };
+    } catch (e) {
+      // Daily AI budget reached (or provider down): the curated explanation still helps.
+      if (e?.code !== 'ai_budget_exceeded' && !(e?.status >= 500)) throw e;
+      logger.warn({ err: e.message, questionId }, '[explainer] AI unavailable — serving the static explanation');
+      return { explanation: q.explanation ?? null, status: q.explanation ? 'static' : 'unavailable' };
+    }
   }
 }
 
@@ -102,18 +107,16 @@ Provide:
 
 Be concise and bar-exam focused. Cite the specific rule, statute, or case.`;
 
-  const t0  = Date.now();
-  const res = await anthropicClient().messages.create({
+  // Budget check, timeout/retries and metering (ai_usage_log): aiClient.
+  const res = await sdkMessagesCreate({
     model:      CLAUDE,
     max_tokens: 600,
     system:     'You are a bar exam expert. Give precise, cited explanations. No fluff.',
     messages:   [{ role: 'user', content: prompt }],
-  });
+  }, { route: 'bar_explain', userId });
 
   const explanation = res.content[0]?.text ?? '';
-  const inputTok    = res.usage.input_tokens;
-  const outputTok   = res.usage.output_tokens;
-  const costUsd     = (inputTok * 0.000003) + (outputTok * 0.000015);
+  const costUsd     = res._cost_usd ?? 0;
 
   // Store permanently in DB
   await db.run(
@@ -122,13 +125,6 @@ Be concise and bar-exam focused. Cite the specific rule, statute, or case.`;
      WHERE id = ?`,
     [explanation, questionId]
   );
-
-  // Log cost
-  await db.run(
-    `INSERT INTO ai_usage_log (user_id, route, model, input_tokens, output_tokens, cost_usd, duration_ms, status, completed_at)
-     VALUES (?, 'bar_explain', ?, ?, ?, ?, ?, 'completed', NOW())`,
-    [userId, CLAUDE, inputTok, outputTok, costUsd, Date.now() - t0]
-  ).catch(() => {});
 
   logger.info({ msg: '[explainer] generated', questionId, cost_usd: costUsd.toFixed(6) });
   return explanation;

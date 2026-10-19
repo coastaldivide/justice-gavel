@@ -1,4 +1,5 @@
-import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { anthropicFetch } from '../../services/aiClient.js';
+import { CLAUDE_MODEL } from '../../utils/ai.js';
 
 // UPL compliance: all AI responses include disclaimer metadata
  // ~12,500 words — covers any motion
@@ -138,8 +139,7 @@ GENERAL REQUIREMENTS:
 
 Generate the complete motion now:`;
 
-  const ANTHROPIC_URL = ANTHROPIC_MESSAGES_URL;
-  const res = await fetch(ANTHROPIC_URL, {
+  const res = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -152,7 +152,7 @@ Generate the complete motion now:`;
       max_tokens: isAppellatMotion ? 8000 : 2000, // appellate briefs need more room
       messages:   [{ role: 'user', content: prompt }],
     }),
-  });
+  }, { route: 'motions_generate' });
 
   if (!res.ok) {
     const err = await res.text();

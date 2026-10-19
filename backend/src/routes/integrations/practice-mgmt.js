@@ -14,6 +14,7 @@
  * PracticePanther: https://www.practicepanther.com/api
  */
 
+import { fetchWithTimeout } from '../../utils/http.js';
 import { Router }     from 'express';
 import { getDb }      from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
@@ -45,7 +46,7 @@ async function pmRequest(conn, method, path, body = null) {
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const resp = await fetch(`${base}${path}`, opts);
+  const resp = await fetchWithTimeout(`${base}${path}`, opts);
   if (!resp.ok) {
     const err = await resp.text().catch(() => '');
     throw new Error(`${conn.provider} API ${resp.status}: ${err.slice(0, 200)}`);

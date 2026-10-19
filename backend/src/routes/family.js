@@ -13,7 +13,7 @@ router.get('/contacts', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const contacts = await db.all(
-      'SELECT * FROM family_contacts WHERE user_id = ? ORDER BY created_at ASC',
+      'SELECT * FROM family_contacts WHERE user_id = ? ORDER BY created_at ASC LIMIT 100',
       [req.user.id]
     ).catch(() => []);
     res.json({ contacts });

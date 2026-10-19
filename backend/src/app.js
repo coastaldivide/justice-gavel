@@ -10,7 +10,7 @@ import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
 import * as Sentry from '@sentry/node';
 import hagueContactsRouter  from './routes/hague_contacts.js';
-import logger from './utils/logger.js';
+import logger, { runWithRequestContext } from './utils/logger.js';
 import { APP_VERSION } from './utils/version.js';
 import express from 'express';
 import helmet      from 'helmet';
@@ -90,6 +90,7 @@ import { stripeConfigured } from './config.js';
 import { aiConfigured } from './utils/ai.js';
 import { getDb } from './db/index.js';
 import { createDbHealthCheck } from './utils/healthCheck.js';
+import { idempotency, IDEMPOTENT_POST_PATHS } from './middleware/idempotency.js';
 
 
 // NOTE: Sentry is initialised once in ./instrument.js (imported first by
@@ -128,7 +129,8 @@ app.use((req, res, next) => {
   req.id = id;
   req.requestId = id;
   res.setHeader('X-Request-ID', id);
-  next();
+  // Everything logged while this request is handled carries its request_id.
+  runWithRequestContext({ requestId: id, method: req.method }, next);
 });
 
 // ── CORS — one configuration ──────────────────────────────────────────────────
@@ -173,7 +175,7 @@ const corsMiddleware = cors({
   origin: true,          // reflect — disallowed origins were rejected above
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  exposedHeaders: ['X-Request-ID'],
+  exposedHeaders: ['X-Request-ID', 'Idempotent-Replayed'],
   maxAge: 86400,
 });
 app.use(corsMiddleware);
@@ -258,6 +260,11 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // ── HTTP Parameter Pollution protection ──────────────────────────────────────
 app.use(hpp());
+
+// ── Idempotency-Key on the create endpoints the app calls ────────────────────
+// A retried POST (dropped connection, double submit) replays the first
+// response instead of creating a duplicate. See middleware/idempotency.js.
+app.post(IDEMPOTENT_POST_PATHS, idempotency());
 
 // ── Global rate limit ─────────────────────────────────────────────────────────
 const limiter = rateLimit({
@@ -513,6 +520,7 @@ app.use((err, req, res, _next) => {
       error:   message,
       status,
       path:    req.path,
+      request_id: req.id,
       ...(IS_PROD ? {} : { stack: err.stack?.split('\n').slice(0, 4) }),
     });
   }

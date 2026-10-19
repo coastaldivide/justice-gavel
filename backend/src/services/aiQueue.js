@@ -1,4 +1,5 @@
-import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
+import { sdkMessagesCreate } from './aiClient.js';
 /**
  * services/aiQueue.js — BullMQ job queue for AI (Claude) calls
  *
@@ -18,10 +19,8 @@ import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
 
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import Anthropic from '@anthropic-ai/sdk';
 import { randomUUID } from 'crypto';
 import logger from '../utils/logger.js';
-import { db } from '../db/index.js';
 
 // ── Redis connection for BullMQ ─────────────────────────────────────────────
 // BullMQ requires an ioredis instance with maxRetriesPerRequest: null (blocking
@@ -48,17 +47,8 @@ export const aiDocumentQueue = connection ? new Queue('ai-document',      { conn
 export const aiMotionQueue   = connection ? new Queue('ai-motion-gen',    { connection }) : null;
 export const barVerifyQueue  = connection ? new Queue('bar-verification', { connection }) : null;
 
-// Anthropic client is created lazily — the SDK throws if constructed without a key.
-let _anthropic = null;
-function anthropicClient() {
-  if (!aiConfigured()) {
-    const e = new Error('AI provider not configured (ANTHROPIC_API_KEY missing)');
-    e.status = 503; e.code = 'ai_unavailable';
-    throw e;
-  }
-  if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return _anthropic;
-}
+// The Anthropic SDK client (lazy, 503 ai_unavailable without a key, timeout
+// and retry policy) lives in services/aiClient.js.
 
 // ── In-process job store ────────────────────────────────────────────────────
 // Routes enqueue closures: enqueueAIJob('chat', async () => {...}, userId).
@@ -172,24 +162,17 @@ export async function executeAIJob(type, payload, userId) {
   const t0 = Date.now();
 
   try {
-    const response = await anthropicClient().messages.create({
+    // Budget check, timeout/retries and metering (ai_usage_log): aiClient.
+    const response = await sdkMessagesCreate({
       model:      CLAUDE_MODEL,
       max_tokens: maxTokens,
       system:     systemPrompt ?? 'You are a legal information assistant. Provide accurate legal information, not legal advice.',
       messages:   [{ role: 'user', content: prompt }],
-    });
+    }, { route: `queue_${type}`, userId: userId ?? null });
 
     const content     = response.content[0]?.text ?? '';
-    const inputTokens = response.usage.input_tokens;
-    const outputTokens= response.usage.output_tokens;
-    const costUsd     = (inputTokens * 0.000003) + (outputTokens * 0.000015);
+    const costUsd     = response._cost_usd ?? 0;
     const durationMs  = Date.now() - t0;
-
-    await db.run(
-      `INSERT INTO ai_usage_log (user_id, endpoint, model, input_tokens, output_tokens, cost_usd)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId ?? null, type, CLAUDE_MODEL, inputTokens, outputTokens, costUsd]
-    ).catch(e => logger.warn('[ai_queue] usage log failed:', e.message));
 
     return { content, job_id: null, status: 'completed', cost_usd: costUsd, duration_ms: durationMs };
 

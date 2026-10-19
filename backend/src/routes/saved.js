@@ -22,7 +22,7 @@ router.get('/lawyers', authRequired, async (req, res) => {
       `SELECT id, user_id, provider_id, name, phone, address, specialties,
               rating, notes, saved_at, gavel_level, golden_gavel,
               bar_verified, jtb_verified
-       FROM saved_lawyers WHERE user_id = ? ORDER BY saved_at DESC`,
+       FROM saved_lawyers WHERE user_id = ? ORDER BY saved_at DESC LIMIT 200`,
       [req.user.id]
     );
     return res.json(lawyers.map(l => ({
@@ -66,6 +66,12 @@ router.post('/lawyers', authRequired, savedLimiter, async (req, res) => {
     );
     return res.status(201).json({ saved: true, id: r.lastID });
   } catch (e) {
+    // Two taps raced past the check above: the unique index
+    // (uq_saved_lawyers_user_provider) kept one row — answer like a re-save.
+    if (e?.code === '23505' && provider_id) {
+      const row = await (await getDb()).get('SELECT id FROM saved_lawyers WHERE user_id=? AND provider_id=?', [req.user.id, provider_id]).catch(() => null);
+      if (row) return res.status(201).json({ already_saved: true, id: row.id });
+    }
     logger.error({ msg: '[saved]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 

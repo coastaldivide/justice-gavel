@@ -339,7 +339,7 @@ router.get('/log/:table/:id' /* intentional: safeTable allowlist validates table
   try {
     const db = await openDb();
     const rows = await db.all(
-      'SELECT id, table_name, record_id, field, old_value, new_value, source, changed_at FROM provider_update_log WHERE table_name = ? AND record_id = ? ORDER BY changed_at DESC',
+      'SELECT id, table_name, record_id, field, old_value, new_value, source, changed_at FROM provider_update_log WHERE table_name = ? AND record_id = ? ORDER BY changed_at DESC LIMIT 500',
       [req.params.table, safeInt(req.params.id)]
     );
     res.json(rows);

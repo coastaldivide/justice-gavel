@@ -1,7 +1,8 @@
+import { anthropicFetch } from '../services/aiClient.js';
 import { isStaff } from '../utils/staff.js';
 import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
-import { asyncRoute, err400, err404, safeInt, API_URLS } from '../utils/routeHelpers.js';
+import { asyncRoute, err400, err404, safeInt } from '../utils/routeHelpers.js';
 /**
  * research.js — AI Legal Research ($49/mo add-on)
  *
@@ -125,7 +126,7 @@ async function callResearch(history, query) {
     { role: 'user', content: query },
   ];
 
-  const res = await fetch(API_URLS.ANTHROPIC, {
+  const res = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -140,7 +141,7 @@ async function callResearch(history, query) {
       system:     RESEARCH_SYSTEM,
       messages,
     }),
-  });
+  }, { route: 'research' });
 
   if (!res.ok) throw new Error(`Claude error ${res.status}`);
   const data = await res.json();
@@ -249,7 +250,7 @@ router.get('/session/:id', authRequired, async (req, res) => {
     );
     if (!sess) return err404(res, 'Session not found');
     const messages = await db.all(
-      'SELECT id, session_id, role, content, created_at FROM research_messages WHERE session_id=? ORDER BY created_at ASC',
+      'SELECT id, session_id, role, content, created_at FROM research_messages WHERE session_id=? ORDER BY created_at ASC LIMIT 500',
       [safeInt(req.params.id)]
     );
     res.json({ ...sess, messages });

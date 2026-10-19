@@ -84,7 +84,7 @@ router.get('/:id/signers', authRequired, async (req, res) => {
     if (!contract) return err404(res, 'Contract not found.');
 
     const signers = await db.all(
-      'SELECT signer_name, signer_email, status, signed_at, signature_method FROM contract_executions WHERE contract_id=? ORDER BY signed_at ASC',
+      'SELECT signer_name, signer_email, status, signed_at, signature_method FROM contract_executions WHERE contract_id=? ORDER BY signed_at ASC LIMIT 100',
       [contract.id]
     );
     res.json(signers);
@@ -107,7 +107,7 @@ router.get('/expiring', authRequired, async (req, res) => {
          AND expiry_date IS NOT NULL
          AND expiry_date > CURRENT_DATE
          AND expiry_date <= (CURRENT_DATE + (? || ' days')::interval)
-       ORDER BY expiry_date ASC`,
+       ORDER BY expiry_date ASC LIMIT 200`,
       [req.user.id, days]
     );
 

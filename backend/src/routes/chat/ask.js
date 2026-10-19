@@ -103,7 +103,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
     const jobId = await enqueue('chat', async () => {
       const r = await callClaude({
         history, newMessage: trimmedMsg, locationContext,
-        mode, caseContext, user_state, user_state_name,
+        mode, caseContext, user_state, user_state_name, userId: req.user.id,
       });
       await saveMessage(db, sessionId, 'user',      trimmedMsg, req.user.id).catch(() => {});
       await saveMessage(db, sessionId, 'assistant', r,          req.user.id).catch(() => {});

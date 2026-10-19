@@ -132,7 +132,7 @@ router.post('/pi-lead/accept/:id', billingLimiter, authRequired, requireLeadAtto
       [lead.id, req.user.id]).catch(() => {});
 
     const Stripe = (await import('stripe')).default;
-    const stripe = new Stripe(stripeKey);
+    const stripe = new Stripe(stripeKey, { timeout: 20_000, maxNetworkRetries: 2 });
     let pi;
     try {
       pi = await stripe.paymentIntents.create(

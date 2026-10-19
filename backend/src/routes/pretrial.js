@@ -60,7 +60,7 @@ router.get('/compliance-report/:defendant_id', authRequired, staffOnly, asyncRou
     FROM checkins
     WHERE user_id = ?
       AND created_at BETWEEN ? AND ?
-    ORDER BY created_at DESC
+    ORDER BY created_at DESC LIMIT 1000
   `, [defendant_id, from_date ?? '2020-01-01', to_date ?? new Date().toISOString()]);
 
   const total    = checkins.length;

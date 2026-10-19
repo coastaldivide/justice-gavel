@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from '../../utils/http.js';
 import { safeJson, err403, err404, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
 /**
  * routes/integrations/caldav.js — CalDAV Calendar Push Integration
@@ -177,7 +178,7 @@ async function caldavPut(conn, uid, ical) {
   // calendar_url / instance_url are firm-supplied (SSRF, H9 class).
   const urlErr = await publicUrlError(resourceUrl);
   if (urlErr) throw new Error(`Calendar URL rejected: ${urlErr}`);
-  const resp = await fetch(resourceUrl, {
+  const resp = await fetchWithTimeout(resourceUrl, {
     redirect: 'manual',
     method: 'PUT',
     headers: {
@@ -211,7 +212,7 @@ async function caldavDelete(conn, href) {
   // href may come from a server's Location header — check it like any user URL.
   const urlErr = await publicUrlError(href);
   if (urlErr) throw new Error(`Calendar URL rejected: ${urlErr}`);
-  const resp = await fetch(href, {
+  const resp = await fetchWithTimeout(href, {
     redirect: 'manual',
     method: 'DELETE',
     headers: { 'Authorization': authHeader },
@@ -418,7 +419,7 @@ router.get('/events', authRequired, requireFirmRole('partner'), async (req, res)
        LEFT JOIN docket_entries de ON de.id = cpe.docket_entry_id
        LEFT JOIN integration_connections ic ON ic.id = cpe.connection_id
        WHERE ic.firm_id=?
-       ORDER BY cpe.dtstart ASC`,
+       ORDER BY cpe.dtstart ASC LIMIT 500`,
       [ctx?.firm_id]
     ).catch(() => []);
 

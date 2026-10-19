@@ -1,4 +1,5 @@
-import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { anthropicFetch } from '../../services/aiClient.js';
+import { CLAUDE_MODEL } from '../../utils/ai.js';
 import { safeJson } from '../../utils/routeHelpers.js';
 /**
  * discovery/_helpers.js — File type validation, AI analysis, DB schema
@@ -217,7 +218,7 @@ export async function analyzeDocument(file, filename = 'document', docType = '',
 If a field is not visible in the document, use an empty string. Do not guess.`;
 
     const fileBlocks = await buildContentBlocks(file);
-    const res = await fetch(ANTHROPIC_MESSAGES_URL, {
+    const res = await anthropicFetch({
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': (process.env.ANTHROPIC_API_KEY ?? ''), 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
@@ -226,7 +227,7 @@ If a field is not visible in the document, use an empty string. Do not guess.`;
         max_tokens: 600,
         messages: [{ role: 'user', content: [...fileBlocks, { type: 'text', text: intakePrompt }] }],
       }),
-    });
+    }, { route: 'discovery' });
     if (!res.ok) throw new Error(`Claude error ${res.status}`);
     const data = await res.json();
     const raw  = data.content?.[0]?.text || '{}';
@@ -297,7 +298,7 @@ Rules:
   // Build content blocks based on file type
   const fileBlocks = await buildContentBlocks(file);
 
-  const res = await fetch(ANTHROPIC_MESSAGES_URL, {
+  const res = await anthropicFetch({
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -315,7 +316,7 @@ Rules:
         ],
       }],
     }),
-  });
+  }, { route: 'discovery' });
 
   if (!res.ok) {
     const err = await res.text();

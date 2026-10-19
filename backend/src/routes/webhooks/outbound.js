@@ -294,7 +294,7 @@ router.get('/subscriptions', authRequired, requireFirmRole('partner'), async (re
 
     const rows = await db.all(
       `SELECT id, name, url, events, active, last_triggered_at, failure_count, created_at
-       FROM webhook_subscriptions WHERE firm_id=? ORDER BY created_at DESC`,
+       FROM webhook_subscriptions WHERE firm_id=? ORDER BY created_at DESC LIMIT 100`,
       [ctx.firm_id]
     );
 

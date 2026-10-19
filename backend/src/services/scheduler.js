@@ -513,6 +513,8 @@ async function cleanupExpiredTokens() {
       `DELETE FROM refresh_tokens WHERE expires_at < NOW() OR used = 1`
     );
     logger.info('[scheduler] token cleanup:', result?.changes, 'rows removed');
+    const { purgeExpiredIdempotencyKeys } = await import('../middleware/idempotency.js');
+    await purgeExpiredIdempotencyKeys(db).catch(e => logger.warn('[scheduler] idempotency-key purge failed:', e?.message));
   } catch (err) {
     logger.error('[scheduler] token cleanup failed:', err?.message);
   }

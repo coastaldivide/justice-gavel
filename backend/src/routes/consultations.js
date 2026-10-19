@@ -52,7 +52,7 @@ function _parseTime(slot) {
 
 const router = Router();
 const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
-const stripe    = stripeKey ? new Stripe(stripeKey) : null;
+const stripe    = stripeKey ? new Stripe(stripeKey, { timeout: 20_000, maxNetworkRetries: 2 }) : null;
 const LIVE      = !!stripeKey;
 
 // Platform fee by duration
@@ -160,7 +160,7 @@ router.get('/slots/:lawyerId', slotsLimiter, async (req, res) => {
     const booked = await db.all(
       `SELECT date_slot, time_slot FROM consultation_bookings
        WHERE lawyer_id = ? AND status NOT IN ('cancelled')
-         AND date_slot >= CURRENT_DATE`,
+         AND date_slot >= CURRENT_DATE LIMIT 500`,
       [lawyerId]
     ).catch(() => []);
 
