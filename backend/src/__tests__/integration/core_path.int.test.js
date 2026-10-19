@@ -97,13 +97,15 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(r.status).toBe(200);
     expect(r.body.state).toBe('TN');
     expect(r.body.general).toHaveLength(8);
-    expect(r.body.state_specific.length).toBeGreaterThan(0);
-    for (const s of [...r.body.general, ...r.body.state_specific]) {
+    // the built-in state notes are unreviewed (no citation, no reviewer): never shown
+    expect(r.body.state_specific).toEqual([]);
+    for (const s of r.body.general) {
       expect(s.source).toEqual(expect.any(String));
       expect(s.last_reviewed).toBe('2026-04');
       expect(s.lawyer_reviewed).toBe(false);
     }
-    expect(r.body.state_notice).toBeNull();
+    expect(r.body.state_notice).toBe("State-specific details for Tennessee haven't been reviewed yet — ask a local lawyer or public defender.");
+    expect(JSON.stringify(r.body)).not.toMatch(/T\.C\.A\.|You must provide your name/);
     expect(r.body.script.say.map(x => x.text)).toContain('I am invoking my right to remain silent.');
     expect(JSON.stringify(r.body)).not.toMatch(/10\s?%/);          // no unsourced bail-fee estimate
     const general = await ctx.request().get('/api/rights/US');
@@ -112,15 +114,15 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect((await ctx.request().get('/api/rights/ZZ')).status).toBe(400);
   });
 
-  it('1: a state without sourced notes gets the general card + "not yet available"', async () => {
+  it('1: a state without reviewed notes gets the general card + "haven\'t been reviewed yet"', async () => {
     const r = await ctx.request().get('/api/rights/PR');
     expect(r.status).toBe(200);
     expect(r.body.general).toHaveLength(8);
     expect(r.body.state_specific).toEqual([]);
-    expect(r.body.state_notice).toBe('State-specific details not yet available for Puerto Rico.');
+    expect(r.body.state_notice).toBe("State-specific details for Puerto Rico haven't been reviewed yet — ask a local lawyer or public defender.");
     const states = await ctx.request().get('/api/rights/states');
     expect(states.body.states.find(s => s.code === 'PR').state_specific_available).toBe(false);
-    expect(states.body.states.find(s => s.code === 'TN').state_specific_available).toBe(true);
+    expect(states.body.states.find(s => s.code === 'TN').state_specific_available).toBe(false);
   });
 
   it('1: a rights_cards row WITH a source replaces the bundled section; one without a source is never shown', async () => {
@@ -134,6 +136,9 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
       body: 'JGTEST reviewed text', source: 'JGTEST Tenn. Code citation', last_reviewed: '2026-09-01', lawyer_reviewed: true,
     }));
     expect(JSON.stringify(r.body)).not.toContain('must not show');
+    expect(r.body.state_notice).toBeNull();
+    const states = await ctx.request().get('/api/rights/states');
+    expect(states.body.states.find(x => x.code === 'TN').state_specific_available).toBe(true);
     await ctx.db.run(`DELETE FROM rights_cards WHERE source LIKE 'JGTEST%' OR topic LIKE 'jgtest%'`);
   });
 
@@ -382,12 +387,13 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(mine).toEqual({ status: 'scheduled', deleted_at: null });
   });
 
-  it('3: fallback chain — no device → SMS when Twilio is configured and the user opted in; otherwise logged e-mail', async () => {
+  it('3: fallback chain — no device → SMS when Twilio is configured and the user opted in; otherwise undeliverable', async () => {
     const r = await ctx.request().post('/api/court-dates').set(dave.headers).send({ case_title: 'Dave case', court_date: dayPlus(6) });
     const pick = async () => (await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [r.body.id])).id;
-    // Twilio not configured → texts are skipped cleanly; logged e-mail
+    // Twilio not configured → texts are skipped cleanly; no e-mail provider → undeliverable (never "sent")
     const noSms = await deliverNow(await pick());
-    expect(noSms).toEqual(expect.objectContaining({ status: 'sent', channel: 'email_log_only' }));
+    expect(noSms).toEqual(expect.objectContaining({ status: 'undeliverable', channel: null }));
+    expect(noSms.error).toMatch(/sms_not_configured/);
     // configured, opted in
     Object.assign(process.env, {
       TWILIO_ACCOUNT_SID: 'ACjgtest', TWILIO_AUTH_TOKEN: 'secret', TWILIO_FROM_NUMBER: '+16155550000',
@@ -405,7 +411,8 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     // opted out → back to e-mail
     await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: false });
     const optedOut = await deliverNow(await pick());
-    expect(optedOut.channel).toBe('email_log_only');
+    expect(optedOut.status).toBe('undeliverable');
+    expect(optedOut.error).toMatch(/sms_not_opted_in/);
     for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
   });
 
@@ -455,8 +462,9 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     const rem2 = await ctx.db.get(`SELECT COUNT(*) AS n FROM scheduled_pushes WHERE user_id = ? AND court_date_id = ? AND notification_type = 'follower_court_reminder' AND status = 'pending'`, [carol.user.id, later.body.id]);
     expect(Number(rem2.n)).toBe(4);
     const one = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE user_id = ? AND notification_type = 'follower_court_reminder' AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [carol.user.id]);
+    await ctx.request().post('/api/push/token').set(carol.headers).send({ token: 'ExponentPushToken[core-path-carol]' });
     const sent = await deliverNow(one.id);
-    expect(sent.status).toBe('sent');
+    expect(sent).toEqual(expect.objectContaining({ status: 'sent', channel: 'push' }));
   });
 
   it('4: the follower cannot reach anything else of the case (no notes, events, messages, court-date edits)', async () => {

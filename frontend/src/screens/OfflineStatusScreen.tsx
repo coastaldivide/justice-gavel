@@ -15,7 +15,7 @@ const OFFLINE_FEATURES: { icon: string; label: string; hint: string; screen: str
   { icon: '📋', label: 'Know Your Rights Card', hint: 'Your rights during a stop or arrest',     screen: 'RightsCard' },
   { icon: '⏰', label: 'Deadline Calculator',   hint: 'Arraignment, appeal and filing deadlines', screen: 'DeadlineCalculator' },
   { icon: '🚨', label: 'Just Arrested guide',   hint: 'Step-by-step: what to do right now',      screen: 'JustArrested' },
-  { icon: '💰', label: 'Bail Calculator',       hint: 'Estimate bail and bond premiums',          screen: 'BailCalculator' },
+  { icon: '💰', label: 'Bail Calculator',       hint: 'Typical bail ranges by state',             screen: 'BailCalculator' },
   { icon: '📁', label: 'My Cases',              hint: 'Saved cases sync when you reconnect',     screen: 'Cases' },
 ];
 

@@ -187,14 +187,17 @@ async function coreJourney(browser, base) {
     const src = await byTid(page, 'core-script-source').innerText();
     if (!/Source:.*Last reviewed: April 2026/.test(src)) throw new Error(`script source line: "${src}"`);
     await byTid(page, 'core-open-rights-card').click();
-    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 15000 });
+    // unreviewed state notes are never shown: the review-pending notice instead
+    await byTid(page, 'rights-state-notice').filter({ hasText: /Tennessee haven't been reviewed yet/ }).first().waitFor({ timeout: 15000 });
+    if (await byTid(page, 'rights-state-section').count()) throw new Error('an unreviewed state section is shown');
+    if (/You must provide your name|T\.C\.A\./.test(await bodyText(page))) throw new Error('unreviewed state note text on the rights card');
     const sources = await byTid(page, 'rights-source').count();
-    const sections = await byTid(page, 'rights-section').count() + await byTid(page, 'rights-state-section').count();
-    if (sources < sections || sections < 9) throw new Error(`${sections} sections but ${sources} source lines`);
+    const sections = await byTid(page, 'rights-section').count();
+    if (sources < sections || sections < 8) throw new Error(`${sections} sections but ${sources} source lines`);
     const txt = await bodyText(page);
     if (/Subscribe|10%/.test(txt)) throw new Error('paywall or unsourced fee text on the rights card');
     await page.screenshot({ path: path.join(OUT, 'CORE-2-rights-TN.png') });
-    return `${sections} sections for Tennessee, each with source + last reviewed; no paywall`;
+    return `${sections} general sections, each with source + last reviewed; Tennessee notes pending review; no paywall`;
   });
 
   if (ok) ok = await step('3 combined lawyer + bail results with a filter', async () => {
@@ -346,14 +349,15 @@ async function coreJourney(browser, base) {
     await page.goto(base + '/emergency-share', { waitUntil: 'networkidle' });
     await page.getByText('6155550101').first().waitFor({ timeout: 15000 });
     await page.goto(base + '/rights', { waitUntil: 'networkidle' });
-    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 15000 });
+    await byTid(page, 'rights-state-notice').filter({ hasText: /Tennessee haven't been reviewed yet/ }).first().waitFor({ timeout: 15000 });
     await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
     await byTid(page, 'court-date-row').first().waitFor({ timeout: 15000 });
     if (process.env.JOURNEY_DEBUG) console.log('OFFLINE ON');
     await context.setOffline(true);
     await spaGo(page, '/rights');
     await byTid(page, 'rights-offline').waitFor({ timeout: 15000 });
-    await page.getByText(/^Tennessee: /).first().waitFor({ timeout: 5000 });
+    await byTid(page, 'rights-state-notice').filter({ hasText: /Tennessee haven't been reviewed yet/ }).first().waitFor({ timeout: 5000 });
+    await byTid(page, 'rights-section').first().waitFor({ timeout: 5000 });
     await page.screenshot({ path: path.join(OUT, 'CORE-12-offline-rights.png') });
     await spaGo(page, '/court-dates');
     await byTid(page, 'court-dates-offline').waitFor({ timeout: 15000 });

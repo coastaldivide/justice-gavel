@@ -35,11 +35,8 @@ router.get('/dashboard', authRequired, bondsmanLimiter, asyncRoute(async (req, r
       SELECT
         COUNT(*) FILTER (WHERE status = 'closed')      AS leads_closed,
         SUM(bail_amount) FILTER (WHERE status='closed') AS bail_secured,
-        SUM(fee_charged)                               AS total_fees_paid,
-        -- ROI: bondsman makes 10% of bail on close
-        SUM(bail_amount * 0.10) FILTER (WHERE status='closed') AS gross_revenue,
-        SUM(bail_amount * 0.10) FILTER (WHERE status='closed')
-          - SUM(fee_charged) FILTER (WHERE status='closed')    AS net_revenue
+        SUM(fee_charged)                               AS total_fees_paid
+        -- No revenue estimate: there is no sourced premium rate (agents set their own fees).
       FROM pi_leads
       WHERE bondsman_id = ? AND created_at > NOW() - INTERVAL '30 days'
     `, [userId]),
@@ -68,9 +65,7 @@ router.get('/dashboard', authRequired, bondsmanLimiter, asyncRoute(async (req, r
       revenue: {
         ...revenue,
         conversion_rate_pct: conversionRate,
-        roi_multiple: revenue.total_fees_paid > 0
-          ? ((revenue.net_revenue ?? 0) / revenue.total_fees_paid).toFixed(2)
-          : null,
+        roi_multiple: null,   // needs the agent's own fee data; no assumed rate
       },
       recent_leads: recent,
       generated_at: new Date().toISOString(),

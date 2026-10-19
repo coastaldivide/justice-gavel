@@ -7,22 +7,27 @@
  * GET /api/rights/:state?lang=  — general (federal) sections + the state's
  *                                 sourced sections + the 30-second script.
  *                                 Every section has source + last_reviewed.
- *                                 Unknown code → 400; known code without
- *                                 state notes → general + state_notice.
+ *                                 State sections only when cited / reviewed;
+ *                                 otherwise general + state_notice ("haven't
+ *                                 been reviewed yet"). Unknown code → 400.
  */
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { apiLimiter } from '../middleware/rateLimiters.js';
 import logger from '../utils/logger.js';
-import { STATE_NAMES, STATE_RIGHTS, getRightsCard, normalizeState } from '../services/rightsContent.js';
+import { STATE_NAMES, getRightsCard, normalizeState, reviewedStateCodes } from '../services/rightsContent.js';
 
 const router = Router();
 
-router.get('/states', apiLimiter, (_req, res) => {
-  res.setHeader('Cache-Control', 'public, max-age=86400');
+// state_specific_available is true only where a cited / reviewed rights_cards
+// row exists (the built-in summaries are unreviewed and never shown).
+router.get('/states', apiLimiter, async (_req, res) => {
+  const db = await getDb().catch(() => null);
+  const reviewed = await reviewedStateCodes(db);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.json({
     states: Object.entries(STATE_NAMES).map(([code, name]) => ({
-      code, name, state_specific_available: !!STATE_RIGHTS[code],
+      code, name, state_specific_available: reviewed.has(code),
     })),
   });
 });

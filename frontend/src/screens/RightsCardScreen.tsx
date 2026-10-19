@@ -22,7 +22,7 @@ import { RNShare } from '../utils/webCompat';
 import { getUserState, setUserState, STATE_LIST, STATE_NAMES } from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import {
-  fetchRightsCard, getCachedRightsCard, type RightsCardData, type RightsSection,
+  fetchRightsCard, getCachedRightsCard, reviewPendingNotice, type RightsCardData, type RightsSection,
 } from '../services/corePath';
 
 const GENERAL_SOURCES: Record<number, string> = {
@@ -115,7 +115,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
   const stateName = stateCode ? (STATE_NAMES[stateCode] || card?.state_name || stateCode) : '';
   const notice = !stateCode ? t('ja_choose_state')
     : card ? card.state_notice
-      : `State details for ${stateName} load the first time you are online; they are then saved on this phone.`;
+      : reviewPendingNotice(stateName);
 
   const share = async () => {
     const lines = [

@@ -70,6 +70,9 @@ const netErr = () => Promise.reject(Object.assign(new Error('Network error. Plea
 
 const SECTION = (key: string, heading: string, body: string, source: string) =>
   ({ key, topic: key, heading, body, source, source_url: null, last_reviewed: '2026-04', lawyer_reviewed: false, reviewed_by: null });
+const PENDING_TN = "State-specific details for Tennessee haven't been reviewed yet — ask a local lawyer or public defender.";
+// A server card carrying one UNREVIEWED state note (generic source, no URL, no reviewer) — what an
+// old server / an old saved copy looks like. The app must never show it.
 const CARD_TN = {
   state: 'TN', state_name: 'Tennessee', language: 'en', state_specific_available: true, state_notice: null, disclaimer: 'x',
   general: [SECTION('rc_1', '1. RIGHT TO REMAIN SILENT  (5th Amendment)', 'Say clearly…', 'U.S. Constitution, 5th Amendment (as summarized in the Justice Gavel rights card)')],
@@ -101,11 +104,12 @@ describe('JustArrestedScreen — the three-step path', () => {
     expect(screen.getByTestId('core-script-source').props.children.join('')).toMatch(/Source: Summarized from the Justice Gavel rights card.*Last reviewed: April 2026.*Not yet reviewed by a lawyer/);
   });
 
-  it('a state with no sourced notes says so', async () => {
+  it('a state with no reviewed notes says "haven\'t been reviewed yet"', async () => {
     await AsyncStorage.setItem('jg_user_state', 'TN');
-    on('get', '/rights/TN', { ...CARD_TN, state_specific: [], state_notice: 'State-specific details not yet available for Tennessee.' });
+    on('get', '/rights/TN', { ...CARD_TN, state_specific: [], state_notice: PENDING_TN });
     wrap(<JustArrestedScreen navigation={mainNav()} route={{} as any} />);
     expect(await screen.findByTestId('core-state-notice')).toBeTruthy();
+    expect(screen.getByText(new RegExp("Tennessee haven't been reviewed yet"))).toBeTruthy();
   });
 
   it('progress is saved and resumed ("Step 2 of 3"), and step 2 opens the combined results', async () => {
@@ -147,32 +151,46 @@ describe('JustArrestedScreen — the three-step path', () => {
 
 // ── RightsCard ───────────────────────────────────────────────────────────────
 describe('RightsCardScreen — free, sourced, offline', () => {
-  it('online: state sections with sources; no subscription check; copy saved for offline', async () => {
+  it('online: unreviewed state notes are never shown (review-pending notice); no subscription check; copy saved', async () => {
     await AsyncStorage.setItem('jg_user_state', 'TN');
     on('get', '/rights/TN', CARD_TN);
     wrap(<RightsCardScreen navigation={makeNavigation()} route={{} as any} />);
-    expect(await screen.findByText('Tennessee: You must provide your name if lawfully detained.')).toBeTruthy();
+    expect(await screen.findByText(new RegExp("Tennessee haven't been reviewed yet"))).toBeTruthy();
+    expect(screen.queryByText('Tennessee: You must provide your name if lawfully detained.')).toBeNull();
+    expect(screen.queryAllByTestId('rights-state-section')).toHaveLength(0);
     expect(screen.getAllByTestId('rights-section').length).toBe(8);   // full general card (translated bundle)
-    expect(screen.getAllByTestId('rights-source').length).toBeGreaterThanOrEqual(9);
+    expect(screen.getAllByTestId('rights-source').length).toBeGreaterThanOrEqual(8);
     expect(screen.getAllByText(/Last reviewed: April 2026/).length).toBeGreaterThan(0);
     expect(calls.some(c => /billing/.test(c.url))).toBe(false);
     expect(screen.queryByText(/Subscribe/i)).toBeNull();
-    await waitFor(async () => expect(await AsyncStorage.getItem('cache_rights_v1_TN')).toBeTruthy());
+    await waitFor(async () => expect(await AsyncStorage.getItem('cache_rights_v2_TN')).toBeTruthy());
+    expect(await AsyncStorage.getItem('cache_rights_v2_TN')).not.toContain('You must provide your name');
   });
 
-  it('offline: shows the copy saved on this phone with a banner', async () => {
+  it('a cited / reviewed state section IS shown', async () => {
+    await AsyncStorage.setItem('jg_user_state', 'TN');
+    on('get', '/rights/TN', { ...CARD_TN, state_specific: [{ ...CARD_TN.state_specific[0], body: 'Reviewed TN text.', source: 'Tenn. Code Ann. § 40-7-123', reviewed_by: 'A. Lawyer, Esq.', lawyer_reviewed: true }] });
+    wrap(<RightsCardScreen navigation={makeNavigation()} route={{} as any} />);
+    expect(await screen.findByText('Reviewed TN text.')).toBeTruthy();
+    expect(screen.getAllByTestId('rights-state-section')).toHaveLength(1);
+  });
+
+  it('offline: an old saved copy (v1, or a v2 copy with an unreviewed note) never shows the note', async () => {
     await AsyncStorage.setItem('jg_user_state', 'TN');
     await AsyncStorage.setItem('cache_rights_v1_TN', JSON.stringify({ card: CARD_TN, at: '2026-10-01T10:00:00Z' }));
+    await AsyncStorage.setItem('cache_rights_v2_TN', JSON.stringify({ card: CARD_TN, at: '2026-10-01T10:00:00Z' }));
     on('get', '/rights/TN', () => netErr());
     wrap(<RightsCardScreen navigation={makeNavigation()} route={{} as any} />);
     expect(await screen.findByTestId('rights-offline')).toBeTruthy();
-    expect(screen.getByText('Tennessee: You must provide your name if lawfully detained.')).toBeTruthy();
+    expect(screen.queryByText('Tennessee: You must provide your name if lawfully detained.')).toBeNull();
+    expect(screen.getByText(new RegExp("Tennessee haven't been reviewed yet"))).toBeTruthy();
+    expect(screen.getAllByTestId('rights-section').length).toBe(8);
   });
 
-  it('a state without sourced notes: general card + "not yet available"', async () => {
-    on('get', '/rights/PR', { ...CARD_TN, state: 'PR', state_name: 'Puerto Rico', state_specific: [], state_specific_available: false, state_notice: 'State-specific details not yet available for Puerto Rico.' });
+  it('a state without reviewed notes: general card + "haven\'t been reviewed yet"', async () => {
+    on('get', '/rights/PR', { ...CARD_TN, state: 'PR', state_name: 'Puerto Rico', state_specific: [], state_specific_available: false, state_notice: "State-specific details for Puerto Rico haven't been reviewed yet — ask a local lawyer or public defender." });
     wrap(<RightsCardScreen navigation={makeNavigation()} route={{ params: { state: 'PR' } } as any} />);
-    expect(await screen.findByText(/State-specific details not yet available for Puerto Rico/)).toBeTruthy();
+    expect(await screen.findByText(/Puerto Rico haven't been reviewed yet/)).toBeTruthy();
     expect(screen.getAllByTestId('rights-section').length).toBe(8);
   });
 
@@ -180,7 +198,7 @@ describe('RightsCardScreen — free, sourced, offline', () => {
     await AsyncStorage.setItem('jg_user_state', 'GA');
     on('get', '/rights/GA', () => netErr());
     wrap(<RightsCardScreen navigation={makeNavigation()} route={{} as any} />);
-    expect(await screen.findByText(/load the first time you are online/)).toBeTruthy();
+    expect(await screen.findByText(/Georgia haven't been reviewed yet/)).toBeTruthy();
     expect(screen.getAllByTestId('rights-section').length).toBe(8);
     expect(screen.getAllByText(/U\.S\. Constitution, 4th Amendment/).length).toBe(1);
   });
@@ -195,7 +213,7 @@ const P = (over: Record<string, unknown>) => ({
 const RESULT = {
   lawyers: [P({})],
   bail_agents: [P({ id: 9, kind: 'bail_agent', name: 'Fast Bail', organization: null, is_24_7: true, free_consultation: null, license_number: 'TN-42' })],
-  public_defender: { name: 'Tennessee District Public Defenders', phone: '(615) 741-5562', url: 'https://pd.test', eligibility: 'Low income', about: null, note: 'If you cannot afford a lawyer, ask the court for a public defender at your first appearance.' },
+  public_defender: { name: 'Tennessee District Public Defenders', phone: '(615) 741-5562', url: 'https://pd.test', eligibility: 'Low income', about: null, note: 'If you cannot afford a lawyer, ask the court how to request a public defender.' },
   inmate_lookup: [{ id: 5, name: 'Inmate Lookup: Davidson County', phone: null, url: 'https://lookup.test' }],
   meta: { state: 'TN', ranking: 'Sorted by distance and how complete the listing is (real phone, hours, website, address). Never by payment.', hours_note: 'Call to confirm.', charge_note: null },
 };
@@ -327,6 +345,39 @@ describe('CourtDatesScreen', () => {
     expect(String(await AsyncStorage.getItem('cache_court_dates_v1'))).not.toContain('notes');
   });
 
+  it('undeliverable reminders: a one-time "turn on notifications or add an e-mail" prompt', async () => {
+    mockToken = 'jwt';
+    const rd = { undeliverable: 2, last_undeliverable_at: '2026-10-18T14:00:00.000Z', channels: { push: false, email: false, sms: false },
+      needs_attention: true, message: 'We could not send your court reminders. Turn on notifications or add an e-mail so we can remind you.' };
+    on('get', '/court-dates/guidance', () => netErr());
+    on('get', '/court-dates', { upcoming: [CD()], past: [], time_zone: 'America/Chicago', reminder_delivery: rd });
+    on('get', '/following', { following: [] });
+    const nav = makeNavigation();
+    const first = wrap(<CourtDatesScreen navigation={nav} route={{} as any} />);
+    expect(await screen.findByTestId('reminder-delivery-prompt')).toBeTruthy();
+    expect(screen.getByText(/Turn on notifications or add an e-mail so we can remind you/)).toBeTruthy();
+    expect(screen.getByTestId('reminder-delivery-notifications')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('reminder-delivery-dismiss'));
+    await waitFor(() => expect(screen.queryByTestId('reminder-delivery-prompt')).toBeNull());
+    first.unmount();
+    // same problem again → not shown a second time
+    wrap(<CourtDatesScreen navigation={nav} route={{} as any} />);
+    expect(await screen.findByText(/Thursday, November 5, 2026 · 9:30 AM/)).toBeTruthy();
+    await new Promise<void>(r => { setTimeout(r, 50); });
+    expect(screen.queryByTestId('reminder-delivery-prompt')).toBeNull();
+  });
+
+  it('no prompt when reminders are reaching the person', async () => {
+    mockToken = 'jwt';
+    on('get', '/court-dates/guidance', () => netErr());
+    on('get', '/court-dates', { upcoming: [CD()], past: [], reminder_delivery: { undeliverable: 0, last_undeliverable_at: null, channels: { push: true, email: false, sms: false }, needs_attention: false, message: null } });
+    on('get', '/following', { following: [] });
+    wrap(<CourtDatesScreen navigation={makeNavigation()} route={{} as any} />);
+    expect(await screen.findByText(/Thursday, November 5, 2026 · 9:30 AM/)).toBeTruthy();
+    await new Promise<void>(r => { setTimeout(r, 50); });
+    expect(screen.queryByTestId('reminder-delivery-prompt')).toBeNull();
+  });
+
   it('offline: the court dates saved on this phone, with a banner', async () => {
     mockToken = 'jwt';
     await AsyncStorage.setItem('cache_court_dates_v1', JSON.stringify({ list: { upcoming: [CD()], past: [] }, at: '2026-10-01T00:00:00Z' }));
@@ -424,6 +475,18 @@ describe('CourtDateDetailScreen', () => {
     await act(async () => { fireEvent.press(screen.getByText('Done')); });
     fireEvent.press(screen.getByTestId('court-date-stop-sharing'));
     await waitFor(() => expect(calls.some(c => c.method === 'delete' && c.url === '/cases/3/followers/11')).toBe(true));
+  });
+
+  it('invite e-mail limit: the 429 message is shown as is', async () => {
+    on('get', '/court-dates/7', detail);
+    on('get', '/cases/3/followers', []);
+    on('post', '/cases/3/followers', () => Promise.reject(reject(429, { error: 'You have sent 10 invite e-mails today, the daily limit. Leave the e-mail empty and share the code yourself (text or call), or try again tomorrow.', code: 'invite_email_daily_limit' })));
+    wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
+    fireEvent.press(await screen.findByTestId('court-date-share-family'));
+    fireEvent.press(await screen.findByTestId('family-consent'));
+    fireEvent.press(screen.getByTestId('family-create-invite'));
+    expect(await screen.findByText(/daily limit\. Leave the e-mail empty and share the code yourself/)).toBeTruthy();
+    expect(screen.queryByTestId('family-code-text')).toBeNull();
   });
 
   it('offline: the saved copy of the date, without network actions', async () => {

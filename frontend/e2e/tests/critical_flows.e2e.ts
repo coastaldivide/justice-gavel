@@ -67,9 +67,8 @@ describe('Flow 2: Bail Calculator', () => {
     await visible('bail-result-amount');
   });
 
-  it('bondsman cost shows as 10% of bail amount', async () => {
-    await visible('bail-bondsman-cost');
-    await visible('bail-breakdown-chart');
+  it('no bail-agent fee estimate: the honest fee note is shown instead', async () => {
+    await visible('bail-fee-note');
   });
 
   it('ICE hold toggle shows immigration bond screen', async () => {

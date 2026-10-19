@@ -19,7 +19,9 @@ export interface CoreProgress { current: CoreStep; done: { rights: boolean; help
 
 const PROGRESS_KEY = 'core_path_progress';
 const PENDING_KEY = 'core_path_pending_route';
-const RIGHTS_PREFIX = 'cache_rights_v1_';
+// v2: copies saved before the state-review rule (v1) could hold unreviewed state notes.
+const RIGHTS_PREFIX = 'cache_rights_v2_';
+const OLD_RIGHTS_PREFIX = 'cache_rights_v1_';
 const COURT_KEY = 'cache_court_dates_v1';
 const FOLLOWING_KEY = 'cache_following_v1';
 
@@ -71,13 +73,40 @@ export interface RightsCardData {
   script: { say: ScriptLine[]; dont: ScriptLine[]; source: string; last_reviewed: string | null; lawyer_reviewed: boolean };
 }
 
+/**
+ * Owner rule (mirrors backend services/rightsContent.js): a state section is
+ * shown only when it carries a real citation (source_url, or a specific
+ * statute cite in its source) or a reviewer. Everything else is dropped —
+ * from fresh responses and from copies saved on the phone.
+ */
+const STATUTE_CITE_RE = /§\s*\d|\b(?:Code|Stat|Stats|Ann|Laws|Rev|Penal|Crim|Proc|C\.R\.S|U\.S\.C|ILCS|RCW|ORS|MCL|CGS)\b\.?[^\n]{0,40}?\d/;
+export function isReviewedStateSection(s: Partial<RightsSection> | null | undefined): boolean {
+  return !!(s && (s.source_url || s.reviewed_by || STATUTE_CITE_RE.test(String(s.source || ''))));
+}
+export const reviewPendingNotice = (name: string): string =>
+  `State-specific details for ${name} haven't been reviewed yet — ask a local lawyer or public defender.`;
+export function sanitizeRightsCard(card: RightsCardData): RightsCardData {
+  const specific = (card?.state_specific || []).filter(isReviewedStateSection);
+  const hasState = !!card?.state && card.state !== 'US';
+  return {
+    ...card,
+    state_specific: specific,
+    state_specific_available: specific.length > 0,
+    state_notice: specific.length ? (card.state_notice ?? null)
+      : hasState ? reviewPendingNotice(card.state_name || card.state) : (card?.state_notice ?? null),
+  };
+}
+
 export async function cacheRightsCard(state: string, card: RightsCardData): Promise<void> {
-  try { await AsyncStorage.setItem(RIGHTS_PREFIX + (state || 'US'), JSON.stringify({ card, at: new Date().toISOString() })); } catch { /* non-critical */ }
+  try { await AsyncStorage.setItem(RIGHTS_PREFIX + (state || 'US'), JSON.stringify({ card: sanitizeRightsCard(card), at: new Date().toISOString() })); } catch { /* non-critical */ }
+  try { await AsyncStorage.removeItem(OLD_RIGHTS_PREFIX + (state || 'US')); } catch { /* non-critical */ }
 }
 export async function getCachedRightsCard(state: string): Promise<{ card: RightsCardData; at: string } | null> {
   try {
     const raw = await AsyncStorage.getItem(RIGHTS_PREFIX + (state || 'US'));
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { card: RightsCardData; at: string };
+    return saved?.card ? { card: sanitizeRightsCard(saved.card), at: saved.at } : null;
   } catch { return null; }
 }
 
@@ -85,8 +114,9 @@ export async function getCachedRightsCard(state: string): Promise<{ card: Rights
 export async function fetchRightsCard(state: string): Promise<RightsCardData> {
   const code = state || 'US';
   const res = await api.get<RightsCardData>(`/rights/${encodeURIComponent(code)}`);
-  await cacheRightsCard(code, res.data);
-  return res.data;
+  const card = sanitizeRightsCard(res.data);
+  await cacheRightsCard(code, card);
+  return card;
 }
 
 /** Best effort: refresh the offline copy for the user's state and the general card. */
@@ -102,7 +132,23 @@ export interface CourtDate {
   court_time_label: string | null; hearing_type: string | null; status: string; location: string | null;
   courthouse: CourtHouse | null; is_past: boolean; archived: boolean;
 }
-export interface CourtDatesList { upcoming: CourtDate[]; past: CourtDate[]; time_zone?: string; today?: string }
+export interface ReminderDelivery {
+  undeliverable: number; last_undeliverable_at: string | null;
+  channels: { push: boolean; email: boolean; sms: boolean };
+  needs_attention: boolean; message: string | null;
+}
+export interface CourtDatesList { upcoming: CourtDate[]; past: CourtDate[]; time_zone?: string; today?: string; reminder_delivery?: ReminderDelivery }
+
+// ── "We could not send your reminders" prompt — shown once per new problem ──
+const DELIVERY_PROMPT_KEY = 'reminder_delivery_prompt_v1';
+const deliveryMarker = (rd: ReminderDelivery) => rd.last_undeliverable_at || 'no_channel';
+export async function shouldShowDeliveryPrompt(rd: ReminderDelivery | null | undefined): Promise<boolean> {
+  if (!rd?.needs_attention) return false;
+  try { return (await AsyncStorage.getItem(DELIVERY_PROMPT_KEY)) !== deliveryMarker(rd); } catch { return true; }
+}
+export async function dismissDeliveryPrompt(rd: ReminderDelivery): Promise<void> {
+  try { await AsyncStorage.setItem(DELIVERY_PROMPT_KEY, deliveryMarker(rd)); } catch { /* non-critical */ }
+}
 
 const stripCourtDate = (d: CourtDate): CourtDate => ({
   id: d.id, case_id: d.case_id, case_title: d.case_title, case_state: d.case_state ?? null,

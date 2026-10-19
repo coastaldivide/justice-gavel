@@ -380,7 +380,7 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
     const bboxParams = bboxQ ? [bboxQ.minLat, bboxQ.maxLat, bboxQ.minLng, bboxQ.maxLng] : [];
 
     const all = await db.all(
-      'SELECT id,name,company,phone,address,lat,lng,city,state,rating,reviews,license_number,verified,doi_verified,languages,website,available_24_7,payment_plans,fee_percent,bond_rate FROM bail_agents WHERE COALESCE(active, 1) = 1'
+      'SELECT id,name,company,phone,address,lat,lng,city,state,rating,reviews,license_number,verified,doi_verified,languages,website,available_24_7,payment_plans FROM bail_agents WHERE COALESCE(active, 1) = 1'
       + (hasCoords ? ' AND lat IS NOT NULL AND lng IS NOT NULL' : '')
       + bboxWhere
       + (!hasCoords && bailCity  ? ' AND LOWER(city) = LOWER(?)' : '')

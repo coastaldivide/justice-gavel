@@ -21,7 +21,6 @@ const ROUTES = path.join(__REPO, 'backend/src/routes');
 // key: "<file>|<first 40 chars of the SQL, whitespace collapsed>" (prefix match)
 const ALLOWED = {
   'attorney/cases.js|SELECT c.outcome FROM cases c JOIN case_a': "outcome stats over the attorney's own assignments (one column, aggregated in JS)",
-  'cases.js|SELECT u.push_token FROM case_family_acc': 'internal push fan-out to one case\'s accepted family members',
   'checkins.js|SELECT DISTINCT ce.user_id FROM checkin_': 'staff-only reminder fan-out (POST), not a list response',
   'conflicts.js|SELECT ci.party_name_orig, ci.party_name': 'conflict check must see every hit (completeness is the point)',
   'conflicts.js|SELECT mp.party_name, mp.party_type, mp.': 'conflict check must see every hit',

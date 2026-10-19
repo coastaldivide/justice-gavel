@@ -40,20 +40,11 @@ import {
   refreshNextCourtDate, rememberTimeZone, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
 } from '../services/courtReminders.js';
 import {
-  createInvite, listFollowers, revokeFollower, listFollowing, FollowError,
+  createInvite, listFollowers, revokeFollower, listFollowing, FollowError, notifyFollowersCourtDateChanged,
 } from '../services/followers.js';
 
 const router       = Router();
 const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many case operations. Slow down.' });
-
-// ── Expo push singleton — lazy-initialized once ───────────────────────────────
-let _expo = null;
-async function getExpo() {
-  if (_expo) return _expo;
-  const { Expo } = await import('expo-server-sdk');
-  _expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
-  return _expo;
-}
 
 // Tightly-scoped column lists — never SELECT * /* intentional */ ──────────────────────────────── /* intentional separator comment */
 const CASE_COLS = `id, user_id, title, status, next_court_date, notes,
@@ -308,8 +299,11 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
       }
     } catch (e) { logger.warn('[cases/update] reminders:', e.message); }
 
-    // Push to linked family members (non-blocking)
-    notifyFamilyMembers(db, caseId, updated.title || existing.title).catch(logIgnored('routes/cases'));
+    // Followers hear about court-date changes ONLY (never other case edits),
+    // with a fixed text (no title / place): services/followers.js.
+    if (!CLOSED_CASE_STATUSES.has(finalStatus) && next_court_date !== undefined && newDate !== oldDate) {
+      notifyFollowersCourtDateChanged(db, caseId, newDate ? 'changed' : 'cancelled').catch(logIgnored('routes/cases'));
+    }
 
     res.json(updated);
   } catch (e) {
@@ -562,26 +556,6 @@ router.get('/family', authRequired, async (req, res) => {
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-async function notifyFamilyMembers(db, caseId, caseTitle) {
-  const familyRows = await db.all(
-    `SELECT u.push_token FROM case_family_access cfa
-     JOIN users u ON u.id = cfa.user_id
-     WHERE cfa.case_id=? AND cfa.status='active' AND u.push_token IS NOT NULL`,
-    [caseId]
-  ).catch(() => []);
-  if (!familyRows.length) return;
-  const expo = await getExpo();
-  const msgs = familyRows
-    .filter(r => expo.constructor.isExpoPushToken(r.push_token))
-    .map(r => ({
-      to: r.push_token, sound: 'default',
-      title: '⚖️ Case updated',
-      body:  `"${caseTitle}" was updated.`,
-      data:  { type: 'case_update', case_id: caseId },
-    }));
-  if (msgs.length) expo.sendPushNotificationsAsync(msgs).catch(e => logger.warn('[cases/push]', e.message));
-}
-
 async function triggerExpungementPush(db, userId, caseRow) {
   const user      = await db.get('SELECT push_token FROM users WHERE id=?', [userId]).catch(() => null);
   const title     = caseRow.status === 'Dismissed' ? '📋 Your charge was dismissed' : '📋 Your case is closed';
@@ -673,21 +647,29 @@ router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
 });
 
 
-// GET /family/contacts — emergency contacts for user's cases
+// GET /family/contacts — the people following the user's cases.
+// Only ACTIVE (accepted, not revoked / expired / pending) follows, and only
+// what the owner entered or the follower agreed to by accepting: the name and
+// e-mail the owner typed on the invite. The follower's own account details
+// (account e-mail, phone, display name) are never returned.
 router.get('/family/contacts', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const contacts = await db.all(
-      `SELECT cfa.id, cfa.user_id, u.name, u.email, u.phone, cfa.role, cfa.case_id,
-              c.title as case_title, c.status as case_status
-       FROM case_family_access cfa
-       LEFT JOIN users u ON u.id = cfa.user_id
-       LEFT JOIN cases c ON c.id = cfa.case_id
-       WHERE cfa.case_id IN (SELECT id FROM cases WHERE user_id = ?)
-       ORDER BY cfa.created_at DESC LIMIT 200`,
+    const rows = await db.all(
+      `SELECT cfa.id, cfa.case_id, cfa.invite_name, cfa.invite_email, cfa.accepted_at, cfa.share_reminders,
+              c.title AS case_title, c.status AS case_status
+         FROM case_family_access cfa
+         JOIN cases c ON c.id = cfa.case_id AND c.user_id = ? AND c.deleted_at IS NULL
+        WHERE cfa.status = 'active' AND cfa.user_id IS NOT NULL
+        ORDER BY cfa.accepted_at DESC NULLS LAST LIMIT 200`,
       [req.user.id]
     );
-    res.json(contacts || []);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(rows.map(r => ({
+      id: Number(r.id), case_id: Number(r.case_id), case_title: r.case_title, case_status: r.case_status,
+      role: 'follower', name: r.invite_name || null, email: r.invite_email || null,
+      accepted_at: r.accepted_at, share_reminders: Number(r.share_reminders) === 1,
+    })));
   } catch (e) {
     logger.error('[GET /family/contacts]', e.message);
     res.status(500).json({ error: 'Could not load family contacts' });

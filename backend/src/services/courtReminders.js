@@ -250,7 +250,7 @@ async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDat
  */
 export async function scheduleCourtReminders(db, {
   userId, caseId, caseTitle, courtDate, state = null, now = new Date(),
-  courtDateId = null, courtTime = null, place = null,
+  courtDateId = null, courtTime = null, place = null, followerPlace = null,
 }) {
   if (courtDateId) await cancelCourtDateReminders(db, courtDateId, 'rescheduled');
   else await cancelCourtReminders(db, userId, caseId, 'rescheduled');
@@ -277,7 +277,7 @@ export async function scheduleCourtReminders(db, {
     for (const f of await reminderFollowers(db, caseId)) {
       await scheduleFollowerReminders(db, {
         followerId: Number(f.user_id), ownerId: userId, caseId, courtDateId,
-        courtDate: date, courtTime, place, state, now,
+        courtDate: date, courtTime, place: followerPlace, state, now,
       }).catch(e => logger.warn({ caseId, err: e.message }, '[court-reminders] follower plan failed'));
     }
   }
@@ -313,6 +313,16 @@ async function placeFor(db, cd) {
   return cd.location || null;
 }
 
+/**
+ * The place a FOLLOWER's reminder may name: the courthouse from the public
+ * directory only — never the owner's free-text location (share rules).
+ */
+async function courthousePlaceFor(db, cd) {
+  if (!cd.courthouse_id) return null;
+  const ch = await db.get('SELECT name, address FROM courthouses WHERE id = ?', [cd.courthouse_id]).catch(() => null);
+  return ch ? [ch.name, ch.address].filter(Boolean).join(', ') || null : null;
+}
+
 /** Plan reminders for one court_dates row (looked up fresh, under the hearing lock). */
 export function scheduleForCourtDate(db, courtDateId, now = new Date()) {
   return withHearingLock(db, courtDateId, (tx) => planForCourtDate(tx, courtDateId, now));
@@ -333,6 +343,7 @@ async function planForCourtDate(db, courtDateId, now) {
     userId: Number(cd.user_id), caseId: Number(cd.case_id), caseTitle: cd.title,
     courtDate: dateOnly(cd.court_date), state: cd.state, now,
     courtDateId: Number(cd.id), courtTime: timeOnly(cd.court_time), place: await placeFor(db, cd),
+    followerPlace: await courthousePlaceFor(db, cd),
   });
 }
 
@@ -418,7 +429,7 @@ export async function rescheduleUserCourtReminders(db, userId, now = new Date())
   for (const f of follows) {
     await scheduleFollowerReminders(db, {
       followerId: userId, ownerId: Number(f.owner_id), caseId: Number(f.case_id), courtDateId: Number(f.id),
-      courtDate: dateOnly(f.court_date), courtTime: timeOnly(f.court_time), place: await placeFor(db, f), state: f.state, now,
+      courtDate: dateOnly(f.court_date), courtTime: timeOnly(f.court_time), place: await courthousePlaceFor(db, f), state: f.state, now,
     });
   }
   return n;
@@ -447,7 +458,7 @@ export async function backfillCourtReminders(db, { now = new Date(), limit = 500
         AND NOT EXISTS (
               SELECT 1 FROM scheduled_pushes sp
                WHERE sp.court_date_id = cd.id AND sp.notification_type = 'court_reminder'
-                 AND sp.status IN ('pending','sending','sent','skipped','failed')
+                 AND sp.status IN ('pending','sending','sent','skipped','failed','undeliverable')
                  AND sp.data LIKE '%"court_date":"' || CAST(cd.court_date AS text) || '"%')
       ORDER BY cd.court_date ASC
       LIMIT ?`,

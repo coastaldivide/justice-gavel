@@ -20,11 +20,17 @@ import {
   scheduleFollowerReminders, cancelFollowerReminders, resolveReminderTimeZone, dateOnly, timeOnly, formatCourtTime,
 } from './courtReminders.js';
 import { todayInZone } from '../utils/timezone.js';
+import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O/1/I/L
 const CODE_LEN = 10;
 const INVITE_DAYS = 14;
 const MAX_FOLLOWERS_PER_CASE = 10;
+// Invite e-mails go to an address the owner types: cap them so an account
+// cannot be used to mail strangers. Counted over the last 24 h, every invite
+// that carried an e-mail (whatever happened to it later).
+export const INVITE_EMAILS_PER_USER_PER_DAY = 10;
+export const INVITE_EMAILS_PER_RECIPIENT_PER_DAY = 3;
 
 export class FollowError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -66,6 +72,20 @@ export async function createInvite(db, { ownerId, caseId, email = null, name = n
   if (cleanEmail) {
     const self = await db.get('SELECT id FROM users WHERE id = ? AND LOWER(email) = ?', [ownerId, cleanEmail]);
     if (self) throw new FollowError(400, 'self_invite', 'You cannot invite yourself.');
+    const mine = await db.get(
+      `SELECT COUNT(*) AS n FROM case_family_access
+        WHERE invited_by = ? AND invite_email IS NOT NULL AND created_at > NOW() - INTERVAL '1 day'`, [ownerId]);
+    if (Number(mine?.n || 0) >= INVITE_EMAILS_PER_USER_PER_DAY) {
+      throw new FollowError(429, 'invite_email_daily_limit',
+        `You have sent ${INVITE_EMAILS_PER_USER_PER_DAY} invite e-mails today, the daily limit. Leave the e-mail empty and share the code yourself (text or call), or try again tomorrow.`);
+    }
+    const theirs = await db.get(
+      `SELECT COUNT(*) AS n FROM case_family_access
+        WHERE LOWER(invite_email) = ? AND created_at > NOW() - INTERVAL '1 day'`, [cleanEmail]);
+    if (Number(theirs?.n || 0) >= INVITE_EMAILS_PER_RECIPIENT_PER_DAY) {
+      throw new FollowError(429, 'invite_email_recipient_limit',
+        'This e-mail address has already received the most invites allowed today. Share the code with them another way, or try again tomorrow.');
+    }
   }
   const code = newCode();
   const expires = new Date(Date.now() + INVITE_DAYS * 86_400_000).toISOString();
@@ -109,15 +129,16 @@ export async function listFollowers(db, ownerId, caseId) {
   await ownedCase(db, ownerId, caseId);
   const rows = await db.all(
     `SELECT cfa.id, cfa.status, cfa.share_reminders, cfa.invite_email, cfa.invite_name, cfa.invited_at,
-            cfa.accepted_at, cfa.revoked_at, cfa.expires_at, cfa.owner_consent_at, u.display_name, u.name
-       FROM case_family_access cfa LEFT JOIN users u ON u.id = cfa.user_id
+            cfa.accepted_at, cfa.revoked_at, cfa.expires_at, cfa.owner_consent_at
+       FROM case_family_access cfa
       WHERE cfa.case_id = ? AND cfa.status IN ('pending', 'active')
       ORDER BY cfa.invited_at DESC LIMIT 50`, [caseId]);
   const now = Date.now();
   return rows.map(r => ({
     id: Number(r.id),
     status: r.status === 'pending' && r.expires_at && new Date(r.expires_at).getTime() < now ? 'expired' : r.status,
-    name: r.display_name || r.name || r.invite_name || null,
+    // only what the owner typed on the invite — never the follower's account details
+    name: r.invite_name || null,
     email: r.invite_email || null,
     share_reminders: Number(r.share_reminders) === 1,
     invited_at: r.invited_at, accepted_at: r.accepted_at, expires_at: r.expires_at,
@@ -194,7 +215,8 @@ export async function acceptInvite(db, userId, rawCode) {
       await scheduleFollowerReminders(db, {
         followerId: userId, ownerId: Number(inv.owner_id), caseId: Number(inv.case_id), courtDateId: Number(d.id),
         courtDate: dateOnly(d.court_date), courtTime: timeOnly(d.court_time),
-        place: [d.ch_name, d.ch_address].filter(Boolean).join(', ') || d.location || null, state: c?.state,
+        // courthouse only — never the owner's free-text location in a follower push
+        place: [d.ch_name, d.ch_address].filter(Boolean).join(', ') || null, state: c?.state,
       });
     }
   }
@@ -235,4 +257,41 @@ export async function leaveFollow(db, userId, followId) {
   if (!row) throw new FollowError(404, 'not_found', 'You are not following that case.');
   await cancelFollowerReminders(db, userId, Number(row.case_id), 'follow_left');
   return { ok: true };
+}
+
+/**
+ * Tell a case's active followers that one of its court dates was added,
+ * changed or cancelled. This is the ONLY push a follower gets about a case
+ * (besides their own court reminders) — never for other case edits. The text
+ * is fixed and carries no case title, place or other free text; the details
+ * are shown in the app under the share rules (GET /api/following).
+ * Fire-and-forget: never throws. Returns the number of push messages sent.
+ */
+export const FOLLOWER_UPDATE_PUSH = Object.freeze({
+  title: '📅 Court date update',
+  body: 'A court date you follow was updated. Open Justice Gavel to see the details.',
+});
+export async function notifyFollowersCourtDateChanged(db, caseId, change = 'changed') {
+  try {
+    const rows = await db.all(
+      `SELECT u.id, u.push_token, u.notif_court_reminders
+         FROM case_family_access cfa JOIN users u ON u.id = cfa.user_id
+        WHERE cfa.case_id = ? AND cfa.status = 'active' AND cfa.owner_consent_at IS NOT NULL
+        LIMIT 20`, [caseId]);
+    const messages = [];
+    for (const r of rows) {
+      if (r.notif_court_reminders != null && Number(r.notif_court_reminders) !== 1) continue;
+      const extra = await db.all('SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 5', [r.id]).catch(() => []);
+      const tokens = [...new Set([...extra.map(t => t.token), r.push_token].filter(isExpoPushToken))];
+      for (const to of tokens) {
+        messages.push({ to, ...FOLLOWER_UPDATE_PUSH, sound: 'default', channelId: 'court_reminders',
+          data: { type: 'follower_court_update', screen: 'Following', change } });
+      }
+    }
+    if (messages.length) await sendExpoPush(messages);
+    return messages.length;
+  } catch (e) {
+    logger.warn({ caseId, err: e.message }, '[followers] court-date update push failed');
+    return 0;
+  }
 }

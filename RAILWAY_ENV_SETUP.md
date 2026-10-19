@@ -91,6 +91,8 @@ TWILIO_ACCOUNT_SID=<AC...>               SMS court reminders (optional; needs al
 TWILIO_AUTH_TOKEN=<...>                   unset → texts skipped, push + e-mail still sent)
 TWILIO_FROM_NUMBER=<+1...>               Twilio sender number, E.164
 TWILIO_API_BASE=<url>                    Twilio API host override (default https://api.twilio.com)
+TRUST_PROXY=<hops|CIDRs>                 Express "trust proxy" (default 1). Decides which X-Forwarded-For entry is the
+                                         client IP for rate limits / guest report keys — see RUNBOOK "Client IP".
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     web push (npx web-push generate-vapid-keys)
 VAPID_EMAIL=admin@justicegavel.app       web push contact
 ```

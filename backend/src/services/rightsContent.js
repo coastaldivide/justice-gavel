@@ -13,8 +13,14 @@
  *     false everywhere until a licensed attorney signs it off (owner action;
  *     reviewed rows go in the rights_cards table with reviewed_by set, and a
  *     database row replaces the bundled section with the same key).
- *   - A state without sourced state-specific content gets the general card
- *     plus the notice "State-specific details not yet available for <state>".
+ *   - A state section is shown (and given to the AI) ONLY when it carries a
+ *     real citation — a source_url, or a specific statute cite in its source
+ *     ("Tenn. Code Ann. § 40-7-123") — or a reviewer (reviewed_by). See
+ *     isReviewedStateSection(). The built-in per-state summaries below
+ *     (STATE_RIGHTS) have neither, so they are kept in the repo as unreviewed
+ *     draft material and are never rendered or sent to the AI: every state gets
+ *     the general card plus REVIEW_PENDING_NOTICE until a cited / reviewed
+ *     rights_cards row is added, which then shows automatically.
  *   - The unsourced "a bondsman charges about 10%" line was removed from the
  *     card: there is no sourced per-state premium data in the repo.
  */
@@ -366,8 +372,29 @@ export const STATE_RIGHTS = Object.freeze({
     mustID: true,
   },
 });
-/** The sourced state-specific sections for a state code ([] when none recorded). */
-export function stateSections(code) {
+/** Shown for a state until a cited / reviewed state section exists. */
+export const reviewPendingNotice = (name) =>
+  `State-specific details for ${name} haven't been reviewed yet — ask a local lawyer or public defender.`;
+
+// A specific statute / code citation in a source string: a section sign, or a
+// code / statute abbreviation followed by a number ("Tex. Penal Code 38.02",
+// "Fla. Stat. 856.021", "18 U.S.C. 3142"). Generic text ("published state
+// statutes and case law") does not match.
+const STATUTE_CITE_RE = /§\s*\d|\b(?:Code|Stat|Stats|Ann|Laws|Rev|Penal|Crim|Proc|C\.R\.S|U\.S\.C|ILCS|RCW|ORS|MCL|CGS)\b\.?[^\n]{0,40}?\d/;
+export function hasStatuteCitation(source) {
+  return STATUTE_CITE_RE.test(String(source || ''));
+}
+/** True when a state section may be shown / given to the AI: cited (URL or statute cite) or lawyer-reviewed. */
+export function isReviewedStateSection(s) {
+  return !!(s && (s.source_url || s.reviewed_by || hasStatuteCitation(s.source)));
+}
+
+/**
+ * The built-in (UNREVIEWED) per-state summaries for a state code, as sections.
+ * Draft material for a reviewer — never rendered to users or fed to the AI
+ * (no citation, no reviewer; isReviewedStateSection() is false for all).
+ */
+export function unreviewedStateNotes(code) {
   const s = STATE_RIGHTS[code];
   if (!s) return [];
   const name = STATE_NAMES[code] || code;
@@ -406,6 +433,22 @@ function mergeRows(base, rows) {
   return out;
 }
 
+/** State codes that have at least one cited / reviewed rights_cards row (shown as state-specific). */
+export async function reviewedStateCodes(db) {
+  const out = new Set();
+  if (!db) return out;
+  try {
+    const rows = await db.all(
+      `SELECT UPPER(state) AS state, topic, title, content, source, source_url, content_verified_at, reviewed_by, needs_review
+         FROM rights_cards WHERE language = 'en' AND state IS NOT NULL AND UPPER(state) <> 'US' LIMIT 2000`);
+    for (const r of rows) {
+      const sec = rowToSection(r);
+      if (sec.source && isReviewedStateSection(sec) && STATE_NAMES[r.state]) out.add(r.state);
+    }
+  } catch { /* no table / DB down → none */ }
+  return out;
+}
+
 /**
  * The full rights card for a state: general (federal) sections + the state's
  * sourced sections + the 30-second script. `db` is optional (rights_cards
@@ -415,7 +458,9 @@ export async function getRightsCard(db, rawState, { lang = 'en' } = {}) {
   const code = normalizeState(rawState);
   const language = 'en'; // only English content is recorded on the server; the app translates the bundled card
   let general = GENERAL_SECTIONS.map(s => ({ ...s }));
-  let specific = code ? stateSections(code) : [];
+  // Only cited / reviewed rights_cards rows become state sections; the
+  // built-in unreviewed summaries are never shown.
+  let specific = [];
   if (db) {
     try {
       const rows = await db.all(
@@ -426,7 +471,10 @@ export async function getRightsCard(db, rawState, { lang = 'en' } = {}) {
           LIMIT 100`,
         [language, code || 'US']);
       general  = mergeRows(general, rows.filter(r => !r.state || String(r.state).toUpperCase() === 'US'));
-      if (code) specific = mergeRows(specific, rows.filter(r => r.state && String(r.state).toUpperCase() === code));
+      if (code) {
+        specific = mergeRows([], rows.filter(r => r.state && String(r.state).toUpperCase() === code))
+          .filter(isReviewedStateSection);
+      }
     } catch { /* bundled content stays */ }
   }
   const name = code ? STATE_NAMES[code] : null;
@@ -440,21 +488,25 @@ export async function getRightsCard(db, rawState, { lang = 'en' } = {}) {
     state_specific_available: specific.length > 0,
     state_notice: !code
       ? 'Choose your state to see state-specific details.'
-      : specific.length ? null : `State-specific details not yet available for ${name}.`,
+      : specific.length ? null : reviewPendingNotice(name),
     script: SCRIPT,
     lawyer_review: 'pending',
     disclaimer: 'General legal information only — not legal advice. Laws vary by state and change. Talk to a licensed attorney about your situation.',
   };
 }
 
-/** Short grounding block for the AI chat: the verified card text, with section keys to cite. */
+/**
+ * Short grounding block for the AI chat: the general card text, with section
+ * keys to cite. The unreviewed per-state summaries are NOT included.
+ */
 export function rightsPromptBlock(rawState) {
   const code = normalizeState(rawState);
   const parts = ['[VERIFIED RIGHTS CONTENT — Justice Gavel rights card]'];
-  for (const s of [...GENERAL_SECTIONS, ...(code ? stateSections(code) : [])]) {
+  for (const s of GENERAL_SECTIONS) {
     parts.push(`(${s.key}) ${s.heading}: ${s.body.replace(/\s+/g, ' ').trim()}`);
   }
   parts.push('[END VERIFIED RIGHTS CONTENT]');
+  if (code) parts.push(`No reviewed state-specific rights content exists yet for ${STATE_NAMES[code]}. Do not state ${STATE_NAMES[code]}-specific rules (ID laws, deadlines, bail rules) as fact; say they vary by state and suggest asking a local lawyer or public defender.`);
   parts.push('When the question is about rights during a stop, search, questioning or arrest, answer ONLY from the verified content above and name the section you used, e.g. "(see your rights card: rc_1)". If the verified content does not answer the question, say that you are not sure and that they should talk to a lawyer or public defender — do not guess.');
   return parts.join('\n');
 }
@@ -486,23 +538,17 @@ export function rightsRefsFor(text, reply = '') {
 export function buildLegacyRightsCard(rawState) {
   const code = normalizeState(rawState) || 'US';
   const stateName = STATE_NAMES[code] || code;
-  const st = STATE_RIGHTS[code];
+  // The built-in state summaries are unreviewed: never shown (see top of file).
   const general = GENERAL_SECTIONS.slice(0, 3).map(s => ({ heading: s.heading, body: s.body }));
   const rights = [
     ...general,
-    ...(st ? [
-      { heading: `4. IF STOPPED — ${stateName.toUpperCase()} LAW`, body: st.stopRule, stateSpecific: true, mustID: st.mustID },
-      { heading: '5. DURING ARREST', body: GENERAL_SECTIONS[5].body },
-      { heading: `6. BAIL — ${stateName.toUpperCase()}`, body: st.bailNote, stateSpecific: true },
-    ] : [
-      { heading: '4. DURING ARREST', body: GENERAL_SECTIONS[5].body },
-    ]),
-    { heading: `${st ? 7 : 5}. YOUR KEY PHRASES`, body: '"I am invoking my right to remain silent."\n"I want a lawyer."\n"I do not consent to a search."' },
+    { heading: '4. DURING ARREST', body: GENERAL_SECTIONS[5].body },
+    { heading: '5. YOUR KEY PHRASES', body: '"I am invoking my right to remain silent."\n"I want a lawyer."\n"I do not consent to a search."' },
   ];
   return {
     state: code,
     stateName,
-    mustID: st ? st.mustID : null,
+    mustID: null,
     title: 'Know Your Rights',
     subtitle: `${stateName} — What to say & do if you're stopped or arrested`,
     brandLine: 'JusticeGavel.app  ·  Free legal help  ·  Available 24/7',
@@ -512,7 +558,7 @@ export function buildLegacyRightsCard(rawState) {
       `Lawyer:     JusticeGavel.app → Find a Lawyer (${stateName})`,
     ],
     footer: 'General legal information only — not legal advice. Laws change. Verify with a licensed attorney in your state.',
-    state_notice: st ? null : `State-specific details not yet available for ${stateName}.`,
+    state_notice: code === 'US' ? null : reviewPendingNotice(stateName),
     last_updated: CONTENT_LAST_REVIEWED,
     source_note: 'Based on published state statutes and case law as of April 2026.',
   };

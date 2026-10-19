@@ -105,8 +105,19 @@ import { idempotency } from './middleware/idempotency.js';
 const IS_PROD = process.env.NODE_ENV === 'production';
 const app = express();
 
-// ── Trust proxy — required for Railway/Fly.io/Render (rate limiter IP detection)
-app.set('trust proxy', 1);
+// ── Trust proxy — which X-Forwarded-For entry is the client (rate limits, guest
+// report keys). Default: one hop (the platform edge). TRUST_PROXY overrides it
+// with a hop count or a comma-separated list of trusted CIDRs (RUNBOOK
+// "Client IP"); the client can never pick its own IP because only entries
+// appended by trusted hops are used.
+export function trustProxySetting(raw = process.env.TRUST_PROXY) {
+  const v = String(raw ?? '').trim();
+  if (!v) return 1;
+  if (/^\d+$/.test(v)) return Number(v);
+  if (/^(true|false)$/i.test(v)) return /^true$/i.test(v) ? 1 : false;   // never "trust everything"
+  return v.split(',').map(x => x.trim()).filter(Boolean);
+}
+app.set('trust proxy', trustProxySetting());
 app.set('etag', 'strong');
 
 // ── Express 5: make req.query a writable own property ─────────────────────────
@@ -321,6 +332,17 @@ app.get(['/health', '/api/health'], async (req, res) => {
   });
 });
 
+async function reminderMetrics() {
+  const { getReminderStats } = await import('./services/reminderDispatcher.js');
+  let undeliverable24h = null;
+  try {
+    const db = await getDb();
+    const r = await db.get(`SELECT COUNT(*) AS n FROM scheduled_pushes WHERE status = 'undeliverable' AND deliver_at > NOW() - INTERVAL '1 day'`);
+    undeliverable24h = Number(r?.n || 0);
+  } catch { /* DB down → null */ }
+  return { process: getReminderStats(), undeliverable_24h: undeliverable24h };
+}
+
 // ── /metrics — machine-readable operational metrics ────────────────────────────
 // Used by: Uptime Robot, Datadog, Railway health checks, Prometheus scrapers
 // Returns JSON by default; ?format=prometheus for Prometheus text format
@@ -358,6 +380,9 @@ app.get('/metrics', async (req, res) => {
       db_pool: pool,
       // Scheduled jobs: runs / failures / skipped overlaps / last success (utils/cronGuard.js)
       jobs: (await import('./utils/cronGuard.js')).getJobStats(),
+      // Court / user reminders: this process's delivery counters + reminders
+      // that reached nobody in the last 24 h (all processes, from the table).
+      reminders: await reminderMetrics(),
       process: {
         pid:       process.pid,
         platform:  process.platform,
@@ -380,6 +405,12 @@ app.get('/metrics', async (req, res) => {
         `# HELP jg_queue_failed AI jobs failed`,
         `# TYPE jg_queue_failed counter`,
         `jg_queue_failed ${metrics.queue.failed}`,
+        `# HELP jg_reminders_undeliverable_24h Reminders that reached no channel in the last 24 hours`,
+        `# TYPE jg_reminders_undeliverable_24h gauge`,
+        `jg_reminders_undeliverable_24h ${metrics.reminders.undeliverable_24h ?? 0}`,
+        `# HELP jg_reminders_sent_total Reminders delivered by this process`,
+        `# TYPE jg_reminders_sent_total counter`,
+        `jg_reminders_sent_total ${metrics.reminders.process.sent}`,
         ...(pool ? [
           `# HELP jg_db_pool_total Open DB connections`,
           `# TYPE jg_db_pool_total gauge`,

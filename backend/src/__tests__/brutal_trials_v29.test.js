@@ -93,7 +93,8 @@ describe('1. whn_dui_ — DUI Step Content (Steps 1–5 Full)', () => {
     expect(en['whn_dui_4_do2']).toContain('community ties');
     expect(en['whn_dui_4_do3']).toContain('lower bail');
     expect(en['whn_dui_4_dont1']).toContain("conditions you can't meet");
-    expect(en['whn_dui_4_dont2']).toContain('10–15%');
+    expect(en['whn_dui_4_dont2']).toContain('full fee in writing');   // no unsourced fee percentage
+    expect(en['whn_dui_4_dont2']).not.toMatch(/\d+\s?%/);
     expect(en['whn_dui_4_tip']).toContain('HELP NOW');
   });
   test('1-05: DUI step 5 — Pre-Trial & Court Date', async () => {

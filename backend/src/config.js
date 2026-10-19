@@ -294,6 +294,7 @@ export const ALL_ENV_VARS = {
   TWILIO_AUTH_TOKEN:        process.env.TWILIO_AUTH_TOKEN          || '',
   TWILIO_FROM_NUMBER:       process.env.TWILIO_FROM_NUMBER         || '',    // E.164 sender, e.g. +16155550123
   TWILIO_API_BASE:          process.env.TWILIO_API_BASE            || '',    // default https://api.twilio.com (tests / regional edge)
+  TRUST_PROXY:              process.env.TRUST_PROXY                || '',    // Express 'trust proxy': hop count (default 1) or CIDR list, e.g. 100.0.0.0/8 (RUNBOOK)
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',
   VAPID_PRIVATE_KEY:        process.env.VAPID_PRIVATE_KEY          || '',
   VAPID_EMAIL:              process.env.VAPID_EMAIL                || '',

@@ -1153,3 +1153,128 @@ smoke-test +4 core checks; web-journeys CORE journey (13 steps incl. airplane mo
 5. openapi.json regenerated (511 paths / 602 ops; drift test passes); ci.yml integration-step comment updated
    (new suites run inside existing steps); valid YAML.
 - Did NOT commit. Scratch DBs dropped, scratch servers stopped.
+
+# Independent review (commits 32a13a1 core path + 12b8bcc checklist)
+
+Method: fresh migrated scratch DB, production boot (TZ=UTC, generated secrets, no Stripe/Twilio/Resend, mock
+Anthropic), real HTTP probes (165 checks: anon/IDOR matrix, follower scope, invite races, rate limits, admin
+role + key, junk input), concurrency scripts, 3 parallel dispatcher processes, .ics parsed with ical.js 2.1.0
++ node-ical 0.20.1, headless Chromium journeys + a cold-offline guest run, account deletion audit.
+
+## Fixed (each with a regression test in backend/src/__tests__/integration/review_regressions.int.test.js)
+- HIGH — duplicate court reminders: parallel re-plans of one hearing (double save, PATCH vs backfill / tz
+  reschedule) interleaved cancel-then-insert; 8 parallel PATCHes left 5–8 pending copies of EACH reminder.
+  Fix: `courtReminders.withHearingLock` (transaction-scoped pg advisory lock per hearing, re-entrant) around
+  scheduleForCourtDate / scheduleFollowerReminders. After: exactly 4 every run.
+- MEDIUM — the family invite code (hash-only by design) was stored in plain text for 24 h in
+  idempotency_keys.response_body. Fix: `res.locals.idempotencyNoStore` honoured by middleware/idempotency.js,
+  set by the invite route (in-flight duplicates still 409; a later retry makes a new code).
+- MEDIUM — account deletion left the user's idempotency rows (cached case titles / court dates / follows).
+  Fix: migration 21 `idempotency_keys.user_id` (FK ON DELETE CASCADE), recorded when the response is stored;
+  USER_REFS 'delete'; excluded from export.
+- LOW — listing reports kept `reporter_key = sha256("u:<id>")` after deletion (reversible, ids sequential).
+  Fix: replaced with 'deleted:<report id>' before the reporter link is nulled (report kept for admins).
+- LOW — invite accept race: the losing concurrent accept could get 201 with no follow and follower
+  reminders planned. Fix: the accepting UPDATE must win (RETURNING + hash match) or 404.
+
+## Verified OK (no change)
+- Auth: 24 private endpoints → 401 anon; public: rights, guidance, nearby, report-reasons, bail-schedule.
+- IDOR: user B gets 404 on A's court date GET/PATCH/DELETE/ics/reminders, add-to-case, followers
+  list/create/revoke, someone else's follow; claims/mine scoped.
+- Follower sees only follow/case title/state/owner first name + dates (date, time, type, location, status,
+  courthouse); no notes/charges; 404/403 on court-date, ics, events, status-history, followers; revoke → access
+  and reminders gone immediately. Codes: 10 chars / 31-symbol alphabet (~49 bits), single use, 14 d expiry
+  (410 then 404), owner can't self-accept, accept 10/15 min/user, invites capped 10/case + 20/min.
+- Reports 10/10 min, claims 10/h; admin = live DB role (admin/super_admin) AND X-Admin-Key; second claimant on
+  a claimed listing → 409; decided claim can't be re-decided; no 500 on any junk input tried.
+- Provider md5 (lawyers 2046 / bail_agents 1262) identical before/after reports, claims, approvals, searches,
+  all int suites.
+- Legal text: STATE_RIGHTS byte-identical to 12b8bcc lessons.js (51 states); general card identical to
+  en.json except rc_b7 (10% fee line removed → "for a fee — ask the agent"); court-day / missed-date lines
+  trace to seed lesson 30, ChatScreen FAQ and reminder copy; PR etc. → "not yet available".
+- Reminders (America/Los_Angeles): 7d 09:00, 3d 09:00, 1d 18:00, day-of 06:30 local; move → old cancelled,
+  4 new; delete → all cancelled, next_court_date cleared; 3 parallel dispatchers on 40 due rows → claimed once
+  each; SMS opt-in without Twilio → note + skipped; no Resend → logged e-mail.
+- .ics: CRLF, ≤75-octet folding (UTF-8 safe), UID, DTSTAMP Z, TZID + VTIMEZONE / VALUE=DATE, , ; \ newline
+  escaped; both parsers import; instants correct (LA, Phoenix 23:30 wrap, Kolkata all-day).
+- Offline: journeys CORE 12 + cold-offline guest (rights card from bundle, court dates prompt) — 0 page errors.
+
+## Not changed — judgement calls for the owner
+- State notes are labelled "sourced" but their only source is "Published state statutes and case law … no
+  specific citation recorded"; several look wrong/outdated (MI "Clean Slate (2021) expanded bail reform" — an
+  expungement law; OR Measure 110 largely repealed 2024; MA/NY "must provide your name"; NJ bail line in
+  stopRule; UT "legal tech sandbox"). Recommend counting only cited/lawyer-reviewed notes as state-specific.
+- 10%-fee claims survive outside the card: ChatScreen FAQ (2), i18n whn_dui_4_do1 / whn_gen_4_do1 (4 langs),
+  routes/bail.js calculator bondsman_cost.
+- New uncited timing claim in help.js PD note: "ask … for a public defender at your first appearance".
+- Followers get "<case title> was updated" pushes on every case edit (incl. private notes) — leaks activity;
+  titles/free-text location are owner text and may name charges.
+- /api/cases/family/contacts shows follower e-mail/phone to the owner, incl. revoked rows.
+- Invite e-mails: an account can trigger ~20/min to any address (new case each time) — add a daily cap.
+- Guest report key = sha256(ip) (brute-forceable); rate limits rely on trust-proxy XFF.
+- No push token + no Resend → row 'sent', delivered=1, channel email_log_only (pre-existing; misleading).
+- Admin demotion takes up to 60 s (documented auth cache); key still required.
+- .ics ambiguous/non-existent DST local times resolve differently per parser (inherent).
+
+## Gate
+1. Fresh DB, 22 migrations (00..21) ON_ERROR_STOP twice — OK; 196 tables, 0 without RLS.
+2. npm ci OK, audit 0, import smoke OK, lint 0/0; prod boot → smoke-test **39/39**.
+3. In-memory jest **334 suites passed / 31 skipped; 27,997 passed / 236 skipped / 0 failed.** PG-gated:
+   trio 3/40, integration 18/141 (+review_regressions 3), security 12/95, refresh 4/26 — **0 failed**.
+4. Frontend (untouched; run anyway): tsc 0, eslint 0, npm test 50/712 + 9/85, expo export web OK, web
+   journeys **21/0** (incl. CORE offline, M6 with a streaming mock).
+5. ci.yml unchanged: migration loop picks up 21; the new suite runs in the existing integration step.
+- Did NOT commit. Scratch DB dropped, servers stopped.
+
+# Review follow-ups (owner rules: no unsourced/possibly-wrong legal content as fact; no privacy leaks)
+
+1. **State notes** — a state section is shown / given to the AI only with `source_url`, a statute cite in
+   `source`, or `reviewed_by` (`rightsContent.isReviewedStateSection`). Built-in `STATE_RIGHTS` (51) kept as
+   draft data, never rendered: every state → general card + "State-specific details for <state> haven't been
+   reviewed yet — ask a local lawyer or public defender." Applies to /api/rights/:state, /states (true only
+   for states with a qualifying rights_cards row), legacy /api/lessons/rights-card, AI prompt (general card
+   only + "don't state <state> rules as fact"). App: offline cache bumped to `cache_rights_v2_`, every
+   fresh/cached card sanitised by the same rule (old copies never show notes); offline-with-no-copy shows the
+   pending notice. A cited/reviewed DB row shows automatically (tested).
+2. **Bail premium** — removed: chat FAQ ×2, `whn_dui_4_do1/_dont2`, `whn_gen_4_do1` (en/es/pt/vi), bail.js
+   `bondsman_cost/bondsman_rate_pct` (+ immigration `bondsman_min/max`, `premium_rate`), `estimate-total`
+   default 10% rate and invented court/monitor/attorney amounts (now only multiplies a quoted rate),
+   `fee_percent/bond_rate` from public bail listings, bondsman CRM 10% revenue/ROI, `BailBreakdown` default
+   10% (needs `quotedRate`), offline hint; seeded lesson 9 reworded (migration 22, provider rows untouched).
+   `no_unsourced_legal_claims.test.js` scans frontend/src + backend/src (verified it flags all old lines).
+3. **PD note** → "If you cannot afford a lawyer, ask the court how to request a public defender."; the
+   seeded PD office `about` texts ("request at arraignment / first appearance", 10 of 51) are no longer
+   returned (data kept).
+4. **Follower pushes** — only on court-date add / move / time / place / cancel (`followers.notify
+   FollowersCourtDateChanged`, fixed text "A court date you follow was updated…", no title/location); the
+   per-case-edit "<title> was updated" push is gone; follower reminders name the courthouse only, never the
+   owner's free-text location; attended/missed marks don't notify.
+5. **Contacts** — `/api/cases/family/contacts`: active follows only; returns the invite name/e-mail the owner
+   typed, never the follower's account e-mail/phone/name; owner follower list likewise.
+6. **Invite e-mail caps** — 10/user/24 h, 3/recipient/24 h → 429 `invite_email_daily_limit` /
+   `invite_email_recipient_limit` with a clear message (shown verbatim in the app; keyed POSTs don't retry 429).
+7. **Undeliverable** — no channel → `status='undeliverable'`, delivered 0, channel NULL, reasons in `error`
+   (push errors still retried first); never "sent". `/metrics.reminders` {process counters,
+   undeliverable_24h} + Prometheus `jg_reminders_undeliverable_24h`; dispatcher tick under
+   `guardJob('reminders:dispatch')` (jobs health). `GET /api/court-dates` → `reminder_delivery`; court-date
+   screen shows a one-time "turn on notifications or add an e-mail" prompt (dismiss remembered per problem).
+- **Trust proxy** — verified: `trust proxy 1` is right only when one edge hop sits in front; Railway's CDN
+  route adds a second hop (community thread), so the client IP would be the CDN node. Added `TRUST_PROXY`
+  (hop count or CIDR list; `true` refused), documented in RUNBOOK "Client IP" with a check procedure +
+  env docs. Admin 60 s cache and IP-hash guest reports left as documented.
+
+Tests: new `integration/review_followups.int` (F1–F7, 6), `no_unsourced_legal_claims` (4), `trust_proxy` (3),
+core_path_units rights block rewritten (+2), render corePath +5 (cited section shown, old caches sanitised,
+delivery prompt once / not when fine, 429 text); updated stale pins (audit11 H11, core_path 1/3/4, bail
+int, v29, v174 CONTRACT-02 now asserts no phone, list_bounds), smoke core-path-1, web-journeys CORE 2/12.
+
+## Gate
+1. Fresh DB, 23 migrations (00..22) ON_ERROR_STOP twice — OK; 196 tables, 0 without RLS; provider md5
+   identical before/after everything (2046 / 1262).
+2. npm ci, audit 0, import OK, lint 0/0; prod boot → smoke **39/39**.
+3. In-memory jest **336 suites passed / 32 skipped; 28,005 passed / 242 skipped / 0 failed.** PG-gated on a
+   fresh DB: trio 3/40, integration 19/147, security 12/95, refresh 4/26 — **0 failed**.
+4. Frontend: tsc 0, eslint 0, npm test 50/712 + render 9/89, nav-targets 0 problems, design-audit 0, expo
+   export web OK; journeys **21/0**; web smoke **170/0**, 0 page/console errors, 0 storms.
+5. ci.yml unchanged (new suites run in existing steps; migrations loop picks up 22); openapi regenerated
+   (no diff). Not committed; scratch DB dropped, servers stopped.

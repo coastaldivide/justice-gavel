@@ -7,6 +7,8 @@ import { apiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
+const FEE_NOTE = 'Bail agents set their own fees. Justice Gavel has no sourced fee data — ask the agent what they charge before you sign.';
+
 // ── Build share-ready summary for bail result ─────────────────────────────
 
 
@@ -55,7 +57,7 @@ router.get('/nearby', async (req, res) => {
       return err400(res, 'lat and lng are required');
     }
     const db = await getDb();
-    const agents = await db.all('SELECT id,name,phone,address,lat,lng,city,state,rating,reviews,verified,fee_percent,available_24_7,active FROM bail_agents WHERE active != 0 ORDER BY rating DESC NULLS LAST LIMIT 300');
+    const agents = await db.all('SELECT id,name,phone,address,lat,lng,city,state,rating,reviews,verified,available_24_7,active FROM bail_agents WHERE active != 0 ORDER BY rating DESC NULLS LAST LIMIT 300');
     const list = agents
       .map(a => ({ ...a, distanceKm: haversine(lat, lng, a.lat, a.lng) }))
       .filter(a => a.distanceKm <= radiusKm)
@@ -92,8 +94,8 @@ router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), (req, re
       type:         'immigration_bond',
       bond_min,
       bond_max,
-      bondsman_min: Math.round(bond_min * 0.15),   // 15% for immigration bonds (vs 10% criminal)
-      bondsman_max: Math.round(bond_max * 0.15),
+      // No bail-agent fee estimate: no sourced premium data (agents set their own fees).
+      fee_note:     FEE_NOTE,
       statutory:    '8 U.S.C. § 1226(a)',
       note:         'ICE detainer holds prevent state bail release. Immigration bond is separate and set by an immigration judge. Minimum $1,500 by statute. Bond may be denied for flight risk or danger to community.',
       no_bail_risk: flight_risk === 'high' && prior_record === 'extensive',
@@ -143,17 +145,13 @@ router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), (req, re
   if (prior_record !== 'none') conditions.push('Pre-trial supervision likely');
   if (violent)              conditions.push('Electronic monitoring possible');
 
-  // ── Bondsman cost (standard 10% non-refundable premium) ──────────────────
-  const BOND_RATE   = 0.10;
-  const bondsman_cost = Math.round(recommended * BOND_RATE);
-
+  // No bail-agent fee estimate: the repo has no sourced per-state premium data.
   res.json({
     type:              'criminal_bail',
     recommended,
     bail_range_min:    Math.round(recommended * 0.75),
     bail_range_max:    Math.round(recommended * 1.5),
-    bondsman_cost,                              // 10% non-refundable
-    bondsman_rate_pct: 10,
+    fee_note:          FEE_NOTE,
     cash_bail:         recommended,             // pay full amount directly to court
     remand_risk,
     conditions,
@@ -175,7 +173,7 @@ router.get('/immigration', apiLimiter, (req, res) => {
     minimum_bond:    1500,
     maximum_bond:    25000,
     typical_range:   '1,500 - 10,000',
-    premium_rate:    '15% (higher than criminal bonds)',
+    fee_note:        FEE_NOTE,
     statutory_basis: '8 U.S.C. § 1226(a)',
     bond_types: [
       { type: 'delivery_bond',    description: 'Allows detainee release pending immigration hearing. Set by ICE or immigration judge.' },
@@ -188,30 +186,29 @@ router.get('/immigration', apiLimiter, (req, res) => {
 });
 
 
-// ── GET /bail/estimate-total — full cost estimate including fees ──────────
+// ── GET /bail/estimate-total — what a quoted bail-agent fee comes to ──────
+// The caller must supply the fee rate the agent actually quoted (`rate`, e.g.
+// 0.08). No default rate and no invented court / monitoring / attorney
+// amounts: there is no sourced data for them.
 router.get('/estimate-total', apiLimiter, asyncRoute((req, res) => {
-  const bail     = parseFloat(req.query.bail_amount || '0');
-  const rate     = parseFloat(req.query.rate || '0.10');
+  const bail = parseFloat(req.query.bail_amount || '0');
+  const rate = req.query.rate == null || req.query.rate === '' ? null : parseFloat(req.query.rate);
 
   if (!bail || bail <= 0) return res.status(400).json({ error: 'bail_amount required' });
-
-  const premium      = Math.ceil(bail * rate * 100) / 100;
-  const court_fees   = 250;   // typical court appearance fees
-  const ankle_monitor= 150;   // if ordered (30 days)
-  const attorney_est  = bail < 10000 ? 1500 : bail < 50000 ? 3500 : 7500;
-  const total_est    = premium + court_fees + ankle_monitor + attorney_est;
-
+  if (rate == null) {
+    return res.json({ bail_amount: bail, premium: null, fee_note: FEE_NOTE,
+      note: 'Enter the fee your bail agent quoted to see what it comes to.' });
+  }
+  if (!Number.isFinite(rate) || rate <= 0 || rate >= 1) {
+    return res.status(400).json({ error: 'rate must be the quoted fee as a fraction between 0 and 1 (e.g. 0.08).' });
+  }
+  const premium = Math.ceil(bail * rate * 100) / 100;
   return res.json({
-    bail_amount:      bail,
+    bail_amount: bail,
+    quoted_rate: rate,
     premium,
-    estimated_fees: {
-      bond_premium:    premium,
-      court_fees,
-      ankle_monitor,
-      attorney_retainer: attorney_est,
-      total:           total_est,
-    },
-    note: 'Estimates only. Court fees, monitoring, and attorney costs vary by county.',
+    fee_note: FEE_NOTE,
+    note: 'Based on the fee you entered. Ask the agent which parts, if any, are refundable before you sign.',
   });
 }));
 

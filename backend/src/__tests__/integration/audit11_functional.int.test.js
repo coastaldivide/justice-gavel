@@ -143,13 +143,16 @@ describeIntegration('audit11 functional fixes (real Postgres)', () => {
     expect(msg.data).toEqual(expect.objectContaining({ type: 'court_reminder', case_id: c.body.id }));
   });
 
-  it('H11: no device → email fallback; a dead device token is dropped', async () => {
+  it('H11: no device and no e-mail provider → undeliverable (never "sent"); a dead device token is dropped', async () => {
     const carol = await ctx.register({ displayName: 'Carol' });
     const c = await ctx.request().post('/api/cases').set(carol.headers).send({ title: 'Trespass', next_court_date: dayPlus(4) });
     const rem = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE case_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [c.body.id]);
     const row = await deliverNow(rem.id);
-    expect(row.status).toBe('sent');
-    expect(row.channel).toBe('email_log_only');   // no RESEND_API_KEY here: logged, honestly labelled
+    // no RESEND_API_KEY here: the e-mail is only logged — that is not delivery
+    expect(row).toEqual(expect.objectContaining({ status: 'undeliverable', channel: null }));
+    expect(Number(row.delivered || 0)).toBe(0);
+    expect(row.error).toMatch(/no_push_token/);
+    expect(row.error).toMatch(/email_not_configured/);
 
     const dead = 'ExponentPushToken[audit11-dead-token]';
     await ctx.request().post('/api/push/token').set(carol.headers).send({ token: dead });
@@ -157,8 +160,9 @@ describeIntegration('audit11 functional fixes (real Postgres)', () => {
     expo.ticket = 'error';
     try {
       const row2 = await deliverNow(rem2.id);
-      expect(row2.status).toBe('sent');                 // still reached the user, by email
-      expect(row2.channel).toBe('email_log_only');
+      expect(row2.status).toBe('pending');              // push error → retried later
+      const row3 = await deliverNow(rem2.id);            // token gone now → nothing left to try
+      expect(row3.status).toBe('undeliverable');
     } finally { expo.ticket = 'ok'; }
     const tok = await ctx.db.get('SELECT COUNT(*) AS n FROM push_tokens WHERE token = ?', [dead]);
     expect(Number(tok.n)).toBe(0);

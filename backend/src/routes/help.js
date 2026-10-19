@@ -189,8 +189,10 @@ router.get('/nearby', optionalAuth, nearbyLimiter, async (req, res) => {
           id: Number(pd.id), name: pd.title || pd.name, phone: pd.phone || null,
           url: pd.url || pd.website || null, address: pd.address || null,
           eligibility: pd.eligibility || null,
-          about: pd.description || pd.body || null,
-          note: 'If you cannot afford a lawyer, ask the court for a public defender at your first appearance.',
+          // The seeded office descriptions carry uncited timing claims ("request at
+          // arraignment / first appearance"); they are not shown (owner rule).
+          about: null,
+          note: 'If you cannot afford a lawyer, ask the court how to request a public defender.',
         };
       }
       inmateLookup = rows.filter(r => r.category === 'INMATE_LOOKUP').map(r => ({

@@ -343,15 +343,16 @@ async function main() {
 
   // ── "Just arrested?" core path ─────────────────────────────────────────────
   const ipFrom = (ip) => ({ 'X-Forwarded-For': ip });
-  await check('core path 1: rights card is public, sourced and dated; unsourced state → notice', async () => {
+  await check('core path 1: rights card is public, sourced and dated; unreviewed state notes never shown', async () => {
     const r = await call('GET', '/api/rights/TN');
-    assert(r.status === 200 && r.json?.general?.length === 8 && r.json.state_specific?.length > 0, `rights TN: ${brief(r)}`);
-    const all = [...r.json.general, ...r.json.state_specific];
-    assert(all.every(s => s.source && s.last_reviewed), 'a rights section has no source / last-reviewed date');
+    assert(r.status === 200 && r.json?.general?.length === 8, `rights TN: ${brief(r)}`);
+    assert(Array.isArray(r.json.state_specific) && r.json.state_specific.length === 0, 'unreviewed state notes shown for TN');
+    assert(r.json.state_notice === "State-specific details for Tennessee haven't been reviewed yet — ask a local lawyer or public defender.", `TN notice: ${r.json.state_notice}`);
+    assert(r.json.general.every(s => s.source && s.last_reviewed), 'a rights section has no source / last-reviewed date');
     assert(!/10\s?%/.test(r.text), 'unsourced bail-fee estimate in the rights card');
     const pr = await call('GET', '/api/rights/PR');
-    assert(pr.status === 200 && pr.json?.state_notice === 'State-specific details not yet available for Puerto Rico.', `PR: ${brief(pr)}`);
-    return `${all.length} sourced sections for TN`;
+    assert(pr.status === 200 && /Puerto Rico haven't been reviewed yet/.test(pr.json?.state_notice || ''), `PR: ${brief(pr)}`);
+    return `${r.json.general.length} sourced general sections; state notes pending review`;
   });
 
   await check('core path 2: guest lawyer + bail results with filters; report a listing never edits it', async () => {

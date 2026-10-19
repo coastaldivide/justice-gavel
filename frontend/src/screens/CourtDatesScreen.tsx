@@ -26,7 +26,8 @@ import { getUserState } from '../utils/userState';
 import { requestNotificationsInContext } from '../services/permissions';
 import {
   cacheCourtDates, getCachedCourtDates, cacheFollowing, getCachedFollowing, isOfflineError, saveCoreProgress,
-  formatCourtDay, HEARING_LABELS, type CourtDate, type CourtDatesList, type FollowedCase,
+  formatCourtDay, HEARING_LABELS, shouldShowDeliveryPrompt, dismissDeliveryPrompt,
+  type CourtDate, type CourtDatesList, type FollowedCase, type ReminderDelivery,
 } from '../services/corePath';
 
 export interface Guidance {
@@ -116,6 +117,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   const [guidance, setGuidance] = useState<Guidance>(BUNDLED_GUIDANCE);
   const [showMissed, setShowMissed] = useState(params.guidance === 'missed');
   const [showPast, setShowPast] = useState(false);
+  const [delivery, setDelivery] = useState<ReminderDelivery | null>(null);
 
   // add form
   const [adding, setAdding] = useState(false);
@@ -151,6 +153,8 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       if (!mounted.current) return;
       setList(cd.data); setPhase('ok'); setSavedAt(null);
       cacheCourtDates(cd.data).catch(() => {});
+      const rd = cd.data?.reminder_delivery || null;
+      shouldShowDeliveryPrompt(rd).then(show => { if (mounted.current) setDelivery(show ? rd : null); }).catch(() => {});
       if (fol?.data?.following) { setFollowing(fol.data.following); cacheFollowing(fol.data.following).catch(() => {}); }
     } catch (e) {
       if (!mounted.current) return;
@@ -281,6 +285,28 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>＋ Add a court date</Text>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={styles.muted}>We remind you 7 days, 3 days and 1 day before, and the morning of. Add each date to your phone calendar too.</Text>
+        {!!delivery && phase === 'ok' && (
+          <View style={styles.box} testID="reminder-delivery-prompt">
+            <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>
+              ⚠️ {delivery.message || 'We could not send your court reminders. Turn on notifications or add an e-mail so we can remind you.'}
+            </Text>
+            <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-notifications" style={styles.secondaryBtn}
+              onPress={async () => {
+                const answer = await requestNotificationsInContext().catch(() => 'declined');
+                if (answer === 'granted') { await dismissDeliveryPrompt(delivery); setDelivery(null); showToast('Notifications on — we will remind you.', 'success'); }
+              }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🔔 Turn on notifications</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-email" style={styles.secondaryBtn}
+              onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); (navigation as any).navigate('Settings'); }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✉️ Add an e-mail</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-dismiss" style={styles.secondaryBtn}
+              onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 20 }} color={colors.textBrand} accessibilityLabel="Loading court dates" />}
         {phase === 'error' && (

@@ -33,6 +33,9 @@ import { courtDayGuidance } from '../services/courtDayGuidance.js';
 import { normalizeState } from '../services/rightsContent.js';
 import { smsLive, toE164 } from '../services/sms.js';
 import { todayInZone } from '../utils/timezone.js';
+import { notifyFollowersCourtDateChanged } from '../services/followers.js';
+import { isExpoPushToken } from '../services/expoPush.js';
+import { logIgnored } from '../utils/ignored.js';
 
 const router = Router();
 const writeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many changes. Slow down.' });
@@ -154,6 +157,38 @@ router.get('/preferences', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * Can we reach this person with their court reminders? `undeliverable` counts
+ * their court reminders of the last 30 days that reached no channel
+ * (reminderDispatcher → status 'undeliverable'); `channels` is what would be
+ * tried now. The court-date screen shows a one-time "turn on notifications or
+ * add an e-mail" prompt when `needs_attention` is true.
+ */
+async function reminderDelivery(db, userId, upcomingCount) {
+  const u = await db.get('SELECT email, phone, sms_reminders, push_token FROM users WHERE id = ?', [userId]).catch(() => null);
+  const toks = await db.all('SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 5', [userId]).catch(() => []);
+  const und = await db.get(
+    `SELECT COUNT(*) AS n, MAX(deliver_at) AS last_at FROM scheduled_pushes
+      WHERE user_id = ? AND status = 'undeliverable' AND notification_type IN ('court_reminder', 'follower_court_reminder')
+        AND deliver_at > NOW() - INTERVAL '30 days'`, [userId]).catch(() => null);
+  const { emailLive } = await import('../services/email.js');
+  const channels = {
+    push: [...toks.map(t => t.token), u?.push_token].some(isExpoPushToken),
+    email: emailLive() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(u?.email || '')),
+    sms: smsLive() && Number(u?.sms_reminders) === 1 && !!toE164(u?.phone),
+  };
+  const undeliverable = Number(und?.n || 0);
+  const lastAt = und?.last_at ? new Date(und.last_at).toISOString() : null;
+  const noChannel = !channels.push && !channels.email && !channels.sms;
+  return {
+    undeliverable, last_undeliverable_at: lastAt, channels,
+    needs_attention: undeliverable > 0 || (noChannel && upcomingCount > 0),
+    message: undeliverable > 0 || noChannel
+      ? 'We could not send your court reminders. Turn on notifications or add an e-mail so we can remind you.'
+      : null,
+  };
+}
+
 // ── list ────────────────────────────────────────────────────────────────────
 router.get('/', authRequired, async (req, res) => {
   try {
@@ -169,11 +204,13 @@ router.get('/', authRequired, async (req, res) => {
         LIMIT 400`, caseId ? [req.user.id, caseId] : [req.user.id]);
     const { today, tz } = await userToday(db, req.user.id, null);
     const all = rows.map(r => serializeCourtDate(r, today));
+    const upcoming = all.filter(x => !x.archived);
     res.setHeader('Cache-Control', 'no-store');
     res.json({
       time_zone: tz, today,
-      upcoming: all.filter(x => !x.archived),
+      upcoming,
       past: all.filter(x => x.archived).reverse(),
+      reminder_delivery: await reminderDelivery(db, req.user.id, upcoming.length),
     });
   } catch (e) {
     logger.error({ err: e.message }, '[court-dates/list]');
@@ -221,6 +258,7 @@ router.post('/', authRequired, writeLimiter, async (req, res) => {
     if (result.status) return res.status(result.status).json(result.body);
     await refreshNextCourtDate(db, caseId);
     const plan = await scheduleForCourtDate(db, result.id);
+    notifyFollowersCourtDateChanged(db, caseId, 'added').catch(logIgnored('routes/courtDates'));
     const row = await loadOwned(db, req.user.id, result.id);
     const { today } = await userToday(db, req.user.id, row?.case_state);
     res.status(201).json({ ...serializeCourtDate(row, today), time_zone: plan.time_zone, reminders: plan.reminders });
@@ -282,6 +320,14 @@ router.patch('/:id', authRequired, writeLimiter, async (req, res) => {
     }
     await refreshNextCourtDate(db, Number(before.case_id));
     const plan = await scheduleForCourtDate(db, id);
+    // Followers hear about changes to the date itself (day, time, place, cancellation) —
+    // not about the owner marking it attended / missed.
+    const courtChange = ['court_date', 'court_time', 'location', 'courthouse_id'].some(k => k in out)
+      || (out.status && ['cancelled', 'rescheduled'].includes(out.status));
+    if (courtChange) {
+      notifyFollowersCourtDateChanged(db, Number(before.case_id), out.status === 'cancelled' ? 'cancelled' : 'changed')
+        .catch(logIgnored('routes/courtDates'));
+    }
     const row = await loadOwned(db, req.user.id, id);
     const { today } = await userToday(db, req.user.id, row.case_state);
     const body = { ...serializeCourtDate(row, today), time_zone: plan.time_zone, reminders: plan.reminders };
@@ -302,6 +348,7 @@ router.delete('/:id', authRequired, writeLimiter, async (req, res) => {
     await db.run('UPDATE court_dates SET deleted_at = NOW(), updated_at = NOW() WHERE id = ? AND user_id = ?', [id, req.user.id]);
     await cancelCourtDateReminders(db, id, 'court_date_deleted');
     await refreshNextCourtDate(db, Number(row.case_id));
+    notifyFollowersCourtDateChanged(db, Number(row.case_id), 'cancelled').catch(logIgnored('routes/courtDates'));
     res.json({ ok: true });
   } catch (e) {
     logger.error({ err: e.message }, '[court-dates/delete]');

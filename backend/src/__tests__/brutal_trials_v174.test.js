@@ -17,14 +17,16 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 
 // ── API RESPONSE ↔ FE FIELD CONTRACTS ────────────────────────────────────
 describe('CONTRACT. API Response Fields Match FE Expectations', () => {
-  test('CONTRACT-02: /family/contacts returns u.phone for emergency dialing', async () => {
+  test('CONTRACT-02: /cases/family/contacts never returns a follower\'s account phone / e-mail (privacy)', async () => {
     const fs = await import('fs');
     const cases = fs.readFileSync(__REPO + '/backend/src/routes/cases.js','utf8');
     const fcIdx = cases.indexOf("'/family/contacts'");
-    const handler = cases.slice(fcIdx, fcIdx+1000);
-    expect(handler).toContain('u.phone');
-    // Before fix: phone was missing — users couldn't call family contacts
-    // After fix: phone included in SELECT and returned with contacts
+    const handler = cases.slice(fcIdx, fcIdx+1400);
+    // Emergency dialing uses the contacts the user typed (/api/family/contacts,
+    // family_contacts table). Followers' own account details were never
+    // consented to; only active follows, with the name / e-mail on the invite.
+    expect(handler).not.toMatch(/u\.phone|u\.email|JOIN users/);
+    expect(handler).toContain("cfa.status = 'active'");
   });
   test('CONTRACT-03: referrals route removed (exploit risk eliminated)', async () => {
     const fs = await import('fs');

@@ -324,10 +324,18 @@ identical tracked fields (0 to insert, 0 to propose).
 
 ## CORE PATH ("Just arrested?") — queues, reminders, content
 
-**Rights content.** `backend/src/services/rightsContent.js` serves the card (general = the app's bundled
-card, state notes = the recorded state summaries) with source + "last reviewed" on every section. Lawyer-
-reviewed text goes in `rights_cards` (one row per state+topic+language, `source` REQUIRED, `reviewed_by`,
-`content_verified_at`); a row without a source is never shown. Check: `GET /api/rights/TN`.
+**Rights content.** `backend/src/services/rightsContent.js` serves the general card (the app's bundled
+card) with source + "last reviewed" on every section. A STATE section is shown — and given to the AI chat —
+only when it has a real citation (`source_url`, or a statute cite such as "Tenn. Code Ann. § 40-7-123" in
+`source`) or `reviewed_by`. The built-in per-state summaries (`STATE_RIGHTS`) have neither, so they are kept
+as draft material and never shown: every state gets "State-specific details for <state> haven't been reviewed
+yet — ask a local lawyer or public defender." To publish a state section, insert a `rights_cards` row (state,
+topic, title, content, `source` with the cite, `source_url`, `reviewed_by`, `content_verified_at`); it shows
+automatically (and the app's offline copy drops any section that does not qualify). Check: `GET /api/rights/TN`.
+
+**Bail-agent fees.** There is no sourced premium data: no endpoint, screen, lesson or tip states a fee
+percentage (`no_unsourced_legal_claims.test.js` scans for it). `/api/bail/estimate-total` only multiplies a
+rate the person was quoted.
 
 **Listing reports** (users tapping "Report a problem with this listing"). They never edit the listing.
 ```bash
@@ -345,8 +353,30 @@ lawyers (bail-agent messaging is not built yet). The listing row is never change
 **Court reminders.** One set per hearing (`court_dates`, `scheduled_pushes.court_date_id`): 7 d 09:00,
 3 d 09:00, 1 d 18:00, morning-of 06:30 in the user's zone; consented family followers get the same set
 (`follower_court_reminder`). Delivery chain: push → e-mail (needs `RESEND_API_KEY`) → SMS (needs all of
-`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, and the user's opt-in) → logged e-mail
-(`channel = 'email_log_only'`). Each missing provider is skipped, never an error.
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, and the user's opt-in). Each missing
+provider is skipped, never an error. A reminder that reached NO channel is `status = 'undeliverable'`
+(`delivered = 0`, reason in `error`, e.g. `no_push_token; email_not_configured; sms_not_configured`) — never
+"sent". `/metrics` → `reminders.undeliverable_24h` (+ `jg_reminders_undeliverable_24h` in Prometheus format)
+and `jobs['reminders:dispatch']`; the court-date screen asks the person once to turn on notifications or add
+an e-mail. A rising `undeliverable_24h` usually means `RESEND_API_KEY` is missing.
+
+**Family followers.** A follower gets their own court reminders (courthouse named, never the owner's free-text
+location or case title) and ONE other push: "A court date you follow was updated" when a date is added,
+moved or cancelled — never for other case edits. Owners see only the name / e-mail they typed on the invite,
+for active follows only. Invite e-mails: 10 per user and 3 per recipient address per 24 h (429).
+
+**Client IP (rate limits, guest report keys).** Express `trust proxy` is `TRUST_PROXY` (default `1` = trust
+the one platform edge in front of the app). `X-Forwarded-For` must be appended by the trusted proxy, never
+taken from the client; with the right setting a client-supplied XFF entry is ignored. Railway: the edge
+appends to / overwrites XFF, but on routes through its CDN there is a second hop (Railway community thread,
+2026: XFF = `client, CDN hop`; socket peer in `100.0.0.0/8`), so `trust proxy = 1` returns the CDN hop and
+many users would share one rate-limit key. After deploy, check it (the HTTP log does not record IPs):
+trip a limit from one phone (e.g. 6 wrong logins), then try a login from a second device on a different
+network — if that is also 429, the app is keying on a shared proxy hop; set `TRUST_PROXY` to the trusted
+ranges (e.g. `100.0.0.0/8` plus the CDN ranges Railway documents) and repeat — never `true`. Guest listing-report keys
+are a hash of that IP (documented limitation: an IPv4 hash can be brute-forced).
+
+
 ```sql
 SELECT status, channel, error, count(*) FROM scheduled_pushes
  WHERE notification_type IN ('court_reminder','follower_court_reminder') AND created_at > now() - interval '1 day'

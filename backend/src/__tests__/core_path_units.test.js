@@ -9,7 +9,7 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import {
   GENERAL_SECTIONS, SCRIPT, STATE_RIGHTS, STATE_NAMES, getRightsCard, buildLegacyRightsCard,
-  rightsPromptBlock, rightsRefsFor, normalizeState,
+  rightsPromptBlock, rightsRefsFor, normalizeState, isReviewedStateSection, unreviewedStateNotes, reviewPendingNotice,
 } from '../services/rightsContent.js';
 import { parseHours, isOpenNow, is24x7, completeness, rankProviders } from '../services/providerHours.js';
 import { buildCourtDateIcs, foldLine, escapeIcsText, vtimezoneLines } from '../services/ics.js';
@@ -65,11 +65,22 @@ describe('rights content', () => {
     expect(ja).toContain(`'${SCRIPT.source}'`);
   });
 
-  it('every state code has a name; the 50 states + DC have sourced notes, territories do not', async () => {
-    expect(Object.keys(STATE_RIGHTS)).toHaveLength(51);
-    for (const code of Object.keys(STATE_RIGHTS)) expect(STATE_NAMES[code]).toEqual(expect.any(String));
+  it('every state code has a name; the built-in state notes are kept but never shown (no citation, no reviewer)', async () => {
+    expect(Object.keys(STATE_RIGHTS)).toHaveLength(51);      // draft data stays in the repo
+    for (const code of Object.keys(STATE_RIGHTS)) {
+      expect(STATE_NAMES[code]).toEqual(expect.any(String));
+      for (const s of unreviewedStateNotes(code)) expect(isReviewedStateSection(s)).toBe(false);
+      const card = await getRightsCard(null, code);
+      expect(card.state_specific).toEqual([]);
+      expect(card.state_specific_available).toBe(false);
+      expect(card.state_notice).toBe(reviewPendingNotice(STATE_NAMES[code]));
+      expect(JSON.stringify(card)).not.toContain(STATE_RIGHTS[code].stopRule);
+      expect(JSON.stringify(card)).not.toContain(STATE_RIGHTS[code].bailNote);
+    }
+    const tn = await getRightsCard(null, 'tn');
+    expect(tn.state_notice).toBe("State-specific details for Tennessee haven't been reviewed yet — ask a local lawyer or public defender.");
     const gu = await getRightsCard(null, 'gu');
-    expect(gu.state_notice).toBe('State-specific details not yet available for Guam.');
+    expect(gu.state_notice).toBe(reviewPendingNotice('Guam'));
     expect(gu.general).toHaveLength(8);
     const none = await getRightsCard(null, '');
     expect(none.state).toBe('US');
@@ -78,18 +89,45 @@ describe('rights content', () => {
     expect(normalizeState('XX')).toBeNull();
   });
 
-  it('a database failure falls back to the bundled card', async () => {
-    const broken = { all: async () => { throw new Error('db down'); } };
-    const c = await getRightsCard(broken, 'TX');
-    expect(c.general).toHaveLength(8);
-    expect(c.state_specific.length).toBeGreaterThan(0);
+  it('only a cited (URL / statute cite) or reviewed state section qualifies', () => {
+    const generic = 'Published state statutes and case law (Justice Gavel state summary, as recorded April 2026; no specific citation recorded)';
+    expect(isReviewedStateSection({ source: generic })).toBe(false);
+    expect(isReviewedStateSection({ source: generic, source_url: 'https://law.example/tca' })).toBe(true);
+    expect(isReviewedStateSection({ source: generic, reviewed_by: 'A. Lawyer, Esq.' })).toBe(true);
+    expect(isReviewedStateSection({ source: 'Tenn. Code Ann. § 40-7-123' })).toBe(true);
+    expect(isReviewedStateSection({ source: 'Tex. Penal Code 38.02' })).toBe(true);
+    expect(isReviewedStateSection({ source: 'Justice Gavel rights card — April 2026' })).toBe(false);
   });
 
-  it('AI grounding: the prompt carries the verified text and the "say you are not sure" rule; refs link back', () => {
+  it('a database row that is cited shows; an uncited one does not; a DB failure falls back to general only', async () => {
+    const rows = [
+      { topic: 'stop_identify', title: 'IF STOPPED — TEXAS', content: 'cited text', state: 'TX', source: 'Tex. Penal Code § 38.02', source_url: null, content_verified_at: '2026-09-01', reviewed_by: null },
+      { topic: 'state_bail', title: 'BAIL — TEXAS', content: 'uncited text', state: 'TX', source: 'Published state statutes and case law', source_url: null, content_verified_at: null, reviewed_by: null },
+    ];
+    const c = await getRightsCard({ all: async () => rows }, 'TX');
+    expect(c.state_specific.map(s => s.body)).toEqual(['cited text']);
+    expect(c.state_notice).toBeNull();
+    const broken = { all: async () => { throw new Error('db down'); } };
+    const b = await getRightsCard(broken, 'TX');
+    expect(b.general).toHaveLength(8);
+    expect(b.state_specific).toEqual([]);
+    expect(b.state_notice).toBe(reviewPendingNotice('Texas'));
+  });
+
+  it('AI grounding: general card only — never the unreviewed state notes; "say you are not sure" rule; refs link back', () => {
     const p = rightsPromptBlock('CA');
     expect(p).toContain('(rc_1) 1. RIGHT TO REMAIN SILENT');
-    expect(p).toContain(STATE_RIGHTS.CA.stopRule);
+    for (const code of Object.keys(STATE_RIGHTS)) {
+      const q = rightsPromptBlock(code);
+      expect(q).not.toContain(STATE_RIGHTS[code].stopRule);
+      expect(q).not.toContain(STATE_RIGHTS[code].bailNote);
+    }
+    expect(p).toMatch(/No reviewed state-specific rights content exists yet for California/);
     expect(p).toMatch(/talk to a lawyer or public defender — do not guess/);
+    const legacy = buildLegacyRightsCard('TX');
+    expect(JSON.stringify(legacy)).not.toContain(STATE_RIGHTS.TX.stopRule);
+    expect(legacy.mustID).toBeNull();
+    expect(legacy.state_notice).toBe(reviewPendingNotice('Texas'));
     const refs = rightsRefsFor('Can the police search my car?', 'No (see your rights card: rc_3).');
     expect(refs.map(r => r.key)).toContain('rc_3');
     expect(refs[0]).toEqual(expect.objectContaining({ heading: expect.any(String), source: expect.any(String), last_reviewed: '2026-04' }));

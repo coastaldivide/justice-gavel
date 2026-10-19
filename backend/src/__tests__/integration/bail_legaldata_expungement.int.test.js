@@ -26,8 +26,10 @@ describeIntegration('bail calculator, legaldata, expungement (real Postgres)', (
     expect(res.body.recommended % 500).toBe(0);
     expect(res.body.bail_range_min).toBeLessThanOrEqual(res.body.recommended);
     expect(res.body.bail_range_max).toBeGreaterThanOrEqual(res.body.recommended);
-    expect(res.body.bondsman_cost).toBe(Math.round(res.body.recommended * 0.10));
-    expect(res.body.bondsman_rate_pct).toBe(10);
+    // no invented bail-agent fee: no sourced premium data
+    expect(res.body).not.toHaveProperty('bondsman_cost');
+    expect(res.body).not.toHaveProperty('bondsman_rate_pct');
+    expect(res.body.fee_note).toMatch(/set their own fees/);
     expect(Array.isArray(res.body.conditions)).toBe(true);
     expect(res.body.disclaimer).toMatch(/estimate/i);
   });
@@ -39,7 +41,8 @@ describeIntegration('bail calculator, legaldata, expungement (real Postgres)', (
     expect(ice.status).toBe(200);
     expect(ice.body.type).toBe('immigration_bond');
     expect(ice.body.bond_min).toBe(1500);
-    expect(ice.body.bondsman_min).toBe(Math.round(1500 * 0.15));
+    expect(ice.body).not.toHaveProperty('bondsman_min');
+    expect(ice.body.fee_note).toMatch(/set their own fees/);
 
     expect((await ctx.request().post('/api/bail/calculate').send({ state: 'TN' })).status).toBe(400);
     expect((await ctx.request().post('/api/bail/calculate').send({})).status).toBe(400);

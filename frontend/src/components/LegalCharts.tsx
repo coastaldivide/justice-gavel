@@ -83,14 +83,17 @@ export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGa
 }
 
 // ── Bail Breakdown ─────────────────────────────────────────────────────────────
+// No default bail-agent rate: there is no sourced premium data. The agent's
+// row is shown only for a rate the person was actually quoted.
 interface BailBreakdownProps {
   bailAmount: number;
-  bondsmanRate?: number;
+  /** The fee the bail agent quoted, as a fraction (0.08 = 8%). Omit when unknown. */
+  quotedRate?: number | null;
 }
 
-export function BailBreakdown({ bailAmount, bondsmanRate = 0.10 }: BailBreakdownProps) {
-  const bondsmanCost = Math.round(bailAmount * bondsmanRate);
-  const cashFull     = bailAmount;
+export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownProps) {
+  const rate = typeof quotedRate === 'number' && quotedRate > 0 && quotedRate < 1 ? quotedRate : null;
+  const cashFull = bailAmount;
   const fmt = (n: number) => '$' + n.toLocaleString('en-US');
 
   return (
@@ -109,24 +112,18 @@ export function BailBreakdown({ bailAmount, bondsmanRate = 0.10 }: BailBreakdown
         <View style={[gc.fill, { width: '100%', backgroundColor: COLORS.navy }]} />
       </View>
 
-      {/* Bondsman */}
+      {/* Bail agent — only with a quoted fee */}
       <View style={[gc.bailRow, { marginTop: 14 }]}>
         <View style={gc.bailLabelRow}>
           <AppIcon name={ICONS.receipt} size={16} color={COLORS.gold} />
-          <Text style={gc.bailLabel}>Bondsman ({Math.round(bondsmanRate * 100)}% non-refundable)</Text>
+          <Text style={gc.bailLabel}>{rate ? `Bail agent (quoted fee ${Math.round(rate * 1000) / 10}%)` : 'Bail agent'}</Text>
         </View>
-        <Text style={[gc.bailAmount, { color: COLORS.goldText }]}>{fmt(bondsmanCost)}</Text>
-      </View>
-      <View style={gc.track}>
-        <View style={[gc.fill, {
-          width: `${bondsmanRate * 100}%`,
-          backgroundColor: COLORS.gold,
-        }]} />
+        <Text style={[gc.bailAmount, { color: COLORS.goldText }]}>{rate ? fmt(Math.round(bailAmount * rate)) : 'Ask the agent'}</Text>
       </View>
 
       <Text style={gc.bailNote}>
-        The bondsman premium is non-refundable regardless of case outcome.
-        Cash bail is returned when the case concludes.
+        Bail agents set their own fees — ask what they charge, and whether any of it is refundable, before you sign.
+        Cash bail paid to the court is generally returned when the case concludes.
       </Text>
     </View>
   );

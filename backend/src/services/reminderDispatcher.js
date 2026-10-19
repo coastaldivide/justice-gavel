@@ -21,8 +21,15 @@
  *                   opted in (users.notif_marketing = 1).
  *
  * Push goes through services/expoPush.js (EXPO_PUSH_API_URL is injectable);
- * email through services/email.js (logged, not sent, without RESEND_API_KEY —
- * recorded as channel 'email_log_only' so nobody mistakes it for delivery).
+ * email through services/email.js (only when RESEND_API_KEY is set).
+ *
+ * A reminder that reached the person on NO channel (no device, no working
+ * e-mail provider, no SMS) is recorded as status 'undeliverable' — never
+ * 'sent' — with delivered = 0 and the reason in `error`. Transient push
+ * failures are retried first; when the retries run out it is 'undeliverable'
+ * too. Counts are kept per process (getReminderStats → /metrics `reminders`)
+ * and the court-date screen asks the person to turn on notifications or add
+ * an e-mail (GET /api/court-dates → reminder_delivery).
  */
 import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
@@ -31,6 +38,7 @@ import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtReminders.js';
 import { sendSms, smsLive } from './sms.js';
+import { guardJob } from '../utils/cronGuard.js';
 
 const BATCH = 50;
 const STALE_CLAIM_MINUTES = 10;
@@ -38,6 +46,10 @@ const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder
 const SMS_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
 const COURT_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
 const DISABLED_ACCOUNT = new Set(['suspended', 'deleted', 'disabled', 'banned']);
+
+// Per-process delivery counters for /metrics (job health).
+const STATS = { runs: 0, last_run_at: null, claimed: 0, sent: 0, undeliverable: 0, failed: 0, cancelled: 0, skipped: 0, retry: 0, last_undeliverable_at: null };
+export function getReminderStats() { return { ...STATS }; }
 
 function parseData(raw) {
   if (!raw) return {};
@@ -159,8 +171,7 @@ async function deliverOne(db, row, now) {
   }
 
   // ── Fallback chain: email (when Resend is configured) → SMS (when Twilio
-  //    is configured and the user opted in) → logged e-mail (dev / no
-  //    provider: recorded as 'email_log_only' so nobody mistakes it for delivery).
+  //    is configured and the user opted in). Nothing worked → 'undeliverable'.
   const canEmail = EMAIL_FALLBACK_TYPES.has(type) && looksLikeEmail(user.email);
   const { emailLive } = await import('./email.js');
   if (canEmail && emailLive()) {
@@ -180,17 +191,13 @@ async function deliverOne(db, row, now) {
     }
     pushError = `${pushError}; sms: ${r.error || r.reason}`;
   }
+  // Without an e-mail provider the message is only logged (dev) — that is
+  // NOT delivery, so it never counts as 'sent'.
   if (canEmail && !emailLive()) {
-    try {
-      const channel = await sendReminderEmail(user, row, data);
-      await finish(db, row.id, { status: 'sent', channel, delivered: 1, sent_at: now.toISOString(), error: pushError });
-      return 'sent';
-    } catch (e) {
-      pushError = `${pushError}; email: ${e.message}`;
-    }
+    await sendReminderEmail(user, row, data).catch(() => null);
   }
 
-  // ── Retry transient failures, otherwise give up ─────────────────────────
+  // ── Retry transient push failures, otherwise: undeliverable ─────────────
   const retries = Number(row.retry_count || 0);
   const max = Number(row.max_retries ?? 3);
   if (pushError !== 'no_push_token' && retries < max) {
@@ -198,8 +205,11 @@ async function deliverOne(db, row, now) {
     await finish(db, row.id, { status: 'pending', retry_count: retries + 1, deliver_at: next.toISOString(), error: pushError, claimed_at: null });
     return 'retry';
   }
-  await finish(db, row.id, { status: 'failed', error: pushError });
-  return 'failed';
+  const reasons = [pushError];
+  if (EMAIL_FALLBACK_TYPES.has(type)) reasons.push(!looksLikeEmail(user.email) ? 'no_email' : emailLive() ? 'email_failed' : 'email_not_configured');
+  if (SMS_FALLBACK_TYPES.has(type)) reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in' : 'sms_failed');
+  await finish(db, row.id, { status: 'undeliverable', delivered: 0, channel: null, error: [...new Set(reasons)].join('; ').slice(0, 300) });
+  return 'undeliverable';
 }
 
 /**
@@ -222,7 +232,7 @@ export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit 
       RETURNING id, user_id, title, body, data, deliver_at, notification_type, case_id, court_date_id, retry_count, max_retries`,
     [nowIso, nowIso, staleIso, limit]
   );
-  const counts = { claimed: claimed.length, sent: 0, failed: 0, cancelled: 0, skipped: 0, retry: 0 };
+  const counts = { claimed: claimed.length, sent: 0, undeliverable: 0, failed: 0, cancelled: 0, skipped: 0, retry: 0 };
   for (const row of claimed) {
     try {
       const outcome = await deliverOne(db, row, now);
@@ -232,6 +242,12 @@ export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit 
       logger.error({ id: row.id, err: e.message }, '[reminders] delivery error');
       await finish(db, row.id, { status: 'failed', error: String(e.message).slice(0, 300) }).catch(logIgnored('services/reminderDispatcher'));
     }
+  }
+  STATS.runs++; STATS.last_run_at = now.toISOString();
+  for (const k of ['claimed', 'sent', 'undeliverable', 'failed', 'cancelled', 'skipped', 'retry']) STATS[k] += counts[k] || 0;
+  if (counts.undeliverable) {
+    STATS.last_undeliverable_at = now.toISOString();
+    logger.warn({ undeliverable: counts.undeliverable }, '[reminders] reminders could not be delivered on any channel');
   }
   if (claimed.length) logger.info(counts, '[reminders] dispatch');
   return counts;
@@ -252,11 +268,13 @@ export function startReminderDispatcher({ intervalMs = 60_000 } = {}) {
     logger.info('[reminders] REMINDERS_ENABLED=false — reminder delivery is off in this process');
     return false;
   }
+  // guardJob: no overlap in this process + runs / failures / last success in
+  // /metrics `jobs['reminders:dispatch']` (rows are also claimed SKIP LOCKED).
+  const guarded = guardJob('reminders:dispatch', () => dispatchDueReminders());
   const tick = async () => {
     if (_running) return;
     _running = true;
-    try { await dispatchDueReminders(); }
-    catch (e) { logger.warn('[reminders] dispatch failed:', e.message); }
+    try { await guarded(); }
     finally { _running = false; }
   };
   _timer = setInterval(tick, intervalMs);
