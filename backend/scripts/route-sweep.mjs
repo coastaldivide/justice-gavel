@@ -312,7 +312,7 @@ function junkBodies(fields) {
 // ── 6. Checks on one response ─────────────────────────────────────────────────
 const OK_503 = new Set(['payments_unavailable', 'ai_unavailable', 'storage_unavailable', 'email_unavailable', 'video_unavailable',
   'sms_unavailable', 'auth_unavailable', 'feature_unavailable', 'service_unavailable', 'search_unavailable', 'integration_unavailable',
-  'sso_unavailable', 'transcription_unavailable', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable']);
+  'sso_unavailable', 'transcription_unavailable', 'unavailable', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable']);
 const LEAK = [/\n\s+at [\w$.<>]+ \(/, /node_modules\//, /\/src\/[\w/]+\.js:\d+/, /syntax error at or near/i, /column "[^"]+" (of relation|does not exist)/i,
   /relation "[^"]+" does not exist/i, /duplicate key value violates/i, /invalid input syntax for type/i, /violates (check|foreign key|not-null) constraint/i,
   /\bSequelize|\bSQLITE_|ECONNREFUSED/];
@@ -404,7 +404,8 @@ async function sweepRoute(route) {
     } else if (heavy && route.method === 'GET') {
       const qf = queryFields.length ? queryFields : ['limit', 'page'];
       for (const v of ['-1', 'x'.repeat(3000), 'abc', "' OR 1=1--"]) {
-        const qs = qf.map(n => `${encodeURIComponent(n)}=${encodeURIComponent(v)}`).join('&') + `&${qf[0]}=dup`;
+        // Long values only in the first two fields: the URL stays under Node's 16 KB header limit.
+        const qs = qf.map((n, i) => `${encodeURIComponent(n)}=${encodeURIComponent(v.length > 100 && i > 1 ? 'x' : v)}`).join('&') + `&${qf[0]}=dup`;
         const r = await send(`${url}${url.includes('?') ? '&' : '?'}${qs}`);
         checkResponse(route, c.who, `query:${v.slice(0, 8)}`, r);
       }

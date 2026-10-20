@@ -234,7 +234,7 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
     audit?.('auth.register', { userId: user.id, req })?.catch?.(() => {});
     if (type === 'email') {
       import('../services/email.js')
-        .then(mod => mod.sendWelcome(value, name))
+        .then(mod => mod.sendWelcome(value, name, lang || 'en'))
         .catch(e => logger.warn('[auth/register] welcome email:', e.message));
     }
     res.status(201).json(out);

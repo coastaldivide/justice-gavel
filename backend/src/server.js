@@ -21,8 +21,8 @@ const { initDb, closeDb } = await import('./db/index.js');
 const { startAllWatchdogs, stopAllWatchdogs } = await import('./monitoring/selfHealing.js');
 const { startScheduler, stopScheduler } = await import('./services/scheduler.js');
 const { startAIWorkers, stopAIWorkers } = await import('./services/aiQueue.js');
-const { deliverScheduledPushes } = await import('./services/pushDelivery.js');
 const { startContentRefreshSchedule } = await import('./services/contentRefresh.js');
+const { runOnce, quarterKey } = await import('./utils/jobLock.js');
 
 // ── 1. Database — fail startup when DATABASE_URL is set but unreachable ───────
 try {
@@ -185,31 +185,18 @@ server.on('listening', () => {
     if (t) { t.unref?.(); timers.push(t); }
   } catch (e) { logger.error({ err: e.message }, '[server] content refresh failed to start'); }
 
-  const push = setInterval(() => {
-    deliverScheduledPushes().catch(err => logger.error({ err: err.message }, '[Push] Delivery loop error'));
-  }, 60_000);
-  push.unref();
-  timers.push(push);
-  deliverScheduledPushes().catch(err => logger.error({ err: err.message }, '[Push] Startup drain error'));
+  // Reminder delivery (scheduled_pushes) runs in startScheduler → reminderDispatcher.
 
-  // Quarterly bar re-verification — first run 2 minutes after startup.
-  // NOTE: the 90-day interval (7,776,000,000 ms) does NOT fit in Node's 32-bit
-  // timer, so a bare setInterval(fn, 90d) clamps to 1 ms (TimeoutOverflowWarning)
-  // and ran runBarReVerification in a tight loop — millions of DB queries and
-  // log lines per hour in production (found during the step-9 ops pass). Tick
-  // daily instead and run only when 90 days have elapsed.
-  const BAR_REVERIFY_INTERVAL_MS = 90 * 24 * 60 * 60 * 1000;
+  // Quarterly bar re-verification: once per calendar quarter across every
+  // instance and restart (job_runs claim), checked daily from 2 minutes after
+  // boot. (A bare 90-day setInterval does not fit Node's 32-bit timer and once
+  // ran in a tight loop — see the step-9 ops pass.)
   const DAY_MS = 24 * 60 * 60 * 1000;
-  let lastBarReverifyAt = 0;
+  const barTick = () => runOnce('bar-reverify', quarterKey(), runBarReVerification)
+    .catch(err => logger.error({ err: err.message }, '[Bar Re-Verify] run failed'));
   const first = setTimeout(() => {
-    lastBarReverifyAt = Date.now();
-    runBarReVerification();
-    const t = setInterval(() => {
-      if (Date.now() - lastBarReverifyAt >= BAR_REVERIFY_INTERVAL_MS) {
-        lastBarReverifyAt = Date.now();
-        runBarReVerification();
-      }
-    }, DAY_MS);
+    barTick();
+    const t = setInterval(barTick, DAY_MS);
     t.unref();
     timers.push(t);
   }, 2 * 60 * 1000);

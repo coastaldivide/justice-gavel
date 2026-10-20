@@ -48,9 +48,14 @@ const PATTERNS = [
   [/(?<![\w/.-])\+\d{10,15}(?![\w/-])/g, '[phone]'],
 ];
 
+// Longest string kept in a log line / report. Error messages can echo request
+// input (Postgres quotes the bad value), so a 1 MB body must not become a 1 MB
+// log line.
+export const MAX_STRING = 2000;
+
 export function redactString(text) {
   if (typeof text !== 'string' || !text) return text;
-  let out = text;
+  let out = text.length > MAX_STRING ? `${text.slice(0, MAX_STRING)}…[+${text.length - MAX_STRING} chars]` : text;
   for (const [re, rep] of PATTERNS) out = out.replace(re, rep);
   return out;
 }

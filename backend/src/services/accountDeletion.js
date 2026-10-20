@@ -27,6 +27,7 @@ export const USER_REFS = {
   // ── the user's own data ────────────────────────────────────────────────
   'ability_to_pay.user_id': 'delete',
   'account_inactivity_log.user_id': 'delete',
+  'ai_job_state.user_id': 'delete',
   'ai_jobs.user_id': 'delete',
   'alert_log.user_id': 'delete',
   'arrest_monitors.user_id': 'delete',
@@ -96,6 +97,7 @@ export const USER_REFS = {
   'padilla_warnings.user_id': 'delete',
   'password_resets.user_id': 'delete',
   'pi_leads.user_id': 'delete',
+  'push_tickets.user_id': 'delete',
   'push_tokens.user_id': 'delete',
   'quiz_answers.user_id': 'delete',
   'quiz_question_flags.user_id': 'delete',

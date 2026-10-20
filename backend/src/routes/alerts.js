@@ -42,7 +42,7 @@ Mitigations implemented:
  * Get legal opinion before enabling public-facing arrest alerts.
  */
 import { logIgnored } from '../utils/ignored.js';
-import { err400, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
+import { err400, safeInt, sanitizeStr, asText } from '../utils/routeHelpers.js';
 import { isStaff, requireStaff } from '../utils/staff.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router }       from 'express';
@@ -51,7 +51,7 @@ import { getDb } from '../db/index.js';
 import { googleMapsLink } from '../services/geolink.js';
 import { sendSms, toE164 } from '../services/sms.js';
 import { sendEmail, emailLive } from '../services/email.js';
-import { resolveLang, msg as i18nMsg } from '../i18n/index.js';
+import { resolveLang, reqMsg, msg as i18nMsg } from '../i18n/index.js';
 import logger from '../utils/logger.js';
 
 const alertsLimiter = makeUserLimiter({ windowMs: 60000, max: 3, message: 'Too many alerts. Please wait 1 minute.' });
@@ -135,18 +135,23 @@ router.get('/family-contacts', authRequired, async (req, res) => {
 
 // ── POST /alerts/family-contacts — add/update emergency contact ─────────────
 router.post('/family-contacts', authRequired, async (req, res) => {
-  const { name, phone, email, relationship } = req.body;
-  if (!name?.trim() || (!phone?.trim() && !email?.trim())) {
-    return res.status(400).json({ error: 'name and phone or email required' });
+  const b = req.body && typeof req.body === 'object' ? req.body : {};
+  const name = asText(b.name).slice(0, 100);
+  const phone = asText(b.phone).slice(0, 30);
+  const email = asText(b.email).slice(0, 254);
+  const relationship = asText(b.relationship).slice(0, 50);
+  const t = reqMsg(req);
+  if (!name || (!phone && !email)) {
+    return res.status(400).json({ error: 'contact_fields_required', message: t('alerts.err.contact_fields') });
   }
   try {
     const db = await getDb();
     // Max 3 emergency contacts per user
     const count = await db.get('SELECT COUNT(*) as n FROM family_contacts WHERE user_id = ?', [req.user.id]);
-    if ((count?.n || 0) >= 3) return res.status(400).json({ error: 'Maximum 3 emergency contacts' });
+    if ((count?.n || 0) >= 3) return res.status(400).json({ error: 'max_contacts', message: t('alerts.err.max_contacts') });
     const r = await db.run(
       'INSERT INTO family_contacts (user_id, name, phone, email, relationship, created_at) VALUES (?,?,?,?,?,NOW())',
-      [req.user.id, name.trim(), phone?.trim() || null, email?.trim() || null, relationship?.trim() || null]
+      [req.user.id, name, phone || null, email || null, relationship || null]
     );
     return res.json({ id: r.lastID, name, phone, email, relationship });
   } catch (e) {

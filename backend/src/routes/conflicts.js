@@ -27,7 +27,7 @@ import { requireFirmRole, loadFirmContext, hasMinRole } from '../middleware/rbac
 import { writeAuditLog }   from '../middleware/audit.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { err400, err403, err404, err409, safeInt,
-         sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
+         sanitizeStr, truncateStr, isText }         from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 import { resolveLang, msg } from '../i18n/index.js';
 
@@ -302,9 +302,9 @@ router.post('/waiver', authRequired, requireFirmRole('partner'), async (req, res
       client_consent = false,
     } = req.body || {};
 
-    if (!adverse_party?.trim()) return err400(res, 'adverse_party is required.');
-    if (!client_party?.trim())  return err400(res, 'client_party is required.');
-    if (!waiver_text?.trim())   return err400(res, 'waiver_text (written justification) is required.');
+    if (!isText(adverse_party)) return err400(res, 'adverse_party is required.');
+    if (!isText(client_party))  return err400(res, 'client_party is required.');
+    if (!isText(waiver_text))   return err400(res, 'waiver_text (written justification) is required.');
 
     const CONFLICT_TYPES = ['adverse_party', 'former_client', 'positional', 'imputed'];
     const safeType = CONFLICT_TYPES.includes(conflict_type) ? conflict_type : 'adverse_party';
@@ -455,7 +455,7 @@ router.post('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), 
     const { user_id, reason } = req.body || {};
 
     if (!user_id)    return err400(res, 'user_id of attorney to screen is required.');
-    if (!reason?.trim()) return err400(res, 'reason is required (ethics wall must be documented).');
+    if (!isText(reason)) return err400(res, 'reason is required (ethics wall must be documented).');
 
     const targetId = safeInt(user_id);
 
@@ -541,7 +541,7 @@ router.delete('/ethics-wall/:matterId/:userId', authRequired, requireFirmRole('f
     const ctx      = req.firmCtx;
     const { reason } = req.body || {};
 
-    if (!reason?.trim()) {
+    if (!isText(reason)) {
       return err400(res, 'reason is required. Lifting an ethics wall must be documented (firm_admin only).');
     }
 

@@ -5052,5 +5052,6 @@
   "st_conflicts_hint": "Verifique nombres en los asuntos de su bufete",
   "st_inbox_hint": "Mensajes e invitaciones a casos",
   "st_leads_hint": "Clientes potenciales de arrestos y clientes",
-  "bd_profile_saved": "Perfil guardado."
+  "bd_profile_saved": "Perfil guardado.",
+  "x_video_consultation_join_video_call": "Unirse a la videollamada"
 }

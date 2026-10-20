@@ -26,7 +26,7 @@ const fresh = () => ({ mode: 'ok', text: null, delayMs: 30, tokens: 40 });
 let state = fresh();
 let requests = [];
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms) => new Promise(r => { setTimeout(r, ms); });
 const words = () => {
   if (state.mode === 'long') return Array.from({ length: Number(state.tokens) || 40 }, (_, i) => `word${i}`);
   return String(state.text || DEFAULT_TEXT).split(/(?<=\s)/);

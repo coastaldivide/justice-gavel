@@ -25,6 +25,15 @@ const MIN_LEAD_MINUTES = 60;
 
 export const usd = (cents) => `$${(cents / 100).toFixed(2)}`;
 
+const SLOT_LOCALES = { en: 'en-US', es: 'es-US', pt: 'pt-BR', vi: 'vi-VN' };
+/** "Monday, May 4 · 9:00 AM CDT" in `lang`, in the zone the booking was made in. */
+export function slotLabel(startsAt, timeZone, lang = 'en') {
+  const d = new Date(startsAt);
+  const loc = SLOT_LOCALES[lang] || 'en-US';
+  const tz = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
+  return `${d.toLocaleDateString(loc, { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' })} · ${d.toLocaleTimeString(loc, { timeZone: tz, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}`;
+}
+
 export function pricing() {
   return Object.entries(FEE_BY_DURATION).map(([min, cents]) => ({ duration_min: Number(min), fee_cents: cents, fee_display: usd(cents) }));
 }

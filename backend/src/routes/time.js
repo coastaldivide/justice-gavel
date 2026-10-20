@@ -33,7 +33,7 @@ import { writeAuditLog }   from '../middleware/audit.js';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { err400, err403, err404, safeInt, safeFloat,
-         sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
+         sanitizeStr, truncateStr, isText }         from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 
 const router      = Router();
@@ -106,7 +106,7 @@ router.post('/entries', authRequired, timeLimiter, async (req, res) => {
 
     if (!entry_date)   return err400(res, 'entry_date (YYYY-MM-DD) is required.');
     if (!hours)        return err400(res, 'hours is required (e.g. 0.5 for 30 minutes).');
-    if (!narrative?.trim()) return err400(res, 'narrative (billing description) is required.');
+    if (!isText(narrative)) return err400(res, 'narrative (billing description) is required.');
 
     const safeHours = roundToTenth(parseFloat(hours) || 0);
     if (safeHours <= 0 || safeHours > 24) return err400(res, 'hours must be between 0.1 and 24.');
@@ -396,7 +396,7 @@ router.post('/invoices', authRequired, requireFirmRole('partner'), invLimiter, a
       entry_ids,  // optional: specific entry IDs; if omitted, all unbilled for matter
     } = req.body || {};
 
-    if (!client_name?.trim()) return err400(res, 'client_name is required.');
+    if (!isText(client_name)) return err400(res, 'client_name is required.');
     if (!matter_id)           return err400(res, 'matter_id is required.');
 
     // Find unbilled entries

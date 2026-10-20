@@ -41,7 +41,8 @@ router.get('/:id', authRequired, async (req, res) => {
     const id = String(req.params.id || '').trim();
     if (!/^[\w-]{1,64}$/.test(id)) return err400(res, 'Invalid id');
     const job = await getJobAsync(id);
-    if (!job || (job.userId != null && String(job.userId) !== String(req.user.id))) {
+    // Only the person who started the job sees it (a job without an owner is nobody's).
+    if (!job || job.userId == null || String(job.userId) !== String(req.user.id)) {
       return res.status(404).json({ error: msg(resolveLang(req), 'ai.job.not_found'), code: 'job_not_found' });
     }
     const code = job.status === 'failed' ? (JOB_ERROR_CODES.has(job.code) ? job.code : 'ai_failed') : null;

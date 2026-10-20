@@ -5052,5 +5052,6 @@
   "st_conflicts_hint": "Kiểm tra tên trong hồ sơ của công ty bạn",
   "st_inbox_hint": "Tin nhắn và lời mời nhận vụ việc",
   "st_leads_hint": "Khách hàng tiềm năng từ vụ bắt và khách hàng",
-  "bd_profile_saved": "Đã lưu hồ sơ."
+  "bd_profile_saved": "Đã lưu hồ sơ.",
+  "x_video_consultation_join_video_call": "Tham gia cuộc gọi video"
 }

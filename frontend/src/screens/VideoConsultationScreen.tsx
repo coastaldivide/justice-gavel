@@ -12,7 +12,6 @@ import { Linking } from 'react-native'; // open Daily.co session in system brows
 const openBrowserAsync = (url: string) => Linking.openURL(url);
 import { api, apiErrorMessage } from '../services/api';
 import { ScreenProps } from '../types/navigation';
-import { RouteParams } from '../types/api';
 import { t, useLang } from '../i18n';
 
 type Props = ScreenProps<'VideoConsultation'>;
@@ -23,7 +22,8 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
   const { showToast } = useToast();
-  const { matterId, attorneyId, topic } = (route.params ?? {}) as RouteParams;
+  // `room`: opened from an invite push — join the room someone else started.
+  const { matterId, attorneyId, topic, room } = route.params ?? {};
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -37,11 +37,13 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post('/video/session', {
-        matter_id:     matterId,
-        attorney_id:   attorneyId,
-        topic:         topic || 'Legal Consultation',
-      });
+      const { data } = room
+        ? await api.post(`/video/session/${encodeURIComponent(room)}/join`, {})
+        : await api.post('/video/session', {
+          matter_id:     matterId,
+          attorney_id:   attorneyId,
+          topic:         topic || 'Legal Consultation',
+        });
       setSessionUrl(data.join_url);
       setRoomName(data.room_name);
       setInSession(true);
@@ -54,7 +56,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [matterId, attorneyId, topic, showToast]);
+  }, [room, matterId, attorneyId, topic, showToast]);
 
   const endSession = useCallback(async () => {
     if (roomName) {
@@ -132,7 +134,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
       >
         {loading
           ? <ActivityIndicator color={colors.white} />
-          : <Text style={styles.startBtnText}>{t('x_video_consultation_start_video_call')}</Text>
+          : <Text style={styles.startBtnText}>{t(room ? 'x_video_consultation_join_video_call' : 'x_video_consultation_start_video_call')}</Text>
         }
       </TouchableOpacity>
 

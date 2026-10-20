@@ -16,7 +16,7 @@
 import { logIgnored } from '../utils/ignored.js';
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr,
-         validateEmail, escapeLike }         from '../utils/routeHelpers.js';
+         validateEmail, escapeLike, isText }         from '../utils/routeHelpers.js';
 import { resolveLang, msg } from '../i18n/index.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../middleware/auth.js';
@@ -54,7 +54,7 @@ router.post('/', authRequired, firmLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const { name } = req.body || {};
-    if (!name?.trim()) return err400(res, 'Firm name is required.');
+    if (!isText(name)) return err400(res, 'Firm name is required.');
 
     // Check not already in a firm
     const existing = await getMembership(db, req.user.id);
@@ -131,7 +131,7 @@ router.put('/:id', authRequired, requireFirmMember({ minRole: 'firm_admin' }), a
     const firmId = req.firmMembership.firm_id;
 
     const { name } = req.body || {};
-    if (!name?.trim()) return err400(res, 'name is required.');
+    if (!isText(name)) return err400(res, 'name is required.');
 
     await db.run('UPDATE firms SET name=? WHERE id=?', [truncateStr(name.trim(), 200), firmId]);
     await writeAuditLog(db, {

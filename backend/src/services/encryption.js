@@ -4,21 +4,23 @@ import logger from '../utils/logger.js';
  *
  * Used for: case messages, case notes (future), voice note transcripts
  *
- * Key derivation: ENCRYPTION_KEY env var (32 bytes hex = 64 chars)
- * If not set: falls back to a deterministic key derived from JWT_SECRET
- * — still encrypted, just not independently rotatable.
+ * Key: ENCRYPTION_KEY (32 bytes hex = 64 chars; any other string is hashed
+ * to 32 bytes). Required — there is no fallback key.
  *
  * Each encrypted value is stored as: iv:authTag:ciphertext (all hex)
  * iv = 12 bytes random, authTag = 16 bytes, ciphertext = variable
  */
 
+import '../config.js';   // generates the dev-only key before it is read
 import crypto from 'crypto';
 
-// Require explicit key — never silently fall back to a predictable value
-if (!process.env.ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
-  throw new Error('[encryption] ENCRYPTION_KEY env var required in production. Generate: node -e "logger.info(require("crypto").randomBytes(32).toString("hex"))"');
+// Require an explicit key — never fall back to a predictable value. config.js
+// generates a random one outside production; in production server.js stops at
+// boot with a clear message when it is missing (validateEnv).
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error('[encryption] ENCRYPTION_KEY is not set. Generate one with: openssl rand -hex 32');
 }
-const RAW_KEY = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || 'jtb-fallback-key-change-in-production';
+const RAW_KEY = process.env.ENCRYPTION_KEY;
 
 // Derive a 32-byte key from whatever string we have
 function deriveKey(source) {

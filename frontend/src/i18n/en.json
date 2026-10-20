@@ -5052,5 +5052,6 @@
   "st_conflicts_hint": "Check names against your firm's matters",
   "st_inbox_hint": "Messages and case invitations",
   "st_leads_hint": "Arrest leads and clients",
-  "bd_profile_saved": "Profile saved."
+  "bd_profile_saved": "Profile saved.",
+  "x_video_consultation_join_video_call": "Join Video Call"
 }

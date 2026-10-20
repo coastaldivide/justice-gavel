@@ -133,24 +133,6 @@ export function startMemoryWatchdog() {
 }
 
 
-// ── 4. Stale job lock cleanup ─────────────────────────────────────────────────
-export async function cleanStaleLocks() {
-  try {
-    const { JOB_LAST_RUN } = await import('../services/scheduler.js').catch(() => ({ JOB_LAST_RUN: new Map() }));
-    const now     = Date.now();
-    const STALE   = 10 * 60 * 1000;  // 10 minutes
-    let cleaned   = 0;
-
-    for (const [key, ts] of JOB_LAST_RUN.entries()) {
-      if (now - ts > STALE * 3) {  // 3x staleness = definitely stuck
-        JOB_LAST_RUN.delete(key);
-        cleaned++;
-      }
-    }
-    if (cleaned > 0) logger.info(`[self-heal] Cleared ${cleaned} stale job locks`);
-  } catch { /* best-effort housekeeping: never let the watchdog throw */ }
-}
-
 // ── 5. Health check watchdog (internal) ───────────────────────────────────────
 export async function runHealthCheck() {
   const results = {};
@@ -216,12 +198,8 @@ export function startAllWatchdogs() {
   dbTimer.unref();
   _intervals.push(dbTimer);
 
-  // Clean stale locks every 15 minutes
-  const lockTimer = setInterval(() => cleanStaleLocks().catch(() => {}), 15 * 60 * 1000);
-  lockTimer.unref();
-  _intervals.push(lockTimer);
-
-  logger.info('[watchdog] All watchdogs started: memory, DB, stale locks');
+  // (Scheduled jobs need no lock cleaner: each run is claimed in job_runs — utils/jobLock.js.)
+  logger.info('[watchdog] All watchdogs started: memory, DB');
 }
 export function stopAllWatchdogs() {
   _intervals.forEach(clearInterval);

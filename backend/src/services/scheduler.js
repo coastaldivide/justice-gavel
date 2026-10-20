@@ -1,7 +1,7 @@
 import { logIgnored } from '../utils/ignored.js';
 import { scheduleGuarded } from '../utils/cronGuard.js';
 import { getDb } from '../db/index.js';
-const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
+import { claimScheduledRun, purgeJobRuns } from '../utils/jobLock.js';
 
 /**
  * scheduler.js — Justice Gavel Full Automated Pipeline
@@ -29,10 +29,17 @@ const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
  *
  * LIVE_REFRESH semantics: it gates ONLY the data-refresh / outbound pipeline
  * above (scrapers, arrest harvest, outbound bot, nightly sweeps, health scan).
- * User-facing reminder DELIVERY (court dates, user-set reminders — see
- * services/reminderDispatcher.js) is not a data refresh: it runs in every API
- * process regardless of LIVE_REFRESH, and is switched off per process with
- * REMINDERS_ENABLED=false.
+ * User-facing delivery is not a data refresh and runs in every API process
+ * regardless of LIVE_REFRESH (REMINDERS_ENABLED=false switches it off per
+ * process): reminder delivery (services/reminderDispatcher.js), the 24-hour
+ * consultation reminder (hourly), Expo receipt checks (every 30 minutes), and
+ * the daily clean-up of expired sign-in tokens, idempotency keys and job
+ * records.
+ *
+ * More than one instance: every cron job claims its fire in job_runs
+ * (utils/jobLock.js — node-cron's scheduled time is the key), so it runs on
+ * one instance; rows that are sent (bookings, docket entries) are also
+ * claimed one by one before anything goes out.
  */
 
 import cron from 'node-cron';
@@ -44,21 +51,15 @@ import { processGoldenGavelAward }              from '../routes/golden_gavel.js'
 import logger                                   from '../utils/logger.js';
 import { startHealthScanScheduler, stopHealthScanScheduler } from './healthScan.js';
 import { archiveCompletedDocketEntries, checkAccountInactivity } from './retention.js';
-import { startReminderDispatcher, stopReminderDispatcher } from './reminderDispatcher.js';
-import { escapeHtml } from '../utils/sanitize.js';
-
-// ── Lazy Expo singleton for docket push notifications ─────────────────────────
-let _schedExpo = null;
-async function getSchedExpo() {
-  if (_schedExpo) return _schedExpo;
-  const { Expo } = await import('expo-server-sdk');
-  _schedExpo = new Expo();
-  return _schedExpo;
-}
+import { startReminderDispatcher, stopReminderDispatcher, remindersEnabled } from './reminderDispatcher.js';
+import { sendPushToUser, checkPushReceipts } from './pushDelivery.js';
+import { msg, userLang, formatTime } from '../i18n/index.js';
+import { slotLabel } from './consultationSlots.js';
 
 let nightlyTask = null;
 let linkExpiryTask = null;
-let reminderInterval = null;
+let consultReminderTask = null;
+let receiptsTask = null;
 let tokenCleanupTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
@@ -71,53 +72,40 @@ export { runRefresh, runScheduledDataRefresh };
 //   2. Entries past due with status='pending' — fires docket.deadline_overdue webhook
 async function runDocketReminderSweep() {
   try {
-    const { getDb }              = await import('../db/index.js');
     const { dispatchWebhookEvent } = await import('../routes/webhooks/outbound.js');
-
     const db    = await getDb();
     const today = new Date().toISOString().slice(0, 10);
 
-    // ── 1. Upcoming reminders ─────────────────────────────────────────────────
-    // Find entries where due_date - reminder_days = today and reminded_at is NULL
+    // ── 1. Upcoming reminders: due_date - reminder_days <= today, not reminded yet
     const upcoming = await db.all(
-      `SELECT de.*, f.name as firm_name, u.push_token, u.display_name as attorney_name
-       FROM docket_entries de
-       LEFT JOIN firms f ON f.id = de.firm_id
-       LEFT JOIN users u ON u.id = de.assigned_to
-       WHERE de.status = 'pending'
-         AND de.reminded_at IS NULL
-         AND (de.due_date::date - (COALESCE(de.reminder_days, 0) || ' days')::interval)::date <= ?::date
-         AND de.due_date::date >= ?::date
-       LIMIT 500`,
+      `SELECT de.id, de.title, de.due_date, de.due_time, de.assigned_to
+         FROM docket_entries de
+        WHERE de.status = 'pending'
+          AND de.reminded_at IS NULL
+          AND (de.due_date::date - (COALESCE(de.reminder_days, 0) || ' days')::interval)::date <= ?::date
+          AND de.due_date::date >= ?::date
+        LIMIT 500`,
       [today, today]
-    ).catch(() => []);
+    );
 
     let remindSent = 0;
     for (const entry of upcoming) {
       try {
-        // Push notification if attorney has a token
-        if (entry.push_token) {
-          const { Expo } = await import('expo-server-sdk');
-          const expo     = await getSchedExpo();
-          if (Expo.isExpoPushToken(entry.push_token)) {
-            const daysUntil = Math.ceil(
-              (new Date(entry.due_date + 'T12:00:00Z') - new Date()) / 86400000
-            );
-            await expo.sendPushNotificationsAsync([{
-              to:    entry.push_token,
-              sound: 'default',
-              title: `⚖️ Deadline ${daysUntil === 0 ? 'TODAY' : `in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`}`,
-              body:  `${entry.title}${entry.due_time ? ` at ${entry.due_time}` : ''}`,
-              data:  { type: 'deadline_reminder', entry_id: entry.id },
-            }]);
-          }
-        }
-        // Mark as reminded
-        await db.run(
-          "UPDATE docket_entries SET reminded_at=? WHERE id=?",
-          [new Date().toISOString(), entry.id]
-        );
-        remindSent++;
+        // Claimed first: a second instance (or a re-run) never reminds twice.
+        const claimed = await db.get('UPDATE docket_entries SET reminded_at = NOW() WHERE id = ? AND reminded_at IS NULL RETURNING id', [entry.id]);
+        if (!claimed || !entry.assigned_to) continue;
+        const lang = await userLang(db, entry.assigned_to);
+        const due = String(entry.due_date).slice(0, 10);
+        const days = Math.round((Date.parse(`${due}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000);
+        const title = days <= 0 ? msg(lang, 'push.docket.title_today')
+          : days === 1 ? msg(lang, 'push.docket.title_tomorrow') : msg(lang, 'push.docket.title_days', { days });
+        const time = formatTime(entry.due_time, lang);
+        const r = await sendPushToUser(entry.assigned_to, {
+          title,
+          body: time ? msg(lang, 'push.docket.body_time', { title: entry.title, time }) : String(entry.title || ''),
+          data: { type: 'deadline_reminder', entry_id: Number(entry.id) },
+        });
+        if (r.sent) remindSent++;
       } catch (e) {
         logger.warn(`[scheduler/docket] reminder error for entry ${entry.id}:`, e.message);
       }
@@ -130,7 +118,7 @@ async function runDocketReminderSweep() {
        WHERE status = 'pending' AND due_date < ?
        LIMIT 200`,
       [today]
-    ).catch(() => []);
+    );
 
     for (const entry of overdue) {
       if (!entry.firm_id) continue;
@@ -139,7 +127,7 @@ async function runDocketReminderSweep() {
         title:     entry.title,
         due_date:  entry.due_date,
         priority:  entry.priority,
-        days_past: Math.ceil((new Date() - new Date(entry.due_date + 'T12:00:00Z')) / 86400000),
+        days_past: Math.ceil((new Date() - new Date(String(entry.due_date).slice(0, 10) + 'T12:00:00Z')) / 86400000),
       }).catch(logIgnored('services/scheduler'));
     }
 
@@ -154,187 +142,117 @@ async function runDocketReminderSweep() {
 // ── Full nightly pipeline ─────────────────────────────────────────────────────
 
 // ── Post-case expungement trigger ─────────────────────────────────────────────
-// Runs nightly. Finds cases closed 30 days ago where the user hasn't visited
-// ExpungementScreen. Sends a targeted push: "Your case closed — see if you
-// qualify to expunge it." This converts one-time users into repeat engagement
-// and creates an expungement attorney referral opportunity.
-async function runExpungementTriggerSweep(db) {
+// Nightly. A case closed with a favourable outcome 25–35 days ago, whose owner
+// has not opened the expungement screen since: one push, ONCE per case (the
+// dedupe key is checked against every reminder ever planned). It is planned as
+// an 'expungement' reminder, so the dispatcher sends it in the person's
+// language and respects the "Expungement" notification switch.
+export async function runExpungementTriggerSweep(db, now = new Date()) {
   try {
-    // Find cases closed 25-35 days ago (window around the 30-day mark)
     const eligible = await db.all(
-      `SELECT DISTINCT c.user_id, c.id AS case_id, c.title, c.state,
-              u.display_name AS user_name, c.outcome_recorded_at
+      `SELECT c.user_id, c.id AS case_id, c.title
          FROM cases c
-         JOIN users u ON u.id = c.user_id
-        WHERE c.status = 'closed'
-          AND c.outcome IN ('dismissed','acquitted','not_guilty','deferred','plea_deal')
-          AND c.outcome_recorded_at >= (NOW() - INTERVAL '35 days')
-          AND c.outcome_recorded_at <= (NOW() - INTERVAL '25 days')
-          AND c.user_id NOT IN (
-            -- Don't re-trigger if they've already opened the expungement screen
-            -- Tracked via analytics event or a simple flag on the case
-            SELECT DISTINCT user_id FROM expungement_check_log
-             WHERE checked_at >= (NOW() - INTERVAL '60 days')
-          )
-        ORDER BY c.outcome_recorded_at DESC
-        LIMIT 200`
-    ).catch(() => []);
-
-    if (!eligible.length) {
-      logger.info('[scheduler/expunge] No eligible cases for trigger today');
-      return;
-    }
-
-    const expo = await getSchedExpo();
-    let sent = 0;
+        WHERE c.status IN ('Closed', 'Dismissed')
+          AND c.deleted_at IS NULL
+          AND LOWER(COALESCE(c.outcome, c.close_outcome, '')) IN ('dismissed','acquitted','not_guilty','deferred','plea_deal')
+          AND COALESCE(c.outcome_recorded_at, c.closed_at) >= (?::timestamptz - INTERVAL '35 days')
+          AND COALESCE(c.outcome_recorded_at, c.closed_at) <= (?::timestamptz - INTERVAL '25 days')
+          AND NOT EXISTS (SELECT 1 FROM expungement_check_log l
+                           WHERE l.user_id = c.user_id AND l.checked_at >= (?::timestamptz - INTERVAL '60 days'))
+          AND NOT EXISTS (SELECT 1 FROM scheduled_pushes p WHERE p.dedupe_key = 'expunge:' || c.id)
+        ORDER BY c.id
+        LIMIT 200`,
+      [now.toISOString(), now.toISOString(), now.toISOString()]
+    );
+    let planned = 0;
     for (const row of eligible) {
-      try {
-        const tokens = await db.all(
-          'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
-          [row.user_id]
-        );
-        if (!tokens.length) continue;
-
-        const { Expo } = await import('expo-server-sdk');
-        const valid = tokens.map(t => t.token).filter(Expo.isExpoPushToken);
-        if (!valid.length) continue;
-
-        await expo.sendPushNotificationsAsync([{
-          to: valid[0],
-          title: '📋 Your case closed — next step?',
-          body: `Your ${row.title || 'case'} was ${row.state ? 'resolved in ' + row.state : 'resolved'}. You may qualify to have it expunged or sealed.`,
-          data: { screen: 'Expungement', caseId: row.case_id, state: row.state || '' },
-          channelId: 'case_updates',
-          sound: 'default',
-          badge: 1,
-        }]);
-        sent++;
-      } catch (e) {
-        logger.warn('[scheduler/expunge] push failed for user', row.user_id, e?.message);
-      }
+      const lang = await userLang(db, row.user_id);
+      const title = String(row.title || '').trim();
+      const r = await db.run(
+        `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type, case_id, status, priority, dedupe_key)
+         VALUES (?, NULL, ?, ?, ?, ?, 'expungement', ?, 'pending', 'normal', ?)
+         ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL AND status IN ('pending', 'sending') DO NOTHING`,
+        [row.user_id, msg(lang, 'push.expunge.title'),
+          title ? msg(lang, 'push.expunge.body', { case: title.slice(0, 80) }) : msg(lang, 'push.expunge.body_untitled'),
+          JSON.stringify({ type: 'expungement', screen: 'Expungement', caseId: Number(row.case_id), lang }),
+          now.toISOString(), row.case_id, `expunge:${row.case_id}`]);
+      if (r.changes) planned++;
     }
-    logger.info(`[scheduler/expunge] Expungement trigger sent to ${sent}/${eligible.length} users`);
+    logger.info(`[scheduler/expunge] planned ${planned} expungement reminders (${eligible.length} eligible cases)`);
+    return { planned, eligible: eligible.length };
   } catch (e) {
     logger.warn('[scheduler/expunge] sweep failed:', e?.message);
+    return { planned: 0, eligible: 0, error: e?.message };
   }
 }
 
 
 // ── 24-hour consultation reminder ─────────────────────────────────────────────
-// Runs every hour. Finds confirmed consultations happening in 20-28 hours
-// and sends push reminders to BOTH the defendant and the attorney.
-// Window: 20-28 hours (catches the "tomorrow same time" window without
-// double-firing for consultations booked within the day).
-async function runConsultationReminderSweep(db) {
-  try {
-    const upcoming = await db.all(
-      `SELECT cb.id, cb.user_id, cb.lawyer_id, cb.lawyer_name,
-              cb.date_slot, cb.time_slot, cb.starts_at, cb.time_zone, cb.duration_min, cb.meeting_link,
-              cb.notes, cb.stripe_pi_id,
-              u.display_name AS client_name,
-              u.email AS client_email
-         FROM consultation_bookings cb
-         JOIN users u ON u.id = cb.user_id
-        WHERE cb.status = 'confirmed'
-          AND COALESCE(cb.starts_at, ((cb.date_slot || ' ' || cb.time_slot)::timestamp AT TIME ZONE COALESCE(cb.time_zone, 'America/Chicago'))) BETWEEN
-              (NOW() + INTERVAL '20 hours') AND (NOW() + INTERVAL '28 hours')
-          AND cb.reminder_sent IS NULL
-        ORDER BY cb.date_slot ASC, cb.time_slot ASC
-        LIMIT 100`
-    ).catch(() => []);
-
-    if (!upcoming.length) return;
-
-    const expo = await getSchedExpo();
-    const { Expo } = await import('expo-server-sdk');
-    const { sendEmail } = await import('./email.js');
-    let sent = 0;
-
-    for (const row of upcoming) {
-      try {
-        // In the lawyer's zone, with the zone named ("9:00 AM CDT").
-        const tz = row.time_zone || 'America/Chicago';
-        const at = row.starts_at ? new Date(row.starts_at) : null;
-        const timeLabel = at ? at.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : row.time_slot;
-        const dateLabel = at
-          ? at.toLocaleDateString('en-US', { timeZone: tz, weekday: 'long', month: 'short', day: 'numeric' })
-          : new Date(String(row.date_slot).slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
-        // ── Push to defendant ─────────────────────────────────────────────────
-        const defTokens = await db.all(
-          'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
-          [row.user_id]).catch(() => []);
-        const validDef = defTokens.map(t => t.token).filter(Expo.isExpoPushToken);
-        if (validDef.length) {
-          await expo.sendPushNotificationsAsync([{
-            to:       validDef[0],
-            title:    '📅 Consultation tomorrow',
-            body:     `Reminder: ${row.lawyer_name} at ${timeLabel} on ${dateLabel}. Tap to join.`,
-            data:     { screen: 'VideoConsultation', meetingLink: row.meeting_link, bookingId: row.id },
-            channelId: 'case_updates',
-            sound:    'default',
-          }]);
+// Hourly. Confirmed consultations starting in 20–28 hours: a push to the client
+// and to the attorney's account, and an e-mail to the client — each in that
+// person's language, with the time in the zone the booking was made in. Every
+// booking is claimed (reminder_sent) before anything is sent, so it is reminded
+// once, whatever the number of instances.
+export async function runConsultationReminderSweep(db, now = new Date()) {
+  const upcoming = await db.all(
+    `SELECT cb.id, cb.user_id, cb.lawyer_id, cb.lawyer_name, cb.starts_at, cb.time_zone, cb.duration_min,
+            u.display_name AS client_name, u.email AS client_email
+       FROM consultation_bookings cb
+       JOIN users u ON u.id = cb.user_id
+      WHERE cb.status = 'confirmed'
+        AND cb.reminder_sent IS NULL
+        AND cb.starts_at BETWEEN (?::timestamptz + INTERVAL '20 hours') AND (?::timestamptz + INTERVAL '28 hours')
+      ORDER BY cb.starts_at ASC
+      LIMIT 100`,
+    [now.toISOString(), now.toISOString()]
+  );
+  if (!upcoming.length) return { sent: 0 };
+  const { sendConsultationReminder } = await import('./email.js');
+  let sent = 0;
+  for (const row of upcoming) {
+    try {
+      const claimed = await db.get('UPDATE consultation_bookings SET reminder_sent = NOW() WHERE id = ? AND reminder_sent IS NULL RETURNING id', [row.id]);
+      if (!claimed) continue;
+      const clientLang = await userLang(db, row.user_id);
+      const whenClient = slotLabel(row.starts_at, row.time_zone, clientLang);
+      await sendPushToUser(row.user_id, {
+        title: msg(clientLang, 'push.consult_reminder.title'),
+        body:  msg(clientLang, 'push.consult_reminder.body', { lawyer: row.lawyer_name, when: whenClient }),
+        data:  { type: 'consultation_reminder', screen: 'Booking', bookingId: Number(row.id) },
+        channelId: 'case_updates',
+      });
+      if (row.lawyer_id) {
+        const atty = await db.get(
+          `SELECT u.id FROM users u JOIN attorney_profiles ap ON ap.user_id = u.id WHERE ap.lawyer_id = ? LIMIT 1`,
+          [row.lawyer_id]);
+        if (atty) {
+          const attyLang = await userLang(db, atty.id);
+          await sendPushToUser(atty.id, {
+            title: msg(attyLang, 'push.consult_reminder.atty_title'),
+            body:  msg(attyLang, 'push.consult_reminder.atty_body', {
+              client: row.client_name || msg(attyLang, 'consult.a_client'), when: slotLabel(row.starts_at, row.time_zone, attyLang) }),
+            data:  { type: 'consultation_reminder', screen: 'AttorneyInbox', bookingId: Number(row.id) },
+            channelId: 'attorney_bookings',
+          });
         }
-
-        // ── Push to attorney ──────────────────────────────────────────────────
-        if (row.lawyer_id) {
-          const attyUser = await db.get(
-            `SELECT u.id FROM users u
-               JOIN attorney_profiles ap ON ap.user_id = u.id
-              WHERE ap.lawyer_id = ? LIMIT 1`,
-            [row.lawyer_id]).catch(() => null);
-          if (attyUser) {
-            const attyTokens = await db.all(
-              'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
-              [attyUser.id]).catch(() => []);
-            const validAtty = attyTokens.map(t => t.token).filter(Expo.isExpoPushToken);
-            if (validAtty.length) {
-              await expo.sendPushNotificationsAsync([{
-                to:       validAtty[0],
-                title:    '📅 Client consultation tomorrow',
-                body:     `${row.client_name || 'Client'} at ${timeLabel} on ${dateLabel}.`,
-                data:     { screen: 'AttorneyInbox', bookingId: row.id },
-                channelId: 'attorney_bookings',
-                sound:    'default',
-              }]);
-            }
-          }
-        }
-
-        // ── Email reminder to defendant ────────────────────────────────────────
-        if (row.client_email) {
-          const esc = escapeHtml;
-          const safeLink = /^https:\/\//i.test(String(row.meeting_link || '')) ? row.meeting_link : null;
-          await sendEmail({
-            to:      row.client_email,
-            subject: `Tomorrow: consultation with ${String(row.lawyer_name || 'your attorney').replace(/[\r\n]+/g, ' ')} at ${timeLabel}`,
-            html: `<p>Hi ${esc(row.client_name || 'there')},</p>
-                   <p>This is a reminder that your <strong>${esc(row.duration_min)}-minute consultation</strong>
-                   with <strong>${esc(row.lawyer_name)}</strong> is tomorrow,
-                   <strong>${esc(dateLabel)} at ${esc(timeLabel)}</strong>.</p>
-                   ${safeLink ? `<a href="${esc(safeLink)}" style="background:#0A1628;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0">Join Video Call</a>` : ''}
-                   <p style="color:#6B7280;font-size:12px">⚖️ This consultation does not create an attorney-client relationship.</p>`,
-            text: `Reminder: ${row.lawyer_name} at ${timeLabel} ${dateLabel}.${safeLink ? ` Meeting link: ${safeLink}` : ''}`,
-          }).catch(logIgnored('services/scheduler'));
-        }
-
-        // Mark reminder sent
-        await db.run(
-          `UPDATE consultation_bookings SET reminder_sent = NOW() WHERE id = ?`,
-          [row.id]
-        ).catch(logIgnored('services/scheduler'));
-        sent++;
-      } catch (e) {
-        logger.warn('[scheduler/reminder] row failed', row.id, e?.message);
       }
+      if (row.client_email) {
+        await sendConsultationReminder({
+          to: row.client_email, lang: clientLang, clientName: row.client_name || null,
+          attorneyName: row.lawyer_name, when: whenClient, durationMin: row.duration_min,
+        }).catch(e => logger.warn('[scheduler/reminder] e-mail failed', row.id, e?.message));
+      }
+      sent++;
+    } catch (e) {
+      logger.warn('[scheduler/reminder] row failed', row.id, e?.message);
     }
-    if (sent) logger.info(`[scheduler/reminder] Sent ${sent} consultation reminders`);
-  } catch (e) {
-    logger.warn('[scheduler/reminder] sweep failed:', e?.message);
   }
+  if (sent) logger.info(`[scheduler/reminder] Sent ${sent} consultation reminders`);
+  return { sent };
 }
 
-async function runNightlyJob() {
+async function runNightlyJob(ctx) {
+  if (!(await claimScheduledRun('nightly', ctx))) return;
   const nowDate = new Date();
   const now     = nowDate.toISOString();
   logger.info(`\n[scheduler] ════════════════════════════════════`);
@@ -404,14 +322,10 @@ async function runNightlyJob() {
 
   // Step 8: Docket deadline reminders + overdue webhooks
   logger.info('[scheduler] Step 8/8 — Docket reminder sweep');
-  try {
-    const r8 = await runDocketReminderSweep();
+  const r8 = await runDocketReminderSweep();
+  logger.info(`[scheduler] Docket: ${r8.remindSent} reminders, ${r8.overdueDispatched} overdue events`);
   // Post-case expungement trigger
-  try { await runExpungementTriggerSweep(await getDb()); } catch(e) { logger.warn('[scheduler] expungement trigger sweep:', e?.message); }
-    logger.info(`[scheduler] Docket: ${r8.remindSent} reminders, ${r8.overdueDispatched} overdue events`);
-  } catch (e) {
-    logger.error('[scheduler] Docket sweep error:', e.message);
-  }
+  await runExpungementTriggerSweep(await getDb());
 
   // Step 9: Docket archiving — completed entries older than 90 days → archive table
   // Keeps active docket fast for long-running cases without losing any history.
@@ -439,40 +353,42 @@ async function runNightlyJob() {
 
 // ── Start all scheduled jobs ──────────────────────────────────────────────────
 export function startScheduler() {
-  // Reminder delivery first — independent of LIVE_REFRESH (see header).
+  // User-facing delivery first — independent of LIVE_REFRESH (see header).
   try { startReminderDispatcher(); } catch (e) { logger.error('[scheduler] reminder dispatcher failed to start:', e.message); }
+  const tz = process.env.REFRESH_TZ || 'America/Chicago';
+  if (remindersEnabled()) {
+    consultReminderTask = scheduleGuarded('7 * * * *', 'consultation-reminders', async (ctx) => {
+      if (await claimScheduledRun('consultation-reminders', ctx)) await runConsultationReminderSweep(await getDb());
+    });
+    receiptsTask = scheduleGuarded('*/30 * * * *', 'push-receipts', async (ctx) => {
+      if (await claimScheduledRun('push-receipts', ctx)) await checkPushReceipts();
+    });
+  }
+  // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
+  tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup', async (ctx) => {
+    if (await claimScheduledRun('refresh-token-cleanup', ctx)) await cleanupExpiredTokens();
+  }, { timezone: tz });
 
   if (!CONFIG.LIVE_REFRESH) {
-    logger.info('[scheduler] LIVE_REFRESH=false — data-refresh / outbound jobs disabled (reminder delivery is unaffected).');
+    logger.info('[scheduler] LIVE_REFRESH=false — data-refresh / outbound jobs disabled (reminders, receipts and clean-up still run).');
     logger.info('[scheduler] Set LIVE_REFRESH=true in .env to activate.');
     return;
   }
 
   const cronExpr = process.env.REFRESH_CRON || '0 3 * * *';
-  const tz       = process.env.REFRESH_TZ   || 'America/Chicago';
 
   if (!cron.validate(cronExpr)) {
     logger.error(`[scheduler] Invalid REFRESH_CRON: "${cronExpr}" — jobs disabled.`);
     return;
   }
 
-  // Main nightly pipeline
+  // Main nightly pipeline (runNightlyJob claims its fire: one instance runs it)
   nightlyTask = cron.schedule(cronExpr, runNightlyJob, { timezone: tz });
   logger.info(`[scheduler] Nightly pipeline: ${cronExpr} (${tz})`);
 
   // Payment link expiry — every 2 hours
-  // Hourly: 24-hour consultation reminders
-  if (reminderInterval) clearInterval(reminderInterval);
-  reminderInterval = setInterval(async () => {
-    try {
-      const { getDb: _getDb } = await import('../db/index.js');
-      const _db = await _getDb();
-      await runConsultationReminderSweep(_db);
-    } catch(e) { logger.warn('[reminder/hourly]', e?.message); }
-  }, 3_600_000);
-  reminderInterval.unref();
-
-  linkExpiryTask = scheduleGuarded('0 */2 * * *', 'payment-link-expiry', async () => {
+  linkExpiryTask = scheduleGuarded('0 */2 * * *', 'payment-link-expiry', async (ctx) => {
+    if (!(await claimScheduledRun('payment-link-expiry', ctx))) return;
     try {
       const r = await expireOldPaymentLinks();
       if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
@@ -482,36 +398,27 @@ export function startScheduler() {
   }, { timezone: tz });
   logger.info('[scheduler] Link expiry: every 2 hours');
 
-  // Daily refresh-token cleanup
-  tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup', cleanupExpiredTokens, { timezone: tz });
-
   // Health scan — every 12 hours (6 AM and 6 PM Central)
   // Monitors: precedent currency, asylum bar risk, signal invariants,
   // bias audit, database health, tracker deadlines, escalation SLA
   startHealthScanScheduler();
 
-  logger.info('[scheduler] All jobs active. Bot will generate revenue automatically.');
+  logger.info('[scheduler] All jobs active.');
 }
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  if (reminderInterval) { clearInterval(reminderInterval); reminderInterval = null; }
-  if (tokenCleanupTask) { tokenCleanupTask.destroy(); tokenCleanupTask = null; }
-  if (nightlyTask)    { nightlyTask.destroy();    nightlyTask    = null; }
-  if (linkExpiryTask) { linkExpiryTask.destroy(); linkExpiryTask = null; }
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = null;
   stopHealthScanScheduler();
 }
 
 export { runNightlyJob };
 
-// ── Token cleanup — runs daily at 3am ────────────────────────────────────────
-// Removes expired + used refresh tokens to keep the table bounded
-async function cleanupExpiredTokens() {
-  const jobKey = 'cleanupExpiredTokens';
-  const now = Date.now();
-  const last = JOB_LAST_RUN.get(jobKey) || 0;
-  if (now - last < 20 * 60 * 60 * 1000) return; // 20h minimum gap
-  JOB_LAST_RUN.set(jobKey, now);
+// ── Daily clean-up (3:15 AM, one instance) ────────────────────────────────────
+// Expired / used refresh tokens, expired idempotency keys, finished AI job
+// states and job-run records older than 30 days.
+export async function cleanupExpiredTokens() {
   try {
     const db = await getDb();
     const result = await db.run(
@@ -520,8 +427,10 @@ async function cleanupExpiredTokens() {
     logger.info('[scheduler] token cleanup:', result?.changes, 'rows removed');
     const { purgeExpiredIdempotencyKeys } = await import('../middleware/idempotency.js');
     await purgeExpiredIdempotencyKeys(db).catch(e => logger.warn('[scheduler] idempotency-key purge failed:', e?.message));
+    const { purgeFinishedJobs } = await import('./aiQueue.js');
+    await purgeFinishedJobs(db).catch(e => logger.warn('[scheduler] AI job purge failed:', e?.message));
+    await purgeJobRuns(db).catch(e => logger.warn('[scheduler] job-run purge failed:', e?.message));
   } catch (err) {
     logger.error('[scheduler] token cleanup failed:', err?.message);
   }
 }
-

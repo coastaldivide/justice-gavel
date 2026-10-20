@@ -29,7 +29,7 @@ import { authRequired }    from '../middleware/auth.js';
 import { loadFirmContext, requireFirmRole, getFirmMembership, resolveMatterAccess, hasMinRole } from '../middleware/rbac.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../services/aiQueue.js';
-import { err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
+import { err400, err403, err404, safeInt, sanitizeStr, truncateStr, isText } from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 
 const router     = Router();
@@ -297,7 +297,7 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
         count:     entries.length,
         ai_powered: !!ANTHROPIC_KEY,
       };
-    });
+    }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,
       message: `Privilege log generation queued. Poll /api/jobs/${jobId} for results.` });
@@ -335,7 +335,7 @@ router.post('/entries', authRequired, privLimiter, async (req, res) => {
       privilege_basis, withheld = true, page_count,
     } = req.body || {};
 
-    if (!description?.trim())   return err400(res, 'description is required.');
+    if (!isText(description))   return err400(res, 'description is required.');
     if (!privilege_basis || !PRIVILEGE_BASES[privilege_basis]) {
       return err400(res, `privilege_basis required. Valid: ${Object.keys(PRIVILEGE_BASES).join(', ')}`);
     }

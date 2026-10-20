@@ -95,58 +95,31 @@ export async function sendPasswordReset(to, resetUrl, lang = 'en') {
   });
 }
 
-export async function sendWelcome(to, displayName) {
+/** Greeting line: "Hi Ana," / "Hola, Ana:" — or the plain form when no name is known. */
+const greeting = (lang, name) => (name ? msg(lang, 'email.greeting', { name }) : msg(lang, 'email.greeting_plain'));
+
+/** Welcome e-mail after sign-up, in `lang`. */
+export async function sendWelcome(to, displayName, lang = 'en') {
+  const m = (k, p) => e(msg(lang, k, p));
+  const name = displayName ? String(displayName).trim() : '';
   return await send({
-    to, subject: 'Welcome to Justice Gavel',
+    to, subject: msg(lang, 'email.welcome.subject'),
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
-        <h2 style="color:#042C53">Welcome, ${e(displayName || 'there')}.</h2>
-        <p>Your account is ready. You now have access to:</p>
+      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
+        <h2 style="color:#042C53">${name ? m('email.welcome.title', { name }) : m('email.welcome.subject')}</h2>
+        <p>${m('email.welcome.body')}</p>
         <ul style="line-height:2">
-          <li>AI-powered legal rights information</li>
-          <li>Bail calculator and bondsman matching</li>
-          <li>Attorney directory and consultations</li>
-          <li>Case management and motion generation</li>
-          <li>ICE detention and immigration resources</li>
+          <li>${m('email.welcome.item1')}</li>
+          <li>${m('email.welcome.item2')}</li>
+          <li>${m('email.welcome.item3')}</li>
+          <li>${m('email.welcome.item4')}</li>
         </ul>
-        <a href="https://justicegavel.app" style="display:inline-block;background:#042C53;
+        <a href="${safeUrl(process.env.APP_URL || 'https://justicegavel.app')}" style="display:inline-block;background:#042C53;
            color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
-          Open Justice Gavel
+          ${m('email.welcome.button')}
         </a>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-        <p style="color:#888;font-size:12px">Questions? Reply to this email — we read every one.</p>
-      </div>`,
-  });
-}
-
-export async function sendSubscriptionConfirm(to, plan, amount) {
-  return await send({
-    to, subject: headerSafe(`You're subscribed to Justice Gavel ${plan}`),
-    html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
-        <h2 style="color:#042C53">Subscription confirmed</h2>
-        <p>You're now on the <strong>${e(plan)}</strong> plan at <strong>$${e(amount)}/month</strong>.</p>
-        <p>All features are unlocked. Your next billing date is 30 days from today.</p>
-        <a href="https://justicegavel.app" style="display:inline-block;background:#042C53;
-           color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
-          Get started
-        </a>
-      </div>`,
-  });
-}
-
-export async function sendPaymentFailed(to, plan, retryDate) {
-  return await send({
-    to, subject: 'Action required — Justice Gavel payment failed',
-    html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
-        <h2 style="color:#C62828">Payment failed</h2>
-        <p>We couldn't charge your card for your <strong>${e(plan)}</strong> subscription.</p>
-        <p>We'll retry on <strong>${e(retryDate)}</strong>. Update your payment method to avoid interruption.</p>
-        <a href="https://justicegavel.app/billing" style="display:inline-block;background:#C62828;
-           color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
-          Update payment method
-        </a>
+        <p style="color:#888;font-size:12px">${m('email.welcome.questions')}</p>
       </div>`,
   });
 }
@@ -172,85 +145,75 @@ export async function sendEmail(arg, subjectArg, textArg) {
   return await send({ to: o.to, subject: o.subject, html: o.html, text: o.text });
 }
 
-export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert, sendEmail };
+export default { sendPasswordReset, sendWelcome, sendCriticalAlert, sendEmail };
 
-// ── Booking confirmation — sent to defendant after successful booking ─────────
-export async function sendBookingConfirmation({ to, clientName, attorneyName,
-  dateSlot, timeSlot, durationMin, feeDollars, meetingLink, cancellationUrl }) {
-  const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
+const row = (label, value) => `<tr><td style="padding:8px 0;color:#6B7280;width:140px">${e(label)}</td>
+              <td style="padding:8px 0;font-weight:600">${e(value)}</td></tr>`;
+
+// ── Booking confirmation — to the client after the payment is verified ────────
+// `when` is the slot as the person reads it ("Monday, May 4 · 9:00 AM CDT"),
+// already in `lang` (routes/consultations.js slotLabel).
+export async function sendBookingConfirmation({ to, lang = 'en', clientName, attorneyName, when, durationMin, feeDisplay, refundHours }) {
+  const m = (k, p) => msg(lang, k, p);
   return await send({
     to,
-    subject: headerSafe(`Consultation confirmed — ${attorneyName} on ${dateLabel}`),
+    subject: m('email.booking.subject', { lawyer: attorneyName, when }),
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#0A1628">Your consultation is confirmed ✅</h2>
-        <p>Hi ${e(clientName)},</p>
-        <p>Your <strong>${e(durationMin)}-minute consultation</strong> with
-           <strong>${e(attorneyName)}</strong> is booked.</p>
+      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#0A1628">${e(m('email.booking.title'))} ✅</h2>
+        <p>${e(greeting(lang, clientName))}</p>
+        <p>${e(m('email.booking.body', { minutes: durationMin, lawyer: attorneyName }))}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
-          <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
-              <td style="padding:8px 0;font-weight:600">${e(dateLabel)}</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Time</td>
-              <td style="padding:8px 0;font-weight:600">${e(timeSlot)}</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Duration</td>
-              <td style="padding:8px 0;font-weight:600">${e(durationMin)} minutes</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Platform fee</td>
-              <td style="padding:8px 0;font-weight:600">$${e(feeDollars)} (charged)</td></tr>
+          ${row(m('email.label.when'), when)}
+          ${row(m('email.label.duration'), m('email.duration_value', { minutes: durationMin }))}
+          ${feeDisplay ? row(m('email.label.fee'), m('email.fee_value', { amount: feeDisplay })) : ''}
         </table>
-        ${meetingLink ? `<a href="${safeUrl(meetingLink)}"
-           style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
-                  border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
-          Join Video Call
-        </a>` : ''}
         <p style="color:#6B7280;font-size:13px;margin-top:24px">
-          ${cancellationUrl ? `Need to cancel? <a href="${safeUrl(cancellationUrl)}">Cancel here</a>` : 'Need to cancel? Open the booking in the Justice Gavel app'}
-          (full refund until 2 hours before the appointment).<br>
-          <strong>⚖️ Legal Notice:</strong> This is a general consultation.
-          It does not create an attorney-client relationship.
+          ${e(m('email.booking.cancel', { hours: refundHours }))}<br>
+          <strong>⚖️</strong> ${e(m('email.booking.notice'))}
         </p>
       </div>`,
-    text: `Consultation confirmed with ${attorneyName} on ${dateLabel} at ${timeSlot}.${meetingLink ? ` Meeting link: ${meetingLink}` : ''}`,
+    text: `${m('email.booking.title')}\n\n${m('email.booking.body', { minutes: durationMin, lawyer: attorneyName })}\n${m('email.label.when')}: ${when}\n\n${m('email.booking.cancel', { hours: refundHours })}\n${m('email.booking.notice')}`,
   });
 }
 
-// ── Attorney booking alert — sent to attorney when a client books ─────────────
-export async function sendAttorneyBookingAlert({ to, attorneyName, clientName,
-  dateSlot, timeSlot, durationMin, caseTitle, clientEmail, clientPhone, meetingLink }) {
-  const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
+// ── New booking — to the attorney's account, in the attorney's language ───────
+export async function sendAttorneyBookingAlert({ to, lang = 'en', attorneyName, clientName, when, durationMin, clientEmail, clientPhone }) {
+  const m = (k, p) => msg(lang, k, p);
+  const client = clientName || msg(lang, 'consult.a_client');
   return await send({
     to,
-    subject: headerSafe(`New consultation booked — ${clientName} on ${dateLabel}`),
+    subject: m('email.atty.subject', { client, when }),
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#0A1628">📋 New consultation booked</h2>
-        <p>Hi ${e(attorneyName)},</p>
-        <p><strong>${e(clientName)}</strong> has booked a
-           <strong>${e(durationMin)}-minute consultation</strong> with you.</p>
+      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#0A1628">📋 ${e(m('email.atty.title'))}</h2>
+        <p>${e(greeting(lang, attorneyName))}</p>
+        <p>${e(m('email.atty.body', { client, minutes: durationMin }))}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
-          <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
-              <td style="padding:8px 0;font-weight:600">${e(dateLabel)}</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Time</td>
-              <td style="padding:8px 0;font-weight:600">${e(timeSlot)}</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Client email</td>
-              <td style="padding:8px 0">${e(clientEmail || 'Not provided')}</td></tr>
-          <tr><td style="padding:8px 0;color:#6B7280">Client phone</td>
-              <td style="padding:8px 0">${e(clientPhone || 'Not provided')}</td></tr>
-          ${caseTitle ? `<tr><td style="padding:8px 0;color:#6B7280">Case</td>
-              <td style="padding:8px 0">${e(caseTitle)}</td></tr>` : ''}
+          ${row(m('email.label.when'), when)}
+          ${row(m('email.label.duration'), m('email.duration_value', { minutes: durationMin }))}
+          ${row(m('email.label.client_email'), clientEmail || m('email.not_provided'))}
+          ${row(m('email.label.client_phone'), clientPhone || m('email.not_provided'))}
         </table>
-        ${meetingLink ? `<a href="${safeUrl(meetingLink)}"
-           style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
-                  border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
-          Join Video Call
-        </a>` : ''}
-        <p style="color:#6B7280;font-size:12px;margin-top:16px">
-          Manage this consultation in your Justice Gavel Attorney Inbox.
-        </p>
+        <p style="color:#6B7280;font-size:12px;margin-top:16px">${e(m('email.atty.manage'))}</p>
       </div>`,
-    text: `New consultation: ${clientName} on ${dateLabel} at ${timeSlot}.${meetingLink ? ` Meeting link: ${meetingLink}` : ''}`,
+    text: `${m('email.atty.body', { client, minutes: durationMin })}\n${m('email.label.when')}: ${when}\n${m('email.atty.manage')}`,
+  });
+}
+
+// ── The day before — to the client (services/scheduler.js) ────────────────────
+export async function sendConsultationReminder({ to, lang = 'en', clientName, attorneyName, when, durationMin }) {
+  const m = (k, p) => msg(lang, k, p);
+  return await send({
+    to,
+    subject: m('email.reminder.subject', { lawyer: attorneyName, when }),
+    html: `
+      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#0A1628">📅 ${e(m('email.reminder.title'))}</h2>
+        <p>${e(greeting(lang, clientName))}</p>
+        <p>${e(m('email.reminder.body', { minutes: durationMin, lawyer: attorneyName, when }))}</p>
+        <p style="color:#6B7280;font-size:12px">⚖️ ${e(m('email.booking.notice'))}</p>
+      </div>`,
+    text: `${m('email.reminder.body', { minutes: durationMin, lawyer: attorneyName, when })}\n\n${m('email.booking.notice')}`,
   });
 }

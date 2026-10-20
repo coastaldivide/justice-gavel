@@ -28,6 +28,7 @@ import { MOTION_PDF_SYSTEM_PROMPT } from '../chat/_prompts.js';
 import logger              from '../../utils/logger.js';
 
 const router      = Router();
+const MAX_MOTION_CHARS = 100_000;   // ~40 pages
 const pdfLimiter  = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'PDF export limit reached.' });
 
 // ── POST /api/motions/export/preview — render any motion text to PDF ──────────
@@ -45,6 +46,7 @@ router.post('/preview', authRequired, pdfLimiter, async (req, res) => {
     } = req.body || {};
 
     if (typeof motion_text !== 'string' || !motion_text.trim()) return err400(res, 'motion_text is required.');
+    if (motion_text.length > MAX_MOTION_CHARS) return err400(res, `motion_text is longer than ${MAX_MOTION_CHARS} characters.`);
 
     const meta = {
       motion_type:    truncateStr(sanitizeStr(motion_type, 200), 200),
@@ -167,6 +169,7 @@ function generateMotionPDF(motionText, meta = {}) {
     const doc    = new PDFDocument({
       size:    'LETTER',
       margins: { top: 72, bottom: 72, left: 72, right: 72 },
+      bufferPages: true,   // page numbers are written once every page exists (below)
       info: {
         Title:   meta.motion_type || 'Legal Motion',
         Subject: `${meta.motion_type} — ${meta.case_number || ''}`,
@@ -178,16 +181,6 @@ function generateMotionPDF(motionText, meta = {}) {
     doc.on('data', c => chunks.push(c));
     doc.on('end',  () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
-
-    // Page numbering in footer
-    let pageNum = 0;
-    doc.on('pageAdded', () => {
-      pageNum++;
-      // Footer
-      const y = doc.page.height - 45;
-      doc.font('Helvetica').fontSize(10).fillColor('#000000');
-      doc.text(String(pageNum), 72, y, { width: 468, align: 'center' });
-    });
 
     const BODY_FONT  = 'Times-Roman';
     const BOLD_FONT  = 'Times-Bold';
@@ -296,6 +289,21 @@ function generateMotionPDF(motionText, meta = {}) {
        .text('This document was AI-assisted using Justice Gavel. All citations marked [ATTORNEY TO VERIFY] must be independently confirmed. Not legal advice.', {
          width: WIDTH, align: 'center',
        });
+
+    // Page numbers in the footer. Written after the layout (bufferPages) and
+    // inside the bottom margin with the margin lifted: writing them from a
+    // 'pageAdded' handler below the margin made PDFKit add a page for the
+    // footer itself, which fired 'pageAdded' again — endless recursion for any
+    // motion longer than one page (and a native zlib crash of the process).
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      const bottom = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+      doc.font('Helvetica').fontSize(10).fillColor('#000000')
+         .text(`${i - range.start + 1} / ${range.count}`, LEFT, doc.page.height - 45, { width: WIDTH, align: 'center', lineBreak: false });
+      doc.page.margins.bottom = bottom;
+    }
 
     doc.end();
   });

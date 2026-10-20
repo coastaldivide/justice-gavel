@@ -124,7 +124,7 @@ router.post('/draft', authRequired, requireAi, draftLimiter, perUserAiLimit, asy
         party_a:       _pA,
         party_b:       _pB,
       };
-    });
+    }, _uid);
 
     res.json({
       jobId,

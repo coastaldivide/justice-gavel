@@ -1,4 +1,4 @@
-import { safeJson, asyncRoute, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
+import { safeJson, asyncRoute, err400, err404, safeInt, sanitizeStr, truncateStr, isText } from '../../utils/routeHelpers.js';
 /**
  * routes/webhooks/outbound.js — Outbound Webhook System
  *
@@ -235,8 +235,8 @@ router.post('/subscriptions', authRequired, requireFirmRole('firm_admin'), whLim
       active = true,
     } = req.body || {};
 
-    if (!name?.trim())   return err400(res, 'name is required.');
-    if (!url?.trim())    return err400(res, 'url (HTTPS endpoint) is required.');
+    if (!isText(name))   return err400(res, 'name is required.');
+    if (!isText(url))    return err400(res, 'url (HTTPS endpoint) is required.');
     if (!Array.isArray(events) || !events.length) {
       return err400(res, 'events must be a non-empty array. See GET /api/webhooks/outbound/events for options.');
     }

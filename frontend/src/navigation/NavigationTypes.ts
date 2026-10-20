@@ -105,7 +105,7 @@ export type RootStackParamList = {
 
   // ── Booking & Consultation ─────────────────────────────────────────────
   Booking:                  { lawyerId: number; specialtyHint?: string };
-  VideoConsultation:        { sessionId?: string; lawyerId?: number };
+  VideoConsultation:        { matterId?: number; attorneyId?: number; topic?: string; room?: string };
 
   // ── Chat & Messaging ─────────────────────────────────────────────────────
   Chat:                     { context?: string; caseId?: number };

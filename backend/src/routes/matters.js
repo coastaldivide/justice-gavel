@@ -25,7 +25,7 @@
  */
 
 import { logIgnored } from '../utils/ignored.js';
-import { err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
+import { err400, err403, err404, safeInt, sanitizeStr, truncateStr, isText } from '../utils/routeHelpers.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
@@ -76,7 +76,7 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
       estimated_value, notes, opened_date, next_deadline, tags,
     } = req.body || {};
 
-    if (!title?.trim()) return err400(res, 'title is required');
+    if (!isText(title)) return err400(res, 'title is required');
 
     const firm_id = await getUserFirmId(db, req.user.id);
 
@@ -738,7 +738,7 @@ router.post('/:id/events', authRequired, requireMatterAccess('id', 'paralegal'),
   try {
     const db = await getDb();
     const { title, event_type='note', description, event_date, amount_cents } = req.body || {};
-    if (!title?.trim()) return err400(res, 'Event title is required.');
+    if (!isText(title)) return err400(res, 'Event title is required.');
 
     const VALID_TYPES = new Set(['hearing','filing','deposition','negotiation','signing',
                                  'billing','deadline','note','call','email','other']);
@@ -813,7 +813,7 @@ router.post('/:id/hold', authRequired, requireMatterAccess('id', 'firm_admin'), 
     const firmId = req.matter.firm_id;
     if (!firmId) return res.status(400).json({ error: 'Legal holds apply to firm matters.' });
     const { reason } = req.body || {};
-    if (!reason?.trim()) return res.status(400).json({ error: 'reason required.' });
+    if (!isText(reason)) return res.status(400).json({ error: 'reason required.' });
     const holdId = await applyLegalHold('matter', safeInt(req.params.id), firmId, req.user.id, sanitizeStr(reason, 500));
     res.status(201).json({ ok: true, hold_id: holdId, message: 'Legal hold applied. Matter is frozen from deletion.' });
   } catch (e) {

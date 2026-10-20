@@ -26,7 +26,7 @@ const BY_TYPE: Record<string, string> = {
   checkin_reminder: 'CheckIn', checkin_submitted: 'CheckInManager',
   message: 'Messages', case_update: 'Cases', arrest_alert: 'ArrestMonitor', expungement_eligible: 'Expungement', // i18n-exempt: screen names
   expungement: 'Expungement', lead_accepted: 'AttorneyDashboard', new_lead: 'AttorneyDashboard', cle_reminder: 'AttorneyDashboard', // i18n-exempt: screen names
-  case_invite: 'AttorneyInbox', direct_message: 'AttorneyInbox',
+  case_invite: 'AttorneyInbox', direct_message: 'AttorneyInbox', video_invite: 'VideoConsultation', // i18n-exempt: screen names
 };
 /** Names the server uses that are not screen names. */
 const ALIASES: Record<string, string> = { Following: 'CourtDates', CasesTab: 'Cases' }; // i18n-exempt: screen names
@@ -53,6 +53,10 @@ export function notificationTarget(data: Record<string, unknown> | null | undefi
     return { screen, params: enrollmentId ? { enrollmentId } : undefined };
   }
   if (screen === 'CourtDateDetail') return courtDateId ? { screen, params: { id: courtDateId } } : { screen: 'CourtDates' };
+  if (screen === 'VideoConsultation') {
+    const room = typeof data.room === 'string' && /^jg-\d+-\d+$/.test(data.room) ? data.room : undefined;
+    return { screen, params: room ? { room } : undefined };
+  }
   return { screen };
 }
 

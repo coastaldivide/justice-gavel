@@ -52,8 +52,7 @@ import { writeAuditLog }   from '../middleware/audit.js';
 import logger              from '../utils/logger.js';
 import {
   err400, err403, err404, safeInt,
-  sanitizeStr, truncateStr,
-}                          from '../utils/routeHelpers.js';
+  sanitizeStr, truncateStr, isText }                          from '../utils/routeHelpers.js';
 import { makeUserLimiter }   from '../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
@@ -536,7 +535,7 @@ router.post('/asylum-clocks', authRequired, routeLimiter, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const { client_name, clock_start, relief_type = 'asylum', country, detained = 0, a_number, matter_id, notes } = req.body || {};
-    if (!client_name?.trim()) return err400(res, 'client_name is required.');
+    if (!isText(client_name)) return err400(res, 'client_name is required.');
     if (!clock_start)         return err400(res, 'clock_start (ISO date) is required.');
     if (!isValidDate(clock_start)) return err400(res, 'clock_start must be a valid ISO date (YYYY-MM-DD).');
     if (relief_type && !VALID_RELIEF.includes(relief_type)) {
@@ -687,7 +686,7 @@ router.post('/dpa', authRequired, routeLimiter, async (req, res) => {
       base_fine_cents = 0, matter_id, notes,
       wells_due, subpoena_due, dpa_sign_due,
     } = req.body || {};
-    if (!client_name?.trim()) return err400(res, 'client_name is required.');
+    if (!isText(client_name)) return err400(res, 'client_name is required.');
     if (cooperation_level && !VALID_COOP.includes(cooperation_level)) return err400(res, 'Invalid cooperation_level.');
     if (dpa_status && !VALID_DPA.includes(dpa_status)) return err400(res, 'Invalid dpa_status.');
     if (wells_due && !isValidDate(wells_due)) return err400(res, 'wells_due must be YYYY-MM-DD.');
@@ -840,7 +839,7 @@ router.post('/tro', authRequired, routeLimiter, async (req, res) => {
     // 0/false/null/undefined → no DV flag; 1/true → DV flag set
     const { client_name, dv_flag = 0, tro_filed, asset_tier = 'under_100k', matter_id, notes } = req.body || {};
     const dvFlagBool = dv_flag === true || dv_flag === 1;  // normalize to boolean
-    if (!client_name?.trim()) return err400(res, 'client_name is required.');
+    if (!isText(client_name)) return err400(res, 'client_name is required.');
 
     if (asset_tier && !VALID_ASSET.includes(asset_tier)) return err400(res, 'Invalid asset_tier.');
 
@@ -1204,12 +1203,12 @@ router.post('/voluntary-departure', authRequired, routeLimiter, async (req, res)
     const { matter_id, client_name, a_number, order_date, departure_deadline,
             departure_country, bond_amount_cents = 0, notes } = req.body || {};
 
-    if (!client_name?.trim())           return err400(res, 'client_name required.');
+    if (!isText(client_name))           return err400(res, 'client_name required.');
     if (!order_date)                    return err400(res, 'order_date required.');
     if (!departure_deadline)            return err400(res, 'departure_deadline required.');
     if (!isValidDate(order_date))       return err400(res, 'order_date must be YYYY-MM-DD.');
     if (!isValidDate(departure_deadline)) return err400(res, 'departure_deadline must be YYYY-MM-DD.');
-    if (!departure_country?.trim())     return err400(res, 'departure_country required.');
+    if (!isText(departure_country))     return err400(res, 'departure_country required.');
 
     const matterErr = await validateMatterId(db, matter_id, memb.firm_id, res);
     if (matterErr) return;
@@ -1328,7 +1327,7 @@ router.post('/vop', authRequired, routeLimiter, async (req, res) => {
       violation_description, detained_on_vop = 0, original_sentence_months = 0, notes,
     } = req.body || {};
 
-    if (!client_name?.trim())               return err400(res, 'client_name required.');
+    if (!isText(client_name))               return err400(res, 'client_name required.');
     if (!violation_date)                    return err400(res, 'violation_date required.');
     if (!isValidDate(violation_date))       return err400(res, 'violation_date must be YYYY-MM-DD.');
     if (!VALID_VOP_TYPE.includes(violation_type)) return err400(res, `violation_type must be one of: ${VALID_VOP_TYPE.join(', ')}.`);
@@ -1449,7 +1448,7 @@ router.post('/dv-firearms', authRequired, routeLimiter, async (req, res) => {
             surrender_deadline, surrender_to = 'law_enforcement',
             firearms_count, firearms_description, notes } = req.body || {};
 
-    if (!client_name?.trim())               return err400(res, 'client_name required.');
+    if (!isText(client_name))               return err400(res, 'client_name required.');
     if (!tro_issue_date)                    return err400(res, 'tro_issue_date required.');
     if (!surrender_deadline)                return err400(res, 'surrender_deadline required.');
     if (!isValidDate(tro_issue_date))       return err400(res, 'tro_issue_date must be YYYY-MM-DD.');
@@ -1558,7 +1557,7 @@ router.post('/bop-exhaustion', authRequired, routeLimiter, async (req, res) => {
       qualifying_condition, warden_request_date, notes,
     } = req.body || {};
 
-    if (!client_name?.trim())               return err400(res, 'client_name required.');
+    if (!isText(client_name))               return err400(res, 'client_name required.');
     if (!VALID_BOP_BASIS.includes(basis))   return err400(res, `basis must be one of: ${VALID_BOP_BASIS.join(', ')}.`);
     if (warden_request_date && !isValidDate(warden_request_date)) return err400(res, 'warden_request_date must be YYYY-MM-DD.');
 
@@ -1813,7 +1812,7 @@ router.post('/padilla-warnings', authRequired, routeLimiter, async (req, res) =>
       notes,
     } = req.body || {};
 
-    if (!client_name?.trim())           return err400(res, 'client_name required.');
+    if (!isText(client_name))           return err400(res, 'client_name required.');
     if (!warning_date)                  return err400(res, 'warning_date required.');
     if (!isValidDate(warning_date))     return err400(res, 'warning_date must be YYYY-MM-DD.');
     if (!VALID_WARN_METHOD.includes(warning_method)) return err400(res, `warning_method must be one of: ${VALID_WARN_METHOD.join(', ')}.`);
@@ -2037,7 +2036,7 @@ router.post('/ability-to-pay', authRequired, routeLimiter, async (req, res) => {
       bearden_motion_filed = 0, bearden_motion_date, notes,
     } = req.body || {};
 
-    if (!client_name?.trim())          return err400(res, 'client_name required.');
+    if (!isText(client_name))          return err400(res, 'client_name required.');
     if (!assessment_date)              return err400(res, 'assessment_date required.');
     if (!isValidDate(assessment_date)) return err400(res, 'assessment_date must be YYYY-MM-DD.');
 
@@ -2164,11 +2163,11 @@ router.post('/hague', authRequired, routeLimiter, async (req, res) => {
       central_authority_contacted = 0, notes,
     } = req.body || {};
 
-    if (!child_name?.trim())          return err400(res, 'child_name required.');
+    if (!isText(child_name))          return err400(res, 'child_name required.');
     if (!removal_date)                return err400(res, 'removal_date required.');
     if (!isValidDate(removal_date))   return err400(res, 'removal_date must be YYYY-MM-DD.');
-    if (!removal_country?.trim())     return err400(res, 'removal_country required.');
-    if (!habitual_residence?.trim())  return err400(res, 'habitual_residence required.');
+    if (!isText(removal_country))     return err400(res, 'removal_country required.');
+    if (!isText(habitual_residence))  return err400(res, 'habitual_residence required.');
 
     const matterErr = await validateMatterId(db, matter_id, memb.firm_id, res);
     if (matterErr) return;
@@ -2283,7 +2282,7 @@ router.post('/material-support', authRequired, routeLimiter, async (req, res) =>
       referred_to_specialist=0, notes,
     } = req.body || {};
 
-    if (!client_name?.trim())          return err400(res, 'client_name required.');
+    if (!isText(client_name))          return err400(res, 'client_name required.');
     if (!screening_date)               return err400(res, 'screening_date required.');
     if (!isValidDate(screening_date))  return err400(res, 'screening_date must be YYYY-MM-DD.');
 
@@ -2515,8 +2514,8 @@ router.post('/eviction', authRequired, routeLimiter, async (req, res) => {
       emergency_stay_filed = 0, hardship_protection_claimed = 0, defenses, notes,
     } = req.body || {};
 
-    if (!client_name?.trim()) return err400(res, 'client_name required.');
-    if (!state?.trim())       return err400(res, 'state required.');
+    if (!isText(client_name)) return err400(res, 'client_name required.');
+    if (!isText(state))       return err400(res, 'state required.');
     if (answer_deadline && !isValidDate(answer_deadline)) return err400(res, 'answer_deadline must be YYYY-MM-DD.');
     if (hearing_date   && !isValidDate(hearing_date))    return err400(res, 'hearing_date must be YYYY-MM-DD.');
     if (notice_type    && !VALID_NOTICE_TYPE.includes(notice_type)) return err400(res, `notice_type must be one of: ${VALID_NOTICE_TYPE.join(', ')}.`);

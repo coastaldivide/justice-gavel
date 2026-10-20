@@ -21,7 +21,7 @@
 
 import { fetchWithTimeout } from '../../utils/http.js';
 import { getDb }     from '../../db/index.js';
-import { safeInt, err400, err404 } from '../../utils/routeHelpers.js';
+import { safeInt, err400, err404, isText } from '../../utils/routeHelpers.js';
 import logger        from '../../utils/logger.js';
 import { refreshTokenIfNeeded } from './index.js';
 import { Router }    from 'express';
@@ -461,7 +461,7 @@ router.post('/search', authRequired, requireFirmRole('associate'), dmsLimiter, a
     const ctx  = await loadFirmContext(req);
     const { query, limit = 20 } = req.body || {};
 
-    if (!query?.trim()) return err400(res, 'query is required.');
+    if (!isText(query)) return err400(res, 'query is required.');
 
     const conn = await db.get(
       "SELECT id, firm_id, user_id, provider, status, external_id, config_json, created_at FROM integration_connections WHERE firm_id=? AND provider IN ('imanage','netdocuments') AND status='active' LIMIT 1",

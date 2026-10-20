@@ -41,7 +41,7 @@ import { writeAuditLog }   from '../middleware/audit.js';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { err400, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
+         sanitizeStr, truncateStr, isText }         from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 
 const router        = Router();
@@ -295,7 +295,7 @@ router.post('/entries', authRequired, docketLimiter, async (req, res) => {
       reminder_days = 3,
     } = req.body || {};
 
-    if (!title?.trim())  return err400(res, 'title is required.');
+    if (!isText(title))  return err400(res, 'title is required.');
     if (!due_date)       return err400(res, 'due_date (YYYY-MM-DD) is required.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(due_date)) return err400(res, 'due_date must be YYYY-MM-DD format.');
     if (!VALID_ENTRY_TYPES.includes(entry_type))

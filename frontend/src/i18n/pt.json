@@ -5052,5 +5052,6 @@
   "st_conflicts_hint": "Confira nomes nos processos do seu escritório",
   "st_inbox_hint": "Mensagens e convites para casos",
   "st_leads_hint": "Indicações de prisões e clientes",
-  "bd_profile_saved": "Perfil salvo."
+  "bd_profile_saved": "Perfil salvo.",
+  "x_video_consultation_join_video_call": "Entrar na videochamada"
 }

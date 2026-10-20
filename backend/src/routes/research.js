@@ -280,8 +280,12 @@ router.post('/rag', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
 router.post('/index', authRequired, asyncRoute(async (req, res) => {
   // The JWT carries no is_admin claim, so this check always failed; read the role from the DB.
   if (!(await isStaff(await getDb(), req.user))) return res.status(403).json({ error: 'Admin only' });
-  const { doc_type, citation, title, content, jurisdiction, practice_area, year, source_url } = req.body;
-  if (!citation || !content || !title) return res.status(400).json({ error: 'citation, title, content required' });
+  const { doc_type, citation, title, content, jurisdiction, practice_area, year, source_url } = req.body || {};
+  const texts = { citation, title, content };
+  if (Object.values(texts).some(v => typeof v !== 'string' || !v.trim()) || content.length > 200_000) {
+    return res.status(400).json({ error: 'citation_title_content_required', message: 'citation, title and content (text, up to 200,000 characters) are required.' });
+  }
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) return refuse(res, req, 503, 'unavailable');
   try {
     const { indexLegalDocument } = await import('../services/rag.js');
     const doc = await indexLegalDocument({ docType: doc_type, citation, title, content, jurisdiction, practiceArea: practice_area, year, sourceUrl: source_url });

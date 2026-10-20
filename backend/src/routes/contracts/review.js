@@ -87,7 +87,7 @@ router.post('/review', authRequired, requireAi, reviewLimiter, perUserAiLimit,
       );
 
       return { ok: true, id: row.lastID, ...result };
-    });
+    }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,
       message: `Review queued. Poll /api/jobs/${jobId} for results.` });
@@ -183,7 +183,7 @@ router.post('/redline', authRequired, requireAi, redlineLimiter, perUserAiLimit,
       );
 
       return { ok: true, id: row.lastID, ...result };
-    });
+    }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,
       message: `Redline queued. Poll /api/jobs/${jobId} for results.` });
@@ -228,7 +228,7 @@ router.post('/:id/negotiate', authRequired, requireAi, negotiateLimiter, perUser
 
     const jobId = await enqueue('contract_negotiate', async () => {
       return await negotiationPoints(_draft, _party, _prios);
-    });
+    }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,
       message: `Negotiation strategy queued. Poll /api/jobs/${jobId} for results.` });

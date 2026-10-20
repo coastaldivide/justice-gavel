@@ -185,14 +185,8 @@ async function deliverOne(db, row, now) {
       });
       return 'sent';
     }
+    // (sendExpoPush removes tokens Expo reports as dead, so they are not retried forever.)
     pushError = tickets.map(t => t?.message || t?.details?.error).filter(Boolean)[0] || 'push_failed';
-    // Tokens Expo says are dead are removed so they are not retried forever.
-    for (let i = 0; i < tickets.length; i++) {
-      if (tickets[i]?.details?.error === 'DeviceNotRegistered') {
-        await db.run('DELETE FROM push_tokens WHERE token = ?', [tokens[i]]).catch(logIgnored('services/reminderDispatcher'));
-        await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [tokens[i]]).catch(logIgnored('services/reminderDispatcher'));
-      }
-    }
   }
 
   // ── Fallback chain: email (when Resend is configured) → SMS (when Twilio

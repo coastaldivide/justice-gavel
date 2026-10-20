@@ -82,7 +82,20 @@ export function safeJson(str, fallback = null) {
  */
 export function safeInt(val, fallback = 0) {
   const n = parseInt(String(val), 10);
-  return isNaN(n) ? fallback : n;
+  // 30-digit ids parse to 1e30, which no bigint column accepts → fallback.
+  return Number.isSafeInteger(n) ? n : fallback;
+}
+
+/** True for a string with something other than whitespace (never throws on objects / arrays). */
+export function isText(v) {
+  return typeof v === 'string' && v.trim() !== '';
+}
+
+/** A body value as trimmed text: strings and finite numbers; anything else → ''. */
+export function asText(v) {
+  if (typeof v === 'string') return v.trim();
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+  return '';
 }
 
 /**

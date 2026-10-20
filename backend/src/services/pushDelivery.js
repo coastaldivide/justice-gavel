@@ -1,18 +1,6 @@
-import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
-// ── Lazy Expo singleton — same pattern as cases.js / messages.js ──────────────
-// Top-level `new Expo()` crashes at import time if expo-server-sdk is missing.
-// Lazy init means the module loads safely and the error surfaces only if push
-// is actually attempted without the SDK installed.
-let _expoInstance = null;
-async function getExpoClient() {
-  if (_expoInstance) return _expoInstance;
-  const { Expo } = await import('expo-server-sdk');
-  _expoInstance = new Expo();
-  return _expoInstance;
-}
 
 /**
  * sendPushToUser — send an immediate push to a specific user
@@ -63,66 +51,8 @@ export async function deliverScheduledPushes(opts = {}) {
 }
 
 /**
- * checkPushReceipts — checks Expo push receipts and removes invalid tokens.
- *
- * WHY THIS MATTERS:
- *   When a push token becomes invalid (user uninstalls, revokes permissions,
- *   or switches devices), Expo returns a DeviceNotRegistered error in the
- *   receipt response — NOT in the initial send ticket. Without checking
- *   receipts, the push table accumulates dead tokens and every push delivery
- *   loop retries them forever.
- *
- * CALL: run this hourly or after each delivery batch.
+ * checkPushReceipts — Expo receipts for recorded tickets; tokens of devices
+ * that no longer exist are removed (services/expoPush.js). The scheduler runs
+ * it every 30 minutes on one instance.
  */
-export async function checkPushReceipts() {
-  try {
-    const db = await getDb();
-
-    // Get tickets that were sent but not yet receipt-checked (last 48h)
-    const pending = await db.all(
-      `SELECT id, push_token, expo_ticket_id
-         FROM scheduled_pushes
-        WHERE status = 'sent'
-          AND expo_ticket_id IS NOT NULL
-          AND sent_at > (NOW() - INTERVAL '48 hours')
-        LIMIT 100`
-    ).catch(() => []);
-
-    if (!pending.length) return { checked: 0 };
-
-    const ticketIds = pending.map(p => p.expo_ticket_id).filter(Boolean);
-    const expoR = await getExpoClient();
-    const receiptChunks = expoR.chunkPushNotificationReceiptIds(ticketIds);
-
-    let invalidCount = 0;
-    for (const chunk of receiptChunks) {
-      const receipts = await expoR.getPushNotificationReceiptsAsync(chunk);
-      for (const [receiptId, receipt] of Object.entries(receipts)) {
-        if (receipt.status === 'error') {
-          if (receipt.details?.error === 'DeviceNotRegistered') {
-            // Token is dead — remove it so we stop sending to it
-            const row = pending.find(p => p.expo_ticket_id === receiptId);
-            if (row?.push_token) {
-              await db.run(
-                "DELETE FROM push_tokens WHERE token = ?",
-                [row.push_token]
-              ).catch(logIgnored('services/pushDelivery'));
-              await db.run(
-                "UPDATE scheduled_pushes SET status='device_not_registered' WHERE id=?",
-                [row.id]
-              ).catch(logIgnored('services/pushDelivery'));
-              invalidCount++;
-              logger.info('[Push] Removed dead token:', row.push_token.slice(-8));
-            }
-          }
-        }
-      }
-    }
-
-    logger.info(`[Push] Receipt check: ${pending.length} checked, ${invalidCount} dead tokens removed`);
-    return { checked: pending.length, removed: invalidCount };
-  } catch (err) {
-    logger.error('[Push] checkPushReceipts error:', err.message);
-    return { checked: 0, error: err.message };
-  }
-}
+export { checkPushReceipts } from './expoPush.js';

@@ -27,10 +27,10 @@ import { sendPushToUser } from '../services/pushDelivery.js';
 import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/email.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { PAYMENTS_UNAVAILABLE, stripeConfigured } from '../config.js';
-import { resolveLang, msg, userLang, LOCALES } from '../i18n/index.js';
+import { resolveLang, msg, userLang } from '../i18n/index.js';
 import {
   FEE_BY_DURATION, REFUND_CUTOFF_HOURS, PENDING_HOLD_MINUTES, pricing, usd,
-  generateSlots, findSlot, lawyerTimeZone,
+  generateSlots, findSlot, lawyerTimeZone, slotLabel,
 } from '../services/consultationSlots.js';
 
 const slotsLimiter  = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many slot requests.' });
@@ -70,12 +70,6 @@ async function bookedSet(db, lawyerId) {
 }
 
 /** "Tuesday, October 20 at 9:00 AM CDT" in the lawyer's zone and `lang`. */
-function slotLabel(startsAt, timeZone, lang) {
-  const d = new Date(startsAt);
-  const loc = LOCALES[lang] || 'en-US';
-  return `${d.toLocaleDateString(loc, { timeZone, weekday: 'long', month: 'long', day: 'numeric' })} · ${d.toLocaleTimeString(loc, { timeZone, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}`;
-}
-
 const shapeBooking = (b) => b && ({
   ...b,
   id: Number(b.id),
@@ -226,19 +220,18 @@ async function notifyConfirmed(db, booking, lawyer, client) {
     }).catch(e => logger.warn('[consultations] attorney push failed', e?.message));
     if (atty.email) {
       sendAttorneyBookingAlert({
-        to: atty.email, attorneyName: atty.display_name || 'Attorney', clientName: client.display_name || 'Client',
-        dateSlot: booking.date_slot, timeSlot: slotLabel(booking.starts_at, booking.time_zone, 'en'),
-        durationMin: booking.duration_min, caseTitle: null,
-        clientEmail: client.email || null, clientPhone: client.phone || null, meetingLink: null,
+        to: atty.email, lang: attyLang, attorneyName: atty.display_name || null, clientName: client.display_name || null,
+        when: slotLabel(booking.starts_at, booking.time_zone, attyLang), durationMin: booking.duration_min,
+        clientEmail: client.email || null, clientPhone: client.phone || null,
       }).catch(e => logger.warn('[email] attorney alert failed:', e?.message));
     }
   }
   if (client.email) {
+    const clientLang = await userLang(db, client.id);
     sendBookingConfirmation({
-      to: client.email, clientName: client.display_name || 'Client', attorneyName: booking.lawyer_name,
-      dateSlot: booking.date_slot, timeSlot: slotLabel(booking.starts_at, booking.time_zone, 'en'),
-      durationMin: booking.duration_min, feeDollars: (Number(booking.platform_fee_cents) / 100).toFixed(2),
-      meetingLink: null, cancellationUrl: null,
+      to: client.email, lang: clientLang, clientName: client.display_name || null, attorneyName: booking.lawyer_name,
+      when: slotLabel(booking.starts_at, booking.time_zone, clientLang), durationMin: booking.duration_min,
+      feeDisplay: booking.platform_fee_cents != null ? usd(Number(booking.platform_fee_cents)) : null, refundHours: REFUND_CUTOFF_HOURS,
     }).catch(e => logger.warn('[email] booking confirmation failed:', e?.message));
   }
 }

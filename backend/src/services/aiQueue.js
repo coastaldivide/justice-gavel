@@ -53,7 +53,9 @@ export const barVerifyQueue  = connection ? new Queue('bar-verification', { conn
 // ── In-process job store ────────────────────────────────────────────────────
 // Routes enqueue closures: enqueueAIJob('chat', async () => {...}, userId).
 // Closures cannot be serialised into Redis, so they always run in this process
-// with bounded concurrency; clients poll GET /api/jobs/:id.
+// with bounded concurrency; clients poll GET /api/jobs/:id. Each job's status
+// (and result) is also written to ai_job_state, so a poll that lands on another
+// instance (Render scaling, a deploy) gets the same answer.
 //   statuses: pending → processing → done | failed
 //   TTL 15 min after completion; per-job timeout 45 s (AI_JOB_TIMEOUT_MS env),
 //   longer for the job types that write long documents (JOB_TIMEOUT_BY_TYPE).
@@ -68,6 +70,60 @@ let   _running = 0;
 let   _done    = 0;
 let   _failed  = 0;
 
+// ── Shared job state (Postgres) ─────────────────────────────────────────────
+const INSTANCE = process.env.RENDER_INSTANCE_ID || `pid:${process.pid}`;
+let _stateDb;   // undefined = not resolved; null = no Postgres (sql.js dev, unit tests)
+async function stateDb() {
+  if (_stateDb !== undefined) return _stateDb;
+  try {
+    const { getDb } = await import('../db/index.js');
+    const db = await getDb();
+    _stateDb = db?.engine === 'postgres' ? db : null;
+  } catch { _stateDb = null; }
+  return _stateDb;
+}
+/** Write a job's state; writes for one job are chained so they land in order. */
+function saveState(job) {
+  const snap = { status: job.status, result: job.result ?? null, code: job.code ?? null,
+    started: job.startedAt ?? null, completed: job.completedAt ?? null };
+  job._saved = (job._saved || Promise.resolve()).then(async () => {
+    const db = await stateDb();
+    if (!db) return;
+    await db.run(
+      `INSERT INTO ai_job_state (id, type, user_id, status, result, code, instance, queued_at, started_at, completed_at)
+       VALUES (?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, result = EXCLUDED.result, code = EXCLUDED.code,
+         started_at = EXCLUDED.started_at, completed_at = EXCLUDED.completed_at`,
+      [job.id, job.type, job.userId ?? null, snap.status, snap.result === null ? null : JSON.stringify(snap.result),
+        snap.code, INSTANCE, job.queuedAt, snap.started, snap.completed]);
+  }).catch(e => logger.warn({ id: job.id, err: e.message }, '[ai_queue] job state not saved'));
+  return job._saved;
+}
+// A job still pending/processing this long after it was queued belongs to an
+// instance that is gone: it is reported as timed out.
+const ORPHAN_AFTER_MS = 5 * 60_000 + Math.max(JOB_TIMEOUT_MS, ...Object.values(JOB_TIMEOUT_BY_TYPE));
+async function loadState(id) {
+  const db = await stateDb();
+  if (!db) return null;
+  const r = await db.get('SELECT id, type, user_id, status, result, code, queued_at, started_at, completed_at FROM ai_job_state WHERE id = ?', [id]);
+  if (!r) return null;
+  const iso = (v) => (v ? new Date(v).toISOString() : null);
+  const orphan = (r.status === 'pending' || r.status === 'processing') && Date.now() - new Date(r.queued_at).getTime() > ORPHAN_AFTER_MS;
+  return {
+    id: r.id, type: r.type, userId: r.user_id ?? null,
+    status: orphan ? 'failed' : r.status, result: r.result ?? null,
+    code: orphan ? 'ai_timeout' : r.code ?? null, error: orphan ? 'ai_timeout' : r.code ?? null,
+    queuedAt: iso(r.queued_at), startedAt: iso(r.started_at), completedAt: iso(r.completed_at),
+  };
+}
+/** Remove job states that finished more than 15 minutes ago (daily clean-up). */
+export async function purgeFinishedJobs(dbArg) {
+  const db = dbArg?.engine === 'postgres' ? dbArg : await stateDb();
+  if (!db) return 0;
+  const r = await db.run(`DELETE FROM ai_job_state WHERE completed_at < NOW() - INTERVAL '15 minutes' OR queued_at < NOW() - INTERVAL '1 day'`);
+  return r?.changes || 0;
+}
+
 function _pump() {
   while (_running < MAX_CONCURRENCY && _pending.length) {
     const id  = _pending.shift();
@@ -76,6 +132,7 @@ function _pump() {
     _running++;
     job.status    = 'processing';
     job.startedAt = new Date().toISOString();
+    saveState(job);
     let timer;
     Promise.race([
       Promise.resolve().then(() => job._fn()),
@@ -99,17 +156,24 @@ function _pump() {
         clearTimeout(timer);
         job.completedAt = new Date().toISOString();
         delete job._fn;
+        saveState(job);
         _running--;
-        const t = setTimeout(() => _jobs.delete(id), JOB_TTL_MS);
+        const t = setTimeout(() => {
+          _jobs.delete(id);
+          stateDb().then(db => db?.run('DELETE FROM ai_job_state WHERE id = ?', [id])).catch(e => logger.warn({ id, err: e.message }, '[ai_queue] job state not removed'));
+        }, JOB_TTL_MS);
         t.unref?.();
         _pump();
       });
   }
 }
 
-function enqueueLocal(type, fn, userId) {
+async function enqueueLocal(type, fn, userId) {
   const id = randomUUID();
-  _jobs.set(id, { id, type, userId: userId ?? null, status: 'pending', queuedAt: new Date().toISOString(), _fn: fn });
+  const job = { id, type, userId: userId ?? null, status: 'pending', queuedAt: new Date().toISOString(), _fn: fn };
+  _jobs.set(id, job);
+  // Written before the id is handed out, so the first poll finds it on any instance.
+  await saveState(job);
   _pending.push(id);
   setImmediate(_pump);
   return id;
@@ -255,14 +319,16 @@ export async function stopAIWorkers() {
 export function getJob(jobId) {
   const local = _jobs.get(String(jobId));
   if (!local) return null;
-  const { _fn, ...pub } = local;
+  const { _fn, _saved, ...pub } = local;
   return pub;
 }
 
-/** getJobAsync(id) — in-process store first, then BullMQ queues (when Redis is configured). */
+/** getJobAsync(id) — this process, then the shared state (another instance), then BullMQ (when Redis is configured). */
 export async function getJobAsync(jobId) {
   const local = getJob(jobId);
   if (local) return local;
+  const shared = await loadState(String(jobId)).catch(e => { logger.warn({ err: e.message }, '[ai_queue] job state lookup failed'); return null; });
+  if (shared) return shared;
   const allQueues = [aiChatQueue, aiResearchQueue, aiDocumentQueue, aiMotionQueue];
   for (const q of allQueues) {
     if (!q) continue;
