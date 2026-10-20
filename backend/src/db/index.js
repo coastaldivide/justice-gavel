@@ -30,7 +30,7 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
-import logger from '../utils/logger.js';
+import logger, { currentRequestContext } from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH   = path.resolve(__dirname, '../../demo.db');
@@ -127,6 +127,17 @@ function normParams(params) {
   return params.map(p => (p === undefined ? null : typeof p === 'boolean' ? (p ? 1 : 0) : p));
 }
 
+/**
+ * Remember the last failed query of the current request (its SQLSTATE only).
+ * middleware/errorShape.js turns a 500 caused by bad input that reached the
+ * database (invalid / out-of-range value, unknown reference, duplicate) into
+ * the 4xx it really is.
+ */
+function noteQueryError(e) {
+  const ctx = currentRequestContext();
+  if (ctx) ctx.lastDbError = { code: e.code || null, at: Date.now() };
+}
+
 // ── Postgres adapter ──────────────────────────────────────────────────────────
 async function initPostgres(url) {
   const { default: pg } = await import('pg');
@@ -188,6 +199,7 @@ async function initPostgres(url) {
         return await executor.query(pgSql, normParams(params));
       } catch (e) {
         e.sql = pgSql.slice(0, 200);
+        noteQueryError(e);
         if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
         throw e;
       } finally {
@@ -214,6 +226,7 @@ async function initPostgres(url) {
           result = await executor.query(pgSql, normParams(params));
         } catch (e) {
           e.sql = pgSql.slice(0, 200);
+          noteQueryError(e);
           if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
           throw e;
         } finally {

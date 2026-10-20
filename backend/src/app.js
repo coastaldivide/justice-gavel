@@ -93,6 +93,7 @@ import { aiConfigured } from './utils/ai.js';
 import { getDb } from './db/index.js';
 import { createDbHealthCheck } from './utils/healthCheck.js';
 import { idempotency } from './middleware/idempotency.js';
+import { errorShape } from './middleware/errorShape.js';
 
 
 // NOTE: Sentry is initialised once in ./instrument.js (imported first by
@@ -147,6 +148,9 @@ app.use((req, res, next) => {
   // Everything logged while this request is handled carries its request_id.
   runWithRequestContext({ requestId: id, method: req.method }, next);
 });
+
+// ── One error format: { error, code, message (request language) } ────────────
+app.use(errorShape());
 
 // ── CORS — one configuration ──────────────────────────────────────────────────
 // Allowed: production web origins, local dev origins, plus comma-separated
@@ -540,11 +544,15 @@ app.use((req, res) => {
 // ── Global error handler ─────────────────────────────────────────────────────
  
 app.use((err, req, res, _next) => {
-  let status = err.status || err.statusCode || 500;
-  if (err.type === 'entity.parse.failed') status = 400;
-  const message = IS_PROD && status >= 500
-    ? 'An unexpected error occurred. Our team has been notified.'
-    : err.message || 'Internal server error';
+  let status = Number(err.status || err.statusCode) || 500;
+  if (status < 400 || status > 599) status = 500;
+  let code = typeof err.code === 'string' && /^[a-z][a-z0-9_]+$/.test(err.code) ? err.code : undefined;
+  if (err.type === 'entity.parse.failed') { status = 400; code = 'invalid_json'; }
+  if (err.type === 'entity.too.large') { status = 413; code = 'payload_too_large'; }
+  if (err.type === 'encoding.unsupported' || err.type === 'charset.unsupported') { status = 415; code = 'unsupported_media_type'; }
+  // Library / internal error text is never shown in production; middleware/errorShape.js
+  // supplies the message in the request language from the code / status.
+  const message = IS_PROD ? undefined : err.message || 'Internal server error';
 
   if (status >= 500) {
     logger.error({
@@ -559,7 +567,9 @@ app.use((err, req, res, _next) => {
 
   if (!res.headersSent) {
     res.status(status).json({
-      error:   message,
+      error:   code || message,
+      ...(code ? { code } : {}),
+      ...(message ? { message } : {}),
       status,
       path:    req.path,
       request_id: req.id,

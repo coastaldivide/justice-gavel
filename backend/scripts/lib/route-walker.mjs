@@ -30,6 +30,16 @@ export const STAFF_MIDDLEWARE = new Set([
   'requireSuperAdmin', 'requireAdmin', 'requireStaff', 'requireRole', 'adminOnly', 'staffOnly',
 ]);
 
+/** The src/ file whose code called router.route() (for route → source mapping). */
+function definingFile() {
+  const frames = String(new Error().stack || '').split('\n');
+  for (const f of frames) {
+    const m = /(?:file:\/\/)?(\/[^\s)]*\/src\/[^\s):]+\.js)/.exec(f);
+    if (m && !m[1].includes('/node_modules/')) return m[1].replace(/^.*\/src\//, 'src/');
+  }
+  return null;
+}
+
 export async function collectRoutes() {
   let RouterProto = Object.getPrototypeOf(express.Router());
   while (RouterProto && !Object.prototype.hasOwnProperty.call(RouterProto, 'route')) {
@@ -45,7 +55,7 @@ export async function collectRoutes() {
   RouterProto.route = function (path) {
     const r = origRoute.call(this, path);
     if (!routes.has(this)) routes.set(this, []);
-    routes.get(this).push({ path, route: r, ordinal: counter++ });
+    routes.get(this).push({ path, route: r, ordinal: counter++, file: definingFile() });
     return r;
   };
   const origUse = RouterProto.use;
@@ -90,10 +100,10 @@ export async function collectRoutes() {
   const join = (a, b) =>
     '/' + [a, b].map(s => String(s).replace(/^\/+|\/+$/g, '')).filter(Boolean).join('/');
 
-  const found = new Map();   // "METHOD path" → { method, path, middleware: Set }
-  function record(method, path, middleware) {
+  const found = new Map();   // "METHOD path" → { method, path, middleware: Set, file }
+  function record(method, path, middleware, file) {
     const key = `${method} ${path}`;
-    if (!found.has(key)) found.set(key, { method, path, middleware: new Set() });
+    if (!found.has(key)) found.set(key, { method, path, middleware: new Set(), file });
     for (const m of middleware) found.get(key).middleware.add(m);
   }
 
@@ -108,7 +118,7 @@ export async function collectRoutes() {
   function walk(router, prefix, inheritedGates, seen = new Set()) {
     if (seen.has(router)) return;
     seen.add(router);
-    for (const { path, route, ordinal } of routes.get(router) || []) {
+    for (const { path, route, ordinal, file } of routes.get(router) || []) {
       const stackNames = (route.stack || [])
         .map(l => l.handle && l.handle.name)
         .filter(Boolean);
@@ -120,7 +130,7 @@ export async function collectRoutes() {
         const gates = [...inheritedGates, ...routerGates, ...stackNames];
         for (const m of Object.keys(route.methods || {})) {
           if (m === '_all') continue;
-          record(m.toUpperCase(), join(prefix, p), gates);
+          record(m.toUpperCase(), join(prefix, p), gates, file);
         }
       }
     }
@@ -140,6 +150,7 @@ export async function collectRoutes() {
         method: r.method,
         path: r.path,
         middleware: mw,
+        file: r.file,
         auth:  mw.some(n => AUTH_MIDDLEWARE.has(n)),
         staff: mw.some(n => STAFF_MIDDLEWARE.has(n)),
       };

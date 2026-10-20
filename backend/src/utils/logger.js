@@ -52,6 +52,11 @@ export function currentRequestId() {
   return requestContext.getStore()?.requestId ?? null;
 }
 
+/** The current request's context object (mutable; null outside a request). */
+export function currentRequestContext() {
+  return requestContext.getStore() ?? null;
+}
+
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Error);
 
 function errorFields(e) {
