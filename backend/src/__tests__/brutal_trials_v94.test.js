@@ -204,18 +204,21 @@ describe('WBA. webhooks/bot_admin.js — Bot Admin + Revenue Dashboard', () => {
 describe('EXP. expungement/check.js — Record Expungement Eligibility', () => {
   test('EXP-01: GET /check — stateless expungement eligibility computation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js','utf8');
-    expect(src).toContain("router.get('/check'");
-    expect(src).toContain('expungement eligibility check');
-    expect(src).toContain('Stateless');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js', 'utf8');
+    expect(src).toContain("router.get('/check', apiLimiter");          // public, IP rate limited
+    expect(src).toContain('Public (guests reach it from Home)');
+    expect(src).toContain('no database reads');
+    expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
+    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
   });
   test('EXP-02: no auth required — pure computation from state rules + charge type', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js','utf8');
-    expect(src).toContain('Pure deterministic computation');
-    expect(src).toContain('state');
-    expect(src).toContain('charges');
-    // No DB reads, no auth — anyone can check expungement eligibility
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js', 'utf8');
+    expect(src).toContain("router.get('/check', apiLimiter");          // public, IP rate limited
+    expect(src).toContain('Public (guests reach it from Home)');
+    expect(src).toContain('no database reads');
+    expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
+    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
   });
   test('EXP-03: query params: state (2-letter) + charges description', async () => {
     const fs = await import('fs');
@@ -237,8 +240,7 @@ describe('EMPTY. Empty State Analysis — 10 Screens Need Enhancement', () => {
   test('EMPTY-03: HagueContactScreen — 4 phases cover empty state (home = initial)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    // 4 phases: home/lookup/intake/result — phase machine handles empty naturally
-    expect(src).toContain("'home'|'lookup'|'intake'|'result'");
+    expect(src).toContain("type Phase = 'home' | 'lookup' | 'intake' | 'done'");
     expect(src).toContain('setPhase');
   });
   test('EMPTY-04: [ENHANCEMENT] 10 screens could benefit from explicit EmptyState', () => {

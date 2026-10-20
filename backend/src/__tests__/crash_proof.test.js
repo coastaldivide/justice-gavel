@@ -55,11 +55,11 @@ describe('CRASH PROOF — Legal Engine', () => {
       }
     });
 
-    test('returns safe defaults: empty → unknown (attorney CTA), unrecognized text → misdemeanor', () => {
+    test('returns safe defaults: empty → unknown (attorney CTA), unrecognized text → unknown', () => {
       expect(classifyCharge(null)).toBe('unknown');
       expect(classifyCharge(undefined)).toBe('unknown');
       expect(classifyCharge('')).toBe('unknown');
-      expect(classifyCharge('gibberish xyz 123')).toBe('misdemeanor');
+      expect(classifyCharge('gibberish xyz 123')).toBe('unknown');
     });
 
     test('correctly classifies all known charge types', () => {

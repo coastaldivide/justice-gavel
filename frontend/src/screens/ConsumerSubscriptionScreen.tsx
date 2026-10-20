@@ -14,6 +14,7 @@ import { api, apiErrorMessage, isPaymentsUnavailable, unwrapList } from '../serv
 import { PAYMENTS_COMING_SOON } from '../payments';
 
 import { useAuthGate } from '../components/AuthGate';
+import { getToken } from '../utils/secureStorage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t, useLang, perLang } from '../i18n';
 
@@ -163,7 +164,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = () => {
     setRefreshing(true);
-    api.get('/billing/consumer/subscription')
+    getToken().then(tk => (tk ? api.get('/billing/consumer/subscription') : { data: { subscription: null } }))
       .then(r => { if (mountedRef.current) setSubscription(r.data?.subscription ?? null); })
       .catch(() => showToast(t('x_consumer_subscription_could_not_refresh_check'), 'error'))
       .finally(() => { if (mountedRef.current) setRefreshing(false); });
@@ -181,7 +182,8 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     try {
       const [tiersRes, subRes] = await Promise.all([
         api.get('/billing/tiers', { params: { audience: 'consumer' } }),
-        api.get('/billing/consumer/subscription').catch(() => null),
+        // Guests have no subscription to read (a request would only 401).
+        getToken().then(tk => (tk ? api.get('/billing/consumer/subscription') : null)).catch(() => null),
       ]);
       if (!mountedRef.current) return;
       setPlans(consumerPlansFrom(tiersRes.data));

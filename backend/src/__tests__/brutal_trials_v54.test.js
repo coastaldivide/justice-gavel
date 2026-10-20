@@ -204,7 +204,7 @@ describe('HAIR. StyleSheet.hairlineWidth — Device-Independent 1px Borders', ()
     const dir  = __REPO + '/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hairlineWidth')).length;
-    expect(count).toBe(4);   // + LegalPenaltiesScreen row separators
+    expect(count).toBe(5);   // + LegalPenaltiesScreen row separators, + Hague resource rows (section F)
   });
 });
 

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v96
@@ -190,33 +191,50 @@ describe('LES2. lessons.js — Complete Legal Education Route Set', () => {
 describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
   test('HGC2-01: GET /us-resources — OCI + NCMEC + FBI + INTERPOL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain("router.get('/us-resources'");
-    expect(src).toContain('1-888-407-4747');
-    expect(src).toContain('1-800-843-5678');
-    expect(src).toContain('ic3.gov');
-    expect(src).toContain('INTERPOL');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    // Section F: the contacts are stored data (migration 26) read by the route, each with its source
+    expect(mig).toContain("'+1-888-407-4747'");
+    expect(mig).toContain('abduction@state.gov');
+    expect(src).toContain('hague_central_authorities');
+    expect(src).toContain('emergency_phone');
   });
   test('HGC2-02: GET /member-states — 28 member states contracting/non-contracting', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('GB', 'United Kingdom'");
+    expect(mig).toContain("('IN', 'India'");
+    expect(mig).toContain("('US', 'United States'");
+    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect(mig).toContain("'HCCH member state registry'");
+    expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
-    expect(src).toContain('MEMBER_STATES');
-    const entries=(src.match(/\{ code:'/g)||[]).length;
-    expect(entries).toBeGreaterThanOrEqual(25);
   });
   test('HGC2-03: GET /central-authority/:countryCode — per-country authority lookup', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('GB', 'United Kingdom'");
+    expect(mig).toContain("('IN', 'India'");
+    expect(mig).toContain("('US', 'United States'");
+    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
-    expect(src).toContain('Not a contracting state');
+    expect(src).toContain("router.get('/member-states'");
   });
   test('HGC2-04: POST /report-intake — case-linked intake with next_steps', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain("router.post('/report-intake'");
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    const en = fs.readFileSync(__REPO + '/backend/src/i18n/messages/en.js', 'utf8');
     expect(src).toContain('next_steps');
-    expect(src).toContain('Article 11');
+    expect(src).toContain('hague.steps.contracting.');
+    expect(src).toContain('hague.steps.non_contracting.');
+    expect(src).toContain('legal_notice');
+    expect(en).toContain('Article 11');      // recorded wording, flagged for lawyer review (section F)
+    expect(en).toContain('6 weeks');
+    expect(en).toContain('U.S. embassy');
+    expect(en).toContain('bilateral treaty');
   });
   test('HGC2-05: GET /intake/:caseId — retrieve intake record for case', async () => {
     const fs = await import('fs');

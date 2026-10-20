@@ -8,6 +8,17 @@ import { asyncRoute } from '../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { apiLimiter }   from '../middleware/rateLimiters.js';
+import { msg, resolveLang } from '../i18n/index.js';
+import { parseDateOnly } from '../utils/timezone.js';
+
+/** A real 'YYYY-MM-DD' calendar day that is not in the future → UTC ms, else null. */
+function pastDay(v) {
+  const d = parseDateOnly(typeof v === 'string' ? v.trim() : '');
+  if (!d) return null;
+  const t = Date.UTC(d.y, d.m - 1, d.d);
+  return t <= Date.now() ? t : null;
+}
+const badDate = (req, res) => res.status(400).json({ error: msg(resolveLang(req), 'immigration.err.date'), code: 'invalid_date' });
 
 const router = Router();
 
@@ -49,10 +60,11 @@ router.get('/rights', cacheFor(24 * 60), apiLimiter, (req, res) => {
 
 // ── POST /immigration/asylum-clock — calculate days on asylum clock ────────
 router.post('/asylum-clock', authRequired, asyncRoute((req, res) => {
-  const { filing_date, case_type = 'defensive' } = req.body;
-  if (!filing_date) return res.status(400).json({ error: 'filing_date required (YYYY-MM-DD)' });
+  const { filing_date, case_type = 'defensive' } = req.body || {};
+  const filedMs = pastDay(filing_date);
+  if (filedMs == null) return badDate(req, res);
 
-  const filed   = new Date(filing_date);
+  const filed   = new Date(filedMs);
   const today   = new Date();
   const days    = Math.floor((today - filed) / (1000 * 60 * 60 * 24));
 
@@ -61,7 +73,7 @@ router.post('/asylum-clock', authRequired, asyncRoute((req, res) => {
   const days_until_ead    = Math.max(0, ead_eligible_days - days);
 
   return res.json({
-    filing_date,
+    filing_date: filed.toISOString().slice(0, 10),
     days_elapsed:      days,
     ead_eligible:      days >= ead_eligible_days,
     days_until_ead:    days_until_ead,
@@ -74,17 +86,19 @@ router.post('/asylum-clock', authRequired, asyncRoute((req, res) => {
 
 // ── POST /immigration/voluntary-departure — deadline calculator ───────────
 router.post('/voluntary-departure', authRequired, (req, res) => {
-  const { grant_date, days_granted = 60 } = req.body;
-  if (!grant_date) return res.status(400).json({ error: 'grant_date required (YYYY-MM-DD)' });
+  const { grant_date, days_granted = 60 } = req.body || {};
+  const grantedMs = pastDay(grant_date);
+  const days = Number(days_granted);
+  if (grantedMs == null || !Number.isInteger(days) || days < 1 || days > 365) return badDate(req, res);
 
-  const granted  = new Date(grant_date);
-  const deadline = new Date(granted.getTime() + parseInt(days_granted, 10) * 86400000);
+  const granted  = new Date(grantedMs);
+  const deadline = new Date(granted.getTime() + days * 86400000);
   const today    = new Date();
   const remaining = Math.max(0, Math.floor((deadline - today) / (1000 * 60 * 60 * 24)));
 
   return res.json({
-    grant_date,
-    days_granted: parseInt(days_granted, 10),
+    grant_date: granted.toISOString().slice(0, 10),
+    days_granted: days,
     departure_deadline: deadline.toISOString().split('T')[0],
     days_remaining: remaining,
     status: remaining === 0 ? 'EXPIRED — seek legal counsel immediately'

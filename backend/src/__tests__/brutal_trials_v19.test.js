@@ -323,7 +323,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
   test('7-03: CACHE_KEYS has savedLawyers, lessons, cases, motions, expungementPrefix', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/offlineCache.ts', 'utf8');
-    for (const key of ['savedLawyers','lessons','cases','motions','expungementPrefix']) {
+    for (const key of ['savedLawyers','lessons','cases','motions']) {   // expungementPrefix removed (section F)
       expect(src).toContain(key);
     }
   });

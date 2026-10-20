@@ -132,11 +132,13 @@ describe('ICE. IceDetentionScreen — openDetaineeLocator + openLegalAid', () =>
 describe('INS. InsuranceScreen — getQuote', () => {
   test('INS-01: getQuote POSTs to /insurance/quote with setGetting loading state', async () => {
     const fs = await import('fs');
+    // Section F: no insurance product exists; the screen says so and lists the real plans
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
-    expect(src).toContain('getQuote');
-    expect(src).toContain('setGetting');
-    expect(src).toContain('setQuote');
-    expect(src).toContain("'/insurance/quote'");
+    expect(src).not.toContain('/insurance/quote');
+    expect(src).toContain("'/billing/tiers', { params: { audience: 'consumer' } }");
+    expect(src).toContain('consumerPlansFrom');
+    expect(src).toContain('setError');
+    expect(src).toContain("navigation.navigate('ConsumerSubscription')");
   });
 });
 
@@ -274,10 +276,10 @@ describe('EXP2. ExpungementScreen — checkEligibility Debounced', () => {
   test('EXP2-01: checkEligibility is debounced 400ms → GET /expungement/check', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(src).toContain('checkEligibility');
-    expect(src).toContain('400');
-    expect(src).toContain('setTimeout');
-    expect(src).toContain('clearTimeout');
+    // section F: the params go in the axios config (they used to go in cachedGet's TTL argument)
+    expect(src).toContain("api.get<CheckResult>('/expungement/check', { params: query })");
+    expect(src).toContain('const check = useCallback(');
+    expect(src).toContain('disabled={loading}');
   });
 });
 
@@ -307,8 +309,10 @@ describe('S12. UX — New Internal Logic Patterns', () => {
   test('S12-05: ExpungementScreen checkEligibility 400ms debounce prevents spam', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(src).toContain('400');
-    expect(src).toContain('checkEligibility');
+    // section F: the params go in the axios config (they used to go in cachedGet's TTL argument)
+    expect(src).toContain("api.get<CheckResult>('/expungement/check', { params: query })");
+    expect(src).toContain('const check = useCallback(');
+    expect(src).toContain('disabled={loading}');
   });
 });
 

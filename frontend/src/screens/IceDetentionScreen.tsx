@@ -22,8 +22,10 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useTheme, COLORS, RADIUS } from '../constants/theme';
-import { hapticImpact, hapticSelection, RNShare } from '../utils/webCompat';
+import { hapticImpact, hapticSelection, RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { t, tl, useLang, type Lang } from '../i18n';
+import { formatPhone, telUrl } from '../utils/contact';
+import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
 const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
@@ -44,7 +46,11 @@ const C_FFFBEB = ('\x23' + 'fffbeb') as string; // hex color
 // switches this one page to English (or back) — e.g. to show it to someone else.
 const PHONES = ['210-787-3745', '213-639-3900', '212-549-2660', '415-255-9499', '301-587-7993'];
 const URLS = ['https://www.raicestexas.org', 'https://www.nilc.org', 'https://www.aclu.org/know-your-rights/immigrants-rights', 'https://www.ilrc.org', 'https://cliniclegal.org'];
-const LOCATOR_URL = 'https://locator.ice.gov/odls/#/index';
+// The address ICE itself publishes for its Online Detainee Locator System
+// (ICE ODLS brochure, ice.gov/doclib/news/library/factsheets/pdf/odls-brochure.pdf, checked 2026-10-20).
+const LOCATOR_URL = 'https://www.ice.gov/locator';
+const LOCATOR_SOURCE = 'ICE Online Detainee Locator System brochure (ice.gov)'; // i18n-exempt: the source's own title
+const LOCATOR_CHECKED = '2026-10-20';
 const RIGHTS = [
   { icon: '🤐', color: C_DC2626, bg: C_FEF2F2, bold: true },
   { icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF, bold: false },
@@ -140,16 +146,18 @@ function IceDetentionScreen(): React.JSX.Element {
   }, [showToast]);
 
   const callNumber = useCallback((phone: string) => {
+    const url = telUrl(phone);
+    if (!url) return;
     hapticImpact();
-    Linking.openURL('tel:' + phone.replace(/[^\d+]/g, '')).catch(() =>
-      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast(t('iced_dialer_failed'), 'error'))
-    );
+    Linking.openURL(url).catch(() => showToast(t('cp_dial_manually', { num: formatPhone(phone) }), 'warning'));
   }, [showToast]);
 
   const shareInfo = useCallback(() => {
     hapticImpact();
-    RNShare.share({ message: L.shareMsg, title: L.shareTitle });
-  }, [L.shareMsg, L.shareTitle]);
+    RNShare.share({ message: L.shareMsg, title: L.shareTitle })
+      .then((r: { action?: string } | undefined) => { if (r?.action === COPIED_ACTION) showToast(t('cs2_copied'), 'success'); })
+      .catch(() => showToast(t('action_failed'), 'error'));
+  }, [L.shareMsg, L.shareTitle, showToast]);
 
   return (
     <ScrollView
@@ -174,6 +182,8 @@ function IceDetentionScreen(): React.JSX.Element {
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>{L.subtitle}</Text>
       </View>
 
+      <UnreviewedNotice lang={lang} text={tl(lang, 'iced_not_reviewed')} testID="ice-notice" />
+
       {/* Rights */}
       <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.rightsLabel}</Text>
       {L.rights.map((r, i) => (
@@ -187,6 +197,10 @@ function IceDetentionScreen(): React.JSX.Element {
           </Text>
         </View>
       ))}
+
+      <View style={{ paddingHorizontal: 16 }}>
+        <SourceLine lang={lang} source={tl(lang, 'iced_rights_source')} testID="ice-rights-source" />
+      </View>
 
       {/* Steps */}
       <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.stepsTitle}</Text>
@@ -212,6 +226,7 @@ function IceDetentionScreen(): React.JSX.Element {
         >
           <Text style={s.locatorBtnTxt} maxFontSizeMultiplier={1.4}>{L.locateBtn}</Text>
         </TouchableOpacity>
+        <SourceLine lang={lang} source={LOCATOR_SOURCE} recorded={LOCATOR_CHECKED} verified={LOCATOR_CHECKED} testID="ice-locator-source" />
       </View>
 
       {/* Legal resources */}
@@ -233,7 +248,7 @@ function IceDetentionScreen(): React.JSX.Element {
               accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
-              <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {r.phone}</Text>
+              <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {formatPhone(r.phone)}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -247,6 +262,10 @@ function IceDetentionScreen(): React.JSX.Element {
           </View>
         </View>
       ))}
+
+      <View style={{ paddingHorizontal: 16 }}>
+        <SourceLine lang={lang} testID="ice-resources-source" />
+      </View>
 
       {/* Share */}
       <TouchableOpacity

@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v84
@@ -34,22 +35,24 @@ const mkMatter = (v, o={}) => ({
 describe('DISC18. Discrepancy Fixes — central-authority + QUICK_COUNTRIES + calcLeadFee', () => {
   test('DISC18-01: GET /central-authority/:countryCode fully documented [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('GB', 'United Kingdom'");
+    expect(mig).toContain("('IN', 'India'");
+    expect(mig).toContain("('US', 'United States'");
+    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
-    expect(src).toContain("{ code:'GB'");
-    expect(src).toContain("{ code:'US'");
-    expect(src).toContain("{ code:'IN'");
-    // Non-contracting state message
-    expect(src).toContain("Not a contracting state");
+    expect(src).toContain("router.get('/member-states'");
   });
   test('DISC18-02: QUICK_COUNTRIES has 18 entries for FE country selection [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('QUICK_COUNTRIES');
-    const entries = (src.match(/\{ code:'/g)||[]).length;
-    expect(entries).toBeGreaterThanOrEqual(16);
-    expect(src).toContain("{ code:'GB', name:'United Kingdom' }");
-    expect(src).toContain("{ code:'IN', name:'India (non-contracting)' }");
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('pickCountry');
+    expect(fe).toContain('/hague-contacts/central-authority/');
+    expect(fe).toContain("'/hague-contacts/member-states'");
+    expect(fe).toContain("'/hague-contacts/report-intake'");
+    expect(fe).toContain('SourceLine');
   });
 });
 
@@ -75,8 +78,10 @@ describe('HGF. HagueContactScreen — All 15 TouchableOpacity Now Have accessibi
   test('HGF-04: HagueContactScreen now accessible — all 15 buttons have role', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    const count = (src.match(/accessibilityRole="button"/g)||[]).length;
-    expect(count).toBeGreaterThanOrEqual(15);
+    const n = (src.match(/<TouchableOpacity\b/g) || []).length;
+    const withRole = (src.match(/<TouchableOpacity[^>]*accessibilityRole=/g) || []).length;
+    expect(n).toBeGreaterThanOrEqual(12);
+    expect(withRole).toBe(n);
   });
 });
 
@@ -84,18 +89,21 @@ describe('HGF. HagueContactScreen — All 15 TouchableOpacity Now Have accessibi
 describe('S6-FIX. S6 Gap Screens — openUrl + loadUsResources', () => {
   test('S6-FX-01: openUrl wraps Linking.openURL for all report links + authority links', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    // openUrl is called for IC3, State Dept, INTERPOL, authority websites
-    expect(src).toContain('openUrl');
-    expect(src).toContain("openUrl('https://www.ic3.gov')");
-    expect(src).toContain('travel.state.gov');
-    expect(src).toContain('interpol.int');
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    // numbers come from the server's stored data and go through utils/contact (tel:+1…)
+    expect(fe).toContain('telUrl(phone)');
+    expect(fe).toContain('hapticCall()');
+    expect(fe).toContain('emergency_phone');
+    expect(fe).toContain("'/hague-contacts/us-resources'");
   });
   test('S6-FX-02: loadUsResources populates US resources on component mount', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).not.toContain('setUsResources'); // fetched-but-never-rendered state removed (step 2)
-    expect(src).toContain("callNumber('+18884074747')"); // OCI 24/7 line stays on the home view
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    // numbers come from the server's stored data and go through utils/contact (tel:+1…)
+    expect(fe).toContain('telUrl(phone)');
+    expect(fe).toContain('hapticCall()');
+    expect(fe).toContain('emergency_phone');
+    expect(fe).toContain("'/hague-contacts/us-resources'");
   });
 });
 

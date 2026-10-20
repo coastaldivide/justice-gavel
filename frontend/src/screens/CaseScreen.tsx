@@ -448,7 +448,7 @@ function CaseScreen({ navigation }: any) {
       case 'messages': navigation.navigate('Messages', { caseId: c.id, caseTitle: c.title }); break;
       case 'documents': navigation.navigate('DocumentScanner', { caseId: c.id, caseTitle: c.title }); break;
       case 'discovery': navigation.navigate('Discovery', { caseId: c.id, caseTitle: c.title }); break;
-      case 'expungement': navigation.navigate('Expungement', { case_id: c.id, incomingState: c.state || undefined, caseTitle: c.title }); break;
+      case 'expungement': navigation.navigate('Expungement', { case_id: c.id, state: c.state || undefined }); break;
       case 'civil-rights': navigation.navigate('PILead', { caseType: 'Civil Rights' }); break;
       case 'export': exportCase(c); break;
       case 'invite':

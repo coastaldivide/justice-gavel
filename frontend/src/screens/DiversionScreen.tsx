@@ -1,4 +1,3 @@
-import { COLORS } from '../constants/theme';
 /**
  * DiversionScreen.tsx — Diversion program eligibility (merged)
  *
@@ -6,16 +5,19 @@ import { COLORS } from '../constants/theme';
  * Drug diversion, mental health diversion, and veteran court —
  * all the same question: "Can I avoid a criminal record?"
  *
- * Tabs: Drug/Alcohol | Mental Health | Veterans Court
+ * Tabs: Drug/Alcohol | Mental Health | Veterans Court (route `tab`, or
+ * "MentalHealthDiversion" opens the mental-health tab).
+ *
+ * The questions are a checklist to bring to a lawyer. The app has no recorded
+ * diversion rules for any state, so it never says whether someone qualifies
+ * (it used to count "yes" answers into "You may qualify").
  */
 
 import React, { useState } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, Switch,
-  StyleSheet, LayoutAnimation,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, LayoutAnimation } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
+import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
 
 type TabKey = 'drug' | 'mental' | 'veteran';
@@ -55,16 +57,16 @@ const VETERAN_CRITERIA = perLang(() => [
   { question: t('x_diversion_there_veterans_treatment_court'), key: 'localCourt' },
 ]);
 
-function DiversionScreen({ navigation }: any) {
+const COURT_TYPE: Record<TabKey, string> = { drug: 'Drug Court', mental: 'Mental Health Court', veteran: 'Veterans' }; // i18n-exempt: data keys
+
+function DiversionScreen({ navigation, route }: ScreenProps) {
   useLang();
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabKey>('drug');
+  const routeTab = (route?.params as { tab?: TabKey } | undefined)?.tab;
+  const startTab: TabKey = routeTab && ['drug', 'mental', 'veteran'].includes(routeTab) ? routeTab
+    : route?.name === 'MentalHealthDiversion' ? 'mental' : 'drug';
+  const [activeTab, setActiveTab] = useState<TabKey>(startTab);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
-  const styles = makeStyles(colors);
-
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
 
   const switchTab = (key: TabKey) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -74,149 +76,95 @@ function DiversionScreen({ navigation }: any) {
 
   const criteria = activeTab === 'drug' ? DRUG_CRITERIA() :
                    activeTab === 'mental' ? MENTAL_CRITERIA() : VETERAN_CRITERIA();
-
-  const yesCount   = criteria.filter(c => answers[c.key]).length;
-  const eligible   = yesCount === criteria.length;
-  const maybeEligible = yesCount >= criteria.length - 1;
+  const yesCount = criteria.filter(c => answers[c.key]).length;
+  const answered = Object.keys(answers).length > 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).bg ?? COLORS.bg }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}>
-          <Text style={[styles.back, { color: colors.primary }]}>{t('ja_back')}</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>{t('x_diversion_diversion_programs')}</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      {/* Tabs */}
-      <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {TABS()?.length === 0 ? (
-
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            {t('empty_state_nothing')}
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            {t('x_attorney_privacy_results_will_appear_here')}
-          </Text>
-        </View>
-        ) : TABS().map(tab => (
+    <View style={[styles.container, { backgroundColor: colors.bg }]} testID="diversion-screen">
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]} accessibilityRole="tablist">
+        {TABS().map(tab => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+            testID={`diversion-tab-${tab.key}`}
+            style={styles.tab}
             onPress={() => switchTab(tab.key)}
-          accessibilityState={{  selected: false  }}
+            aria-selected={activeTab === tab.key}
             accessibilityRole="tab"
           >
             <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.emoji}</Text>
-            <Text style={[styles.tabText, {
-              color: activeTab === tab.key ? colors.primary : ((colors as any).subtext ?? COLORS.textMuted),
-            }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.tabText, { color: activeTab === tab.key ? colors.textBrand : colors.textMuted }]}>
               {tab.label}
             </Text>
-            {activeTab === tab.key && (
-              <View style={[styles.tabLine, { backgroundColor: colors.primary }]} />
-            )}
+            {activeTab === tab.key && <View style={[styles.tabLine, { backgroundColor: colors.navy }]} />}
           </TouchableOpacity>
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <Text style={[styles.intro, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-          {t('x_diversion_answer_honestly_this_helps')}
-        </Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        <UnreviewedNotice inset={false} />
+        <Text maxFontSizeMultiplier={1.4} style={[styles.intro, { color: colors.textSecond }]}>{t('div_intro')}</Text>
 
-        {/* Eligibility checklist */}
         {criteria.map((c, i) => (
-          <View key={c.key} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
+          <View key={c.key} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={styles.rowBetween}>
-              <Text style={[styles.question, { color: colors.text, flex: 1, marginRight: 12 }]}>
-                {i + 1}. {c.question}
-              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.question, { color: colors.textPrimary }]}>{i + 1}. {c.question}</Text>
               <Switch
+                testID={`diversion-q-${c.key}`}
+                accessibilityLabel={c.question}
                 value={answers[c.key] ?? false}
                 onValueChange={val => setAnswers(prev => ({ ...prev, [c.key]: val }))}
-                trackColor={{ false: COLORS.border, true: colors.primary + '66' }}
-                thumbColor={answers[c.key] ? colors.primary : COLORS.textMuted}
+                trackColor={{ false: colors.border, true: colors.navy }}
               />
             </View>
           </View>
         ))}
 
-        {/* Result */}
-        {yesCount > 0 && (
-          <View style={[styles.resultCard, {
-            backgroundColor: eligible ? colors.legalBg : maybeEligible ? colors.warnBg : colors.emergencyBg,
-            borderColor: eligible ? COLORS.legal : maybeEligible ? COLORS.warn : COLORS.emergency,
-          }]}>
-            <Text style={[styles.resultIcon]}>
-              {eligible ? '✅' : maybeEligible ? '⚠️' : '❌'}
+        {answered && (
+          <View style={[styles.resultCard, { backgroundColor: colors.bgSubtle, borderColor: colors.border }]} testID="diversion-summary">
+            <Text maxFontSizeMultiplier={1.4} style={[styles.resultTitle, { color: colors.textPrimary }]}>
+              {t('div_answered', { yes: yesCount, total: criteria.length })}
             </Text>
-            <Text style={[styles.resultTitle, {
-              color: eligible ? colors.legal : maybeEligible ? colors.warnDark : colors.emergencyDark,
-            }]}>
-              {eligible     ? t('x_diversion_may_qualify_diversion') :
-               maybeEligible? t('x_diversion_may_partially_qualify_speak') :
-                              t('x_diversion_may_not_qualify_but')}
-            </Text>
-            <Text style={[styles.resultSub, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-              {t('x_diversion_criteria_met', { yesCount, length: criteria.length })}
-            </Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.resultSub, { color: colors.textSecond }]}>{t('div_no_rules')}</Text>
           </View>
         )}
 
-        {/* Attorney CTA */}
-        <View style={[styles.ctaCard, { backgroundColor: (colors as any).primary + '15' }]}>
-          <Text style={[styles.ctaTitle, { color: colors.primary }]}>
-            {t('x_diversion_get_free_case_evaluation')}
-          </Text>
-          <Text style={[styles.ctaText, { color: colors.text }]}>
+        <View style={[styles.ctaCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.ctaText, { color: colors.textPrimary }]}>
             {t('x_diversion_diversion_eligibility_depends_specif')}
           </Text>
-          <TouchableOpacity
-            style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
-            onPress={() => navigation?.navigate('LawyersTab')}
-            accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          >
-            <Text style={styles.ctaBtnText}>{t('x_diversion_find_lawyer')}</Text>
+          <TouchableOpacity testID="diversion-courts" style={[styles.ctaBtn, styles.ctaOutline, { borderColor: colors.navy }]}
+            onPress={() => navigation.navigate('SpecialtyCourts', { type: COURT_TYPE[activeTab] })} accessibilityRole="button">
+            <Text maxFontSizeMultiplier={1.3} style={[styles.ctaBtnText, { color: colors.textBrand }]}>{t('div_find_courts')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity testID="diversion-lawyer" style={[styles.ctaBtn, { backgroundColor: colors.navy }]}
+            onPress={() => navigation.navigate('LawyersTab')} accessibilityRole="button">
+            <Text maxFontSizeMultiplier={1.3} style={[styles.ctaBtnText, { color: colors.textOnNavy }]}>{t('x_diversion_find_lawyer')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-function makeStyles(colors: any) {
-  return StyleSheet.create({
+const styles = StyleSheet.create({
     container:  { flex: 1 },
-    header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-    back:       { fontSize: 16, fontWeight: '500' },
-    title:      { fontSize: 18, fontWeight: '700' },
     tabBar:     { flexDirection: 'row', borderBottomWidth: 1 },
-    tab:        { flex: 1, alignItems: 'center', paddingVertical: 10, position: 'relative' },
-    tabActive:  {},
-    tabText:    { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-    tabLine:    { position: 'absolute', bottom: 0, left: 8, right: 8, height: 2, borderRadius: 1 },
-    intro:      { fontSize: 13, lineHeight: 18, marginBottom: 16 },
-    card:       { borderRadius: 12, padding: 14, marginBottom: 8, elevation: 1, shadowColor: COLORS.textPrimary, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:2 },
-    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    question:   { fontSize: 14, lineHeight: 20 },
-    resultCard: { borderRadius: 12, padding: 16, marginVertical: 12, borderWidth: 1, alignItems: 'center' },
-    resultIcon: { fontSize: 28, marginBottom: 8 },
-    resultTitle:{ fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 4 },
-    resultSub:  { fontSize: 12, textAlign: 'center' },
-    ctaCard:    { borderRadius: 12, padding: 16, marginTop: 8 },
-    ctaTitle:   { fontSize: 15, fontWeight: '700', marginBottom: 6 },
-    ctaText:    { fontSize: 13, lineHeight: 18, marginBottom: 12 },
-    ctaBtn:     { borderRadius: 24, paddingVertical: 12, paddingHorizontal: 24, alignItems: 'center' },
-    ctaBtnText: { color: colors.bg, fontSize: 15, fontWeight: '600' },
-  });
-}
+    tab:        { flex: 1, alignItems: 'center', minHeight: 56, justifyContent: 'center', paddingVertical: 8 },
+    tabText:    { fontSize: 12, fontWeight: '700', textAlign: 'center' },
+    tabLine:    { position: 'absolute', bottom: 0, left: 8, right: 8, height: 3, borderRadius: 1 },
+    content:    { padding: 16, paddingBottom: 40, width: '100%', maxWidth: 760, alignSelf: 'center' },
+    intro:      { fontSize: 13, lineHeight: 19, marginVertical: 12 },
+    card:       { borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1 },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    question:   { fontSize: 14, lineHeight: 20, flex: 1 },
+    resultCard: { borderRadius: 12, padding: 16, marginVertical: 12, borderWidth: 1, gap: 6 },
+    resultTitle:{ fontSize: 15, fontWeight: '700' },
+    resultSub:  { fontSize: 13, lineHeight: 19 },
+    ctaCard:    { borderRadius: 12, padding: 16, marginTop: 8, borderWidth: 1, gap: 10 },
+    ctaText:    { fontSize: 13, lineHeight: 19 },
+    ctaBtn:     { borderRadius: 24, minHeight: 48, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+    ctaOutline: { borderWidth: 1.5 },
+    ctaBtnText: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
+});
 
 export default React.memo(DiversionScreen);

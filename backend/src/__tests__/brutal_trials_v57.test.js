@@ -198,14 +198,15 @@ describe('EXP. ExpungementScreen — Eligibility + AI Petition + Marketplace', (
   test('EXP-01: generatePetition POSTs to /expungement/petition (AI draft)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(src).toContain('generatePetition');
-    expect(src).toContain('/expungement/petition');
-    expect(src).toContain('setGenPetition');
+    expect(src).toContain('const makeDraft = () => requireAuth(');   // signed-in only
+    expect(src).toContain("'/expungement/petition'");
+    expect(src).toContain('setDrafting');
   });
   test('EXP-03: ExpungementScreen entry points — eligibility+marketplace noted in doc', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(src).toContain('Expungement eligibility + marketplace');
+    expect(src).toContain('what the recorded rule says about clearing a record');
+    expect(src).toContain('Entry points: Home');
   });
 });
 

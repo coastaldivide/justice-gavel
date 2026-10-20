@@ -538,7 +538,7 @@ function classifyCharge(chargeText = '') {
   // Dismissals first — override everything else
   if (/dismiss|not guilty|acquit|dropped|no charge/.test(lower)) return 'dismissed';
   // DUI/DWI before domestic (drunk driving + domestic overlap is rare)
-  if (/dui|dwi|\bowi\b|\boui\b|drunk.driv|impaired driv|driv.*impair|operating while intox|operating under.{0,5}influ/.test(lower)) return 'dui';
+  if (/dui|dwi|\bowi\b|\boui\b|drunk.driv|impaired driv|driv.*impair|driv\w* under (the )?influence|operating while intox|operating under.{0,5}influ/.test(lower)) return 'dui';
   // Domestic violence — check before generic assault
   if (/domestic|intimate partner|family violence/.test(lower)) return 'domestic';
   // Sexual offenses
@@ -593,8 +593,37 @@ function classifyCharge(chargeText = '') {
   if (/public official.*bribe|quid.*pro.*quo.*official/.test(lower)) return 'felony';
   if (/espionage|18 u\.s\.c.*794|national security/.test(lower)) return 'felony';
 
-  return 'misdemeanor';
+  // Explicit misdemeanor wording
+  if (/misdemeanou?r|disorderly persons|petty offense|class [a-c] misd/.test(lower)) return 'misdemeanor';
+
+  // Anything else (theft, assault, trespass, "other / not sure", …) can be a
+  // misdemeanor or a felony: say we cannot tell instead of guessing.
+  return 'unknown';
 }
+
+/**
+ * The statute / act the rule's note names ("T.C.A. § 40-32-101", "20 ILCS 2630/5.2",
+ * "La. C.Cr.P. art. 977", "Clean Slate Act" …), or null when the note names none.
+ * This is the only source the app has for a rule (see RULE_EFFECTIVE_DATES).
+ */
+const CITATION = /(?:[A-Z][A-Za-z.]*\.?\s){0,4}(?:§+\s?[\w.:\-–()/]+|[Aa]rt\.\s?\d[\w.-]*|\d+\s?ILCS\s?[\d/.-]+|N\.J\.S\.A\.\s?[\w:.-]+|\b(?:PC|CPL|ORS|RCW|MCL|KRS|NRS|HRS|Penal Law)\s?§?\s?\d[\w.-]*|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)* (?:Reform )?Act(?: of \d{4})?)/;
+function citationOf(note) {
+  const m = String(note || '').match(CITATION);
+  return m ? m[0].trim().replace(/[.,;:]+$/, '') : null;
+}
+
+/**
+ * Rules whose recorded fields contradict their own note. The eligibility check
+ * gives no verdict for these (it shows the note as unreviewed text) until a
+ * lawyer settles them. Listed in notes/debug_pass.md section F.
+ */
+const REVIEW_FLAGS = {
+  'CT.dismissed': 'waitYears is 0 but the note says erasure happens after 13 months',
+  'TX.dismissed': 'waitYears is 0 but the note says eligibility starts after the statute of limitations passes',
+  'NV.domestic':  'marked not eligible but the note says there are extended waiting periods',
+  'AZ.domestic':  'marked not eligible but the note only says "restricted"',
+};
+
 
 /**
  * Get expungement eligibility for a charge in a state.
@@ -622,4 +651,4 @@ function getEligibility(state, chargeType, status) {
   };
 }
 
-export { STATE_RULES, DEFAULT_RULES, classifyCharge, getEligibility };
+export { STATE_RULES, DEFAULT_RULES, REVIEW_FLAGS, classifyCharge, citationOf, getEligibility };

@@ -17,7 +17,9 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React from 'react';
 
-import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation, TouchableOpacity } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
+import { UnreviewedNotice } from '../components/LegalSource';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
 import { t, perLang, useLang } from '../i18n';
@@ -94,7 +96,7 @@ const EVICTION_SECTIONS = perLang(() => [
   },
 ]);
 
-function HousingRightsScreen(): React.JSX.Element {
+function HousingRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -110,7 +112,7 @@ function HousingRightsScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="housing-rights-screen"
-      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+      contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: 12, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -120,12 +122,20 @@ function HousingRightsScreen(): React.JSX.Element {
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>{t('x_housing_rights_tenant_rights_evictions')}</Text>
       </View>
 
+      <UnreviewedNotice inset={false} />
       <InfoTabs
         testID="housing-rights-tabs"
         tabs={[{ key: 'record', label: t('x_housing_rights_criminal_record_housing') }, { key: 'eviction', label: t('x_housing_rights_eviction_defense') }]}
         active={tab}
         onChange={k => setTab(k as 'record' | 'eviction')}
       />
+
+      {tab === 'eviction' && (
+        <TouchableOpacity accessibilityRole="button" testID="housing-tenant-now"
+          style={[styles.cta, { backgroundColor: colors.navy }]} onPress={() => navigation.navigate('TenantRights')}>
+          <Text style={[styles.ctaText, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>{t('hr_tenant_cta')}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Section cards */}
       {sections.map(sec => (
@@ -151,7 +161,7 @@ function HousingRightsScreen(): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   screen:          { flex: 1 },
   scroll:          { padding: 16 },
-  header:          { borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, alignItems: 'center' },
+  header:          { borderRadius: RADIUS.lg, padding: 20, marginTop: 12, alignItems: 'center' },
   headerIcon:      { fontSize: 36, marginBottom: 8 },
   headerTitle:     { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:       { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },

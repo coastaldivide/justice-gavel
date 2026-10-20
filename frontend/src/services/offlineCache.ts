@@ -38,7 +38,6 @@ export const CACHE_KEYS = {
   motions:           'cache_motions',
   motionsAt:         'cache_motions_at',
   // Expungement — keyed by state
-  expungementPrefix: 'cache_expunge_',
   bailAgents:        'cache_bail_agents',
   bailAgentsAt:      'cache_bail_agents_at',
   resources:         'cache_resources',
@@ -143,25 +142,6 @@ export async function addMotionToCache(motion: unknown): Promise<void> {
     const updated = [(motion as any), ...motions.filter((m: any) => m.id !== (motion as any).id)].slice(0, 30);
     await cacheMotions(updated);
   } catch {}
-}
-
-// ── Expungement results (per state) ──────────────────────────────────────────
-export async function cacheExpungement(state: string, result: unknown): Promise<void> {
-  if (!state) return;
-  await write(
-    CACHE_KEYS.expungementPrefix + state,
-    result,
-    CACHE_KEYS.expungementPrefix + state + '_at'
-  );
-}
-export async function getCachedExpungement(state: string): Promise<unknown> {
-  if (!state) return { data: null, isCache: false };
-  const r = await read<Record<string, unknown>>(
-    CACHE_KEYS.expungementPrefix + state,
-    CACHE_KEYS.expungementPrefix + state + '_at',
-    TTL_7_DAYS
-  );
-  return { data: r.data, cachedAt: r.cachedAt, isCache: r.isCache, stale: r.stale };
 }
 
 // ── Format cache age for display ─────────────────────────────────────────────

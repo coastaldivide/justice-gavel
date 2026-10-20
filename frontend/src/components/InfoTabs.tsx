@@ -24,7 +24,7 @@ export function InfoTabs({ tabs, active, onChange, testID }: {
           <TouchableOpacity
             key={tab.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected }}
+            aria-selected={selected}
             accessibilityLabel={tab.label}
             onPress={() => onChange(tab.key)}
             style={[styles.tabBtn, selected && { backgroundColor: colors.navy }]}

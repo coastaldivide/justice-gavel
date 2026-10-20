@@ -234,10 +234,10 @@ describe('CHK. checkins + bail + insurance + webpush', () => {
   });
   test('CHK-03: insurance.js — POST /quote + GET /plans legal insurance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js','utf8');
-    expect(src).toContain("router.post('/quote'");
-    expect(src).toContain("router.get('/plans'");
-    // Legal expense insurance: covers attorney fees up to policy limits
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
   test('CHK-04: webpush.js — GET /key + POST /subscribe + POST /send', async () => {
     const fs = await import('fs');

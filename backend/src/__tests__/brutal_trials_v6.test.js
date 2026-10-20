@@ -480,8 +480,8 @@ describe('7. offlineCache.ts — Cache Keys & Online Detection', () => {
   test('7-01: CACHE_KEYS has all 5 offline surfaces', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/offlineCache.ts', 'utf8');
-    // 5 offline surfaces: lawyers, lessons, cases, motions, expungement
-    const REQUIRED_KEYS = ['savedLawyers', 'lessons', 'cases', 'motions', 'expungement'];
+    // offline surfaces: lawyers, lessons, cases, motions (the per-state expungement cache was unused and wrong — removed, section F)
+    const REQUIRED_KEYS = ['savedLawyers', 'lessons', 'cases', 'motions'];
     for (const key of REQUIRED_KEYS) {
       expect(src).toContain(key);
     }

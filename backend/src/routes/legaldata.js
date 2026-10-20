@@ -10,6 +10,7 @@ import { safeJson, safeInt } from '../utils/routeHelpers.js';
  * The rows carry their own `source` / `source_url`; nothing here says the data
  * was verified unless a row records a review.
  */
+import { createHash } from 'node:crypto';
 import { Router } from "express";
 import { getDb }   from "../db/index.js";
 import { apiLimiter } from '../middleware/rateLimiters.js';
@@ -17,6 +18,35 @@ import { msg, resolveLang } from '../i18n/index.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
+
+const md5 = (s) => createHash('md5').update(String(s), 'utf8').digest('hex');
+
+/**
+ * Replace English text fields with the stored translation for `lang`
+ * (content_translations, migration 26) — only while the row's English still
+ * matches the text the translation was made from (source_md5), so an edited
+ * row falls back to English. Each row gets `text_lang`: the language its
+ * free-text fields are in ('en' when nothing was translated).
+ */
+async function applyTranslations(db, table, rows, lang) {
+  for (const r of rows) r.text_lang = 'en';
+  if (lang === 'en' || !rows.length) return;
+  const ids = rows.map(r => r.id).filter(id => Number.isSafeInteger(Number(id)));
+  if (!ids.length) return;
+  const marks = ids.map(() => '?').join(',');
+  const tr = await db.all(
+    `SELECT row_id, field, text, source_md5 FROM content_translations
+      WHERE table_name = ? AND lang = ? AND row_id IN (${marks})`, [table, lang, ...ids]);
+  const byRow = new Map(rows.map(r => [String(r.id), r]));
+  const done = new Map();
+  for (const t of tr) {
+    const r = byRow.get(String(t.row_id));
+    if (!r || typeof r[t.field] !== 'string' || md5(r[t.field]) !== t.source_md5) continue;
+    r[t.field] = t.text;
+    done.set(r, (done.get(r) || 0) + 1);
+  }
+  for (const r of done.keys()) r.text_lang = lang;
+}
 
 const TABLE_MAP = {
   "bail":           { table: "bail_schedules",        stateCol: "state" },
@@ -67,6 +97,7 @@ router.get("/:type", apiLimiter, async (req, res) => {
       if (r.covers) r.covers = safeJson(r.covers);
       return r;
     });
+    await applyTranslations(db, cfg.table, parsed, lang);
 
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     res.setHeader('Vary', 'Accept-Language');

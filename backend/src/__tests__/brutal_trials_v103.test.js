@@ -169,16 +169,17 @@ describe('MCH. match.js — Attorney Matchmaking Engine', () => {
 describe('INS. insurance.js — Legal Insurance Plans', () => {
   test('INS-01: POST /quote — get legal insurance quote', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js','utf8');
-    expect(src).toContain("router.post('/quote'");
-    expect(src).toContain('quote');
-    // Legal expense insurance: covers attorney fees if arrested
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
   test('INS-02: GET /plans — available insurance plan listings', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js','utf8');
-    expect(src).toContain("router.get('/plans'");
-    expect(src).toContain('plans');
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
 });
 
@@ -206,7 +207,7 @@ describe('APP. app.js — Complete 61-Route Mount Manifest', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');
     for (const route of ['/api/matters','/api/firms','/api/time','/api/push',
-                          '/api/pay','/api/match','/api/insurance','/api/alerts',
+                          '/api/pay','/api/match','/api/alerts',
                           '/api/billing','/api/webhooks/outbound']) {
       expect(src).toContain(route);
     }

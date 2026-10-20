@@ -14,7 +14,7 @@
  *                           and the AI checks verify the outgoing request (model, key).
  *                           Without this flag the AI check expects 503 ai_unavailable
  *                           (server started WITHOUT ANTHROPIC_API_KEY).
- *   --expect-model <id>     model the mock must receive (default claude-sonnet-4-6)
+ *   --expect-model <id>     model the mock must receive (default: CLAUDE_MODEL env, else the server default claude-sonnet-5-5)
  *   --payments-live         Stripe is configured: skip the 503 payments_unavailable check
  *   --keep-user             do not delete the smoke-test user at the end
  *
@@ -33,7 +33,7 @@ const BASE = (argv.find(a => /^https?:\/\//.test(a)) || 'http://localhost:4000')
 const DB_URL = opt('--db-url', process.env.DATABASE_URL || null);
 const EXPECT_DB_DOWN = !!opt('--expect-db-down', false);
 const MOCK_PORT = opt('--anthropic-mock', null);
-const EXPECT_MODEL = opt('--expect-model', 'claude-sonnet-4-6');
+const EXPECT_MODEL = opt('--expect-model', process.env.CLAUDE_MODEL || 'claude-sonnet-5-5');
 const PAYMENTS_LIVE = !!opt('--payments-live', false);
 const KEEP_USER = !!opt('--keep-user', false);
 

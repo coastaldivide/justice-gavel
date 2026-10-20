@@ -14111,21 +14111,14 @@
         "tags": [
           "hague-contacts"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -14195,21 +14188,14 @@
         "tags": [
           "hague-contacts"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -14262,21 +14248,14 @@
         "tags": [
           "hague-contacts"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -14631,66 +14610,6 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
-      }
-    },
-    "/api/insurance/plans": {
-      "get": {
-        "operationId": "get_api_insurance_plans",
-        "summary": "GET /api/insurance/plans",
-        "tags": [
-          "insurance"
-        ],
-        "security": [],
-        "x-auth": "public",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
-    "/api/insurance/quote": {
-      "post": {
-        "operationId": "post_api_insurance_quote",
-        "summary": "POST /api/insurance/quote",
-        "tags": [
-          "insurance"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
         }
       }
     },

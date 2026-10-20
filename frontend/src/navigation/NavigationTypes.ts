@@ -44,20 +44,21 @@ export type RootStackParamList = {
   // ── Know Your Rights ────────────────────────────────────────────────────
   RightsCard:               { state?: string };
   IceDetention:             undefined;
-  ImmigrationConsequences:  { chargeType?: string };
-  HagueContact:             undefined;
+  ImmigrationConsequences:  undefined;
+  HagueContact:             { caseId?: number; caseName?: string } | undefined;
   KnowYourRights:           undefined;
 
   // ── Legal Info Screens ───────────────────────────────────────────────────
-  Expungement:              { state?: string; charge?: string };
-  ChildSupport:             { state?: string };
+  Expungement:              { state?: string; charge?: string; case_id?: number } | undefined;
+  ChildSupport:             { state?: string } | undefined;
   LegalPenalties:           { tab?: 'drug' | 'dui' | 'other' };
-  Diversion:                { tab?: 'drug' | 'mental' | 'veteran' };
-  JuvenileJustice:          { state?: string };
-  SpecialtyCourts:          { state?: string; type?: string };
-  FamilyCourt:              undefined;
-  TenantRights:             { state?: string };
-  HousingRights:            { state?: string };
+  Diversion:                { tab?: 'drug' | 'mental' | 'veteran' } | undefined;
+  MentalHealthDiversion:    { tab?: 'drug' | 'mental' | 'veteran' } | undefined;
+  JuvenileJustice:          { tab?: 'rights' | 'process' | 'sealing' } | undefined;
+  SpecialtyCourts:          { state?: string; type?: string } | undefined;
+  FamilyCourt:              { tab?: 'custody' | 'orders' | 'support' } | undefined;
+  TenantRights:             undefined;
+  HousingRights:            undefined;
   Advocacy:                 undefined;
 
   // ── Attorney Matching ─────────────────────────────────────────────────────

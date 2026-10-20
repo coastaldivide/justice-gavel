@@ -1,277 +1,200 @@
 /**
- * hague_contacts.js — Hague Convention Central Authority + Reporting Links
+ * hague_contacts.js — Hague Abduction Convention (1980) contacts + case intake
  *
- * Hague Abduction Convention (1980): Civil Aspects of International Child Abduction
- * Scope: family law attorneys + parents facing cross-border child abduction
+ * The country list, the Central Authorities and the U.S. resources come from
+ * hague_central_authorities / hague_resources (migration 26). Every answer
+ * carries each row's source, when it was recorded and when it was last checked
+ * (null = never re-checked). Nothing here has been reviewed by a lawyer.
  *
- * Routes:
- *   GET  /api/hague-contacts/central-authority/:countryCode
- *        → Returns the Central Authority for a specific country (name, address,
- *          phone, email, website). Sourced from HCCH member state registry.
+ *   GET  /member-states                  public — stored countries (code, authority, contracting, source)
+ *   GET  /central-authority/:countryCode public — one country's authority (404 when not stored)
+ *   GET  /us-resources                   public — U.S. Central Authority + NCMEC / FBI / INTERPOL
+ *   POST /report-intake                  signed in — pre-application record on the person's own case
+ *   GET  /intake/:caseId                 signed in — that record (own case only)
  *
- *   GET  /api/hague-contacts/us-resources
- *        → US-specific resources:
- *          - Office of Children's Issues (State Dept Central Authority for US)
- *          - NCMEC (National Center for Missing & Exploited Children)
- *          - FBI IC3 for federal international parental kidnapping reporting
- *          - OCI emergency line
- *
- *   GET  /api/hague-contacts/member-states
- *        → Full list of Hague Convention member states with ISO codes
- *
- *   POST /api/hague-contacts/report-intake
- *        → Records a pre-application intake for attorney tracking.
- *          Does NOT submit to authority — attorney submits directly.
- *          Stores: caseId = null, countryCode = '', childName = '', abductionDate, notes
- *
- *   GET  /api/hague-contacts/intake/:caseId
- *        → Retrieves intake record for a specific case
- *
- * Auth: all routes require authRequired
- * Rate: standard authRequired rate limiting
- *
- * Legal note: Justice Gavel provides contact information and intake tracking.
- * Actual Hague applications must be submitted by attorneys directly to the
- * relevant Central Authority. We do not file on behalf of clients.
+ * Justice Gavel does not file anything: the application goes to the U.S.
+ * Central Authority (by the parent or their lawyer).
  */
-
-import { err400, err403, err404, err422, err500, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
-import { Router }        from 'express';
-import { getDb }         from '../db/index.js';
-import { authRequired }  from '../middleware/auth.js';
-import logger            from '../utils/logger.js';
+import { Router }         from 'express';
+import { getDb }          from '../db/index.js';
+import { authRequired }   from '../middleware/auth.js';
+import { apiLimiter }     from '../middleware/rateLimiters.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
-
-const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
+import { msg, resolveLang } from '../i18n/index.js';
+import { parseDateOnly }  from '../utils/timezone.js';
+import logger             from '../utils/logger.js';
 
 const router = Router();
+const intakeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req) => msg(resolveLang(req), 'hague.err.rate_limited') });
 
-// ── US Central Authority and Key Resources ─────────────────────────────────
-const US_RESOURCES = {
-  central_authority: {
-    name:    'Office of Children\'s Issues (OCI) — U.S. Central Authority',
-    agency:  'U.S. Department of State',
-    phone:   '+1-202-501-4444',
-    emergency: '+1-888-407-4747',
-    email:   'abduction@state.gov',
-    website: 'https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction.html',
-    submit_application: 'https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction/prevention/hague-convention.html',
-    note:    'Available Mon–Fri 8am–8pm ET. Emergency line available 24/7 for US citizens abroad.',
-  },
-  ncmec: {
-    name:    'National Center for Missing & Exploited Children (NCMEC)',
-    phone:   '1-800-THE-LOST (1-800-843-5678)',
-    website: 'https://www.missingkids.org',
-    report:  'https://www.cybertipline.org',
-    note:    'Available 24/7. Reports international parental abduction to FBI and Interpol.',
-  },
-  fbi: {
-    name:    'FBI — International Parental Kidnapping (IPKCA)',
-    statute: '18 U.S.C. § 1204',
-    website: 'https://www.fbi.gov/investigate/violent-crime/parental-kidnapping',
-    ic3:     'https://www.ic3.gov',
-    note:    'File IC3 report for federal jurisdiction. FBI coordinates with Interpol for international cases.',
-  },
-  interpol: {
-    name:    'INTERPOL — Child Abduction',
-    website: 'https://www.interpol.int/Crimes/Crimes-against-children/Child-abduction',
-    ncb:     'https://www.interpol.int/en/Contact/Contact-INTERPOL',
-    note:    'Contact through FBI or local law enforcement. INTERPOL issues Yellow Notices for missing children.',
-  },
-};
+const HCCH_LIST = 'https://www.hcch.net/en/states/authorities';
+const AUTH_COLS = `country_code, country_name, authority_name, website, phone, emergency_phone, email, hours_note,
+  contracting, source, source_url, recorded_at, last_verified_at`;
 
-// ── Hague Member States (ISO 3166-1 alpha-2 + Central Authority summary) ──
-const MEMBER_STATES = [
-  { code:'AR', name:'Argentina',       authority:'Dirección Nacional del Menor y la Familia', website:'https://www.argentina.gob.ar' },
-  { code:'AU', name:'Australia',       authority:'Central Authority (Canberra)', website:'https://www.ag.gov.au/families-and-marriage/hague-conventions' },
-  { code:'AT', name:'Austria',         authority:'Bundesministerium für Justiz', website:'https://www.justiz.gv.at' },
-  { code:'BE', name:'Belgium',         authority:'Service public fédéral Justice', website:'https://justice.belgium.be' },
-  { code:'BR', name:'Brazil',          authority:'Autoridade Central Federal — ACAF', website:'https://www.gov.br/mj/pt-br' },
-  { code:'CA', name:'Canada',          authority:'Central Authority (varies by province)', website:'https://www.justice.gc.ca/eng/fl-df/hague-lahaye/index.html' },
-  { code:'CN', name:'China',           authority:'Not a contracting state — see HCCH', website:'https://www.hcch.net' },
-  { code:'FR', name:'France',          authority:'Bureau de l\'entraide civile et commerciale internationale (BECCI)', website:'https://www.justice.gouv.fr' },
-  { code:'DE', name:'Germany',         authority:'Bundesamt für Justiz', website:'https://www.bundesjustizamt.de' },
-  { code:'GR', name:'Greece',          authority:'Ministry of Justice', website:'http://www.ministryofjustice.gr' },
-  { code:'IN', name:'India',           authority:'Not a contracting state — bilateral channels required', website:'https://www.hcch.net' },
-  { code:'IL', name:'Israel',          authority:'Ministry of Justice, Department of International Affairs', website:'https://www.gov.il/en/departments/topics/hague-convention' },
-  { code:'IT', name:'Italy',           authority:'Ministero della Giustizia', website:'https://www.giustizia.it' },
-  { code:'JP', name:'Japan',           authority:'Ministry of Foreign Affairs', website:'https://www.mofa.go.jp/ca/fna/hague/' },
-  { code:'MX', name:'Mexico',          authority:'Secretaría de Gobernación — SEGOB', website:'https://www.gob.mx/segob' },
-  { code:'NL', name:'Netherlands',     authority:'Ministry of Justice and Security', website:'https://www.rijksoverheid.nl' },
-  { code:'NZ', name:'New Zealand',     authority:'Ministry of Justice', website:'https://www.justice.govt.nz' },
-  { code:'PK', name:'Pakistan',        authority:'Not a contracting state — bilateral channels required', website:'https://www.hcch.net' },
-  { code:'RU', name:'Russia',          authority:'Ministry of Education of the Russian Federation', website:'https://www.hcch.net' },
-  { code:'ZA', name:'South Africa',    authority:'Department of Justice and Constitutional Development', website:'https://www.justice.gov.za' },
-  { code:'ES', name:'Spain',           authority:'Dirección General de Cooperación Jurídica Internacional', website:'https://www.mjusticia.gob.es' },
-  { code:'SE', name:'Sweden',          authority:'Ministry for Foreign Affairs', website:'https://www.government.se' },
-  { code:'CH', name:'Switzerland',     authority:'Federal Office of Justice — FOJ', website:'https://www.bj.admin.ch' },
-  { code:'TR', name:'Turkey',          authority:'Ministry of Justice', website:'https://www.adalet.gov.tr' },
-  { code:'GB', name:'United Kingdom',  authority:'International Child Abduction & Contact Unit (ICACU)', website:'https://www.gov.uk/international-parental-child-abduction' },
-  { code:'US', name:'United States',   authority:'Office of Children\'s Issues, U.S. Department of State', website:'https://travel.state.gov' },
-  { code:'UY', name:'Uruguay',         authority:'Ministerio de Educación y Cultura', website:'https://www.gub.uy' },
-  { code:'VE', name:'Venezuela',       authority:'Ministerio del Poder Popular para Relaciones Exteriores', website:'https://www.hcch.net' },
-];
+const day = (v) => (v ? new Date(v).toISOString().slice(0, 10) : null);
+const sourceOf = (r) => ({ label: r.source, url: r.source_url || null, recorded_at: day(r.recorded_at), last_verified_at: day(r.last_verified_at), reviewed: false });
 
-// ── Route: GET /us-resources ───────────────────────────────────────────────
-router.get('/us-resources', authRequired, (req, res) => {
+function authorityOut(r, lang) {
+  return {
+    country_code: r.country_code,
+    country_name: r.country_name,
+    found: true,
+    contracting_state: !!r.contracting,
+    note: msg(lang, r.contracting ? 'hague.note.contracting' : 'hague.note.non_contracting'),
+    central_authority: {
+      name: r.authority_name,
+      website: r.website || null,
+      phone: r.phone || null,
+      emergency_phone: r.emergency_phone || null,
+      email: r.email || null,
+    },
+    source: sourceOf(r),
+  };
+}
+
+const fail = (res, lang, status, key, code) => res.status(status).json({ error: msg(lang, key), code, message: msg(lang, key) });
+
+// ── GET /member-states ───────────────────────────────────────────────────────
+router.get('/member-states', apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   try {
+    const db = await getDb();
+    const rows = await db.all(`SELECT ${AUTH_COLS} FROM hague_central_authorities WHERE country_code <> 'US' ORDER BY country_name`);
+    res.setHeader('Vary', 'Accept-Language');
     res.json({
-      resources: US_RESOURCES,
-      legal_note: 'Justice Gavel provides contact information only. Applications must be filed directly by attorneys with the relevant Central Authority.',
-      hcch_full_list: 'https://www.hcch.net/en/states/authorities',
+      member_states: rows.map(r => ({
+        code: r.country_code, name: r.country_name, authority: r.authority_name, website: r.website || null,
+        contracting: !!r.contracting, source: sourceOf(r),
+      })),
+      total: rows.length,
+      partial: true,
+      note: msg(lang, 'hague.note.partial'),
+      hcch_full_list: HCCH_LIST,
     });
   } catch (e) {
-    logger.error('[hague] us-resources error', e);
-    return err500(res, 'Failed to load US resources');
+    logger.error('[hague] member-states', e.message);
+    return fail(res, lang, 500, 'hague.err.server', 'server_error');
   }
 });
 
-// ── Route: GET /member-states ──────────────────────────────────────────────
-router.get('/member-states', authRequired, (req, res) => {
+// ── GET /central-authority/:countryCode ──────────────────────────────────────
+router.get('/central-authority/:countryCode', apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
+  const code = String(req.params.countryCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return fail(res, lang, 400, 'hague.err.bad_country', 'invalid_country');
   try {
-    res.json({
-      member_states: MEMBER_STATES,
-      total: MEMBER_STATES.length,
-      note: 'Partial list. Full HCCH member state registry: https://www.hcch.net/en/states/hcch-members',
-      hcch_full_list: 'https://www.hcch.net/en/states/authorities',
-    });
-  } catch (e) {
-    logger.error('[hague] member-states error', e);
-    return err500(res, 'Failed to load member states');
-  }
-});
-
-// ── Route: GET /central-authority/:countryCode ─────────────────────────────
-router.get('/central-authority/:countryCode', authRequired, (req, res) => {
-  try {
-    const code = (req.params.countryCode || '').toUpperCase().trim();
-    if (!code || code.length !== 2) return err400(res, 'Invalid country code (use ISO 3166-1 alpha-2)');
-
-    // US is a special case with full resource object
-    if (code === 'US') {
-      return res.json({
-        country_code: 'US',
-        country_name: 'United States',
-        central_authority: US_RESOURCES.central_authority,
-        additional_resources: {
-          ncmec: US_RESOURCES.ncmec,
-          fbi:   US_RESOURCES.fbi,
-          interpol: US_RESOURCES.interpol,
-        },
-      });
+    const db = await getDb();
+    const row = await db.get(`SELECT ${AUTH_COLS} FROM hague_central_authorities WHERE country_code = ?`, [code]);
+    if (!row) {
+      return res.status(404).json({ error: msg(lang, 'hague.err.not_stored'), code: 'not_stored', message: msg(lang, 'hague.err.not_stored'),
+        country_code: code, found: false, hcch_full_list: HCCH_LIST });
     }
-
-    const state = MEMBER_STATES.find(s => s.code === code);
-    if (!state) {
-      return res.json({
-        country_code: code,
-        found: false,
-        note: 'Country not in our member state list. Check HCCH full registry.',
-        hcch_link: `https://www.hcch.net/en/states/authorities/details/?aid=`,
-        hcch_member_search: 'https://www.hcch.net/en/states/hcch-members',
-      });
-    }
-
-    res.json({
-      country_code: state.code,
-      country_name: state.name,
-      central_authority: {
-        name:    state.authority,
-        website: state.website,
-        hcch_profile: `https://www.hcch.net/en/states/authorities`,
-      },
-      contracting_state: !state.authority.includes('Not a contracting state'),
-      note: state.authority.includes('Not a contracting state')
-        ? 'This country has not ratified the 1980 Hague Convention. Bilateral channels or local counsel required.'
-        : 'Contracting state — Hague Convention procedures apply.',
-    });
+    res.setHeader('Vary', 'Accept-Language');
+    return res.json(authorityOut(row, lang));
   } catch (e) {
-    logger.error('[hague] central-authority error', e);
-    return err500(res, 'Failed to load central authority');
+    logger.error('[hague] central-authority', e.message);
+    return fail(res, lang, 500, 'hague.err.server', 'server_error');
   }
 });
 
-// ── Route: POST /report-intake ─────────────────────────────────────────────
-router.post('/report-intake', authRequired, routeLimiter, async (req, res) => {
+// ── GET /us-resources ────────────────────────────────────────────────────────
+router.get('/us-resources', apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   try {
-    const { caseId = null, countryCode = '', childName = '', abductionDate, notes, childAge } = req.body;
-    if (!caseId)       return err400(res, 'caseId required');
-    if (!countryCode)  return err400(res, 'countryCode required');
-    if (!childName)    return err422(res, 'childName required');
-    if (!abductionDate) return err422(res, 'abductionDate required');
+    const db = await getDb();
+    const us = await db.get(`SELECT ${AUTH_COLS} FROM hague_central_authorities WHERE country_code = 'US'`);
+    const resources = await db.all(
+      `SELECT key, name, phone, website, statute, source, source_url, recorded_at, last_verified_at
+         FROM hague_resources ORDER BY sort_order, key`);
+    res.setHeader('Vary', 'Accept-Language');
+    res.json({
+      central_authority: us ? authorityOut(us, lang) : null,
+      resources: resources.map(r => ({ key: r.key, name: r.name, phone: r.phone || null, website: r.website || null,
+        statute: r.statute || null, source: sourceOf(r) })),
+      legal_note: msg(lang, 'hague.note.legal'),
+      hcch_full_list: HCCH_LIST,
+    });
+  } catch (e) {
+    logger.error('[hague] us-resources', e.message);
+    return fail(res, lang, 500, 'hague.err.server', 'server_error');
+  }
+});
 
-    const db     = await getDb();
-    const userId = req.user.id;
-    const code   = countryCode.toUpperCase().trim();
-    const state  = MEMBER_STATES.find(s => s.code === code);
+// ── POST /report-intake ──────────────────────────────────────────────────────
+router.post('/report-intake', authRequired, intakeLimiter, async (req, res) => {
+  const lang = resolveLang(req);
+  const b = req.body && typeof req.body === 'object' ? req.body : {};
+  const caseId = Number(b.caseId);
+  if (!Number.isSafeInteger(caseId) || caseId <= 0) return fail(res, lang, 400, 'hague.err.case_required', 'case_required');
+  const code = typeof b.countryCode === 'string' ? b.countryCode.trim().toUpperCase() : '';
+  if (!/^[A-Z]{2}$/.test(code) || code === 'US') return fail(res, lang, 400, 'hague.err.bad_country', 'invalid_country');
+  const childName = typeof b.childName === 'string' ? b.childName.trim() : '';
+  if (!childName || childName.length > 100) return fail(res, lang, 400, 'hague.err.child_name', 'child_name_required');
+  let childAge = null;
+  if (b.childAge != null && b.childAge !== '') {
+    childAge = Number(b.childAge);
+    if (!Number.isInteger(childAge) || childAge < 0 || childAge > 17) return fail(res, lang, 400, 'hague.err.child_age', 'invalid_child_age');
+  }
+  const dateStr = typeof b.abductionDate === 'string' ? b.abductionDate.trim() : '';
+  const d = parseDateOnly(dateStr);
+  if (!d || dateStr.length !== 10 || Date.UTC(d.y, d.m - 1, d.d) > Date.now() + 86400000) {
+    return fail(res, lang, 400, 'hague.err.date', 'invalid_date');
+  }
+  const notes = typeof b.notes === 'string' ? b.notes.trim().slice(0, 2000) : '';
 
-    // Verify case belongs to user
-    const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [safeInt(caseId), userId]);
-    if (!cas) return err403(res, 'Access denied to this case');
+  try {
+    const db = await getDb();
+    const cas = await db.get('SELECT id FROM cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [caseId, req.user.id]);
+    if (!cas) return fail(res, lang, 404, 'hague.err.case_not_found', 'case_not_found');
+    const country = await db.get(`SELECT ${AUTH_COLS} FROM hague_central_authorities WHERE country_code = ?`, [code]);
+    if (!country) return fail(res, lang, 400, 'hague.err.not_stored', 'not_stored');
+    const us = await db.get(`SELECT ${AUTH_COLS} FROM hague_central_authorities WHERE country_code = 'US'`);
 
-    // Upsert by (case_id, user_id): update the existing intake, else insert.
-    const hagueVals = [code, sanitizeStr(childName, 100), safeInt(childAge),
-                       sanitizeStr(abductionDate, 20), sanitizeStr(notes || '', 2000)];
-    const upd = await db.run(`
-      UPDATE hague_intakes SET country_code=?, child_name=?, child_age=?, abduction_date=?, notes=?
-       WHERE case_id=? AND user_id=?
-    `, [...hagueVals, safeInt(caseId), userId]);
+    const vals = [code, country.country_name, childName, childAge, dateStr, notes];
+    const upd = await db.run(
+      `UPDATE hague_intakes SET country_code = ?, country = ?, child_name = ?, child_age = ?, abduction_date = ?, notes = ?
+        WHERE case_id = ? AND user_id = ?`, [...vals, String(caseId), req.user.id]);
     if (!upd.changes) {
-      await db.run(`
-        INSERT INTO hague_intakes
-          (case_id, user_id, country_code, child_name, child_age, abduction_date, notes, created_at)
-        VALUES (?,?,?,?,?,?,?,NOW())
-      `, [safeInt(caseId), userId, ...hagueVals]);
+      await db.run(
+        `INSERT INTO hague_intakes (country_code, country, child_name, child_age, abduction_date, notes, case_id, user_id, created_at)
+         VALUES (?,?,?,?,?,?,?,?,NOW())`, [...vals, String(caseId), req.user.id]);
     }
 
-    const isContractingState = state && !state.authority.includes('Not a contracting state');
-
-    res.json({
+    const oci = us?.emergency_phone || us?.phone || '';
+    const steps = country.contracting
+      ? [1, 2, 3, 4, 5].map(n => msg(lang, `hague.steps.contracting.${n}`, { phone: oci }))
+      : [1, 2, 3, 4].map(n => msg(lang, `hague.steps.non_contracting.${n}`, { phone: '1-800-843-5678' }));
+    return res.json({
       success: true,
       intake_recorded: true,
-      next_steps: isContractingState ? [
-        'Contact U.S. Central Authority (OCI): +1-888-407-4747',
-        'Complete the Hague Application form at travel.state.gov',
-        'Gather documentation: child\'s birth certificate, proof of residence, photos, custody order',
-        'File with OCI — they will forward to the destination country\'s Central Authority',
-        'Timeline: Central Authorities must respond within 6 weeks under Article 11',
-      ] : [
-        'Destination country has not ratified the 1980 Hague Convention',
-        'Contact U.S. Embassy in destination country immediately',
-        'File with NCMEC for FBI coordination: 1-800-843-5678',
-        'Consult bilateral treaty options or local counsel in destination country',
-      ],
-      resources: {
-        oci:       US_RESOURCES.central_authority,
-        ncmec:     US_RESOURCES.ncmec,
-        authority: state ? { name: state.authority, website: state.website } : null,
-        hcch:      'https://www.hcch.net/en/instruments/conventions/full-text/?cid=24',
-      },
-      legal_notice: 'This intake record is for your case tracking. Your attorney must file the application directly with the U.S. Central Authority.',
+      contracting_state: !!country.contracting,
+      next_steps: steps,
+      next_steps_reviewed: false,
+      authority: authorityOut(country, lang),
+      legal_notice: msg(lang, 'hague.note.intake'),
     });
   } catch (e) {
-    logger.error('[hague] report-intake error', e);
-    return err500(res, 'Failed to record intake');
+    logger.error('[hague] report-intake', e.message);
+    return fail(res, lang, 500, 'hague.err.server', 'server_error');
   }
 });
 
-// ── Route: GET /intake/:caseId ─────────────────────────────────────────────
+// ── GET /intake/:caseId ──────────────────────────────────────────────────────
 router.get('/intake/:caseId', authRequired, async (req, res) => {
+  const lang = resolveLang(req);
+  const caseId = Number(req.params.caseId);
+  if (!Number.isSafeInteger(caseId) || caseId <= 0) return fail(res, lang, 404, 'hague.err.no_intake', 'not_found');
   try {
-    const db     = await getDb();
-    const userId = req.user.id;
-    const caseId = safeInt(req.params.caseId);
-
+    const db = await getDb();
     const intake = await db.get(
-      'SELECT id, case_id, submitted_by, country_of_removal, child_name, submitted_at, status FROM hague_intakes WHERE case_id=? AND user_id=?',
-      [caseId, userId]
-    );
-    if (!intake) return err404(res, 'No Hague intake found for this case');
-
-    res.json({ intake });
+      `SELECT h.id, h.case_id, h.country_code, h.country, h.child_name, h.child_age, h.abduction_date, h.notes, h.status, h.created_at
+         FROM hague_intakes h JOIN cases c ON c.id::text = h.case_id AND c.user_id = h.user_id AND c.deleted_at IS NULL
+        WHERE h.case_id = ? AND h.user_id = ?`, [String(caseId), req.user.id]);
+    if (!intake) return fail(res, lang, 404, 'hague.err.no_intake', 'not_found');
+    return res.json({ intake });
   } catch (e) {
-    logger.error('[hague] intake-get error', e);
-    return err500(res, 'Failed to load intake');
+    logger.error('[hague] intake-get', e.message);
+    return fail(res, lang, 500, 'hague.err.server', 'server_error');
   }
 });
 

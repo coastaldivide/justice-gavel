@@ -25,6 +25,7 @@ import { View, Text, StyleSheet, ScrollView, LayoutAnimation, TouchableOpacity }
 import type { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
+import { UnreviewedNotice } from '../components/LegalSource';
 
 
 type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability';
@@ -138,14 +139,15 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_tenant_rights_housing_landlord_tenant_law')}</Text>
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('tr_situation_label')}</Text>
+      <UnreviewedNotice />
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted, marginTop: 12 }]}>{t('tr_situation_label')}</Text>
       {SITUATIONS().map(sit => {
         const active = sit.key === situation;
         return (
           <TouchableOpacity
             key={sit.key}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            aria-selected={active}
             accessibilityLabel={sit.label}
             testID={`tenant-situation-${sit.key}`}
             onPress={() => setSituation(active ? '' : sit.key)}

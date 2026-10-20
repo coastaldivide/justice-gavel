@@ -350,7 +350,7 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
     const noValidation = [];
     const ADMIN_ONLY = new Set(['analytics.js', 'barVerification.js']); // admin-only, no user input to validate
     const WEBHOOK_RECEIVERS = new Set(['webhooks.js']); // signed provider callbacks (was referenced but never defined)
-    const WHITELIST_LOOKUP = new Set(['insurance.js']);  // /quote: unknown plan falls back to an allow-listed plan
+    const WHITELIST_LOOKUP = new Set();
     const scanDir = (dir) => {
       for (const f of fs.readdirSync(dir)) {
         const full = path.join(dir, f);
@@ -362,7 +362,7 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
         const hasMutation = /router\.(post|put|patch)\s*\(/.test(src);
         // validation = an explicit 400, or input coerced/whitelisted (safeInt / sanitizeStr /
         // validate() schema). Counting a merely-imported err400 (unused) no longer passes.
-        const validates = /err400\(|status\(400\)|validate\(|safeInt\(|sanitizeStr\(/.test(src);
+        const validates = /err400\(|status\(400\)|validate\(|safeInt\(|sanitizeStr\(|fail\(res, lang, 400/.test(src);
         if (hasMutation && !validates && !WHITELIST_LOOKUP.has(f)) {
           noValidation.push(f);
         }

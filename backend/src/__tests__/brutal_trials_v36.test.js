@@ -235,8 +235,12 @@ describe('S8. offlineCache.ts — 16 Remaining 4-Hit Exports', () => {
   test('S8-02: cacheExpungement(state, result) caches per-state eligibility', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/offlineCache.ts', 'utf8');
-    expect(src).toContain('cacheExpungement');
-    expect(src).toContain('state: string, result: unknown');
+    // section F: the per-state expungement cache was keyed by state only (one answer for every charge)
+    // and nothing read it — removed
+    for (const fn of ['addMotionToCache','cacheBailAgents','cacheMotions','cacheResources','cacheSavedLawyers',
+      'cacheSearch','cacheTimeline','clearAllCaches','getCachedLawyers','getCachedLessons','getCachedMotions',
+      'getCachedSearch','getRecentSearches','markOnline']) expect(src).toContain(fn);
+    expect(src).not.toContain('cacheExpungement');
   });
   test('S8-03: cacheMotions caps at 30 most recent motions (slice 0-30)', async () => {
     const fs = await import('fs');
@@ -253,9 +257,12 @@ describe('S8. offlineCache.ts — 16 Remaining 4-Hit Exports', () => {
   test('S8-05: getCachedExpungement(state) returns {data, isCache} or early null', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/offlineCache.ts', 'utf8');
-    expect(src).toContain('getCachedExpungement');
-    expect(src).toContain('!state');
-    expect(src).toContain('return { data: null');
+    // section F: the per-state expungement cache was keyed by state only (one answer for every charge)
+    // and nothing read it — removed
+    for (const fn of ['addMotionToCache','cacheBailAgents','cacheMotions','cacheResources','cacheSavedLawyers',
+      'cacheSearch','cacheTimeline','clearAllCaches','getCachedLawyers','getCachedLessons','getCachedMotions',
+      'getCachedSearch','getRecentSearches','markOnline']) expect(src).toContain(fn);
+    expect(src).not.toContain('cacheExpungement');
   });
   test('S8-06: getCachedSearch returns {query, results, ts} or null', async () => {
     const fs = await import('fs');
@@ -275,13 +282,12 @@ describe('S8. offlineCache.ts — 16 Remaining 4-Hit Exports', () => {
   test('S8-08: all 16 remaining exports are documented', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/offlineCache.ts', 'utf8');
-    const exports16 = ['addMotionToCache','cacheBailAgents','cacheExpungement','cacheMotions',
-      'cacheResources','cacheSavedLawyers','cacheSearch','cacheTimeline','clearAllCaches',
-      'getCachedExpungement','getCachedLawyers','getCachedLessons','getCachedMotions',
-      'getCachedSearch','getRecentSearches','markOnline'];
-    for (const fn of exports16) {
-      expect(src).toContain(fn);
-    }
+    // section F: the per-state expungement cache was keyed by state only (one answer for every charge)
+    // and nothing read it — removed
+    for (const fn of ['addMotionToCache','cacheBailAgents','cacheMotions','cacheResources','cacheSavedLawyers',
+      'cacheSearch','cacheTimeline','clearAllCaches','getCachedLawyers','getCachedLessons','getCachedMotions',
+      'getCachedSearch','getRecentSearches','markOnline']) expect(src).toContain(fn);
+    expect(src).not.toContain('cacheExpungement');
   });
 });
 
@@ -296,8 +302,11 @@ describe('S12. UX — useMemo Pattern + firm_verticals Architecture', () => {
   test('S12-02: SpecialtyCourtsScreen uses cachedGet from api.ts', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SpecialtyCourtsScreen.tsx', 'utf8');
-    expect(src).toContain('cachedGet');
-    expect(src).toMatch(/import \{[^}]*cachedGet[^}]*\} from '..\/services\/api'/);
+    // section F: request-language rows (translated DB text), contacts through ContactActions, a source per card
+    expect(src).toContain("api.get('/legaldata/specialty-courts', { params: query })");
+    expect(src).toContain("lang: getLang()");
+    expect(src).toContain('<ContactActions');
+    expect(src).toContain('<SourceLine');
   });
   test('S12-04: 10 useMemo screens verified across corpus', async () => {
     const fs   = await import('fs');

@@ -213,11 +213,12 @@ describe('classifyCharge() — pure classification logic', () => {
     ['felonious assault', 'felony'],
     ['Class A Felony', 'felony'],
 
-    // default misdemeanor
-    ['simple assault', 'misdemeanor'],
-    ['disorderly conduct', 'misdemeanor'],
-    ['shoplifting', 'misdemeanor'],
-    ['trespassing', 'misdemeanor'],
+    // no stated level → unknown (it used to default to misdemeanor and give a misdemeanor verdict)
+    ['simple assault', 'unknown'],
+    ['disorderly conduct', 'unknown'],
+    ['shoplifting', 'unknown'],
+    ['trespassing', 'unknown'],
+    ['misdemeanor trespassing', 'misdemeanor'],
     ['', 'unknown'],                // empty → 'unknown' (attorney CTA, never a false "eligible")
     ['   ', 'unknown'],             // whitespace only
   ];
@@ -361,7 +362,7 @@ describe('GET /expungement/check', () => {
   });
 
   test('unknown state returns conditional default', async () => {
-    const r = await request(app).get('/expungement/check?state=ZZ&charges=assault');
+    const r = await request(app).get('/expungement/check?state=ZZ&charges=misdemeanor%20assault');
     expect(r.status).toBe(200);
     expect(r.body.eligibility.conditional).toBe(true);
   });

@@ -386,12 +386,14 @@ describe('S. Expungement Rules — All 51 States', () => {
     expect(classifyCharge('drunk driving first offense')).toBe('dui');
     // Impaired driving may vary — verify it returns a valid category
     const driResult = classifyCharge('driving under the influence first');
-    expect(['dui','misdemeanor']).toContain(driResult);
+    expect(driResult).toBe('dui');
   });
 
   test('S-09: classifyCharge — petty theft → misdemeanor', () => {
-    for (const charge of ['shoplifting petty theft', 'trespassing misdemeanor', 'disorderly conduct']) {
-      expect(classifyCharge(charge)).toBe('misdemeanor');
+    // Only an explicit level is a misdemeanor; theft / disorderly conduct can be either (section F: no guessing)
+    expect(classifyCharge('trespassing misdemeanor')).toBe('misdemeanor');
+    for (const charge of ['shoplifting petty theft', 'disorderly conduct']) {
+      expect(classifyCharge(charge)).toBe('unknown');
     }
   });
 

@@ -1,85 +1,110 @@
 /**
- * expungement/check.js — GET /check — record expungement eligibility check
+ * expungement/check.js — GET /check — what the recorded rule says about a record
  *
- * Stateless — no database reads, no auth required.
- * Pure deterministic computation from state rules + charge classification.
+ * Public (guests reach it from Home), IP rate limited, no database reads.
  *
  * Query params:
- *   state   — 2-letter state code (default: TN)
- *   charges — description of the charge(s)
- *   status  — case status: Closed | Dismissed | Convicted (default: Closed)
+ *   state   — 2-letter code of one of the 50 states or DC (required → 400 otherwise)
+ *   status  — Dismissed | Convicted (Closed is the same) | Open (Still open / Pending)
+ *   type    — misdemeanor | felony | dui | domestic | sexual | unknown (the app's chips);
+ *             when absent the charge text is classified
+ *   charges — free-text charge description (optional)
  *
- * Returns:
- *   eligibility — { likely, conditional, notEligible, waitYears, note }
- *   partners    — referral links to expungement services
- *   disclaimer  — mandatory legal notice
+ * eligibility.result:
+ *   eligible | conditional | not_eligible — the rule names a statute (its source)
+ *   unsourced     — the recorded rule names no statute: no verdict, the note is shown
+ *                   as unreviewed general information
+ *   needs_review  — the recorded rule contradicts its own note (REVIEW_FLAGS): no verdict
+ *   unknown       — the charge could not be put in a category
+ *   case_open     — the case has not ended; nothing can be sealed yet
+ * waitYears is given only with a sourced verdict. Notes are the English text as
+ * recorded (`notes_lang: 'en'`); everything else is in the request language.
+ * None of it has been reviewed by a lawyer (`source.reviewed: false`).
  */
 
 import { Router }         from 'express';
-import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
+import { apiLimiter }     from '../../middleware/rateLimiters.js';
 import { sanitizeStr }    from '../../utils/routeHelpers.js';
+import { msg, resolveLang, stateName } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
-import { STATE_RULES, classifyCharge, getEligibility } from './rules.js';
+import { STATE_RULES, REVIEW_FLAGS, RULE_EFFECTIVE_DATES, classifyCharge, citationOf, getEligibility } from './rules.js';
 
-const router      = Router();
-const checkLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Eligibility check limit reached.' });
+const router = Router();
 
 const PARTNERS = [
-  {
-    key:           'recordseal',
-    name:          'RecordSeal.com',
-    description:   'Online expungement service. Flat fee, no hourly billing.',
-    estimatedCost: '$179–$399',
-    cta:           'Check Eligibility Free',
-    url:           'https://recordseal.com/?ref=justicegavel',
-  },
+  { key: 'recordseal', name: 'RecordSeal.com', url: 'https://recordseal.com/?ref=justicegavel' },
 ];
 
-const DISCLAIMER =
-  'IMPORTANT: This eligibility result is general information only — not legal advice. ' +
-  'Expungement eligibility depends on your full criminal history, the specific statute in ' +
-  'your state, and recent case law. Consult a licensed attorney in your state before ' +
-  'filing any petition. Laws change frequently — verify current rules with your state court.';
+const TYPES = new Set(['misdemeanor', 'felony', 'dui', 'domestic', 'sexual', 'unknown']);
 
-// Valid case-status values — declared at module level (constant across all requests)
-const VALID_STATUSES = new Set(['Closed', 'Dismissed', 'Convicted', 'Pending', 'Open', 'Expunged', 'Transferred']);
+/** 'Dismissed' | 'Convicted' | 'Open' — anything else is null (→ 400). */
+function normalizeStatus(raw) {
+  const s = String(raw || 'Convicted').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (['dismissed', 'acquitted', 'not guilty', 'expunged'].includes(s)) return 'Dismissed';
+  if (['convicted', 'closed', 'transferred'].includes(s)) return 'Convicted';
+  if (['open', 'still open', 'pending'].includes(s)) return 'Open';
+  return null;
+}
 
-// ── GET /check ────────────────────────────────────────────────────────────────
-router.get('/check', checkLimiter, (req, res) => {
+function bad(res, lang, code) {
+  return res.status(400).json({ error: msg(lang, `expungement.err.${code}`), code, message: msg(lang, `expungement.err.${code}`) });
+}
+
+router.get('/check', apiLimiter, (req, res) => {
+  const lang = resolveLang(req);
   try {
-    const rawState = sanitizeStr(String(req.query.state || 'TN'), 2).toUpperCase();
-    // Validate state is exactly 2 alpha chars — otherwise fall back to TN defaults
-    const state = /^[A-Z]{2}$/.test(rawState) ? rawState : 'TN';
-    if (state !== rawState) logger.warn(`[expungement/check] invalid state '${rawState}' — defaulting to TN`);
+    const state = sanitizeStr(String(req.query.state || ''), 3).trim().toUpperCase();
+    if (!Object.prototype.hasOwnProperty.call(STATE_RULES, state)) return bad(res, lang, 'invalid_state');
+    const status = normalizeStatus(req.query.status);
+    if (!status) return bad(res, lang, 'invalid_status');
     const charges = sanitizeStr(String(req.query.charges || ''), 500).trim();
-    const rawStatus = sanitizeStr(String(req.query.status || 'Closed'), 30);
-    // Normalize to Title Case so 'dismissed' matches 'Dismissed' in VALID_STATUSES
-    const status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+    const rawType = String(req.query.type || '').trim().toLowerCase();
+    if (rawType && !TYPES.has(rawType)) return bad(res, lang, 'invalid_type');
 
-    const safeStatus = VALID_STATUSES.has(status) ? status : 'Closed';
+    const chargeType = status === 'Dismissed' ? 'dismissed' : (rawType || classifyCharge(charges));
+    const dates = RULE_EFFECTIVE_DATES[state] || RULE_EFFECTIVE_DATES.DEFAULT;
 
-    const chargeType  = classifyCharge(charges);
-    const eligibility = getEligibility(state, chargeType, safeStatus);
-    const stateInfo   = STATE_RULES[state] || { name: state };
+    let result;
+    let rule = null;
+    if (status === 'Open') result = 'case_open';
+    else if (chargeType === 'unknown') result = 'unknown';
+    else {
+      rule = getEligibility(state, chargeType, status);
+      if (REVIEW_FLAGS[`${state}.${chargeType}`]) result = 'needs_review';
+      else if (!citationOf(rule.note)) result = 'unsourced';
+      else result = rule.eligible === true ? 'eligible' : rule.eligible === 'conditional' ? 'conditional' : 'not_eligible';
+    }
+    const citation = rule ? citationOf(rule.note) : null;
+    const verdict = ['eligible', 'conditional', 'not_eligible'].includes(result);
 
+    res.setHeader('Vary', 'Accept-Language');
     res.json({
       state,
-      stateName: stateInfo.name,
+      stateName: stateName(state, STATE_RULES[state].name, lang),
       chargeType,
-      status:    safeStatus,
+      status,
       eligibility: {
-        likely:       eligibility.eligible === true,
-        conditional:  eligibility.eligible === 'conditional',
-        notEligible:  eligibility.eligible === false,
-        waitYears:    eligibility.waitYears ?? 0,
-        note:         eligibility.note || null,
+        result,
+        likely:      result === 'eligible',
+        conditional: result === 'conditional',
+        notEligible: result === 'not_eligible',
+        waitYears:   verdict && result !== 'not_eligible' && Number.isFinite(rule.waitYears) ? rule.waitYears : null,
+        note:        rule?.note || null,
+        citation,
       },
-      partners:   PARTNERS,
-      disclaimer: DISCLAIMER,
+      notes_lang: 'en',
+      source: {
+        label:     citation ? msg(lang, 'expungement.source.cited', { citation }) : null,
+        citation,
+        recorded_at: dates.last_reviewed,
+        reviewed:  false,
+      },
+      partners:   verdict && result !== 'not_eligible' ? PARTNERS : [],
+      disclaimer: msg(lang, 'expungement.disclaimer'),
     });
   } catch (e) {
     logger.error('[expungement/check]', e.message);
-    res.status(500).json({ error: 'Could not compute eligibility. Please try again.' });
+    res.status(500).json({ error: msg(lang, 'expungement.err.server'), code: 'server_error' });
   }
 });
 

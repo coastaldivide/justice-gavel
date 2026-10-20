@@ -18,6 +18,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, LayoutAnimation }
 import type { ScreenProps } from '../types/navigation';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
 
 
@@ -130,7 +131,7 @@ const SUPPORT_SECTIONS = perLang(() => [
   },
 ]);
 
-function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
+function FamilyCourtScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -140,7 +141,9 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, []);
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [tab, setTab] = React.useState<'custody' | 'orders' | 'support'>('custody');
+  type Tab = 'custody' | 'orders' | 'support';
+  const initialTab = (route?.params as { tab?: Tab } | undefined)?.tab;
+  const [tab, setTab] = React.useState<Tab>(initialTab && ['custody', 'orders', 'support'].includes(initialTab) ? initialTab : 'custody');
   const allSections = tab === 'custody' ? CUSTODY_SECTIONS() : tab === 'orders' ? ORDERS_SECTIONS() : SUPPORT_SECTIONS();
 
   return (
@@ -156,6 +159,7 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_family_court_custody_support_orders')}</Text>
       </View>
 
+      <UnreviewedNotice />
       <View style={{ paddingHorizontal: 12 }}>
         <InfoTabs
           testID="family-court-tabs"
@@ -165,44 +169,41 @@ function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
         />
       </View>
 
-      {/* Child-support estimator CTA (support tab only) */}
+      {/* Child support by state (support tab only) */}
       {tab === 'support' && (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={t('x_family_court_open_child_support_estimator')}
+          testID="family-court-child-support"
           style={[styles.cta, { backgroundColor: colors.navy, marginHorizontal: 12 }]}
           onPress={() => navigation.navigate('ChildSupport')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.ctaText, { color: colors.textOnNavy }]}>
-            {t('x_family_court_estimate_child_support')}
+            {t('fc_support_cta')}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Section cards */}
-      {allSections?.length === 0 ? (
+      {tab === 'custody' && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          testID="family-court-hague"
+          style={[styles.cta, { backgroundColor: colors.bgCard, borderColor: colors.navy, borderWidth: 1, marginHorizontal: 12 }]}
+          onPress={() => navigation.navigate('HagueContact')}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.ctaText, { color: colors.textBrand }]}>{t('fc_hague_cta')}</Text>
+        </TouchableOpacity>
+      )}
 
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            {t('empty_state_nothing')}
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            {t('x_attorney_privacy_results_will_appear_here')}
-          </Text>
-        </View>
-        ) : allSections.map((sec: any, idx: number) => (
-        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      {/* Section cards */}
+      {allSections.map((sec, idx) => (
+        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, marginHorizontal: 12 }]}>
           {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
           {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
-          {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text maxFontSizeMultiplier={1.4} key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
-          )) : null}
         </View>
       ))}
 
       {/* Disclaimer */}
-      <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
+      <View style={[styles.disclaimer, { borderTopColor: colors.border, marginHorizontal: 12 }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textMuted }]}>
           {t('x_family_court_this_information_general_education')}
         </Text>

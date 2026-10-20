@@ -189,16 +189,17 @@ describe('ULD. scripts/update_legal_data.js — Legal Data Patcher', () => {
 describe('INS. routes/insurance.js — Legal Insurance Routes', () => {
   test('INS-01: POST /quote generates a legal insurance quote', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js', 'utf8');
-    expect(src).toContain("router.post('/quote'");
-    expect(src).toContain('authRequired');
-    expect(src).toContain('quote');
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
   test('INS-02: GET /plans lists available legal insurance plans', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js', 'utf8');
-    expect(src).toContain("router.get('/plans'");
-    expect(src).toContain('plans');
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
 });
 
@@ -207,15 +208,18 @@ describe('EXI. expungement/ — Module Entry + Stateless Check + Attorney Search
   test('EXI-01: check.js GET /check is stateless — no auth, no DB, pure eligibility', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js', 'utf8');
-    expect(src).toContain('GET /check');
-    expect(src).toContain('Stateless');
-    expect(src).toContain('no auth required');
+    expect(src).toContain("router.get('/check', apiLimiter");          // public, IP rate limited
+    expect(src).toContain('Public (guests reach it from Home)');
+    expect(src).toContain('no database reads');
+    expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
+    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
   });
   test('EXI-02: attorneys.js GET /attorneys finds expungement attorneys by state', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/attorneys.js', 'utf8');
     expect(src).toContain('GET /attorneys');
-    expect(src).toContain('expungement attorneys');
+    expect(src).toContain('UPPER(l.state) = ?');                      // section F: no city LIKE '%ca%' (matched Chicago)
+    expect(src).toContain('formatLawyer');
   });
   test('EXI-03: index.js mounts rules + check + attorneys at /api/expungement', async () => {
     const fs = await import('fs');
@@ -269,8 +273,11 @@ describe('S12. UX — Final Coverage: Encryption + Migrations + Stateless Check'
   test('S12-02: expungement /check is public API — no login wall for eligibility', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js', 'utf8');
-    expect(src).toContain('Stateless');
-    expect(src).toContain('no auth required');
+    expect(src).toContain("router.get('/check', apiLimiter");          // public, IP rate limited
+    expect(src).toContain('Public (guests reach it from Home)');
+    expect(src).toContain('no database reads');
+    expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
+    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
   });
   test('S12-04: refresh.js only runs with LIVE_REFRESH=true (safe default)', () => {
     expect(CONFIG.LIVE_REFRESH).toBe(false);

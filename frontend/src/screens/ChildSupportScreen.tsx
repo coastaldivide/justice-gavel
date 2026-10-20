@@ -1,309 +1,74 @@
-import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useToast } from '../components/ToastProvider';
-import UPLDisclaimer from '../components/UPLDisclaimer';
-import React, { useState, useCallback } from 'react';
-import {
-  View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Switch } from 'react-native';
-import { COLORS } from '../constants/theme';
+/**
+ * ChildSupportScreen — child support amounts by state.
+ *
+ * This screen used to print a dollar estimate from a made-up "national average"
+ * obligation table and a made-up shared-custody discount. No state's guideline
+ * formula is recorded in the app with a source, so it now says that for the
+ * chosen state and points to where the official calculation comes from, instead
+ * of showing a number. (Listed for the owner in notes/debug_pass.md section F.)
+ */
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
+import { useTheme, RADIUS } from '../constants/theme';
+import { getUserState, stateName } from '../utils/userState';
+import { StatePicker } from '../components/StatePicker';
+import { UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang } from '../i18n';
 
-// Income shares model — the majority US approach
-// Guideline figures approximate mean combined obligation tables (simplified)
-function calculateSupport(
-  parent1Income: number,
-  parent2Income: number,
-  numChildren: number,
-  custodySplit: number,     // 0–100: parent1 custody percentage
-) {
-  const combined = parent1Income + parent2Income;
-  if (combined <= 0 || numChildren <= 0) return null;
-
-  // Basic child support obligation table ($/month, simplified national average)
-  const OBLIGATION_TABLE: Record<number, number[]> = {
-    //          1 child   2 ch    3 ch    4 ch    5 ch
-    1000:  [134, 214, 271, 314, 351],
-    2000:  [254, 407, 514, 596, 666],
-    3000:  [357, 571, 721, 836, 934],
-    4000:  [453, 725, 916, 1062, 1187],
-    5000:  [541, 866, 1094, 1268, 1419],
-    6000:  [624, 999, 1262, 1464, 1636],
-    7000:  [702, 1124, 1420, 1646, 1840],
-    8000:  [776, 1242, 1570, 1820, 2034],
-    9000:  [847, 1356, 1713, 1987, 2220],
-    10000: [913, 1462, 1847, 2142, 2394],
-  };
-
-  // Find nearest income bracket
-  const bracket = Math.min(10000, Math.max(1000, Math.round(combined / 1000) * 1000));
-  const obligations = OBLIGATION_TABLE[bracket] || OBLIGATION_TABLE[5000];
-  const childIdx = Math.min(numChildren, 5) - 1;
-  let baseObligation = obligations[childIdx];
-
-  // Prorate by income share
-  const parent1Share = parent1Income / combined;
-  const parent2Share = parent2Income / combined;
-
-  let parent1Obligation = baseObligation * parent1Share;
-  let parent2Obligation = baseObligation * parent2Share;
-
-  // Shared custody adjustment (when custody approaches 50/50, obligation decreases)
-  const p1Custody = custodySplit / 100;
-  if (p1Custody >= 0.35 && p1Custody <= 0.65) {
-    // Offset model for near-shared custody
-    const reduction = 1 - Math.abs(0.5 - p1Custody) * 2;
-    parent1Obligation *= (1 - reduction * 0.3);
-    parent2Obligation *= (1 - reduction * 0.3);
-  }
-
-  // Who pays whom: the non-custodial parent (less custody) pays
-  const p1IsPayor = p1Custody < 0.5;
-  const netPayment = Math.abs(parent1Obligation - parent2Obligation);
-
-  return {
-    combined:          Math.round(combined),
-    baseObligation:    Math.round(baseObligation),
-    parent1Obligation: Math.round(parent1Obligation),
-    parent2Obligation: Math.round(parent2Obligation),
-    payor:             p1IsPayor ? 'Parent 1' : 'Parent 2', // i18n-exempt: ids, shown via x_child_support_parent_*
-    payee:             p1IsPayor ? 'Parent 2' : 'Parent 1', // i18n-exempt: ids, shown via x_child_support_parent_*
-    netMonthly:        Math.round(netPayment),
-    netAnnual:         Math.round(netPayment * 12),
-    model:             t('x_child_support_income_shares_simplified'),
-    disclaimer:        true,
-  };
-}
-
-function fmt(n: number) {
-  return '$' + n.toLocaleString('en-US');
-}
-
-function ChildSupportScreen() {
+function ChildSupportScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
-  const { showToast } = useToast();
-  const [p1Income, setP1Income] = useState('');
-  const [p2Income, setP2Income] = useState('');
-  const [children, setChildren] = useState('1');
-  const [custody, setCustody] = useState('70');  // parent1 custody %
-  const [alimony, setAlimony] = useState(false);
-  const [alimonyAmt, setAlimonyAmt] = useState('');
-  const [result, setResult] = useState<any>(null);
-
-  const calculate = useCallback(() => {
-    // Input validation
-    const p1Num = parseFloat(p1Income);
-    const p2Num = parseFloat(p2Income);
-    if (!p1Income || isNaN(p1Num) || p1Num <= 0) {
-      showToast(t('x_child_support_please_enter_valid_income'));
-      return;
-    }
-    if (!p2Income || isNaN(p2Num) || p2Num <= 0) {
-      showToast(t('x_child_support_please_enter_valid_income_2'));
-      return;
-    }
-    if (parseInt(children||'0') < 1 || parseInt(children||'0') > 10) {
-      showToast(t('x_child_support_number_children_must_be'));
-      return;
-    }
-
-    const p1 = parseFloat(p1Income.replace(/[^0-9.]/g, '')) || 0;
-    const p2 = parseFloat(p2Income.replace(/[^0-9.]/g, '')) || 0;
-    const n  = parseInt(children) || 1;
-    const c  = parseFloat(custody) || 70;
-    // Spousal support is shown separately in the result; it does not change the child-support estimate.
-    setResult(calculateSupport(p1, p2, n, c));
-  }, [p1Income, p2Income, children, custody, showToast]);
-
-  const inputStyle = [s.input, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, color: COLORS.textPrimary }];
-  const labelStyle = [s.label, { color: COLORS.textSecond }];
+  const { colors } = useTheme();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
+  const initial = String((route?.params as { state?: string } | undefined)?.state || '').toUpperCase();
+  const [state, setState] = useState(initial);
+  useEffect(() => {
+    if (!initial) getUserState().then(u => { if (u?.code) setState(prev => prev || u.code); }).catch(() => {});
+  }, [initial]);
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={s.container}>
-      <UPLDisclaimer compact />
-      {/* Header */}
-      <View style={[s.header, { backgroundColor: COLORS.navy }]}>
-        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{t('x_child_support_child_spousal_support')}</Text>
-        <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
-          {t('x_child_support_estimate_based_income_shares')}
-        </Text>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={s.content} testID="child-support-screen">
+      <View style={[s.header, { backgroundColor: colors.navy }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[s.title, { color: colors.textOnNavy }]}>{t('cs_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[s.sub, { color: colors.textOnNavy }]}>{t('cs_sub')}</Text>
       </View>
 
-      <View style={s.form}>
-        {/* Incomes */}
-        <Text style={[s.sectionLabel, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_monthly_gross_income')}</Text>
-        <View style={s.row}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1')}</Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="e.g. 4500"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="numeric"
-              value={p1Income}
-              onChangeText={setP1Income}
-          returnKeyType="done" blurOnSubmit={true}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_2')}</Text>
-            <TextInput
-          accessibilityLabel="e.g. 3000"
-              style={inputStyle}
-              placeholder="e.g. 3000"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="numeric"
-              value={p2Income}
-              onChangeText={setP2Income}
-          returnKeyType="done" blurOnSubmit={true}
-            />
-          </View>
-        </View>
+      <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('div_your_state')}</Text>
+      <StatePicker value={state} onChange={setState} testID="child-support-state" />
 
-        {/* Children */}
-        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_number_children')}</Text>
-        <View style={s.row}>
-          {['1','2','3','4','5'].map(n => (
-            <TouchableOpacity
-              key={n}
-              accessibilityRole="button"
-              style={[s.childBtn, { borderColor: COLORS.border, backgroundColor: children === n ? COLORS.navy : COLORS.bgCard }]}
-              accessibilityLabel={n} onPress={() => setChildren(n)}
-            >
-              <Text style={{ color: children === n ? COLORS.white : COLORS.textPrimary, fontWeight: '700' }} maxFontSizeMultiplier={1.4}>{n}</Text>
-            </TouchableOpacity>
+      {!!state && (
+        <View style={s.card} testID="child-support-unavailable">
+          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('cs_unavailable_title', { state: stateName(state) })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.body}>{t('cs_unavailable_body')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('cs_where_title')}</Text>
+          {['cs_where_agency', 'cs_where_court', 'cs_where_lawyer'].map(k => (
+            <Text key={k} maxFontSizeMultiplier={1.4} style={s.body}>• {t(k)}</Text>
           ))}
         </View>
-
-        {/* Custody split */}
-        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1_physical_custody')}</Text>
-        <TextInput
-          accessibilityLabel={t('x_child_support_e_g_70_parent')}
-          style={inputStyle}
-          placeholder={t('x_child_support_e_g_70_parent')}
-          placeholderTextColor={COLORS.textMuted}
-          keyboardType="numeric"
-          value={custody}
-          onChangeText={setCustody}
-          returnKeyType="done" blurOnSubmit={true}
-        />
-        <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_50_equal_shared_custody')}</Text>
-
-        {/* Spousal support toggle */}
-        <View style={[s.switchRow, { borderColor: COLORS.border }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={[s.switchLabel, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_include_spousal_support')}</Text>
-            <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_alimony_paid_by_higher')}</Text>
-          </View>
-          <Switch
-            value={alimony}
-            onValueChange={setAlimony}
-            trackColor={{ true: COLORS.navy }}
-            accessibilityState={{ checked: alimony }}
-          />
-        </View>
-        {alimony && (
-          <>
-            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>{t('x_child_support_monthly_spousal_support_amount')}</Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="e.g. 800"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="numeric"
-              value={alimonyAmt}
-              onChangeText={setAlimonyAmt}
-          returnKeyType="done" blurOnSubmit={true}
-            />
-          </>
-        )}
-
-        {/* Calculate */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[s.calcBtn, { backgroundColor: COLORS.navy }]}
-          onPress={calculate}
-         accessibilityLabel={t('x_child_support_calculate_estimate')}
-          accessibilityHint={t('cp_double_tap')}>
-          <Text style={s.calcBtnText} maxFontSizeMultiplier={1.4}>{t('x_child_support_calculate_estimate')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Result */}
-      {result && (
-        <View style={[s.result, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-          <Text style={[s.resultTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_estimated_support_order')}</Text>
-
-          <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_combined_monthly_income')}</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.combined)}</Text>
-          </View>
-          <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t(Number(children) === 1 ? 'x_child_support_base_obligation_child_one' : 'x_child_support_base_obligation_child_other', { children })}</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo', { baseObligation: fmt(result.baseObligation) })}</Text>
-          </View>
-          <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_1_share_custody', { Math: Math.round(Number(custody) || 70) })}</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo_2', { parent1Obligation: fmt(result.parent1Obligation) })}</Text>
-          </View>
-          <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_parent_2_share_custody', { value: 100 - (Math.round(Number(custody) || 70)) })}</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_mo_3', { parent2Obligation: fmt(result.parent2Obligation) })}</Text>
-          </View>
-
-          {/* Net payment */}
-          <View style={[s.netBlock, { backgroundColor: COLORS.navy + '15' }]}>
-            <Text style={[s.netLabel, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_pays', { payor: t(result.payor === 'Parent 1' ? 'x_child_support_parent_1' : 'x_child_support_parent_2'), payee: t(result.payee === 'Parent 1' ? 'x_child_support_parent_1' : 'x_child_support_parent_2') })}</Text>
-            <Text style={[s.netAmount, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netMonthly)}<Text style={{ fontSize: 14 }} maxFontSizeMultiplier={1.4}>{t('x_child_support_month')}</Text></Text>
-            <Text style={[s.netAnnual, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_child_support_per_year', { netAnnual: fmt(result.netAnnual) })}</Text>
-          </View>
-
-          {alimony && parseFloat(alimonyAmt) > 0 && (
-            <View style={[s.alimonyBlock, { borderColor: COLORS.border }]}>
-              <Text style={[s.alimonyLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
-                {t('x_child_support_spousal_support_mo_yr', { value: fmt(parseFloat(alimonyAmt)), value2: fmt(parseFloat(alimonyAmt) * 12) })}
-              </Text>
-            </View>
-          )}
-
-          <Text style={[s.disclaimer, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
-            {t('x_child_support_this_estimate_using_simplified')}
-          </Text>
-        </View>
       )}
+      <UnreviewedNotice inset={false} />
 
-      <View style={{ height: 40 }} />
-      <AIDisclaimer variant="banner" />
-
+      <TouchableOpacity accessibilityRole="button" testID="child-support-guide" style={s.secondary} onPress={() => navigation.navigate('FamilyCourt', { tab: 'support' })}>
+        <Text maxFontSizeMultiplier={1.3} style={s.secondaryText}>{t('cs_open_guide')}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" testID="child-support-lawyer" style={s.secondary} onPress={() => navigation.navigate('LawyersTab')}>
+        <Text maxFontSizeMultiplier={1.3} style={s.secondaryText}>{t('cs_find_lawyer')}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const s = StyleSheet.create({
-  container:    { paddingBottom: 24 },
-  header:       { padding: 28, paddingTop: 52 },
-  headerTitle:  { fontSize: 22, fontWeight: '800', color: COLORS.white, marginBottom: 8 },
-  headerSub:    { fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 19 },
-  form:         { padding: 16 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 8, marginTop: 8 },
-  label:        { fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 12 },
-  input:        { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  hint:         { fontSize: 12, marginTop: 4 },
-  row:          { flexDirection: 'row' },
-  childBtn:     { flex: 1, marginHorizontal: 3, paddingVertical: 10, borderWidth: 1, borderRadius: 8, alignItems: 'center' },
-  switchRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  switchLabel:  { fontSize: 15, fontWeight: '600' },
-  calcBtn:      { marginTop: 24, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
-  calcBtnText:  { color: COLORS.white, fontSize: 16, fontWeight: '800' },
-  result:       { margin: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
-  resultTitle:  { fontSize: 16, fontWeight: '700', padding: 16, paddingBottom: 12 },
-  resultRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
-  resultLabel:  { fontSize: 13, flex: 1, marginRight: 8 },
-  resultValue:  { fontSize: 13, fontWeight: '700' },
-  netBlock:     { padding: 20, alignItems: 'center' },
-  netLabel:     { fontSize: 13, fontWeight: '600', marginBottom: 4 },
-  netAmount:    { fontSize: 32, fontWeight: '900', marginBottom: 2 },
-  netAnnual:    { fontSize: 14, fontWeight: '600' },
-  alimonyBlock: { borderTopWidth: 1, paddingHorizontal: 16, paddingVertical: 12 },
-  alimonyLabel: { fontSize: 13 },
-  disclaimer:   { fontSize: 11, lineHeight: 16, padding: 16, paddingTop: 12 },
+const makeStyles = (c: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  content: { padding: 16, paddingBottom: 48, width: '100%', maxWidth: 760, alignSelf: 'center' },
+  header: { borderRadius: RADIUS.lg, padding: 20, marginBottom: 8 },
+  title: { fontSize: 21, fontWeight: '800', marginBottom: 6 },
+  sub: { fontSize: 13, lineHeight: 19 },
+  label: { fontSize: 14, fontWeight: '800', color: c.textBrand, marginTop: 16, marginBottom: 8 },
+  card: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 14, marginTop: 14, gap: 8 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+  body: { fontSize: 14, lineHeight: 20, color: c.textSecond },
+  secondary: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: c.navy, alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingHorizontal: 12 },
+  secondaryText: { color: c.textBrand, fontSize: 15, fontWeight: '700', textAlign: 'center' },
 });
+
 export default React.memo(ChildSupportScreen);

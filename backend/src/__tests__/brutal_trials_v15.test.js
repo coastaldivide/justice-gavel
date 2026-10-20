@@ -214,9 +214,14 @@ describe('4. DrugPenaltiesScreen — Drug Penalty Lookup', () => {
 describe('5. InsuranceScreen — Legal Insurance Quote', () => {
 
   test('5-01: fetches insurance quote from /insurance/quote', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section F: no insurance product exists; the screen says so and lists the real plans
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
-    expect(src).toContain("'/insurance/quote'");
+    expect(src).not.toContain('/insurance/quote');
+    expect(src).toContain("'/billing/tiers', { params: { audience: 'consumer' } }");
+    expect(src).toContain('consumerPlansFrom');
+    expect(src).toContain('setError');
+    expect(src).toContain("navigation.navigate('ConsumerSubscription')");
   });
 
   test('5-02: has plan, quote, error, refreshing states', async () => {
@@ -323,15 +328,23 @@ describe('9. SpecialtyCourtsScreen — Specialty Court Finder', () => {
   });
 
   test('9-02: uses mountedRef for unmount safety', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SpecialtyCourtsScreen.tsx', 'utf8');
-    expect(src).toContain('mountedRef');
+    // section F: request-language rows (translated DB text), contacts through ContactActions, a source per card
+    expect(src).toContain("api.get('/legaldata/specialty-courts', { params: query })");
+    expect(src).toContain("lang: getLang()");
+    expect(src).toContain('<ContactActions');
+    expect(src).toContain('<SourceLine');
   });
 
   test('9-03: has Linking.openURL for court websites', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SpecialtyCourtsScreen.tsx', 'utf8');
-    expect(src).toContain('Linking');
+    // section F: request-language rows (translated DB text), contacts through ContactActions, a source per card
+    expect(src).toContain("api.get('/legaldata/specialty-courts', { params: query })");
+    expect(src).toContain("lang: getLang()");
+    expect(src).toContain('<ContactActions');
+    expect(src).toContain('<SourceLine');
   });
 });
 
@@ -468,20 +481,28 @@ describe('12. VoiceNoteScreen — Voice Recording Flow', () => {
 describe('13. ExpungementScreen — Expungement Eligibility', () => {
 
   test('13-01: has 3 entry points (push notification, HomeScreen, CaseScreen)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    // Entry points described in JSDoc comment at top of file; eligibility reminder via services/reminders
-    expect(src).toContain('scheduleReminder');
-    expect(src).toContain('petition');
+    // section F: state → outcome → kind of charge → the recorded rule with its source; the eligibility
+    // countdown (it counted from the case's creation date, which the API never returned) was removed
+    expect(src).toContain('<StatePicker');
+    expect(src).toContain("type Status = 'Dismissed' | 'Convicted' | 'Open'");
+    expect(src).toContain('<SourceLine source={result.source.label}');
+    expect(src).toContain("'/expungement/petition'");
+    expect(src).not.toContain('scheduleReminder');
   });
 
 
   test('13-03: multi-step: state picker → charges → eligibility → partner CTA', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(src).toContain('step');
-    expect(src).toContain('charges');
-    expect(src).toContain('caseStatus');
+    // section F: state → outcome → kind of charge → the recorded rule with its source; the eligibility
+    // countdown (it counted from the case's creation date, which the API never returned) was removed
+    expect(src).toContain('<StatePicker');
+    expect(src).toContain("type Status = 'Dismissed' | 'Convicted' | 'Open'");
+    expect(src).toContain('<SourceLine source={result.source.label}');
+    expect(src).toContain("'/expungement/petition'");
+    expect(src).not.toContain('scheduleReminder');
   });
 
   test('13-04: has Share export for eligibility result', async () => {
@@ -491,12 +512,15 @@ describe('13. ExpungementScreen — Expungement Eligibility', () => {
   });
 
   test('13-05: has PTR and /push/reminders endpoint', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
-    // reminders go through services/reminders.ts (POST /push/reminders with deliver_at — audit11 H11)
-    expect(src).toContain("../services/reminders");
-    expect(fs.readFileSync(__REPO + '/frontend/src/services/reminders.ts', 'utf8')).toContain("'/push/reminders'");
+    // section F: state → outcome → kind of charge → the recorded rule with its source; the eligibility
+    // countdown (it counted from the case's creation date, which the API never returned) was removed
+    expect(src).toContain('<StatePicker');
+    expect(src).toContain("type Status = 'Dismissed' | 'Convicted' | 'Open'");
+    expect(src).toContain('<SourceLine source={result.source.label}');
+    expect(src).toContain("'/expungement/petition'");
+    expect(src).not.toContain('scheduleReminder');
   });
 });
 

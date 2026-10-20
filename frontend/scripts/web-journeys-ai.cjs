@@ -193,7 +193,7 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     if (!/Write your whole answer in Spanish/.test(last.system)) throw new Error('system prompt does not ask for Spanish');
     if (!/VERIFIED RIGHTS CONTENT/.test(last.system) || !/talk to a lawyer/.test(last.system)) throw new Error('system prompt is not grounded in the rights card');
     if ('temperature' in last) throw new Error('temperature sent to the API');
-    if (last.model !== 'claude-sonnet-4-6') throw new Error(`model ${last.model}`);
+    if (last.model !== (process.env.CLAUDE_MODEL || 'claude-sonnet-5-5')) throw new Error(`model ${last.model}`);   // the server default (utils/ai.js)
     await shot(s.page, 'E1-done');
     await go(s.page, '/chat');
     await until(async () => (await bodyText(s.page)).includes('Octava parte'), 8000, 'history after reload');

@@ -21,6 +21,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
+import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
 
 
@@ -121,7 +122,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="immigration-consequences-screen"
-      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+      contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: 12, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -131,6 +132,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>{t('x_immigration_consequences_consequences_convictions')}</Text>
       </View>
 
+      <UnreviewedNotice inset={false} text={t('imm_not_reviewed')} />
       <InfoTabs
         testID="immigration-tabs"
         tabs={[{ key: 'consequences', label: t('x_immigration_consequences_criminal_consequences') }, { key: 'status', label: t('x_immigration_consequences_by_immigration_status') }]}
@@ -178,7 +180,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   screen:        { flex: 1 },
   scroll:        { padding: 16 },
-  header:        { borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, alignItems: 'center' },
+  header:        { borderRadius: RADIUS.lg, padding: 20, marginTop: 12, alignItems: 'center' },
   headerIcon:    { fontSize: 36, marginBottom: 8 },
   headerTitle:   { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:     { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },

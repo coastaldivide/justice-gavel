@@ -258,7 +258,7 @@ describe('5. i18n div_ — Diversion Eligibility (36 keys)', () => {
   });
   test('5-05: div_ total key count = 36', async () => {
     const en = await getEn();
-    expect(Object.keys(en).filter(k => k.startsWith('div_')).length).toBe(36);
+    expect(Object.keys(en).filter(k => k.startsWith('div_')).length).toBe(40);   // + 4 for the section F checklist summary
   });
 });
 

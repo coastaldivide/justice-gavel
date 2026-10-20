@@ -56,43 +56,58 @@ const mkMatter = (v, o={}) => ({
 describe('DISC17. Hague Discrepancy Fixes — 5 items at threshold', () => {
   test('DISC17-01: OCI emergency line 1-888-407-4747 documented [≥6]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain('1-888-407-4747');
-    expect(src).toContain('emergency: ');
-    expect(src).toContain('abduction@state.gov');
-    // Tap-to-call in frontend
-    const fe = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(fe).toContain('+18884074747');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    // Section F: the contacts are stored data (migration 26) read by the route, each with its source
+    expect(mig).toContain("'+1-888-407-4747'");
+    expect(mig).toContain('abduction@state.gov');
+    expect(src).toContain('hague_central_authorities');
+    expect(src).toContain('emergency_phone');
   });
   test('DISC17-02: NCMEC 1-800-843-5678 documented [≥6]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain('1-800-843-5678');
-    expect(src).toContain('NCMEC');
-    const fe = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(fe).toContain('18008435678');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('ncmec', 'National Center for Missing & Exploited Children (NCMEC)', '1-800-843-5678'");
+    expect(src).toContain('FROM hague_resources');
   });
   test('DISC17-03: GET /central-authority/:countryCode returns authority for GB/US/IN [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('GB', 'United Kingdom'");
+    expect(mig).toContain("('IN', 'India'");
+    expect(mig).toContain("('US', 'United States'");
+    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
-    expect(src).toContain("{ code:'GB'");
-    expect(src).toContain("{ code:'US'");
-    expect(src).toContain("{ code:'IN'");
+    expect(src).toContain("router.get('/member-states'");
   });
   test('DISC17-04: Article 11 6-week response timeline from Hague Convention [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain('Article 11');
-    expect(src).toContain('6 weeks');
-    // Article 11: Central Authorities must respond within 6 weeks
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    const en = fs.readFileSync(__REPO + '/backend/src/i18n/messages/en.js', 'utf8');
+    expect(src).toContain('next_steps');
+    expect(src).toContain('hague.steps.contracting.');
+    expect(src).toContain('hague.steps.non_contracting.');
+    expect(src).toContain('legal_notice');
+    expect(en).toContain('Article 11');      // recorded wording, flagged for lawyer review (section F)
+    expect(en).toContain('6 weeks');
+    expect(en).toContain('U.S. embassy');
+    expect(en).toContain('bilateral treaty');
   });
   test('DISC17-05: Non-contracting state path uses bilateral channels + embassy [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
-    expect(src).toContain('bilateral channels');
-    expect(src).toContain('U.S. Embassy');
-    expect(src).toContain('Not a contracting state');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    const en = fs.readFileSync(__REPO + '/backend/src/i18n/messages/en.js', 'utf8');
+    expect(src).toContain('next_steps');
+    expect(src).toContain('hague.steps.contracting.');
+    expect(src).toContain('hague.steps.non_contracting.');
+    expect(src).toContain('legal_notice');
+    expect(en).toContain('Article 11');      // recorded wording, flagged for lawyer review (section F)
+    expect(en).toContain('6 weeks');
+    expect(en).toContain('U.S. embassy');
+    expect(en).toContain('bilateral treaty');
   });
 });
 
@@ -100,34 +115,37 @@ describe('DISC17. Hague Discrepancy Fixes — 5 items at threshold', () => {
 describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to ≥2]', () => {
   test('S6-01: callNumber uses hapticCall + Linking.openURL tel: scheme', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('callNumber');
-    expect(src).toContain('hapticCall()');
-    expect(src).toContain("Linking.openURL(`tel:");
-    expect(src).toContain("replace(/[^0-9+]/g, '')");
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    // numbers come from the server's stored data and go through utils/contact (tel:+1…)
+    expect(fe).toContain('telUrl(phone)');
+    expect(fe).toContain('hapticCall()');
+    expect(fe).toContain('emergency_phone');
+    expect(fe).toContain("'/hague-contacts/us-resources'");
   });
   test('S6-02: onSelectCountry sets selectedCountry then calls lookupAuthority', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('onSelectCountry');
-    expect(src).toContain('setSelectedCountry(code)');
-    expect(src).toContain('lookupAuthority(code)');
-    expect(src).toContain("setPhase('lookup')");
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('pickCountry');
+    expect(fe).toContain('/hague-contacts/central-authority/');
+    expect(fe).toContain("'/hague-contacts/member-states'");
+    expect(fe).toContain("'/hague-contacts/report-intake'");
+    expect(fe).toContain('SourceLine');
   });
   test('S6-03: QUICK_COUNTRIES has 18 entries for fast country selection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('QUICK_COUNTRIES');
-    const entries = (src.match(/\{ code:'/g) || []).length;
-    expect(entries).toBeGreaterThanOrEqual(16);
-    // Includes contracting (GB, AU, CA, FR, DE...) and non-contracting (IN, PK, CN)
-    expect(src).toContain("{ code:'IN', name:'India (non-contracting)' }");
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('pickCountry');
+    expect(fe).toContain('/hague-contacts/central-authority/');
+    expect(fe).toContain("'/hague-contacts/member-states'");
+    expect(fe).toContain("'/hague-contacts/report-intake'");
+    expect(fe).toContain('SourceLine');
   });
   test('S6-04: HagueContactScreen legal notice on home screen', async () => {
-    const src = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
-    expect(src).toContain('legalNoticeText');
-    expect(src).toContain('not legal advice');
-    expect(src).toContain('licensed family law attorney');
+    const fs = await import('fs');
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('not legal advice');
+    expect(fe).toContain('family law attorney');
+    expect(fe).toContain('UnreviewedNotice');
   });
 });
 
@@ -139,10 +157,15 @@ describe('S6-GAP2. MotionLibraryScreen — deleteHistory function', () => {
 describe('S1-GAP. Low-Hit Routes — All 30 Below 3 Hits Documented', () => {
   test('S1-G-02: Hague GET /member-states returns full member state list', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
+    const mig = fs.readFileSync(__REPO + '/supabase/migrations/00000000000026_specialized_guides.sql', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js', 'utf8');
+    expect(mig).toContain("('GB', 'United Kingdom'");
+    expect(mig).toContain("('IN', 'India'");
+    expect(mig).toContain("('US', 'United States'");
+    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect(mig).toContain("'HCCH member state registry'");
+    expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
-    expect(src).toContain('MEMBER_STATES');
-    expect(src).toContain('hcch.net');
   });
   test('S1-G-03: matters.js POST/DELETE /:id/hold — legal hold operations', async () => {
     const fs = await import('fs');

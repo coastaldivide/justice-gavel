@@ -72,6 +72,9 @@ const PUBLIC = {
   'GET /api/interrogation/recording-law': 'static guidance',
   'GET /api/expungement/check': 'eligibility rules (rate limited)',
   'GET /api/expungement/attorneys': 'directory',
+  'GET /api/hague-contacts/member-states': 'stored public contact data with sources (rate limited)',
+  'GET /api/hague-contacts/central-authority/:countryCode': 'stored public contact data with sources (rate limited)',
+  'GET /api/hague-contacts/us-resources': 'stored public contact data with sources (rate limited)',
   'GET /api/consultations/slots/:lawyerId': 'free/busy slots, no client data',
   'GET /api/match/profile/:lawyerId': 'public lawyer profile',
   'GET /api/reviews': 'public reviews',
@@ -91,7 +94,6 @@ const PUBLIC = {
   // marketing / pricing pages
   'GET /api/billing/tiers': 'price list',
   'GET /api/billing/bondsman/tiers': 'price list',
-  'GET /api/insurance/plans': 'price list',
   'GET /api/firm-acquisition/plans': 'price list',
   'GET /api/firm-acquisition/vertical-demo': 'marketing demo data',
   'POST /api/firm-acquisition/lead': 'sales contact form',

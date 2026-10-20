@@ -73,12 +73,13 @@ describe('1. ImmigrationConsequencesScreen + TenantRightsScreen', () => {
 describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScreen', () => {
   test('2-01: InsuranceScreen fetches /insurance/quote with plan/quote states', async () => {
     const fs = await import('fs');
+    // Section F: no insurance product exists; the screen says so and lists the real plans
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
-    expect(src).toContain("'/insurance/quote'");
-    expect(src).toContain('plan');
-    expect(src).toContain('quote');
-    expect(src).toContain('error');
-    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
+    expect(src).not.toContain('/insurance/quote');
+    expect(src).toContain("'/billing/tiers', { params: { audience: 'consumer' } }");
+    expect(src).toContain('consumerPlansFrom');
+    expect(src).toContain('setError');
+    expect(src).toContain("navigation.navigate('ConsumerSubscription')");
   });
   test('2-02: PILeadScreen submits to /billing/pi-lead/submit', async () => {
     const fs = await import('fs');

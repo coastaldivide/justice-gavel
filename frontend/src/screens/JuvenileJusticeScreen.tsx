@@ -15,7 +15,10 @@ import { AppIcon } from '../components/AppIcon';
  *   - Automatic sealing timelines by state
  */
 import React from 'react';
-import type {} from '../types/navigation';
+import type { ScreenProps } from '../types/navigation';
+import { getUserState } from '../utils/userState';
+import { StatePicker } from '../components/StatePicker';
+import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
@@ -186,7 +189,7 @@ const SEALING_DATA = perLang((): SealingEntry[] => [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
-function JuvenileJusticeScreen(): React.JSX.Element {
+function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
   useLang();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -196,7 +199,13 @@ function JuvenileJusticeScreen(): React.JSX.Element {
   }, []);
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [tab, setTab] = React.useState<'rights' | 'process' | 'sealing'>('rights');
+  type Tab = 'rights' | 'process' | 'sealing';
+  const initialTab = (route?.params as { tab?: Tab } | undefined)?.tab;
+  const [tab, setTab] = React.useState<Tab>(initialTab && ['rights', 'process', 'sealing'].includes(initialTab) ? initialTab : 'rights');
+  // Sealing table: the person's state first (all states when none is saved).
+  const [sealState, setSealState] = React.useState('');
+  React.useEffect(() => { getUserState().then(u => { if (u?.code) setSealState(prev => prev || u.code); }).catch(() => {}); }, []);
+  const sealingRows = SEALING_DATA().filter(r => !sealState || r.state === sealState);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -219,6 +228,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
       </View>
 
       <View style={{ paddingHorizontal: 12 }}>
+      <UnreviewedNotice inset={false} />
       <InfoTabs
         testID="juvenile-tabs"
         tabs={[{ key: 'rights', label: t('x_juvenile_justice_rights') }, { key: 'process', label: t('x_juvenile_justice_process') }, { key: 'sealing', label: t('juv_tab_sealing') }]}
@@ -260,7 +270,12 @@ function JuvenileJusticeScreen(): React.JSX.Element {
         </View>
       ))}
 
-      {tab === 'sealing' && SEALING_DATA().map(row => (
+      {tab === 'sealing' && (
+        <View style={{ marginBottom: 10 }}>
+          <StatePicker value={sealState} onChange={setSealState} allowAll testID="juvenile-state" />
+        </View>
+      )}
+      {tab === 'sealing' && sealingRows.map(row => (
         <View key={row.state} style={[styles.sealingRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={[styles.stateBadge, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.textBrand }]}>{row.state}</Text>
@@ -275,6 +290,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
               </View>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted }]}>{row.notes}</Text>
+            <SourceLine testID="juvenile-row-source" />
           </View>
         </View>
       ))}

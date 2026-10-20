@@ -135,7 +135,7 @@ describe('DFLOW. 9 Screen Data Flow Traces', () => {
     const res   = fs.readFileSync(__REPO + '/frontend/src/screens/LegalResearchScreen.tsx','utf8');
     // Each screen calls its own backend endpoint
     expect(match).toMatch(/\/match\/lawyers|\/consultations/);
-    expect(ins).toContain('/insurance/quote');
+    expect(ins).toContain('/billing/tiers');   // section F: real plans, the fake quote is gone
     expect(res).toContain('/research/ask');
   });
   test('DFLOW-03: PI Lead Screen calls correct billing endpoint', async () => {

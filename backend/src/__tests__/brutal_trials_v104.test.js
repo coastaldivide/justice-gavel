@@ -57,9 +57,10 @@ describe('DISC36. S0 Threshold Fixes — 9 items', () => {
   });
   test('DISC36-04: insurance.js GET /plans — legal insurance plans [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/insurance.js','utf8');
-    expect(src).toContain("router.get('/plans'");
-    expect(src).toContain('plans');
+    // Section F: the fake legal-insurance quote (made-up carrier, Legal Pro at $19.99) was removed
+    expect(fs.existsSync(__REPO + '/backend/src/routes/insurance.js')).toBe(false);
+    const app = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    expect(app).not.toContain('/api/insurance');
   });
   test('DISC36-05: alerts.js POST / — broadcast emergency arrest alert [≥4]', async () => {
     const fs = await import('fs');

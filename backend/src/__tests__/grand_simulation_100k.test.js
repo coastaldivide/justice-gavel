@@ -210,7 +210,7 @@ function assertFirmTrial(t) {
   expect(t.financialValue).toBeGreaterThanOrEqual(0);
 
   // Classification
-  expect(['felony','misdemeanor','civil','other','dui','sexual','domestic','dismissed','infraction','traffic','child_abuse','juvenile','immigration','housing','employment','consumer']).toContain(t.ct);
+  expect(['unknown','felony','misdemeanor','civil','other','dui','sexual','domestic','dismissed','infraction','traffic','child_abuse','juvenile','immigration','housing','employment','consumer']).toContain(t.ct);
 
   // Urgency flag consistency
   if(t.v.vulnerability==='crisis'||t.v.timePressure==='emergency') {
@@ -239,7 +239,7 @@ function assertIndTrial(t) {
   assertScore(t.top);
 
   // Classification
-  expect(['felony','misdemeanor','civil','other','dui','sexual','domestic','dismissed','infraction','traffic','child_abuse','juvenile','immigration','housing','employment','consumer']).toContain(t.ct);
+  expect(['unknown','felony','misdemeanor','civil','other','dui','sexual','domestic','dismissed','infraction','traffic','child_abuse','juvenile','immigration','housing','employment','consumer']).toContain(t.ct);
 
   // Eligibility shape
   expect(t.elig).toBeDefined(); expect(['boolean','string']).toContain(typeof t.elig.eligible);

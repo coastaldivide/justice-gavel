@@ -1,3 +1,4 @@
+import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v85
@@ -108,21 +109,21 @@ describe('ACC. Accessibility Audit — 286 Buttons Fixed Across 64 Screens', () 
 describe('S6SI. HagueContactScreen submitIntake — pushed to ≥2 hits', () => {
   test('S6SI-01: submitIntake validates required fields before POST', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('submitIntake');
-    expect(src).toContain("childName.trim()");
-    expect(src).toContain("selectedCountry");
-    expect(src).toContain("abductionDate.trim()");
-    // Three required fields validated client-side before submit
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('const submit = async');
+    expect(fe).toContain("setFormError(t('hg_choose_case'))");
+    expect(fe).toContain("setFormError(t('x_hague_contact_child_name_required'))");
+    expect(fe).toContain("'/hague-contacts/report-intake', {");
+    expect(fe).toContain('caseId, countryCode: country, childName: childName.trim()');
   });
   test('S6SI-02: submitIntake posts to /hague-contacts/report-intake with full payload', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain("api.post('/hague-contacts/report-intake'");
-    expect(src).toContain('caseId');
-    expect(src).toContain('countryCode');
-    expect(src).toContain("setPhase('result')");
-    // Success → navigate to result phase with next_steps
+    const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
+    expect(fe).toContain('const submit = async');
+    expect(fe).toContain("setFormError(t('hg_choose_case'))");
+    expect(fe).toContain("setFormError(t('x_hague_contact_child_name_required'))");
+    expect(fe).toContain("'/hague-contacts/report-intake', {");
+    expect(fe).toContain('caseId, countryCode: country, childName: childName.trim()');
   });
 });
 

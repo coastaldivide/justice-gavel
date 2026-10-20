@@ -78,6 +78,18 @@ export const linking: LinkingOptions<any> = {
               SpecialtyCourts:    'specialty-courts',
               LegalResearch:      'research',
               Diversion:          'diversion',
+              MentalHealthDiversion: 'mental-health-diversion',
+
+              // Specialized legal guides
+              ChildSupport:       'child-support',
+              FamilyCourt:        'family-court',
+              HagueContact:       'hague',
+              HousingRights:      'housing-rights',
+              TenantRights:       'tenant-rights',
+              IceDetention:       'ice-detention',
+              ImmigrationConsequences: 'immigration-consequences',
+              JuvenileJustice:    'juvenile-justice',
+              Insurance:          'legal-insurance',
               Translator:         'interpreter',
               InterrogationRecorder: 'encounter-recorder',
               Education:          'learn',

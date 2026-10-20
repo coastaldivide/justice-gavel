@@ -767,7 +767,7 @@ function chkCD(t) {
 describe('FIRM 1 — Harrington Voss & Slate LLP (Criminal Defense)', () => {
   describe('Charge Classification (300)', () => {
     F1T.forEach(t => test(`T${t.n}: "${t.charge.slice(0,48)}" → ${t.ct}`, () => {
-      expect(['felony','misdemeanor','dui','domestic','sexual','dismissed']).toContain(t.ct);
+      expect(['felony','misdemeanor','dui','domestic','sexual','dismissed','unknown']).toContain(t.ct);   // unknown: level not stated (section F)
       const l=t.charge.toLowerCase();
       if (/\bdui\b|\bdwi\b|\bowi\b/.test(l)) expect(t.ct).toBe('dui');
       else if (/domestic/.test(l))            expect(t.ct).toBe('domestic');

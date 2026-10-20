@@ -436,7 +436,7 @@ describe('S12. UX Deep Audit — Navigation + Platform + A11y', () => {
       .filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('KeyboardAvoidingView'))
       .length;
-    expect(count).toBeGreaterThanOrEqual(35);
+    expect(count).toBeGreaterThanOrEqual(34);   // SpecialtyCourts dropped a KeyboardAvoidingView around a chip row (section F)
   });
   test('S12-06: 48 screens use Platform.OS for cross-platform differences', async () => {
     const fs   = await import('fs');
