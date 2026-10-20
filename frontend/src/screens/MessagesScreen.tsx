@@ -12,16 +12,26 @@
  *   3. Deep link justicegavel.app/messages/:caseId
  *   4. Search results                                → { caseId }
  *
- * With no params it lists the user's cases so a thread can be picked.
+ * With no params it lists the case threads (unread counts) so one can be picked.
+ *
+ * In a thread the case owner sees who the attorney is ("counsel": invited →
+ * active once they accept in their Attorney Inbox) and can invite a saved
+ * lawyer who uses the app. Case documents (📎) open with the person's own
+ * token; a long press on your own message deletes it.
  */
 
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl,
+  ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl, Modal, ScrollView,
 } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
+import { api, apiErrorMessage, unwrapList } from '../services/api';
+import { openAttachment } from '../services/attachments';
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../hooks/useConfirm';
+import { statusLabel } from './CaseScreen';
 import * as secureStorage from '../utils/secureStorage';
 import { t, useLang, locale } from '../i18n';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
@@ -73,7 +83,9 @@ function formatBytes(n: number | null | undefined): string {
   return n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`;
 }
 
-interface CaseRow { id: number; title: string; status?: string }
+interface CaseRow { id: number; title: string; status?: string; unread?: number }
+interface Counsel { assignment_id: number; attorney_id: number; status: 'pending' | 'active'; attorney_name: string | null }
+interface SavedLawyer { id: number; provider_id?: number; name?: string; on_app?: boolean }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
@@ -81,6 +93,8 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   const params = (route?.params as import('../types/api').RouteParams) ?? {};
   const paramCaseId = params.caseId != null && /^\d+$/.test(String(params.caseId))
@@ -100,8 +114,13 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [resolveError, setResolveError] = useState('');
   const [body, setBody]             = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  // counsel (case owner only; null = not the owner / not loaded)
+  const [counsel, setCounsel] = useState<Counsel[] | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [saved, setSaved] = useState<SavedLawyer[] | null>(null);
+  const [inviteMsg, setInviteMsg] = useState('');
 
-  const { messages, loading, sending, error, sendMessage, refresh, clearError } =
+  const { messages, loading, sending, error, sendMessage, refresh, clearError, unavailable } =
     useCaseMessages(isGuest === false ? activeCase?.id : null);
 
   // ── Who am I (for own-bubble alignment) ────────────────────────────────────
@@ -134,6 +153,14 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         const res = await api.get('/cases');
         const list: CaseRow[] = Array.isArray(res.data) ? res.data : (res.data?.cases ?? []);
         if (stale || !mountedRef.current) return;
+        if (!lawyerId && !lawyerName) {
+          // the threads I can open (my cases and cases I am counsel on), with unread counts
+          const th = await api.get<{ threads: { case_id: number; title: string; status: string; unread: number }[] }>('/messages/threads').catch(() => null);
+          if (th?.data?.threads && !stale && mountedRef.current) {
+            setCases(th.data.threads.map(x => ({ id: x.case_id, title: x.title, status: x.status, unread: x.unread })));
+            return;
+          }
+        }
         if (lawyerId || lawyerName) {
           // Same behavior as LawyersScreen.openSecureMessage: reuse an open
           // case, otherwise create a lightweight one to hold the thread.
@@ -163,6 +190,53 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     const title = activeCase?.title || (params.caseTitle as string | undefined);
     if (title) navigation.setOptions({ title: `💬 ${title}` });
   }, [activeCase?.title, params.caseTitle, navigation]);
+
+  const loadCounsel = useCallback(async () => {
+    if (!activeCase?.id) return;
+    try {
+      const r = await api.get<{ counsel: Counsel[] }>(`/cases/${activeCase.id}/counsel`);
+      if (mountedRef.current) setCounsel(r.data?.counsel || []);
+    } catch { if (mountedRef.current) setCounsel(null); }   // not the owner (counsel reading the thread) or offline
+  }, [activeCase?.id]);
+  useFocusEffect(useCallback(() => { if (isGuest === false) loadCounsel(); }, [isGuest, loadCounsel]));
+
+  const openInvite = async () => {
+    setInviteOpen(true); setInviteMsg(''); setSaved(null);
+    try {
+      const r = await api.get('/saved/lawyers');
+      if (mountedRef.current) setSaved(unwrapList<SavedLawyer>(r.data, 'lawyers'));
+    } catch (e) { if (mountedRef.current) { setSaved([]); setInviteMsg(apiErrorMessage(e, t('msg2_saved_failed'))); } }
+  };
+  const invite = async (l: SavedLawyer) => {
+    if (!activeCase) return;
+    setInviteMsg('');
+    try {
+      await api.post(`/cases/${activeCase.id}/counsel`, { lawyer_id: l.provider_id ?? l.id });
+      setInviteOpen(false);
+      showToast(t('msg2_invited', { name: l.name || t('x_attorney_dashboard_attorney') }), 'success');
+      loadCounsel();
+    } catch (e) { setInviteMsg(apiErrorMessage(e, t('msg2_invite_failed'))); }
+  };
+  const removeCounsel = async (c: Counsel) => {
+    if (!activeCase) return;
+    const ok = await confirm(t('msg2_remove_q', { name: c.attorney_name || t('x_attorney_dashboard_attorney') }), t('msg2_remove_body'), { confirmLabel: t('saved_remove'), destructive: true });
+    if (!ok) return;
+    try { await api.delete(`/cases/${activeCase.id}/counsel/${c.attorney_id}`); loadCounsel(); }
+    catch (e) { showToast(apiErrorMessage(e, t('msg2_remove_failed')), 'error'); }
+  };
+  const openDoc = async (msg: CaseMessage) => {
+    if (!msg.attachment_id) return;
+    try {
+      const how = await openAttachment(msg.attachment_id, msg.attachment_name || 'document', msg.attachment_type);
+      if (how === 'download') showToast(t('msg2_downloaded'), 'success');
+    } catch (e) { showToast(apiErrorMessage(e, t('msg2_cannot_open')), 'error'); }
+  };
+  const deleteMine = async (msg: CaseMessage) => {
+    const ok = await confirm(t('msg2_delete_q'), t('msg2_delete_body'), { confirmLabel: t('delete'), destructive: true });
+    if (!ok) return;
+    try { await api.delete(`/messages/${msg.id}`); refresh(); }
+    catch (e) { showToast(apiErrorMessage(e, t('msg2_delete_failed')), 'error'); }
+  };
 
   const listRef = useRef<FlatList<Row>>(null);
   const rows = useMemo(() => groupByDay(messages), [messages]);
@@ -268,7 +342,10 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                   {item.title}
                 </Text>
                 {item.status ? (
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.caseRowStatus, { color: colors.textMuted }]}>{item.status}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.caseRowStatus, { color: colors.textMuted }]}>{statusLabel(item.status)}</Text>
+                ) : null}
+                {item.unread ? (
+                  <View style={[styles.unreadPill, { backgroundColor: colors.emergency }]}><Text maxFontSizeMultiplier={1.2} style={styles.unreadPillText}>{item.unread > 9 ? '9+' : item.unread}</Text></View>
                 ) : null}
                 <Text maxFontSizeMultiplier={1.4} style={[styles.caseRowChevron, { color: colors.textMuted }]}>›</Text>
               </TouchableOpacity>
@@ -280,6 +357,20 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   }
 
   // ── Render: message thread ─────────────────────────────────────────────────
+  // ── Render: the case was deleted or is not this person's ───────────────────
+  if (unavailable) return (
+    <View testID="messages-screen" style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
+      <View testID="messages-unavailable" style={styles.emptyWrap}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>🔒</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('case_unavailable_body')}</Text>
+        <TouchableOpacity accessibilityRole="button" testID="messages-unavailable-back" style={[styles.primaryBtn, { backgroundColor: colors.navy }]} onPress={() => setActiveCase(null)}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>{t('msg2_your_threads')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <KeyboardAvoidingView
       testID="messages-screen"
@@ -293,6 +384,25 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           🔒 {t('msg_e2e_note')}
         </Text>
       </View>
+      {counsel && (
+        <View testID="messages-counsel" style={[styles.counselBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
+          {counsel.length === 0 ? (
+            <Text maxFontSizeMultiplier={1.4} style={[styles.counselText, { color: colors.textPrimary }]}>{t('msg2_no_counsel')}</Text>
+          ) : counsel.map(c => (
+            <View key={c.assignment_id} style={styles.counselRow}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.counselText, { color: colors.textPrimary, flex: 1 }]}>
+                ⚖️ {c.attorney_name || t('x_attorney_dashboard_attorney')} · {c.status === 'active' ? t('msg2_counsel_active') : t('msg2_counsel_pending')}
+              </Text>
+              <TouchableOpacity accessibilityRole="button" style={styles.counselBtn} onPress={() => removeCounsel(c)} accessibilityLabel={t('saved_remove')}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.counselBtnText, { color: colors.emergency }]}>{t('saved_remove')}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity accessibilityRole="button" testID="messages-invite-counsel" style={[styles.counselBtn, { borderColor: colors.border }]} onPress={openInvite}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.counselBtnText, { color: colors.textBrand }]}>＋ {t('msg2_invite_attorney')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {error ? (
         <View style={[styles.errorBanner, { backgroundColor: colors.emergencyBg }]}>
@@ -346,10 +456,15 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             const msg  = item.msg;
             const mine = isMine(msg);
             return (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.85}
                 style={[styles.msgRow, mine && styles.msgRowMine]}
-                accessibilityRole="text"
+                accessibilityRole={msg.attachment_id ? 'button' : 'text'}
+                accessibilityHint={msg.attachment_id ? t('msg2_open_hint') : mine ? t('msg2_delete_hint') : undefined}
                 accessibilityLabel={`${mine ? t('x_messages_text') : msg.sender_name || t('x_messages_legal_team')}: ${msg.body}`}
+                onPress={msg.attachment_id ? () => openDoc(msg) : undefined}
+                onLongPress={mine ? () => deleteMine(msg) : undefined}
+                testID={msg.attachment_id ? 'message-attachment' : 'message-row'}
               >
                 <View style={styles.msgCol}>
                   {!mine && msg.sender_name ? (
@@ -378,7 +493,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                     {mine ? (msg.read_at ? '  ' + t('x_messages_read') : '  ' + t('x_messages_sent')) : ''}
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
@@ -389,6 +504,11 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         backgroundColor: isDark ? colors.tabBg : colors.bg,
         borderTopColor: colors.border,
       }]}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('msg2_add_document')} testID="messages-add-document"
+          style={[styles.sendBtn, { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('DocumentScanner', { caseId: activeCase.id, caseTitle: activeCase.title })}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 18 }}>📎</Text>
+        </TouchableOpacity>
         <TextInput
           style={[styles.input, {
             backgroundColor: colors.bgCard,
@@ -417,6 +537,33 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             : <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>↑</Text>}
         </TouchableOpacity>
       </View>
+
+      <Modal visible={inviteOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteOpen(false)} accessibilityViewIsModal>
+        <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+          <View style={[styles.modalHeader, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.modalTitle, { color: colors.textBrand }]}>{t('msg2_invite_attorney')}</Text>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('close')} style={styles.closeBtn} onPress={() => setInviteOpen(false)}>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 20 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.pickerContent} testID="messages-invite-modal">
+            <Text maxFontSizeMultiplier={1.4} style={[styles.pickerHeader, { color: colors.textSecond }]}>{t('msg2_invite_intro')}</Text>
+            {!!inviteMsg && <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: colors.textPrimary, backgroundColor: colors.emergencyBg, padding: 10, borderRadius: 10, marginBottom: 8 }]}>{inviteMsg}</Text>}
+            {saved === null && <ActivityIndicator color={colors.textBrand} />}
+            {saved?.length === 0 && (
+              <TouchableOpacity accessibilityRole="button" style={[styles.primaryBtn, { backgroundColor: colors.navy }]} onPress={() => { setInviteOpen(false); navigation.navigate('LawyersTab'); }}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.primaryBtnText, { color: colors.textOnNavy }]}>{t('msg2_find_lawyer')}</Text>
+              </TouchableOpacity>
+            )}
+            {saved?.map(l => (
+              <TouchableOpacity key={l.id} accessibilityRole="button" testID="messages-invite-lawyer" style={[styles.caseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]} onPress={() => invite(l)}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.caseRowTitle, { color: colors.textPrimary }]} numberOfLines={1}>{l.name || t('x_cs_saved_lawyer')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.caseRowChevron, { color: colors.textMuted }]}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -479,6 +626,16 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontSize: 15, maxHeight: 120, lineHeight: 20 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sendBtnText: { color: colors.bgCard, fontSize: 20, fontWeight: '300', lineHeight: 22, marginTop: -1 },
+  unreadPill:  { borderRadius: 10, minWidth: 20, paddingHorizontal: 6, paddingVertical: 1, alignItems: 'center' },
+  unreadPillText: { color: colors.emergencyBg, fontSize: 11, fontWeight: '800' },
+  counselBar:  { paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0.5, gap: 6 },
+  counselRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  counselText: { fontSize: 13, lineHeight: 18 },
+  counselBtn:  { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center', alignSelf: 'flex-start', borderRadius: 10, borderWidth: 0 },
+  counselBtnText: { fontSize: 13, fontWeight: '800' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, minHeight: 56, borderBottomWidth: 1 },
+  modalTitle:  { flex: 1, fontSize: 18, fontWeight: '900' },
+  closeBtn:    { minWidth: 56, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default React.memo(MessagesScreen);

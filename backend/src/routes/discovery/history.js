@@ -8,6 +8,8 @@ import { getDb }          from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 
 import { safeJsonParse, hasDiscoveryPro } from './_helpers.js';
+import { DISCOVERY_PRICE_CENTS } from './analyze.js';
+import { stripeConfigured } from '../../config.js';
 
 
 
@@ -67,10 +69,10 @@ router.get('/status', authRequired, async (req, res) => {
   try {
     const db  = await getDb();
     const pro = await hasDiscoveryPro(db, req.user.id);
-    res.json({ has_pro: pro, per_doc_price: '$19.99' });
+    res.json({ has_pro: pro, price_cents: DISCOVERY_PRICE_CENTS, payments_live: stripeConfigured() });
   } catch (e) {
     logger.warn('[discovery/status]', e?.message);
-    res.json({ has_pro: false, per_doc_price: '$19.99' });
+    res.json({ has_pro: false, price_cents: DISCOVERY_PRICE_CENTS, payments_live: stripeConfigured() });
   }
 });
 

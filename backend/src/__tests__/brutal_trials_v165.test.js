@@ -90,7 +90,7 @@ describe('F2. Just Arrested Emergency Flow', () => {
   test('F2-03: LawyerProfileScreen has Call + Book + Message + error handling', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx','utf8');
-    expect(src).toContain('Linking');  // tel: phone call
+    expect(src).toContain('ContactActions');  // tel: phone call (Linking inside the shared component)
     expect(src).toContain('Book');
     expect(src).toContain('Message');
     expect(src).toContain('catch');    // error handling added

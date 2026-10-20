@@ -152,11 +152,11 @@ describe('JOURNEY. 10 Critical User Journeys', () => {
   test('JOURNEY-09: Check-In (supervised release) → GPS → record → history', async () => {
     const fs = await import('fs');
     const ci = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx','utf8');
-    expect(ci).toContain('/checkins');
-    expect(ci).toMatch(/location|gps/i);
-    // history may be shown as 'past check-ins', 'previous', or just the list
-    const hasHistoryPattern = /history|previous|past|log|record/i.test(ci);
-    expect(hasHistoryPattern).toBe(true);
+    const mgr = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInManagerScreen.tsx','utf8');
+    expect(ci).toContain('/checkins/submit');
+    expect(ci).toContain('getLocation'); // location only when the person turns it on
+    expect(ci).toContain('streak');      // the defendant sees their streak and total
+    expect(mgr).toContain('/checkins/history'); // the bail agent sees the log + compliance
     expect(ci).toContain('catch');
   });
 });

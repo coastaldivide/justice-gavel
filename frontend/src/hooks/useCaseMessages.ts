@@ -10,8 +10,11 @@
  * attack surface.
  *
  * Usage:
- *   const { messages, loading, error, sending, sendMessage, refresh } =
+ *   const { messages, loading, error, sending, sendMessage, refresh, unavailable } =
  *     useCaseMessages(caseId);
+ *
+ * `unavailable`: the server answered 403 / 404 — the case was deleted or is not
+ * the person's. Polling stops and the screen says so instead of offering a composer.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -53,6 +56,8 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
   const [loading,  setLoading]  = useState(false);
   const [sending,  setSending]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const unavailableRef = useRef(false);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -66,6 +71,8 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
     caseIdRef.current = caseId;
     setMessages([]);
     setError(null);
+    setUnavailable(false);
+    unavailableRef.current = false;
   }, [caseId]);
 
   const load = useCallback(async (opts: { silent?: boolean } = {}) => {
@@ -80,6 +87,8 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
       setError(null);
     } catch (e) {
       if (!mountedRef.current || caseIdRef.current !== cid) return;
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 403 || status === 404) { unavailableRef.current = true; setUnavailable(true); setMessages([]); return; }
       // A failed background poll keeps the thread as-is and tries again later.
       if (!opts.silent) setError(apiErrorMessage(e, t('x_use_case_messages_could_not_load_messages')));
     } finally {
@@ -92,7 +101,7 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
     if (!caseId) return;
     load();
     const timer = setInterval(() => {
-      if (AppState.currentState === 'active') load({ silent: true });
+      if (AppState.currentState === 'active' && !unavailableRef.current) load({ silent: true });
     }, MESSAGE_POLL_MS);
     return () => clearInterval(timer);
   }, [caseId, load]);
@@ -134,5 +143,5 @@ export function useCaseMessages(caseId: number | string | null | undefined) {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { messages, loading, sending, error, sendMessage, refresh: load, clearError };
+  return { messages, loading, sending, error, sendMessage, refresh: load, clearError, unavailable };
 }

@@ -211,11 +211,13 @@ describe('EXP. ExpungementScreen — Eligibility + AI Petition + Marketplace', (
 
 // ── FAM. FamilyConnectScreen ($28.99 Emergency Connection) ────────────────
 describe('FAM. FamilyConnectScreen — $28.99 Emergency Family Connection', () => {
-  test('FAM-01: FamilyConnectScreen is $28.99 one-tap emergency connection for families', async () => {
+  test('FAM-01: FamilyConnectScreen shows the server price and pays like Quick Connect', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
-    expect(src).toContain('$28.99');
-    expect(src).toContain('emergency connection');
+    expect(src).not.toContain('$28.99'); // the price comes from GET /billing/family/quote
+    expect(src).toContain('/billing/family/quote');
+    expect(src).toContain('/billing/family/connect');
+    expect(src).toContain('/billing/family/confirm');
   });
   test('FAM-02: searchArrests searches by name for detained family member', async () => {
     const fs = await import('fs');
@@ -296,10 +298,10 @@ describe('CHS. ChatScreen — Bubble Sub-Component + clearChat', () => {
 
 // ── S12. UX ───────────────────────────────────────────────────────────────
 describe('S12. UX — Final Internal Logic Patterns', () => {
-  test('S12-01: FamilyConnectScreen $28.99 = QUICKCONNECT equiv for families', async () => {
+  test('S12-01: FamilyConnectScreen = Quick Connect payment pattern for families', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
-    expect(src).toContain('$28.99');
+    expect(src).toContain('usd(');
     expect(src).toContain('requireAuth');
   });
   test('S12-02: HelpNowScreen offline copy of the last results', async () => {

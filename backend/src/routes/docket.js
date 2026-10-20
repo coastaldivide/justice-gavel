@@ -643,9 +643,10 @@ router.get('/upcoming', authRequired, async (req, res) => {
 // Signed URLs expire after 1 hour to prevent unauthorized access.
 router.get('/:id/download-url', authRequired, async (req, res) => {
   const { id } = req.params;
-  const ctx = req.firmCtx;
+  if (!/^\d{1,15}$/.test(String(id))) return err404(res, 'Document not found');
   try {
     const db = await getDb();
+    const ctx = await loadFirmContext(req).catch(() => null);
 
     // Verify the requesting user/firm owns this document
     const entry = await db.get(
@@ -687,16 +688,26 @@ router.get('/:id/download-url', authRequired, async (req, res) => {
 });
 
 // ── Upload — store to Supabase Storage, save path in docket_entries ──────────
+const UPLOAD_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
 router.post('/upload', authRequired, async (req, res) => {
-  const ctx = req.firmCtx;
   try {
-    // File arrives as base64 in JSON body (React Native / web)
-    const { matter_id, filename, content_type, data_base64, notes } = req.body;
-    if (!data_base64 || !filename) return err400(res, 'filename and data_base64 required');
-
-    const MAX_MB = 100;
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      return res.status(503).json({ error: 'storage_unavailable', message: 'Document storage is not configured.' });
+    }
+    const ctx = await loadFirmContext(req).catch(() => null);
+    // File arrives as base64 in JSON body (React Native / web) — bounded by the 1 MB JSON body limit
+    const { matter_id, filename, content_type, data_base64, notes } = req.body || {};
+    if (!data_base64 || !filename || typeof data_base64 !== 'string' || typeof filename !== 'string') return err400(res, 'filename and data_base64 required');
+    if (!UPLOAD_TYPES.has(String(content_type || ''))) return res.status(415).json({ error: 'unsupported_type' });
     const bytes  = Buffer.from(data_base64, 'base64');
-    if (bytes.length > MAX_MB * 1024 * 1024) return err400(res, `File exceeds ${MAX_MB}MB`);
+    if (!bytes.length) return err400(res, 'The file is empty');
+    if (matter_id != null && matter_id !== '') {
+      // only into a matter of the caller's firm, or a consumer matter the caller created
+      const m = await (await getDb()).get('SELECT id, firm_id, created_by FROM matters WHERE id = ?', [safeInt(matter_id)]);
+      const mine = m && (m.firm_id ? Number(m.firm_id) === Number(ctx?.firm_id) : Number(m.created_by) === Number(req.user.id));
+      if (!mine) return err404(res, 'Matter not found');
+    }
 
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(

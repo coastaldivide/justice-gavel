@@ -85,7 +85,7 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain('QuickConnect');
-    expect(src).toContain('$20 instant matchmaking');
+    expect(src).toContain('Quick Connect ($20)');
     expect(src).toContain('getOrCreateStripeCustomer');
   });
   test('2-02: connections.js handles Emergency family connection', async () => {

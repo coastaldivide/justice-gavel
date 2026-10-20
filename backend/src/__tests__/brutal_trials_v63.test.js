@@ -164,10 +164,10 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
   test('WEB-02: DocumentScannerScreen.web.tsx uses file input with drag-drop (not camera)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
-    expect(src).toContain('Web platform replacement');
-    expect(src).toContain('file input');
-    expect(src).toContain('drag-and-drop');
-    expect(src).toContain('Browse');
+    expect(src).toContain('case documents on the web');
+    expect(src).toContain('type="file"');
+    expect(src).toContain('checkUpload('); // same 10 MB / type limits as the server
+    expect(src).toContain("'/messages/attachment'");
   });
   test('WEB-03: VoiceNoteScreen.web.tsx uses MediaRecorder API for browser audio', async () => {
     const fs = await import('fs');
@@ -183,7 +183,7 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
     const vn  = fs.readFileSync(__REPO + '/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
     // Each web variant documents its functional equivalence
     expect(int).toContain('Same job as the native screen');
-    expect(doc).toContain('file system');
+    expect(doc).toContain('stored encrypted with the case');
     expect(vn).toContain('Same flow as native');
   });
 });

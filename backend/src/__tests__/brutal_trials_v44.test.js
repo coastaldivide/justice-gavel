@@ -190,11 +190,10 @@ describe('S6e. BookingScreen — 3-Step Consultation Booking', () => {
   test('S6e-01: 3-step booking flow: duration → days → confirm', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('3-step booking flow');
-    expect(src).toContain('step');
-    expect(src).toContain('duration');
-    expect(src).toContain('days');
-    expect(src).toContain('selDay');
+    // debug pass C: duration → date/time → confirm & pay → confirmed
+    expect(src).toContain('duration → date/time → confirm & pay');
+    expect(src).toContain("useState<Step>('duration')");
+    expect(src).toContain('selSlot');
   });
   test('S6e-02: APIs: /attorney/profile/availability + /consultations/book + /callback-request', async () => {
     const fs = await import('fs');

@@ -16,6 +16,8 @@ import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 import { sendEmail } from '../services/email.js';
+import { cancelCourtReminders } from '../services/courtReminders.js';
+import { resolveLang, msg } from '../i18n/index.js';
 
 const router = Router();
 
@@ -32,16 +34,21 @@ router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, 
 
   // Verify ownership
   const caseRow = await req.db.get(
-    'SELECT * FROM cases WHERE id = ? AND user_id = ?', [id, userId]
-  );
-  if (!caseRow) return res.status(404).json({ error: 'Case not found' });
+    'SELECT id, user_id, status, state, charge FROM cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [id, userId]);
+  if (!caseRow) return res.status(404).json({ error: msg(resolveLang(req), 'case.err.not_found') });
 
-  // Close the case
+  // Close the case: the canonical status the app and the reminder planner use ('Closed'),
+  // with the status history and every pending court reminder cancelled.
   await req.db.run(`
     UPDATE cases
-    SET status = 'closed', close_reason = ?, close_outcome = ?, closed_at = NOW()
+    SET status = 'Closed', close_reason = ?, close_outcome = ?, closed_at = NOW(), updated_at = NOW()
     WHERE id = ?
-  `, [reason, outcome, id]);
+  `, [reason ? String(reason).slice(0, 200) : null, outcome ? String(outcome).slice(0, 60) : null, id]);
+  if (caseRow.status !== 'Closed') {
+    await req.db.run('INSERT INTO case_status_history (case_id, user_id, old_status, new_status) VALUES (?,?,?,?)',
+      [id, userId, caseRow.status, 'Closed']).catch(logIgnored('routes/caseLifecycle'));
+  }
+  await cancelCourtReminders(req.db, userId, Number(id), 'case_closed').catch(logIgnored('routes/caseLifecycle'));
 
   // ── Trigger retention flow ──────────────────────────────────────────────
   const retention = await buildRetentionPayload(userId, caseRow, outcome);
@@ -52,7 +59,6 @@ router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, 
     template: 'case_closed_retention',
     data:     {
       name:                 req.user.name,
-      case_type:            caseRow.case_type,
       outcome,
       expungement_eligible: retention.expungement_eligible,
       wait_years:           retention.wait_years,
@@ -63,24 +69,22 @@ router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, 
   return res.json({
     data: {
       case_id:   id,
-      status:    'closed',
+      status:    'Closed',
       retention, // Sent to frontend to display "What Now?" screen
     },
   });
 }));
 
 async function buildRetentionPayload(userId, caseRow, outcome) {
-  const state    = caseRow.state ?? 'CA';
-  const charge   = caseRow.charge_type ?? 'misdemeanor';
-
-  // Expungement eligibility (immediate check at case close)
-  const expRules = await getExpungementRules(state, charge);
-  const yearsWait = expRules?.wait_years ?? 3;
+  // Only what the expungement rules engine knows for the case's own state — no
+  // assumed state, charge or waiting period (an unknown stays null).
+  const expRules = caseRow.state ? await getExpungementRules(caseRow.state, caseRow.charge || '') : null;
+  const yearsWait = Number.isFinite(expRules?.wait_years) ? expRules.wait_years : null;
 
   return {
-    expungement_eligible: outcome !== 'convicted' || expRules?.eligible,
+    expungement_eligible: expRules ? (outcome !== 'convicted' || expRules.eligible) : null,
     wait_years:           yearsWait,
-    eligible_date:        new Date(
+    eligible_date:        yearsWait == null ? null : new Date(
       Date.now() + yearsWait * 365.25 * 24 * 3600 * 1000
     ).toISOString().slice(0, 10),
     next_steps: [
@@ -119,8 +123,8 @@ async function getExpungementRules(state, charge) {
     const known = ['felony','misdemeanor','dui','domestic','sexual','dismissed'];
     const type  = known.includes(String(charge).toLowerCase()) ? String(charge).toLowerCase() : classifyCharge(String(charge || ''));
     const r = getEligibility(state, type);
-    return { eligible: r.eligible === true || r.eligible === 'conditional', wait_years: r.wait_years ?? r.waitYears ?? r.waiting_years ?? 5 };
-  } catch { return { eligible: false, wait_years: 5 }; }
+    return { eligible: r.eligible === true || r.eligible === 'conditional', wait_years: r.wait_years ?? r.waitYears ?? r.waiting_years ?? null };
+  } catch { return null; }
 }
 
 export default router;

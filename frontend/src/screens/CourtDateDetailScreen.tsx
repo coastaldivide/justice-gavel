@@ -2,7 +2,9 @@
  * CourtDateDetailScreen — one hearing: when, where (courthouse name,
  * address, phone, hours, directions), the reminder schedule, "Add to phone
  * calendar" (.ics), the court-day checklist, "I missed this court date"
- * guidance (ends with "Call your lawyer or the court clerk"), text-message
+ * guidance (ends with "Call your lawyer or the court clerk"), "Change date or
+ * time" (a continuance moves the hearing; its reminders are re-planned and
+ * family followers are told), text-message
  * reminders (when available) and family sharing.
  *
  * Family sharing needs the owner's explicit consent (a checkbox), creates a
@@ -17,9 +19,12 @@ import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
 import { RNShare } from '../utils/webCompat';
 import { exportCourtDateIcs } from '../utils/icsExport';
-import { getCachedCourtDates, isOfflineError, formatCourtDay, formatCourtTime, hearingLabel, statusLabel, type CourtDate } from '../services/corePath';
+import { getCachedCourtDates, isOfflineError, formatCourtDay, formatCourtTime, hearingLabel, statusLabel, HEARING_TYPES, type CourtDate } from '../services/corePath';
+import { validCourtDate } from '../utils/dateUtils';
 import { pickGuidance, GuidanceView, makeStyles as courtStyles, type Guidance } from './CourtDatesScreen';
 import { useConfirm } from '../hooks/useConfirm';
+import { getToken } from '../utils/secureStorage';
+import { SignInNeeded } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
 
 interface Reminder { id: number; deliver_at: string; days_before: number | null; title: string }
@@ -46,7 +51,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   useEffect(() => () => { mounted.current = false; }, []);
 
   const [d, setD] = useState<Detail | null>(null);
-  const [phase, setPhase] = useState<'loading' | 'ok' | 'offline' | 'error'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'ok' | 'offline' | 'error' | 'signed_out'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [serverGuidance, setServerGuidance] = useState<Guidance | null>(null);
   const guidance = pickGuidance(serverGuidance);
@@ -61,9 +66,13 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   const [consent, setConsent] = useState(false);
   const [withReminders, setWithReminders] = useState(true);
   const [invite, setInvite] = useState<{ invite_code: string; share_message: string } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [edit, setEdit] = useState({ date: '', time: '', hearing: '', location: '' });
+  const [editError, setEditError] = useState('');
 
   const load = useCallback(async () => {
     if (!Number.isFinite(id)) { setErrorMsg(t('cdd_not_found')); setPhase('error'); return; }
+    if (!(await getToken().catch(() => null))) { if (mounted.current) setPhase('signed_out'); return; }
     try {
       const r = await api.get<Detail>(`/court-dates/${id}`);
       if (!mounted.current) return;
@@ -99,6 +108,29 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
       showToast(ok, 'success');
     } catch (e) { showToast(apiErrorMessage(e, t('cdd_update_failed')), 'error'); }
     finally { if (mounted.current) setBusy(false); }
+  };
+
+  const openEdit = () => {
+    if (!d) return;
+    setEdit({ date: d.court_date, time: d.court_time || '', hearing: d.hearing_type || '', location: d.location || '' });
+    setEditError(''); setEditOpen(true);
+  };
+  const saveEdit = async () => {
+    if (!validCourtDate(edit.date.trim())) { setEditError(t('cd_err_date')); return; }
+    if (edit.time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(edit.time.trim())) { setEditError(t('cd_err_time')); return; }
+    setBusy(true); setEditError('');
+    try {
+      const r = await api.patch<Detail>(`/court-dates/${id}`, {
+        court_date: edit.date.trim(), court_time: edit.time.trim() || null, hearing_type: edit.hearing || null,
+        location: edit.location.trim() || null, ...(d?.status !== 'scheduled' ? { status: 'scheduled' } : {}),
+      });
+      if (!mounted.current) return;
+      setD(prev => ({ ...(prev as Detail), ...r.data, reminders: r.data.reminders || [] }));
+      setEditOpen(false);
+      showToast(t('cdd_moved', { day: formatCourtDay(r.data.court_date) }), 'success');
+    } catch (e: any) {
+      setEditError(e?.response?.status === 409 ? t('cd_err_duplicate') : apiErrorMessage(e, t('cdd_update_failed')));
+    } finally { if (mounted.current) setBusy(false); }
   };
 
   const markMissed = async () => {
@@ -148,6 +180,13 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   };
 
   if (phase === 'loading') return <View style={styles.screen}><ActivityIndicator style={{ marginTop: 40 }} color={colors.textBrand} accessibilityLabel={t('loading')} /></View>;
+  if (phase === 'signed_out') {
+    return (
+      <View style={styles.screen} testID="court-date-detail-screen">
+        <SignInNeeded navigation={navigation} testID="court-date-sign-in" body={t('sin_court_body')} onSignedIn={load} />
+      </View>
+    );
+  }
   if (phase === 'error' || !d) {
     return (
       <View style={[styles.screen, styles.scroll]} testID="court-date-detail-screen">
@@ -192,6 +231,11 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
         <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cdd_no_courthouse')}</Text>
       )}
 
+      {phase === 'ok' && (
+        <TouchableOpacity accessibilityRole="button" testID="court-date-edit" style={styles.secondaryBtn} onPress={openEdit}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✏️ {t('cdd_change')}</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity accessibilityRole="button" testID="court-date-ics" style={styles.primaryBtn} onPress={addToCalendar} disabled={phase === 'offline'}>
         <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>🗓 {t('cdd_add_calendar')}</Text>
       </TouchableOpacity>
@@ -259,6 +303,39 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
           <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cdd_delete_btn')}</Text>
         </TouchableOpacity>
       )}
+
+      <Modal visible={editOpen} animationType="slide" onRequestClose={() => setEditOpen(false)} accessibilityViewIsModal>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="court-date-edit-form" keyboardShouldPersistTaps="handled">
+          <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('cdd_change')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cdd_change_note')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_court_date')}</Text>
+          <TextInput accessibilityLabel={t('cd_date_a11y')} testID="court-edit-date" style={styles.inputFull} value={edit.date} onChangeText={v => setEdit(e => ({ ...e, date: v }))}
+            placeholder={t('cd_date_placeholder')} placeholderTextColor={colors.textMuted} maxLength={10} />
+          {validCourtDate(edit.date.trim()) && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>📅 {formatCourtDay(edit.date.trim())}</Text>}
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_time_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_time_a11y')} testID="court-edit-time" style={styles.inputFull} value={edit.time} onChangeText={v => setEdit(e => ({ ...e, time: v }))}
+            placeholder={t('cd_time_placeholder')} placeholderTextColor={colors.textMuted} maxLength={5} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_hearing_optional')}</Text>
+          <View style={styles.chipsWrap}>
+            {HEARING_TYPES.map(h => (
+              <TouchableOpacity key={h} accessibilityRole="radio" accessibilityState={{ selected: edit.hearing === h }} style={[styles.chip, edit.hearing === h && styles.chipOn]}
+                onPress={() => setEdit(e => ({ ...e, hearing: e.hearing === h ? '' : h }))}>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, edit.hearing === h && styles.chipTextOn]}>{hearingLabel(h)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_room_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_room_a11y')} style={styles.inputFull} value={edit.location} onChangeText={v => setEdit(e => ({ ...e, location: v }))}
+            placeholder={t('cd_room_placeholder')} placeholderTextColor={colors.textMuted} maxLength={200} />
+          {!!editError && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="court-edit-error">{editError}</Text>}
+          <TouchableOpacity accessibilityRole="button" testID="court-edit-save" style={styles.primaryBtn} onPress={saveEdit} disabled={busy}>
+            {busy ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('cd_save_reminders')}</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setEditOpen(false)}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cancel')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Modal>
 
       <Modal visible={shareOpen} animationType="slide" onRequestClose={() => setShareOpen(false)} accessibilityViewIsModal>
         <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="family-share-modal" keyboardShouldPersistTaps="handled">

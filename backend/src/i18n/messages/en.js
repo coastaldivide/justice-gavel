@@ -522,4 +522,18 @@ export default {
   "msgs.push.attorney_accepted_title": "✅ An attorney accepted your case",
   "msgs.push.attorney_accepted_body": "{name} accepted your case: {title}. You can message them in the app now.",
   "msgs.push.your_attorney": "Your attorney",
+  "courthouse.err.load": "Could not load courthouses. Please try again.",
+  "courthouse.err.not_found": "Courthouse not found.",
+  // ── Discovery analysis (routes/discovery/analyze.js) ──
+  "discovery.err.rate": "Too many document requests. Please wait a few minutes.",
+  "discovery.err.file_required": "Choose a PDF, Word, text or photo file (up to 10 MB).",
+  "discovery.err.payments_off": "Payments are not available yet, so paid document analysis is not available.",
+  "discovery.err.payment_required": "Pay for this analysis to continue.",
+  "discovery.err.payment_not_found": "Payment not found.",
+  "discovery.err.other_file": "This payment was for a different file.",
+  "discovery.err.not_paid": "The payment did not go through.",
+  "discovery.err.payment_used": "This payment was already used for an analysis — open it from your history.",
+  "discovery.err.server": "The analysis could not be started. Nothing was charged. Please try again.",
+  "family.err.contact_required": "Enter a name and a phone number or e-mail.",
+  "family.err.contact_not_found": "Contact not found.",
 };

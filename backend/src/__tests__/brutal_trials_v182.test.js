@@ -120,9 +120,10 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-05: Push notification → navigates to correct screen', async () => {
     const fs = await import('fs');
-    const app = fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
-    expect(app).toContain('addNotificationResponseReceivedListener');
-    expect(app).toContain('navigationRef.current');
+    const hook = fs.readFileSync(__REPO + '/frontend/src/hooks/useAppSetup.ts','utf8');
+    const app = fs.readFileSync(__REPO + '/frontend/src/services/notificationRoute.ts','utf8');
+    expect(hook).toContain('addNotificationResponseReceivedListener');
+    expect(hook).toContain('openNotification(navigationRef, data)');
     // Handles 7 notification types
     for(const type of ['case_update','arrest_alert','message','expungement_eligible','court_reminder']){
       expect(app).toContain(type);

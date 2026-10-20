@@ -19,6 +19,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage, unwrapList, deviceTimeZone } from '../services/api';
 import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../hooks/useConfirm';
 import { useTheme } from '../constants/theme';
 import { t, useLang, getLang, locale } from '../i18n';
 import { getToken } from '../utils/secureStorage';
@@ -121,7 +122,10 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
-  const params = (route?.params || {}) as { add?: boolean; guidance?: 'missed'; caseId?: number };
+  const { confirm } = useConfirm();
+  const params = (route?.params || {}) as { add?: boolean; guidance?: 'missed'; caseId?: number | string };
+  // Opened from one case ("Court dates & reminders" on its card): show that case's hearings, with "Show all".
+  const [onlyCase, setOnlyCase] = useState<number | null>(params.caseId != null && Number(params.caseId) > 0 ? Number(params.caseId) : null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
@@ -141,7 +145,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   // add form
   const [adding, setAdding] = useState(false);
   const [cases, setCases] = useState<{ id: number; title: string; state: string | null }[]>([]);
-  const [caseId, setCaseId] = useState<number | null>(params.caseId ?? null);
+  const [caseId, setCaseId] = useState<number | null>(params.caseId != null && Number(params.caseId) > 0 ? Number(params.caseId) : null);
   const [caseTitle, setCaseTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -260,6 +264,16 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     finally { if (mounted.current) setFollowingBusy(false); }
   };
 
+  const unfollow = async (f: FollowedCase) => {
+    const ok = await confirm(t('cd_unfollow_q', { title: f.case_title }), t('cd_unfollow_body'), { confirmLabel: t('cd_unfollow'), destructive: true });
+    if (!ok) return;
+    try {
+      await api.delete(`/following/${f.follow_id}`);
+      setFollowing(list => list.filter(x => x.follow_id !== f.follow_id));
+      showToast(t('cd_unfollowed'), 'success');
+    } catch (e) { showToast(apiErrorMessage(e, t('cd_unfollow_failed')), 'error'); }
+  };
+
   const onRefresh = async () => { setRefreshing(true); await load(); if (mounted.current) setRefreshing(false); };
 
   const Row = ({ d }: { d: CourtDate }) => (
@@ -342,19 +356,32 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
             </TouchableOpacity>
           </View>
         )}
-        {(phase === 'ok' || phase === 'offline') && list && (
+        {(phase === 'ok' || phase === 'offline') && list && (() => {
+          const upcoming = onlyCase ? list.upcoming.filter(d => d.case_id === onlyCase) : list.upcoming;
+          const past = onlyCase ? list.past.filter(d => d.case_id === onlyCase) : list.past;
+          const caseName = onlyCase ? [...list.upcoming, ...list.past].find(d => d.case_id === onlyCase)?.case_title : null;
+          return (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>{t('cd_upcoming', { n: list.upcoming.length })}</Text>
-            {list.upcoming.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="court-dates-empty">{t('cd_none_upcoming')}</Text>}
-            {list.upcoming.map(d => <Row key={d.id} d={d} />)}
-            {list.past.length > 0 && (
+            {!!onlyCase && (
+              <View style={styles.followRow} testID="court-dates-case-filter">
+                <Text maxFontSizeMultiplier={1.4} style={[styles.muted, { flex: 1 }]}>{caseName ? t('cd_only_case', { title: caseName }) : t('cd_only_case_none')}</Text>
+                <TouchableOpacity accessibilityRole="button" style={styles.goBtn} onPress={() => setOnlyCase(null)} testID="court-dates-show-all">
+                  <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{t('cd_show_all')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>{t('cd_upcoming', { n: upcoming.length })}</Text>
+            {upcoming.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="court-dates-empty">{t('cd_none_upcoming')}</Text>}
+            {upcoming.map(d => <Row key={d.id} d={d} />)}
+            {past.length > 0 && (
               <TouchableOpacity accessibilityRole="button" testID="court-dates-past-toggle" style={styles.secondaryBtn} onPress={() => setShowPast(v => !v)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t(showPast ? 'cd_hide_past' : 'cd_show_past', { n: list.past.length })}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t(showPast ? 'cd_hide_past' : 'cd_show_past', { n: past.length })}</Text>
               </TouchableOpacity>
             )}
-            {showPast && list.past.map(d => <Row key={d.id} d={d} />)}
+            {showPast && past.map(d => <Row key={d.id} d={d} />)}
           </>
-        )}
+          );
+        })()}
 
         {(phase === 'ok' || phase === 'offline') && (
           <View testID="following-section">
@@ -368,6 +395,12 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
                     📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
                   </Text>
                 ))}
+                {f.court_dates.filter(d => !d.is_past).length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{t('cd_follow_no_dates')}</Text>}
+                {phase === 'ok' && (
+                  <TouchableOpacity accessibilityRole="button" testID="following-stop" style={[styles.secondaryBtn, { minHeight: 44, paddingVertical: 8 }]} onPress={() => unfollow(f)}>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cd_unfollow')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
             {phase === 'ok' && (

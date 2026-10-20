@@ -171,9 +171,10 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
     const dir  = __REPO + '/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('__DEV__')).length;
-    // 19: Login / Register / LegalDisclaimer and the directory screens (Lawyers, Bail,
-    // Booking) now show their errors to the person instead of a dev-only log
-    expect(count).toBeGreaterThanOrEqual(19);
+    // 16: Login / Register / LegalDisclaimer, the directory screens (Lawyers, Bail,
+    // Booking) and Cases / CheckInManager / DocumentScanner now show their errors
+    // to the person instead of a dev-only log
+    expect(count).toBeGreaterThanOrEqual(16);
   });
 });
 
@@ -230,9 +231,10 @@ describe('S12. UX — Final Architecture', () => {
     const dir  = __REPO + '/frontend/src/screens';
     const devScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('__DEV__ && console.warn'));
-    // 18: Login / Register / LegalDisclaimer and the directory screens (Lawyers, Bail,
-    // Booking) now show their errors to the person instead of a dev-only log
-    expect(devScreens.length).toBeGreaterThanOrEqual(18);
+    // 16: Login / Register / LegalDisclaimer, the directory screens (Lawyers, Bail,
+    // Booking) and Cases / CheckInManager / DocumentScanner now show their errors
+    // to the person instead of a dev-only log
+    expect(devScreens.length).toBeGreaterThanOrEqual(16);
     // ...and no screen logs console.warn WITHOUT a __DEV__ guard
     const unguarded = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))
       .filter(f => /console\.warn\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')

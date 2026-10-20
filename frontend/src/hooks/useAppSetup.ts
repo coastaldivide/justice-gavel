@@ -7,10 +7,11 @@
  *   useOTAUpdates()    — checks for JS bundle updates on mount
  *   usePushTokenRefresh() — re-registers push token when app comes to foreground
  */
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
+import { openNotification } from '../services/notificationRoute';
 // Sentry is initialised once in App.tsx (no-op when EXPO_PUBLIC_SENTRY_DSN is empty).
 
 /** EAS project id, or null while the owner has not run `eas init` yet. */
@@ -81,30 +82,14 @@ export function useOTAUpdates() {
 
 
 
-/** Hook that navigates to relevant screen when user taps a push notification */
-export function usePushNotificationTap(navigationRef: React.RefObject<any>) {
+/** Opens the screen a tapped push notification points to (services/notificationRoute.ts). */
+export function usePushNotificationTap(navigationRef: { isReady: () => boolean; navigate: (...a: any[]) => void }) {
   useEffect(() => {
     let sub: { remove: () => void } | null = null;
     import('expo-notifications').then(Notifications => {
       sub = Notifications.addNotificationResponseReceivedListener(response => {
-        const data = response.notification.request.content.data as Record<string, string>;
-        if (!navigationRef.current) return;
-        const nav = navigationRef.current;
-
-        // Route to relevant screen based on notification type
-        if (data?.type === 'checkin_reminder') {
-          nav.navigate('MoreTab', { screen: 'CheckIn' });
-        } else if (data?.type === 'arrest_alert' && data?.watchId) {
-          nav.navigate('MoreTab', { screen: 'ArrestMonitor' });
-        } else if (data?.type === 'court_reminder' && data?.caseId) {
-          nav.navigate('MoreTab', { screen: 'Cases', params: { caseId: data.caseId } });
-        } else if (data?.type === 'message' && data?.threadId) {
-          nav.navigate('ChatTab');
-        } else if (data?.type === 'expungement_eligible') {
-          nav.navigate('MoreTab', { screen: 'Expungement' });
-        } else if (data?.type === 'cle_reminder') {
-          nav.navigate('MoreTab', { screen: 'AttorneyDashboard' });
-        }
+        const data = response.notification.request.content.data as Record<string, unknown>;
+        if (navigationRef.isReady()) openNotification(navigationRef, data);
       });
     }).catch(() => {});
     return () => { sub?.remove(); };

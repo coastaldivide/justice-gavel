@@ -1,551 +1,360 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useToast } from '../components/ToastProvider';
 /**
- * CheckInManagerScreen -- Bondsman check-in management
+ * CheckInManagerScreen — the bail agent's side of post-release check-ins.
  *
- * Bondsman can:
- *   - See all enrolled defendants + compliance status
- *   - Enroll a new defendant (name, phone, case number, court date)
- *   - View daily check-in log for each defendant
- *   - See missed check-ins highlighted in red
- *   - Deactivate monitoring for a defendant
- *
- * $9.99/month per active defendant. Shown as monthly total.
+ *  - Defendants with today's status in THEIR day (checked in / not yet / court
+ *    soon / waiting for them to sign in), the check-in link to send them
+ *    (share sheet; copied on web), history with 30-day compliance, stop
+ *    monitoring.
+ *  - Enroll: name, phone and/or e-mail (the defendant's account is matched by
+ *    them), case number, court date, daily or weekly.
+ *  - Only bail-agent accounts can enroll (the server answers 403 otherwise);
+ *    other accounts see what the tool is for.
+ *  - Billing: the per-defendant price is shown, and that it is not charged yet
+ *    (no payment exists for it) — never a "demo" charge.
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Modal, ActivityIndicator, RefreshControl, KeyboardAvoidingView, InteractionManager } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { api, apiErrorMessage } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { daysUntil } from '../utils/dateUtils';
+import type { ScreenProps } from '../types/navigation';
+import { api, apiErrorMessage } from '../services/api';
+import { formatCourtDay } from '../services/corePath';
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../hooks/useConfirm';
 import { useAuthGate } from '../components/AuthGate';
+import { useTheme } from '../constants/theme';
+import { daysUntil, validCourtDate } from '../utils/dateUtils';
+import { RNShare, COPIED_ACTION } from '../utils/webCompat';
+import * as secureStorage from '../utils/secureStorage';
 import { t, useLang, locale } from '../i18n';
 
-type DefendantRow = {
-  id: number; defendant_name: string; defendant_phone: string;
-  case_number: string; court_date: string; active: number;
-  total_checkins: number; checkins_today: number; last_checkin: string | null;
-  monthly_fee_cents: number;
-};
-
-function statusColor(row: DefendantRow): { color: string; bg: string; label: string } {
-  if (!row.active) return { color: COLORS.textMuted, bg: COLORS.bg, label: t('x_check_in_manager_inactive') };
-  if (row.checkins_today > 0) return { color: COLORS.legal, bg: COLORS.legalBg, label: t('x_check_in_manager_checked_today') };
-  const courtSoon = row.court_date &&
-    (daysUntil(row.court_date) ?? Infinity) <= 3;
-  if (courtSoon) return { color: COLORS.emergency, bg: COLORS.emergencyBg, label: t('x_check_in_manager_court_soon_not_checked') };
-  return { color: COLORS.warn, bg: COLORS.warnBg, label: t('x_check_in_manager_not_checked_today') };
+export interface DefendantRow {
+  id: number; defendant_name: string; defendant_phone: string | null; defendant_email: string | null; case_number: string | null;
+  court_date: string | null; check_in_freq: 'daily' | 'weekly'; active: number; linked: boolean; total_checkins: number;
+  checkins_today: number; done_for_period: boolean; next_due: string; today: string; last_checkin: string | null; checkin_link: string;
+}
+interface ListResponse { enrollments: DefendantRow[]; total_active: number; fee_cents: number; monthly_cost_cents: number; billing_active: boolean }
+interface HistoryResponse {
+  records: { id: number; checked_in_at: string; local_day: string; location_label: string | null; notes: string | null; lat: number | null; lng: number | null }[];
+  compliance: { window_days: number; expected: number; completed: number; missed: number; rate: number | null };
+  time_zone: string;
 }
 
-// ── Enroll Modal ──────────────────────────────────────────────────────────────
-function EnrollModal({ visible, onClose, onEnrolled }: any) {
-  useLang();
-  const { showToast } = useToast();
-  React.useEffect(() => {
-    const tItem = InteractionManager.runAfterInteractions(() => {});
-    return () => tItem.cancel();
-  }, []);
-  const [mgmtError, setMgmtError] = React.useState<string|null>(null);
-  const [name, setName]       = useState('');
-  const [phone, setPhone]     = useState('');
-  const [caseNum, setCaseNum] = useState('');
-  const [courtDate, setCourtDate] = useState('');
-  const [freq, setFreq]       = useState<'daily'|'weekly'>('daily');
-  const [saving, setSaving]   = useState(false);
+const money = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' });
 
-  const reset = () => { setName(''); setPhone(''); setCaseNum(''); setCourtDate(''); };
-
-  const save = async () => {
-    if (!name.trim()) { showToast(t('x_check_in_manager_enter_defendant_name')); return; }
-    setSaving(true);
-    setMgmtError(null);
-    try {
-      const res = await api.post('/checkins/enroll', {
-        defendant_name: name.trim(),
-        defendant_phone: phone.trim(),
-        case_number: caseNum.trim(),
-        court_date: courtDate.trim() || undefined,
-        check_in_freq: freq,
-      });
-      showToast(res.data?.message, 'success');
-      reset();
-      onEnrolled();
-    } catch (e: any) {
-      // Shown inline at the top of the form; the entered details are kept.
-      setMgmtError(apiErrorMessage(e, t('x_check_in_manager_check_internet_try_again')));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
-        onRequestClose={() => onClose()}>
-    {mgmtError && (
-      <View style={{margin:16,padding:14,backgroundColor:COLORS.surface,
-        borderRadius:10,borderWidth:1,borderColor:COLORS.border}}>
-        <Text style={{color:COLORS.danger,fontWeight:'700',fontSize:14}}>⚠ {mgmtError}</Text>
-      </View>
-    )}
-      <View style={styles.modalWrap}>
-        <View style={styles.modalHeader}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{t('x_check_in_manager_enroll_defendant')}</Text>
-          <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} onPress={() => { reset(); onClose(); }}
-            >
-            <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}>
-        <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-          <View style={styles.feeBreakdown}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBreakdownTitle}>{t('x_check_in_manager_billing')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBreakdownItem}>{t('x_check_in_manager_9_99_month_per')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBreakdownItem}>{t('x_check_in_manager_first_defendant_added_account')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBreakdownItem}>{t('x_check_in_manager_cancel_per_defendant_anytime')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBreakdownItem}>{t('x_check_in_manager_demo_mode_no_charge')}</Text>
-          </View>
-
-          {[
-            { label: t('x_check_in_manager_full_name'), value: name, set: setName, placeholder: t('x_check_in_manager_john_smith'), keyboard: 'default' as any },
-            { label: t('x_auth_gate_phone_number'), value: phone, set: setPhone, placeholder: '+1 555-000-0000', keyboard: 'phone-pad' as any },
-            { label: t('x_check_in_manager_case_number'), value: caseNum, set: setCaseNum, placeholder: t('x_check_in_manager_e_g_2025_cr'), keyboard: 'default' as any },
-            { label: t('x_check_in_manager_court_date_yyyy_mm'), value: courtDate, set: setCourtDate, placeholder: '2025-07-15', keyboard: 'default' as any },
-          ].map(f => (
-            <View key={f.label} style={{ marginBottom: 14 }}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{f.label}</Text>
-              <TextInput
-                style={styles.input}
-                value={f.value}
-                onChangeText={f.set}
-                placeholder={f.placeholder}
-                placeholderTextColor={COLORS.textSecond}
-                keyboardType={f.keyboard}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-            </View>
-          ))}
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_check_in_manager_check_frequency')}</Text>
-          <View style={styles.freqRow}>
-            {(['daily', 'weekly'] as const).map(f => (
-              <TouchableOpacity
-                accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                key={f}
-                style={[styles.freqBtn, freq === f && styles.freqBtnActive]}
-                onPress={() => setFreq(f)}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={[styles.freqBtnText, freq === f && styles.freqBtnTextActive]}>
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} activeOpacity={0.6}
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={save}
-            disabled={saving}
-           accessibilityLabel={t('x_check_in_manager_enroll_9_99_month')}>
-            {saving
-              ? <ActivityIndicator color={COLORS.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{t('x_check_in_manager_enroll_9_99_month')}</Text>
-            }
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
+/** The status pill for a defendant row. */
+export function rowStatus(r: DefendantRow): { key: string; tone: 'muted' | 'ok' | 'urgent' | 'warn' } {
+  if (!r.active) return { key: 'x_check_in_manager_inactive', tone: 'muted' };
+  if (!r.linked) return { key: 'ckm_waiting_sign_in', tone: 'muted' };
+  if (r.done_for_period) return { key: r.check_in_freq === 'weekly' ? 'ckm_done_week' : 'x_check_in_manager_checked_today', tone: 'ok' };
+  const soon = r.court_date ? daysUntil(r.court_date) : null;
+  if (soon !== null && soon >= 0 && soon <= 3) return { key: 'x_check_in_manager_court_soon_not_checked', tone: 'urgent' };
+  return { key: r.check_in_freq === 'weekly' ? 'ckm_not_this_week' : 'x_check_in_manager_not_checked_today', tone: 'warn' };
 }
 
-// ── History Modal ─────────────────────────────────────────────────────────────
-function HistoryModal({ enrollment, visible, onClose }: any) {
-  useLang();
-  const [records, setRecords]   = useState<any[]>([]);
-  const [compliance, setCompliance] = useState<any>(null);
-  const [loading, setLoading]   = useState(false);
-
-  useEffect(() => {
-    if (visible && enrollment) {
-      setLoading(true);
-      api.get(`/checkins/history/${enrollment.id}`)
-        .then(r => { setRecords(r.data?.records); setCompliance(r.data?.compliance); })
-        .catch((e) => { __DEV__ && console.warn(e?.message); })
-        .finally(() => setLoading(false));
-    }
-  }, [visible, enrollment]);
-
-  if (!enrollment) return null;
-
-  return (
-    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
-        onRequestClose={() => onClose()}>
-      <View style={styles.modalWrap}
-        testID="check-in-manager-screen">
-        <View style={[styles.modalHeader, { backgroundColor: COLORS.navy }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.modalTitle, { color: COLORS.bgCard }]}>{enrollment.defendant_name}</Text>
-          <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} onPress={onClose}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.modalClose, { color: COLORS.bgCard }]}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        {compliance && (
-          <View style={styles.complianceStrip}>
-            {[
-              { n: compliance.last_30_days, label: t('x_check_in_manager_last_30_days') },
-              { n: compliance.missed, label: t('cd_status_missed'), red: true },
-              { n: compliance.rate, label: t('x_check_in_manager_rate') },
-            ].map(item => (
-              <View key={item.label} style={styles.complianceStat}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.complianceNum, item.red && { color: COLORS.emergency }]}>
-                  {item.n}
-                </Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.complianceLabel}>{item.label}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {loading
-          ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.navy} />
-          : records.length === 0
-            ? <View style={styles.emptyCenter}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{t('x_check_in_manager_no_check_ins_yet')}</Text></View>
-            : (
-              <FlashList
-          accessibilityLabel={t('x_check_in_manager_check_schedule_list')}
-          data={records}
-                keyExtractor={r => String(r.id)}
-                contentContainerStyle={{ padding: 14}}
-                renderItem={({ item }) => (
-                  <View style={styles.historyRow}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.historyStatus,
-                      item.status === 'submitted' ? { color: COLORS.legal } : { color: COLORS.goldText }
-                    ]}>
-                      {item.status === 'submitted' ? '✓' : '⚠'}
-                    </Text>
-                    <View style={{ flex: 1 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.historyDate}>
-                        {new Date(item.checked_in_at ?? 0).toLocaleDateString(locale(),
-                          { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-                        )}
-                      </Text>
-                      {!!item.location_label && (
-                        <Text maxFontSizeMultiplier={1.4} style={styles.historyLocation}>📍 {item.location_label}</Text>
-                      )}
-                      {!!item.notes && (
-                        <Text maxFontSizeMultiplier={1.4} style={styles.historyNotes} numberOfLines={2} ellipsizeMode="tail">{item.notes}</Text>
-                      )}
-                    </View>
-                  </View>
-                )}
-              />
-            )
-        }
-      </View>
-    </Modal>
-  );
-}
-
-// ── Main Screen ───────────────────────────────────────────────────────────────
 function CheckInManagerScreen({ navigation }: ScreenProps) {
   useLang();
-  const { confirm } = useConfirm();
-  const { showToast } = useToast();
-  const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
-
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [data, setData]             = useState<any>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showEnroll, setShowEnroll] = useState(false);
-  const [selectedEnroll, setSelectedEnroll] = useState<any>(null);
-  const [loading, setLoading]       = useState(true);
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const [isAgent, setIsAgent] = useState<boolean | null>(null);
+  const [data, setData] = useState<ListResponse | null>(null);
+  const [phase, setPhase] = useState<'loading' | 'ok' | 'error' | 'guest'>('loading');
+  const [refreshing, setRefreshing] = useState(false);
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const [history, setHistory] = useState<{ row: DefendantRow; data: HistoryResponse | null; error: string } | null>(null);
+
+  // enroll form
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [caseNum, setCaseNum] = useState('');
+  const [courtDate, setCourtDate] = useState('');
+  const [freq, setFreq] = useState<'daily' | 'weekly'>('daily');
+  const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const token = await secureStorage.getToken().catch(() => null);
+    if (!token) { if (mounted.current) { setPhase('guest'); setIsAgent(false); } return; }
+    const raw = await secureStorage.getItem('user').catch(() => null);
+    let agent = false;
+    try { agent = JSON.parse(raw || '{}')?.accountType === 'bail_agent'; } catch { agent = false; }
     try {
-      const res = await api.get('/checkins/enrollments');
-      setData(res.data || null);
-    } catch (e: any) {
-      if (e.response?.status !== 401) {
-        showToast(t('x_check_in_manager_check_connection_pull_down'));
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      const r = await api.get<ListResponse>('/checkins/enrollments');
+      if (!mounted.current) return;
+      setData(r.data); setPhase('ok');
+      setIsAgent(agent || (r.data?.enrollments?.length ?? 0) > 0);
+    } catch {
+      if (mounted.current) { setPhase('error'); setIsAgent(agent); }
     }
-  }, [showToast]);
+  }, []);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const onRefresh = () => { setRefreshing(true); load().finally(() => { if (mounted.current) setRefreshing(false); }); };
 
-  // Refresh whenever the user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  const resetForm = () => { setName(''); setPhone(''); setEmail(''); setCaseNum(''); setCourtDate(''); setFreq('daily'); setFormError(''); };
 
-  const deactivate = (id: number, name: string) => {
-    confirm(t('x_check_in_manager_remove', { name }), t('x_check_in_manager_they_will_no_longer'),
-      { confirmLabel: t('saved_remove'), destructive: true }).then(async ok => { if (!ok) return;
-      await api.put(`/checkins/enrollments/${id}`, { active: false }).catch((e) => { __DEV__ && console.warn(e?.message); });
-        load();
-    })
+  const shareLink = async (row: DefendantRow, message?: string) => {
+    const text = message || t('ckm_share_message', { name: row.defendant_name.split(/\s+/)[0], link: row.checkin_link });
+    const r = await RNShare.share({ message: text, title: t('ckm_share_title') }).catch(() => null);
+    if (r?.action === COPIED_ACTION) showToast(t('ckm_link_copied'), 'success');
   };
 
-  const enrollments: DefendantRow[] = data?.enrollments || [];
-  const active = enrollments.filter(e => e.active);
-  const inactive = enrollments.filter(e => !e.active);
+  const enroll = async () => {
+    if (!name.trim()) { setFormError(t('x_check_in_manager_enter_defendant_name')); return; }
+    if (!phone.trim() && !email.trim()) { setFormError(t('ckm_need_contact')); return; }
+    if (courtDate.trim() && !validCourtDate(courtDate.trim())) { setFormError(t('cs2_err_date')); return; }
+    setSaving(true); setFormError('');
+    try {
+      const r = await api.post<{ enrollment: DefendantRow; checkin_link: string; share_message: string }>('/checkins/enroll', {
+        defendant_name: name.trim(), defendant_phone: phone.trim() || undefined, defendant_email: email.trim() || undefined,
+        case_number: caseNum.trim() || undefined, court_date: courtDate.trim() || undefined, check_in_freq: freq,
+      });
+      if (!mounted.current) return;
+      setEnrollOpen(false); resetForm();
+      showToast(t('ckm_enrolled', { name: r.data.enrollment.defendant_name }), 'success');
+      await load();
+      await shareLink({ ...r.data.enrollment, checkin_link: r.data.checkin_link }, r.data.share_message);
+    } catch (e) {
+      setFormError(apiErrorMessage(e, t('x_check_in_manager_check_internet_try_again')));
+    } finally { if (mounted.current) setSaving(false); }
+  };
+
+  const openHistory = async (row: DefendantRow) => {
+    setHistory({ row, data: null, error: '' });
+    try {
+      const r = await api.get<HistoryResponse>(`/checkins/history/${row.id}`);
+      if (mounted.current) setHistory({ row, data: r.data, error: '' });
+    } catch (e) {
+      if (mounted.current) setHistory({ row, data: null, error: apiErrorMessage(e, t('ckm_history_failed')) });
+    }
+  };
+
+  const setActive = async (row: DefendantRow, active: boolean) => {
+    if (!active) {
+      const ok = await confirm(t('x_check_in_manager_remove', { name: row.defendant_name }), t('x_check_in_manager_they_will_no_longer'),
+        { confirmLabel: t('ckm_stop'), destructive: true });
+      if (!ok) return;
+    }
+    try {
+      await api.put(`/checkins/enrollments/${row.id}`, { active });
+      showToast(active ? t('ckm_restarted') : t('ckm_stopped'), 'success');
+      load();
+    } catch (e) { showToast(apiErrorMessage(e, t('x_check_in_manager_check_internet_try_again')), 'error'); }
+  };
+
+  const rows = data?.enrollments || [];
+  const active = rows.filter(r => r.active);
+  const toneColor = { muted: colors.textMuted, ok: colors.legalDark, urgent: colors.emergency, warn: colors.warnDark } as const;
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View style={styles.screen}>
       <AuthGateModal />
-
-      {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_check_in_manager_check_manager')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-            {t('x_check_in_manager_active_month', { length: active.length, value: data?.monthly_cost || '$0.00' })}
-          </Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.heading} accessibilityRole="header">{t('x_check_in_manager_check_manager')}</Text>
+          {!!data && (
+            <Text maxFontSizeMultiplier={1.4} style={styles.subheading} testID="checkin-manager-summary">
+              {t('ckm_summary', { n: active.length, price: money(data.fee_cents) })}
+            </Text>
+          )}
         </View>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={styles.enrollBtn}
-          accessibilityLabel={t('x_check_in_manager_enroll')} onPress={() => requireAuth(() => setShowEnroll(true))}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>{t('x_check_in_manager_enroll')}</Text>
-        </TouchableOpacity>
+        {isAgent && (
+          <TouchableOpacity accessibilityRole="button" testID="checkin-manager-enroll" style={styles.enrollBtn}
+            onPress={() => requireAuth(() => { resetForm(); setEnrollOpen(true); })}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.enrollBtnText}>{t('x_check_in_manager_enroll')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* How it works -- shown when empty */}
-      {!loading && active.length === 0 && (
-        <View style={styles.howItWorks}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.howTitle}>{t('x_check_in_manager_digital_check_defendants')}</Text>
-          {[
-            t('x_check_in_manager_1_enroll_defendant_with'),
-            t('x_check_in_manager_2_they_get_link'),
-            t('x_check_in_manager_3_gps_timestamp_logged'),
-            t('x_check_in_manager_4_see_compliance_history'),
-            t('x_check_in_manager_5_9_99_month'),
-          ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.howItem}>{s}</Text>)}
-          <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-            style={styles.howBtn}
-            accessibilityLabel={t('x_check_in_manager_enroll_first_defendant')} onPress={() => requireAuth(() => setShowEnroll(true))}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.howBtnText}>{t('x_check_in_manager_enroll_first_defendant')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.navy} size="large" />
-      ) : (
-        <FlashList
-          data={[...active, ...inactive]}
-          keyExtractor={(r) => String(r.id)}
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
-          renderItem={({ item }) => {
-            const st = statusColor(item);
-            return (
-              <View style={[styles.card, !item.active && styles.cardInactive]}>
-                <View style={styles.cardTop}>
-                  <View style={{ flex: 1 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.defendantName}>{item.defendant_name}</Text>
-                    {!!item.case_number && (
-                      <Text maxFontSizeMultiplier={1.4} style={styles.caseNum}>{t('x_check_in_manager_case', { case_number: item.case_number })}</Text>
-                    )}
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
-                  </View>
+      <ScrollView testID="check-in-manager-screen" contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        {phase === 'loading' && <ActivityIndicator style={{ marginTop: 40 }} color={colors.textBrand} />}
+        {phase === 'error' && (
+          <View style={styles.box}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.body}>{t('x_check_in_manager_check_connection_pull_down')}</Text>
+            <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={() => { setPhase('loading'); load(); }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('try_again')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {!!data && (
+          <View style={styles.note} testID="checkin-manager-billing">
+            <Text maxFontSizeMultiplier={1.4} style={styles.noteText}>💳 {t(data.billing_active ? 'ckm_billing_on' : 'ckm_billing_off', { price: money(data.fee_cents) })}</Text>
+          </View>
+        )}
+        {(phase === 'ok' || phase === 'guest') && active.length === 0 && (
+          <View style={styles.box} testID="checkin-manager-how">
+            <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>{t('x_check_in_manager_digital_check_defendants')}</Text>
+            {['ckm_how_1', 'ckm_how_2', 'ckm_how_3', 'ckm_how_4'].map(k => <Text key={k} maxFontSizeMultiplier={1.4} style={styles.body}>{t(k)}</Text>)}
+            {isAgent ? (
+              <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={() => requireAuth(() => { resetForm(); setEnrollOpen(true); })}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('x_check_in_manager_enroll_first_defendant')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text maxFontSizeMultiplier={1.4} style={styles.small} testID="checkin-manager-agents-only">{t('ckm_agents_only')}</Text>
+            )}
+          </View>
+        )}
+        {rows.map(row => {
+          const st = rowStatus(row);
+          return (
+            <View key={row.id} style={[styles.card, !row.active && { opacity: 0.65 }]} testID="checkin-manager-row">
+              <View style={styles.cardTop}>
+                <View style={{ flex: 1 }}>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.name}>{row.defendant_name}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.small}>
+                    {[row.case_number ? t('x_check_in_manager_case', { case_number: row.case_number }) : null, t(row.check_in_freq === 'weekly' ? 'ckm_weekly' : 'ckm_daily')].filter(Boolean).join(' · ')}
+                  </Text>
                 </View>
-
-                <View style={styles.statsStrip}>
-                  <View style={styles.miniStat}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.miniStatNum}>{item.total_checkins}</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.miniStatLabel}>{t('qc_total')}</Text>
-                  </View>
-                  <View style={styles.miniStat}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.miniStatNum, item.checkins_today > 0 && { color: COLORS.legal }]}>
-                      {item.checkins_today > 0 ? '✓' : '--'}
-                    </Text>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.miniStatLabel}>{t('x_attorney_inbox_today')}</Text>
-                  </View>
-                  {!!item.court_date && (
-                    <View style={styles.miniStat}>
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.miniStatNum, { fontSize: 12 }]}>
-                        {Math.max(0, daysUntil(item.court_date) ?? 0)}d
-                      </Text>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.miniStatLabel}>{t('x_check_in_manager_court')}</Text>
-                    </View>
-                  )}
-                  <View style={styles.miniStat}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.miniStatNum}>${(item.monthly_fee_cents / 100).toFixed(2)}</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.miniStatLabel}>{t('x_check_in_manager_mo')}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                    style={styles.actionBtn}
-                    accessibilityLabel={t('x_check_in_manager_view_history')} onPress={() => setSelectedEnroll(item)}
-                  >
-                    <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_check_in_manager_view_history')}</Text>
-                  </TouchableOpacity>
-                  {item.active && (
-                    <TouchableOpacity
-                      accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                      style={[styles.actionBtn, styles.actionBtnRed]}
-                      accessibilityLabel={t('saved_remove')} onPress={() => deactivate(item.id, item.defendant_name)}
-                    >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.actionBtnText, { color: COLORS.emergency }]}>{t('saved_remove')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.pill, { color: toneColor[st.tone], borderColor: toneColor[st.tone] }]}>{t(st.key)}</Text>
               </View>
-            );
-          }}
-        />
-      )}
-      <EnrollModal
-        visible={showEnroll}
-        onClose={() => setShowEnroll(false)}
-        onEnrolled={() => { setShowEnroll(false); load(); }}
-      />
-      <HistoryModal
-        enrollment={selectedEnroll}
-        visible={!!selectedEnroll}
-        onClose={() => setSelectedEnroll(null)}
-      />
+              <Text maxFontSizeMultiplier={1.4} style={styles.small}>
+                {[t('ckm_total', { n: row.total_checkins }),
+                  row.last_checkin ? t('ckm_last', { when: new Date(row.last_checkin).toLocaleString(locale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }) : null,
+                  row.court_date ? t('ckm_court', { day: formatCourtDay(row.court_date) }) : null].filter(Boolean).join(' · ')}
+              </Text>
+              <View style={styles.actions}>
+                <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => openHistory(row)} testID="checkin-manager-history">
+                  <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>{t('x_check_in_manager_view_history')}</Text>
+                </TouchableOpacity>
+                {!!row.active && (
+                  <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => shareLink(row)} testID="checkin-manager-send-link">
+                    <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>📤 {t('ckm_send_link')}</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => setActive(row, !row.active)} testID="checkin-manager-toggle">
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.actionText, row.active ? { color: colors.emergency } : null]}>{row.active ? t('ckm_stop') : t('ckm_restart')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      {/* Enroll */}
+      <Modal visible={enrollOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEnrollOpen(false)} accessibilityViewIsModal>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
+          <View style={styles.modalHeader}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.modalTitle}>{t('x_check_in_manager_enroll_defendant')}</Text>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('close')} style={styles.closeBtn} onPress={() => setEnrollOpen(false)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.modalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" testID="checkin-enroll-form">
+            {!!formError && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="checkin-enroll-error">⚠ {formError}</Text>}
+            {[
+              { id: 'name', label: t('x_check_in_manager_full_name'), value: name, set: setName, ph: t('x_check_in_manager_john_smith'), kb: 'default' as const },
+              { id: 'phone', label: t('ckm_phone'), value: phone, set: setPhone, ph: '(615) 555-0100', kb: 'phone-pad' as const },
+              { id: 'email', label: t('ckm_email'), value: email, set: setEmail, ph: t('cs_email_placeholder'), kb: 'email-address' as const },
+              { id: 'case', label: t('x_check_in_manager_case_number'), value: caseNum, set: setCaseNum, ph: t('x_check_in_manager_e_g_2025_cr'), kb: 'default' as const },
+              { id: 'court', label: t('x_check_in_manager_court_date_yyyy_mm'), value: courtDate, set: setCourtDate, ph: '2026-11-15', kb: 'numbers-and-punctuation' as const },
+            ].map(f => (
+              <View key={f.id}>
+                <Text maxFontSizeMultiplier={1.4} style={styles.label}>{f.label}</Text>
+                <TextInput testID={`checkin-enroll-${f.id}`} accessibilityLabel={f.label} style={styles.input} value={f.value} onChangeText={f.set}
+                  placeholder={f.ph} placeholderTextColor={colors.textMuted} keyboardType={f.kb} autoCapitalize={f.id === 'email' ? 'none' : 'words'} />
+              </View>
+            ))}
+            <Text maxFontSizeMultiplier={1.4} style={styles.small}>{t('ckm_contact_hint')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('x_check_in_manager_check_frequency')}</Text>
+            <View style={styles.actions}>
+              {(['daily', 'weekly'] as const).map(f => (
+                <TouchableOpacity key={f} accessibilityRole="radio" accessibilityState={{ selected: freq === f }} testID={`checkin-enroll-${f}`}
+                  style={[styles.action, freq === f && styles.actionOn]} onPress={() => setFreq(f)}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.actionText, freq === f && { color: colors.textOnNavy }]}>{t(f === 'weekly' ? 'ckm_weekly' : 'ckm_daily')}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity accessibilityRole="button" testID="checkin-enroll-save" style={[styles.primaryBtn, saving && { opacity: 0.6 }]} onPress={enroll} disabled={saving}>
+              {saving ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ckm_enroll_btn')}</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* History */}
+      <Modal visible={!!history} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setHistory(null)} accessibilityViewIsModal>
+        <View style={styles.screen}>
+          <View style={styles.modalHeader}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.modalTitle} numberOfLines={1}>{history?.row.defendant_name}</Text>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('close')} style={styles.closeBtn} onPress={() => setHistory(null)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.modalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.scroll} testID="checkin-history">
+            {!!history?.error && <Text maxFontSizeMultiplier={1.4} style={styles.error}>⚠ {history.error}</Text>}
+            {!history?.data && !history?.error && <ActivityIndicator style={{ marginTop: 30 }} color={colors.textBrand} />}
+            {!!history?.data && (
+              <>
+                <View style={styles.stats}>
+                  {[
+                    { n: String(history.data.compliance.completed), label: t('ckm_done_30') },
+                    { n: String(history.data.compliance.missed), label: t('cd_status_missed') },
+                    { n: history.data.compliance.rate == null ? '—' : `${history.data.compliance.rate}%`, label: t('x_check_in_manager_rate') },
+                  ].map(s => (
+                    <View key={s.label} style={styles.stat}><Text maxFontSizeMultiplier={1.3} style={styles.statNum}>{s.n}</Text><Text maxFontSizeMultiplier={1.3} style={styles.small}>{s.label}</Text></View>
+                  ))}
+                </View>
+                <Text maxFontSizeMultiplier={1.4} style={styles.small}>{t('ckm_tz_note', { tz: history.data.time_zone })}</Text>
+                {history.data.records.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.body}>{t('x_check_in_manager_no_check_ins_yet')}</Text>}
+                {history.data.records.map(r => (
+                  <View key={r.id} style={styles.histRow}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.label}>
+                      ✓ {formatCourtDay(r.local_day)} · {new Date(r.checked_in_at).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit', timeZone: history.data?.time_zone })}
+                    </Text>
+                    {!!r.location_label && <Text maxFontSizeMultiplier={1.4} style={styles.small}>📍 {r.location_label}</Text>}
+                    {r.lat != null && r.lng != null && <Text maxFontSizeMultiplier={1.4} style={styles.small}>📍 {r.lat.toFixed(4)}, {r.lng.toFixed(4)}</Text>}
+                    {!!r.notes && <Text maxFontSizeMultiplier={1.4} style={styles.small} numberOfLines={3}>{r.notes}</Text>}
+                  </View>
+                ))}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
-  header: {
-    backgroundColor: COLORS.bail, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16,
-    flexDirection: 'row', alignItems: 'flex-end',
-  },
-  heading:    { fontSize: 22, ...FONTS.black, color: COLORS.bgCard },
-  subheading: { fontSize: 12, color: colors.textOnNavy, marginTop: 2 },
-  enrollBtn:  {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md,
-    paddingHorizontal: 16, paddingVertical: 8,
-  },
-  enrollBtnText: { color: COLORS.bail, ...FONTS.heavy, fontSize: 12 },
-
-  howItWorks: {
-    backgroundColor: COLORS.bgCard, margin: 14, borderRadius: RADIUS.xl,
-    padding: 16, ...SHADOW.md, borderWidth: 1, borderColor: COLORS.border,
-  },
-  howTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 12 },
-  howItem:  { fontSize: 12, color: COLORS.textSecond, lineHeight: 22 },
-  howBtn:   {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.md,
-    paddingVertical: 12, alignItems: 'center', marginTop: 14,
-  },
-  howBtnText: { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 14,
-    lineHeight: 21, },
-
-  card: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10,
-    ...SHADOW.sm, borderWidth: 1, borderColor: COLORS.border,
-  },
-  cardInactive: { opacity: 0.6 },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-  defendantName: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, marginBottom: 2 },
-  caseNum:       { fontSize: 12, color: COLORS.textMuted },
-  statusBadge:   { borderRadius: RADIUS.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText:    { fontSize: 11, ...FONTS.bold },
-
-  statsStrip: { flexDirection: 'row', marginBottom: 10, gap: 12 },
-  miniStat:   { alignItems: 'center', flex: 1 },
-  miniStatNum:   { fontSize: 18, ...FONTS.black, color: COLORS.navy },
-  miniStatLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
-
-  cardActions: { flexDirection: 'row', gap: 8 },
-  actionBtn: {
-    flex: 1, paddingVertical: 9, borderRadius: RADIUS.md,
-    backgroundColor: COLORS.bg, alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  actionBtnRed:  { borderColor: COLORS.emergencyBg, backgroundColor: COLORS.emergencyBg },
-  actionBtnText: { fontSize: 12, ...FONTS.semi, color: COLORS.textSecond },
-
-  // Modals
-  modalWrap:   { flex: 1, backgroundColor: COLORS.bg },
-  modalHeader: {
-    backgroundColor: COLORS.bail, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
-  modalTitle: { fontSize: 20, ...FONTS.black, color: COLORS.bgCard },
-  modalClose: { fontSize: 20, color: COLORS.bgCard },
-  modalBody:  { padding: 20 },
-
-  feeNote: {
-    backgroundColor: COLORS.legalBg, borderRadius: RADIUS.md, padding: 12,
-    fontSize: 12, color: COLORS.legal, marginBottom: 16, lineHeight: 17,
-    borderWidth: 1, borderColor: colors.legal,
-  },
-  feeBreakdown: { backgroundColor: colors.legalBg, borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.legal },
-  feeBreakdownTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, marginBottom: 6 },
-  feeBreakdownItem:  { fontSize: 12, color: colors.legal, lineHeight: 19 },
-  fieldLabel: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
-  input: {
-    backgroundColor: COLORS.bgCard, borderWidth: 1.5, borderColor: COLORS.border,
-    borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 14, lineHeight: 21, color: COLORS.textPrimary,
-  },
-  freqRow:        { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  freqBtn:        { flex: 1, paddingVertical: 11, borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center' },
-  freqBtnActive:  { borderColor: COLORS.navy, backgroundColor: COLORS.navy },
-  freqBtnText:    { fontSize: 14, lineHeight: 21, ...FONTS.semi, color: COLORS.textSecond },
-  freqBtnTextActive: { color: COLORS.bgCard },
-  saveBtn: {
-    backgroundColor: COLORS.bail, borderRadius: RADIUS.lg,
-    paddingVertical: 15, alignItems: 'center', marginTop: 4,
-  },
-  saveBtnText: { color: COLORS.bgCard, ...FONTS.black, fontSize: 15,
-    lineHeight: 22, },
-
-  // Compliance / History
-  complianceStrip: { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  complianceStat:  { flex: 1, alignItems: 'center', paddingVertical: 16 },
-  complianceNum:   { fontSize: 22, ...FONTS.black, color: COLORS.navy },
-  complianceLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
-  emptyCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: Platform.OS === 'ios' ? 40 : 28 },
-  emptyText:   { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
-
-  historyRow: {
-    flexDirection: 'row', gap: 8, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  historyStatus:   { fontSize: 18, marginTop: 2 },
-  historyDate:     { fontSize: 12, lineHeight: 20, ...FONTS.semi, color: COLORS.textPrimary },
-  historyLocation: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  historyNotes:    { fontSize: 12, color: COLORS.textSecond, marginTop: 2, fontStyle: 'italic' },
+const makeStyles = (c: any) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
+  scroll: { padding: 16, paddingBottom: 48, width: '100%', maxWidth: 720, alignSelf: 'center' },
+  header: { backgroundColor: c.navy, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heading: { color: c.textOnNavy, fontSize: 21, fontWeight: '900' },
+  subheading: { color: c.textOnNavy, fontSize: 13, marginTop: 2, opacity: 0.9 },
+  enrollBtn: { backgroundColor: c.bgCard, borderRadius: 10, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' },
+  enrollBtnText: { color: c.textBrand, fontWeight: '800', fontSize: 14 },
+  box: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 16, marginBottom: 12 },
+  boxTitle: { color: c.textBrand, fontSize: 16, fontWeight: '800', marginBottom: 8 },
+  body: { color: c.textPrimary, fontSize: 14, lineHeight: 21 },
+  small: { color: c.textSecond, fontSize: 13, lineHeight: 18 },
+  note: { backgroundColor: c.infoBg, borderRadius: 10, borderWidth: 1, borderColor: c.border, padding: 10, marginBottom: 12 },
+  noteText: { color: c.textPrimary, fontSize: 13, lineHeight: 18 },
+  card: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 14, marginBottom: 10 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  name: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
+  pill: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12, fontWeight: '700', maxWidth: '50%' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  action: { flexGrow: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  actionOn: { backgroundColor: c.navy, borderColor: c.navy },
+  actionText: { color: c.textPrimary, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  primaryBtn: { backgroundColor: c.navy, borderRadius: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginTop: 14 },
+  primaryBtnText: { color: c.textOnNavy, fontSize: 15, fontWeight: '800' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.bgCard, borderBottomWidth: 1, borderBottomColor: c.border, paddingLeft: 16, minHeight: 56 },
+  modalTitle: { flex: 1, color: c.textBrand, fontSize: 18, fontWeight: '900' },
+  closeBtn: { minWidth: 56, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  modalClose: { color: c.textMuted, fontSize: 20 },
+  label: { color: c.textPrimary, fontSize: 14, fontWeight: '800', marginTop: 12, marginBottom: 4 },
+  input: { backgroundColor: c.inputBg || c.bgCard, color: c.inputText || c.textPrimary, borderColor: c.inputBorder || c.border, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, minHeight: 48, fontSize: 16 },
+  error: { color: c.textPrimary, backgroundColor: c.emergencyBg, borderRadius: 10, padding: 10, fontSize: 14, marginBottom: 8 },
+  stats: { flexDirection: 'row', backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1, borderColor: c.border, marginBottom: 8 },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: 12 },
+  statNum: { color: c.textBrand, fontSize: 22, fontWeight: '900' },
+  histRow: { borderBottomWidth: 1, borderBottomColor: c.border, paddingVertical: 8 },
 });
 
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(CheckInManagerScreen);

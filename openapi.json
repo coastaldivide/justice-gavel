@@ -5330,6 +5330,45 @@
         }
       }
     },
+    "/api/billing/family/confirm": {
+      "post": {
+        "operationId": "post_api_billing_family_confirm",
+        "summary": "POST /api/billing/family/confirm",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/billing/family/connect": {
       "post": {
         "operationId": "post_api_billing_family_connect",
@@ -5366,6 +5405,31 @@
         "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/family/quote": {
+      "get": {
+        "operationId": "get_api_billing_family_quote",
+        "summary": "GET /api/billing/family/quote",
+        "tags": [
+          "billing"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },
@@ -7594,38 +7658,6 @@
         }
       }
     },
-    "/api/checkins/family-contacts": {
-      "get": {
-        "operationId": "get_api_checkins_family-contacts",
-        "summary": "GET /api/checkins/family-contacts",
-        "tags": [
-          "checkins"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
     "/api/checkins/history/{enrollmentId}": {
       "get": {
         "operationId": "get_api_checkins_history_enrollmentId",
@@ -7666,6 +7698,38 @@
             }
           }
         ]
+      }
+    },
+    "/api/checkins/mine": {
+      "get": {
+        "operationId": "get_api_checkins_mine",
+        "summary": "GET /api/checkins/mine",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
       }
     },
     "/api/checkins/my/{enrollmentId}": {
@@ -7735,38 +7799,6 @@
         },
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/checkins/status": {
-      "get": {
-        "operationId": "get_api_checkins_status",
-        "summary": "GET /api/checkins/status",
-        "tags": [
-          "checkins"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
         }
       }
     },
@@ -9566,21 +9598,14 @@
         "tags": [
           "courthouses"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -9598,21 +9623,14 @@
         "tags": [
           "courthouses"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -17600,6 +17618,38 @@
       "get": {
         "operationId": "get_api_messages_direct",
         "summary": "GET /api/messages/direct",
+        "tags": [
+          "messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/messages/threads": {
+      "get": {
+        "operationId": "get_api_messages_threads",
+        "summary": "GET /api/messages/threads",
         "tags": [
           "messages"
         ],

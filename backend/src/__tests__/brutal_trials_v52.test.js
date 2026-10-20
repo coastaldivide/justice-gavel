@@ -71,16 +71,13 @@ const mkMatter = (v, o = {}) => ({
 
 // ── PERF. Large Screen Architecture ───────────────────────────────────────
 describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
-  test('PERF-01: CaseScreen (1340L) has autosave, doc scanner, sharing, calendar sync sections', async () => {
+  test('PERF-01: CaseScreen has document scan, court-date sharing, family invite and court dates', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    const lines = src.split('\n').length;
-    expect(lines).toBeGreaterThan(1200);
-    expect(src).toContain('Autosave notes');
-    expect(src).toContain('Document scanner');
-    expect(src).toContain('Case sharing');
-    expect(src).toContain('Family invite');
-    expect(src).toContain('Calendar sync');
+    expect(src).toContain('export function parseScanResult'); // document scan → new case fields
+    expect(src).toContain('export function courtDateShareText'); // share the court date
+    expect(src).toContain('/followers`'); // family invite
+    expect(src).toContain("navigation.navigate('CourtDates', { caseId: c.id })"); // court dates (.ics there)
   });
   test('PERF-03: MotionLibraryScreen (1350L) mirrors backend motion type definitions', async () => {
     const fs = await import('fs');
@@ -204,23 +201,22 @@ describe('TRAN. Phase Transitions — All Documented', () => {
 
 // ── S6. CaseScreen Internal Architecture ──────────────────────────────────
 describe('S6. CaseScreen — 1340-Line Internal Architecture', () => {
-  test('S6-01: CaseScreen autosave notes section (debounced saves)', async () => {
+  test('S6-01: CaseScreen notes are saved with the case (editor Save)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('Autosave notes');
-    expect(src).toContain('notes');
+    expect(src).toContain('notes: draft.notes.trim()');
+    expect(src).toContain('case-notes-input');
   });
   test('S6-03: CaseScreen AI scan response parsed into case fields', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('Parse AI scan response into case fields');
+    expect(src).toContain('export function parseScanResult');
+    expect(src).toContain('pollJob');
   });
-  test('S6-04: CaseScreen calendar sync section pushes deadlines to CalDAV', async () => {
+  test('S6-04: CaseScreen court date goes to the court-dates screen (calendar .ics there)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('Calendar sync');
-    // Calendar sync uses addToCalendar useCallback
-    expect(src).toContain('addToCalendar');
+    expect(src).toContain("navigation.navigate('CourtDates', { caseId: c.id })");
     expect(src).toContain('next_court_date');
   });
 });

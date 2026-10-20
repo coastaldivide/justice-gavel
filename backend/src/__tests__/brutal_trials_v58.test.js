@@ -311,8 +311,8 @@ describe('S6M. CaseScreen — sendInvite + runDocumentScan', () => {
   test('S6M-02: runDocumentScan triggers OCR scan on a given asset URI', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('runDocumentScan');
-    expect(src).toContain('asset.uri');
+    expect(src).toContain('const runScan = async (uri: string, mime: string, name: string)');
+    expect(src).toContain("doc_type', 'case_intake'");
     expect(src).toContain('setScanning');
   });
 });

@@ -70,8 +70,9 @@ const idList = (s) => String(s || '').split(',').map(x => Number.parseInt(x, 10)
 async function arrestFor(db, arrestId) {
   if (!arrestId || !/^\d{1,15}$/.test(String(arrestId))) return null;
   // Paid path: sample/seed or taken-down rows are never attached to a purchase.
-  return db.get(`SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location FROM arrest_records
-                  WHERE id = ? AND ${realArrestSql()} LIMIT 1`, [Number(arrestId)]).catch(() => null);
+  const row = await db.get(`SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location FROM arrest_records
+                  WHERE id = ? AND ${realArrestSql()} LIMIT 1`, [Number(arrestId)]);
+  return row || null;
 }
 
 router.get('/family/quote', (req, res) => {
@@ -191,12 +192,12 @@ async function pickQuickConnectContacts(db, { lat, lng, state }) {
   const inState = (table, cols) => db.all(
     `SELECT ${cols} FROM ${table} WHERE active = 1 AND phone IS NOT NULL AND UPPER(state) = ?
       ORDER BY rating DESC NULLS LAST LIMIT 1`, [st]).catch(() => []);
-  const BAIL_COLS = 'id, name, phone, address, rating, lat, lng, hours';
-  const LAW_COLS = 'id, name, phone, address, rating, specialties, free_consultation, lat, lng';
-  let bondsmen = hasCoords ? await near('bail_agents', BAIL_COLS) : [];
-  if (!bondsmen.length) bondsmen = await inState('bail_agents', BAIL_COLS);
-  let lawyers = hasCoords ? await near('lawyers', LAW_COLS) : [];
-  if (!lawyers.length) lawyers = await inState('lawyers', LAW_COLS);
+  const agentCols = 'id, name, phone, address, rating, lat, lng, hours';
+  const lawyerCols = 'id, name, phone, address, rating, specialties, free_consultation, lat, lng';
+  let bondsmen = hasCoords ? await near('bail_agents', agentCols) : [];
+  if (!bondsmen.length) bondsmen = await inState('bail_agents', agentCols);
+  let lawyers = hasCoords ? await near('lawyers', lawyerCols) : [];
+  if (!lawyers.length) lawyers = await inState('lawyers', lawyerCols);
   return { bondsman: bondsmen[0] || null, lawyer: lawyers[0] || null };
 }
 

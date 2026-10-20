@@ -504,4 +504,18 @@ export default {
   "msgs.push.attorney_accepted_title": "✅ Một luật sư đã nhận hồ sơ của bạn",
   "msgs.push.attorney_accepted_body": "{name} đã nhận hồ sơ của bạn: {title}. Giờ bạn có thể nhắn tin cho họ trong ứng dụng.",
   "msgs.push.your_attorney": "Luật sư của bạn",
+  "courthouse.err.load": "Không thể tải danh sách tòa án. Vui lòng thử lại.",
+  "courthouse.err.not_found": "Không tìm thấy tòa án.",
+  // ── Discovery analysis (routes/discovery/analyze.js) ──
+  "discovery.err.rate": "Quá nhiều yêu cầu tài liệu. Vui lòng đợi vài phút.",
+  "discovery.err.file_required": "Hãy chọn tệp PDF, Word, văn bản hoặc ảnh (tối đa 10 MB).",
+  "discovery.err.payments_off": "Chưa thể thanh toán, nên dịch vụ phân tích tài liệu có phí chưa khả dụng.",
+  "discovery.err.payment_required": "Hãy thanh toán cho lần phân tích này để tiếp tục.",
+  "discovery.err.payment_not_found": "Không tìm thấy khoản thanh toán.",
+  "discovery.err.other_file": "Khoản thanh toán này dành cho tệp khác.",
+  "discovery.err.not_paid": "Thanh toán chưa thành công.",
+  "discovery.err.payment_used": "Khoản thanh toán này đã dùng cho một lần phân tích — hãy mở trong lịch sử.",
+  "discovery.err.server": "Không thể bắt đầu phân tích. Bạn chưa bị tính phí. Vui lòng thử lại.",
+  "family.err.contact_required": "Hãy nhập tên và số điện thoại hoặc e-mail.",
+  "family.err.contact_not_found": "Không tìm thấy liên hệ.",
 };

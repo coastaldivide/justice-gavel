@@ -188,7 +188,8 @@ describe('PAY. Payment System — All 29 Checks', () => {
     expect(src).toContain('paymentIntents.create');
     expect(src).toContain("pi.status !== 'succeeded'");
     expect(src).toContain('revenue_log');
-    expect(src).toContain('mock: true');
+    expect(src).not.toContain('mock: true'); // no demo "connection" without a payment
+    expect(src).not.toContain('pi_mock_family');
   });
   test('PAY-03: pay.js orchestrator + rate limited + auth', async () => {
     const fs = await import('fs');

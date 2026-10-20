@@ -38,9 +38,10 @@ function ContactsScreen(): React.JSX.Element {
     })();
   }, []);
 
+  // Three fixed slots: removing a contact empties its slot (it can be filled again).
   const removeContact = (i: number) => {
-    if (contacts.length <= 1) { setLocalContacts([{ value: '', label: '' }]); }
-    else { setLocalContacts(prev => prev.filter((_, idx) => idx !== i)); }
+    setLocalContacts(prev => prev.map((c, idx) => (idx === i ? { ...c, value: '' } : c)));
+    setSaved(false);
   };
 
   const updateContact = (idx: number, val: string) => {

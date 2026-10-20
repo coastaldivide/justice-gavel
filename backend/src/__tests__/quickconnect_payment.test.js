@@ -70,6 +70,7 @@ const fakeStripe = {
 jest.unstable_mockModule('../db/index.js', () => ({ getDb: async () => fakeDb, default: fakeDb }));
 jest.unstable_mockModule('../routes/billing/_shared.js', () => ({
   stripe: fakeStripe,
+  stripeClient: () => fakeStripe,
   LIVE: true,
   billingLimiter: (req, res, next) => next(),
   getOrCreateStripeCustomer: async () => 'cus_test',
@@ -79,6 +80,7 @@ jest.unstable_mockModule('../middleware/auth.js', () => ({
     const t = (req.headers.authorization || '').replace('Bearer ', '');
     try { req.user = jwt.verify(t, SECRET); next(); } catch { res.status(401).json({ error: 'auth' }); }
   },
+  optionalAuth: (req, res, next) => next(), // routes/providers.js (directory columns) is imported by connections.js
 }));
 
 const { default: router } = await import('../routes/billing/connections.js');

@@ -181,7 +181,7 @@ describe('S6. Screens — 15-19 Hit Range', () => {
     expect(src).toContain('identifier');
     expect(src).toContain('password');
   });
-  test('S6-02: CheckInScreen — 532 lines, phase+enrollment+todayStatus, /checkins/submit', async () => {
+  test('S6-02: CheckInScreen — phase + enrollment + today status, /checkins/submit', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('/checkins/submit');
@@ -189,8 +189,7 @@ describe('S6. Screens — 15-19 Hit Range', () => {
     expect(src).toContain('enrollment');
     expect(src).toContain('checked_in_today');
     expect(src).toContain('RefreshControl');
-    const lines = src.split('\n').length;
-    expect(lines).toBeGreaterThan(500);
+    expect(src).not.toContain('Animated.loop'); // no endless animation
   });
   test('S6-03: BondsmanDashboardScreen — expanded accordion + useFocusEffect + /billing/leads', async () => {
     const fs = await import('fs');

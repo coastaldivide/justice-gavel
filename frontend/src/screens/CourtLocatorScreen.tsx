@@ -7,6 +7,7 @@ import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { unwrapList,api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { getUserState } from '../utils/userState';
 
 type Courthouse = {
   id: number;
@@ -44,6 +45,7 @@ function CourtLocatorScreen(): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [home, setHome] = useState('');
 
   const bg   = colors.bg;
   const card = isDark ? colors.surface : colors.bgCard;
@@ -58,7 +60,7 @@ function CourtLocatorScreen(): React.JSX.Element {
     try {
       const endpoint = courtMode === 'federal'
         ? `/legaldata/federal-courts?q=${encodeURIComponent(q)}&limit=30`
-        : `/courthouses?q=${encodeURIComponent(q)}&limit=30`;
+        : /^[A-Z]{2}$/.test(q) ? `/courthouses?state=${q}&limit=100` : `/courthouses?q=${encodeURIComponent(q)}&limit=30`;
       const res = await api.get(endpoint);
       // Normalize federal courts to match courthouse schema
       // /courthouses answers with an array, /legaldata/* with { data: [...] }.
@@ -68,7 +70,7 @@ function CourtLocatorScreen(): React.JSX.Element {
         name: fc.name,
         address: fc.address,
         phone: fc.phone,
-        hours: fc.hours || t('x_court_locator_mon_fri_8_30am'),
+        hours: fc.hours || null,
         county: fc.district,
         notes: t('x_court_locator_federal_district', { district: String(fc.district ?? '') }),
         court_type: 'Federal',
@@ -81,18 +83,21 @@ function CourtLocatorScreen(): React.JSX.Element {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await doSearch(search || 'Nashville').catch(() => {});
+    await doSearch(search.trim().length >= 2 ? search : home).catch(() => {});
     setRefreshing(false);
-  }, [search, doSearch]);
+  }, [search, home, doSearch]);
 
 
   useEffect(() => {
-    const tItem = setTimeout(() => doSearch(search), 350);
+    const tItem = setTimeout(() => doSearch(search.trim().length >= 2 ? search : home), 350);
     return () => clearTimeout(tItem);
-  }, [search, doSearch, courtMode]);
+  }, [search, home, doSearch, courtMode]);
 
-  // Load nearby / default on mount
-  useEffect(() => { doSearch('Nashville'); }, [doSearch]);
+  // Start with the person's state (Settings / location); nothing is assumed when it is unknown.
+  useEffect(() => {
+    getUserState().then(st => { if (mountedRef.current && st?.code) setHome(st.code); }).catch(() => {});
+  }, []);
+
 
   const openMaps = (address: string) => {
     const encoded = encodeURIComponent(address);
@@ -153,7 +158,7 @@ function CourtLocatorScreen(): React.JSX.Element {
       )}
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch(search.trim().length >= 2 ? search : 'Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>{t('retry')}</Text></TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch(search.trim().length >= 2 ? search : home)} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>{t('retry')}</Text></TouchableOpacity>
       </>) : null}
       {/* FlashList only supports padding/background in contentContainerStyle,
           so the centered max-width column lives on a wrapper View instead. */}

@@ -157,8 +157,9 @@ describeIntegration('section B: sign-up, sign-in & account (real Postgres)', () 
       const tokens = received.map(m => m.to);
       expect(tokens).toContain('ExponentPushToken[b-on]');
       expect(tokens).not.toContain('ExponentPushToken[b-off]');
-      const checkins = fs.readFileSync(new URL('../../routes/checkins.js', import.meta.url), 'utf8');
-      expect(checkins).toMatch(/COALESCE\(u\.notif_checkin_reminders, 1\) = 1/);
+      // check-in reminders are planned per enrollment and dropped at send time when the setting is off
+      const dispatcher = fs.readFileSync(new URL('../../services/reminderDispatcher.js', import.meta.url), 'utf8');
+      expect(dispatcher).toContain("if (type === 'checkin_reminder') return !on(user.notif_checkin_reminders);");
     } finally {
       process.env.EXPO_PUSH_API_URL = prevExpo || '';
       if (!prevExpo) delete process.env.EXPO_PUSH_API_URL;

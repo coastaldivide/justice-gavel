@@ -30,10 +30,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { FileSystem, RNShare } from '../utils/webCompat';
-import { unwrapList, api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { pollJob } from '../services/jobPoller';
+import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { t, useLang, perLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
+import { getToken } from '../utils/secureStorage';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Analysis {
@@ -247,11 +250,16 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const [history,   setHistory]   = useState<any[]>([]);
   const [histLoad,  setHistLoad]  = useState(false);
   const [hasPro,    setHasPro]    = useState(false);
+  const [paymentsLive, setPaymentsLive] = useState(true);
 
-    useEffect(() => {
-    api.get('/discovery/status')
-      .then(r => setHasPro(r.data?.has_pro || false))
-      .catch((e) => { __DEV__ && console.warn(e?.message); });
+  // Pro status and whether payments are live — for a signed-in person (guests sign in at "Analyze").
+  useEffect(() => {
+    getToken().then(tk => {
+      if (!tk) return;
+      api.get('/discovery/status')
+        .then(r => { setHasPro(r.data?.has_pro || false); setPaymentsLive(r.data?.payments_live !== false); })
+        .catch((e) => { __DEV__ && console.warn(e?.message); });
+    }, () => undefined);
   }, []);
 
 
@@ -291,59 +299,75 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   }, [showToast]);
 
 
+  const { available: sheetAvailable, initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+
+  /** POST the file (with a paid PaymentIntent the second time); returns the response body. */
+  const postFile = useCallback(async (paymentIntentId?: string) => {
+    if (!file) throw new Error('no file');
+    const formData = new FormData();
+    const getFileMime = (name: string) => {
+      const ext = name.toLowerCase();
+      if (ext.endsWith('.pdf'))  return 'application/pdf';
+      if (ext.endsWith('.jpg') || ext.endsWith('.jpeg')) return 'image/jpeg';
+      if (ext.endsWith('.png'))  return 'image/png';
+      if (ext.endsWith('.webp')) return 'image/webp';
+      if (ext.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      if (ext.endsWith('.doc'))  return 'application/msword';
+      if (ext.endsWith('.txt'))  return 'text/plain';
+      return 'application/octet-stream';
+    };
+    if (Platform.OS === 'web') {
+      const blob = await (await fetch(file.uri)).blob();
+      formData.append('document', new File([blob], file.name, { type: blob.type || getFileMime(file.name) }));
+    } else {
+      formData.append('document', { uri: file.uri, type: getFileMime(file.name), name: file.name } as any);
+    }
+    formData.append('doc_type', docType);
+    formData.append('case_context', caseTitle || '');
+    if (caseId) formData.append('case_id', String(caseId));
+    if (paymentIntentId) formData.append('payment_intent_id', paymentIntentId);
+    const res = await api.post('/discovery/analyze', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 90_000 });
+    return res.data as { jobId?: string };
+  }, [file, docType, caseId, caseTitle]);
+
   const runAnalysis = useCallback(async () => {
     if (!file) return;
     setAnalyzing(true);
     setPhase('analyzing');
-
+    const fail = (m: string) => { showToast(m, 'error'); setPhase('upload'); };
     try {
-      // Send as multipart form data
-      const formData = new FormData();
-      // Detect MIME type from extension for proper server-side routing
-      const getFileMime = (name: string) => {
-        const ext = name.toLowerCase();
-        if (ext.endsWith('.pdf'))  return 'application/pdf';
-        if (ext.endsWith('.jpg') || ext.endsWith('.jpeg')) return 'image/jpeg';
-        if (ext.endsWith('.png'))  return 'image/png';
-        if (ext.endsWith('.tiff') || ext.endsWith('.tif')) return 'image/tiff';
-        if (ext.endsWith('.heic') || ext.endsWith('.heif')) return 'image/heic';
-        if (ext.endsWith('.webp')) return 'image/webp';
-        if (ext.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        if (ext.endsWith('.doc'))  return 'application/msword';
-        if (ext.endsWith('.txt'))  return 'text/plain';
-        return 'application/octet-stream';
-      };
-      formData.append('document', {
-        uri:  file.uri,
-        type: getFileMime(file.name),
-        name: file.name } as any);
-      formData.append('doc_type',     docType);
-      formData.append('case_context', caseTitle || '');
-      if (caseId) formData.append('case_id', String(caseId));
-
-      const res = await api.post('/discovery/analyze', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 90000, // 90s -- large PDFs take time
-      });
-
-      setAnalysis({ ...res.data, filename: file.name });
+      let body: { jobId?: string };
+      try {
+        body = await postFile();
+      } catch (e: any) {
+        const d = e?.response?.data;
+        if (e?.response?.status !== 402 || !d?.requires_payment) throw e;
+        // Not a Pro subscriber: pay for this document with the Stripe payment sheet, then send it again.
+        if (!sheetAvailable || !d.client_secret) return fail(PAYMENTS_COMING_SOON());
+        const init = await initPaymentSheet({ paymentIntentClientSecret: d.client_secret, merchantDisplayName: 'Justice Gavel' });
+        if (init.error) return fail(init.error.message || t('x_booking_payment_setup_failed_please'));
+        const paid = await presentPaymentSheet();
+        if (paid.error) { if (paid.error.code !== 'Canceled') fail(paid.error.message || t('x_quick_connect_card_was_declined_please')); else setPhase('upload'); return; }
+        body = await postFile(d.payment_intent_id);
+      }
+      if (!body?.jobId) throw new Error('no job');
+      const job = await pollJob(body.jobId, { timeoutMs: 180_000 });
+      if (job.status === 'failed' || !job.result) throw new Error(job.error || t('x_discovery_analysis_failed'));
+      setAnalysis({ ...(job.result as Analysis), filename: file.name });
       setPhase('result');
-
-      // Clean up cached PDF
-      await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch((e) => { __DEV__ && console.warn(e?.message); });
+      if (Platform.OS !== 'web') await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch(() => undefined);
     } catch (e: any) {
-      const msg = apiErrorMessage(e, t('x_discovery_analysis_failed'));
-      showToast(t('x_discovery_try_smaller_pdf_check', { msg }), 'error');
-        setPhase('upload');
-      setPhase('upload');
+      if (isPaymentsUnavailable(e) || e?.response?.status === 503) return fail(t('disc2_payments_off'));
+      fail(t('x_discovery_try_smaller_pdf_check', { msg: apiErrorMessage(e, t('x_discovery_analysis_failed')) }));
     } finally {
       setAnalyzing(false);
     }
-  }, [file, docType, caseId, caseTitle, showToast]);
+  }, [file, postFile, sheetAvailable, initPaymentSheet, presentPaymentSheet, showToast]);
 
   const analyze = useCallback(async () => {
     if (!file) return;
     requireAuth(async () => {
+      if (!hasPro && !paymentsLive) { showToast(t('disc2_payments_off'), 'info'); return; }
       // Confirm payment if not Pro subscriber
       if (!hasPro) {
         confirm(t('x_discovery_analyze_19_99', { name: file.name }),
@@ -355,7 +379,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         runAnalysis();
       }
     });
-  }, [file, hasPro, requireAuth, confirm, runAnalysis]);
+  }, [file, hasPro, paymentsLive, requireAuth, confirm, runAnalysis, showToast]);
 
   const loadHistory = useCallback(async () => {
     setHistLoad(true);

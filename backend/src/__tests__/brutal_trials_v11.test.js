@@ -898,7 +898,8 @@ describe('14. Screen Contracts — Share, Clipboard, Linking, Focus', () => {
   test('14-01: CaseScreen Share.share has message + title fields', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    const shareIdx = src.indexOf('Share.share');
+    // the court date is shared as text (no link, no notes)
+    const shareIdx = src.indexOf('RNShare.share');
     expect(shareIdx).toBeGreaterThan(0);
     const shareBlock = src.slice(shareIdx, shareIdx + 100);
     expect(shareBlock).toContain('message');

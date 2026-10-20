@@ -33,6 +33,14 @@ export function parseLocalDate(value: string | number | Date | null | undefined)
   return isNaN(d.getTime()) ? null : d;
 }
 
+/** 'YYYY-MM-DD' naming a real calendar day (rejects 2026-02-30 and other formats). */
+export function validCourtDate(v: string): boolean {
+  if (!DATE_ONLY.test(v)) return false;
+  const [y, m, d] = v.split('-').map(Number);
+  const probe = new Date(Date.UTC(y, m - 1, d));
+  return probe.getUTCFullYear() === y && probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+}
+
 /** Format a Date as a local "YYYY-MM-DD" string (no UTC shift). */
 export function toLocalISODate(d: Date): string {
   const y = d.getFullYear();

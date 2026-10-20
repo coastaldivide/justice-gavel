@@ -212,16 +212,16 @@ describe('CS3. CaseScreen — Scan Source + Invite Modal + New Case', () => {
   test('CS3-01: pickScanSource selects camera or library for document scan', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('pickScanSource');
-    expect(src).toContain("'camera'");
-    expect(src).toContain("'library'");
+    expect(src).toContain("const pickScan = async (source: 'camera' | 'library')");
+    expect(src).toContain("pickScan(camera ? 'camera' : 'library')");
+    expect(src).toContain("if (Platform.OS === 'web') { pickScan('library'); return; }");
   });
   test('CS3-02: openInvite(cas) opens invite modal and resets email/name fields', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('openInvite');
-    expect(src).toContain('setInvitingCase');
-    expect(src).toContain('setInviteEmail');
+    expect(src).toContain("case 'invite'");
+    expect(src).toContain('setInviteCase(c)');
+    expect(src).toContain("setInviteEmail('')");
   });
 });
 

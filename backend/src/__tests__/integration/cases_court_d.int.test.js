@@ -245,6 +245,13 @@ describeIntegration('section D — cases, court dates, check-ins, messages (real
     expect(hist.body.records[0].lat).toBeCloseTo(36.16);
     expect(hist.body.enrollment.user_id).toBeUndefined();
     expect((await req('get', `/api/checkins/history/${eid}`, defendant)).status).toBe(404);
+    // "Check-in reminders" off in Settings: the reminder is not sent
+    const later = await svc.checkin.planCheckinReminder(ctx.db, eid, new Date(Date.now() + 2 * 86_400_000));
+    const planned = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE notification_type = 'checkin_reminder' AND user_id = ? AND status = 'pending' AND deliver_at = ?`, [defendant.user.id, later.deliver_at]);
+    await ctx.db.run('UPDATE users SET notif_checkin_reminders = 0 WHERE id = ?', [defendant.user.id]);
+    await svc.dispatch.dispatchDueReminders({ db: ctx.db, now: new Date(later.deliver_at) });
+    expect(await ctx.db.get('SELECT status, error FROM scheduled_pushes WHERE id = ?', [planned.id])).toEqual({ status: 'skipped', error: 'user_preference' });
+    expect(await svc.checkin.planCheckinReminder(ctx.db, eid, new Date(Date.now() + 3 * 86_400_000))).toBeNull();   // and none is planned while off
     expect((await req('put', `/api/checkins/enrollments/${eid}`, agent).send({ active: false })).status).toBe(200);
     expect(await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE notification_type = 'checkin_reminder' AND user_id = ? AND status = 'pending'`, [defendant.user.id])).toBeUndefined();
   });

@@ -65,6 +65,7 @@ const fakeDb = {
       });
     }
     if (/FROM case_messages m LEFT JOIN users u ON m.sender_id = u.id WHERE m.id = \?/.test(s)) return state.case_messages.filter(m => m.id === p[0]);
+    if (/^SELECT deleted_at FROM case_messages WHERE id = \?/.test(s)) return state.case_messages.filter(m => m.id === p[0]);
     if (/FROM case_assignments ca LEFT JOIN users u/.test(s)) return [];
     if (/FROM messages m LEFT JOIN users su/.test(s))
       return state.messages.filter(m => m.recipient_id === p[0] || m.sender_id === p[1]).reverse();

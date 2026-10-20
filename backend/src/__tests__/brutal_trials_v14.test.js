@@ -327,10 +327,12 @@ describe('6. MatchScreen — AI Lawyer Matching', () => {
     expect(src).toContain('proBonoOnly');
   });
 
-  test('6-03: MatchScreen has callback request endpoint', async () => {
+  test('6-03: MatchScreen results reach the lawyer through ContactActions (call/text/directions)', async () => {
+    // debug pass C: the dead callback modal was removed; callbacks live on Booking for on-app lawyers
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/MatchScreen.tsx', 'utf8');
-    expect(src).toContain("'/consultations/callback-request'");
+    expect(src).toContain('ContactActions');
+    expect(src).not.toContain("'/consultations/callback-request'");
   });
 
   test('6-04: MatchScreen uses PracticeAreaSelector component', async () => {
@@ -339,10 +341,11 @@ describe('6. MatchScreen — AI Lawyer Matching', () => {
     expect(src).toContain('PracticeAreaSelector');
   });
 
-  test('6-05: MatchScreen uses Modal for filters', async () => {
+  test('6-05: MatchScreen filters are inline (Picker), no dead modal', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/MatchScreen.tsx', 'utf8');
-    expect(src).toContain('Modal');
+    expect(src).toContain('Picker');
+    expect(src).not.toMatch(/<Modal\b/);
   });
 
   test('6-06: MatchScreen has KeyboardAvoidingView (text input safety)', async () => {

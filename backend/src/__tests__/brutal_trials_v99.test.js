@@ -102,30 +102,29 @@ describe('MLS. MotionLibraryScreen.tsx — 76,090 chars, 9 Modals, 6 API Calls',
 
 // ── CSC. CaseScreen — Second Largest Screen ───────────────────────────────
 describe('CSC. CaseScreen.tsx — 70,149 chars, 18 Modals, 12 API Calls', () => {
-  test('CSC-01: CaseScreen 70,149 chars — comprehensive case management', async () => {
+  test('CSC-01: CaseScreen — comprehensive case management', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx','utf8');
-    expect(src.length).toBeGreaterThan(65000);
+    expect(src.length).toBeGreaterThan(40000);
     expect(src).toContain('CaseScreen');
   });
-  test('CSC-02: 18 modal sheets for case management actions', async () => {
+  test('CSC-02: two modal sheets (editor, family invite)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx','utf8');
-    const modals=(src.match(/Modal/g)||[]).length;
-    expect(modals).toBeGreaterThanOrEqual(15);
-    // Case notes, timeline, docket, documents, contacts, checkins, etc.
+    // one editor sheet + the family-invite sheet; the rest are their own screens
+    const modals=(src.match(/<Modal\b/g)||[]).length;
+    expect(modals).toBe(2);
   });
-  test('CSC-03: 12 API calls — comprehensive case data aggregation', async () => {
+  test('CSC-03: case data from the API (8+ calls)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx','utf8');
     const apiCalls=(src.match(/api\.(get|post|put|delete|patch)\s*\(/g)||[]).length;
-    expect(apiCalls).toBeGreaterThanOrEqual(10);
+    expect(apiCalls).toBeGreaterThanOrEqual(8);
   });
-  test('CSC-04: addToCalendar handler — court dates to device calendar', async () => {
+  test('CSC-04: court dates of a case open the court-dates screen (calendar .ics there)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx','utf8');
-    expect(src).toContain('addToCalendar');
-    // Court hearing dates added to device calendar — critical reminder
+    expect(src).toContain("case 'court-dates'");
   });
   test('CSC-05: all TouchableOpacity accessible', async () => {
     const fs = await import('fs');

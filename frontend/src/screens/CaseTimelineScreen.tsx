@@ -20,6 +20,9 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
+import { formatDate } from '../utils/dateUtils';
+import { getToken } from '../utils/secureStorage';
+import { SignInNeeded } from '../components/SignInNeeded';
 import { t, perLang, useLang, locale } from '../i18n';
 
 const EVENT_ICONS: Record<string, string> = {
@@ -84,21 +87,20 @@ interface CaseEvent {
   created_at: string;
 }
 
-function formatEventDate(dateStr: string | null): string {
+/** An event date is a calendar day: shown as that day in every time zone (never shifted by UTC). */
+export function formatEventDate(dateStr: string | null): string {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString(locale(), { month:'short', day:'numeric', year:'numeric' });
+  return formatDate(String(dateStr).slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatAmount(cents: number | null): string {
   if (!cents) return '';
-  return ' · $' + (cents / 100).toLocaleString();
+  return ' · ' + (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' });
 }
 
 
 
-function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
+function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   useLang();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
@@ -132,15 +134,15 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
 
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  return () => { mountedRef.current = false; };
+    mountedRef.current = true;
+    const task = InteractionManager.runAfterInteractions(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     });
-    return () => _task.cancel();
+    return () => { mountedRef.current = false; task.cancel(); };
   }, []);
 
   const { colors } = useTheme();
-  const [_fetchError, _setFetchError] = useState<string|null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [events, setEvents]       = useState<CaseEvent[]>([]);
 
   const [loading, setLoading]     = useState(true);
@@ -155,31 +157,40 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
   const [newDesc, setNewDesc]     = useState('');
   const [newLocation, setNewLocation] = useState('');
   const [formError, setFormError] = useState('');
+  const [signedOut, setSignedOut] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
   const loadEvents = useCallback(async () => {
     if (!caseId) return;
+    if (!(await getToken().catch(() => null))) {
+      if (mountedRef.current) { setSignedOut(true); setLoading(false); }
+      return;
+    }
+    if (mountedRef.current) setSignedOut(false);
     try {
       const res = await api.get(`/cases/${caseId}/events`);
       if (mountedRef.current) {
         const evts = res.data?.events || [];
         setEvents(evts);
+        setFetchError(null);
         cacheTimeline(caseId, evts).catch(() => {});
       }
-    } catch {
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 403 || status === 404) { if (mountedRef.current) { setUnavailable(true); setEvents([]); setFetchError(null); } return; }
       if (mountedRef.current) {
         const cached = await getCachedTimeline(caseId).catch(() => null);
         if (cached?.data?.length) {
           setEvents(cached.data as any);
+          setFetchError(t('x_case_timeline_offline_saved'));
         } else {
-          setEvents([]);
+          setFetchError(apiErrorMessage(e, t('x_case_timeline_could_not_load')));
         }
       }
     } finally {
       if (mountedRef.current) setLoading(false);
     }
   }, [caseId]);
-
-  React.useEffect(() => { loadEvents(); }, [loadEvents]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -208,8 +219,8 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
       setNewTitle(''); setNewType('note'); setNewDate('');
       setNewDesc(''); setNewLocation('');
       await loadEvents();
-    } catch {
-      setFormError(t('x_case_timeline_could_not_save_event'));
+    } catch (e) {
+      setFormError(apiErrorMessage(e, t('x_case_timeline_could_not_save_event')));
     } finally {
       setSaving(false);
     }
@@ -303,6 +314,14 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}>
     <View style={[s.screen, { backgroundColor: colors.bg }]}>
+      {signedOut ? <SignInNeeded navigation={navigation} testID="timeline-sign-in" body={t('sin_case_body')} onSignedIn={loadEvents} />
+        : unavailable ? (
+          <View testID="timeline-unavailable" style={s.unavailable}>
+            <Text maxFontSizeMultiplier={1.4} style={s.unavailableIcon}>🔒</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.unavailableTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.unavailableBody, { color: colors.textSecond }]}>{t('case_unavailable_body')}</Text>
+          </View>
+        ) : (<>
       {loading && !events.length && (
         <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
           <ActivityIndicator size="large" color={colors.navy} />
@@ -313,10 +332,10 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
         </View>
       )}
 
-          {_fetchError && (
+          {!!fetchError && (
             <View style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
               <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 13 }}>
-                {_fetchError}
+                {fetchError}
               </Text>
             </View>
           )}
@@ -340,7 +359,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
           </View>
         }
         ListEmptyComponent={
-          !loading ? (
+          !loading && !fetchError ? (
             <View style={s.empty}>
               <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
@@ -365,6 +384,7 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
       >
         <Text maxFontSizeMultiplier={1.4} style={s.fabText}>{t('x_case_timeline_add_event')}</Text>
       </TouchableOpacity>
+      </>)}
 
       {/* Add event modal */}
       <Modal accessibilityViewIsModal={true} visible={showAdd} animationType="slide" transparent presentationStyle="overFullScreen"
@@ -484,6 +504,10 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
 
 const styles = () => StyleSheet.create({
   screen:       { flex:1 },
+  unavailable:  { alignItems:'center', padding:32, gap:10 },
+  unavailableIcon: { fontSize:36 },
+  unavailableTitle: { fontSize:18, fontWeight:'800', textAlign:'center' },
+  unavailableBody: { fontSize:15, lineHeight:22, textAlign:'center' },
   list:         { padding:16, paddingBottom:100 },
   header:       { marginBottom:20 },
   headerTitle:  { fontSize:TYPE['2xl'], lineHeight:34, ...FONTS.black },

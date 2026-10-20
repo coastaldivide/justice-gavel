@@ -13,7 +13,7 @@ describeIntegration('H1/H2 — check-in routes', () => {
   beforeAll(async () => {
     if (!ctx.app) return;
     process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef';
-    bondsman  = await ctx.persona('BondsmanB');
+    bondsman  = await ctx.persona('BondsmanB', { accountType: 'bail_agent' });   // enrolling is for bail agents only
     defendant = await ctx.persona('Defendant');
     stranger  = await ctx.persona('Stranger');
     staff     = await ctx.persona('Ops', { role: 'admin' });
@@ -21,7 +21,7 @@ describeIntegration('H1/H2 — check-in routes', () => {
       defendant_name: 'Dee Fendant', defendant_phone: '615-555-0199', defendant_email: defendant.email,
       case_number: '2026-CR-777', court_date: '2026-12-01',
     });
-    expect(r.status).toBe(200);
+    expect(r.status).toBe(201);
     enrollmentId = r.body.enrollment.id;
     ctx.addCleanup(async (db) => {
       await db.run('DELETE FROM checkin_records WHERE enrollment_id = ?', [enrollmentId]).catch(() => {});
@@ -38,7 +38,8 @@ describeIntegration('H1/H2 — check-in routes', () => {
   it('H1 LEGIT: staff (or the scheduler with the admin key) can run it', async () => {
     const r = await ctx.request().post('/api/checkins/remind-all').set(staff.headers);
     expect(r.status).toBe(200);
-    expect(r.body).toEqual(expect.objectContaining({ reminded: expect.any(Number), total_due: expect.any(Number) }));
+    // it plans the missing per-enrollment reminders (the dispatcher sends them in the defendant's day)
+    expect(r.body).toEqual({ planned: expect.any(Number) });
     const k = await ctx.request().post('/api/checkins/remind-all').set('X-Admin-Key', process.env.ADMIN_KEY);
     expect(k.status).toBe(200);
   });
@@ -47,7 +48,7 @@ describeIntegration('H1/H2 — check-in routes', () => {
     for (const path of [`/api/checkins/status/${enrollmentId}`, `/api/checkins/my/${enrollmentId}`]) {
       const anon = await ctx.request().get(path);
       expect(anon.status).toBe(401);
-      expect(leaks(anon, '615-555-0199')).toBe(false);
+      expect(leaks(anon, '5550199')).toBe(false);
       const s = await ctx.request().get(path).set(stranger.headers);
       expect(s.status).toBe(404);
       expect(leaks(s, 'Dee Fendant')).toBe(false);
@@ -69,17 +70,24 @@ describeIntegration('H1/H2 — check-in routes', () => {
     const linked = await ctx.db.get('SELECT user_id FROM checkin_enrollments WHERE id = ?', [enrollmentId]);
     expect(Number(linked.user_id)).toBe(defendant.id);
     const sub = await ctx.request().post('/api/checkins/submit').set(defendant.headers).send({ enrollment_id: enrollmentId, notes: 'Home' });
-    expect(sub.status).toBe(200);
+    expect(sub.status).toBe(201);
     const my = await ctx.request().get(`/api/checkins/my/${enrollmentId}`).set(defendant.headers);
     expect(my.status).toBe(200);
     // once linked, a later account with the same contact cannot take it over
     expect((await ctx.request().get(`/api/checkins/status/${enrollmentId}`).set(stranger.headers)).status).toBe(404);
   });
 
+  it('H1/H2: an account that is not a bail agent cannot enroll anyone', async () => {
+    const r = await ctx.request().post('/api/checkins/enroll').set(stranger.headers).send({ defendant_name: 'Some One', defendant_phone: '615-555-0100' });
+    expect(r.status).toBe(403);
+  });
+
   it('H2 LEGIT: the bondsman and staff still see the full enrollment', async () => {
     const b = await ctx.request().get(`/api/checkins/status/${enrollmentId}`).set(bondsman.headers);
     expect(b.status).toBe(200);
-    expect(b.body.enrollment.defendant_phone).toBe('615-555-0199');
+    expect(b.body.as).toBe('bondsman');
+    const list = await ctx.request().get('/api/checkins/enrollments').set(bondsman.headers);
+    expect(list.body.enrollments.find(x => x.id === enrollmentId).defendant_phone).toBe('+16155550199');   // stored in E.164
     expect((await ctx.request().get(`/api/checkins/history/${enrollmentId}`).set(bondsman.headers)).status).toBe(200);
     expect((await ctx.request().get(`/api/checkins/status/${enrollmentId}`).set(staff.headers)).status).toBe(200);
     expect((await ctx.request().patch(`/api/checkins/enrollments/${enrollmentId}/note`).set(bondsman.headers).send({ note: 'ok' })).status).toBe(200);

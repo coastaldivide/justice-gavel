@@ -62,9 +62,12 @@ describe('APP. App Entry and Lifecycle', () => {
   test('APP-05: push notification deep-link routing', async () => {
     const fs = await import('fs');
     const app = fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
-    expect(app).toContain('addNotificationResponseReceivedListener');
-    expect(app).toContain('case_update');
-    expect(app).toContain('navigationRef');
+    const hook = fs.readFileSync(__REPO + '/frontend/src/hooks/useAppSetup.ts','utf8');
+    const route = fs.readFileSync(__REPO + '/frontend/src/services/notificationRoute.ts','utf8');
+    expect(app).toContain('usePushNotificationTap(navigationRef)');
+    expect(hook).toContain('addNotificationResponseReceivedListener');
+    expect(hook).toContain('openNotification(navigationRef, data)');
+    expect(route).toContain('case_update');
   });
 });
 

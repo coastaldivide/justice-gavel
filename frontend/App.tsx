@@ -237,37 +237,6 @@ function AppInner() {
     if (authStateRef.current === 'authed') setTosNeeded(true);
   }), []);
 
-  // ── Push notification → deep navigation ────────────────────────────────────
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const sub = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data as Record<string,unknown>;
-      if (!data) return;
-      try {
-        const nav = navigationRef.current;
-        if (!nav) return;
-        // Route by notification type — navigate to the relevant screen
-        if (data.type === 'case_update' && data.case_id) {
-          (nav as any).navigate('MoreTab', { screen: 'Cases' });
-        } else if (data.type === 'arrest_alert') {
-          (nav as any).navigate('MoreTab', { screen: 'ArrestMonitor' });
-        } else if (data.type === 'message' && data.case_id) {
-          (nav as any).navigate('MoreTab', {
-            screen: 'Messages',
-            params: { caseId: data.case_id },
-          });
-        } else if (data.type === 'expungement_eligible') {
-          (nav as any).navigate('MoreTab', { screen: 'Expungement' });
-        } else if (data.type === 'court_reminder') {
-          (nav as any).navigate('MoreTab', { screen: 'Cases' });
-        } else if (data.type === 'lead_accepted' || data.type === 'new_lead') {
-          (nav as any).navigate('MoreTab', { screen: 'AttorneyDashboard' });
-        }
-      } catch {}
-    });
-    return () => sub.remove();
-  }, []);
-
   // ── Clear badge count when app comes to foreground; app lock on return ─────
   useEffect(() => {
     let backgroundAt: number | null = null;

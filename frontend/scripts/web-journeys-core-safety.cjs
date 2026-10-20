@@ -386,13 +386,16 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
   // ── A9 Voice note ────────────────────────────────────────────────────────
   await journey('A9 Voice note: no transcription → type → structured → appended to the case notes', async () => {
     const acc = await newUser('a9');
-    // A closed case's card has "Voice note", which opens the screen WITHOUT the
-    // current notes — the path that used to overwrite them.
+    // A closed case's "Voice note" (in its editor; the editor closes first) opens
+    // the screen WITHOUT the current notes — the path that used to overwrite them.
     const c = await apiCall('POST', '/cases', { token: acc.token, body: { title: 'Notes case', notes: 'EXISTING NOTE — keep me', status: 'Closed' } });
     if (c.status >= 300) throw new Error(`create case ${c.status}`);
     const s = await open(browser, { account: acc });
     await go(s.page, '/cases');
     await s.page.getByText('Notes case').first().waitFor({ timeout: 15000 });
+    await byTid(s.page, 'case-edit').first().click();
+    await byTid(s.page, 'case-editor').waitFor({ timeout: 10000 });
+    await s.page.waitForTimeout(700);   // the sheet slides in
     await s.page.getByLabel(tx('en', 'x_cs_record_voice_note_this')).first().click({ timeout: 10000 });
     await byTid(s.page, 'voice-note-toggle').waitFor({ timeout: 10000 });
     await byTid(s.page, 'voice-note-toggle').click();

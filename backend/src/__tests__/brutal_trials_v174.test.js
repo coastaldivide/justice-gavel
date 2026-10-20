@@ -106,13 +106,13 @@ describe('SESSION. Complete User Sessions', () => {
     expect(bail).not.toContain('bondCost');
     expect(bail).not.toMatch(/10\s?%/);
   });
-  test('SESSION-06: Discovery uses 90s direct request (not job queue)', async () => {
+  test('SESSION-06: Discovery uploads (90s) then polls the analysis job', async () => {
     const fs = await import('fs');
     const disc = fs.readFileSync(__REPO + '/frontend/src/screens/DiscoveryScreen.tsx','utf8');
     expect(disc).toContain('/discovery/analyze');
-    expect(disc).toContain('90000'); // 90s timeout for large PDFs
-    expect(disc).toContain('setAnalysis'); // stores result directly
-    // No jobId polling needed — synchronous AI call with timeout
+    expect(disc).toContain('90_000'); // upload timeout for large PDFs
+    expect(disc).toContain('pollJob'); // the server answers { jobId }
+    expect(disc).toContain('setAnalysis');
   });
 });
 

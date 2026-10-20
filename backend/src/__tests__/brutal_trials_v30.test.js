@@ -221,10 +221,10 @@ describe('S6. Screens at 5–7 Hits — Pattern Verification', () => {
   test('S6-07: CheckInManagerScreen — bondsman check-in management, enroll+enrollments', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInManagerScreen.tsx', 'utf8');
-    expect(src).toContain('Bondsman check-in management');
+    expect(src).toContain("the bail agent's side of post-release check-ins");
     expect(src).toContain('/checkins/enroll');
     expect(src).toContain('/checkins/enrollments');
-    expect(src).toContain('mountedRef');
+    expect(src).toContain('/checkins/history');
   });
   test('S6-08: CourtLocatorScreen — static Courthouse type, no API', async () => {
     const fs = await import('fs');

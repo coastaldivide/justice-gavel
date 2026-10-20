@@ -133,17 +133,17 @@ describe('CKN. CheckInScreen — doCheckIn GPS + loadStatus', () => {
   test('CKN-01: doCheckIn sets phase=gps then gets GPS coords before submitting', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
-    expect(src).toContain('doCheckIn');
-    expect(src).toContain("setPhase('gps')");
+    expect(src).toContain('const submit = async');
+    expect(src).toContain('getLocation'); // only when the person turned location on
     expect(src).toContain('lat');
     expect(src).toContain('/checkins/submit');
   });
   test('CKN-02: loadStatus checks enrollment and redirects if already_done', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
-    expect(src).toContain('loadStatus');
+    expect(src).toContain('/checkins/status/');
     expect(src).toContain('enrollmentId');
-    expect(src).toContain('already_done');
+    expect(src).toContain('done_for_period');
   });
 });
 
@@ -182,18 +182,16 @@ describe('CS2. CaseScreen — shareCase + loadSavedLawyers', () => {
   test('CS2-01: shareCase posts to /cases/:id/share then shares the URL', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('shareCase');
-    expect(src).toContain('useCallback');
-    expect(src).toContain("'/cases/");
-    expect(src).toContain('share');
+    // the court date is shared as text: no share link that the web app cannot open
+    expect(src).toContain("case 'share'");
+    expect(src).toContain('courtDateShareText(c)');
+    expect(src).not.toContain('/share`');
   });
   test('CS2-02: loadSavedLawyers fetches GET /saved-lawyers for case lawyer badge', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('loadSavedLawyers');
-    // loadSavedLawyers loads saved lawyers for the case view
-    expect(src).toContain('setLawyersLoading');
-    expect(src).toContain('saved');
+    expect(src).toContain('const loadSaved = useCallback');
+    expect(src).toContain("api.get('/saved/lawyers')");
   });
 });
 

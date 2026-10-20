@@ -199,19 +199,18 @@ describe('BKS. BookingScreen — Booking + Callback Handlers', () => {
 
 // ── CASE. CaseScreen Handler Depth ────────────────────────────────────────
 describe('CASE. CaseScreen — autoSaveNotes + exportCasePDF', () => {
-  test('CASE-01: autoSaveNotes debounces via clearTimeout+setTimeout on text change', async () => {
+  test('CASE-01: notes are saved with the case (no background autosave racing the editor)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('autoSaveNotes');
-    expect(src).toContain('clearTimeout');
-    expect(src).toContain('setTimeout');
-    expect(src).toContain('autoSaveTimer');
+    expect(src).not.toContain('autoSaveTimer');
+    expect(src).toContain('notes: draft.notes.trim()');
   });
-  test('CASE-02: exportCasePDF has accessibilityLabel="Export full case summary as PDF"', async () => {
+  test('CASE-02: exportCase prints (web) or makes a PDF and shares it (native)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('exportCasePDF');
-    expect(src).toContain('Export full case summary as PDF');
+    expect(src).toContain('const exportCase = useCallback');
+    expect(src).toContain('Print.printAsync({ html })');
+    expect(src).toContain('Print.printToFileAsync({ html })');
     expect(src).toContain('accessibilityLabel');
   });
 });

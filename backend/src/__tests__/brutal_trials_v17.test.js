@@ -374,8 +374,8 @@ describe('8. SettingsScreen + CaseScreen', () => {
   test('8-06: CaseScreen has activeTab and Share', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('activeTab');
-    expect(src).toContain('Share');
+    expect(src).toContain('setTab(');
+    expect(src).toContain('RNShare.share');
   });
 });
 

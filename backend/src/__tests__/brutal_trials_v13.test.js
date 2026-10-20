@@ -483,11 +483,12 @@ describe('7. DocumentScannerScreen — Camera Flow', () => {
     expect(hasUse).toBe(true);
   });
 
-  test('7-03: DocumentScannerScreen accepts caseId and onCapture params', async () => {
+  test('7-03: DocumentScannerScreen takes caseId; a file can be chosen when the camera is denied', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DocumentScannerScreen.tsx', 'utf8');
     expect(src).toContain('caseId');
-    expect(src).toContain('onCapture');
+    expect(src).toContain('expo-document-picker');
+    expect(src).not.toContain('onCapture'); // the never-called callback param is gone
   });
 
   test('7-04: DocumentScannerScreen handles Platform differences', async () => {

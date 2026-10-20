@@ -6,17 +6,20 @@ import { useToast } from '../components/ToastProvider';
  * bail paperwork) and attach it directly to a case or send it in a message.
  *
  * Flow:
- *   1. Request camera permission
- *   2. Show camera viewfinder with capture button
+ *   1. The case the document belongs to (route caseId, else pick one)
+ *   2. Camera viewfinder with capture button — or "Choose a file" (a photo or a
+ *      PDF from the phone), which also works when camera access is refused
  *   3. Preview captured photo with retake / use options
- *   4. On "Use" -- upload to messages attachment endpoint or return URI
+ *   4. On "Use" -- upload (POST /messages/attachment, stored encrypted with the
+ *      case; it shows in the case's thread for the owner and the attorney)
  *
- * Navigation params:
- *   caseId?    -- if set, photo is attached to this case
- *   onCapture? -- callback with the captured image URI
+ * Navigation params: caseId?, caseTitle?
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View, AppState, LayoutAnimation } from 'react-native';
+import { ActivityIndicator, Image, Linking, StyleSheet, Text, TouchableOpacity, View, AppState, LayoutAnimation } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { CasePicker, checkUpload } from '../components/CaseDocuments';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 // Camera -- native only (web uses DocumentScannerScreen.web.tsx).
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -29,10 +32,10 @@ import { t, useLang } from '../i18n';
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
   const { showToast } = useToast();
-  const { caseId, onCapture } = (route?.params ?? {}) as {
-    caseId?: number;
-    onCapture?: (uri: string) => void;
-  };
+  const params = (route?.params ?? {}) as { caseId?: number | string; caseTitle?: string };
+  const [picked, setPicked] = useState<{ id: number; title: string } | null>(Number(params.caseId) ? { id: Number(params.caseId), title: params.caseTitle || '' } : null);
+  const caseId = picked?.id;
+  const { hasSession, recheck } = useHasSession();
 
   const { colors }                      = useTheme();
   const [isCameraActive, setIsCameraActive] = React.useState(true);
@@ -76,38 +79,56 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
   }, [showToast]);
 
   // ── Upload ────────────────────────────────────────────────────────────────
-  const usePhoto = useCallback(async () => {
-    if (!captured) return;
-
-    // If a callback was provided, return the URI directly (e.g. for case notes)
-    if (onCapture) {
-      onCapture(captured);
-      navigation.canGoBack() ? navigation.goBack() : null;
-      return;
-    }
-
+  const send = useCallback(async (file: { uri: string; name: string; type: string; size?: number | null }) => {
+    if (!caseId) return;
+    const bad = checkUpload(file.size ?? null, file.type);
+    if (bad) { showToast(bad, 'error'); return; }
     setUploading(true);
     try {
       const form = new FormData();
-      form.append('file', {
-        uri: captured,
-        name: `doc_${Date.now()}.jpg`,
-        type: 'image/jpeg' } as any);
-      if (caseId) form.append('case_id', String(caseId));
-
-      await api.post('/messages/attachment', form, {
-        headers: { 'Content-Type': 'multipart/form-data' } });
+      form.append('file', { uri: file.uri, name: file.name, type: file.type } as any);
+      form.append('case_id', String(caseId));
+      await api.post('/messages/attachment', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 });
       await hapticNotification();
-      showToast(caseId ? t('x_document_scanner_document_attached_case') : t('x_document_scanner_document_uploaded'), 'success');
+      showToast(t('x_document_scanner_document_attached_case'), 'success');
+      if (mountedRef.current) setCaptured(null);
+      navigation.navigate('Messages', { caseId, caseTitle: picked?.title });
     } catch (err) {
-      if (__DEV__) console.error(err);
       showToast(apiErrorMessage(err, t('x_document_scanner_could_not_upload_document')), 'error');
     } finally {
       if (mountedRef.current) setUploading(false);
     }
-  }, [captured, caseId, onCapture, navigation, showToast]);
+  }, [caseId, picked?.title, navigation, showToast]);
+  const usePhoto = useCallback(() => {
+    if (captured) send({ uri: captured, name: `document_${Date.now()}.jpg`, type: 'image/jpeg' });
+  }, [captured, send]);
+  const chooseFile = useCallback(async () => {
+    const r = await DocumentPicker.getDocumentAsync({ type: ['image/*', 'application/pdf'], copyToCacheDirectory: true, multiple: false });
+    if (r.canceled || !r.assets?.length) return;
+    const a = r.assets[0];
+    send({ uri: a.uri, name: a.name || 'document', type: a.mimeType || 'application/octet-stream', size: a.size ?? null });
+  }, [send]);
 
   const s = styles(colors as any);
+
+  // ── Signed out: documents belong to a case in the person's account ────────
+  if (hasSession === false) {
+    return (
+      <View style={[s.screen, { backgroundColor: colors.bg }]} testID="document-scanner-screen">
+        <SignInNeeded navigation={navigation} testID="doc-sign-in" body={t('sin_docs_body')} onSignedIn={recheck} />
+      </View>
+    );
+  }
+  if (hasSession === null) return <View style={[s.screen, { backgroundColor: colors.bg }]} />;
+
+  // ── Which case ────────────────────────────────────────────────────────────
+  if (!picked) {
+    return (
+      <View style={[s.screen, { backgroundColor: colors.bg, padding: 16 }]} testID="document-scanner-screen">
+        <CasePicker onPick={setPicked} />
+      </View>
+    );
+  }
 
   // ── Permission denied ─────────────────────────────────────────────────────
   if (!permission) return <View style={s.screen} />;
@@ -132,8 +153,11 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
           style={[s.btn, { backgroundColor: colors.navy }]}
-          onPress={requestPermission}>
-          <Text maxFontSizeMultiplier={1.4} style={s.btnText}>{t('x_document_scanner_allow_camera')}</Text>
+          onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnText}>{permission.canAskAgain ? t('x_document_scanner_allow_camera') : t('x_cs_open_settings')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" style={[s.btn, { marginTop: 12, borderWidth: 1.5, borderColor: colors.border }]} onPress={chooseFile} disabled={uploading}>
+          {uploading ? <ActivityIndicator color={colors.textBrand} /> : <Text maxFontSizeMultiplier={1.4} style={[s.btnText, { color: colors.textPrimary }]}>{t('doc2_choose_file')}</Text>}
         </TouchableOpacity>
       </View>
     );
@@ -161,22 +185,16 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
             style={[s.previewBtn, { backgroundColor: colors.navy }]}
             onPress={usePhoto}
             disabled={uploading}
-            accessibilityLabel={caseId ? t('x_document_scanner_attach_case') : t('x_document_scanner_use_this_photo')}
+            accessibilityLabel={t('x_document_scanner_attach_case')}
           >
             {uploading
               ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>
-                  {caseId ? t('x_document_scanner_attach_case_2') : t('x_document_scanner_use_photo')}
-                </Text>
+              : <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>{t('x_document_scanner_attach_case_2')}</Text>
             }
           </TouchableOpacity>
         </View>
 
-        <Text maxFontSizeMultiplier={1.4} style={s.previewHint}>
-          {caseId
-            ? t('x_document_scanner_this_document_will_be')
-            : t('x_document_scanner_tap_use_photo_continue')}
-        </Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.previewHint}>{t('x_document_scanner_this_document_will_be')}</Text>
       </View>
     );
   }
@@ -199,6 +217,9 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
 
         {/* Shutter button */}
         <View style={s.shutterRow}>
+          <TouchableOpacity accessibilityRole="button" style={s.fileBtn} onPress={chooseFile} disabled={uploading}>
+            <Text maxFontSizeMultiplier={1.3} style={s.previewBtnText}>{t('doc2_choose_file')}</Text>
+          </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={s.shutter}
@@ -245,6 +266,7 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   shutter:     { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.3)',
                  alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: COLORS.bgCard },
   shutterInner:{ width: 54, height: 54, borderRadius: 27, backgroundColor: COLORS.bgCard },
+  fileBtn:     { position: 'absolute', left: 16, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: RADIUS.md, backgroundColor: 'rgba(0,0,0,0.75)' },
 
   // Preview
   preview:      { flex: 1 },

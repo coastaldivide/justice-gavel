@@ -31,7 +31,8 @@ import {
   FEDERAL_SOURCES,
   type CourtFormSource} from '../data/courtFormsRegistry';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
+import { pollJob } from '../services/jobPoller';
 import { t, perLang, useLang } from '../i18n';
 
 // ── Form categories ───────────────────────────────────────────────────────────
@@ -151,9 +152,20 @@ function CourtFormsScreen(): React.JSX.Element | null {
         message: t('x_court_forms_explain_what_information_someone', { categoryLabel, stateName: selectedState.stateName }),
         systemContext: 'court_forms_explainer',
         disclaimer: 'information_only'});
-      if (mountedRef.current) setAiGuide(res.data?.response ?? res.data?.content ?? null);
-    } catch {
-      if (mountedRef.current) setAiGuide(t('x_court_forms_unable_load_field_guide'));
+      // /chat/ask queues the answer as a job: wait for it
+      let reply: unknown = res.data?.reply;
+      if (!reply && res.data?.jobId) {
+        const job = await pollJob(String(res.data.jobId), { timeoutMs: 90_000 });
+        const r = job.result as { reply?: string } | undefined;
+        if (job.status === 'failed' || !r?.reply) throw new Error(job.error || 'no reply');
+        reply = r.reply;
+      }
+      if (mountedRef.current) setAiGuide(typeof reply === 'string' && reply ? reply : t('x_court_forms_unable_load_field_guide'));
+    } catch (e: any) {
+      if (mountedRef.current) {
+        setAiGuide(e?.response?.status === 401 ? t('x_court_forms_sign_in_ai')
+          : apiErrorMessage(e, t('x_court_forms_unable_load_field_guide')));
+      }
     } finally {
       if (mountedRef.current) setAiLoading(false);
     }

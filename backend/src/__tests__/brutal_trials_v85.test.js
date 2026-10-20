@@ -51,13 +51,13 @@ describe('DISC19. Discrepancy Fixes — 4 items', () => {
 
 // ── ACC. Comprehensive Accessibility Audit ─────────────────────────────────
 describe('ACC. Accessibility Audit — 286 Buttons Fixed Across 64 Screens', () => {
-  test('ACC-01: CaseScreen — 20 buttons fixed (highest count)', async () => {
+  test('ACC-01: CaseScreen — every button has a role', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx','utf8');
     const buttons = (src.match(/<TouchableOpacity[^>]+>/gs)||[]);
     const missing = buttons.filter(b => !b.includes('accessibilityRole'));
     expect(missing).toHaveLength(0);
-    expect(buttons.length).toBeGreaterThan(30);
+    expect(buttons.length).toBeGreaterThan(20);
   });
   test('ACC-02: AttorneyDashboardScreen — 14 buttons fixed', async () => {
     const fs = await import('fs');

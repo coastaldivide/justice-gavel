@@ -4,7 +4,8 @@ import { AppIcon } from '../components/AppIcon';
 /**
  * MatterIntelligenceScreen — All 40 simulation signals surfaced as live matter intelligence
  *
- * Accessed from any matter card via the 🧠 intelligence button.
+ * Opened with { matterId } — or without one (Attorney dashboard, Firm tools):
+ * then it lists the matters the person can open (GET /matters) to pick one.
  * Four tabs:
  *   1. Outcome    — prediction indicators, settlement probability, reversal score
  *   2. Motions    — recommended motions based on charge × evidence × vulnerability
@@ -17,7 +18,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, RefreshControl, LayoutAnimation} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { t, useLang } from '../i18n';
 
@@ -41,10 +42,16 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: COLORS.emergency, normal: COLORS.blue, low: COLORS.textMuted,
 };
 
-function MatterIntelligenceScreen({ route }: any) {
+interface MatterRow { id: number; title: string; client_name?: string | null; status?: string | null }
+
+function MatterIntelligenceScreen({ route, navigation }: any) {
   useLang();
   const { showToast } = useToast();
-  const { matterId, matterTitle } = route.params || {};
+  const [picked, setPicked] = useState<{ id: number; title: string } | null>(null);
+  const matterId = route.params?.matterId ?? picked?.id;
+  const matterTitle = route.params?.matterTitle ?? picked?.title;
+  const [matters, setMatters] = useState<MatterRow[] | null>(null);
+  const [mattersError, setMattersError] = useState('');
   const { colors } = useTheme();
   const s = styles(colors);
 
@@ -64,7 +71,12 @@ function MatterIntelligenceScreen({ route }: any) {
 
   const load = useCallback(async () => {
     if (!matterId) {
-      setLoading(false);
+      try {
+        const r = await api.get<{ matters: MatterRow[] }>('/matters');
+        if (isMounted.current) { setMatters(r.data?.matters || []); setMattersError(''); }
+      } catch (e) {
+        if (isMounted.current) setMattersError(apiErrorMessage(e, t('x_matter_intelligence_could_not_load_data')));
+      } finally { if (isMounted.current) setLoading(false); }
       return;
     }
     setLoading(true);
@@ -122,11 +134,29 @@ function MatterIntelligenceScreen({ route }: any) {
     return v >= 0.7 ? colors.legal : v >= 0.45 ? colors.warn : colors.steel;
   };
 
-  // Guard: screen must receive a valid matterId
+  // No matter given: pick one of the matters this person can open
   if (!matterId) return (
-    <View style={s.center}>
-      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: TYPE.base }}>{t('x_matter_intelligence_no_matter_selected')}</Text>
-    </View>
+    <ScrollView style={s.root} contentContainerStyle={s.scroll} testID="matter-intelligence-picker">
+      <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('mi2_pick')}</Text>
+      {loading && <ActivityIndicator color={colors.gold} />}
+      {!!mattersError && (
+        <TouchableOpacity accessibilityRole="button" onPress={() => { setLoading(true); load(); }}>
+          <Text maxFontSizeMultiplier={1.4} style={s.empty}>⚠️ {mattersError} · {t('try_again')}</Text>
+        </TouchableOpacity>
+      )}
+      {matters?.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>{t('mi2_none')}</Text>}
+      {(matters || []).map(m => (
+        <View key={m.id} style={s.motionCard}>
+          <TouchableOpacity accessibilityRole="button" testID="matter-intelligence-pick" onPress={() => { setLoading(true); setPicked({ id: Number(m.id), title: m.title }); }}>
+            <Text maxFontSizeMultiplier={1.4} style={s.motionLabel}>{m.title}</Text>
+            {!!m.client_name && <Text maxFontSizeMultiplier={1.4} style={s.motionReason}>{m.client_name}</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => navigation.navigate('Matter', { matterId: m.id })}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.motionReason, { color: colors.gold }]}>{t('mi2_open_matter')} ›</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </ScrollView>
   );
 
   if (loading) return (
@@ -184,10 +214,10 @@ function MatterIntelligenceScreen({ route }: any) {
             onPress={() => setTab(tItem as Tab)}
 
             accessibilityState={{ selected: tab === tItem }}
-            accessibilityLabel={t('x_matter_intelligence_tab', { value: tItem.charAt(0).toUpperCase() + tItem.slice(1) })}>
+            accessibilityLabel={t(`mi2_tab_${tItem}`)}>
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===tItem && s.tabLabelActive]}>
               {tItem === 'outcome' ? '📊' : tItem === 'motions' ? '⚖️' : tItem === 'diversion' ? '🔄' : tItem === 'analytics' ? '🧠' : tItem === 'escalation' ? '🚨' : '📋'}
-              {' '}{tItem.charAt(0).toUpperCase() + tItem.slice(1)}
+              {' '}{t(`mi2_tab_${tItem}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -390,37 +420,23 @@ function MatterIntelligenceScreen({ route }: any) {
             {!analytics ? (
               <Text maxFontSizeMultiplier={1.4} style={s.empty}>{t('x_matter_intelligence_analytics_not_available_this')}</Text>
             ) : (
-              <>
-                {analytics.disclaimer && (
-                  <View style={s.analyticsDisclaimer}>
-                    <Text maxFontSizeMultiplier={1.4} style={s.analyticsDTitle}>⚖️ {analytics.disclaimer.title || t('x_matter_intelligence_statistical_analysis')}</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={s.analyticsDText}>{analytics.disclaimer.text}</Text>
+              <View testID="matter-intelligence-analytics">
+                <View style={s.summaryRow}>
+                  <View style={s.summaryCard}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.summaryLabel}>{t('mi2_events')}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.summaryVal}>{analytics.event_count}</Text>
                   </View>
-                )}
-                {(analytics.analyses || []).map((a: any, i: number) => (
-                  <View key={`analysis-${i}`} style={s.analysisCard}>
-                    <View style={s.analysisTierRow}>
-                      <Text maxFontSizeMultiplier={1.4} style={[s.analysisTier, { color: colors.gold }]}>{a.signal_tier}</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={s.analysisRange}>
-                        {a.range?.low != null ? `${Math.round(a.range.low * 100)}–${Math.round(a.range.high * 100)}%` : ''}
-                      </Text>
-                    </View>
-                    <Text maxFontSizeMultiplier={1.4} style={s.analysisTitle}>{a.title}</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={s.analysisInterp}>{a.interpretation}</Text>
-                    {a.circuit_split_warning && (
-                      <Text maxFontSizeMultiplier={1.4} style={s.circuitSplitWarn}>⚠ {a.circuit_split_warning}</Text>
-                    )}
-                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
-                    {(a.factors_applied || []).map((f: string, fi: number) => (
-                      <Text maxFontSizeMultiplier={1.4} key={fi} style={s.factorItem}>• {f}</Text>
-                    ))}
-                    {a.source_url ? (
-                      <Text maxFontSizeMultiplier={1.4} style={s.analysisSource}>{t('x_matter_intelligence_source', { value: a.source_label || a.source_url })}</Text>
-                    ) : null}
+                  <View style={s.summaryCard}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.summaryLabel}>{t('mi2_docket')}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.summaryVal}>{analytics.docket_count}</Text>
                   </View>
-                ))}
-                {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
-              </>
+                </View>
+                {(analytics.recent_docket || []).length === 0
+                  ? <EmptyState icon="📋" title={t('mi2_no_docket')} />
+                  : (analytics.recent_docket || []).map((r: { entry_date: string; filing_type: string }, i: number) => (
+                    <Text key={`d-${i}`} maxFontSizeMultiplier={1.4} style={s.factorItem}>• {String(r.entry_date).slice(0, 10)} — {r.filing_type}</Text>
+                  ))}
+              </View>
             )}
           </>
         )}

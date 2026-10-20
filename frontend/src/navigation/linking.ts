@@ -100,6 +100,7 @@ export const linking: LinkingOptions<any> = {
               CheckIn:            'checkin',
               CheckInManager:     'checkin/manage',
               FamilyConnect:      'family',
+              Contacts:           'emergency-contacts',
 
               // Account & plans
               Settings:           'settings',
@@ -117,6 +118,8 @@ export const linking: LinkingOptions<any> = {
               AttorneyDashboard:  'attorney-dashboard',
               AttorneyInbox:      'attorney-inbox',
               BondsmanDashboard:  'bondsman-dashboard',
+              MatterIntelligence: 'matter-intelligence/:matterId?',
+              Matter:             'matters/:matterId',
             },
           },
         },

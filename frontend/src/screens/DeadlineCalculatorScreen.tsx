@@ -34,8 +34,12 @@ interface DeadlineRule {
   label:       string;
   icon:        string;
   description: string;
-  compute:     (arrestDate: Date, judgmentDate: Date | null, state: string) => Date | null;
+  compute:     (arrestDate: Date | null, judgmentDate: Date | null, state: string) => Date | null;
   note:        string;
+  /** which date the deadline counts from */
+  basis:       'arrest' | 'judgment';
+  /** counted in hours (a deadline time, not a calendar day) */
+  hours?:      boolean;
 }
 
 
@@ -94,15 +98,18 @@ const STATE_DMV_DUI_DAYS: Record<string, number> = {
   WY: 20,  // 20 days to request hearing
 };
 
-const DEADLINE_RULES = perLang((): DeadlineRule[] => [
+export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
   {
     label: t('whn_dui_3_title'),
     icon:  '🏛️',
     description: t('x_deadline_calculator_first_court_appearance_charges'),
     note: t('x_deadline_calculator_most_states_48_72'),
+    hours: true,
+    basis: 'arrest',
     compute: (arrest, _, state) => {
+      if (!arrest) return null;
       const d = new Date(arrest);
-      const hrs = (state && STATE_ARRAIGNMENT_HRS[state]) || 72;
+      const hrs = (state && STATE_ARRAIGNMENT_HRS[state]) || 72;  // hours
       d.setHours(d.getHours() + hrs);
       return d;
     } },
@@ -111,9 +118,11 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '🚗',
     description: t('x_deadline_calculator_deadline_request_hearing_keep'),
     note: t('x_deadline_calculator_only_applies_dui_dwi'),
+    basis: 'arrest',
     compute: (arrest, _, state) => {
       const days = state ? STATE_DMV_DUI_DAYS[state] : undefined;
       if (!days) return null;
+      if (!arrest) return null;
       const d = new Date(arrest);
       d.setDate(d.getDate() + days);
       return d;
@@ -123,7 +132,10 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '🔓',
     description: t('x_deadline_calculator_right_bail_determination'),
     note: t('x_deadline_calculator_most_states_require_bail'),
+    hours: true,
+    basis: 'arrest',
     compute: (arrest) => {
+      if (!arrest) return null;
       const d = new Date(arrest);
       d.setHours(d.getHours() + 48);
       return d;
@@ -133,7 +145,9 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '📋',
     description: t('x_deadline_calculator_probable_cause_hearing_felony'),
     note: t('x_deadline_calculator_federal_within_14_days'),
+    basis: 'arrest',
     compute: (arrest) => {
+      if (!arrest) return null;
       const d = new Date(arrest);
       d.setDate(d.getDate() + 14);
       return d;
@@ -143,7 +157,9 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '⏱️',
     description: t('x_deadline_calculator_deadline_formally_assert_6th'),
     note: t('x_deadline_calculator_assert_writing_as_early'),
+    basis: 'arrest',
     compute: (arrest, _, state) => {
+      if (!arrest) return null;
       const d = new Date(arrest);
       const days = (state && STATE_SPEEDY_TRIAL_DAYS[state]) || 30;
       d.setDate(d.getDate() + days);
@@ -154,7 +170,9 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '⚖️',
     description: t('x_deadline_calculator_federal_trial_must_begin'),
     note: t('x_deadline_calculator_18_u_s_c'),
+    basis: 'arrest',
     compute: (arrest) => {
+      if (!arrest) return null;
       const d = new Date(arrest);
       d.setDate(d.getDate() + 70);
       return d;
@@ -164,6 +182,7 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '📣',
     description: t('x_deadline_calculator_14_day_deadline_from'),
     note: t('x_deadline_calculator_fed_r_app_p'),
+    basis: 'judgment',
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -175,6 +194,7 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '📣',
     description: t('x_deadline_calculator_30_day_deadline_from'),
     note: t('x_deadline_calculator_verify_state_s_exact'),
+    basis: 'judgment',
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -186,11 +206,12 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '⚖️',
     description: t('x_deadline_calculator_1_year_limit_from'),
     note: t('x_deadline_calculator_28_u_s_c'),
-    compute: (_, judgment, state) => {
+    basis: 'judgment',
+    compute: (_, judgment) => {
       if (!judgment) return null;
+      // 28 U.S.C. § 2244(d)(1): one year — a federal limit, the same in every state
       const d = new Date(judgment);
-      const yrs = (state && STATE_PCR_YEARS[state]) || 1;
-      d.setFullYear(d.getFullYear() + yrs);
+      d.setFullYear(d.getFullYear() + 1);
       return d;
     } },
   {
@@ -198,6 +219,7 @@ const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     icon:  '📜',
     description: t('x_deadline_calculator_post_conviction_relief_state'),
     note: t('x_deadline_calculator_varies_widely_by_state'),
+    basis: 'judgment',
     compute: (_, judgment) => {
       if (!judgment) return null;
       const d = new Date(judgment);
@@ -273,60 +295,6 @@ const STATE_SPEEDY_TRIAL_DAYS: Record<string, number> = {
   WY: 180,
 };
 
-// State PCR petition windows (years)
-const STATE_PCR_YEARS: Record<string, number> = {
-  AK: 1,
-  AL: 2,
-  AR: 3,
-  AZ: 2,
-  CA: 2,
-  CO: 2,
-  CT: 5,
-  DC: 2,
-  DE: 3,
-  FL: 2,
-  GA: 4,
-  HI: 1,
-  IA: 3,
-  ID: 5,
-  IL: 6,
-  IN: 1,
-  KS: 1,
-  KY: 3,
-  LA: 2,
-  MA: 3,
-  MD: 10,
-  ME: 1,
-  MI: 1,
-  MN: 2,
-  MO: 1,
-  MS: 1,
-  MT: 1,
-  NC: 5,
-  ND: 2,
-  NE: 1,
-  NH: 3,
-  NJ: 5,
-  NM: 2,
-  NV: 1,
-  NY: 1,
-  OH: 1,
-  OK: 1,
-  OR: 2,
-  PA: 1,
-  RI: 3,
-  SC: 1,
-  SD: 1,
-  TN: 1,
-  TX: 0,
-  UT: 1,
-  VA: 2,
-  VT: 3,
-  WA: 1,
-  WI: 2,
-  WV: 1,
-  WY: 1,
-};
 
 
 function getStateName(code: string): string {
@@ -368,7 +336,10 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const deadline = arrest ? rule.compute(arrest, judgment, state || '') : null;
+  const base = rule.basis === 'judgment' ? judgment : arrest;
+  const deadline = base ? rule.compute(arrest, judgment, state || '') : null;
+  // A count of days that ends on a Saturday or Sunday: say so (courts' own rules decide whether it moves).
+  const weekend = !!deadline && !rule.hours && (deadline.getDay() === 0 || deadline.getDay() === 6);
 
   const addToCalendar = React.useCallback(async (title: string, dueDate: Date) => {
     try {
@@ -435,7 +406,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
         <View style={{ flex: 1, marginLeft: 10 }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: COLORS.textSecond }]}>{rule.label}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowSub, { color: COLORS.textSecond }]}>
-            {rule.label.includes('Appeal') || rule.label.includes('Habeas') || rule.label.includes('PCR')
+            {rule.basis === 'judgment'
               ? t('x_deadline_calculator_enter_judgment_date_above')
               : t('x_deadline_calculator_enter_arrest_date_above')}
           </Text>
@@ -472,6 +443,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           </View>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={[styles.rowDate, { color: col.text }]}>{formatDate(deadline)}</Text>
+        {weekend && <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: COLORS.textPrimary }]} testID="deadline-weekend">⚠️ {t('dl2_weekend')}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: COLORS.textSecond }]}>{rule.description}</Text>
         {expanded && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowNote, { color: COLORS.textMuted, borderTopColor: COLORS.border }]}>

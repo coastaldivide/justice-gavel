@@ -101,9 +101,11 @@ describe('HAP. Haptics — Semantic Haptic Feedback Pattern', () => {
     const fs   = await import('fs');
     const path = await import('path');
     const dir  = __REPO + '/frontend/src/screens';
+    // dial buttons go through hapticCall directly or through the shared ContactActions component
     const callScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
-      .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticCall'));
+      .filter(f => /hapticCall|ContactActions/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
     expect(callScreens.length).toBeGreaterThanOrEqual(4);
+    expect(fs.readFileSync(__REPO + '/frontend/src/components/ContactActions.tsx', 'utf8')).toContain('hapticCall');
   });
   test('HAP-02: hapticSuccess fires on booking/payment/check-in confirmed', async () => {
     const fs = await import('fs');

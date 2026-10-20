@@ -123,10 +123,12 @@ describe('S1c. checkins.js — Post-Release Check-in System', () => {
   test('S1c-01: POST-release check-in system: bondsman enrolls, defendant submits', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/checkins.js', 'utf8');
-    expect(src).toContain('Post-release check-in system');
-    expect(src).toContain('Bondsman');
+    expect(src).toContain('post-release check-ins (bail agent ↔ defendant)');
+    expect(src).toContain('Bail agent');
     expect(src).toContain('Defendant');
-    expect(src).toContain('$9.99/month/defendant');
+    // the fee is shown but no Stripe product charges it: the enrollment says so
+    expect(src).toContain('billing_active: false');
+    expect(src).not.toContain('stripe_sub_id = ');
   });
   test('S1c-02: /history/:enrollmentId + /my/:enrollmentId + /status/:enrollmentId', async () => {
     const fs = await import('fs');

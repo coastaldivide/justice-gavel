@@ -163,7 +163,8 @@ describeIntegration('messages routes (real Postgres)', () => {
   it('sender can soft-delete a message; a stranger cannot', async () => {
     const sent = await ctx.request().post(`/api/messages/${caseId}`).set(client.headers).send({ body: 'delete me' });
     const mid = sent.body.message.id;
-    expect((await ctx.request().delete(`/api/messages/${mid}`).set(stranger.headers)).status).toBe(403);
+    // a stranger cannot even learn that the message exists
+    expect((await ctx.request().delete(`/api/messages/${mid}`).set(stranger.headers)).status).toBe(404);
     const del = await ctx.request().delete(`/api/messages/${mid}`).set(client.headers);
     expect(del.status).toBe(200);
     const row = await ctx.db.get('SELECT deleted_at FROM case_messages WHERE id = ?', [mid]);

@@ -192,9 +192,9 @@ describe('TYPE. Screen Type Aliases — State Machine Types', () => {
   test('TYPE-05: CheckInScreen CheckInPhase has already_done state (idempotent check-in)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
-    expect(src).toContain('CheckInPhase');
-    expect(src).toContain('already_done');
-    expect(src).toContain("'loading' | 'ready' | 'gps' | 'submitting' | 'done'");
+    expect(src).toContain("type Phase = 'loading' | 'guest' | 'none' | 'pick' | 'ready' | 'submitting' | 'error'");
+    // "done" is the server's answer (done_for_period), not a client-only phase
+    expect(src).toContain('done_for_period');
   });
 });
 

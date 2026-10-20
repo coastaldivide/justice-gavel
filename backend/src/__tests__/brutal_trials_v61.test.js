@@ -129,8 +129,8 @@ describe('CS4. CaseScreen — scanDocument + openEdit', () => {
   test('CS4-02: openEdit(c) opens edit modal pre-filled with case data', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
-    expect(src).toContain('openEdit');
-    expect(src).toContain('setEditCase');
+    expect(src).toContain('const openEdit = useCallback');
+    expect(src).toContain('setEditing({ id: c.id');
     expect(src).toContain('next_court_date');
   });
 });

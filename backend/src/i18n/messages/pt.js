@@ -504,4 +504,18 @@ export default {
   "msgs.push.attorney_accepted_title": "✅ Um advogado aceitou seu caso",
   "msgs.push.attorney_accepted_body": "{name} aceitou seu caso: {title}. Agora você pode enviar mensagens pelo app.",
   "msgs.push.your_attorney": "Seu advogado",
+  "courthouse.err.load": "Não foi possível carregar os fóruns. Tente novamente.",
+  "courthouse.err.not_found": "Fórum não encontrado.",
+  // ── Discovery analysis (routes/discovery/analyze.js) ──
+  "discovery.err.rate": "Muitas solicitações de documentos. Aguarde alguns minutos.",
+  "discovery.err.file_required": "Escolha um arquivo PDF, Word, de texto ou uma foto (até 10 MB).",
+  "discovery.err.payments_off": "Os pagamentos ainda não estão disponíveis, então a análise paga de documentos não está disponível.",
+  "discovery.err.payment_required": "Pague esta análise para continuar.",
+  "discovery.err.payment_not_found": "Pagamento não encontrado.",
+  "discovery.err.other_file": "Este pagamento foi para outro arquivo.",
+  "discovery.err.not_paid": "O pagamento não foi concluído.",
+  "discovery.err.payment_used": "Este pagamento já foi usado em uma análise — abra pelo histórico.",
+  "discovery.err.server": "Não foi possível iniciar a análise. Nada foi cobrado. Tente novamente.",
+  "family.err.contact_required": "Digite um nome e um telefone ou e-mail.",
+  "family.err.contact_not_found": "Contato não encontrado.",
 };

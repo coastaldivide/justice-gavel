@@ -2,21 +2,34 @@ import { SampleRecordBadge } from '../components/SampleRecordBadge';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 /**
- * FamilyConnectScreen -- $28.99 one-tap emergency connection
+ * FamilyConnectScreen — emergency connection for the family of someone just arrested.
  *
- * For family members of someone who was just arrested.
- * Three steps: find arrest → pay $28.99 → get 3 attorneys + 2 bail agents immediately.
- * Pre-fills with arrest data from the scraper if arrest_id is passed via navigation.
+ * Three steps: find the arrest record (optional) → your contact details → pay
+ * the one-time price → the phone numbers of 3 criminal-defense lawyers and 2
+ * bail agents near the arrest (or near you). Same payment flow as Quick
+ * Connect: POST /billing/family/connect creates the payment → Stripe payment
+ * sheet → POST /billing/family/confirm checks it on the server and only then
+ * returns the contacts. A payment that went through while the contacts could
+ * not be loaded is retried, never charged again. Without payments (no Stripe
+ * key, or on the web) the button explains that payments are not available.
+ * The price comes from the server (GET /billing/family/quote).
  */
 
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
+import { getLocation } from '../services/location';
+import { getUserState } from '../utils/userState';
+import { formatPhone } from '../utils/contact';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
-import { t, useLang } from '../i18n';
+import { t, useLang, locale } from '../i18n';
+
+const usd = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' });
+const FALLBACK_PRICE_CENTS = 2899;
 
 // Plain helper (no hooks); failures are reported through onError.
 function callPhone(phone: string, onError?: () => void) {
@@ -59,10 +72,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
   const color = isAtty ? COLORS.navy : COLORS.bail;
   const bg = isAtty ? COLORS.bgSubtle : COLORS.emergencyBg;
 
-  let specialties: string[] = [];
-  if (contact.specialties) {
-    try { specialties = JSON.parse(contact.specialties); } catch { specialties = []; }
-  }
+  const specialties: string[] = Array.isArray(contact.specialties) ? contact.specialties : [];
 
   return (
     <View style={[styles.contactCard, { borderLeftColor: color, borderLeftWidth: 4 }]}>
@@ -90,18 +100,18 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
         </View>
       )}
 
-      {contact.rating && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {contact.rating?.toFixed(1)}</Text>
+      {Number(contact.rating) > 0 && (
+        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {Number(contact.rating).toFixed(1)}</Text>
       )}
 
       {contact.phone ? (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={t('help_now_no_phone')}
+          accessibilityLabel={t('x_family_connect_call', { value: contact.name })}
           style={[styles.callBtn, { backgroundColor: color }]}
           onPress={() => callPhone(contact.phone, () => showToast(t('x_emergency_share_please_dial_manually', { phone: contact.phone }), 'warning'))}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('x_family_connect_call', { value: contact.name.split(' ')[0] })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('x_family_connect_call', { value: formatPhone(contact.phone) })}</Text>
         </TouchableOpacity>
       ) : (
         <View style={[styles.callBtn, { backgroundColor: COLORS.emergencyDark }]}>
@@ -145,6 +155,16 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [paying, setPaying] = useState(false);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const [result, setResult] = useState<any>(null);
+  const [priceCents, setPriceCents] = useState(FALLBACK_PRICE_CENTS);
+  const [payError, setPayError] = useState('');
+  // A payment that went through whose contacts could not be loaded yet — retried, never re-charged.
+  const [paidPi, setPaidPi] = useState<string | null>(null);
+  const { available: sheetAvailable, initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+  useEffect(() => {
+    api.get<{ price_cents: number }>('/billing/family/quote')
+      .then(r => { if (mountedRef.current && Number.isFinite(r.data?.price_cents)) setPriceCents(r.data.price_cents); })
+      .catch(() => { /* offline: the list price stays */ });
+  }, []);
 
   // Load arrest if passed via navigation
   useEffect(() => {
@@ -194,23 +214,59 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     requireAuth(() => handleConnect());
   };
 
+  const fail = (m: string) => {
+    if (!mountedRef.current) return;
+    setPayError(m); showToast(m, 'error'); setPaying(false); setStep(2);
+  };
+  /** Contacts for a payment that succeeded; null (with a retry message) when they could not be loaded. */
+  const confirmPaid = async (piId: string) => {
+    try {
+      const r = await api.post('/billing/family/confirm', { payment_intent_id: piId });
+      if (mountedRef.current) setPaidPi(null);
+      return r.data;
+    } catch {
+      fail(t('qc_paid_retry'));
+      return null;
+    }
+  };
+  const retryConfirm = async () => {
+    if (!paidPi) return;
+    setPaying(true); setPayError(''); setStep(3);
+    const done = await confirmPaid(paidPi);
+    if (done && mountedRef.current) { setResult(done); setPaying(false); }
+  };
+
   const handleConnect = async () => {
     if (paying) return; // double-tap guard
-    setPaying(true);
-    setStep(3);
+    setPaying(true); setPayError(''); setStep(3);
     try {
+      const [loc, st] = await Promise.all([getLocation().catch(() => null), getUserState().catch(() => null)]);
       const res = await api.post('/billing/family/connect', {
-        arrest_id: selectedArrest?.id || null,
-        family_name: familyName.trim(),
-        family_phone: familyPhone.trim(),
-        family_email: familyEmail.trim() || null,
+        arrest_id: selectedArrest?.id || undefined,
+        family_name: familyName.trim(), family_phone: familyPhone.trim(), family_email: familyEmail.trim() || undefined,
+        lat: loc?.lat, lng: loc?.lng, state: selectedArrest?.state || st?.code || undefined,
       });
-      setResult(res.data || null);
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_family_connect_something_went_wrong_check')));
-      setStep(2);
-    } finally {
+      const pi = res.data?.payment_intent_id;
+      // The card is collected by Stripe's payment sheet; nothing is revealed until it succeeds.
+      if (!sheetAvailable || !res.data?.client_secret || !pi) return fail(PAYMENTS_COMING_SOON());
+      const init = await initPaymentSheet({ paymentIntentClientSecret: res.data.client_secret, merchantDisplayName: 'Justice Gavel' });
+      if (init.error) return fail(init.error.message || t('x_booking_payment_setup_failed_please'));
+      const paid = await presentPaymentSheet();
+      if (paid.error) {
+        if (paid.error.code === 'Canceled') { if (mountedRef.current) { setPaying(false); setStep(2); } return; }
+        return fail(paid.error.message || t('x_quick_connect_card_was_declined_please'));
+      }
+      if (mountedRef.current) setPaidPi(pi);
+      const done = await confirmPaid(pi);
+      if (!done || !mountedRef.current) return;
+      setResult(done);
       setPaying(false);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (isPaymentsUnavailable(e) || status === 503) return fail(t('x_common_payments_aren_t_available'));
+      if (status === 402) return fail(t('x_quick_connect_card_was_declined_please'));
+      if (!e?.response) return fail(t('x_ch_no_connection_check_internet'));
+      fail(apiErrorMessage(e, t('x_family_connect_something_went_wrong_check')));
     }
   };
 
@@ -224,10 +280,10 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_family_connect_emergency_connection')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {t('x_family_connect_get_verified_attorneys_bail')}
+          {t('fc2_sub')}
         </Text>
         <View style={styles.priceBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.priceText}>{t('x_family_connect_28_99_one_time')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.priceText} testID="family-connect-price">{t('fc2_price', { price: usd(priceCents) })}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.priceSubText}>{t('x_family_connect_no_subscription_instant_results')}</Text>
         </View>
       </View>
@@ -281,7 +337,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     <SampleRecordBadge row={r} />
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultName}>{r.name}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultDetail}>
-                      {r.county ? t('x_bondsman_dashboard_county', { county: r.county }) : ''}{r.state ? `, ${r.state}` : ''}{r.booking_date ? `  ·  ${new Date(r.booking_date).toLocaleDateString()}` : ''}
+                      {r.county ? t('x_bondsman_dashboard_county', { county: r.county }) : ''}{r.state ? `, ${r.state}` : ''}{r.booking_date ? `  ·  ${new Date(r.booking_date).toLocaleDateString(locale())}` : ''}
                     </Text>
                     {r.charges && (
                       <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultCharges} numberOfLines={1}>
@@ -290,7 +346,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     )}
                     {((r as import('../types/api').BailAgent).bail_amount ?? 0) > 0 && (
                       <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultBail}>
-                        {t('x_family_connect_bail', { value: ((r as import('../types/api').BailAgent).bail_amount ?? 0).toLocaleString() })}
+                        {t('x_family_connect_bail', { value: ((r as import('../types/api').BailAgent).bail_amount ?? 0).toLocaleString(locale()) })}
                       </Text>
                     )}
                   </View>
@@ -329,7 +385,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryTitle}>{t('x_family_connect_text', { name: selectedArrest.name })}</Text>
               {selectedArrest.county && (
                 <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryDetail}>
-                  {t('x_family_connect_county', { county: selectedArrest.county, value: selectedArrest.state ? `, ${selectedArrest.state}` : '', value2: selectedArrest.bail_amount > 0 ? '  ' + t('x_family_connect_bail_2', { value: selectedArrest.bail_amount.toLocaleString() }) : '' })}
+                  {t('x_family_connect_county', { county: selectedArrest.county, value: selectedArrest.state ? `, ${selectedArrest.state}` : '', value2: selectedArrest.bail_amount > 0 ? '  ' + t('x_family_connect_bail_2', { value: selectedArrest.bail_amount.toLocaleString(locale()) }) : '' })}
                 </Text>
               )}
               {selectedArrest.charges && (
@@ -384,13 +440,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         />
 
           <View style={styles.feeBlock}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{t('x_family_connect_what_get_28_99')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{t('fc2_what_you_get', { price: usd(priceCents) })}</Text>
             {[
-              t('x_family_connect_3_verified_criminal_defense'),
-              t('x_family_connect_2_bail_bondsmen_available'),
-              t('x_family_connect_pre_filled_case_info'),
+              t('fc2_get_lawyers'),
+              t('fc2_get_agents'),
               t('x_family_connect_direct_call_buttons_reach'),
               t('x_family_connect_one_time_fee_no'),
+              t('fc2_listing_note'),
             ].map(item => (
               <View key={item} style={styles.feeItem}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.feeItemText}>{item}</Text>
@@ -398,14 +454,18 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             ))}
           </View>
 
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.payBtn}
-            onPress={proceedToPayment}
-           accessibilityLabel={t('x_family_connect_pay_28_99_amp')}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('x_family_connect_pay_28_99_amp')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>{t('x_family_connect_demo_mode_no_real')}</Text>
-          </TouchableOpacity>
+          {!!payError && <Text maxFontSizeMultiplier={1.4} style={styles.payError} testID="family-connect-error">⚠ {payError}</Text>}
+          {paidPi ? (
+            <TouchableOpacity accessibilityRole="button" testID="family-connect-retry" style={styles.payBtn} onPress={retryConfirm}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('fc2_load_contacts')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity accessibilityRole="button" testID="family-connect-pay" style={styles.payBtn} onPress={proceedToPayment}
+              accessibilityLabel={t('fc2_pay', { price: usd(priceCents) })}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('fc2_pay', { price: usd(priceCents) })}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>{t('x_quick_connect_payments_processed_securely_by')}</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity accessibilityRole="button" style={styles.backBtn} onPress={() => setStep(1)}
               accessibilityLabel={t('x_gradient_header_go_back')}
@@ -421,7 +481,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           {paying ? (
             <View style={styles.payingBlock}>
               <ActivityIndicator size="large" color={colors.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>{t('x_family_connect_connecting_with_verified_contacts')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>{t('fc2_paying')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.payingHint}>{t('x_family_connect_this_takes_just_moment')}</Text>
             </View>
           ) : result ? (
@@ -430,7 +490,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                 <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
                 <Text maxFontSizeMultiplier={1.4} style={styles.successTitle}>{t('x_family_connect_re_connected')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.successSub}>
-                  {t('x_family_connect_call_any_contacts_below')}
+                  {t('fc2_call_below')}
                 </Text>
               </View>
 
@@ -442,7 +502,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     <Text maxFontSizeMultiplier={1.4} style={styles.caseCharges}>{result.arrest.charges}</Text>
                   )}
                   {result.arrest.bail_amount > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={styles.caseBail}>{t('x_family_connect_bail', { value: result.arrest.bail_amount.toLocaleString() })}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.caseBail}>{t('x_family_connect_bail', { value: result.arrest.bail_amount.toLocaleString(locale()) })}</Text>
                   )}
                   {result.arrest.county && (
                     <Text maxFontSizeMultiplier={1.4} style={styles.caseLocation}>
@@ -481,15 +541,12 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                 <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>{t('x_family_connect_payment_receipt')}</Text>
                 <View style={styles.receiptRow}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_emergency_connection')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptAmount}>$28.99.00</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptAmount}>{usd(Number(result.charged_cents) || priceCents)}</Text>
                 </View>
                 <View style={styles.receiptRow}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_connection_id')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptValue}>#{result.connection_id}</Text>
                 </View>
-                {result.mock && (
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptMock}>{t('x_family_connect_demo_mode_no_real_2')}</Text>
-                )}
               </View>
             </>
           ) : (
@@ -539,7 +596,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sectionSub: { fontSize: 12, color: colors.info, marginBottom: 16, lineHeight: 18 },
 
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  searchInput: { flex: 1, backgroundColor: COLORS.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.bgCard },
+  searchInput: { flex: 1, minWidth: 0, backgroundColor: colors.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   searchBtn: { backgroundColor: colors.emergency, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center', minWidth: 70 },
   searchBtnText: { color: colors.textOnAccent, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
@@ -565,7 +622,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   arrestSummaryCharges: { fontSize: 12, color: colors.blue, lineHeight: 16 },
 
   fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: COLORS.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.bgCard },
+  input: { backgroundColor: colors.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.textPrimary },
 
   feeBlock: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginTop: 20, marginBottom: 8, borderWidth: 1.5, borderColor: COLORS.bgSubtle },
   feeBlockTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 10 },
@@ -619,7 +676,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   receiptLabel: { fontSize: 12, lineHeight: 20, color: colors.info },
   receiptAmount: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand },
   receiptValue: { fontSize: 12, lineHeight: 20, color: colors.info },
-  receiptMock: { fontSize: 11, color: colors.info, marginTop: 6, textAlign: 'center' },
+  payError: { color: colors.textPrimary, backgroundColor: colors.emergencyBg, borderRadius: 10, padding: 10, fontSize: 14, marginTop: 12 },
 
   errorBlock: { alignItems: 'center', padding: 40 },
   errorText: { fontSize: 14, color: colors.info, textAlign: 'center', lineHeight: 20, marginBottom: 16 },

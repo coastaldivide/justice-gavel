@@ -167,7 +167,7 @@ describe('S6. Screens — Remaining UX Patterns', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('/checkins/submit');
-    expect(src).toContain('mountedRef');
+    expect(src).toContain('/checkins/mine');
     expect(src).toContain('RefreshControl');
   });
 });

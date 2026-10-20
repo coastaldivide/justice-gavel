@@ -62,10 +62,10 @@ describe('NULL_GUARDS. FE Null Access Fixed on API Responses', () => {
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
     expect(src).toContain('(res.data?.upcoming || [])');
   });
-  test('NULL-06: CheckInManager res.data?.message', async () => {
+  test('NULL-06: CheckInManager shows the server message via apiErrorMessage', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/CheckInManagerScreen.tsx','utf8');
-    expect(src).toContain('res.data?.message');
+    expect(src).toContain('apiErrorMessage(');
   });
 });
 
@@ -80,7 +80,7 @@ describe('FALLBACK. setState Null Fallbacks Added', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx','utf8');
     // audit11 H12: list bodies are unwrapped with unwrapList (bare array / {data} / named key)
-    expect(src).toMatch(/unwrapList\(res\.data/);
+    expect(src).toMatch(/unwrapList(<\w+>)?\(res\.data/);
     expect(src).not.toMatch(/setItems\(res\.data\)/);
   });
   test('FALLBACK-03: CrisisResources setDbLines(r.data || [])', async () => {

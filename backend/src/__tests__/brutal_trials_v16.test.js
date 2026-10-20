@@ -85,22 +85,27 @@ describe('1. BailSearchScreen — Bail Agent Directory', () => {
   test('1-02: has sortBy, items, status, refreshing, _fetchError states', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx', 'utf8');
-    expect(src).toContain('sortBy');
+    // debug pass C: the client-side re-sort was removed (server keeps nearest-first order)
+    expect(src).not.toContain('sortBy');
     expect(src).toContain('items');
-    expect(src).toContain('_fetchError');
+    expect(src).toContain('apiErrorMessage');
   });
 
-  test('1-03: uses hapticCall for phone interactions', async () => {
+  test('1-03: uses hapticCall for phone interactions (via ContactActions)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx', 'utf8');
-    expect(src).toContain('hapticCall');
+    expect(src).toContain('ContactActions');
+    expect(fs.readFileSync(__REPO + '/frontend/src/components/ContactActions.tsx', 'utf8')).toContain('hapticCall');
   });
 
   test('1-04: uses tel: scheme via Linking.openURL for calling agents', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx', 'utf8');
-    expect(src).toContain('tel:');
-    expect(src).toContain('Linking.openURL');
+    expect(src).toContain('ContactActions');
+    const ca = fs.readFileSync(__REPO + '/frontend/src/components/ContactActions.tsx', 'utf8');
+    expect(ca).toContain('telUrl');
+    const cu = fs.readFileSync(__REPO + '/frontend/src/utils/contact.ts', 'utf8');
+    expect(cu).toContain('tel:');
   });
 
   test('1-05: uses GPS and user state for location filtering', async () => {
@@ -161,7 +166,7 @@ describe('3. CheckInManagerScreen — Bondsman Enrollment Manager', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInManagerScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
     expect(src).toContain('RefreshControl');
-    expect(src).toContain('mountedRef');
+    expect(src).toContain('/checkins/enrollments');
   });
 });
 
@@ -398,18 +403,18 @@ describe('12. LawyerProfileScreen — Full Attorney Profile', () => {
   test('12-03: has Share, Linking, Alert, PTR, mounted guard', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('Share');
-    expect(src).toContain('Linking');
+    expect(src).toContain('RNShare');
+    expect(src).toContain('ContactActions'); // call / text / directions / website (Linking inside)
     expect(src).toContain('showToast');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('mountedRef');
   });
 
-  test('12-04: takes lawyerId and optionally lawyerData from navigation params', async () => {
+  test('12-04: takes lawyerId from navigation params and always loads the listing by id (deep links work)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('lawyerId');
-    expect(src).toContain('lawyerData');
+    expect(src).not.toContain('lawyerData');
   });
 });
 
