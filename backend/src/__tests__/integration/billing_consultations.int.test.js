@@ -35,7 +35,6 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     await expect503('/api/billing/quickconnect', { lat: 36.16, lng: -86.78 });
     await expect503('/api/billing/family/connect', { arrest_id: 1 });
     await expect503('/api/billing/leads/1/accept', {});
-    await expect503('/api/billing/bondsman/verified-badge/subscribe', {});
     await expect503('/api/billing/bondsman/subscribe', { tier: 'pro' });
     // nothing was activated behind the scenes
     const subs = await ctx.db.get('SELECT COUNT(*) AS n FROM subscriptions WHERE user_id = ?', [user.user.id]);
@@ -47,12 +46,13 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     expect(sub.status).toBe(200);
     expect(sub.body.subscription).toBeNull();
     expect(Array.isArray(sub.body.tiers)).toBe(true);
-    expect(sub.body.mock).toBe(true);                       // Stripe not live
+    expect(sub.body.payments_live).toBe(false);             // Stripe not live
 
     const consumer = await ctx.request().get('/api/billing/consumer/subscription').set(user.headers);
     expect(consumer.status).toBe(200);
     expect(consumer.body.subscription).toBeNull();
-    expect(consumer.body.tiers.map(t => t.key)).toEqual(['advisor', 'legal_pro', 'legal_radar']);
+    expect(consumer.body.tiers.map(t => t.key).sort()).toEqual(['advisor', 'advisor_annual', 'legal_pro', 'legal_radar', 'pro_annual']);
+    expect(consumer.body.tiers.every(t => t.audience === 'consumer')).toBe(true);
 
     const tiers = await ctx.request().get('/api/billing/bondsman/tiers');
     expect(tiers.status).toBe(200);
@@ -66,12 +66,16 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     // Only bondsman accounts may browse leads (audit11 C2): a plain user is refused…
     const plain = await ctx.request().get('/api/billing/leads?state=TN').set(user.headers);
     expect(plain.status).toBe(403);
-    // …and the same user can list once they have a bondsman profile.
-    const prof = await ctx.request().post('/api/billing/bondsman/profile').set(user.headers)
+    // …a bail agent account lists once it has a bondsman profile (the profile is
+    // for bail-agent accounts only — section G).
+    expect((await ctx.request().post('/api/billing/bondsman/profile').set(user.headers)
+      .send({ company_name: 'Not an agent', license_state: 'TN' })).status).toBe(403);
+    const agent = await ctx.register({ displayName: 'Lead Agent', accountType: 'bail_agent' });
+    const prof = await ctx.request().post('/api/billing/bondsman/profile').set(agent.headers)
       .send({ company_name: `${ctx.tag} Bonds`, license_number: 'TN-1', license_state: 'TN', counties: ['Davidson'], states: ['TN'] });
     expect(prof.status).toBe(200);
-    ctx.addCleanup(async (db) => { await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [user.user.id]); });
-    const res = await ctx.request().get('/api/billing/leads?state=TN&hours=87600').set(user.headers);
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [agent.user.id]); });
+    const res = await ctx.request().get('/api/billing/leads?state=TN&hours=87600').set(agent.headers);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.leads)).toBe(true);
     expect(res.body.lead_fee).toMatchObject({ model: 'flat', cents: 10000 });
@@ -89,7 +93,8 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     const atty = await ctx.register({ displayName: 'Linked Attorney', accountType: 'attorney' });
     const row = await ctx.db.get(`SELECT l.id, l.state FROM lawyers l WHERE l.user_id IS NULL AND l.state = 'TX'
       AND NOT EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id) ORDER BY l.id LIMIT 1`);
-    await ctx.db.run('INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES (?, ?)', [atty.user.id, row.id]);
+    await ctx.db.run(`INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES (?, ?)
+                      ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO UPDATE SET lawyer_id = EXCLUDED.lawyer_id`, [atty.user.id, row.id]);
     ctx.addCleanup(async (db) => { await db.run('DELETE FROM attorney_profiles WHERE lawyer_id = ?', [row.id]); });
     linked = row;
     unlinked = await ctx.db.get(`SELECT l.id FROM lawyers l WHERE l.user_id IS NULL

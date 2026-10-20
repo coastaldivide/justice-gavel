@@ -96,17 +96,21 @@ describe('TOS. TermsAcceptanceModal.tsx — Clickwrap Terms of Service', () => {
 describe('AVR. attorney/verification.js — Attorney Bar Number Verification', () => {
   test('AVR-01: POST /verify-bar — submit bar number for verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js','utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js', 'utf8');
     expect(src).toContain("router.post('/verify-bar'");
     expect(src).toContain('authRequired');
-    expect(src.length).toBeGreaterThan(8000);
-    // Attorneys must verify state bar number before accepting cases
+    expect(src).toContain('audit(');   // section G: every submission is audit-logged
   });
   test('AVR-02: POST /approve-verification — admin approves attorney', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js','utf8');
-    expect(src).toContain("router.post('/approve-verification'");
-    // Admin reviews + approves bar verification submissions
+    // Section G: admins decide bar numbers in the admin review queue (POST /api/admin/queue/bar/:userId,
+    // audit-logged); attorney/verification.js only takes the submission.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js', 'utf8');
+    expect(src).toContain("router.post('/verify-bar'");
+    expect(src).not.toContain("router.post('/approve-verification'");
+    const q = fs.readFileSync(__REPO + '/backend/src/routes/admin/queue.js', 'utf8');
+    expect(q).toContain("router.post('/bar/:userId'");
+    expect(fs.readFileSync(__REPO + '/backend/src/services/adminQueues.js', 'utf8')).toContain('ADMIN_BAR_APPROVED');
   });
 });
 
@@ -134,12 +138,16 @@ describe('BBD. billing/bondsman.js — Bondsman Leads + Verified Badge', () => {
   });
   test('BBD-04: verified-badge subscribe + status + cancel — $49/mo badge', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(src).toContain("router.post('/bondsman/verified-badge/subscribe'");
-    expect(src).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(src).toContain("router.post('/bondsman/verified-badge/cancel'");
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900); // $49/mo
-    // Verified badge: 🥇 displayed on profile, increases lead volume
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined();
+    expect(src).toContain('authRequired');
   });
 });
 

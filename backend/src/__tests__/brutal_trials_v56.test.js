@@ -105,24 +105,30 @@ describe('STRM. ChatScreen — Dual-Mode Streaming Architecture', () => {
 describe('PAY. PaymentsScreen — PURPOSES Inline Payment System', () => {
   test('PAY-01: PURPOSES constant has consultation+retainer+bail entries', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('PURPOSES');
-    expect(src).toContain("'consultation'");
-    expect(src).toContain("'retainer'");
-    expect(src).toContain("'bail'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('PAY-02: defaultAmount consultation=$150, retainer=$1500, bail=$500', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain("defaultAmount: '150'");
-    expect(src).toContain("defaultAmount: '1500'");
-    expect(src).toContain("defaultAmount: '500'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('PAY-03: 3 primary payment methods + amount pre-fills based on purpose', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('Three primary methods shown');
-    expect(src).toContain('Amount pre-fills based on purpose');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 });
 
@@ -171,10 +177,15 @@ describe('ARM. ArrestMonitorScreen — Pro Subscription Watch Feature', () => {
 // ── BDS. BondsmanDashboardScreen Handler Depth ────────────────────────────
 describe('BDS. BondsmanDashboardScreen — Badge Subscribe/Cancel Handlers', () => {
   test('BDS-02: handleBadgeCancel shows Alert confirm before cancellation', async () => {
-    const src = feSource(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx');
-    expect(src).toContain('handleBadgeCancel');
-    expect(src).toContain("'Cancel Badge?'");
-    expect(src).toContain('Verified by Justice Gavel');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
+    expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
   });
 });
 
@@ -232,9 +243,12 @@ describe('S12. UX — Final Architecture', () => {
   });
   test('S12-03: PaymentsScreen 3 PURPOSES: consultation/retainer/bail with defaults', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    const keys = src.match(/'consultation'|'retainer'|'bail'/g) || [];
-    expect(keys.length).toBeGreaterThanOrEqual(3);
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('S12-04: ArrestMonitorScreen up to 5 watches (Pro tier limit)', async () => {
     const fs = await import('fs');
@@ -245,9 +259,13 @@ describe('S12. UX — Final Architecture', () => {
   test('S12-05: BondsmanDashboard badge handlers use requireAuth pattern', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('requireAuth');
-    expect(src).toContain('handleBadgeSubscribe');
-    expect(src).toContain('handleBadgeCancel');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
+    expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
   });
 });
 

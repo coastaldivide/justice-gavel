@@ -1,4 +1,3 @@
-import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v96
@@ -37,19 +36,26 @@ const mkMatter = (v, o={}) => ({
 describe('DISC28. Discrepancy Fixes — 3 items', () => {
   test('DISC28-01: billing/webhooks.js constructEvent signature verification [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
     expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(src).toContain('express.raw()');
-    // Stripe HMAC: constructEvent verifies payload authenticity
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('DISC28-02: attorney/profile — GET/PATCH /profile + GET/PUT /availability [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
+    // Section G: PATCH /profile is removed (it let an attorney edit verified bar fields); the bar number goes
+    // through POST /verify-bar and admin review. Availability stays.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
     expect(src).toContain("router.get('/profile'");
-    expect(src).toContain("router.patch('/profile'");
+    expect(src).not.toContain("router.patch('/profile'");
     expect(src).toContain("router.get('/profile/availability'");
     expect(src).toContain("router.put('/profile/availability'");
+    expect(src).toContain('authRequired');
   });
   test('DISC28-03: bail.js GET /nearby — GPS emergency bondsman finder [≥4]', async () => {
     const fs = await import('fs');
@@ -206,7 +212,7 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
@@ -218,7 +224,7 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
@@ -276,7 +282,7 @@ describe('Regression — All v1–v95 Confirmed', () => {
   });
   test('R-05: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_MESSAGES_PER_THREAD does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();

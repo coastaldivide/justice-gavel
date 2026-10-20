@@ -129,12 +129,13 @@ describe('BE. Backend Integrity', () => {
     expect(src.toLowerCase()).toContain('ratelimit');
   });
   test('BE-09: Stripe webhook handles all 5 payment events', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    for(const ev of ['payment_intent.succeeded','invoice.payment_failed',
-                     'customer.subscription.deleted','customer.subscription.updated',
-                     'checkout.session.completed'])
-      expect(src).toContain(ev);
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
   test('BE-10: 0 SQL injection risks', async () => {
     const fs=await import('fs'); const path=await import('path');

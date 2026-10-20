@@ -108,7 +108,6 @@ describe('ACC. Accessibility Audit — 286 Buttons Fixed Across 64 Screens', () 
 // ── S6SI. submitIntake — S6 Gap ────────────────────────────────────────────
 describe('S6SI. HagueContactScreen submitIntake — pushed to ≥2 hits', () => {
   test('S6SI-01: submitIntake validates required fields before POST', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('const submit = async');
     expect(fe).toContain("setFormError(t('hg_choose_case'))");
@@ -117,7 +116,6 @@ describe('S6SI. HagueContactScreen submitIntake — pushed to ≥2 hits', () => 
     expect(fe).toContain('caseId, countryCode: country, childName: childName.trim()');
   });
   test('S6SI-02: submitIntake posts to /hague-contacts/report-intake with full payload', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('const submit = async');
     expect(fe).toContain("setFormError(t('hg_choose_case'))");
@@ -236,7 +234,7 @@ describe('Regression — All v1–v84 Confirmed', () => {
   });
   test('R-06: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
     expect(CONFIG.PORT).toBe(4000);

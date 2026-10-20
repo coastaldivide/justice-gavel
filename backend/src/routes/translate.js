@@ -36,6 +36,8 @@ import rateLimit from 'express-rate-limit';
 import { createHash, randomBytes as _tokBytes, randomBytes as _rb, timingSafeEqual } from 'crypto';
 import { enqueueAIJob as enqueue } from '../services/aiQueue.js';
 import logger from '../utils/logger.js';
+import { hasFeature } from '../services/entitlements.js';
+import { FEATURES } from './billing/plans.js';
 
 const router = express.Router();
 const say = (req, key, params) => msg(resolveLang(req), `translate.err.${key}`, params);
@@ -142,15 +144,11 @@ async function translate(text, srcLang, tgtLang) {
 router.post('/message', authRequired, requireAi, perUserAiLimit, async (req, res) => {
   try {
 
-    // Verify caller has an active subscription or is using defender mode
-    let subCheck = null;
+    // A plan that includes the interpreter (routes/billing/plans.js), or an attorney account
+    let subCheck = false;
     try {
-      const db = await (await import('../db/index.js')).getDb();
-      subCheck = await db.get(
-        `SELECT id FROM subscriptions WHERE user_id=? AND status='active' LIMIT 1`,
-        [req.user.id]
-      ).catch(() => null);
-    } catch (e) { logger.warn('[translate/sub-check]', e?.message); subCheck = null; }
+      subCheck = await hasFeature(await getDb(), req.user.id, FEATURES.INTERPRETER);
+    } catch (e) { logger.warn('[translate/sub-check]', e?.message); }
     const isDefender = req.user?.role === 'defender' || req.user?.role === 'attorney';
     if (!subCheck && !isDefender) {
       return res.status(402).json({ error: 'subscription_required', code: 'subscription_required', message: say(req, 'subscription_required'), upgrade_url: '/subscribe' });

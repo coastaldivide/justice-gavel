@@ -92,11 +92,15 @@ describe('ARR_A. arrests.js — 3 Routes PUSH ≥10', () => {
 describe('BND_A. billing/bondsman.js — 3 Routes PUSH ≥10', () => {
   test('BND_A-01: GET/POST /bondsman/verified-badge + POST /cancel', async () => {
     const fs = await import('fs');
-    const s = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(s).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/subscribe'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/cancel'");
-    // Verified badge: premium bondsman listing with trust indicator
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
 });
 

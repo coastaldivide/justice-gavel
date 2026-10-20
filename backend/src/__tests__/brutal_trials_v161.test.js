@@ -101,13 +101,13 @@ describe('A. Backend — All Issues Fixed', () => {
   });
 
   test('A-08: Stripe webhook handles all 5 payment lifecycle events', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    for(const ev of ['payment_intent.succeeded','invoice.payment_failed',
-                     'customer.subscription.deleted','customer.subscription.updated',
-                     'checkout.session.completed']){
-      expect(src).toContain(ev);
-    }
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
 
   test('A-09: 5 previously missing DB tables now in schema', async () => {
@@ -156,10 +156,14 @@ describe('A. Backend — All Issues Fixed', () => {
   });
 
   test('test-orphan-165', async () => {
-    const fs=await import('fs');
-    const stripe=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    const bot=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js','utf8');
-    expect(stripe).toContain('STRIPE_WEBHOOK_SECRET');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    const bot = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(bot).toContain('ADMIN_KEY');
   });
 });

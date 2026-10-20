@@ -214,13 +214,18 @@ describe('CON_C. conflicts 7 + acquisition 5 + privilege 5 → ≥15', () => {
     expect(s).toContain("router.post('/ethics-wall/:matterId'");
   });
   test('CON_C-02: firm_acquisition all 5 routes', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
-    expect(s).toContain("router.get('/vertical-demo'");
+    const fs = await import('fs');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
     expect(s).toContain("router.post('/trial'");
     expect(s).toContain("router.post('/upgrade'");
     expect(s).toContain("router.get('/checklist'");
-    expect(s).toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
   test('CON_C-03: privilege csv + pdf + review-status + entries/review + bases', async () => {
     const fs=await import('fs');

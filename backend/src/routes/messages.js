@@ -4,6 +4,9 @@
  *   GET    /messages/unread[/count]   unread badge count (my cases + cases I am counsel on)
  *   GET    /messages/threads          one row per case thread I can open: unread count, last message, counsel
  *   GET    /messages/direct           direct messages to/from me (incl. bulk outreach)
+ *   GET    /messages/direct/threads   one row per direct conversation (last message, unread)
+ *   POST   /messages/direct           reply to someone who wrote to me directly { to, body }
+ *   POST   /messages/direct/:userId/read  mark a direct conversation read
  *   POST   /messages/bulk             message up to BULK_MAX attorneys from the directory
  *   POST   /messages/attachment       upload a document (multipart), optionally into a case thread
  *   GET    /messages/attachment/:id   download an attachment (decrypted)
@@ -204,6 +207,79 @@ router.get('/direct', authRequired, async (req, res) => {
   } catch (e) {
     logger.warn('[messages/direct]', e?.message);
     return fail(req, res, 500, 'msgs.err.load');
+  }
+});
+
+// ── GET /messages/direct/threads — one row per person I have a direct conversation with ──
+// (someone wrote to me directly, or I wrote first via /bulk): last message, unread count.
+router.get('/direct/threads', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const me = req.user.id;
+    const rows = await db.all(
+      `SELECT DISTINCT ON (other) other, sender_id, content, created_at,
+              (SELECT COUNT(*)::int FROM messages x WHERE x.sender_id = t.other AND x.recipient_id = ? AND x.read_at IS NULL) AS unread
+         FROM (SELECT m.*, CASE WHEN m.sender_id = ? THEN m.recipient_id ELSE m.sender_id END AS other
+                 FROM messages m WHERE (m.recipient_id = ? OR m.sender_id = ?) AND m.recipient_id IS NOT NULL) t
+        ORDER BY other, created_at DESC, id DESC
+        LIMIT 200`, [me, me, me, me]);
+    const ids = rows.map(r => Number(r.other));
+    const names = ids.length
+      ? Object.fromEntries((await db.all(`SELECT id, display_name FROM users WHERE id IN (${ids.map(() => '?').join(',')})`, ids)).map(u => [Number(u.id), u.display_name]))
+      : {};
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ threads: rows.map(r => ({
+      user_id: Number(r.other), name: names[Number(r.other)] || null, last_message: preview(decrypt(r.content) || ''),
+      last_from_me: Number(r.sender_id) === Number(me), last_at: r.created_at, unread: Number(r.unread || 0),
+    })).sort((a, b) => new Date(b.last_at) - new Date(a.last_at)) });
+  } catch (e) {
+    logger.warn('[messages/direct/threads]', e?.message);
+    return fail(req, res, 500, 'msgs.err.load');
+  }
+});
+
+// ── POST /messages/direct/:userId/read — mark a direct conversation read ─────
+router.post('/direct/:userId/read', authRequired, async (req, res) => {
+  if (!isId(req.params.userId)) return fail(req, res, 404, 'msgs.err.no_conversation');
+  try {
+    const db = await getDb();
+    const r = await db.run('UPDATE messages SET read_at = NOW() WHERE sender_id = ? AND recipient_id = ? AND read_at IS NULL', [Number(req.params.userId), req.user.id]);
+    return res.json({ ok: true, marked: r.changes });
+  } catch (e) {
+    logger.warn('[messages/direct/read]', e?.message);
+    return fail(req, res, 500, 'msgs.err.load');
+  }
+});
+
+// ── POST /messages/direct — reply in a direct conversation ──────────────────
+// Only to a person who has already written to me directly (no cold messages:
+// first contact goes through /bulk, which is limited to directory attorneys).
+router.post('/direct', authRequired, bulkLimiter, async (req, res) => {
+  const to = isId(req.body?.to) ? Number(req.body.to) : null;
+  const raw = req.body?.body ?? req.body?.message;
+  if (!to || to === Number(req.user.id)) return fail(req, res, 400, 'msgs.err.bad_recipient');
+  if (typeof raw !== 'string' || !raw.trim()) return fail(req, res, 400, 'msgs.err.body_required');
+  if (raw.length > BULK_MAX_CHARS) return res.status(400).json({ error: say(req, 'msgs.err.too_long', { n: BULK_MAX_CHARS }) });
+  const text = truncateStr(sanitizeStr(raw.trim(), BULK_MAX_CHARS), BULK_MAX_CHARS);
+  try {
+    const db = await getDb();
+    const wrote = await db.get('SELECT id, case_id FROM messages WHERE sender_id = ? AND recipient_id = ? ORDER BY id DESC LIMIT 1', [to, req.user.id]);
+    if (!wrote) return fail(req, res, 404, 'msgs.err.no_conversation');
+    const r = await db.run(
+      `INSERT INTO messages (sender_id, recipient_id, case_id, sender_role, lang, content, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [req.user.id, to, wrote.case_id || null, isAttorneyRole(req.user) ? 'attorney' : 'user', resolveLang(req), encrypt(text)]);
+    await db.run('UPDATE messages SET read_at = COALESCE(read_at, NOW()) WHERE sender_id = ? AND recipient_id = ?', [to, req.user.id]);
+    userLang(db, to).then(lang => sendPushToUser(to, {
+      title: msg(lang, 'msgs.push.direct_reply', { name: req.user.display_name || msg(lang, 'msgs.push.your_attorney') }),
+      body: preview(text),
+      data: { type: 'direct_message', screen: 'Messages', from: req.user.id, directWith: req.user.id },
+      channelId: 'messages',
+    })).catch(logIgnored('routes/messages'));
+    return res.status(201).json({ ok: true, id: r.lastID });
+  } catch (e) {
+    logger.warn('[messages/direct POST]', e?.message);
+    return fail(req, res, 500, 'msgs.err.send');
   }
 });
 

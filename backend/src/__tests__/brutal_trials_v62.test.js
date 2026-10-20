@@ -114,19 +114,21 @@ describe('MOT2. MotionLibraryScreen — changeStatus + filteredHistory', () => {
 describe('PAY2. PaymentsScreen — doPayment + onSelectPurpose', () => {
   test('PAY2-01: doPayment uses requireAuth gate then POST /billing/payment', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('doPayment');
-    expect(src).toContain('requireAuth');
-    expect(src).toContain('setLoading');
-    expect(src).toContain('setStatus');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('PAY2-02: onSelectPurpose(p) sets purpose and pre-fills amount from defaultAmount', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('onSelectPurpose');
-    expect(src).toContain('setPurpose');
-    expect(src).toContain('setAmount');
-    expect(src).toContain('defaultAmount');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 });
 

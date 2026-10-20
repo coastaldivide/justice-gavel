@@ -74,16 +74,15 @@ const mkMatter = (v, o = {}) => ({
 // ── DISC. Discrepancy Verification ────────────────────────────────────────
 describe('DISC. All Discrepancies Resolved', () => {
   test('DISC-01: AttorneyDashboard .status === fulfilled documented (casesRes.status in corpus)', async () => {
-    const fs   = await import('fs');
-    const path = await import('path');
-    const dir  = __REPO + '/backend/src/__tests__';
-    const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
-      .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    expect(corpus).toContain('casesRes.status');
-    // The status check uses extra spaces: .status    === 'fulfilled'
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    const checks = src.match(/\.status\s*===\s*'fulfilled'/g) || [];
-    expect(checks.length).toBeGreaterThanOrEqual(4);
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
   test('DISC-02: All other discrepancies confirmed resolved', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
@@ -234,16 +233,27 @@ describe('S6I. FirmAcquisitionScreen — loadPlans + requestUpgrade + activateTr
   test('S6I-01: loadPlans fetches pricing plans from /firm-verticals/pricing', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain('loadPlans');
-    expect(src).toContain('useCallback');
-    expect(src).toContain('pricing');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
   test('S6I-02: requestUpgrade(tier) initiates firm plan upgrade', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain('requestUpgrade');
-    expect(src).toContain('upgrading');
-    expect(src).toContain('tier');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
+    expect(src).toContain('requestPlan');
   });
 });
 
@@ -293,9 +303,16 @@ describe('S6L. SubscriptionScreen — loadSubscription + handleSubscribe', () =>
   test('S6L-02: handleSubscribe wraps doSubscribe in requireAuth gate', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('handleSubscribe');
-    expect(src).toContain('requireAuth');
-    expect(src).toContain('doSubscrib');
+    // Section G: attorney and bail-agent plans from the server; purchase via services/purchase.ts;
+    // failures shown in the notice banner
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).toContain("type ProviderType = 'lawyer' | 'bail_agent';");
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useAuthGate');
+    expect(src).toContain('testID="subscription-notice"');
+    expect(src).toContain('colors.errorBg');
+    expect(src).toContain("Platform.OS === 'ios'");
   });
 });
 

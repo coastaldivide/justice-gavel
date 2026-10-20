@@ -97,7 +97,9 @@ describe('Error message quality — user-friendly content', () => {
     for (const fp of routeFiles) {
       const c = readFileSync(fp, 'utf-8');
       const hasHandlers = /router\.(get|post|put|patch|delete)\s*\(/.test(c);
-      const hasErrMsg   = /['"`][A-Z][^'"`]{10,}['"`]/.test(c); // sentence-case string > 10 chars
+      // a sentence-case string > 10 chars, or a message from the server catalogue in the
+      // request language (msg / say → backend/src/i18n/messages)
+      const hasErrMsg   = /['"`][A-Z][^'"`]{10,}['"`]/.test(c) || /\b(msg|say)\(\s*(lang|resolveLang\(req\)|req)\b/.test(c);
       if (hasHandlers && !hasErrMsg) noErrors.push(fp.split('/routes/')[1]);
     }
     expect(noErrors.length).toBeLessThan(5);

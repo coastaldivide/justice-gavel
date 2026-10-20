@@ -143,43 +143,27 @@ describe('Stripe webhook — signed events (STRIPE_WEBHOOK_SECRET set)', () => {
   beforeAll(() => { process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET; });
   afterAll(() => { if (_savedSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET; else process.env.STRIPE_WEBHOOK_SECRET = _savedSecret; });
 
-  // In mock mode, constructWebhookEvent returns null (no secret to verify with).
-  // The route checks: if (!event && process.env.STRIPE_WEBHOOK_SECRET) → 400.
-  // Without STRIPE_WEBHOOK_SECRET, it accepts all events and returns 200.
-
-  test('payment_intent.succeeded → 200 { received: true }', async () => {
-    const r = await postWebhook(makePayload('payment_intent.succeeded',
-      { id: 'pi_test', amount: 2000, customer: 'cus_test' }));
-    expect(r.status).toBe(200);
-    expect(r.body.received).toBe(true);
-  });
-
-  test('invoice.payment_succeeded → 200 { received: true }', async () => {
-    const r = await postWebhook(makePayload('invoice.payment_succeeded',
-      { id: 'in_test', subscription: 'sub_test', customer: 'cus_test' }));
-    expect(r.status).toBe(200);
-    expect(r.body.received).toBe(true);
-  });
-
-  test('invoice.payment_failed → 200 { received: true }', async () => {
-    const r = await postWebhook(makePayload('invoice.payment_failed',
-      { id: 'in_test', subscription: 'sub_test' }));
-    expect(r.status).toBe(200);
-    expect(r.body.received).toBe(true);
-  });
-
-  test('customer.subscription.deleted → 200 { received: true }', async () => {
-    const r = await postWebhook(makePayload('customer.subscription.deleted',
-      { id: 'sub_test', customer: 'cus_test' }));
-    expect(r.status).toBe(200);
-    expect(r.body.received).toBe(true);
-  });
-
-  test('unknown event type is gracefully accepted → 200', async () => {
-    const r = await postWebhook(makePayload('some.unknown.event.type', {}));
-    expect(r.status).toBe(200);
-    expect(r.body.received).toBe(true);
-  });
+  // A correctly signed event passes verification. The handler then records the
+  // event id (stripe_event_log) before acting on it — this unit app has no
+  // database, so it answers 500 and Stripe retries later: an event is never
+  // acknowledged (200) without being recorded and processed. The real processing
+  // (paid / failed / deleted, replays, leads) is proved against Postgres with a
+  // fake Stripe client in integration/pro_billing_g.int.test.js (G6, G8, G9).
+  for (const [type, data] of [
+    ['payment_intent.succeeded', { id: 'pi_test', amount: 2000, customer: 'cus_test' }],
+    ['invoice.payment_succeeded', { id: 'in_test', subscription: 'sub_test', customer: 'cus_test' }],
+    ['invoice.payment_failed', { id: 'in_test', subscription: 'sub_test' }],
+    ['customer.subscription.deleted', { id: 'sub_test', customer: 'cus_test' }],
+    ['some.unknown.event.type', {}],
+  ]) {
+    test(`${type}: signature accepted; not acknowledged until it is recorded (no DB here → 500, Stripe retries)`, async () => {
+      const r = await postWebhook(makePayload(type, data));
+      expect(r.status).not.toBe(400);
+      expect(r.status).toBe(500);
+      expect(r.body.received).toBeUndefined();
+      expect(r.body.error).toBe('webhook_failed');
+    });
+  }
 
   test('missing stripe-signature header is rejected → 400 (no unsigned events)', async () => {
     const r = await request(stripeApp)
@@ -203,9 +187,9 @@ describe('Stripe webhook — signed events (STRIPE_WEBHOOK_SECRET set)', () => {
     } finally { process.env.STRIPE_WEBHOOK_SECRET = saved; }
   });
 
-  test('response body always contains received: true', async () => {
-    const r = await postWebhook(makePayload('payment_intent.succeeded', { id: 'pi_x' }));
-    expect(r.body.received).toBe(true);
-    expect(r.body).toMatchObject({ received: true });
+  test('a rejected or failed webhook never claims received: true', async () => {
+    const bad = await postWebhook(makePayload('payment_intent.succeeded', { id: 'pi_x' }), 't=1,v1=deadbeef');
+    expect(bad.status).toBe(400);
+    expect(bad.body.received).toBeUndefined();
   });
 });

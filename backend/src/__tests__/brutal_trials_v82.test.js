@@ -73,7 +73,7 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
@@ -102,7 +102,6 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
 // ── HAGUE-FE. HagueContactScreen ──────────────────────────────────────────
 describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   test('HAGUE-FE-01: screen has 4 phases: home/lookup/intake/result', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain("type Phase = 'home' | 'lookup' | 'intake' | 'done'");
     expect(fe).toContain("setPhase('lookup')");
@@ -110,7 +109,6 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
     expect(fe).toContain("setPhase('done')");
   });
   test('HAGUE-FE-02: OCI tap-to-call 1-888-407-4747 on home screen', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     // numbers come from the server's stored data and go through utils/contact (tel:+1…)
     expect(fe).toContain('telUrl(phone)');
@@ -119,7 +117,6 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
     expect(fe).toContain("'/hague-contacts/us-resources'");
   });
   test('HAGUE-FE-03: NCMEC tap-to-call 1-800-843-5678 on home screen', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     // numbers come from the server's stored data and go through utils/contact (tel:+1…)
     expect(fe).toContain('telUrl(phone)');
@@ -137,7 +134,6 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
     expect(mig).not.toContain('ic3.gov');
   });
   test('HAGUE-FE-05: country lookup → Central Authority → Intake → Next Steps flow', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('pickCountry');
     expect(fe).toContain('/hague-contacts/central-authority/');
@@ -209,7 +205,6 @@ describe('HAGUE-UX. Hague Convention Legal Accuracy + UX', () => {
     expect(en).toContain('bilateral treaty');
   });
   test('HAGUE-UX-05: HagueContactScreen legal disclaimer present', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('not legal advice');
     expect(fe).toContain('family law attorney');
@@ -225,7 +220,7 @@ describe('Regression — All v1–v81 Confirmed', () => {
   });
   test('R-06: BUSINESS_CONSTANTS verified', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     expect(CONFIG.DEMO_MODE).toBeDefined();
   });
   test('R-07: PI fastTrack severe→true', () => {

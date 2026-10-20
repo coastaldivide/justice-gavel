@@ -35,14 +35,14 @@ describeIntegration('H3/H4 — live roles and the provider admin console', () =>
 
   it('H3: a promotion takes effect from the DB even though the token says "user"', async () => {
     expect((await adminGet(admin, '/api/admin/stats')).status).toBe(200);
-    expect((await ctx.request().get('/api/attorney/pending-verification').set(admin.headers)).status).toBe(200);
+    expect((await ctx.request().get('/api/admin/queue/bar').set(admin.headers)).status).toBe(200);
   });
 
   it('H3 ATTACK: after demotion the OLD token is refused (immediately after invalidation)', async () => {
     await ctx.db.run(`UPDATE users SET role = 'user' WHERE id = ?`, [admin.id]);
     invalidateUserCache(admin.id);
     expect((await adminGet(admin, '/api/admin/stats')).status).toBe(403);
-    const pv = await ctx.request().get('/api/attorney/pending-verification').set(admin.headers);
+    const pv = await ctx.request().get('/api/admin/queue/bar').set(admin.headers);
     expect(pv.status).toBe(403);
     expect(JSON.stringify(pv.body)).not.toContain(attorney.email);
     // restore for the next tests

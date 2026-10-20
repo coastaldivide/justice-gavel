@@ -1213,8 +1213,12 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
   test('17-01: conflicts.js uses batched query (no N+1)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/conflicts.js', 'utf8');
-    expect(src).toContain('normedNames');
-    expect(src).toContain('ciOrClauses');
+    // Section G: the firm's index, parties and matters are read once (three
+    // queries, capped) and every name is matched in memory on normalized tokens.
+    expect(src).toContain('normalizeName');
+    const fn = src.slice(src.indexOf('async function conflictCheck'), src.indexOf('\nrouter.', src.indexOf('async function conflictCheck')));
+    expect((fn.match(/db\.(all|get)\(/g) || []).length).toBeLessThanOrEqual(4);
+    expect(src).toMatch(/LIMIT \$\{MAX_ROWS\}/);
     // The old N+1 loop should be gone
     expect(src).not.toContain('for (const name of rawNames)');
   });

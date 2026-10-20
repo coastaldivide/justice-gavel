@@ -189,14 +189,20 @@ describe('PSH_20. push(6) + bondsman(6) + hague(5) + recap(5) + other large grou
     // push.js: 10 routes — d7-reengage, receipts, preferences×2, retention are the 6 <20 hits
   });;
   test('PSH20-02: bondsman all 6 routes', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(s).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/subscribe'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/cancel'");
-    expect(s).toContain("router.get('/bondsman/profile'");
-    expect(s).toContain("router.post('/bondsman/profile'");
-    expect(s).toContain("router.post('/leads/:id/accept'");
+    const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
+    expect(src).toContain("router.get('/bondsman/profile'");
+    expect(src).toContain("router.post('/bondsman/profile'");
+    expect(src).toContain("router.post('/leads/:id/accept'");
+    expect(src).toContain("router.post('/leads/:id/confirm'");
   });
   test('PSH20-03: hague + recap all routes', async () => {
     const fs=await import('fs');

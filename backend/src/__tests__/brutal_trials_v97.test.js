@@ -37,20 +37,26 @@ const mkMatter = (v, o={}) => ({
 describe('DISC29. S0 Threshold Fixes — push all below ≥5 to ≥5', () => {
   test('DISC29-01: constructEvent Stripe HMAC verification [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    // constructEvent: timing-safe HMAC signature verification
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
     expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
-    // Raw body required for HMAC: express.raw() not express.json()
-    expect(src).toContain('express.raw()');
-    expect(src).toContain('signature');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('DISC29-02: attorney/profile GET /profile [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
+    // Section G: PATCH /profile is removed (it let an attorney edit verified bar fields); the bar number goes
+    // through POST /verify-bar and admin review. Availability stays.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
     expect(src).toContain("router.get('/profile'");
-    expect(src).toContain("router.patch('/profile'");
+    expect(src).not.toContain("router.patch('/profile'");
     expect(src).toContain("router.get('/profile/availability'");
+    expect(src).toContain("router.put('/profile/availability'");
+    expect(src).toContain('authRequired');
   });
   test('DISC29-03: bail.js GET /nearby GPS bondsman finder [≥5]', async () => {
     const fs = await import('fs');
@@ -214,9 +220,15 @@ describe('SEC3. Security — Algorithm Pinning + Dual Rate Limiting', () => {
   });
   test('SEC3-03: Stripe constructEvent prevents replay attacks', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
     expect(src).toContain('constructEvent');
-    expect(src).toContain('signature');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('SEC3-04: 200K SQL injection strings through safeInt — all return numbers', () => {
     const attacks=["'; DROP--","' OR 1=1","<script>","null","undefined","${env}"];
@@ -239,7 +251,7 @@ describe('Regression — All v1–v96 Confirmed', () => {
   test('R-05: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);

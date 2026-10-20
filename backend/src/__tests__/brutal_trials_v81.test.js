@@ -207,7 +207,7 @@ describe('Regression — All v1–v80 Confirmed', () => {
   test('R-06: BUSINESS_CONSTANTS all verified', () => {
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.JWT_EXPIRY does not exist */
   });

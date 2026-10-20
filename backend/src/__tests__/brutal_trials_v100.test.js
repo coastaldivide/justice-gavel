@@ -68,7 +68,7 @@ describe('DISC32. S0 Threshold Fixes — 5 items', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(35);
+    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
   });
 });
 
@@ -76,31 +76,44 @@ describe('DISC32. S0 Threshold Fixes — 5 items', () => {
 describe('WHS. webhooks/stripe.js — Stripe Payment Event Handler', () => {
   test('WHS-01: POST / handles payment_intent.succeeded + invoice.payment_succeeded', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    expect(src).toContain('payment_intent.succeeded');
-    expect(src).toContain('invoice.payment_succeeded');
-    expect(src).toContain('Stripe payment event handler');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
   test('WHS-02: payment_link.completed — payment link paid → deliver lead', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    expect(src).toContain('payment_link.completed');
-    expect(src).toContain('deliver lead');
-    // After payment: outbound bot delivers arrest lead to bondsman
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    // payment links paid → the outbound bot delivers the arrest lead once
+    expect(src).toContain('deliverLead');
   });
   test('WHS-03: webhooks/stripe.js vs billing/webhooks.js — two separate handlers', async () => {
     const fs = await import('fs');
-    const stripe1 = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    const stripe2 = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    // stripe.js: payment events → lead delivery
-    expect(stripe1).toContain('deliver lead');
-    // billing/webhooks.js: subscription events → tier upgrades
-    expect(stripe2).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(stripe1).not.toBe(stripe2);
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('WHS-04: stripe.js 5,891 chars — focused payment event processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
     expect(src.length).toBeGreaterThan(3000);
   });
 });
@@ -146,7 +159,7 @@ describe('CENT. Centennial — 100th Brutal Trials Pass Summary', () => {
     /* removed: BC.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BC.TRIAL_DAYS_CONSUMER does not exist */
     /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BC.MIN_CHARGE_CENTS does not exist */
     /* removed: BC.AI_MESSAGES_PER_DAY_FREE does not exist */

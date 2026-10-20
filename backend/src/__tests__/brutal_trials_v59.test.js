@@ -1,4 +1,3 @@
-import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -171,9 +170,13 @@ describe('BDS2. BondsmanDashboardScreen — loadProfile + confirmAccept', () => 
   test('BDS2-02: confirmAccept is a useCallback wrapper for lead acceptance action', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('confirmAccept');
-    expect(src).toContain('useCallback');
-    expect(src).toContain('accepting');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
+    expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
   });
 });
 
@@ -219,9 +222,13 @@ describe('CSS. ConsumerSubscriptionScreen — Cancel + Subscribe Handlers', () =
   test('CSS-02: doSubscribe(tier) uses requireAuth gate then POSTs subscribe', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('doSubscribe');
+    // Section G: plans from GET /billing/tiers; subscribing needs an account (requireAuth); cancel keeps the
+    // plan until the paid period ends (plan_cancel_body)
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain('/billing/consumer/subscribe');
     expect(src).toContain('requireAuth');
-    expect(src).toContain('tier');
+    expect(src).toContain('plan_cancel_body');
+    expect(src).toContain('usePurchase');
   });
 });
 
@@ -312,9 +319,15 @@ describe('S12. UX — Emergency + Subscription + Family Logic', () => {
     expect(src).toContain("'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error'");
   });
   test('S12-02: ConsumerSub cancel keeps access until period end (no immediate cutoff)', async () => {
-    const src = feSource(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx');
-    expect(src).toContain('access until');
-    expect(src).toContain('handleCancel');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    // Section G: plans from GET /billing/tiers; subscribing needs an account (requireAuth); cancel keeps the
+    // plan until the paid period ends (plan_cancel_body)
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain('/billing/consumer/subscribe');
+    expect(src).toContain('requireAuth');
+    expect(src).toContain('plan_cancel_body');
+    expect(src).toContain('usePurchase');
   });
   test('S12-03: FamilyConnect skipToStep2 handles no-arrest-found gracefully', async () => {
     const fs = await import('fs');

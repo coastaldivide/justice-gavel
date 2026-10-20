@@ -117,10 +117,14 @@ describe('BDS3. BondsmanDashboardScreen — loadLeads', () => {
   test('BDS3-01: loadLeads(isRefresh) uses stale-while-revalidate pattern', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('loadLeads');
-    expect(src).toContain('isRefresh');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
+    expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
     expect(src).toContain('setRefreshing');
-    expect(src).toContain('useCallback');
   });
 });
 
@@ -196,9 +200,15 @@ describe('FAS. FirmAcquisitionScreen — loadPitch', () => {
   test('FAS-01: loadPitch loads pricing pitch with selectedV vertical tracking', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain('loadPitch');
-    expect(src).toContain('selectedV');
-    expect(src).toContain('criminal_defense');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
+    expect(src).toContain("'criminal_defense'");
   });
 });
 

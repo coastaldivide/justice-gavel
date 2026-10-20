@@ -133,16 +133,17 @@ describe('1. useAppSetup.ts — App Lifecycle Hooks', () => {
 describe('2. firm_acquisition.js — Firm Onboarding Funnel', () => {
 
   test('2-01: firm_acquisition has 8 route handlers', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    // Section G: plans, lead, trial, status, upgrade, checklist, invite, invites, invites/:id/accept
     const handlers = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
-    expect(handlers.length).toBe(8);
+    expect(handlers.length).toBe(9);
   });
 
   test('2-02: TRIAL_DAYS is 14 (single source of truth)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('TRIAL_DAYS     = 14');
+    expect(src).toContain('export const TRIAL_DAYS = 14;');
     expect(src).toContain('free trial length — single source of truth');
   });
 
@@ -196,20 +197,26 @@ describe('2. firm_acquisition.js — Firm Onboarding Funnel', () => {
   });
 
   test('2-08: checklist route tracks onboarding steps', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('/checklist');
-    expect(src).toContain('checklist_key');
-    expect(src).toContain('completed_at');
+    // Section G: the steps are worked out from the firm's data, not ticked by hand
+    expect(src).toContain("router.get('/checklist'");
+    for (const step of ['vertical_set', 'team_invited', 'first_matter']) expect(src).toContain(step);
   });
 
   test('2-09: VERTICAL_PITCH has headlines for all 10+ verticals', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('VERTICAL_PITCH');
-    expect(src).toContain('criminal_defense');
-    expect(src).toContain('headline');
-    expect(src).toContain('stats');
+    const fs = await import('fs');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
 });
 
@@ -679,12 +686,17 @@ describe('11. AttorneyDashboardScreen — Attorney Portal', () => {
   });
 
   test('11-04: AttorneyDashboardScreen has schedule and saving states', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('schedule');
-    expect(src).toContain('saving');
-    expect(src).toContain('saved');
-    expect(src).toContain('roleChecked');
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
+    expect(src).toContain('availability');
+    expect(src).toContain('saveAvail');
   });
 
   test('11-05: AttorneyDashboardScreen has templates endpoint', async () => {
@@ -764,9 +776,9 @@ describe('13. Regression — All Prior Fixes Confirmed', () => {
   });
 
   test('13-06: TRIAL_DAYS = 14 (firm acquisition)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('TRIAL_DAYS     = 14');
+    expect(src).toContain('export const TRIAL_DAYS = 14;');
   });
 
   test('13-07: VALID_VERTICALS has 11 entries (includes "general")', async () => {

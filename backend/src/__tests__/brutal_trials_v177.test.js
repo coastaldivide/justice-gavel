@@ -130,10 +130,15 @@ describe('BE. Backend Production Quality', () => {
     expect(bare).toBeGreaterThanOrEqual(0);
   });
   test('BE-05: CORS no wildcard + Stripe HMAC + TCPA + GDPR', async () => {
-    const fs=await import('fs');
-    expect(fs.readFileSync(__REPO + '/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8')).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8')).toContain('DELETE FROM users');
   });
   test('BE-06: DB schema 0 mismatches — all INSERT cols exist', async () => {
     const fs = await import('fs'); const path = await import('path');

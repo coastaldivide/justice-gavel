@@ -50,10 +50,13 @@ describe('DISC36. S0 Threshold Fixes — 9 items', () => {
   });
   test('DISC36-03: pay.js POST /checkout — Stripe checkout session [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("router.post('/checkout'");
-    expect(src).toContain('checkout');
-    expect(src).toContain('stripe');
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('DISC36-04: insurance.js GET /plans — legal insurance plans [≥4]', async () => {
     const fs = await import('fs');
@@ -70,12 +73,12 @@ describe('DISC36. S0 Threshold Fixes — 9 items', () => {
   });
   test('DISC36-06: app.js 61 mounts including /api/jobs [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
     expect(src).toContain('/api/jobs');
     expect(src).toContain('/api/time');
     expect(src).toContain('/api/push');
     expect(src).toContain('/api/match');
-    expect(src).toContain('/api/pay');
+    expect(src).not.toMatch(/['"]\/api\/pay['"]/);   // section G: routes/pay.js removed
   });
   test('DISC36-07: contracts/execution GET /:id/signers [≥5]', async () => {
     const fs = await import('fs');
@@ -184,7 +187,7 @@ describe('Regression — All v1–v103 Confirmed', () => {
     const BC=BUSINESS_CONSTANTS;
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.MAX_CASES does not exist */
     /* removed: BC.JWT_EXPIRY does not exist */
     /* removed: BC.MAX_MESSAGES_PER_THREAD does not exist */

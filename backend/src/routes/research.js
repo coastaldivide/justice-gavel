@@ -3,11 +3,12 @@ import { isStaff } from '../utils/staff.js';
 import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
 import { asyncRoute, safeInt } from '../utils/routeHelpers.js';
-import { canAccessFeature, FEATURE_TIERS } from '../utils/subscriptionStateMachine.js';
+import { hasFeature } from '../services/entitlements.js';
+import { TIERS, FEATURES, planFeatures } from './billing/plans.js';
 import { msg, resolveLang } from '../i18n/index.js';
 /**
  * research.js — AI Legal Research (included in the paid plans that list
- * `research` in utils/subscriptionStateMachine.js FEATURE_TIERS; attorneys and
+ * `legal_research` in routes/billing/plans.js PLAN_FEATURES; attorneys and
  * public defenders always)
  *
  * POST /api/research/ask          — run a legal research query → { jobId, session_id }
@@ -53,17 +54,12 @@ const refuse = (res, req, status, code) => res.status(status).json({ error: code
 
 const PROFESSIONAL_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
 /** The plans whose subscribers get research (for the paywall). */
-export const RESEARCH_PLANS = Object.freeze([...FEATURE_TIERS.research]);
+export const RESEARCH_PLANS = Object.freeze(Object.keys(TIERS).filter(k => !TIERS[k].legacy && !TIERS[k].matches_monthly && planFeatures(k).includes(FEATURES.LEGAL_RESEARCH)));
 
 // ── Research access: an attorney / public defender, or an active paid plan that includes it ──
 async function hasResearchAccess(db, user) {
   if (PROFESSIONAL_ROLES.has(user?.role) || Number(user?.is_defender) === 1) return true;
-  const rows = await db.all(
-    `SELECT tier, status, current_period_end FROM subscriptions
-      WHERE user_id = ? AND status IN ('active','trialing') ORDER BY id DESC LIMIT 5`,
-    [user.id]
-  ).catch(() => []);
-  return rows.some(r => canAccessFeature(r, 'research'));
+  return await hasFeature(db, user.id, FEATURES.LEGAL_RESEARCH);
 }
 
 // ── Legal research system prompt ──────────────────────────────────────────────

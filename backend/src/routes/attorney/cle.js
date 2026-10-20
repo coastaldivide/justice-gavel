@@ -18,6 +18,7 @@ import { Router }                     from 'express';
 import { authRequired }               from '../../middleware/auth.js';
 import logger                         from '../../utils/logger.js';
 import { requireAttorney } from './_helpers.js';
+import { resolveLang, msg } from '../../i18n/index.js';
 
 const router       = Router();
 const cleLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'CLE request limit reached.' });
@@ -162,7 +163,8 @@ router.post('/cle/:id/complete', authRequired, cleLimiter, async (req, res) => {
       course_title:   course.title,
       credit_hours:   hours,
       certificate_id: certId,
-      message:        `${hours} CLE credit hour${hours !== 1 ? 's' : ''} awarded.`,
+      // Recorded on Justice Gavel only — credit is granted by the state bar, not by the app.
+      message:        msg(resolveLang(req), 'attorney.msg.cle_logged'),
     });
   } catch (e) {
     logger.error('[attorney/cle/complete]', e.message);

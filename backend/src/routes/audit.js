@@ -65,8 +65,10 @@ router.get('/matter/:id', authRequired, apiLimiter, async (req, res) => {
     ).catch(() => null);
 
     const firmRole = await getFirmRole(db, req.user.id);
-    const isAdmin  = ['super_admin','firm_admin'].includes(req.user?.role) ||
-                     ['firm_admin'].includes(firmRole?.role);
+    // A firm admin sees the audit trail of their OWN firm's matters only.
+    const matter = await db.get('SELECT firm_id FROM matters WHERE id = ?', [matterId]).catch(() => null);
+    const sameFirm = !!matter && firmRole && Number(matter.firm_id) === Number(firmRole.firm_id);
+    const isAdmin  = req.user?.role === 'super_admin' || (sameFirm && ['firm_admin'].includes(firmRole?.role));
 
     if (!onTeam && !isAdmin) {
       return err403(res, 'Not a member of this matter team.');

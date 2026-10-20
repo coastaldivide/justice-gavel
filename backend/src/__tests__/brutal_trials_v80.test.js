@@ -142,7 +142,8 @@ describe('BDB. billing/bondsman.js — Bondsman Lead Marketplace', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
     expect(src).toContain("router.post('/bondsman/profile'");
     expect(src).toContain("router.get('/bondsman/profile'");
-    expect(src).toContain('Bondsman profiles');
+    expect(src).toContain('bail-agent profile');
+    expect(src).toContain('bondsman.err.bail_agent_only');   // section G: the profile is for bail-agent accounts
   });
   test('BDB-02: GET /leads — bondsman browses available arrest leads', async () => {
     const fs = await import('fs');
@@ -158,12 +159,15 @@ describe('BDB. billing/bondsman.js — Bondsman Lead Marketplace', () => {
   });
   test('BDB-04: Verified Badge subscription routes (subscribe/status/cancel)', async () => {
     const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('/bondsman/verified-badge/subscribe');
-    expect(src).toContain('/bondsman/verified-badge/status');
-    expect(src).toContain('/bondsman/verified-badge/cancel');
-    // BONDSMAN_BADGE_CENTS=4900 ($49/month)
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
 });
 
@@ -184,7 +188,8 @@ describe('BCN. billing/consumer.js — Consumer Subscription Plans', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/consumer.js', 'utf8');
     expect(src).toContain("router.post('/consumer/subscribe'");
-    expect(src).toContain('Consumer');
+    expect(src).toContain('consumer plan');
+    expect(src).toContain("startPlan(req, res, { audience: 'consumer' })");
   });
   test('BCN-02: GET /consumer/subscription — get current subscription status', async () => {
     const fs = await import('fs');
@@ -216,7 +221,7 @@ describe('S12. UX — Firm Verticals + Bondsman + Routes Architecture', () => {
     expect(src).toContain('computeMotionRecommendations');
   });
   test('S12-03: BONDSMAN_BADGE_CENTS=4900 ($49/mo) = Verified Badge subscription', () => {
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
   });
   test('S12-04: firm_verticals has 50+ endpoints — most route-dense file', async () => {
     const fs = await import('fs');

@@ -241,19 +241,28 @@ describe('PSD. pushDelivery.js — Expo Push Notification Delivery', () => {
 // ── BDB2. billing/bondsman — Verified Badge Final Routes ──────────────────
 describe('BDB2. billing/bondsman — Verified Badge Status + Cancel', () => {
   test('BDB2-01: GET /bondsman/verified-badge/status — current badge subscription', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(src).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(src).toContain('status');
+    const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
     expect(src).toContain('authRequired');
   });
   test('BDB2-02: POST /bondsman/verified-badge/cancel — cancel $49/mo badge subscription', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(src).toContain("router.post('/bondsman/verified-badge/cancel'");
-    expect(src).toContain('cancel');
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
-    // Cancels $49/mo Verified Badge — removes badge from profile immediately
+    const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
 });
 
@@ -324,7 +333,7 @@ describe('Regression — All v1–v88 Confirmed', () => {
   });
   test('R-06: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.LIVE_REFRESH).toBe(false);

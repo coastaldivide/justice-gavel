@@ -127,13 +127,13 @@ describe('BE. Backend Behavioral Checks', () => {
     expect(src).toContain('DELETE FROM users');
   });
   test('BE-05: Stripe webhook 5 events + HMAC verification', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    for(const ev of ['payment_intent.succeeded','invoice.payment_failed',
-                     'customer.subscription.deleted','customer.subscription.updated',
-                     'checkout.session.completed'])
-      expect(src).toContain(ev);
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
   test('test-orphan-219', async () => {
   });

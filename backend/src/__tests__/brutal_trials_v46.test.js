@@ -217,9 +217,16 @@ describe('S12. UX — Final Architecture Depth', () => {
   test('S12-05: SubscriptionScreen providerType "lawyer" | "bail_agent" drives tier display', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain("'lawyer' | 'bail_agent'");
-    expect(src).toContain('providerType');
-    expect(src).toContain("'lawyer'");
+    // Section G: attorney and bail-agent plans from the server; purchase via services/purchase.ts;
+    // failures shown in the notice banner
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).toContain("type ProviderType = 'lawyer' | 'bail_agent';");
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useAuthGate');
+    expect(src).toContain('testID="subscription-notice"');
+    expect(src).toContain('colors.errorBg');
+    expect(src).toContain("Platform.OS === 'ios'");
   });
   test('S12-06: LegalDisclaimerModal accessibilityState={{ checked: agreed }} is WCAG pattern', async () => {
     const fs = await import('fs');

@@ -1,136 +1,130 @@
-import { safeJson, err400 } from '../../utils/routeHelpers.js';
 /**
- * attorney/profile.js — Attorney profile and availability schedule
+ * attorney/profile.js — the attorney's own profile, dashboard counts and weekly availability.
+ *
+ *   GET /api/attorney/profile               profile + real counts (nothing estimated)
+ *   GET /api/attorney/profile/availability  { schedule, note }
+ *   PUT /api/attorney/profile/availability  { schedule: { mon: ['morning', …] }, note }
+ *
+ * Availability is stored on the attorney's own attorney_profiles row; the
+ * directory listing (lawyers) is never written. The bar number is changed only
+ * through POST /api/attorney/verify-bar (which restarts the verification).
  */
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
-import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
 import { requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
+import { resolveLang, msg } from '../../i18n/index.js';
+import { activeSubscriptions } from '../../services/entitlements.js';
+import { safeJson } from '../../utils/routeHelpers.js';
 
-
-const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
-
-
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 });
 const router = Router();
+const n = (row, k = 'n') => Number(row?.[k] || 0);
+const fail = (req, res, key, e) => { logger.error(`[attorney/profile] ${key}`, e?.message); res.status(500).json({ error: msg(resolveLang(req), `attorney.err.${key}`), code: 'server_error' }); };
 
+/** The directory listing linked to this account (approved listing claim), or null. */
+export async function linkedListing(db, userId) {
+  return await db.get(
+    `SELECT l.id, l.name FROM lawyers l
+      WHERE l.id = (SELECT lawyer_id FROM attorney_profiles WHERE user_id = ? AND lawyer_id IS NOT NULL ORDER BY id LIMIT 1)
+         OR l.user_id = ?
+      ORDER BY l.id LIMIT 1`, [userId, userId]);
+}
 
-// GET /api/attorney/profile
 router.get('/profile', authRequired, async (req, res) => {
   try {
     const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
-    const user = ctx.user;
-
-    const [activeCases, completedMotions, cleHours, avgRating] = await Promise.all([
-      db.get(`SELECT COUNT(*) as n FROM case_assignments WHERE defender_id=? AND status='active'`, [req.user.id]).catch(() => ({n:0})),
-      db.get(`SELECT COUNT(*) as n FROM motions WHERE user_id=?`, [req.user.id]).catch(() => ({n:0})),
-      db.get(`SELECT COALESCE(SUM(credit_hours),0) as hrs FROM cle_completions WHERE user_id=?`, [req.user.id]).catch(() => ({hrs:0})),
-      await db.get(`SELECT AVG(rating) as avg, COUNT(*) as cnt FROM reviews WHERE entity_type='lawyer' AND entity_id=?`, [req.user.id]).catch(() => ({avg:null,cnt:0})),
+    const uid = req.user.id;
+    const u = await db.get(
+      `SELECT id, display_name, email, bar_number, bar_state, bar_verified, pending_bar_verification, bar_verified_at,
+              bar_submitted_at, bar_rejection_reason, office_id, is_defender
+         FROM users WHERE id = ?`, [uid]);
+    const listing = await linkedListing(db, uid);
+    const [office, active, pending, hearings, unreadCase, unreadDirect, motions, cle, consults, rating, subs] = await Promise.all([
+      u.office_id ? db.get('SELECT office_name FROM office_members WHERE office_id = ? AND office_name IS NOT NULL ORDER BY id LIMIT 1', [u.office_id]) : null,
+      db.get(`SELECT COUNT(*)::int AS n FROM case_assignments WHERE defender_id = ? AND status = 'active'`, [uid]),
+      db.get(`SELECT COUNT(*)::int AS n FROM case_assignments WHERE defender_id = ? AND status = 'pending'`, [uid]),
+      db.get(`SELECT COUNT(*)::int AS n FROM court_dates cd
+                JOIN case_assignments ca ON ca.case_id = cd.case_id AND ca.defender_id = ? AND ca.status = 'active'
+               WHERE cd.deleted_at IS NULL AND (cd.court_date - CURRENT_DATE) BETWEEN 0 AND 6`, [uid]),
+      db.get(`SELECT COUNT(*)::int AS n FROM case_messages cm
+                JOIN case_assignments ca ON ca.case_id = cm.case_id AND ca.defender_id = ? AND ca.status = 'active'
+               WHERE cm.read_at IS NULL AND cm.sender_type = 'user' AND cm.deleted_at IS NULL`, [uid]),
+      db.get(`SELECT COUNT(*)::int AS n FROM messages WHERE recipient_id = ? AND read_at IS NULL`, [uid]),
+      db.get(`SELECT COUNT(*)::int AS n FROM motions WHERE user_id = ?`, [uid]),
+      db.get(`SELECT COALESCE(SUM(credit_hours), 0) AS n FROM cle_completions WHERE user_id = ?`, [uid]),
+      listing ? db.get(`SELECT COUNT(*)::int AS n FROM consultation_bookings WHERE lawyer_id = ? AND status = 'confirmed'
+                         AND COALESCE(starts_at, date_slot::timestamptz) >= NOW()`, [listing.id]) : null,
+      listing ? db.get(`SELECT AVG(rating) AS avg, COUNT(*)::int AS cnt FROM reviews
+                         WHERE entity_type = 'lawyer' AND entity_id = ? AND COALESCE(status, 'published') = 'published'`, [listing.id]) : null,
+      activeSubscriptions(db, uid),
     ]);
-
-    return res.json({
-      id:            user.id,
-      name:          user.name,
-      email:         user.email,
-      bar_number:       user.bar_number,
-      bar_state:        user.bar_state,
-      bar_verified:     !!user.bar_verified,
-      pending_bar_verification: !!user.pending_bar_verification,
-      office_id:        user.office_id,
-      is_defender:      user.is_defender,
-      gavel_level:      user.gavel_level || 0,
-      subscription_tier: user.subscription || 'basic',
-      office_name:      user.office_name,
-      bio:              user.bio,
-      phone:            user.phone,
-      specialties:      user.specialties ? (() => { try { return safeJson(user.specialties); } catch { return []; } })().catch?.() || [] : [],
+    const plan = subs.find(s => s.provider_type === 'lawyer') || null;
+    res.json({
+      id: Number(u.id), name: u.display_name, email: u.email,
+      bar_number: u.bar_number, bar_state: u.bar_state,
+      bar_verified: Number(u.bar_verified) === 1,
+      pending_bar_verification: Number(u.pending_bar_verification) === 1,
+      bar_verified_at: u.bar_verified_at, bar_submitted_at: u.bar_submitted_at,
+      bar_rejection_reason: Number(u.pending_bar_verification) === 1 || Number(u.bar_verified) === 1 ? null : (u.bar_rejection_reason || null),
+      office_id: u.office_id ? Number(u.office_id) : null, office_name: office?.office_name || null,
+      is_defender: Number(u.is_defender) === 1,
+      listing: listing ? { id: Number(listing.id), name: listing.name } : null,
+      plan: plan ? { tier: plan.tier, status: plan.status } : null,
       stats: {
-        active_cases:       activeCases.n,
-        motions_generated:  completedMotions.n,
-        cle_hours_earned:   avgRating.hrs || cleHours.hrs,
-        avg_rating:         avgRating.avg ? Math.round(avgRating.avg * 10) / 10 : null,
-        review_count:       avgRating.cnt,
+        active_cases: n(active), pending_assignments: n(pending), hearings_this_week: n(hearings),
+        unread_messages: n(unreadCase) + n(unreadDirect), motions_generated: n(motions),
+        cle_hours: Math.round(Number(cle?.n || 0) * 10) / 10,
+        upcoming_consultations: consults ? n(consults) : null,
+        avg_rating: rating?.cnt ? Math.round(Number(rating.avg) * 10) / 10 : null,
+        review_count: rating ? n(rating, 'cnt') : null,
       },
     });
-  } catch (e) { logger.error('[attorney/profile/get]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+  } catch (e) { fail(req, res, 'profile', e); }
 });
 
-// PATCH /api/attorney/profile
-router.patch('/profile', authRequired, routeLimiter, async (req, res) => {
+// ── Weekly availability ───────────────────────────────────────────────────────
+const DAYS  = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const SLOTS = ['morning', 'afternoon', 'evening'];
+
+router.get('/profile/availability', authRequired, async (req, res) => {
   try {
     const ctx = await requireAttorney(req, res);
     if (!ctx) return;
-    const { db } = ctx;
-    const { bar_number, is_defender } = req.body;
-    const updates = [];
-    const params  = [];
-    if (bar_number !== undefined) { updates.push('bar_number=?');  params.push(bar_number); }
-    if (is_defender !== undefined){ updates.push('is_defender=?'); params.push(is_defender ? 1 : 0); }
-    if (!updates.length) return err400(res, 'No fields to update');
-    params.push(req.user.id);
-    await db.run(`UPDATE users SET ${updates.join(',')} WHERE id=?`, params);
-    return res.json({ ok: true });
-  } catch (e) { logger.error('[attorney/profile/patch]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+    const row = await ctx.db.get('SELECT availability_schedule, availability_note FROM attorney_profiles WHERE user_id = ? ORDER BY id LIMIT 1', [req.user.id]);
+    const raw = row?.availability_schedule ? safeJson(row.availability_schedule, {}) : {};
+    const schedule = {};
+    for (const d of DAYS) if (Array.isArray(raw?.[d])) schedule[d] = raw[d].filter(s => SLOTS.includes(s));
+    res.json({ schedule, note: row?.availability_note || '' });
+  } catch (e) { fail(req, res, 'availability', e); }
 });
 
-// ── Weekly availability schedule ──────────────────────────────────────────────
-
-// GET /api/attorney/profile/availability
-router.get('/profile/availability', authRequired, async (req, res) => {
-  try {
-    const db  = await getDb();
-    const row = await db.get(
-      'SELECT weekly_availability, availability_note FROM lawyers WHERE user_id=?',
-      [req.user.id]
-    );
-    const schedule = row?.weekly_availability
-      ? safeJson(row.weekly_availability)
-      : {};
-    return res.json({ schedule, note: row?.availability_note || '' });
-  } catch (e) {
-    logger.error('[attorney/availability/get]', e?.message);
-    return res.status(500).json({ error: 'Could not load availability.' });
-  }
-});
-
-// PUT /api/attorney/profile/availability
 router.put('/profile/availability', authRequired, routeLimiter, async (req, res) => {
   try {
-    const db = await getDb();
-    const { schedule = {}, note = '' } = req.body;
-
-    // Validate: only known day/slot values accepted
-    const DAYS  = ['mon','tue','wed','thu','fri','sat','sun'];
-    const SLOTS = ['morning','afternoon','evening'];
-    const clean = {};
-    for (const day of DAYS) {
-      if (Array.isArray(schedule[day])) {
-        clean[day] = schedule[day].filter((s) => SLOTS.includes(s));
-      }
+    const ctx = await requireAttorney(req, res);
+    if (!ctx) return;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    if (body.schedule !== undefined && (typeof body.schedule !== 'object' || body.schedule === null || Array.isArray(body.schedule))) {
+      return res.status(400).json({ error: msg(resolveLang(req), 'attorney.err.bad_schedule'), code: 'bad_schedule' });
     }
-
-    await db.run(
-      `UPDATE lawyers SET weekly_availability=?, availability_note=?,
-       updated_at=NOW() WHERE user_id=?`,
-      [JSON.stringify(clean), String(note).slice(0, 200), req.user.id]
-    );
-    return res.json({ ok: true, schedule: clean });
-  } catch (e) {
-    logger.error('[attorney/availability/put]', e?.message);
-    return res.status(500).json({ error: 'Could not save availability.' });
-  }
+    const clean = {};
+    for (const d of DAYS) {
+      const v = body.schedule?.[d];
+      if (Array.isArray(v)) clean[d] = [...new Set(v.filter(s => SLOTS.includes(s)))];
+    }
+    const note = typeof body.note === 'string' ? body.note.trim().slice(0, 200) : '';
+    const { db } = ctx;
+    const r = await db.run('UPDATE attorney_profiles SET availability_schedule = ?, availability_note = ?, updated_at = NOW() WHERE user_id = ?',
+      [JSON.stringify(clean), note, req.user.id]);
+    if (!r.changes) {
+      await db.run('INSERT INTO attorney_profiles (user_id, availability_schedule, availability_note, updated_at) VALUES (?, ?, ?, NOW())',
+        [req.user.id, JSON.stringify(clean), note]);
+    }
+    res.json({ ok: true, schedule: clean, note });
+  } catch (e) { fail(req, res, 'availability', e); }
 });
-
-;
-
-// POST /api/attorney/verify-bar — attorney submits bar number for verification
-// Sets bar_verified=0 (pending) initially; JTB admin reviews and flips to 1
-// ── State Bar Lookup URLs — for human verification step ───────────────────────
-// Every URL is the official state bar attorney search page.
-// Admin team uses these during the 1–2 business day review period.
-// Last verified: April 2026
 
 export default router;

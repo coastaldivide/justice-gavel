@@ -73,16 +73,17 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
 describe('RUNTIME. Deep Flow Simulation', () => {
   test('RT-01: Stripe webhook end-to-end — HMAC + events + DB update', async () => {
     const fs = await import('fs');
-    const wh  = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    const wh2 = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    expect(wh2).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(wh).toContain('customer.subscription');
-    expect(wh).toContain('invoice.payment_failed');
-    expect(wh).toContain('checkout.session.completed');
-    expect(wh).toContain('UPDATE');
-    // Raw body must be preserved for HMAC verification
-    const app = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');
-    expect(app).toMatch(/raw|express\.raw|bodyParser\.raw/i);
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).toMatch(/express\.raw/);
   });
   test('RT-02: JWT silent refresh — interceptor + /refresh route + new token', async () => {
     const fs = await import('fs');

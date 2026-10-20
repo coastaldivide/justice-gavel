@@ -30,6 +30,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api, apiErrorMessage, unwrapList } from '../services/api';
 import { openAttachment } from '../services/attachments';
 import { useToast } from '../components/ToastProvider';
+import { DirectConversation } from '../components/DirectConversation';
 import { useConfirm } from '../hooks/useConfirm';
 import { statusLabel } from './CaseScreen';
 import * as secureStorage from '../utils/secureStorage';
@@ -638,4 +639,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   closeBtn:    { minWidth: 56, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 });
 
-export default React.memo(MessagesScreen);
+/** ?directWith=<userId> (a reply push, or Cases › Messages) opens that direct conversation. */
+function MessagesRoute(props: ScreenProps): React.JSX.Element {
+  const p = (props.route?.params ?? {}) as { directWith?: number | string; directName?: string };
+  const other = p.directWith != null && /^\d+$/.test(String(p.directWith)) ? Number(p.directWith) : null;
+  if (other) {
+    return <DirectConversation who={{ user_id: other, name: p.directName || null }}
+      onClose={() => (props.navigation.canGoBack() ? props.navigation.goBack() : props.navigation.navigate('Cases' as never))} />;
+  }
+  return <MessagesScreen {...props} />;
+}
+
+export default React.memo(MessagesRoute);

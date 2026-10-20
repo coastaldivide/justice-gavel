@@ -52,15 +52,19 @@ describe('S1a. billing/bondsman.js — /leads/:id/accept', () => {
   test('S1a-01: /leads/:id/accept uses atomic BEGIN IMMEDIATE transaction', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('/leads/:id/accept');
-    expect(src).toContain('BEGIN IMMEDIATE');
-    expect(src).toContain('Atomic: charge + record together');
+    // Section G: buy = server-priced PaymentIntent (startPayment) → confirm checked with Stripe → recorded
+    // once (services/leadPurchases.js recordBailLead; unique payment id); no card id from the client
+    expect(src).toContain("router.post('/leads/:id/accept'");
+    expect(src).toContain('startPayment');
+    expect(src).toContain('recordBailLead');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/leadPurchases.js', 'utf8')).toContain('export async function recordBailLead');
   });
   test('S1a-02: /leads/:id/accept requires payment_method_id in body', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('payment_method_id');
-    expect(src).toContain('safeInt(req.params.id)');
+    expect(src).not.toContain('payment_method_id');   // section G: Stripe collects the card, never the client body
+    expect(src).toContain('verifyPayment');
+    expect(src).toContain('BONDSMAN_LEAD_FEE_CENTS');
   });
   test('S1a-03: billing/bondsman.js has 7 total handlers', async () => {
     const fs = await import('fs');
@@ -150,17 +154,29 @@ describe('S1d. matters /hold, motions/export /refine, pi_leads /accept', () => {
   });
   test('S1d-03: pi_leads /:id/accept charges attorney lead fee', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain(':id/accept');
-    expect(src).toContain('attorney accepts lead');
-    expect(src).toContain('charged');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('S1d-05: firm_acquisition /vertical-demo + /checklist/:key documented', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('/vertical-demo');
-    expect(src).toContain('vertical-specific demo metrics');
-    expect(src).toContain('/checklist/:key');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
 });
 
@@ -236,10 +252,15 @@ describe('S6. Screens at 5–7 Hits — Pattern Verification', () => {
   test('S6-09: FirmAcquisitionScreen — self-serve onboarding funnel, 4 APIs', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain('Self-serve firm onboarding funnel');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
     expect(src).toContain('/firm-acquisition/status');
     expect(src).toContain('/firm-acquisition/checklist');
-    expect(src).toContain('/firm-acquisition/plans');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
+    expect(src).toContain('start a firm workspace and run it during the free trial');
   });
   test('S6-10: HelpNowScreen — combined lawyer + bail results, mounted guard', async () => {
     const fs = await import('fs');

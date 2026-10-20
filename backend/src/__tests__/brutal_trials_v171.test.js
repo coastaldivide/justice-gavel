@@ -169,14 +169,17 @@ describe('FLOW. 57/57 Screens — Complete Function Flows', () => {
 describe('PAY. Payment System — All 29 Checks', () => {
   test('PAY-01: subscription routes + logic complete', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js','utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
+    // Section G: no demo / mock mode — without Stripe every POST is 503 (billing/index.js gate); the Stripe
+    // calls live in services/stripeBilling.js; plans and prices come from billing/plans.js
     expect(src).toContain("router.post('/subscribe'");
     expect(src).toContain("router.get('/subscription'");
     expect(src).toContain("router.post('/cancel'");
-    expect(src).toContain("TIERS[tier]");           // tier validation
-    expect(src).toContain("Already subscribed");    // 409 duplicate prevention
-    expect(src).toContain("'demo'");               // demo mode
-    expect(src).toContain("stripe.subscriptions.create"); // live Stripe
+    expect(src).toContain("router.post('/refund'");
+    expect(src).not.toMatch(/'demo'|mock:/);
+    expect(src).toContain('startSubscription');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8')).toContain('stripe.subscriptions.create');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain('payments_unavailable');
   });
   test('PAY-02: QuickConnect complete payment flow', async () => {
     const fs = await import('fs');
@@ -193,12 +196,13 @@ describe('PAY. Payment System — All 29 Checks', () => {
   });
   test('PAY-03: pay.js orchestrator + rate limited + auth', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("'/create'");
-    expect(src).toContain('createPaymentSession');
-    expect(src).toContain('VALID_METHODS');
-    expect(src).toContain('payLimiter');
-    expect(src).toContain('authRequired');
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('PAY-04: Stripe integration has demo fallback', async () => {
     const fs = await import('fs');
@@ -212,14 +216,17 @@ describe('PAY. Payment System — All 29 Checks', () => {
   });
   test('PAY-05: webhook events + DB updates + HMAC', async () => {
     const fs = await import('fs');
-    const wh  = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    const swh = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    for(const ev of ['customer.subscription.deleted','customer.subscription.updated',
-                     'invoice.payment_failed','checkout.session.completed'])
-      expect(wh).toContain(ev);
-    expect(wh).toContain('db.');    // updates DB
-    expect(wh).toContain('UPDATE'); // modifies subscription status
-    expect(swh).toContain('STRIPE_WEBHOOK_SECRET'); // HMAC verification
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('db.');
   });
   test('PAY-06: LIVE guard drives all billing routes', async () => {
     const fs = await import('fs');
@@ -231,17 +238,18 @@ describe('PAY. Payment System — All 29 Checks', () => {
   });
   test('PAY-07: frontend payment screens all wired', async () => {
     const fs = await import('fs');
-    const sub  = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
-    const qc   = fs.readFileSync(__REPO + '/frontend/src/screens/QuickConnectScreen.tsx','utf8');
-    const cons = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx','utf8');
-    const pay  = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx','utf8');
-    const bond = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx','utf8');
+    const scr = __REPO + '/frontend/src/screens/';
+    const sub  = fs.readFileSync(scr + 'SubscriptionScreen.tsx', 'utf8');
+    const qc   = fs.readFileSync(scr + 'QuickConnectScreen.tsx', 'utf8');
+    const cons = fs.readFileSync(scr + 'ConsumerSubscriptionScreen.tsx', 'utf8');
+    const pay  = fs.readFileSync(scr + 'PaymentsScreen.tsx', 'utf8');
+    const bond = fs.readFileSync(scr + 'BondsmanDashboardScreen.tsx', 'utf8');
     expect(sub).toContain('/billing/subscribe');
-    expect(sub).toContain('handleSubscribe');
+    expect(sub).toContain('usePurchase');
     expect(sub).toContain('Linking');
     expect(qc).toContain('/billing/quickconnect');
     expect(cons).toContain('/billing/consumer/subscribe');
-    expect(pay).toContain('/pay/create');
+    expect(pay).toContain('/billing/overview');   // section G: no "pay anything" form
     expect(bond).toContain('/billing/leads');
     expect(bond).toContain('/billing/bondsman/profile');
   });

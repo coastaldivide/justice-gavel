@@ -14,6 +14,8 @@ import { CLAUDE_MODEL } from '../../utils/ai.js';
 import { safeJson } from '../../utils/routeHelpers.js';
 import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
 import logger               from '../../utils/logger.js';
+import { hasFeature }       from '../../services/entitlements.js';
+import { FEATURES }         from '../billing/plans.js';
 import { randomUUID }       from 'crypto';
 import { rightsPromptBlock } from '../../services/rightsContent.js';
 import { msg, resolveLang } from '../../i18n/index.js';
@@ -52,9 +54,7 @@ export async function chatContext(db, req) {
   const ctx = { lang, defender, unlimited: defender, used: 0, limit: FREE_CHAT_MESSAGES_PER_DAY, resetsAt: null, limited: false };
   if (defender) return ctx;
   try {
-    const sub = await db.get(
-      `SELECT id FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing') LIMIT 1`, [req.user.id]);
-    if (sub) { ctx.unlimited = true; return ctx; }
+    if (await hasFeature(db, req.user.id, FEATURES.AI_CHAT_UNLIMITED)) { ctx.unlimited = true; return ctx; }
     const { start, next } = startOfLocalDay(req);
     const row = await db.get(
       `SELECT COUNT(*) AS n FROM chat_sessions WHERE user_id = ? AND role = 'user' AND created_at >= ?`,

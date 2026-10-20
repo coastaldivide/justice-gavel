@@ -100,7 +100,7 @@ describe('RHLF. routeHelpers.js — All Exports Final Verification', () => {
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MIN_CHARGE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE does not exist */

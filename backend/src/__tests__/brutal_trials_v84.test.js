@@ -40,13 +40,12 @@ describe('DISC18. Discrepancy Fixes — central-authority + QUICK_COUNTRIES + ca
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
   });
   test('DISC18-02: QUICK_COUNTRIES has 18 entries for FE country selection [≥4]', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('pickCountry');
     expect(fe).toContain('/hague-contacts/central-authority/');
@@ -88,7 +87,6 @@ describe('HGF. HagueContactScreen — All 15 TouchableOpacity Now Have accessibi
 // ── S6-FIX. S6 Gap Screens ────────────────────────────────────────────────
 describe('S6-FIX. S6 Gap Screens — openUrl + loadUsResources', () => {
   test('S6-FX-01: openUrl wraps Linking.openURL for all report links + authority links', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     // numbers come from the server's stored data and go through utils/contact (tel:+1…)
     expect(fe).toContain('telUrl(phone)');
@@ -97,7 +95,6 @@ describe('S6-FIX. S6 Gap Screens — openUrl + loadUsResources', () => {
     expect(fe).toContain("'/hague-contacts/us-resources'");
   });
   test('S6-FX-02: loadUsResources populates US resources on component mount', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     // numbers come from the server's stored data and go through utils/contact (tel:+1…)
     expect(fe).toContain('telUrl(phone)');
@@ -234,7 +231,7 @@ describe('Regression — All v1–v83 Confirmed', () => {
   test('R-06: BUSINESS_CONSTANTS all verified', () => {
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_MESSAGES_PER_THREAD does not exist */

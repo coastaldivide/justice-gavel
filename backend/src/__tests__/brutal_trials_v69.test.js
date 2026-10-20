@@ -94,10 +94,15 @@ const mkMatter = (v, o = {}) => ({
 describe('DISC4. Discrepancy Fixes — haptics + pi_leads + interrogation', () => {
   test('DISC4-03: POST /pi-leads/submit is free (no auth) — max lead conversion [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('/pi-leads/submit');
-    expect(src).toContain('consumer submits a lead (free)');
-    // No authRequired on submit — consumers can submit without account
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('DISC4-04: interrogation /transcribe returns pdf_base64 in response [FIX ≥4]', async () => {
     const fs = await import('fs');

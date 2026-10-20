@@ -92,10 +92,14 @@ describe('API1. Backend Routes for Frontend Calls', () => {
     expect(src).toContain('enroll');
   });
   test('API-05: /pay/create route exists', async () => {
-    const fs=await import('fs');
-    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(true);
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain('create');
+    const fs = await import('fs');
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('API-06: /push/token + /push/reminders exist', async () => {
     const fs=await import('fs');

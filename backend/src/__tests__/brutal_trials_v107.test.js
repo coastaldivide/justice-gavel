@@ -123,7 +123,7 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
   test('QFN-06: ALL 13 BUSINESS_CONSTANTS + 10 CONFIG flags + 4 GAVEL tiers', () => {
     const BC=BUSINESS_CONSTANTS;
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */ /* removed: BC.TRIAL_DAYS_ANNUAL does not exist */
-    /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */ expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */ expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.AI_MESSAGES_PER_DAY_FREE does not exist */ /* removed: BC.AI_MESSAGES_PER_HOUR_PRO does not exist */
     /* removed: BC.MAX_CASES does not exist */ /* removed: BC.JWT_EXPIRY does not exist */
     /* removed: BC.COURT_REMINDER_DAYS does not exist */

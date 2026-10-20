@@ -95,7 +95,6 @@ const PUBLIC = {
   'GET /api/billing/tiers': 'price list',
   'GET /api/billing/bondsman/tiers': 'price list',
   'GET /api/firm-acquisition/plans': 'price list',
-  'GET /api/firm-acquisition/vertical-demo': 'marketing demo data',
   'POST /api/firm-acquisition/lead': 'sales contact form',
   'GET /api/firm-verticals/presets': 'deadline-rule catalogue',
   'GET /api/firm-verticals/pricing': 'price list',

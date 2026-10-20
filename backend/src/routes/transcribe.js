@@ -10,6 +10,10 @@ import { transcribeLimiter } from '../utils/rateLimiters.js';
 import { uploadGuard, fileStream, MB } from '../middleware/uploads.js';
 import logger from '../utils/logger.js';
 import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_VERSION } from '../utils/ai.js';
+import { getDb } from '../db/index.js';
+import { hasFeature } from '../services/entitlements.js';
+import { FEATURES } from './billing/plans.js';
+import { msg, resolveLang } from '../i18n/index.js';
 
 const router = Router();
 // 25 MB Whisper limit; streamed to a temp file, never buffered (C5).
@@ -23,11 +27,14 @@ const uploadAudio = uploadGuard({
 
 // Refuse BEFORE the upload is read: a request that can never be served (no
 // Whisper key, or a plan without transcription) must not stream 25 MB first (C5).
-const PAID_TIERS = new Set(['advisor','legal_pro','esquire','24_hour_advisor','attorney','pro','starter']);
-function requirePaidTranscription(req, res, next) {
-  if (!PAID_TIERS.has(req.user?.tier || 'free')) {
+// Audio transcription is included in the plans that list it (routes/billing/plans.js).
+async function requirePaidTranscription(req, res, next) {
+  let ok = false;
+  try { ok = await hasFeature(await getDb(), req.user.id, FEATURES.AUDIO_TRANSCRIPTION); }
+  catch (e) { logger.warn('[transcribe] plan check failed', e?.message); }
+  if (!ok) {
     res.setHeader('Connection', 'close');
-    return res.status(403).json({ error: 'Transcription requires Advisor plan or higher.', code: 'upgrade_required', upgrade_url: '/subscription' });
+    return res.status(403).json({ error: msg(resolveLang(req), 'transcribe.err.upgrade'), code: 'upgrade_required', upgrade_url: '/plans' });
   }
   next();
 }

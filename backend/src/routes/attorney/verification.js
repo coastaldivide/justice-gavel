@@ -1,282 +1,78 @@
 /**
- * attorney/verification.js — Bar verification submit + admin approve
+ * attorney/verification.js — an attorney submits a bar number for review.
+ *
+ *   POST /api/attorney/verify-bar { bar_number, state }
+ *
+ * The bar number is stored on the attorney's own account as pending; the badge
+ * is granted only by an admin who checked it on the state bar's official site
+ * (GET/POST /api/admin/queue/bar — routes/admin/queue.js). Submitting a
+ * different number after verification removes the badge until it is checked
+ * again. The directory listing (lawyers) is never written.
+ *
+ * IMPORTANT: The verified badge MUST NOT be granted automatically. People facing
+ * criminal charges rely on it to assess an attorney; an automated grant would be
+ * deceptive.
  */
-import { logIgnored } from '../../utils/ignored.js';
 import { escapeHtml, safeUrl } from '../../utils/html.js';
-import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
-import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
 import { STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
+import { resolveLang, msg } from '../../i18n/index.js';
+import { normalizeState } from '../../services/rightsContent.js';
+import { audit } from '../../utils/audit.js';
 
-const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
-
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 10 });
 const router = Router();
 
-
 router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
-  /**
-   * Attorney bar verification — Phase 1 of a two-phase process.
-   *
-   * PHASE 1 (this route): Attorney submits bar number + state.
-   *   - Stored as pending_bar_verification = 1
-   *   - bar_verified remains 0 (JTB badge NOT granted yet)
-   *   - Admin notified by email with direct link to state bar lookup
-   *
-   * PHASE 2 (POST /approve-verification — admin only):
-   *   - Admin manually checks bar number at STATE_BAR_LOOKUP[state]
-   *   - Confirms license is ACTIVE and attorney is in GOOD STANDING
-   *   - Grants bar_verified=1, jtb_verified=1
-   *   - Attorney notified by push + email
-   *
-   * IMPORTANT: The JTB Verified badge MUST NOT be granted automatically.
-   * Users facing criminal charges rely on this badge to assess attorney
-   * credibility. Automated bypass would constitute deceptive advertising
-   * and expose the company to FTC enforcement and state bar complaints.
-   */
+  const lang = resolveLang(req);
   try {
     const ctx = await requireAttorney(req, res);
     if (!ctx) return;
-
     const { bar_number, state } = req.body || {};
-    if (!bar_number || !state) {
-      return err400(res, 'bar_number and state required');
-    }
-
-    // Validate state code
-    const VALID_STATES = new Set([
-      'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN',
-      'IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH',
-      'NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT',
-      'VT','VA','WA','WV','WI','WY',
-    ]);
-    const stateUpper = state.trim().toUpperCase();
-    if (!VALID_STATES.has(stateUpper)) {
-      return err400(res, 'Invalid state code. Use a 2-letter US state abbreviation (e.g. TN, CA).');
-    }
-
-    // Validate bar number format (3–20 chars, alphanumeric)
-    const cleanBar = bar_number.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const st = normalizeState(state);
+    if (!st) return res.status(400).json({ error: msg(lang, 'attorney.err.bar_state'), code: 'bad_state' });
+    const cleanBar = String(bar_number || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
     if (cleanBar.length < 3 || cleanBar.length > 20) {
-      return err400(res, 'Bar number must be 3–20 characters.');
+      return res.status(400).json({ error: msg(lang, 'attorney.err.bar_format'), code: 'bad_bar_number' });
     }
-
     const { db, user } = ctx;
-
-    // ── Atomic check-then-write using transaction ──────────────────────────────
-    // Without a transaction, two concurrent requests could both pass the
-    // "already verified" check and both set pending=1. BEGIN IMMEDIATE acquires
-    // a write lock so only one request can execute this block at a time.
-    // BEGIN IMMEDIATE — acquires write lock to prevent concurrent submissions.
-    // If this fails (SQLite busy, WAL checkpoint lock), return 503 rather
-    // than silently proceeding without transaction protection.
-    try {
-      await db.exec('BEGIN IMMEDIATE');
-    } catch (e) {
-      logger.error('[attorney/verify-bar] BEGIN IMMEDIATE failed — refusing to proceed without lock:', e.message);
-      return res.status(503).json({ error: 'Server busy. Please try again in a moment.' });
+    const current = await db.get('SELECT bar_number, bar_state, bar_verified, pending_bar_verification FROM users WHERE id = ?', [req.user.id]);
+    if (Number(current?.bar_verified) === 1 && current.bar_number === cleanBar && current.bar_state === st) {
+      return res.json({ ok: true, status: 'already_verified', message: msg(lang, 'attorney.msg.bar_already_verified') });
     }
-    let current;
-    try {
-      current = await db.get(
-        'SELECT bar_verified, pending_bar_verification FROM users WHERE id=?',
-        [req.user.id]
-      );
-    } catch { await db.exec('ROLLBACK').catch(logIgnored('routes/attorney/verification')); throw new Error('DB read failed'); }
-
-    if (current?.bar_verified) {
-      await db.exec('ROLLBACK').catch(logIgnored('routes/attorney/verification'));
-      return res.json({ ok: true, status: 'already_verified', message: 'Your bar number is already verified.' });
+    if (Number(current?.pending_bar_verification) === 1 && current.bar_number === cleanBar && current.bar_state === st) {
+      return res.json({ ok: true, status: 'pending_review', message: msg(lang, 'attorney.msg.bar_pending'), bar_number: cleanBar, state: st });
     }
-
-    // Store bar submission — pending, not verified
     await db.run(
-      `UPDATE users
-         SET bar_number              = ?,
-             bar_state               = ?,
-             pending_bar_verification = 1,
-             bar_verified             = 0,
-             bar_submitted_at         = NOW()
-       WHERE id = ?`,
-      [cleanBar, stateUpper, req.user.id]
-    );
+      `UPDATE users SET bar_number = ?, bar_state = ?, pending_bar_verification = 1, bar_verified = 0,
+              bar_submitted_at = NOW(), bar_rejection_reason = NULL
+        WHERE id = ?`, [cleanBar, st, req.user.id]);
+    await audit('attorney.bar_submitted', { userId: req.user.id, req, entityType: 'user', entityId: req.user.id, metadata: { state: st, was_verified: Number(current?.bar_verified) === 1 } });
 
-    // Mirror to provider record
-    const provider = await db.get(
-      'SELECT id FROM lawyers WHERE email=? LIMIT 1',
-      [user.email || '']
-    ).catch(() => null);
-
-    if (provider) {
-      await db.run(
-        `UPDATE lawyers
-           SET bar_number          = ?,
-               bar_state           = ?,
-               bar_verified         = 0,
-               pending_verification = 1
-         WHERE id = ?`,
-        [cleanBar, stateUpper, provider.id]
-      );
-    }
-
-    try {
-      await db.exec('COMMIT');
-    } catch (e) {
-      // COMMIT failed — bar verification not persisted despite appearing to succeed
-      logger.error('[attorney/verify-bar] COMMIT failed — bar submission lost:', e.message);
-      return res.status(500).json({ error: 'Could not save verification. Please try again.' });
-    }
-
-    // Build admin lookup link
-    const lookupUrl = STATE_BAR_LOOKUP[stateUpper]
-      || 'https://www.americanbar.org/tools/find-a-lawyer/';
-    const adminUrl  = `${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/verify/${req.user.id}`;
-
-    // Notify admin team
+    const lookupUrl = STATE_BAR_LOOKUP[st] || 'https://www.americanbar.org/groups/legal_services/flh-home/';
     const { sendEmail } = await import('../../services/email.js');
     await sendEmail({
-      to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
-      subject: `[JTB Verify] Bar submission — ${cleanBar} (${stateUpper}) from ${user.email}`,
+      to: process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
+      subject: `[Bar verification] ${cleanBar} (${st}) from ${user.email}`,
       text: [
-        `Attorney email: ${user.email}`,
-        `Bar number:     ${cleanBar}`,
-        `State:          ${stateUpper}`,
-        `Submitted:      ${new Date().toISOString()}`,
-        ``,
-        `STEP 1 — Look up at official state bar:`,
-        lookupUrl,
-        ``,
-        `Search for: ${cleanBar}`,
-        `Confirm status is: ACTIVE / IN GOOD STANDING`,
-        ``,
-        `STEP 2 — Approve or reject in admin panel:`,
-        adminUrl,
-        ``,
-        `Do NOT approve if: suspended, disbarred, inactive, or name does not match.`,
+        `Attorney e-mail: ${user.email}`, `Bar number: ${cleanBar}`, `State: ${st}`, `Submitted: ${new Date().toISOString()}`, '',
+        `1. Look it up at the official state bar: ${lookupUrl}`,
+        '   Confirm ACTIVE / IN GOOD STANDING and that the name matches.',
+        '2. Approve or reject in the app: Settings → Admin review → Bar numbers.',
       ].join('\n'),
-      html: `
-        <h2>Bar Verification Request</h2>
-        <table>
-          <tr><td><b>Attorney:</b></td><td>${escapeHtml(user.email)}</td></tr>
-          <tr><td><b>Bar number:</b></td><td>${escapeHtml(cleanBar)}</td></tr>
-          <tr><td><b>State:</b></td><td>${escapeHtml(stateUpper)}</td></tr>
-          <tr><td><b>Submitted:</b></td><td>${new Date().toISOString()}</td></tr>
-        </table>
-        <p><a href="${safeUrl(lookupUrl)}" style="font-size:16px;font-weight:bold">
-          → Look up ${escapeHtml(cleanBar)} at ${escapeHtml(stateUpper)} State Bar
-        </a></p>
-        <p style="color:#666">Confirm: ACTIVE and IN GOOD STANDING before approving.</p>
-        <p><a href="${safeUrl(adminUrl)}" style="background:#042C53;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">
-          Approve or Reject in Admin Panel
-        </a></p>
-      `,
+      html: `<p>Attorney: ${escapeHtml(user.email)}<br>Bar number: ${escapeHtml(cleanBar)}<br>State: ${escapeHtml(st)}</p>
+<p><a href="${safeUrl(lookupUrl)}">Look up ${escapeHtml(cleanBar)} at the ${escapeHtml(st)} state bar</a></p>
+<p>Approve or reject in the app: Settings → Admin review → Bar numbers.</p>`,
     }).catch(err => logger.error('[bar-verify email]', err.message));
 
-    return res.json({
-      ok:         true,
-      status:     'pending_review',
-      message:    'Bar number submitted. Our team verifies each submission against your state bar\'s official records. You will receive a notification within 1–2 business days.',
-      bar_number: cleanBar,
-      state:      stateUpper,
-    });
+    return res.json({ ok: true, status: 'pending_review', message: msg(lang, 'attorney.msg.bar_submitted'), bar_number: cleanBar, state: st });
   } catch (e) {
     logger.error('[attorney/verify-bar]', e.message);
-    return res.status(500).json({ error: 'Could not submit verification. Please try again.' });
+    return res.status(500).json({ error: msg(lang, 'attorney.err.server'), code: 'server_error' });
   }
 });
-
-// ── POST /approve-verification — Admin grants or rejects JTB Verified ─────────
-// Called by the admin team after manually confirming bar status at state bar website.
-router.post('/approve-verification', authRequired, routeLimiter, async (req, res) => {
-  try {
-    const db    = await getDb();
-    const admin = await db.get('SELECT role FROM users WHERE id=?', [req.user.id]);
-    if (admin?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required.' });
-    }
-
-    const { attorney_user_id, approved, rejection_reason, verified_by } = req.body || {};
-    if (!attorney_user_id || typeof approved !== 'boolean') {
-      return err400(res, 'attorney_user_id (number) and approved (boolean) required');
-    }
-
-    const attorney = await db.get('SELECT id, email, phone, name, type, user_type, avatar_url, created_at, bar_number, bar_verified, bar_state, office_id, is_defender, gavel_level, golden_gavel, subscription, push_token, lang, notifs_enabled FROM users WHERE id=?', [attorney_user_id]);
-    if (!attorney) return err404(res, 'Attorney not found.');
-
-    const { sendEmail } = await import('../../services/email.js');
-    const { sendPushToUser } = await import('../../services/pushDelivery.js');
-
-    if (approved) {
-      // Grant the JTB Verified badge
-      await db.run(
-        `UPDATE users
-           SET bar_verified              = 1,
-               pending_bar_verification   = 0,
-               bar_verified_at            = NOW(),
-               bar_verified_by            = ?
-         WHERE id = ?`,
-        [verified_by || req.user.id, attorney_user_id]
-      );
-      await db.run(
-        `UPDATE lawyers
-           SET bar_verified      = 1,
-               jtb_verified      = 1,
-               pending_verification = 0
-         WHERE email = ?`,
-        [attorney.email]
-      );
-      await sendEmail({
-        to:      attorney.email,
-        subject: 'Justice Gavel — Bar Verification Approved ✅',
-        text:    'Congratulations — your bar number has been verified. The JTB Verified badge is now active on your Justice Gavel profile. Thank you for helping us maintain a trusted network of attorneys.',
-      }).catch(logIgnored('routes/attorney/verification'));
-      await sendPushToUser(attorney_user_id, {
-        title: '✅ Bar Verified — JTB Badge Active',
-        body:  'Your Justice Gavel JTB Verified badge is now live on your profile.',
-        data:  { screen: 'AttorneyDashboard' },
-      }).catch(logIgnored('routes/attorney/verification'));
-    } else {
-      // Reject — clear pending, leave bar_verified=0
-      await db.run(
-        `UPDATE users
-           SET pending_bar_verification = 0,
-               bar_rejection_reason      = ?
-         WHERE id = ?`,
-        [rejection_reason || 'Could not verify bar status with the state bar.', attorney_user_id]
-      );
-      await db.run(
-        `UPDATE lawyers SET pending_verification = 0 WHERE email = ?`,
-        [attorney.email]
-      );
-      await sendEmail({
-        to:      attorney.email,
-        subject: 'Justice Gavel — Bar Verification Update',
-        text:    `We were unable to verify your bar number at this time.\n\nReason: ${rejection_reason || 'Could not confirm active status with your state bar.'}\n\nIf you believe this is an error, please contact support@justicegavel.app with your full name, bar number, and state.`,
-      }).catch(logIgnored('routes/attorney/verification'));
-    }
-
-    return res.status(201).json({ ok: true, approved, attorney_user_id });
-  } catch (e) {
-    logger.error('[attorney/approve-verification]', e.message);
-    return res.status(500).json({ error: 'Server error. Please try again.' });
-  }
-});
-
 
 export default router;
-
-// GET /api/attorney/pending-verification (admin view)
-router.get('/pending-verification', authRequired, async (req, res) => {
-  try {
-    const db = await getDb();
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
-    const pending = await db.all(
-      `SELECT u.id as user_id, u.display_name, u.email, u.bar_number, u.created_at
-       FROM users u WHERE u.bar_verified = 0 AND u.bar_number IS NOT NULL
-       ORDER BY u.created_at DESC LIMIT 50`
-    ).catch(() => []);
-    res.json({ pending });
-  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
-});

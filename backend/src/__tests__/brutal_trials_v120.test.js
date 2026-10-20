@@ -210,7 +210,7 @@ describe('FINAL. Quality Gates — All Systems Perfect', () => {
   });
   test('FG-04: ALL constants final', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
     expect(CONFIG.AI_CONCURRENCY).toBe(8);

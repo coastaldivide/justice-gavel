@@ -51,11 +51,10 @@ describe('QA. Code Quality Audit — All Clear', () => {
   });
   test('QA-03: attorney/profile.js UPDATE uses joins not raw SQL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
-    expect(src).toContain('updates.join');
-    // Pattern: const updates=[]; updates.push('col=?'); params.push(value)
-    // Then: `UPDATE users SET ${updates.join(',')} WHERE id=?`, params
-    // Column names from updates[] are developer-controlled, not user input
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
+    // Section G: no dynamic UPDATE column list any more (PATCH /profile removed); availability is one upsert
+    expect(src).not.toMatch(/SET \$\{/);
+    expect(src).toContain('availability_schedule');
   });
   test('QA-04: 7 public routes (no authRequired) are intentionally public', async () => {
     // Public routes confirmed as intentional:
@@ -111,9 +110,13 @@ describe('DBQ. DB Query Safety — safeTable + parameterized queries', () => {
 describe('ATP. attorney/profile.js — Attorney Profile + Availability', () => {
   test('ATP-01: GET /profile + PATCH /profile — attorney profile management', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
+    // Section G: PATCH /profile is removed (it let an attorney edit verified bar fields); the bar number goes
+    // through POST /verify-bar and admin review. Availability stays.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
     expect(src).toContain("router.get('/profile'");
-    expect(src).toContain("router.patch('/profile'");
+    expect(src).not.toContain("router.patch('/profile'");
+    expect(src).toContain("router.get('/profile/availability'");
+    expect(src).toContain("router.put('/profile/availability'");
     expect(src).toContain('authRequired');
   });
   test('ATP-02: GET /profile/availability + PUT /profile/availability — calendar slots', async () => {
@@ -262,7 +265,7 @@ describe('Regression — All v1–v93 Confirmed', () => {
   });
   test('R-05: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);

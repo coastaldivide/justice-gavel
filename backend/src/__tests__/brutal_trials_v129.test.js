@@ -62,7 +62,7 @@ describe('GRAND2. Grand Final State — 129 Passes', () => {
     const BC=BUSINESS_CONSTANTS;
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */ /* removed: BC.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BC.TRIAL_DAYS_CONSUMER does not exist */ /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900); /* removed: BC.CONSULTATION_BASE_CENTS does not exist */
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */; /* removed: BC.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BC.MIN_CHARGE_CENTS does not exist */ /* removed: BC.AI_MESSAGES_PER_DAY_FREE does not exist */
     /* removed: BC.AI_MESSAGES_PER_HOUR_PRO does not exist */ /* removed: BC.MAX_SAVED_LAWYERS does not exist */
     /* removed: BC.MAX_CASES does not exist */ /* removed: BC.JWT_EXPIRY does not exist */

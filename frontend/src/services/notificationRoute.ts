@@ -44,7 +44,10 @@ export function notificationTarget(data: Record<string, unknown> | null | undefi
   const courtDateId = num(data.court_date_id);
   // a court reminder opens its hearing
   if ((type === 'court_reminder' || screen === 'Cases') && courtDateId) return { screen: 'CourtDateDetail', params: { id: courtDateId } }; // i18n-exempt: screen names
-  if (screen === 'Messages') return { screen, params: caseId ? { caseId } : undefined }; // i18n-exempt: screen names
+  if (screen === 'Messages') {
+    const directWith = num(data.directWith);
+    return { screen, params: caseId ? { caseId } : directWith ? { directWith } : undefined }; // i18n-exempt: screen names
+  }
   if (screen === 'CheckIn') {
     const enrollmentId = num(data.enrollment_id ?? data.enrollmentId);
     return { screen, params: enrollmentId ? { enrollmentId } : undefined };

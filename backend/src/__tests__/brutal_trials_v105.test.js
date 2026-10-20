@@ -40,9 +40,13 @@ describe('DISC37. S0 Threshold Fixes — 4 items', () => {
   });
   test('DISC37-02: pay.js POST /checkout — Stripe checkout session [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("router.post('/checkout'");
-    expect(src).toContain('stripe');
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('DISC37-03: contracts/execution GET /:id/signers [≥5]', async () => {
     const fs = await import('fs');

@@ -176,7 +176,7 @@ describe('UX2. UX Final Audit — All Screens', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(35);
+    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
     // Large screens are feature-rich — not code bloat
   });
 });
@@ -194,7 +194,7 @@ describe('Regression — All v1–v98 Confirmed', () => {
     const BC=BUSINESS_CONSTANTS;
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.MAX_CASES does not exist */
     /* removed: BC.COURT_REMINDER_DAYS does not exist */
     /* removed: BC.MAX_MESSAGES_PER_THREAD does not exist */

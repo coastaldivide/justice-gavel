@@ -51,19 +51,31 @@ describe('CON_A. conflicts.js — 7 Routes PUSH ≥10', () => {
 describe('ACQ_A. firm_acquisition.js — 5 Routes PUSH ≥10', () => {
   test('ACQ_A-01: GET /vertical-demo + POST /trial + POST /upgrade', async () => {
     const fs = await import('fs');
-    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
-    expect(s).toContain("router.get('/vertical-demo'");
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
     expect(s).toContain("router.post('/trial'");
     expect(s).toContain("router.post('/upgrade'");
-    // vertical-demo: preview vertical features before purchase
-    // trial: start 14-day trial; upgrade: convert trial to paid
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
   test('ACQ_A-02: GET /checklist + POST /checklist/:key — onboarding', async () => {
     const fs = await import('fs');
-    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
     expect(s).toContain("router.get('/checklist'");
-    expect(s).toContain("router.post('/checklist/:key'");
-    // Onboarding checklist: complete items to unlock full platform
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
 });
 

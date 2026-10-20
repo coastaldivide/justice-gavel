@@ -41,12 +41,14 @@ export function initSecuritySuite(opts = {}) {
     return r.body.id;
   };
 
-  /** Add an existing user to a firm with a role (firm_admin invites → auto-added). */
+  /** Add an existing user to a firm with a role: the firm_admin invites, the member accepts (nobody is added without accepting). */
   ctx.addToFirm = async (firmId, admin, member, role = 'associate') => {
     const r = await ctx.request().post(`/api/firms/${firmId}/members/invite`).set(admin.headers)
       .send({ email: member.email, role });
     if (r.status !== 201) throw new Error(`addToFirm ${r.status} ${JSON.stringify(r.body)}`);
-    return r.body;
+    const a = await ctx.request().post('/api/firms/accept-invite').set(member.headers).send({ token: r.body.token });
+    if (a.status !== 200) throw new Error(`addToFirm accept ${a.status} ${JSON.stringify(a.body)}`);
+    return { ...r.body, ...a.body };
   };
 
   ctx.makeMatter = async (user, fields = {}) => {

@@ -195,39 +195,6 @@
         }
       }
     },
-    "/api/admin/attorney/pending-verification": {
-      "get": {
-        "operationId": "get_api_admin_attorney_pending-verification",
-        "summary": "GET /api/admin/attorney/pending-verification",
-        "tags": [
-          "admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "x-staff-only": true
-      }
-    },
     "/api/admin/bail": {
       "get": {
         "operationId": "get_api_admin_bail",
@@ -1762,6 +1729,346 @@
         }
       }
     },
+    "/api/admin/queue/bar": {
+      "get": {
+        "operationId": "get_api_admin_queue_bar",
+        "summary": "GET /api/admin/queue/bar",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/admin/queue/bar/{userId}": {
+      "post": {
+        "operationId": "post_api_admin_queue_bar_userId",
+        "summary": "POST /api/admin/queue/bar/{userId}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/queue/claims": {
+      "get": {
+        "operationId": "get_api_admin_queue_claims",
+        "summary": "GET /api/admin/queue/claims",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/admin/queue/claims/{id}": {
+      "post": {
+        "operationId": "post_api_admin_queue_claims_id",
+        "summary": "POST /api/admin/queue/claims/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/queue/reports": {
+      "get": {
+        "operationId": "get_api_admin_queue_reports",
+        "summary": "GET /api/admin/queue/reports",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/admin/queue/reports/{id}": {
+      "post": {
+        "operationId": "post_api_admin_queue_reports_id",
+        "summary": "POST /api/admin/queue/reports/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/queue/reviews": {
+      "get": {
+        "operationId": "get_api_admin_queue_reviews",
+        "summary": "GET /api/admin/queue/reviews",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/admin/queue/reviews/{id}": {
+      "post": {
+        "operationId": "post_api_admin_queue_reviews_id",
+        "summary": "POST /api/admin/queue/reviews/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/queue/summary": {
+      "get": {
+        "operationId": "get_api_admin_queue_summary",
+        "summary": "GET /api/admin/queue/summary",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/admin/refresh": {
       "post": {
         "operationId": "post_api_admin_refresh",
@@ -2906,41 +3213,6 @@
         ]
       }
     },
-    "/api/attorney/approve-verification": {
-      "post": {
-        "operationId": "post_api_attorney_approve-verification",
-        "summary": "POST /api/attorney/approve-verification",
-        "tags": [
-          "attorney"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
     "/api/attorney/cases": {
       "get": {
         "operationId": "get_api_attorney_cases",
@@ -3291,6 +3563,51 @@
         }
       }
     },
+    "/api/attorney/inbox/direct/{userId}/read": {
+      "post": {
+        "operationId": "post_api_attorney_inbox_direct_userId_read",
+        "summary": "POST /api/attorney/inbox/direct/{userId}/read",
+        "tags": [
+          "attorney"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/attorney/inbox/mark-read/{caseId}": {
       "post": {
         "operationId": "post_api_attorney_inbox_mark-read_caseId",
@@ -3403,38 +3720,6 @@
         }
       }
     },
-    "/api/attorney/pending-verification": {
-      "get": {
-        "operationId": "get_api_attorney_pending-verification",
-        "summary": "GET /api/attorney/pending-verification",
-        "tags": [
-          "attorney"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
     "/api/attorney/profile": {
       "get": {
         "operationId": "get_api_attorney_profile",
@@ -3464,39 +3749,6 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
-      },
-      "patch": {
-        "operationId": "patch_api_attorney_profile",
-        "summary": "PATCH /api/attorney/profile",
-        "tags": [
-          "attorney"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
         }
       }
     },
@@ -5078,6 +5330,45 @@
         }
       }
     },
+    "/api/billing/bondsman/subscription/confirm": {
+      "post": {
+        "operationId": "post_api_billing_bondsman_subscription_confirm",
+        "summary": "POST /api/billing/bondsman/subscription/confirm",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/billing/bondsman/tiers": {
       "get": {
         "operationId": "get_api_billing_bondsman_tiers",
@@ -5100,116 +5391,6 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
-      }
-    },
-    "/api/billing/bondsman/verified-badge/cancel": {
-      "post": {
-        "operationId": "post_api_billing_bondsman_verified-badge_cancel",
-        "summary": "POST /api/billing/bondsman/verified-badge/cancel",
-        "tags": [
-          "billing"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-payments-gated": true,
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/billing/bondsman/verified-badge/status": {
-      "get": {
-        "operationId": "get_api_billing_bondsman_verified-badge_status",
-        "summary": "GET /api/billing/bondsman/verified-badge/status",
-        "tags": [
-          "billing"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
-    "/api/billing/bondsman/verified-badge/subscribe": {
-      "post": {
-        "operationId": "post_api_billing_bondsman_verified-badge_subscribe",
-        "summary": "POST /api/billing/bondsman/verified-badge/subscribe",
-        "tags": [
-          "billing"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-payments-gated": true,
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
         }
       }
     },
@@ -5507,10 +5688,140 @@
         }
       }
     },
+    "/api/billing/leads/{id}/confirm": {
+      "post": {
+        "operationId": "post_api_billing_leads_id_confirm",
+        "summary": "POST /api/billing/leads/{id}/confirm",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/overview": {
+      "get": {
+        "operationId": "get_api_billing_overview",
+        "summary": "GET /api/billing/overview",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/billing/pi-lead/accept/{id}": {
       "post": {
         "operationId": "post_api_billing_pi-lead_accept_id",
         "summary": "POST /api/billing/pi-lead/accept/{id}",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/pi-lead/confirm/{id}": {
+      "post": {
+        "operationId": "post_api_billing_pi-lead_confirm_id",
+        "summary": "POST /api/billing/pi-lead/confirm/{id}",
         "tags": [
           "billing"
         ],
@@ -5581,6 +5892,55 @@
         }
       }
     },
+    "/api/billing/pi-lead/release/{id}": {
+      "post": {
+        "operationId": "post_api_billing_pi-lead_release_id",
+        "summary": "POST /api/billing/pi-lead/release/{id}",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/billing/pi-lead/submit": {
       "post": {
         "operationId": "post_api_billing_pi-lead_submit",
@@ -5620,6 +5980,38 @@
       "get": {
         "operationId": "get_api_billing_pi-leads",
         "summary": "GET /api/billing/pi-leads",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/billing/pi-leads/mine": {
+      "get": {
+        "operationId": "get_api_billing_pi-leads_mine",
+        "summary": "GET /api/billing/pi-leads/mine",
         "tags": [
           "billing"
         ],
@@ -5868,6 +6260,84 @@
         }
       }
     },
+    "/api/billing/subscription/change": {
+      "post": {
+        "operationId": "post_api_billing_subscription_change",
+        "summary": "POST /api/billing/subscription/change",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/subscription/confirm": {
+      "post": {
+        "operationId": "post_api_billing_subscription_confirm",
+        "summary": "POST /api/billing/subscription/confirm",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/billing/tiers": {
       "get": {
         "operationId": "get_api_billing_tiers",
@@ -5925,6 +6395,38 @@
       "get": {
         "operationId": "get_api_bondsman_dashboard",
         "summary": "GET /api/bondsman/dashboard",
+        "tags": [
+          "bondsman"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/bondsman/leads": {
+      "get": {
+        "operationId": "get_api_bondsman_leads",
+        "summary": "GET /api/bondsman/leads",
         "tags": [
           "bondsman"
         ],
@@ -10648,10 +11150,77 @@
         }
       }
     },
-    "/api/firm-acquisition/checklist/{key}": {
+    "/api/firm-acquisition/invite": {
       "post": {
-        "operationId": "post_api_firm-acquisition_checklist_key",
-        "summary": "POST /api/firm-acquisition/checklist/{key}",
+        "operationId": "post_api_firm-acquisition_invite",
+        "summary": "POST /api/firm-acquisition/invite",
+        "tags": [
+          "firm-acquisition"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/firm-acquisition/invites": {
+      "get": {
+        "operationId": "get_api_firm-acquisition_invites",
+        "summary": "GET /api/firm-acquisition/invites",
+        "tags": [
+          "firm-acquisition"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/firm-acquisition/invites/{id}/accept": {
+      "post": {
+        "operationId": "post_api_firm-acquisition_invites_id_accept",
+        "summary": "POST /api/firm-acquisition/invites/{id}/accept",
         "tags": [
           "firm-acquisition"
         ],
@@ -10680,7 +11249,7 @@
         },
         "parameters": [
           {
-            "name": "key",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -10845,31 +11414,6 @@
         },
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/firm-acquisition/vertical-demo": {
-      "get": {
-        "operationId": "get_api_firm-acquisition_vertical-demo",
-        "summary": "GET /api/firm-acquisition/vertical-demo",
-        "tags": [
-          "firm-acquisition"
-        ],
-        "security": [],
-        "x-auth": "public",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
         }
       }
     },
@@ -17542,6 +18086,116 @@
             "$ref": "#/components/responses/ServerError"
           }
         }
+      },
+      "post": {
+        "operationId": "post_api_messages_direct",
+        "summary": "POST /api/messages/direct",
+        "tags": [
+          "messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/messages/direct/threads": {
+      "get": {
+        "operationId": "get_api_messages_direct_threads",
+        "summary": "GET /api/messages/direct/threads",
+        "tags": [
+          "messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/messages/direct/{userId}/read": {
+      "post": {
+        "operationId": "post_api_messages_direct_userId_read",
+        "summary": "POST /api/messages/direct/{userId}/read",
+        "tags": [
+          "messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
       }
     },
     "/api/messages/threads": {
@@ -18097,261 +18751,6 @@
         "summary": "PATCH /api/motions/{id}/status",
         "tags": [
           "motions"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/pay/checkout": {
-      "post": {
-        "operationId": "post_api_pay_checkout",
-        "summary": "POST /api/pay/checkout",
-        "tags": [
-          "pay"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-payments-gated": true,
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/pay/create": {
-      "post": {
-        "operationId": "post_api_pay_create",
-        "summary": "POST /api/pay/create",
-        "tags": [
-          "pay"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "x-payments-gated": true,
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/pi-leads": {
-      "get": {
-        "operationId": "get_api_pi-leads",
-        "summary": "GET /api/pi-leads",
-        "tags": [
-          "pi-leads"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
-    "/api/pi-leads/profile": {
-      "get": {
-        "operationId": "get_api_pi-leads_profile",
-        "summary": "GET /api/pi-leads/profile",
-        "tags": [
-          "pi-leads"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      },
-      "post": {
-        "operationId": "post_api_pi-leads_profile",
-        "summary": "POST /api/pi-leads/profile",
-        "tags": [
-          "pi-leads"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/pi-leads/submit": {
-      "post": {
-        "operationId": "post_api_pi-leads_submit",
-        "summary": "POST /api/pi-leads/submit",
-        "tags": [
-          "pi-leads"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/pi-leads/{id}/accept": {
-      "post": {
-        "operationId": "post_api_pi-leads_id_accept",
-        "summary": "POST /api/pi-leads/{id}/accept",
-        "tags": [
-          "pi-leads"
         ],
         "security": [
           {

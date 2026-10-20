@@ -138,8 +138,9 @@ describe('personal-injury attorney lead fee', () => {
     expect(m && Number(m[1])).toBe(PI_LEAD_FEE_CENTS);
   });
 
-  it('both lead routes use the shared fee function and no severity tiers remain', () => {
-    for (const f of ['backend/src/routes/pi_leads.js', 'backend/src/routes/billing/pi_leads.js']) {
+  it('the lead route uses the shared fee function and no severity tiers remain (the legacy routes/pi_leads.js is gone)', () => {
+    expect(fs.existsSync(path.resolve(REPO, 'backend/src/routes/pi_leads.js'))).toBe(false);
+    for (const f of ['backend/src/routes/billing/pi_leads.js']) {
       const src = read(f);
       expect(src).toContain('attorneyLeadFeeCents');
       expect(src).not.toMatch(/\b(4999|14999|29999|49999)\b/);

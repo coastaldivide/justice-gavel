@@ -160,14 +160,20 @@ describe('BLK_D. conflicts(5) + privilege(5) + bondsman(6) Double Coverage', () 
     // bases: A-C privilege, work product doctrine, common interest, spousal
   });
   test('D-03: bondsman — verified-badge (3) + profile + leads/accept', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(s).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/subscribe'");
-    expect(s).toContain("router.post('/bondsman/verified-badge/cancel'");
-    expect(s).toContain("router.get('/bondsman/profile'");
-    expect(s).toContain("router.post('/bondsman/profile'");
-    expect(s).toContain("router.post('/leads/:id/accept'");
+    const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
+    expect(src).toContain("router.get('/bondsman/profile'");
+    expect(src).toContain("router.post('/bondsman/profile'");
+    expect(src).toContain("router.post('/leads/:id/accept'");
+    expect(src).toContain("router.post('/leads/:id/confirm'");
   });
 });
 
@@ -201,13 +207,18 @@ describe('BLK_E. firms(5) + recap(5) + caldav(5) + acquisition(4) Double', () =>
     expect(s).toContain("router.post('/push/:entryId'");
   });
   test('E-04: firm_acquisition vertical-demo + trial + upgrade + checklist', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
-    expect(s).toContain("router.get('/vertical-demo'");
+    const fs = await import('fs');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
     expect(s).toContain("router.post('/trial'");
     expect(s).toContain("router.post('/upgrade'");
     expect(s).toContain("router.get('/checklist'");
-    expect(s).toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
 });
 

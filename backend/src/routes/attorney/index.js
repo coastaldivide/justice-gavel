@@ -8,7 +8,7 @@
  *   templates.js     — /templates
  *   cle.js           — /cle
  *   profile.js       — /profile, /profile/availability
- *   verification.js  — /verify-bar, /approve-verification
+ *   verification.js  — /verify-bar (decisions: routes/admin/queue.js)
   *   inbox.js        — /inbox (unified attorney command center)
  */
 import { Router }       from 'express';
@@ -22,13 +22,9 @@ import inboxRouter     from './inbox.js';
 const router = Router();
 router.use('/', inboxRouter);
 router.use('/', casesRouter);
-router.use('/', inboxRouter);
 router.use('/', templatesRouter);
-router.use('/', inboxRouter);
 router.use('/', cleRouter);
-router.use('/', inboxRouter);
 router.use('/', profileRouter);
-router.use('/', inboxRouter);
 router.use('/', verifyRouter);
 
 export default router;

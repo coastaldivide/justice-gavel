@@ -2,7 +2,8 @@
  * attorney/_helpers.js — Shared utilities for the attorney platform
  */
 import { getDb }        from '../../db/index.js';
-import { err401 }       from '../../utils/routeHelpers.js';
+import { resolveLang, msg } from '../../i18n/index.js';
+import { PAID_STATUSES } from '../../services/entitlements.js';
 
 // ── Profile field sanitiser — strip HTML tags and control characters ───────────
 // Prevents stored XSS if profile data is ever rendered in a WebView context.
@@ -42,15 +43,15 @@ async function loadUser(db, id) {
 export async function requireDefender(req, res) {
   const db   = await getDb();
   const user = await loadUser(db, req.user.id);
-  if (!user) { err401(res, 'Not found'); return null; }
+  if (!user) { res.status(401).json({ error: msg(resolveLang(req), 'attorney.err.signin'), code: 'unauthorized' }); return null; }
   if (ATTORNEY_ROLES.has(user.role) || Number(user.is_defender) === 1) return { db, user };
-  // Attorney subscription also grants access
+  // An attorney plan also grants access
   const sub = await db.get(
     `SELECT tier FROM subscriptions WHERE user_id=? AND provider_type='lawyer'
-     AND status IN ('active','trialing') LIMIT 1`, [req.user.id]
+     AND status IN (${PAID_STATUSES.map(s => `'${s}'`).join(',')}) LIMIT 1`, [req.user.id]
   );
   if (!sub) {
-    res.status(403).json({ error: 'Attorney account required' });
+    res.status(403).json({ error: msg(resolveLang(req), 'attorney.err.attorney_only'), code: 'attorney_required' });
     return null;
   }
   return { db, user };
@@ -59,9 +60,9 @@ export async function requireDefender(req, res) {
 export async function requireAttorney(req, res) {
   const db   = await getDb();
   const user = await loadUser(db, req.user.id);
-  if (!user) { err401(res, 'Not found'); return null; }
+  if (!user) { res.status(401).json({ error: msg(resolveLang(req), 'attorney.err.signin'), code: 'unauthorized' }); return null; }
   if (!ATTORNEY_ROLES.has(user.role) && Number(user.is_defender) !== 1) {
-    res.status(403).json({ error: 'Attorney access required' });
+    res.status(403).json({ error: msg(resolveLang(req), 'attorney.err.attorney_only'), code: 'attorney_required' });
     return null;
   }
   return { db, user };

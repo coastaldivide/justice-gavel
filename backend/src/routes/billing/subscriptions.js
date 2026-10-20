@@ -1,351 +1,270 @@
 /**
- * billing/subscriptions.js — Attorney & general subscriptions — subscribe, view, cancel, refund
- * Part of the billing module. Mounted at /api/billing by billing/index.js
+ * billing/subscriptions.js — consumer and attorney plans.
+ * Mounted at /api/billing by billing/index.js (POSTs are 503 payments_unavailable without Stripe).
+ *
+ *   GET  /tiers[?audience=consumer|attorney]  plans, exact prices, trial length, features (public)
+ *   GET  /subscription                         the caller's plan (+ the price list, for upsells)
+ *   POST /subscribe { tier, ui?, return_path? } start a plan — nothing unlocks yet:
+ *        ui 'sheet' (default) → { client_secret, intent_type, subscription_id } for the payment sheet;
+ *        ui 'checkout'        → { checkout_url } for Stripe Checkout in a browser
+ *   POST /subscription/confirm { subscription_id | checkout_session_id }
+ *        reads the subscription back from Stripe (this user, paid / card on file) and only then
+ *        records it as trialing / active. Safe to repeat.
+ *   POST /subscription/change { tier }        switch plan (prorated; a declined card keeps the old plan)
+ *   POST /cancel                               cancel at the end of the paid period (or the trial)
+ *   POST /refund { reason, additional_info? }  refund request (policy below)
+ *   GET  /overview                             everything billed to the caller (Billing screen)
  */
-import { logIgnored } from '../../utils/ignored.js';
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
-  from './_shared.js';
-import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
-import logger             from '../../utils/logger.js';
-
-// ── Generate Stripe idempotency key ────────────────────────────────────────────
-// Key format: userId-priceId-5minuteBucket
-// This means the same user subscribing to the same plan within 5 minutes
-// uses the same idempotency key → Stripe returns the same result, no double charge
-function stripeIdempotencyKey(userId, priceId, action = 'sub') {
-  const bucket = Math.floor(Date.now() / 300000); // 5-minute windows
-  return `${action}-${userId}-${String(priceId || 'none').slice(-12)}-${bucket}`;
-}
+import logger           from '../../utils/logger.js';
+import { resolveLang, msg, LOCALES } from '../../i18n/index.js';
+import { stripeConfigured } from '../../config.js';
+import { TIERS, BONDSMAN_TIERS, planFeatures, usd, billingLimiter, stripeClient } from './_shared.js';
+import { startSubscription, verifySubscription, changePlan, returnUrlFor, uiFrom, BillingError, periodEnd } from '../../services/stripeBilling.js';
+import { recordIncomplete, syncFromStripe } from '../../services/subscriptionStore.js';
+import { PAID_STATUSES } from '../../services/entitlements.js';
+import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 
 const router = Router();
+const PAID_SQL = PAID_STATUSES.map(s => `'${s}'`).join(',');
+const PRO_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
+const isProfessional = (u) => PRO_ROLES.has(u?.role) || Number(u?.is_defender) === 1;
 
-router.post('/subscribe', billingLimiter, authRequired, async (req, res) => {
-  const { tier = 'advisor', payment_method_id, provider_type = 'lawyer' } = req.body;
-  const tierConfig = TIERS[tier];
-  if (!tierConfig) return err400(res, 'Invalid tier. Options: starter, pro, attorney, starter_annual, pro_annual, attorney_annual, legal_radar');
-
-  try {
-    const db = await getDb();
-
-    // Check existing subscription
-    const existing = await db.get(
-      'SELECT id, user_id, status, stripe_sub_id, stripe_customer_id, tier, provider_type, created_at, current_period_start, cancel_at_period_end FROM subscriptions WHERE user_id = ? AND status IN (?,?) AND provider_type = ?',
-      [req.user.id, 'active', 'trialing', provider_type]
-    );
-    if (existing) return res.status(409).json({ error: 'Already subscribed', subscription: existing });
-
-    if (!LIVE) {
-      // Demo mode — create mock subscription
-      const isAnnual = tierConfig.billing === 'annual';
-      const trialDays = isAnnual ? 7 : 30;
-      const trialEnd = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
-      const sub = await db.run(
-        `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
-         VALUES (?,?,?,?,?,?,?,?)`,
-        [req.user.id, provider_type, tier, 'demo', tierConfig.monthly_cents, trialEnd, 'sub_mock_demo', 'cus_mock_demo']
-      );
-      return res.json({
-        success: true,
-        mock: true,
-        subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd, amount_cents: tierConfig.monthly_cents },
-        message: `${isAnnual ? '7' : '30'}-day free trial started for ${tierConfig.name}. No credit card charged in demo mode.`
-      });
-    }
-
-    // Live Stripe subscription
-    const customerId = await getOrCreateStripeCustomer(req.user);
-
-    if (payment_method_id) {
-      await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
-      await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: payment_method_id } });
-    }
-
-    // Create subscription — annual tiers use yearly interval
-    const isAnnual = tierConfig.billing === 'annual';
-    const stripeSub = await stripe.subscriptions.create(
-      {
-      customer: customerId,
-      items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.monthly_cents,
-        product_data: { name: `Justice Gavel — ${tierConfig.name}` },
-        recurring: { interval: isAnnual ? 'year' : 'month' }
-      }}],
-      trial_period_days: isAnnual ? 7 : 30,
-      metadata: { user_id: String(req.user.id), tier, provider_type }
-    }, { idempotencyKey: stripeIdempotencyKey(req.user?.id, tierConfig?.price_id || tier || 'checkout') });
-
-    const trialEnd = new Date(stripeSub.trial_end * 1000).toISOString();
-    const sub = await db.run(
-      `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
-       VALUES (?,?,?,?,?,?,?,?)`,
-      [req.user.id, provider_type, tier, 'trialing', tierConfig.monthly_cents, trialEnd, stripeSub.id, customerId]
-    );
-
-    res.json({
-      success: true,
-      subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd },
-      message: `30-day free trial started. You won't be charged until ${new Date(trialEnd).toLocaleDateString()}.`
-    });
-  } catch (e) {
-    logger.error('[billing] subscribe error:', e.message);
-    res.status(500).json({ error: 'Server error. Please try again.' });
+/** A billing error in the request's language: { error, code, ...params }. */
+export function billingFail(req, res, e, fallbackKey = 'billing.err.server') {
+  if (e instanceof BillingError) {
+    return res.status(e.status).json({ error: msg(resolveLang(req), `billing.err.${e.code}`, e.params), code: e.code, ...e.params });
   }
-});
+  logger.error('[billing]', e?.message);
+  return res.status(500).json({ error: msg(resolveLang(req), fallbackKey), code: 'server_error' });
+}
 
-// ── Public price list ─────────────────────────────────────────────────────────
-// GET /api/billing/tiers[?audience=consumer|attorney] — the plans and the exact
-// prices the backend will charge (TIERS in _shared.js is the single source).
-// Screens render prices from here instead of hard-coding them. Legacy aliases
-// that exist only for old subscriptions/webhooks are not listed.
-router.get('/tiers', (req, res) => {
-  const audience = ['consumer', 'attorney'].includes(req.query.audience) ? req.query.audience : null;
-  const tiers = Object.entries(TIERS)
+const SUB_COLS = `id, user_id, provider_type, tier, status, amount_cents, trial_ends_at, current_period_end,
+                  cancel_at_period_end, stripe_sub_id, created_at`;
+
+/** Public view of a subscriptions row. */
+export function publicSub(row) {
+  if (!row) return null;
+  const t = TIERS[row.tier] || {};
+  return {
+    id: Number(row.id), tier: row.tier, name: t.name || row.tier, audience: t.audience || null, billing: t.billing || null,
+    status: row.status, paid: PAID_STATUSES.includes(row.status),
+    amount_cents: row.amount_cents == null ? null : Number(row.amount_cents),
+    trial_ends_at: row.trial_ends_at || null, current_period_end: row.current_period_end || null,
+    cancel_at_period_end: Number(row.cancel_at_period_end || 0) === 1, created_at: row.created_at,
+    features: PAID_STATUSES.includes(row.status) ? planFeatures(row.tier) : [],
+  };
+}
+
+/** The price list exactly as charged (plans.js), with each plan's features. */
+export function tierList(audience) {
+  return Object.entries(TIERS)
     .filter(([, t]) => !t.legacy && (!audience || t.audience === audience))
     .map(([key, t]) => ({
-      key,
-      name:            t.name,
-      audience:        t.audience,
-      billing:         t.billing,
-      display_price:   t.display_price,
-      monthly_cents:   t.monthly_cents,
-      annual_cents:    t.annual_cents ?? null,
-      matches_monthly: t.matches_monthly ?? null,
-      // consumer monthly plans: 7 days (/consumer/subscribe); annual: 7; attorney monthly: 30 (/subscribe)
-      trial_days:      t.billing === 'annual' || t.audience === 'consumer' ? 7 : 30,
+      key, name: t.name, audience: t.audience, billing: t.billing, display_price: t.display_price,
+      monthly_cents: t.monthly_cents, annual_cents: t.annual_cents ?? null, matches_monthly: t.matches_monthly ?? null,
+      trial_days: t.trial_days, card_required: true, features: planFeatures(key),
     }));
-  res.json({ tiers, payments_live: LIVE });
+}
+
+router.get('/tiers', (req, res) => {
+  const audience = ['consumer', 'attorney'].includes(req.query.audience) ? req.query.audience : null;
+  res.json({ tiers: tierList(audience), payments_live: stripeConfigured() });
 });
 
-// ── Get subscription status ───────────────────────────────────────────────────
+/** The caller's newest plan row that is paid (else their newest row) for a provider type, or any. */
+async function currentRow(db, userId, providerType = null) {
+  const where = providerType ? 'AND provider_type = ?' : '';
+  const args = providerType ? [userId, providerType] : [userId];
+  return (await db.get(`SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? ${where} AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`, args))
+    || db.get(`SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? ${where} AND status <> 'incomplete' ORDER BY id DESC LIMIT 1`, args);
+}
+
 router.get('/subscription', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const sub = await db.get(
-      `SELECT id, user_id, status, stripe_sub_id, stripe_customer_id, tier, provider_type, created_at, current_period_start, cancel_at_period_end FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
-      [req.user.id]
-    );
-
-    const tiers = Object.entries(TIERS).map(([key, val]) => ({ key, ...val }));
-    res.json({ subscription: sub || null, tiers, mock: !LIVE });
-  } catch {
-    res.status(500).json({ error: 'Server error. Please try again.' });
-  }
+    const pt = ['consumer', 'lawyer'].includes(req.query.provider_type) ? req.query.provider_type : null;
+    const row = await currentRow(db, req.user.id, pt);
+    res.json({ subscription: publicSub(row), tiers: tierList(null), payments_live: stripeConfigured() });
+  } catch (e) { billingFail(req, res, e); }
 });
 
-// ── Cancel subscription ────────────────────────────────────────────────────────
-router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
+/** Shared start handler for /subscribe and /consumer/subscribe. */
+export async function startPlan(req, res, { audience = null } = {}) {
+  const lang = resolveLang(req);
+  const tier = typeof req.body?.tier === 'string' ? req.body.tier : '';
+  const t = TIERS[tier];
+  if (!t || t.legacy || (audience && t.audience !== audience)) {
+    return res.status(400).json({ error: msg(lang, 'billing.err.bad_plan'), code: 'bad_plan' });
+  }
+  if (t.audience === 'attorney' && !isProfessional(req.user)) {
+    return res.status(403).json({ error: msg(lang, 'billing.err.attorney_plan'), code: 'attorney_plan_only' });
+  }
   try {
     const db = await getDb();
-    const sub = await db.get(
-      'SELECT id, user_id, status, stripe_sub_id, stripe_customer_id, tier, provider_type, created_at, current_period_start, cancel_at_period_end FROM subscriptions WHERE user_id = ? AND status IN (?,?)',
-      [req.user.id, 'active', 'trialing']
-    );
-    if (!sub) return err404(res, 'No active subscription found');
-
-    if (LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
-      await stripe.subscriptions.cancel(sub.stripe_sub_id);
+    const providerType = t.audience === 'attorney' ? 'lawyer' : 'consumer';
+    const existing = await db.get(
+      `SELECT id, tier FROM subscriptions WHERE user_id = ? AND provider_type = ? AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`,
+      [req.user.id, providerType]);
+    if (existing) {
+      return res.status(409).json({ error: msg(lang, 'billing.err.already_subscribed'), code: 'already_subscribed', current_tier: existing.tier });
     }
-
-    await db.run(
-      'UPDATE subscriptions SET status = ?, updated_at = NOW() WHERE id = ?',
-      ['cancelled', sub.id]
-    );
-
-    res.json({ success: true, message: 'Subscription cancelled.' });
-  } catch {
-    res.status(500).json({ error: 'Server error. Please try again.' });
-  }
-});
-
-// ── POST /refund — Request a subscription refund ──────────────────────────────
-// Refund Policy (mirrors top legal services platforms):
-//   - Trial period (7 days): full refund, no questions asked
-//   - Within 48 hours of first charge: full refund
-//   - 3–30 days after charge: prorated refund, case-by-case review
-//   - After 30 days: no refund (subscription already provided access)
-//   - Per-document purchases (motions, discovery): no refund once generated
-//   - Exceptions: documented billing errors always refunded regardless of timing
-//
-// Refund processing: via Stripe refund API (stripe.refunds.create).
-// All refund requests logged for FTC compliance and dispute resolution.
-router.post('/refund', billingLimiter, authRequired, async (req, res) => {
-  try {
-    const db = await getDb();
-    const { reason, additional_info } = req.body || {};
-    if (!reason) {
-      return err400(res, 'reason required (billing_error | unsatisfied | accidental | other)');
-    }
-
-    const VALID_REASONS = ['billing_error','unsatisfied','accidental','duplicate','other'];
-    if (!VALID_REASONS.includes(reason)) {
-      return res.status(400).json({ error: `Invalid reason. Must be one of: ${VALID_REASONS.join(', ')}` });
-    }
-
-    // Get the user's most recent completed charge
-    const sub = await db.get(
-      `SELECT id, user_id, status, stripe_sub_id, stripe_customer_id, tier, provider_type, created_at, current_period_start, cancel_at_period_end FROM subscriptions WHERE user_id=? ORDER BY created_at DESC LIMIT 1`,
-      [req.user.id]
-    );
-    if (!sub) {
-      return err404(res, 'No subscription found for your account.');
-    }
-
-    // Determine eligibility
-    const chargedAt = sub.current_period_start
-      ? new Date(sub.current_period_start * 1000)
-      : new Date(sub.created_at);
-    const daysSinceCharge = (Date.now() - chargedAt.getTime()) / (1000 * 60 * 60 * 24);
-    const isInTrialWindow  = daysSinceCharge <= 7;
-    const isIn48HrWindow   = daysSinceCharge <= 2;
-    const isIn30DayWindow  = daysSinceCharge <= 30;
-    const isBillingError   = reason === 'billing_error';
-
-    // Automatic approval conditions
-    const autoApprove = isInTrialWindow || isIn48HrWindow || isBillingError;
-
-    // Log the request regardless of outcome
-    await db.run(
-      `INSERT INTO refund_requests
-         (user_id, subscription_id, stripe_sub_id, reason, additional_info,
-          days_since_charge, auto_approve, status, created_at)
-       VALUES (?,?,?,?,?,?,?,?,NOW())`,
-      [
-        req.user.id,
-        sub.id,
-        sub.stripe_sub_id || null,
-        reason,
-        additional_info || null,
-        Math.round(daysSinceCharge),
-        autoApprove ? 1 : 0,
-        autoApprove ? 'pending_stripe' : 'pending_review',
-      ]
-    ).catch(logIgnored('routes/billing/subscriptions')); // don't fail the request if logging fails
-
-    // Process automatic refunds via Stripe
-    if (autoApprove && LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
-      try {
-        // Retrieve the latest invoice to get the payment intent
-        const invoices = await stripe.invoices.list({
-          subscription: sub.stripe_sub_id,
-          limit: 1,
-        });
-        const latestInvoice = invoices.data?.[0];
-        const paymentIntentId = latestInvoice?.payment_intent;
-
-        if (paymentIntentId) {
-          // Issue full refund for trial/48hr/billing error; prorated for others
-          const refundAmount = isIn30DayWindow && !isIn48HrWindow && !isBillingError
-            ? Math.round((1 - daysSinceCharge / 30) * (latestInvoice?.amount_paid || 0))
-            : undefined; // undefined = full refund
-
-          const refund = await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            ...(refundAmount ? { amount: refundAmount } : {}),
-            reason:         reason === 'billing_error' ? 'duplicate' : 'requested_by_customer',
-            metadata: {
-              user_id:     String(req.user.id),
-              days_since:  String(Math.round(daysSinceCharge)),
-              jg_reason:   reason,
-            },
-          });
-
-          // Update refund log
-          await db.run(
-            `UPDATE refund_requests SET status='refunded', stripe_refund_id=?
-              WHERE id = (SELECT id FROM refund_requests WHERE user_id=? ORDER BY id DESC LIMIT 1)`,
-            [refund.id, req.user.id]
-          ).catch(logIgnored('routes/billing/subscriptions'));
-
-          // Cancel the subscription
-          await stripe.subscriptions.cancel(sub.stripe_sub_id).catch(logIgnored('routes/billing/subscriptions'));
-          await db.run(
-            `UPDATE subscriptions SET status='refunded' WHERE id=?`,
-            [sub.id]
-          );
-
-          // Notify user
-          const { sendEmail } = await import('../../services/email.js');
-          const { sendPushToUser } = await import('../../services/pushDelivery.js');
-          const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
-          const refundDollars = ((refund.amount || latestInvoice?.amount_paid || 0) / 100).toFixed(2);
-
-          await sendPushToUser(req.user.id, {
-            title: '✅ Refund Approved',
-            body:  `$${refundDollars} will appear on your statement within 5–10 business days.`,
-            data:  { screen: 'Settings' },
-          }).catch(logIgnored('routes/billing/subscriptions'));
-
-          await sendEmail({
-            to:      user?.email,
-            subject: 'Justice Gavel — Refund Confirmed',
-            text: [
-              `Your refund of $${refundDollars} has been approved and processed.`,
-              ``,
-              `Refund ID: ${refund.id}`,
-              `Reason: ${reason}`,
-              ``,
-              `Refunds typically appear on your statement within 5–10 business days,`,
-              `depending on your bank or card issuer.`,
-              ``,
-              `Your subscription has been cancelled. You can resubscribe at any time.`,
-              ``,
-              `Questions? Contact support@justicegavel.app`,
-              ``,
-              `— The Justice Gavel Team`,
-            ].join('\n'),
-          }).catch(logIgnored('routes/billing/subscriptions'));
-
-          return res.json({
-            ok:             true,
-            status:         'refunded',
-            refund_id:      refund.id,
-            amount_dollars: refundDollars,
-            message:        `Refund of $${refundDollars} approved. Funds typically arrive within 5–10 business days.`,
-          });
-        }
-      } catch (stripeErr) {
-        logger.error('[billing/refund] Stripe error:', stripeErr.message);
-        // Fall through to manual review
-
-    // Fall through to manual review path below
-  }
-    }
-
-    // Cases that require manual review (30+ days, prorated, or Stripe failure)
-    const { sendEmail } = await import('../../services/email.js');
-    const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
-    await sendEmail({
-      to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
-      subject: `[Refund Request] ${user?.email} — ${reason} — ${Math.round(daysSinceCharge)}d since charge`,
-      text: [
-        `User: ${user?.email} (ID: ${req.user.id})`,
-        `Subscription: ${sub.stripe_sub_id || 'N/A'}`,
-        `Reason: ${reason}`,
-        `Days since charge: ${Math.round(daysSinceCharge)}`,
-        `Auto-approve eligible: ${autoApprove}`,
-        `Additional info: ${additional_info || 'none'}`,
-        ``,
-        `Review and process at: ${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/refunds`,
-      ].join('\n'),
-    }).catch(logIgnored('routes/billing/subscriptions'));
-
-    const pendingMsg = isIn30DayWindow
-      ? 'Your refund request is under review. Our team will respond within 1–2 business days.'
-      : 'Your request has been received. Refunds are available within 30 days of charge. Our team will review your request and respond within 2 business days.';
-
-    return res.json({
-      ok:      true,
-      status:  'pending_review',
-      message: pendingMsg,
+    const out = await startSubscription({
+      user: req.user, kind: 'tier', tier, billing: t.billing, ui: uiFrom(req.body),
+      returnUrl: returnUrlFor(req, req.body?.return_path || '/plans'),
     });
-  } catch (e) {
-    logger.error('[billing/refund]', e.message);
-    return res.status(500).json({ error: 'Could not process refund request. Please contact support@justicegavel.app.' });
-  }
+    if (out.subscription_id) {
+      await recordIncomplete(db, { userId: req.user.id, kind: 'tier', tier, billing: t.billing, stripeSubId: out.subscription_id, customer: out.customer, cents: out.amount_cents });
+    }
+    delete out.customer;
+    res.json(out);
+  } catch (e) { billingFail(req, res, e); }
+}
+
+router.post('/subscribe', billingLimiter, authRequired, (req, res) => startPlan(req, res));
+
+/** Shared confirm handler (also used by /bondsman/subscription/confirm). */
+export async function confirmPlan(req, res, { kind }) {
+  const lang = resolveLang(req);
+  try {
+    const sub = await verifySubscription({
+      user: req.user,
+      subscriptionId: typeof req.body?.subscription_id === 'string' ? req.body.subscription_id.trim() : null,
+      checkoutSessionId: typeof req.body?.checkout_session_id === 'string' ? req.body.checkout_session_id.trim() : null,
+    });
+    const isBondsman = sub.metadata?.kind === 'bondsman' || sub.metadata?.type === 'bondsman_tier';
+    if ((kind === 'bondsman') !== isBondsman) throw new BillingError(404, 'payment_not_found');
+    const db = await getDb();
+    const row = await syncFromStripe(db, sub, { paid: true });
+    if (!row) throw new BillingError(404, 'payment_not_found');
+    await audit(AUDIT_ACTIONS.SUBSCRIPTION_STARTED, { userId: req.user.id, req, entityType: isBondsman ? 'bondsman_subscription' : 'subscription', entityId: row.id, metadata: { tier: row.tier, status: row.status } });
+    const until = row.trial_ends_at || row.current_period_end || row.renews_at;
+    const when = until ? new Date(until).toLocaleDateString(LOCALES[lang], { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : '';
+    const message = row.status === 'trialing' ? msg(lang, 'billing.msg.trial_started', { date: when }) : msg(lang, 'billing.msg.plan_active');
+    if (isBondsman) return res.json({ ok: true, subscription: row, message });
+    res.json({ ok: true, subscription: publicSub(row), message });
+  } catch (e) { billingFail(req, res, e); }
+}
+
+router.post('/subscription/confirm', billingLimiter, authRequired, (req, res) => confirmPlan(req, res, { kind: 'tier' }));
+
+router.post('/subscription/change', billingLimiter, authRequired, async (req, res) => {
+  const lang = resolveLang(req);
+  const tier = typeof req.body?.tier === 'string' ? req.body.tier : '';
+  const t = TIERS[tier];
+  if (!t || t.legacy) return res.status(400).json({ error: msg(lang, 'billing.err.bad_plan'), code: 'bad_plan' });
+  try {
+    const db = await getDb();
+    const providerType = t.audience === 'attorney' ? 'lawyer' : 'consumer';
+    const row = await db.get(
+      `SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? AND provider_type = ? AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`,
+      [req.user.id, providerType]);
+    if (!row?.stripe_sub_id) throw new BillingError(404, 'no_subscription');
+    if (row.tier === tier) return res.json({ ok: true, subscription: publicSub(row), message: msg(lang, 'billing.msg.same_plan') });
+    const { sub } = await changePlan({ stripeSubId: row.stripe_sub_id, kind: 'tier', tier, billing: t.billing });
+    await db.run('UPDATE subscriptions SET tier = ?, amount_cents = ?, current_period_end = COALESCE(?, current_period_end), updated_at = NOW() WHERE id = ?',
+      [tier, t.billing === 'annual' ? t.annual_cents : t.monthly_cents, periodEnd(sub), row.id]);
+    await audit(AUDIT_ACTIONS.SUBSCRIPTION_CHANGED, { userId: req.user.id, req, entityType: 'subscription', entityId: row.id, metadata: { from: row.tier, to: tier } });
+    const fresh = await db.get(`SELECT ${SUB_COLS} FROM subscriptions WHERE id = ?`, [row.id]);
+    res.json({ ok: true, subscription: publicSub(fresh), message: msg(lang, 'billing.msg.plan_changed', { name: t.name }) });
+  } catch (e) { billingFail(req, res, e); }
 });
 
+router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
+  const lang = resolveLang(req);
+  try {
+    const db = await getDb();
+    const pt = ['consumer', 'lawyer'].includes(req.body?.provider_type) ? req.body.provider_type : null;
+    const row = await db.get(
+      `SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? ${pt ? 'AND provider_type = ?' : ''} AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`,
+      pt ? [req.user.id, pt] : [req.user.id]);
+    if (!row?.stripe_sub_id) throw new BillingError(404, 'no_subscription');
+    const sub = await stripeClient().subscriptions.update(row.stripe_sub_id, { cancel_at_period_end: true });
+    await db.run('UPDATE subscriptions SET cancel_at_period_end = 1, current_period_end = COALESCE(?, current_period_end), updated_at = NOW() WHERE id = ?', [periodEnd(sub), row.id]);
+    await audit(AUDIT_ACTIONS.SUBSCRIPTION_CANCELLED, { userId: req.user.id, req, entityType: 'subscription', entityId: row.id, metadata: { tier: row.tier } });
+    const until = row.status === 'trialing' ? row.trial_ends_at : (periodEnd(sub) || row.current_period_end);
+    const when = until ? new Date(until).toLocaleDateString(LOCALES[lang], { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : '';
+    res.json({ ok: true, message: msg(lang, 'billing.msg.cancelled', { date: when }), access_until: until || null });
+  } catch (e) { billingFail(req, res, e); }
+});
+
+// ── Refunds ───────────────────────────────────────────────────────────────────
+// Policy (the same text the app shows, billing.refund.policy):
+//   • no charge yet (still in the free trial): nothing to refund — cancel instead;
+//   • within 7 days of the latest charge, or a billing error: full refund, automatic;
+//   • later: the request goes to support for review.
+// Refunding cancels the plan at once.
+const REFUND_REASONS = ['billing_error', 'unsatisfied', 'accidental', 'duplicate', 'other'];
+const AUTO_REFUND_DAYS = 7;
+
+router.post('/refund', billingLimiter, authRequired, async (req, res) => {
+  const lang = resolveLang(req);
+  const reason = req.body?.reason;
+  if (!REFUND_REASONS.includes(reason)) return res.status(400).json({ error: msg(lang, 'billing.err.refund_reason'), code: 'bad_reason' });
+  const info = typeof req.body?.additional_info === 'string' ? req.body.additional_info.trim().slice(0, 1000) || null : null;
+  try {
+    const db = await getDb();
+    const row = await db.get(
+      `SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? AND status IN (${PAID_SQL}) AND stripe_sub_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [req.user.id]);
+    if (!row) throw new BillingError(404, 'no_subscription');
+    const stripe = stripeClient();
+    const invoices = await stripe.invoices.list({ subscription: row.stripe_sub_id, status: 'paid', limit: 1 });
+    const inv = invoices?.data?.[0];
+    if (!inv || !(Number(inv.amount_paid) > 0)) {
+      return res.status(409).json({ error: msg(lang, 'billing.err.nothing_to_refund'), code: 'nothing_to_refund' });
+    }
+    const paidAt = new Date(((inv.status_transitions?.paid_at || inv.created) || 0) * 1000);
+    const days = Math.max(0, (Date.now() - paidAt.getTime()) / 86_400_000);
+    const auto = days <= AUTO_REFUND_DAYS || reason === 'billing_error';
+    const reqRow = await db.get(
+      `INSERT INTO refund_requests (user_id, subscription_id, stripe_sub_id, reason, additional_info, days_since_charge, auto_approve, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW()) RETURNING id`,
+      [req.user.id, row.id, row.stripe_sub_id, reason, info, Math.round(days), auto ? 1 : 0, auto ? 'processing' : 'pending_review']);
+    if (!auto) {
+      await audit(AUDIT_ACTIONS.REFUND_REQUESTED, { userId: req.user.id, req, entityType: 'refund_request', entityId: reqRow.id, metadata: { days: Math.round(days) } });
+      return res.json({ ok: true, status: 'pending_review', message: msg(lang, 'billing.msg.refund_review') });
+    }
+    const piId = typeof inv.payment_intent === 'string' ? inv.payment_intent : inv.payment_intent?.id;
+    const refund = await stripe.refunds.create(
+      { payment_intent: piId, reason: reason === 'duplicate' || reason === 'billing_error' ? 'duplicate' : 'requested_by_customer',
+        metadata: { user_id: String(req.user.id), refund_request_id: String(reqRow.id) } },
+      { idempotencyKey: `refund_${reqRow.id}` });
+    await stripe.subscriptions.cancel(row.stripe_sub_id);
+    await db.run(`UPDATE refund_requests SET status = 'refunded', stripe_refund_id = ?, updated_at = NOW() WHERE id = ?`, [refund.id, reqRow.id]);
+    await db.run(`UPDATE subscriptions SET status = 'refunded', updated_at = NOW() WHERE id = ?`, [row.id]);
+    await audit(AUDIT_ACTIONS.REFUND_ISSUED, { userId: req.user.id, req, entityType: 'refund_request', entityId: reqRow.id, metadata: { amount_cents: refund.amount } });
+    res.json({ ok: true, status: 'refunded', amount_cents: refund.amount, message: msg(lang, 'billing.msg.refunded', { amount: usd(refund.amount) }) });
+  } catch (e) { billingFail(req, res, e); }
+});
+
+// ── Billing overview (PaymentsScreen) ─────────────────────────────────────────
+router.get('/overview', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const uid = req.user.id;
+    const [subs, bonds, leads, piLeads, refunds] = await Promise.all([
+      db.all(`SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? AND status <> 'incomplete' ORDER BY id DESC LIMIT 20`, [uid]),
+      db.all(`SELECT id, tier, status, amount_cents, billing_period, renews_at, cancel_at_period_end, created_at
+                FROM bondsman_subscriptions WHERE user_id = ? AND status <> 'incomplete' ORDER BY id DESC LIMIT 20`, [uid]),
+      db.all(`SELECT id, arrest_id, lead_fee_cents, created_at FROM lead_purchases
+               WHERE bondsman_id = ? AND status = 'charged' ORDER BY id DESC LIMIT 100`, [uid]),
+      db.all(`SELECT id, case_type, lead_fee_cents, accepted_at FROM pi_leads WHERE accepted_by = ? AND status = 'accepted' ORDER BY accepted_at DESC LIMIT 100`, [uid]),
+      db.all(`SELECT id, reason, status, created_at FROM refund_requests WHERE user_id = ? ORDER BY id DESC LIMIT 20`, [uid]),
+    ]);
+    res.json({
+      subscriptions: subs.map(publicSub),
+      bondsman_subscriptions: bonds.map(b => ({ ...b, id: Number(b.id), name: BONDSMAN_TIERS[b.tier]?.name || b.tier,
+        paid: PAID_STATUSES.includes(b.status), cancel_at_period_end: Number(b.cancel_at_period_end || 0) === 1 })),
+      purchases: [
+        ...leads.map(l => ({ kind: 'bail_lead', id: Number(l.id), amount_cents: Number(l.lead_fee_cents), at: l.created_at })),
+        ...piLeads.map(l => ({ kind: 'case_lead', id: Number(l.id), case_type: l.case_type, amount_cents: Number(l.lead_fee_cents), at: l.accepted_at })),
+      ].sort((a, b) => new Date(b.at) - new Date(a.at)),
+      refund_requests: refunds.map(r => ({ ...r, id: Number(r.id) })),
+      payments_live: stripeConfigured(),
+    });
+  } catch (e) { billingFail(req, res, e); }
+});
 
 export default router;

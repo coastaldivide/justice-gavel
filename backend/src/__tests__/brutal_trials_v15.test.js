@@ -82,30 +82,51 @@ const mkMatter = (v, o = {}) => ({
 describe('1. AdminVerificationScreen — Attorney Verification Queue', () => {
 
   test('1-01: fetches pending verifications', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdminVerificationScreen.tsx', 'utf8');
-    expect(src).toContain("'/attorney/pending-verification'");
+    // Section G: four admin queues (bar numbers, listing claims, listing reports, reviews) from /admin/queue
+    expect(src).toContain("'/admin/queue/summary'");
+    expect(src).toContain('/admin/queue/${which}');
+    expect(src).toContain('/admin/queue/bar/${b.user_id}');
+    expect(src).toContain('isAdminUser');
+    expect(src).toContain('refreshing');
+    expect(src).toContain('busy');
   });
 
   test('1-02: approve/reject action goes to /attorney/approve-verification', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdminVerificationScreen.tsx', 'utf8');
-    expect(src).toContain("'/attorney/approve-verification'");
+    // Section G: four admin queues (bar numbers, listing claims, listing reports, reviews) from /admin/queue
+    expect(src).toContain("'/admin/queue/summary'");
+    expect(src).toContain('/admin/queue/${which}');
+    expect(src).toContain('/admin/queue/bar/${b.user_id}');
+    expect(src).toContain('isAdminUser');
+    expect(src).toContain('refreshing');
+    expect(src).toContain('busy');
   });
 
   test('1-03: uses mountedRef to prevent setState after unmount', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdminVerificationScreen.tsx', 'utf8');
-    expect(src).toContain('mountedRef');
-    expect(src).toContain('mountedRef.current = false');
+    // Section G: four admin queues (bar numbers, listing claims, listing reports, reviews) from /admin/queue
+    expect(src).toContain("'/admin/queue/summary'");
+    expect(src).toContain('/admin/queue/${which}');
+    expect(src).toContain('/admin/queue/bar/${b.user_id}');
+    expect(src).toContain('isAdminUser');
+    expect(src).toContain('refreshing');
+    expect(src).toContain('busy');
   });
 
   test('1-04: has pending, loading, refreshing, acting states', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdminVerificationScreen.tsx', 'utf8');
-    expect(src).toContain('pending');
-    expect(src).toContain('acting');
+    // Section G: four admin queues (bar numbers, listing claims, listing reports, reviews) from /admin/queue
+    expect(src).toContain("'/admin/queue/summary'");
+    expect(src).toContain('/admin/queue/${which}');
+    expect(src).toContain('/admin/queue/bar/${b.user_id}');
+    expect(src).toContain('isAdminUser');
     expect(src).toContain('refreshing');
+    expect(src).toContain('busy');
   });
 
   test('1-05: has PTR (RefreshControl)', async () => {

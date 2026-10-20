@@ -206,20 +206,38 @@ describe('RCP. recap.js — CourtListener Case Law Integration', () => {
 describe('PIL. pi_leads.js — PI & Civil Rights Lead Marketplace', () => {
   test('PIL-01: POST /submit — consumer submits a lead (free, no auth required)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('POST /api/pi-leads/submit');
-    expect(src).toContain('consumer submits a lead');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('PIL-02: GET / — attorneys browse available PI leads (Pro tier)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('attorney');
-    expect(src).toContain('pi-leads');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('PIL-03: POST /:id/accept — attorney accepts lead and is charged', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('/accept');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
     expect(src).toContain('authRequired');
   });
 });
@@ -299,9 +317,15 @@ describe('S12. UX — Final Infrastructure Depth', () => {
   });
   test('S12-03: PI lead marketplace = free lead submission, paid attorney access', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('consumer submits a lead (free)');
-    expect(src).toContain('attorney');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('S12-04: interrogation POST /transcribe → dialogue[] = structured police encounter', async () => {
     const fs = await import('fs');

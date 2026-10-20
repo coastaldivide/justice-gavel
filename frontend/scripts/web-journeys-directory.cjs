@@ -414,7 +414,10 @@ const done = async (s, { allow = [] } = {}) => {
       AND NOT EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id) ORDER BY md5(l.id::text) LIMIT 1`, [st]).then(r => r[0]);
     const tx1 = await pick('TX'); const ny = await pick('NY'); const off = await pick('OH');
     const a1 = await newUser('c8tx', { accountType: 'attorney' }); const a2 = await newUser('c8ny', { accountType: 'attorney' });
-    await sql('INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES ($1, $2), ($3, $4)', [a1.user.id, tx1.id, a2.user.id, ny.id]);
+    // sign-up already made each attorney's profile row (one per account): link the listing on it
+    for (const [u, l] of [[a1, tx1], [a2, ny]]) {
+      await sql('INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES ($1, $2) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO UPDATE SET lawyer_id = EXCLUDED.lawyer_id', [u.user.id, l.id]);
+    }
     try {
       const acc = await newUser('c8');
       const s = await open(browser, { account: acc });

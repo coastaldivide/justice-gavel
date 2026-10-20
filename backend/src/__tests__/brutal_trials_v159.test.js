@@ -36,10 +36,16 @@ describe('DB_TABLES. 5 Missing Tables Now in Schema', () => {
 // ── FE: Null Guard Fixes ──────────────────────────────────────────────────
 describe('NULL_GUARDS. FE Null Access Fixed on API Responses', () => {
   test('NULL-01: BondsmanDashboard res.data?.profile (was res.data.profile)', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx','utf8');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
+    expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
     expect(src).not.toContain('res.data.profile');
-    expect(src).toContain('res.data?.profile');
   });
   test('NULL-02: FamilyConnect res.data?.records', async () => {
     const fs=await import('fs');
@@ -94,14 +100,13 @@ describe('FALLBACK. setState Null Fallbacks Added', () => {
 // ── Stripe webhook completeness ───────────────────────────────────────────
 describe('STRIPE. Webhook Event Handlers Complete', () => {
   test('STRIPE-01: all 4 required events handled', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    expect(src).toContain('payment_intent.succeeded');
-    expect(src).toContain('invoice.payment_failed');
-    expect(src).toContain('customer.subscription.deleted');
-    expect(src).toContain('customer.subscription.updated');
-    expect(src).toContain('checkout.session.completed');
-    // 5 event handlers — full subscription lifecycle covered
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
 });
 
@@ -176,10 +181,14 @@ describe('SECURITY. Critical Security Checks', () => {
     expect(app).not.toContain("origin: '*'");
   });
   test('test-orphan-224', async () => {
-    const fs=await import('fs');
-    const stripe=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    const bot=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js','utf8');
-    expect(stripe).toContain('STRIPE_WEBHOOK_SECRET');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    const bot = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(bot).toContain('ADMIN_KEY');
   });
 });

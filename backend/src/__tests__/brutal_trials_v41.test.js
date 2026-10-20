@@ -68,7 +68,7 @@ describe('S1a. research.js — AI Legal Research ($49/mo)', () => {
       const fs = await import('fs');
       const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
       expect(src).toContain('RESEARCH_PLANS');
-      expect(src).toContain("canAccessFeature(r, 'research')");
+      expect(src).toContain('hasFeature(db, user.id, FEATURES.LEGAL_RESEARCH)');   // section G: the plan feature matrix
       expect(src).toContain('model: CLAUDE_MODEL');                // pinned once in utils/ai.js
       expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
       expect(src).toContain('legal research');
@@ -138,10 +138,17 @@ describe('S1c. consultations.js + auth.js + admin.js', () => {
 describe('S1d. firm_acquisition + firms + matter_intelligence + time + messages', () => {
   test('S1d-01: firm_acquisition GET /vertical-demo, POST /upgrade, POST /checklist/:key', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain("router.get('/vertical-demo'");
-    expect(src).toContain("router.post('/upgrade'");
-    expect(src).toContain("router.post('/checklist/:key'");
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
   });
   test('S1d-02: firms POST /:id/members/invite — invite by email; GET /:id/audit', async () => {
     const fs = await import('fs');

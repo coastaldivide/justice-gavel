@@ -61,11 +61,14 @@ describe('ATT3. attorney/ — Cases + CLE + Profile Submodule', () => {
   });
   test('ATT3-03: attorney/profile.js — GET/PATCH /profile + GET /profile/availability', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
+    // Section G: PATCH /profile is removed (it let an attorney edit verified bar fields); the bar number goes
+    // through POST /verify-bar and admin review. Availability stays.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
     expect(src).toContain("router.get('/profile'");
-    expect(src).toContain("router.patch('/profile'");
+    expect(src).not.toContain("router.patch('/profile'");
     expect(src).toContain("router.get('/profile/availability'");
-    // Availability: attorney's schedule + booking slots for consultations
+    expect(src).toContain("router.put('/profile/availability'");
+    expect(src).toContain('authRequired');
   });
 });
 
@@ -82,10 +85,16 @@ describe('BLG2. billing/ — Subscriptions + Stripe Webhooks + PI Leads', () => 
   });
   test('BLG2-02: billing/webhooks.js — POST /webhook Stripe event handling', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    expect(src).toContain("router.post('/webhook'");
-    expect(src.length).toBeGreaterThan(8000);
-    // Handles: invoice.paid, subscription.deleted, payment_intent.failed
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    expect(src.length).toBeGreaterThan(5000);
   });
   test('BLG2-03: billing/pi_leads.js — PI lead marketplace', async () => {
     const fs = await import('fs');
@@ -133,10 +142,13 @@ describe('CON3. consultations + push + pay', () => {
   });
   test('CON3-04: pay.js — POST /create + POST /checkout payment sessions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("router.post('/create'");
-    expect(src).toContain("router.post('/checkout'");
-    // Pay: creates payment session via orchestrator.js for consultations + leads
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
 });
 

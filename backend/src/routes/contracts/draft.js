@@ -60,11 +60,12 @@ router.post('/draft', authRequired, requireAi, draftLimiter, perUserAiLimit, asy
     if (def.tier_required) {
       const hasPro = await hasContractPro(db, req.user.id);
       if (!hasPro) {
+        // No plan sold today includes these types (there is no Contract Pro tier in
+        // billing/plans.js), so say so instead of pointing at a checkout that doesn't exist.
         return res.status(402).json({
-          error:         `This contract type requires Contract Pro subscription.`,
-          code:          'subscription_required',
+          error:         'This contract type is not included in any plan yet.',
+          code:          'plan_not_available',
           tier_required: def.tier_required,
-          upgrade_url:   '/billing/contract-pro',
         });
       }
     }

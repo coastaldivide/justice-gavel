@@ -168,6 +168,7 @@ export const USER_REFS = {
   'hague_intakes.submitted_by': 'nullify',
   'hague_proceedings.created_by': 'nullify',
   'invoices.created_by': 'nullify',
+  'lead_alert_log.user_id': 'delete',            // which new-arrest alerts were pushed (dedupe only)
   'lead_purchases.bondsman_id': 'nullify',      // payment ledger
   'lead_purchases.bondsman_user_id': 'nullify', // payment ledger
   'legal_holds.applied_by': 'nullify',

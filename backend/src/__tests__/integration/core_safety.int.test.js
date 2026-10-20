@@ -107,6 +107,14 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
 
   // ── 3 arrest monitors ──────────────────────────────────────────────────
   test('3 monitors: no state / "ALL" = every state; delete is owner-only with a 404 otherwise', async () => {
+    // Monitoring is a paid feature (Legal Pro / Esquire — billing/plans.js PLAN_FEATURES, section G):
+    // without such a plan the server refuses with 402; a Stripe-confirmed plan row unlocks it.
+    const refused = await ctx.request().post('/api/arrests/monitors').set(alice.headers).send({ watch_name: 'Jordan Sample' });
+    expect(refused.status).toBe(402);
+    expect(refused.body.code).toBe('upgrade_required');
+    await ctx.db.run(`INSERT INTO subscriptions (user_id, tier, status, stripe_sub_id, created_at) VALUES (?, 'legal_pro', 'active', ?, NOW())`,
+      [alice.user.id, `sub_core_safety_${ctx.tag}`]);
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM subscriptions WHERE user_id = ?', [alice.user.id]); });
     const a = await ctx.request().post('/api/arrests/monitors').set(alice.headers).send({ watch_name: 'Jordan Sample', county: 'All' });
     expect(a.status).toBe(201);
     const b = await ctx.request().post('/api/arrests/monitors').set(alice.headers).send({ watch_name: 'Jamie Sample', state: 'ALL' });

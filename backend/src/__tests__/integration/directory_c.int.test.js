@@ -76,7 +76,11 @@ describeIntegration('section C — directory, reviews, booking, match (real Post
     txLawyer = await free('TX');
     nyLawyer = await free('NY');
     // Linking an attorney account to a listing (what an approved claim does) — the listing row is untouched.
-    await ctx.db.run('INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES (?, ?), (?, ?)', [attyTx.user.id, txLawyer.id, attyNy.user.id, nyLawyer.id]);
+    // (sign-up already made each attorney's profile row: one per account)
+    for (const [u, l] of [[attyTx, txLawyer], [attyNy, nyLawyer]]) {
+      await ctx.db.run(`INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES (?, ?)
+                        ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO UPDATE SET lawyer_id = EXCLUDED.lawyer_id`, [u.user.id, l.id]);
+    }
     ctx.addCleanup(async (db) => {
       await db.run('DELETE FROM attorney_profiles WHERE lawyer_id IN (?, ?)', [txLawyer.id, nyLawyer.id]);
       await db.run('DELETE FROM review_reports WHERE user_id IN (SELECT id FROM users WHERE email LIKE ?)', [`${ctx.tag}-%@it.example.test`]);
@@ -361,7 +365,7 @@ describeIntegration('section C — directory, reviews, booking, match (real Post
     expect(leads.status).toBe(200);
     const mineLead = leads.body.find(l => l.id === ok.body.lead_id);
     expect(mineLead).toBeDefined();
-    expect(mineLead.description).toBeNull();
+    expect(mineLead.description ?? null).toBeNull();          // never sent before a purchase
     expect(JSON.stringify(mineLead)).not.toMatch(/615-555-0101|@it\.example\.test/);
     expect((await ctx.request().post(`/api/billing/pi-lead/accept/${ok.body.lead_id}`).set(attyTx.headers)).status).toBe(503);
   });

@@ -92,31 +92,46 @@ describe('ATD. AttorneyDashboardScreen — Internal Functions', () => {
   test('ATD-01: urgencyColor maps days-until to color (null→muted, ≤7→red)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('urgencyColor');
-    expect(src).toContain('days === null');
-    expect(src).toContain('textMuted');
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
   test('ATD-02: completeCLE(courseId) POSTs to /attorney/cle/:id/complete', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('completeCLE');
-    expect(src).toContain('/attorney/cle');
-    expect(src).toContain('complete');
-    expect(src).toContain('setCompleting');
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
+    expect(src).toContain('/attorney/cle/${id}/complete');
   });
   test('ATD-03: saveProfile() PATCHes /attorney/profile with form data', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('saveProfile');
-    expect(src).toContain("api.patch('/attorney/profile'");
-    expect(src).toContain('setSavingProfile');
+    // Section G: the bar number is submitted for review (POST /attorney/verify-bar); empty input cannot be sent
+    const idx = src.indexOf('const submitBar');
+    expect(idx).toBeGreaterThan(-1);
+    expect(src.slice(idx, idx + 400)).toContain('/attorney/verify-bar');
+    expect(src).toMatch(/disabled=\{sending \|\| !bar\.trim\(\) \|\| !barState\}/);
+    expect(src).toMatch(/testID="ad-bar-number"[^>]*maxLength=\{20\}/);
   });
   test('ATD-04: DiffBadge is an inline functional component for CLE diffs', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('DiffBadge');
-    expect(src).toContain('diff: string');
-    expect(src).toContain('Record<string,');
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
 });
 
@@ -354,7 +369,7 @@ describe('Regression — All v1–v56 Confirmed', () => {
   test("R-05: BUSINESS_CONSTANTS all 14 fields", () => {
     // the current BUSINESS_CONSTANTS set (utils/routeHelpers.js); the older keys no longer exist
     const keys = ['LEGAL_RADAR_CENTS','ADVISOR_PRICE_CENTS','LEGAL_PRO_PRICE_CENTS','ESQUIRE_PRICE_CENTS',
-                  'ADVISOR_ANNUAL_CENTS','LEGAL_PRO_ANNUAL_CENTS','ESQUIRE_ANNUAL_CENTS','BONDSMAN_BADGE_CENTS',
+                  'ADVISOR_ANNUAL_CENTS','LEGAL_PRO_ANNUAL_CENTS','ESQUIRE_ANNUAL_CENTS',
                   'MAX_FREE_AI_MSGS','FREE_CASE_LIMIT','TRIAL_DAYS'];
     for (const k of keys) {
       expect(Number.isInteger(BUSINESS_CONSTANTS[k])).toBe(true);

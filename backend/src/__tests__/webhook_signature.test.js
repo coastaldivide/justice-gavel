@@ -8,7 +8,7 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const WH_FILE   = resolve(__dirname, '../routes/billing/webhooks.js');
+const WH_FILE   = resolve(__dirname, '../services/stripeWebhook.js');   // section G: the one Stripe webhook handler
 
 // Mirror Stripe's signature generation for testing
 function generateStripeSignature(payload, secret, timestamp = Math.floor(Date.now()/1000)) {

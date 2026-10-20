@@ -269,27 +269,42 @@ describe('6. EmergencyShareScreen — Emergency Contact Sharing', () => {
 describe('7. FirmAcquisitionScreen — Firm Self-Serve Onboarding', () => {
 
   test('7-01: uses status, checklist, plans, upgrade endpoints', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain("'/firm-acquisition/status'");
-    expect(src).toContain("'/firm-acquisition/checklist'");
-    expect(src).toContain("'/firm-acquisition/plans'");
-    expect(src).toContain("'/firm-acquisition/upgrade'");
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
 
   test('7-02: has flow, loading, refreshing, selectedV, pitch states', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain('flow');
-    expect(src).toContain('selectedV');
-    expect(src).toContain('pitch');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
 
   test('7-03: has PTR, Modal, Alert', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
     expect(src).toContain('RefreshControl');
-    expect(src).toContain('Modal');
+    expect(src).toContain('useConfirm');
   });
 });
 

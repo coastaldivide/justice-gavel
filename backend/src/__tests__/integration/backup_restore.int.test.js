@@ -42,7 +42,7 @@ run('db-backup.sh / db-restore.sh (real Postgres)', () => {
     for (const d of [dbA, dbB]) await admin.query(`DROP DATABASE IF EXISTS ${d} WITH (FORCE)`).catch(() => {});
     await admin.end();
     fs.rmSync(dir, { recursive: true, force: true });
-  });
+  }, 60_000);   // dropping the scratch databases can take a few seconds on a loaded machine
 
   const sh = (script, args, env) => spawnSync('bash', [path.join(SCRIPTS, script), ...args], { env: { ...process.env, ...env }, encoding: 'utf8' });
   const md5 = (url) => execFileSync('psql', [url, '-Atc',

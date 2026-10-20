@@ -1,12 +1,10 @@
 /**
- * subscriptionStateMachine.js
+ * subscriptionStateMachine.js — subscription status → access level helpers.
  *
- * Subscription price tiers (Stripe product names):
- *   free         → $0/month    → basic rights info, bail calculator, emergency
- *   legal_radar  → $19.99/mo   → AI chat (3/day), research, case tracking
- *   advisor      → $24.99/mo   → AI chat (10/day), attorney match, motions
- *   legal_pro    → $34.99/mo   → unlimited AI, video consultation, firm features
- *   esquire      → $49.99/mo   → everything + priority + white-glove
+ * Not used to gate any feature: what a plan unlocks, and its price, come from
+ * routes/billing/plans.js (PLAN_FEATURES, TIERS) through services/entitlements.js.
+ * The FEATURE_TIERS table below is kept only for the simulation tests that
+ * exercise these helpers; it is not the product's feature list.
  *
  * Subscription lifecycle states:
  *   trialing → active → past_due → canceled → unpaid

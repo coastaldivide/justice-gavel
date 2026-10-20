@@ -978,9 +978,9 @@ describe('17. Regression — All Prior Fixes Still Hold', () => {
   });
 
   test('17-04: conflicts.js batched name query intact', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/conflicts.js', 'utf8');
-    expect(src).toContain('normedNames');
+    expect(src).toContain('normalizeName');   // section G: names matched on normalized tokens, firm data read once
   });
 
   test('17-05: app.js X-API-Version header intact', async () => {

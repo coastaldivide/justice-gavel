@@ -206,7 +206,7 @@ describe('FIN2. Absolute Final State — 112 Passes', () => {
   test('FIN2-03: ALL constants verified one final time', () => {
     const BC=BUSINESS_CONSTANTS;
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */ /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900); /* removed: BC.MAX_CASES does not exist */
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */; /* removed: BC.MAX_CASES does not exist */
     /* removed: BC.JWT_EXPIRY does not exist */ /* removed: BC.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.PORT).toBe(4000); expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.courtlistener.enabled).toBe(true);

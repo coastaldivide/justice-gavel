@@ -82,11 +82,15 @@ const mkMatter = (v, o = {}) => ({
 describe('DISC5. Discrepancy Fixes — pi_leads + SSO ACS + clearAuth', () => {
   test('DISC5-01: POST /pi-leads/submit has no auth (free lead submission) [FIX ≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('/pi-leads/submit');
-    expect(src).toContain('consumer submits a lead (free)');
-    // PI lead submission must be frictionless — no account required
-    expect(src).toContain('/submit');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('DISC5-02: SSO POST /acs is the SAML Assertion Consumer Service [FIX ≥4]', async () => {
     const fs = await import('fs');
@@ -178,16 +182,28 @@ describe('CDT. Contracts Sub-Routers — Draft + Review + Execution', () => {
 describe('PIL2. pi_leads.js — PI Lead Marketplace Detail', () => {
   test('PIL2-01: PI lead marketplace = pay-per-lead, not subscription', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('pi_leads');
-    expect(src).toContain('attorney');
-    expect(src).toContain('accept');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
+    expect(src).toContain('authRequired');
   });
   test('PIL2-02: POST /profile — attorney configures PI practice profile', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pi_leads.js', 'utf8');
-    expect(src).toContain('/profile');
+    // Section G: the legacy routes/pi_leads.js (civil_leads) is removed; case leads live in billing/pi_leads.js
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pi_leads.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8');
+    expect(src).toContain("router.post('/pi-lead/submit'");
+    expect(src).toContain("router.get('/pi-leads'");
+    expect(src).toContain("router.post('/pi-lead/accept/:id'");
+    expect(src).toContain("router.post('/pi-lead/confirm/:id'");
+    expect(src).toContain('attorneyLeadFeeCents');
     expect(src).toContain('authRequired');
+    expect(src).not.toContain("router.post('/profile'");
   });
 });
 

@@ -31,12 +31,11 @@ describe('PARAMS. Navigation Param Passing — End to End', () => {
 
   test('PARAMS-02: PaymentsScreen reads route.params.productId from InsuranceScreen', async () => {
     const fs = await import('fs');
-    const pay = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx','utf8');
-    // InsuranceScreen navigates with { productId: 'insurance' }
-    // PaymentsScreen should pre-select insurance payment type
-    expect(pay).toMatch(/productId|routeParams|initialProduct/);
-    // Before fix: productId ignored — user arrived at generic payment screen
-    // After fix: insurance product pre-selected
+    const pay = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const ins = fs.readFileSync(__REPO + '/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
+    // Section F/G: there is no insurance product to pre-select — Insurance links to the real plans
+    expect(pay).not.toMatch(/productId/);
+    expect(ins).toContain("navigation.navigate('ConsumerSubscription')");
   });
 
   test('PARAMS-03: CaseScreen passes caseId params to Messages+VoiceNote+MotionLibrary', async () => {
@@ -67,12 +66,17 @@ describe('ERROR. Error States Rendered — Not Just Caught', () => {
 
   test('ERROR-03: SubscriptionScreen error banner visible on payment failure', async () => {
     const fs = await import('fs');
-    const sub = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
-    expect(sub).toContain('setError(');
-    expect(sub).toContain('{!!error'); // rendered in JSX
-    expect(sub).toContain('colors.errorBg'); // uses theme colors
-    // Before fix: payment failure silent — user saw nothing
-    // After fix: error banner with card error message shown
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    // Section G: attorney and bail-agent plans from the server; purchase via services/purchase.ts;
+    // failures shown in the notice banner
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).toContain("type ProviderType = 'lawyer' | 'bail_agent';");
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useAuthGate');
+    expect(src).toContain('testID="subscription-notice"');
+    expect(src).toContain('colors.errorBg');
+    expect(src).toContain("Platform.OS === 'ios'");
   });
 
   test('ERROR-04: all screens with API calls show error to user', async () => {
@@ -96,11 +100,13 @@ describe('ERROR. Error States Rendered — Not Just Caught', () => {
 describe('STATE. Loading/Empty/Error State Machines', () => {
   test('STATE-01: AttorneyDashboard saveProfile validates bar number first', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
-    const idx = src.indexOf('const saveProfile');
-    const block = src.slice(idx, idx+400);
-    // Must validate before calling API
-    expect(block).toMatch(/!barInput|barInput\.trim|Bar Number Required/);
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    // Section G: the bar number is submitted for review (POST /attorney/verify-bar); empty input cannot be sent
+    const idx = src.indexOf('const submitBar');
+    expect(idx).toBeGreaterThan(-1);
+    expect(src.slice(idx, idx + 400)).toContain('/attorney/verify-bar');
+    expect(src).toMatch(/disabled=\{sending \|\| !bar\.trim\(\) \|\| !barState\}/);
+    expect(src).toMatch(/testID="ad-bar-number"[^>]*maxLength=\{20\}/);
   });
 
   test('STATE-02: 0 infinite spinner risk — setLoading(true) always paired with false', async () => {

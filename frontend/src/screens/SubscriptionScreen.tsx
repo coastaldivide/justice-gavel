@@ -1,372 +1,291 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
-import { useToast } from '../components/ToastProvider';
 /**
- * SubscriptionScreen -- provider plans (attorneys and bail agents)
+ * SubscriptionScreen — plans for attorneys and bail agents.
  *
- * Every price shown here comes from the backend — the same table the backend
- * charges from (routes/billing/_shared.js):
- *   attorneys   GET /api/billing/tiers?audience=attorney → POST /api/billing/subscribe
- *   bail agents GET /api/billing/bondsman/tiers          → POST /api/billing/bondsman/subscribe
- * Nothing is hard-coded, and no placement / ranking promises are made: the
- * directory's search order does not depend on a paid plan.
- * Without Stripe the subscribe calls answer 503 payments_unavailable and the
- * screen says so (no charge, free features keep working).
+ * Every price and feature comes from the server's price list (the list it
+ * charges from and enforces):
+ *   attorneys   GET /billing/tiers?audience=attorney → POST /billing/subscribe → /billing/subscription/confirm
+ *   bail agents GET /billing/bondsman/tiers          → POST /billing/bondsman/subscribe → …/subscription/confirm
+ * Buying goes through services/purchase.ts (payment sheet / Stripe Checkout, then a
+ * server-verified confirm); nothing is unlocked before the card is confirmed.
+ * Without Stripe the server answers payments_unavailable and the screen says so.
  */
-
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { api, apiErrorMessage, isPaymentsUnavailable, unwrapList } from '../services/api';
-import { PAYMENTS_COMING_SOON } from '../payments';
-import { useTheme, COLORS } from '../constants/theme';
+import { api, apiErrorMessage, unwrapList } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { t, useLang } from '../i18n';
+import { useConfirm } from '../hooks/useConfirm';
+import { useHasSession } from '../components/SignInNeeded';
+import { useStoredUser, isBailAgentUser } from '../hooks/useStoredUser';
+import { usePurchase, takePendingCheckout } from '../services/purchase';
+import { plansFrom, featureLabel, usd, type SubscriptionView } from '../services/plans';
+import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
+import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
 
 type ProviderType = 'lawyer' | 'bail_agent';
 
-/** One purchasable plan, normalised from either pricing endpoint. */
-export type ProviderPlan = {
-  key: string;
-  name: string;
-  price: string;          // exactly as the backend displays it
-  sub?: string | null;    // e.g. "$1490/yr · Save $298/yr" or "3 counties"
-  features: string[];
-  trialDays?: number | null;
-};
-
-/** What each attorney plan includes (features only — prices come from the API). */
-const ESQUIRE_FEATURES = ['x_subscription_feat_dashboard', 'x_subscription_feat_motions', 'x_subscription_feat_cases', 'x_subscription_feat_conflicts'];
-const ATTORNEY_FEATURE_KEYS: Record<string, string[]> = { esquire: ESQUIRE_FEATURES, esquire_annual: ESQUIRE_FEATURES };
+/** One purchasable plan, normalised from either price list. */
+export type ProviderPlan = { key: string; name: string; price: string; sub: string | null; features: string[]; trialDays: number; billing: 'monthly' | 'annual' };
 
 export function attorneyPlansFrom(body: unknown): ProviderPlan[] {
-  return unwrapList<Record<string, any>>(body, 'tiers')
-    .filter(tItem => tItem && tItem.audience === 'attorney' && typeof tItem.display_price === 'string')
-    .map(tItem => ({
-      key: String(tItem.key),
-      name: String(tItem.name),
-      price: tItem.display_price,
-      sub: tItem.billing === 'annual' ? t('x_subscription_billed_once_year') : t('x_subscription_billed_monthly'),
-      features: (ATTORNEY_FEATURE_KEYS[tItem.key] || []).map(k => t(k)),
-      trialDays: Number(tItem.trial_days) || null,
-    }));
+  return plansFrom(body, 'attorney').flatMap(p => [
+    { key: p.key, name: p.label, price: p.price, sub: t('x_subscription_billed_monthly'), features: p.features.map(featureLabel), trialDays: p.trialDays, billing: 'monthly' as const },
+    ...(p.annualKey ? [{ key: p.annualKey, name: `${p.label} · ${t('x_consumer_subscription_annual')}`, price: p.annualPrice as string, sub: p.annualSavings || t('x_subscription_billed_once_year'), features: p.features.map(featureLabel), trialDays: p.annualTrialDays || 0, billing: 'annual' as const }] : []),
+  ]);
 }
 
+type BondsmanTier = { key: string; name: string; display: string; annual_cents: number; annual_savings_cents: number; counties: number | 'all' };
 export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
-  return unwrapList<Record<string, any>>(body, 'tiers')
-    .filter(tItem => tItem && typeof tItem.display === 'string')
-    .map(tItem => ({
-      key: String(tItem.key),
-      name: String(tItem.name),
-      price: tItem.display,
-      sub: tItem.annual_display ? t('x_subscription_text', { annual_display: tItem.annual_display, value: tItem.annual_savings ? ` · ${tItem.annual_savings}` : '' }) : null,
-      features: String(tItem.label || '').split('·').map((f: string) => f.trim()).filter(Boolean),
-      trialDays: null,
-    }));
+  return unwrapList<BondsmanTier>(body, 'tiers').filter(x => x && typeof x.display === 'string').map(x => ({
+    key: x.key, name: x.name, price: x.display,
+    sub: x.annual_cents ? t('plan_bondsman_annual', { price: usd(x.annual_cents), saving: usd(x.annual_savings_cents) }) : null,
+    features: [x.counties === 'all' ? t('plan_feat_lead_alerts_all') : t(Number(x.counties) === 1 ? 'plan_feat_lead_alerts_one' : 'plan_feat_lead_alerts_other', { n: x.counties })],
+    trialDays: 0, billing: 'monthly' as const,
+  }));
 }
 
-function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
-  plan: ProviderPlan; active: boolean; onSubscribe: (key: string) => void; onCancel: () => void; loading: boolean; styles: any;
-}) {
+const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+type BondsmanSub = { active: boolean; tier: string | null; name?: string; status?: string; renews_at?: string | null; cancel_at_period_end?: boolean };
+
+function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
-  return (
-    <View style={styles.tierCard} testID={`plan-${plan.key}`}>
-      <View style={styles.tierHeader}>
-        <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tierLabel}>{plan.name}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tierPrice} testID={`plan-price-${plan.key}`}>{plan.price}</Text>
-          {!!plan.sub && <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{plan.sub}</Text>}
-        </View>
-        {active && (
-          <View style={styles.activeBadge}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.activeBadgeText}>{t('x_consumer_subscription_active')}</Text>
-          </View>
-        )}
-      </View>
-
-      {plan.features.length > 0 && (
-        <View style={styles.featureList}>
-          {plan.features.map(f => (
-            <View key={f} style={styles.featureRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.featureCheck}>✓</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{f}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {!active ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('x_subscription_subscribe', { name: plan.name })}
-          activeOpacity={0.6}
-          style={[styles.subscribeBtn, loading && { opacity: 0.6 }]}
-          onPress={() => onSubscribe(plan.key)}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-            : <>
-                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>
-                  {plan.trialDays ? t('x_subscription_start_day_free_trial', { trialDays: plan.trialDays }) : t('x_subscription_subscribe_2')}
-                </Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnSub}>
-                  {t('x_subscription_cancel_anytime_auto_renews', { value: plan.trialDays ? t('x_subscription_then', { price: plan.price }) + ' ' : '' })}
-                </Text>
-              </>
-          }
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.activeBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>{t('x_consumer_subscription_re_this_plan')}</Text>
-          <TouchableOpacity accessibilityRole="button" testID={`cancel-${plan.key}`}
-            accessibilityLabel={t('x_subscription_cancel', { name: plan.name })} onPress={onCancel} disabled={loading}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>{t('x_subscription_cancel_plan')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
-}
-
-function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
-  useLang();
-  const { showToast } = useToast();
-  const { confirm } = useConfirm();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
-
-  const [providerType, setProviderType] = useState<ProviderType>('lawyer');
-  const [plans, setPlans]               = useState<ProviderPlan[]>([]);
-  const [activeTier, setActiveTier]     = useState<string | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [refreshing, setRefreshing]     = useState(false);
-  const [loadError, setLoadError]       = useState('');
-  const [error, setError]               = useState('');
-  const [subscribing, setSubscribing]   = useState<string | null>(null);
+  const s = makeStyles(colors);
+  const { confirm } = useConfirm();
+  const { hasSession } = useHasSession();
+  const { user, ready } = useStoredUser();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const purchase = usePurchase();
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
-  const load = useCallback(async (type: ProviderType) => {
-    setLoadError('');
+  const [type, setType] = useState<ProviderType>('lawyer');
+  useEffect(() => { if (ready && isBailAgentUser(user)) setType('bail_agent'); }, [ready, user]);
+  const [plans, setPlans] = useState<ProviderPlan[]>([]);
+  const [current, setCurrent] = useState<{ tier: string; line: string; cancelling: boolean } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async (pt: ProviderType) => {
     try {
-      if (type === 'lawyer') {
-        const [tiers, sub] = await Promise.all([
+      if (pt === 'lawyer') {
+        const [tiers, mine] = await Promise.all([
           api.get('/billing/tiers', { params: { audience: 'attorney' } }),
-          api.get('/billing/subscription').catch(() => null),
+          hasSession ? api.get('/billing/subscription', { params: { provider_type: 'lawyer' } }).catch(() => null) : Promise.resolve(null),
         ]);
-        if (!mountedRef.current) return;
+        if (!mounted.current) return;
         setPlans(attorneyPlansFrom(tiers.data));
-        const s = sub?.data?.subscription;
-        setActiveTier(s && ['active', 'trialing'].includes(s.status) ? s.tier : null);
+        const sub = (mine?.data as { subscription?: SubscriptionView | null } | undefined)?.subscription;
+        setCurrent(sub?.paid ? {
+          tier: sub.tier, cancelling: sub.cancel_at_period_end,
+          line: sub.cancel_at_period_end ? t('plan_status_ends', { date: fmtDay(sub.status === 'trialing' ? sub.trial_ends_at : sub.current_period_end) })
+            : sub.status === 'trialing' ? t('plan_status_trial', { date: fmtDay(sub.trial_ends_at) })
+              : sub.status === 'past_due' ? t('plan_status_past_due') : t('plan_status_renews', { date: fmtDay(sub.current_period_end) }),
+        } : null);
       } else {
-        const [tiers, sub] = await Promise.all([
+        const [tiers, mine] = await Promise.all([
           api.get('/billing/bondsman/tiers'),
-          api.get('/billing/bondsman/subscription').catch(() => null),
+          hasSession ? api.get('/billing/bondsman/subscription').catch(() => null) : Promise.resolve(null),
         ]);
-        if (!mountedRef.current) return;
+        if (!mounted.current) return;
         setPlans(bondsmanPlansFrom(tiers.data));
-        setActiveTier(sub?.data?.active ? sub.data.tier : null);
+        const b = mine?.data as BondsmanSub | undefined;
+        setCurrent(b?.active && b.tier ? {
+          tier: b.tier, cancelling: !!b.cancel_at_period_end,
+          line: b.cancel_at_period_end ? t('plan_status_ends', { date: fmtDay(b.renews_at) }) : b.status === 'past_due' ? t('plan_status_past_due') : t('plan_status_renews', { date: fmtDay(b.renews_at) }),
+        } : null);
       }
-    } catch (e: any) {
-      if (mountedRef.current) { setPlans([]); setLoadError(apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans'))); }
-    }
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    load(providerType).finally(() => { if (mountedRef.current) setLoading(false); });
-  }, [providerType, load]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    load(providerType).finally(() => { if (mountedRef.current) setRefreshing(false); });
-  };
-
-  const doSubscribe = async (tier: string) => {
-    // iOS App Store IAP gate (Apple §3.1.1): digital subscriptions on iOS go through the website.
-    if (Platform.OS === 'ios') {
-      confirm(t('x_consumer_subscription_subscribe_web'), t('x_subscription_ios_subscriptions_managed_at'),
-        { confirmLabel: t('x_consumer_subscription_open_website') }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
-      return;
-    }
-    setSubscribing(tier);
-    setError('');
-    try {
-      const res = providerType === 'lawyer'
-        ? await api.post('/billing/subscribe', { tier, provider_type: 'lawyer' })
-        : await api.post('/billing/bondsman/subscribe', { tier });
-      showToast(res.data?.message || t('x_subscription_subscription_started'), 'success');
-      await load(providerType);
-    } catch (e: any) {
-      if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON());
-      else if (e?.response?.status === 409) setError(t('x_consumer_subscription_already_have_active_plan'));
-      else setError(apiErrorMessage(e, t('x_subscription_could_not_start_subscription')));
+      setNotice(n => (n?.tone === 'error' && n.text === t('x_consumer_subscription_could_not_load_plans') ? null : n));
+    } catch (e) {
+      if (mounted.current) { setPlans([]); setNotice({ text: apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans')), tone: 'error' }); }
     } finally {
-      if (mountedRef.current) setSubscribing(null);
+      if (mounted.current) { setLoading(false); setRefreshing(false); }
     }
-  };
+  }, [hasSession]);
+  useEffect(() => { setLoading(true); load(type); }, [type, load]);
 
-  const handleSubscribe = (tier: string) => { requireAuth(() => doSubscribe(tier)); };
+  const confirmFor = useCallback((pt: ProviderType) => async (ids: Record<string, string | undefined>) =>
+    (await api.post(pt === 'lawyer' ? '/billing/subscription/confirm' : '/billing/bondsman/subscription/confirm', ids)).data as { message: string }, []);
 
-  const handleCancel = () => {
-    confirm(t('x_subscription_cancel_plan_2'), t('x_subscription_plan_stays_active_until'),
-      { confirmLabel: t('x_subscription_yes_cancel'), destructive: true }).then(async ok => {
+  // Back from Stripe Checkout (web)
+  const sessionId = (route?.params as { checkout_session_id?: string } | undefined)?.checkout_session_id;
+  useEffect(() => {
+    if (!sessionId || !hasSession) return;
+    const pending = takePendingCheckout('provider_plan');
+    const pt: ProviderType = pending?.ctx?.type === 'bail_agent' ? 'bail_agent' : 'lawyer';
+    setType(pt);
+    purchase.finish(confirmFor(pt), { checkout_session_id: sessionId }).then(r => {
+      if (!mounted.current) return;
+      if (r.status === 'done') { setNotice({ text: r.data.message, tone: 'ok' }); load(pt); }
+      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, hasSession, confirmFor, load]);
+
+  const iosGate = () => confirm(t('x_consumer_subscription_subscribe_web'), t('x_subscription_ios_subscriptions_managed_at'),
+    { confirmLabel: t('x_consumer_subscription_open_website') }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
+
+  const subscribe = (plan: ProviderPlan) => requireAuth(async () => {
+    if (Platform.OS === 'ios') { iosGate(); return; }
+    setBusy(plan.key); setNotice(null);
+    const r = await purchase.run({
+      key: 'provider_plan', ctx: { type },
+      start: async (ui) => (await api.post(type === 'lawyer' ? '/billing/subscribe' : '/billing/bondsman/subscribe',
+        { tier: plan.key, billing: plan.billing, ui, return_path: '/subscribe' })).data,
+      confirm: confirmFor(type),
+    });
+    if (!mounted.current) return;
+    setBusy(null);
+    if (r.status === 'done') { setNotice({ text: r.data.message, tone: 'ok' }); load(type); }
+    else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+  });
+
+  const switchTo = (plan: ProviderPlan) => {
+    if (Platform.OS === 'ios') { iosGate(); return; }
+    confirm(t('plan_switch_title', { name: plan.name }), t('plan_switch_body'), { confirmLabel: t('plan_switch_cta') }).then(async ok => {
       if (!ok) return;
-      setError('');
+      setBusy(plan.key); setNotice(null);
       try {
-        if (providerType === 'lawyer') await api.post('/billing/cancel');
-        else await api.post('/billing/bondsman/subscription/cancel');
-        showToast(t('x_subscription_plan_has_been_cancelled'), 'info');
-        await load(providerType);
-      } catch (e: any) {
-        if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON());
-        else setError(apiErrorMessage(e, t('x_subscription_could_not_cancel_plan')));
-      }
+        const r = await api.post(type === 'lawyer' ? '/billing/subscription/change' : '/billing/bondsman/subscription/change', { tier: plan.key, billing: plan.billing });
+        if (mounted.current) setNotice({ text: r.data?.message, tone: 'ok' });
+        load(type);
+      } catch (e) {
+        if (mounted.current) setNotice({ text: apiErrorMessage(e, t('pay_failed')), tone: 'error' });
+      } finally { if (mounted.current) setBusy(null); }
     });
   };
 
+  const cancel = () => confirm(t('x_subscription_cancel_plan_2'), t('plan_cancel_body'), { confirmLabel: t('plan_cancel_cta'), destructive: true }).then(async ok => {
+    if (!ok) return;
+    setBusy('cancel'); setNotice(null);
+    try {
+      const r = type === 'lawyer' ? await api.post('/billing/cancel', { provider_type: 'lawyer' }) : await api.post('/billing/bondsman/subscription/cancel', {});
+      if (mounted.current) setNotice({ text: r.data?.message, tone: 'ok' });
+      load(type);
+    } catch (e) {
+      if (mounted.current) setNotice({ text: apiErrorMessage(e, t('x_subscription_could_not_cancel_plan')), tone: 'error' });
+    } finally { if (mounted.current) setBusy(null); }
+  });
+
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={styles.scroll}
-      testID="subscription-screen"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      {!!error && (
-        <View testID="subscription-error" style={{ margin: 16, padding: 14, backgroundColor: colors.errorBg,
-          borderRadius: 10, borderWidth: 1, borderColor: colors.danger }}>
-          <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 14 }}>⚠ {error}</Text>
-        </View>
-      )}
-      <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_subscription_provider_plans')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          {t('x_subscription_tools_attorneys_bail_agents')}
-        </Text>
-      </View>
-
-      <View style={styles.toggleBlock}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>{t('x_subscription_i_am')}</Text>
-        <View style={styles.toggleRow}>
-          {([['lawyer', t('x_family_connect_attorney')], ['bail_agent', t('x_family_connect_bail_agent')]] as const).map(([type, label]) => (
-            <TouchableOpacity key={type}
-              accessibilityRole="button"
-              accessibilityState={{ selected: providerType === type }}
-              testID={`provider-type-${type}`}
-              style={[styles.toggleChip, providerType === type && styles.toggleChipActive]}
-              onPress={() => { setError(''); setProviderType(type); }}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === type && styles.toggleChipTextActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator style={{ marginVertical: 32 }} size="large" color={colors.navy} />
-      ) : loadError ? (
-        <View style={{ alignItems: 'center', padding: 24 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, textAlign: 'center', marginBottom: 8 }}>{loadError}</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={onRefresh}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary }}>{t('bc_retry')}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : plans.map(plan => (
-        <TierCard key={plan.key} plan={plan} styles={styles}
-          active={activeTier === plan.key}
-          onSubscribe={handleSubscribe}
-          onCancel={handleCancel}
-          loading={subscribing === plan.key} />
-      ))}
-
-      {providerType === 'bail_agent' && (
-        <View style={styles.bondsCTA}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>{t('x_subscription_leads')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTAText}>
-            {t('x_subscription_bondsmen_accept_only_leads', { value: BONDSMAN_LEAD_FEE_DISPLAY })}
-          </Text>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.bondsCTABtn}
-            accessibilityLabel={t('x_subscription_open_lead_dashboard')} onPress={() => navigation.navigate('BondsmanDashboard')}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>{t('x_subscription_open_lead_dashboard')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
+    <ScrollView testID="subscription-screen" style={[s.screen, { backgroundColor: colors.bg }]} contentContainerStyle={s.scroll}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(type); }} />}>
       <AuthGateModal />
-      <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        {t('x_subscription_subscriptions_auto_renew_until')}
-      </Text>
-      <View style={{ height: 40 }} />
+      <View style={s.header}>
+        <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_subscription_provider_plans')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.subheading}>{t('plan_intro_pro')}</Text>
+      </View>
+
+      <View style={s.toggleWrap}>
+        {([['lawyer', t('x_family_connect_attorney')], ['bail_agent', t('x_family_connect_bail_agent')]] as const).map(([pt, label]) => (
+          <TouchableOpacity key={pt} accessibilityRole="tab" aria-selected={type === pt} accessibilityState={{ selected: type === pt }}
+            testID={`provider-type-${pt}`} style={[s.toggleBtn, type === pt && s.toggleBtnActive]} onPress={() => { setNotice(null); setType(pt); }}>
+            <Text maxFontSizeMultiplier={1.3} style={[s.toggleText, type === pt && s.toggleTextActive]}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {!!notice && (
+        <View testID="subscription-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger, fontSize: 14, lineHeight: 20 }}>{notice.text}</Text>
+        </View>
+      )}
+
+      {current && (
+        <View testID="current-plan" style={[s.card, { borderColor: colors.legal }]}>
+          <Text maxFontSizeMultiplier={1.4} style={s.kicker}>{t('plan_your_plan')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{plans.find(p => p.key === current.tier)?.name || current.tier}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{current.line}</Text>
+          <View style={s.row}>
+            <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('Payments' as never)}>
+              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('plan_billing_link')}</Text>
+            </TouchableOpacity>
+            {!current.cancelling && (
+              <TouchableOpacity accessibilityRole="button" testID="plan-cancel" style={s.ghostBtn} onPress={cancel} disabled={busy === 'cancel'}>
+                <Text maxFontSizeMultiplier={1.4} style={[s.ghostText, { color: colors.danger }]}>{t('x_subscription_cancel_plan')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {loading ? <ActivityIndicator style={{ marginVertical: 32 }} size="large" color={colors.navy} /> : plans.map(plan => {
+        const mine = current?.tier === plan.key;
+        return (
+          <View key={plan.key} testID={`plan-${plan.key}`} style={[s.card, mine && { borderColor: colors.legal }]}>
+            <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{plan.name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.price} testID={`plan-price-${plan.key}`}>{plan.price}</Text>
+            {!!plan.sub && <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{plan.sub}</Text>}
+            {!current && plan.trialDays > 0 && <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { color: colors.legal }]}>{t('plan_trial_card', { days: plan.trialDays, price: plan.price })}</Text>}
+            <View style={{ marginVertical: 10 }}>
+              {plan.features.map(f => (
+                <View key={f} style={s.featureRow}>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.check, { color: colors.legal }]}>✓</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.featureText}>{f}</Text>
+                </View>
+              ))}
+            </View>
+            {mine ? (
+              <View style={s.currentPill}><Text maxFontSizeMultiplier={1.4} style={s.currentPillText}>{t('x_consumer_subscription_re_this_plan')}</Text></View>
+            ) : (
+              <TouchableOpacity accessibilityRole="button" testID={`subscribe-${plan.key}`} accessibilityLabel={t('x_subscription_subscribe', { name: plan.name })}
+                style={[s.primaryBtn, !!busy && { opacity: 0.6 }]} disabled={!!busy} onPress={() => (current ? switchTo(plan) : subscribe(plan))}>
+                {busy === plan.key ? <ActivityIndicator color={COLORS.white} /> : (
+                  <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>
+                    {current ? t('plan_switch_cta') : plan.trialDays ? t('plan_start_trial', { days: plan.trialDays }) : t('x_subscription_subscribe_2')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      })}
+
+      {type === 'bail_agent' && (
+        <View style={s.card}>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('x_subscription_leads')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('plan_bondsman_leads_note', { fee: BONDSMAN_LEAD_FEE_DISPLAY })}</Text>
+          <TouchableOpacity accessibilityRole="button" style={[s.primaryBtn, { marginTop: 12 }]} onPress={() => navigation.navigate('BondsmanDashboard' as never)}>
+            <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('x_subscription_open_lead_dashboard')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <Text maxFontSizeMultiplier={1.4} style={s.footer}>{t('plan_footer_card')}</Text>
     </ScrollView>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'transparent' },
+const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  screen: { flex: 1 },
   scroll: { paddingBottom: 40 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  header: { backgroundColor: COLORS.navy, padding: 20, paddingTop: 30, paddingBottom: 24 },
-  heading: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
-  subheading: { color: COLORS.bgSubtle, fontSize: 12, marginTop: 3, lineHeight: 18 },
-
-  activeBanner: { backgroundColor: colors.legalBg, margin: 12, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center' },
-  activeBannerTitle: { color: colors.textPrimary, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
-    lineHeight: 21, },
-  activeBannerSub: { color: colors.legal, fontSize: 12, marginTop: 2 },
-  cancelLink: { color: colors.danger, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-
-  toggleBlock: { backgroundColor: colors.bgCard, margin: 12, marginBottom: 0, borderRadius: 12, padding: 14 },
-  toggleTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.info, marginBottom: 8 },
-  toggleRow: { flexDirection: 'row', gap: 10 },
-  toggleChip: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', backgroundColor: COLORS.bgCard },
-  toggleChipActive: { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
-  toggleChipText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.info },
-  toggleChipTextActive: { color: COLORS.navy },
-
-  tierCard: { margin: 12, marginBottom: 0, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, borderWidth: 1.5, borderColor: 'transparent' },
-  tierCardHighlight: { borderColor: colors.blue, elevation: 4 },
-  tierBadge: { position: 'absolute', top: -1, right: 16, backgroundColor: colors.blue, paddingHorizontal: 10, paddingVertical: 10, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
-  tierBadgeText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  tierHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  tierIcon: { fontSize: 28, marginRight: 12 },
-  tierLabel: { fontSize: 16, fontWeight: '800', color: colors.textBrand },
-  tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginTop: 1 },
-  activeBadge: { backgroundColor: colors.legalBg, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
-  activeBadgeText: { color: colors.legal, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  featureList: { marginBottom: 16 },
-  featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  featureCheck: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 8, marginTop: 1, color: colors.legal },
-  featureText: { fontSize: 12, color: colors.info, flex: 1, lineHeight: 18 },
-  subscribeBtn: { borderRadius: 12, paddingVertical: 16, alignItems: 'center', backgroundColor: COLORS.navy },
-  subscribeBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
-    lineHeight: 22, },
-  subscribeBtnSub: { color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 },
-  activeBlock: { backgroundColor: colors.legalBg, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  activeText: { color: colors.legal, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
-    lineHeight: 21, },
-
-  intelCard: { margin: 12, marginBottom: 0, backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, elevation: 1 },
-  intelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  intelIcon: { fontSize: 22, marginRight: 10 },
-  intelLabel: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
-  intelPrice: { fontSize: 12, lineHeight: 20, color: colors.info, marginTop: 1 },
-  intelDesc: { fontSize: 12, color: colors.info, lineHeight: 18, marginBottom: 12 },
-
-  bondsCTA: { margin: 12, backgroundColor: colors.infoBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.steelMid },
-  bondsCTATitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 6 },
-  bondsCTAText: { fontSize: 12, color: colors.textSecond, lineHeight: 18, marginBottom: 12 },
-  bondsCTABtn: { backgroundColor: COLORS.steelDark, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  bondsCTABtnText: { color: COLORS.white, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
-    lineHeight: 21, },
-
-  footer: { fontSize: 11, color: colors.info, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
+  header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 20 },
+  heading: { fontSize: 26, ...FONTS.black, color: colors.textOnNavy },
+  subheading: { color: colors.textOnNavy, opacity: 0.85, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  toggleWrap: { flexDirection: 'row', marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border, padding: 4, backgroundColor: colors.bgCard },
+  toggleBtn: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.md },
+  toggleBtnActive: { backgroundColor: colors.navy },
+  toggleText: { fontSize: 14, ...FONTS.bold, color: colors.textMuted },
+  toggleTextActive: { color: colors.textOnNavy },
+  notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
+  card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5, borderColor: colors.border },
+  kicker: { fontSize: 11, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+  cardTitle: { fontSize: 17, ...FONTS.heavy, color: colors.textPrimary },
+  cardLine: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 4 },
+  price: { fontSize: 22, ...FONTS.black, color: colors.textBrand, marginTop: 2 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
+  ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
+  featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 },
+  check: { fontSize: 13, ...FONTS.black, marginRight: 8, lineHeight: 19 },
+  featureText: { fontSize: 13, lineHeight: 19, color: colors.textSecond, flex: 1 },
+  primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  currentPill: { minHeight: 44, borderRadius: RADIUS.md, backgroundColor: colors.legalBg, alignItems: 'center', justifyContent: 'center' },
+  currentPillText: { color: colors.legal, fontSize: 14, ...FONTS.heavy },
+  footer: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 20, lineHeight: 17, marginTop: 16 },
 });
 
 export default React.memo(SubscriptionScreen);

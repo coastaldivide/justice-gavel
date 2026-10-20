@@ -1,560 +1,257 @@
-import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
 /**
- * FirmAcquisitionScreen — Self-serve firm onboarding funnel
+ * FirmAcquisitionScreen — start a firm workspace and run it during the free trial.
  *
- * Three flows:
- *   1. Browse    — vertical picker + pitch + pricing calculator
- *   2. Activate  — firm name + trial activation
- *   3. Status    — trial countdown + onboarding checklist
- *
- * Entry points:
- *   - HomeScreen attorney tile (pre-auth)
- *   - AttorneyDashboardScreen header CTA
- *   - SettingsScreen My Tools
+ *   GET  /firm-acquisition/status     the firm, trial days left / ended, seats, matters
+ *   POST /firm-acquisition/trial      attorney accounts: create the firm + the trial (no card)
+ *   GET  /firm-acquisition/checklist  onboarding steps worked out from the firm's own data
+ *   POST /firm-acquisition/invite     firm admin: invite a colleague (seat limit)
+ *   GET  /firm-acquisition/invites    invitations for this account; accept to join
+ *   POST /firm-acquisition/upgrade    ask for a paid firm plan (a request — nothing is charged)
+ * There is no paid firm plan to convert to yet: the trial ends without a charge and the
+ * firm keeps its data (the screen says so). Every message comes from the server in the
+ * app's language.
  */
-
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-  LayoutAnimation,
-  InteractionManager,
-} from 'react-native';
-import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
+import React, { useCallback, useState } from 'react';
+import type { ScreenProps } from '../types/navigation';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
-import type {} from '../types/navigation';
-import { useAuthGate } from '../components/AuthGate';
-import { t, perLang, useLang } from '../i18n';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
+import { useStoredUser, isAttorneyUser } from '../hooks/useStoredUser';
+import { useConfirm } from '../hooks/useConfirm';
+import { FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
 
-type Flow = 'browse' | 'activate' | 'status';
+const VERTICALS = ['criminal_defense', 'civil_rights', 'white_collar', 'family', 'immigration', 'personal_injury', 'public_defense', 'appellate', 'military', 'juvenile', 'general'] as const;
+const ORG_TYPES = ['law_firm', 'solo', 'public_defender', 'legal_aid', 'nonprofit', 'government', 'other'] as const;
+const PLAN_TIERS = ['standard', 'mission', 'government', 'enterprise'] as const;
+const INVITE_ROLES = ['associate', 'partner', 'paralegal'] as const;
 
-// ─── CONSTANTS ──────────────────────────────────────────────────────────────────
-const TRIAL_DAYS = 14; // keep in sync with backend TRIAL_DAYS
-const STANDARD_PRICE_DISPLAY = '$199/mo'; // keep in sync with firm_pricing_configs
-
-// ─── VERTICAL DATA ────────────────────────────────────────────────────────────
-const VERTICALS = perLang(() => [
-  { key: 'criminal_defense', label: t('x_court_forms_criminal_defense'),    emoji: '⚖️',  color: COLORS.legal },
-  { key: 'civil_rights',     label: t('x_firm_acquisition_civil_rights_1983'), emoji: '✊',  color: COLORS.blue },
-  { key: 'white_collar',     label: t('x_firm_acquisition_white_collar_reg'),  emoji: '🏦',  color: COLORS.navy },
-  { key: 'family',           label: t('x_practice_area_selector_family_law'),          emoji: '👨‍👩‍👧',  color: COLORS.emergency },
-  { key: 'immigration',      label: t('chat_cat_immigration'),         emoji: '🛂',  color: COLORS.warn },
-  { key: 'personal_injury',  label: t('x_practice_area_selector_personal_injury'),     emoji: '🏥',  color: COLORS.emergency },
-  { key: 'public_defense',   label: t('x_firm_acquisition_public_defense'),      emoji: '🛡️',  color: COLORS.navy },
-  { key: 'appellate',        label: t('x_firm_acquisition_appellate_pcr'),     emoji: '📜',  color: COLORS.blue },
-  { key: 'military',         label: t('x_firm_acquisition_military_ucmj'),     emoji: '🎖️',  color: COLORS.legal },
-  { key: 'juvenile',         label: t('x_firm_acquisition_juvenile_dependency'),emoji: '👦', color: COLORS.warn },
-  { key: 'general',          label: t('x_firm_acquisition_general_practice'),    emoji: '📁',  color: COLORS.steel },
-]);
-
-const TIER_COLORS: Record<string, string> = {
-  standard:   COLORS.blue,
-  mission:    COLORS.legal,
-  government: COLORS.navy,
-  enterprise: COLORS.emergency,
+type Status = {
+  has_firm: boolean; trials_left?: number; role?: string;
+  firm?: { id: number; name: string; vertical: string; pricing_tier: string; plan: string; seat_limit: number };
+  trial_active?: boolean; trial_ended?: boolean; trial_days?: number; trial_seats?: number; trial_end?: string | null; trial_days_left?: number;
+  member_count?: number; matter_count?: number; pending_invites?: number;
+  upgrade_request?: { target_tier: string; status: string; created_at: string } | null;
 };
+type Invite = { id: number; role: string; firm_name: string; invited_by_name: string | null; expires_at: string };
+type Step = { key: 'vertical_set' | 'team_invited' | 'first_matter'; done: boolean };
+const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { month: 'long', day: 'numeric', year: 'numeric' }) : '');
+const ADMIN_ROLES = new Set(['firm_admin', 'admin', 'owner']);
+const PARTNER_ROLES = new Set(['partner', 'managing_partner', 'firm_admin', 'admin', 'owner', 'lead_attorney']);
 
-function FirmAcquisitionScreen({ navigation }: any) {
+function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
-  const { showToast } = useToast();
   const { colors } = useTheme();
-  const s = styles(colors);
-  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const s = makeStyles(colors);
+  const { confirm } = useConfirm();
+  const { hasSession, recheck } = useHasSession();
+  const { user, ready } = useStoredUser();
+  const [status, setStatus] = useState<Status | null>(null);
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [firmName, setFirmName] = useState('');
+  const [vertical, setVertical] = useState<(typeof VERTICALS)[number]>('criminal_defense');
+  const [orgType, setOrgType] = useState<(typeof ORG_TYPES)[number]>('law_firm');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<(typeof INVITE_ROLES)[number]>('associate');
 
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  return () => { mountedRef.current = false; };
-    });
-    return () => _task.cancel();
-  }, []);
-  const [flow, setFlow]           = useState<Flow>('browse');
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefresh]  = useState(false);
-  const pitchAbort = React.useRef<AbortController | null>(null);  // component-level — persists across loadPitch calls
-
-  // Browse state
-  const [selectedV, setSelectedV] = useState('criminal_defense');
-  const [pitch, setPitch]         = useState<any>(null);
-  const [plans, setPlans]         = useState<any[]>([]);
-  const [pitchLoading, setPL]     = useState(false);
-
-  // Activate state
-  const [firmName, setFirmName]   = useState('');
-  const [activating, setActiv]    = useState(false);
-  const [upgrading,  setUpgrading] = useState(false);
-
-  // Status state
-  const [status, setStatus]       = useState<any>(null);
-  const [checklist, setChecklist] = useState<any[]>([]);
-  const [checkPct, setCheckPct]   = useState(0);
-
-  // ── Load ──────────────────────────────────────────────────────────────────
-  const loadStatus = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      const [statusRes, clRes] = await Promise.allSettled([
-        api.get('/firm-acquisition/status'),
-        api.get('/firm-acquisition/checklist').catch(() => ({ data: { checklist: [] } })),
+      const [st, cl, inv] = await Promise.all([
+        api.get<Status>('/firm-acquisition/status'),
+        api.get('/firm-acquisition/checklist'),
+        api.get('/firm-acquisition/invites'),
       ]);
-      const statusData = statusRes.status === 'fulfilled' ? statusRes.value.data : null;
-      const clData     = clRes.status     === 'fulfilled' ? clRes.value.data     : null;
-      if (statusData) setStatus(statusData);
-      if (clData?.checklist) setChecklist(clData.checklist);
-      if (clData?.completion_pct != null) setCheckPct(clData.completion_pct);
-      if (statusData?.has_firm) setFlow('status');
-    } catch { /* not logged in or no firm */ }
+      setStatus(st.data);
+      setSteps((cl.data?.checklist || []) as Step[]);
+      setInvites((inv.data?.invites || []) as Invite[]);
+    } catch (e) { setNotice({ text: apiErrorMessage(e, t('fa_load_error')), tone: 'error' }); }
+    finally { setRefreshing(false); }
   }, []);
+  useFocusEffect(useCallback(() => { if (hasSession && isAttorneyUser(user)) load(); }, [hasSession, user, load]));
 
-  const loadPlans = useCallback(async () => {
-    try {
-      const res = await api.get('/firm-acquisition/plans');
-      setPlans(res.data?.plans || []);
-    } catch {}
-  }, []);
-
-  const loadPitch = useCallback(async (v: string) => {
-    // Cancel any in-flight request before starting a new one
-    if (pitchAbort.current) pitchAbort.current.abort();
-    pitchAbort.current = new AbortController();
-    setPL(true);
-    try {
-      const res = await api.get(`/firm-acquisition/vertical-demo?vertical=${v}`);
-      if (!pitchAbort.current?.signal.aborted) setPitch(res.data || null);
-    } catch (e: any) {
-      // Ignore AbortError — a newer request is taking over
-      // Guard all cancellation signal variants (browser AbortError, Axios ERR_CANCELED/CanceledError)
-      const isCancellation = e?.name === 'AbortError' ||
-        e?.code === 'ERR_CANCELED' ||
-        e?.name === 'CanceledError' ||
-        e?.message === 'canceled';
-      if (!isCancellation) {
-        setPitch(null);
-      }
-    } finally {
-      // Always clear loading — the new request (if one fired) sets it true immediately
-      setPL(false);
-    }
-  }, []);
-
-  const requestUpgrade = async (tier: string) => {
-    if (upgrading) return;
-    setUpgrading(true);
-    try {
-      const res = await api.post('/firm-acquisition/upgrade', { target_tier: tier });
-showToast(res.data?.message, 'success');
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_firm_acquisition_could_not_submit_upgrade')), 'error');
-    } finally { setUpgrading(false); }
+  const run = async (key: string, fn: () => Promise<{ data?: { message?: string } }>, after?: () => void) => {
+    setBusy(key); setNotice(null);
+    try { const r = await fn(); setNotice({ text: r.data?.message || t('fa_done'), tone: 'ok' }); after?.(); load(); }
+    catch (e) { setNotice({ text: apiErrorMessage(e, t('fa_failed')), tone: 'error' }); }
+    finally { setBusy(null); }
   };
-
-  useEffect(() => {
-    Promise.all([loadStatus(), loadPlans()]).finally(() => setLoading(false));
-  }, [loadStatus, loadPlans]);
-
-  useEffect(() => { loadPitch(selectedV); }, [selectedV, loadPitch]);
-
-  // ── Activate trial ────────────────────────────────────────────────────────
-  const activateTrial = async () => {
-    if (!firmName.trim()) { showToast(t('x_firm_acquisition_firm_name_required')); return; }
-    if (firmName.trim().length < 2) { showToast(t('x_firm_acquisition_firm_name_must_be')); return; }
-    const canProceed = await (requireAuth as any)();
-    if (canProceed === false) return;
-    setActiv(true);
-    try {
-      const res = await api.post('/firm-acquisition/trial', {
-        firm_name: firmName.trim(), vertical: selectedV,
-      });
-      showToast(res.data?.message, 'info');
-      setFirmName('');
-      setFlow('status');  // navigate first — loadStatus failure must not trap user on trial form
-      loadStatus().catch(() => null);  // refresh status in background
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_firm_acquisition_could_not_activate_trial')), 'error');
-    } finally { setActiv(false); }
+  const startTrial = () => {
+    if (firmName.trim().length < 2) { setNotice({ text: t('x_firm_acquisition_firm_name_must_be'), tone: 'error' }); return; }
+    run('trial', () => api.post('/firm-acquisition/trial', { firm_name: firmName.trim(), vertical, org_type: orgType }), () => setFirmName(''));
   };
+  const invite = () => run('invite', () => api.post('/firm-acquisition/invite', { email: inviteEmail.trim(), role: inviteRole }), () => setInviteEmail(''));
+  const accept = (inv: Invite) => confirm(t('fa_join_title', { firm: inv.firm_name }), t('fa_join_body'), { confirmLabel: t('fa_join_cta') })
+    .then(ok => { if (ok) run(`inv${inv.id}`, () => api.post(`/firm-acquisition/invites/${inv.id}/accept`, {})); });
+  const requestPlan = (tier: (typeof PLAN_TIERS)[number]) => run(`plan-${tier}`, () => api.post('/firm-acquisition/upgrade', { target_tier: tier }));
 
-  if (loading) return (
-    <View style={s.center}>
-      <ActivityIndicator color={colors.gold} size="large" />
-    </View>
-  );
+  if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('x_nav_start_firm_trial')} body={t('fa_signin_body')} onSignedIn={recheck} /></View>;
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (!isAttorneyUser(user)) {
+    return <View testID="firm-acquisition-not-attorney" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}><Text maxFontSizeMultiplier={1.4} style={[s.title, { textAlign: 'center' }]}>{t('fa_attorney_only')}</Text></View>;
+  }
+  if (!status) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
 
-  const vertObj = VERTICALS().find(v => v.key === selectedV);
-
+  const f = status.firm;
+  const canInvite = !!status.role && ADMIN_ROLES.has(status.role);
+  const canRequest = !!status.role && PARTNER_ROLES.has(status.role);
   return (
-    <View style={s.root}
-      testID="firm-acquisition-screen">
-      {/* Flow toggle — only show if no firm yet */}
-      {!status?.has_firm && (
-        <View style={s.flowBar}>
-          {(['browse','activate'] as Flow[]).map(f => (
-            <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
-              accessibilityLabel={t('x_firm_acquisition_select_firm_vertical')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[s.flowLabel, flow===f && s.flowLabelActive]}>
-                {f === 'browse' ? t('x_firm_acquisition_explore') : t('x_firm_acquisition_start_free_trial')}
-              </Text>
-            </TouchableOpacity>
-          ))}
+    <ScrollView testID="firm-acquisition-screen" style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
+      {!!notice && (
+        <View testID="fa-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger, fontSize: 14, lineHeight: 20 }}>{notice.text}</Text>
         </View>
       )}
+      {invites.map(inv => (
+        <View key={inv.id} style={s.card} testID="fa-invite">
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('fa_invited', { firm: inv.firm_name })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('fa_invited_by', { name: inv.invited_by_name || '', role: t(`fa_role_${inv.role}`), date: fmtDay(inv.expires_at) })}</Text>
+          <TouchableOpacity accessibilityRole="button" testID="fa-invite-accept" style={s.primaryBtn} disabled={busy !== null} onPress={() => accept(inv)}>
+            <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('fa_join_cta')}</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); loadStatus().finally(() => setRefresh(false)); }} tintColor={colors.gold} />}
-        keyboardShouldPersistTaps="handled"
-      >
-
-        {/* ── STATUS FLOW ──────────────────────────────────────────────────── */}
-        {flow === 'status' && status?.has_firm && (
-          <>
-            <View style={s.heroCard}>
-              <Text maxFontSizeMultiplier={1.4} style={s.heroTitle}>{status.firm?.name}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={s.heroSub}>
-                {VERTICALS().find(v => v.key === status.firm?.vertical)?.emoji}{' '}
-                {VERTICALS().find(v => v.key === status.firm?.vertical)?.label}
+      {!status.has_firm || !f ? (
+        <View style={s.card} testID="fa-start">
+          <Text maxFontSizeMultiplier={1.4} style={s.h1}>{t('x_firm_acquisition_activate_trial')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('fa_trial_terms', { days: status.trial_days ?? '', seats: status.trial_seats ?? '' })}</Text>
+          {status.trials_left === 0 ? <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.danger }]}>{t('fa_no_trials_left')}</Text> : (
+            <>
+              <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('x_firm_acquisition_firm_name')}</Text>
+              <TextInput testID="fa-firm-name" style={s.field} value={firmName} onChangeText={setFirmName} maxLength={200} placeholder={t('x_firm_acquisition_e_g_harrington_voss')} placeholderTextColor={colors.placeholder} accessibilityLabel={t('x_firm_acquisition_firm_name')} />
+              <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('fa_practice_area')}</Text>
+              <View style={s.chips}>
+                {VERTICALS.map(v => (
+                  <TouchableOpacity key={v} accessibilityRole="radio" aria-checked={vertical === v} accessibilityState={{ checked: vertical === v }} testID={`fa-vertical-${v}`}
+                    style={[s.chip, vertical === v && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setVertical(v)}>
+                    <Text maxFontSizeMultiplier={1.2} style={[s.chipText, vertical === v && { color: colors.textOnNavy }]}>{t(`fa_v_${v}`)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('fa_org_type')}</Text>
+              <View style={s.chips}>
+                {ORG_TYPES.map(o => (
+                  <TouchableOpacity key={o} accessibilityRole="radio" aria-checked={orgType === o} accessibilityState={{ checked: orgType === o }}
+                    style={[s.chip, orgType === o && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setOrgType(o)}>
+                    <Text maxFontSizeMultiplier={1.2} style={[s.chipText, orgType === o && { color: colors.textOnNavy }]}>{t(`fa_org_${o}`)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity accessibilityRole="button" testID="fa-start-trial" style={[s.primaryBtn, busy === 'trial' && { opacity: 0.6 }]} disabled={busy !== null} onPress={startTrial}>
+                {busy === 'trial' ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('x_firm_acquisition_activate_free_trial')}</Text>}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      ) : (
+        <>
+          <View style={s.card} testID="fa-status">
+            <Text maxFontSizeMultiplier={1.4} style={s.h1}>{f.name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t(`fa_v_${(VERTICALS as readonly string[]).includes(f.vertical) ? f.vertical : 'general'}`)}</Text>
+            {status.trial_active ? (
+              <Text maxFontSizeMultiplier={1.4} testID="fa-trial" style={[s.badge, { backgroundColor: colors.legalBg, color: colors.legal }]}>
+                {t(status.trial_days_left === 1 ? 'x_firm_acquisition_trial_day_remaining_one' : 'x_firm_acquisition_trial_day_remaining_other', { trial_days_left: status.trial_days_left })}
               </Text>
-              {status.trial_active && status.trial_days_left > 0 ? (
-                <View style={s.trialBadge}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.trialBadgeText}>
-                    {t(status.trial_days_left === 1 ? 'x_firm_acquisition_trial_day_remaining_one' : 'x_firm_acquisition_trial_day_remaining_other', { trial_days_left: status.trial_days_left })}
-                  </Text>
-                </View>
-              ) : status.firm?.plan === 'trial' && !status.trial_active ? (
-                <View style={[s.trialBadge, { backgroundColor: colors.emergencyBg }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={[s.trialBadgeText, { color: colors.emergency }]}>{t('x_firm_acquisition_trial_expired_upgrade_continue')}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Stats row */}
-            <View style={s.statsRow}>
-              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.member_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_team_members')}</Text></View>
-              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.matter_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_matters')}</Text></View>
-              <View style={s.stat}>
-                <Text maxFontSizeMultiplier={1.4} style={[s.statVal, { color: TIER_COLORS[status.firm?.pricing_tier] || colors.steel }]}>
-                  {status.firm?.pricing_tier}
-                </Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.statLabel}>{t('x_firm_acquisition_billing_tier')}</Text>
-              </View>
-            </View>
-
-            {/* Onboarding checklist */}
-            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_firm_acquisition_getting_started')}</Text>
-            <View style={s.progressTrack}>
-              <View style={[s.progressFill, { width: `${checkPct}%` as any }]} />
-            </View>
-            <Text maxFontSizeMultiplier={1.4} style={s.progressLabel}>{t('x_firm_acquisition_complete', { checkPct })}</Text>
-
-            {checklist.length === 0 ? (
-              // Skeleton placeholder while checklist loads
-              [0,1,2].map(i => (
-                <View key={`skel-${i}`} style={[s.checkRow, { opacity: 0.3 }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.checkIcon}>⬜</Text>
-                  <View style={{ flex: 1, height: 14, backgroundColor: colors.bgElevated, borderRadius: 4 }} />
-                </View>
-              ))
-            ) : checklist.map((c: any) => (
-              <View key={c.key} style={[s.checkRow, c.done && s.checkRowDone]}>
-                <Text maxFontSizeMultiplier={1.4} style={s.checkIcon}>{c.done ? '✅' : c.required ? '⬜' : '◽'}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={[s.checkLabel, c.done && { color: colors.textMuted }]}>{c.label}</Text>
-                  {c.required && !c.done && <Text maxFontSizeMultiplier={1.4} style={s.checkRequired}>{t('required')}</Text>}
-                </View>
-              </View>
-            ))}
-
-            {/* Upgrade CTA — shown when on trial or standard tier */}
-            {status?.firm && ['trial','standard'].includes(status.firm.plan) && (
-              <View style={s.upgradeCard}>
-                <Text maxFontSizeMultiplier={1.4} style={s.upgradeTitle}>{t('x_firm_acquisition_ready_upgrade')}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>{t('x_firm_acquisition_mission_pricing_75_off')}</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                    style={[s.upgradeBtn, { backgroundColor: colors.legalDark }]}
-                    onPress={() => requestUpgrade('enterprise')}
-                    disabled={upgrading}
-                  >
-                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? t('x_bar_prep_quiz_submitting') : t('x_firm_acquisition_enterprise')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                    style={[s.upgradeBtn, { backgroundColor: COLORS.warnDark }]}
-                    onPress={() => requestUpgrade('mission')}
-                    disabled={upgrading}
-                  >
-                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? '…' : t('x_firm_acquisition_mission_75_off')}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {/* Quick actions */}
-            <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>{t('x_firm_acquisition_quick_actions')}</Text>
-            <View style={s.actionGrid}>
-              <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => navigation.navigate('FirmVertical')}
-                      >
-                <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_configure_vertical')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
-                      >
-                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_deadline_calculator')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
-                      >
-                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_create_matter')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
-                      >
-                <AppIcon name="card-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>{t('x_firm_acquisition_upgrade_plan')}</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* ── BROWSE FLOW ──────────────────────────────────────────────────── */}
-        {flow === 'browse' && (
-          <>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>{t('x_firm_acquisition_find_vertical')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{t('x_firm_acquisition_justice_gavel_adapts_its')}</Text>
-
-            {/* Vertical grid */}
-            <View style={s.vertGrid}>
-              {VERTICALS().map(v => (
-                <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                  key={v.key}
-                  style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
-                  accessibilityLabel={v.emoji} onPress={() => setSelectedV(v.key)}
-                  activeOpacity={0.75}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={[s.vertLabel, selectedV === v.key && { color: v.color }]} numberOfLines={2}>{v.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Pitch card */}
-            {pitchLoading ? (
-              <ActivityIndicator color={colors.gold} style={{ marginTop: 20 }} />
-            ) : pitch ? (
-              <View style={[s.pitchCard, { borderLeftColor: vertObj?.color || colors.steel }]}>
-                <Text maxFontSizeMultiplier={1.4} style={s.pitchHeadline}>{pitch.headline}</Text>
-                {(pitch.stats || []).map((stat: string, i: number) => (
-                  <View key={`stat-${i}`} style={s.pitchStat}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ color: vertObj?.color || colors.steel, fontSize: 14, marginRight: 8 }}>→</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={s.pitchStatText}>{stat}</Text>
-                  </View>
-                ))}
-                {pitch.roi && (
-                  <View style={s.roiBox}>
-                    <Text maxFontSizeMultiplier={1.4} style={s.roiLabel}>ROI</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={s.roiText}>{pitch.roi}</Text>
-                  </View>
-                )}
-              </View>
+            ) : status.trial_ended ? (
+              <Text maxFontSizeMultiplier={1.4} testID="fa-trial-ended" style={[s.badge, { backgroundColor: colors.warnBg, color: colors.warnDark }]}>{t('fa_trial_ended', { date: fmtDay(status.trial_end) })}</Text>
             ) : null}
-
-            {/* Pricing cards */}
-            {plans.length > 0 && (
-              <>
-                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>{t('x_firm_acquisition_pricing')}</Text>
-                {plans.map((p: any) => (
-                  <View key={p.tier_key} style={[s.tierCard, { borderLeftColor: TIER_COLORS[p.tier_key] || colors.steel }]}>
-                    <View style={s.tierHeader}>
-                      <View>
-                        <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: TIER_COLORS[p.tier_key] }]}>{p.display_name}</Text>
-                        <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{p.description}</Text>
-                      </View>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>{t('x_check_in_manager_mo')}</Text></Text>
-                    </View>
-                    <View style={s.tierMeta}>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_seats', { value: p.seat_limit >= 999 ? '∞' : p.seat_limit })}</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_matters_2', { value: p.matter_limit >= 99999 ? '∞' : p.matter_limit })}</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>{t('x_firm_acquisition_day', { ai_calls_daily: p.ai_calls_daily })}</Text>
-                    </View>
-                  </View>
-                ))}
-              </>
-            )}
-
-            <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={s.ctaBtn} accessibilityLabel={t('x_firm_acquisition_start_trial_days_day', { TRIAL_DAYS })} onPress={() => setFlow('activate')}
-                    >
-              <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>{t('x_firm_acquisition_start_day_free_trial', { TRIAL_DAYS })}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* ── ACTIVATE FLOW ─────────────────────────────────────────────────── */}
-        {flow === 'activate' && (
-          <>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>{t('x_firm_acquisition_activate_trial')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{t('x_firm_acquisition_days_free_no_credit', { TRIAL_DAYS })}</Text>
-
-            {/* Selected vertical recap */}
-            <View style={[s.vertRecap, { borderColor: vertObj?.color || colors.steel }]}>
-              <Text maxFontSizeMultiplier={1.4} style={s.vertRecapEmoji}>{vertObj?.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapLabel}>{vertObj?.label}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>{t('x_firm_acquisition_tap_explore_change_vertical')}</Text>
-              </View>
-              <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('x_firm_acquisition_change')} onPress={() => setFlow('browse')}
-                      >
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>{t('x_firm_acquisition_change')}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>{t('x_firm_acquisition_firm_name')}</Text>
-            <TextInput
-              style={[s.input, activating && { opacity: 0.5 }]}
-              value={firmName}
-              onChangeText={setFirmName}
-              placeholder={t('x_firm_acquisition_e_g_harrington_voss')}
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="words"
-              editable={!activating}
-          returnKeyType="done" blurOnSubmit={true}
-            />
-
-            <View style={s.trialPerks}>
-              {[
-                t('x_firm_acquisition_all_vertical_features_unlocked'),
-                t('x_firm_acquisition_automatic_deadline_seeding_every'),
-                t('x_firm_acquisition_invite_full_team_during'),
-                t('x_firm_acquisition_specialty_trackers_asylum_dpa'),
-                t('x_firm_acquisition_switch_vertical_any_time'),
-              ].map((p, i) => (
-                <View key={`perk-${i}`} style={s.perkRow}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.legal, marginRight: 8 }}>✓</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.perkText}>{p}</Text>
-                </View>
+            <View style={s.statsRow}>
+              {[[`${status.member_count ?? 0}/${f.seat_limit}`, t('fa_seats')], [String(status.matter_count ?? 0), t('x_firm_acquisition_matters')], [String(status.pending_invites ?? 0), t('fa_pending_invites')]].map(([v, l]) => (
+                <View key={l} style={s.stat}><Text maxFontSizeMultiplier={1.2} style={s.statVal}>{v}</Text><Text maxFontSizeMultiplier={1.2} style={s.statLabel}>{l}</Text></View>
               ))}
             </View>
+          </View>
 
-            <TouchableOpacity style={s.activateBtn} onPress={activateTrial} disabled={activating}
-            accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('x_firm_acquisition_activate_free_trial')}>
-              {activating
-                ? <ActivityIndicator color={colors.navy} />
-                : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>{t('x_firm_acquisition_activate_free_trial')}</Text>
-              }
-            </TouchableOpacity>
+          <View style={s.card} testID="fa-checklist">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_firm_acquisition_getting_started')}</Text>
+            {steps.map(st => (
+              <TouchableOpacity key={st.key} accessibilityRole="button" style={s.step} onPress={() => {
+                if (st.key === 'vertical_set') navigation.navigate('FirmVertical' as never);
+                else if (st.key === 'first_matter') navigation.navigate('MatterIntelligence' as never);
+              }} disabled={st.key === 'team_invited'}>
+                <Text maxFontSizeMultiplier={1.4} style={s.stepIcon}>{st.done ? '✅' : '⬜'}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.line, { flex: 1 }, st.done && { textDecorationLine: 'line-through' }]}>{t(`fa_step_${st.key}`)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-            <Text maxFontSizeMultiplier={1.4} style={s.legalNote}>
-              {t('x_firm_acquisition_by_activating_trial_agree', { STANDARD_PRICE_DISPLAY, TRIAL_DAYS })}
-            </Text>
-          </>
-        )}
+          {canInvite && (
+            <View style={s.card} testID="fa-invite-form">
+              <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('fa_invite_title')}</Text>
+              <TextInput testID="fa-invite-email" style={[s.field, { marginTop: 8 }]} value={inviteEmail} onChangeText={setInviteEmail} keyboardType="email-address" autoCapitalize="none" maxLength={200}
+                placeholder={t('fa_invite_email')} placeholderTextColor={colors.placeholder} accessibilityLabel={t('fa_invite_email')} />
+              <View style={s.chips}>
+                {INVITE_ROLES.map(r => (
+                  <TouchableOpacity key={r} accessibilityRole="radio" aria-checked={inviteRole === r} accessibilityState={{ checked: inviteRole === r }}
+                    style={[s.chip, inviteRole === r && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setInviteRole(r)}>
+                    <Text maxFontSizeMultiplier={1.2} style={[s.chipText, inviteRole === r && { color: colors.textOnNavy }]}>{t(`fa_role_${r}`)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity accessibilityRole="button" testID="fa-invite-send" style={[s.ghostBtn, (!inviteEmail.trim() || busy !== null) && { opacity: 0.5 }]} disabled={!inviteEmail.trim() || busy !== null} onPress={invite}>
+                <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('fa_invite_send')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-      </ScrollView>
-      <AuthGateModal />
-    </View>
+          <View style={s.card} testID="fa-plans">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('fa_plans_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('fa_plans_body')}</Text>
+            {status.upgrade_request && <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.legal }]}>{t('fa_plan_requested', { plan: t(`fa_tier_${status.upgrade_request.target_tier}`), date: fmtDay(status.upgrade_request.created_at) })}</Text>}
+            {canRequest ? (
+              <View style={s.chips}>
+                {PLAN_TIERS.map(tier => (
+                  <TouchableOpacity key={tier} accessibilityRole="button" testID={`fa-plan-${tier}`} style={[s.chip, busy === `plan-${tier}` && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => requestPlan(tier)}>
+                    <Text maxFontSizeMultiplier={1.2} style={s.chipText}>{t(`fa_tier_${tier}`)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('fa_plans_partner')}</Text>}
+          </View>
+
+          <View style={s.chipsPadded}>
+            {[['ConflictCheck', t('x_nav_conflict_check')], ['DeadlineCalculator', t('x_firm_acquisition_deadline_calculator')], ['FirmVertical', t('x_firm_acquisition_configure_vertical')]].map(([screen, label]) => (
+              <TouchableOpacity key={screen} accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate(screen as never)}>
+                <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{label} ›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
+    </ScrollView>
   );
 }
 
-// ─── STYLES ───────────────────────────────────────────────────────────────────
-const styles = (c: any) => StyleSheet.create({
-  root:             { flex: 1, backgroundColor: c.background },
-  center:           { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.background },
-  scroll:           { padding: 16, paddingBottom: 60 },
-  flowBar:          { flexDirection: 'row', backgroundColor: c.card, borderBottomWidth: 0.5, borderBottomColor: c.borderSubtle },
-  flowBtn:          { flex: 1, paddingVertical: 13, alignItems: 'center' },
-  flowBtnActive:    { borderBottomWidth: 2, borderBottomColor: c.gold },
-  flowLabel:        { fontSize: TYPE.sm, fontFamily: FONT.medium, color: c.textMuted },
-  flowLabelActive:  { color: c.gold },
-  pageTitle:        { fontSize: TYPE.xl, fontFamily: FONT.bold, color: c.text, marginBottom: 6 },
-  pageHint:         { fontSize: TYPE.sm, color: c.textMuted, lineHeight: 18, marginBottom: 20 },
-  sectionTitle:     { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, marginBottom: 10 },
-  inputLabel:       { fontSize: TYPE.sm, color: c.textMuted, marginBottom: 4, fontFamily: FONT.medium },
-  input:            { backgroundColor: c.card, color: c.text, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, paddingHorizontal: 12, paddingVertical: 10, fontFamily: FONT.regular, fontSize: TYPE.base, marginBottom: 16 },
-  // Browse
-  vertGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  vertTile:         { width: '30%', backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 10, alignItems: 'center' },
-  vertEmoji:        { fontSize: 20, marginBottom: 4 },
-  vertLabel:        { fontSize: TYPE.xs, fontFamily: FONT.medium, color: c.textMuted, textAlign: 'center' },
-  pitchCard:        { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 3, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 16, marginBottom: 16 },
-  pitchHeadline:    { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 12, lineHeight: 20 },
-  pitchStat:        { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  pitchStatText:    { fontSize: TYPE.sm, color: c.textMuted, flex: 1, lineHeight: 18 },
-  roiBox:           { backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 10, marginTop: 12 },
-  roiLabel:         { fontSize: TYPE.xs, color: c.gold, fontFamily: FONT.semiBold, marginBottom: 2 },
-  roiText:          { fontSize: TYPE.sm, color: c.text, lineHeight: 18 },
-  tierCard:         { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 3, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, marginBottom: 10 },
-  tierHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  tierName:         { fontSize: TYPE.md, fontFamily: FONT.bold, marginBottom: 2 },
-  tierDesc:         { fontSize: TYPE.xs, color: c.textMuted, maxWidth: '75%', lineHeight: 16 },
-  tierPrice:        { fontSize: TYPE.xl, fontFamily: FONT.bold, color: c.text },
-  tierPriceSub:     { fontSize: TYPE.sm, color: c.textMuted },
-  tierMeta:         { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  tierMetaItem:     { fontSize: TYPE.xs, color: c.textMuted },
-  ctaBtn:           { backgroundColor: c.gold, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
-  ctaBtnText:       { fontSize: TYPE.md, fontFamily: FONT.bold, color: c.navy },
-  // Activate
-  vertRecap:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.md, padding: 12, marginBottom: 20, gap: 10 },
-  vertRecapEmoji:   { fontSize: 22 },
-  vertRecapLabel:   { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text },
-  vertRecapHint:    { fontSize: TYPE.xs, color: c.textMuted },
-  trialPerks:       { backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, marginBottom: 20 },
-  perkRow:          { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  perkText:         { fontSize: TYPE.sm, color: c.text, lineHeight: 18 },
-  activateBtn:      { backgroundColor: c.gold, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', marginBottom: 12 },
-  activateBtnText:  { fontSize: TYPE.md, fontFamily: FONT.bold, color: c.navy },
-  legalNote:        { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 16, textAlign: 'center', paddingHorizontal: 8 },
-  // Status
-  heroCard:         { backgroundColor: c.card, borderRadius: RADIUS.lg, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 20, marginBottom: 16, alignItems: 'center' },
-  heroTitle:        { fontSize: TYPE.xl, fontFamily: FONT.bold, color: c.text, marginBottom: 4, textAlign: 'center' },
-  heroSub:          { fontSize: TYPE.base, color: c.textMuted, marginBottom: 12 },
-  trialBadge:       { backgroundColor: c.warnBg, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
-  trialBadgeText:   { fontSize: TYPE.sm, color: c.warn, fontFamily: FONT.semiBold },
-  statsRow:         { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  stat:             { flex: 1, backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 12, alignItems: 'center' },
-  statVal:          { fontSize: TYPE.xl, fontFamily: FONT.bold, color: c.text, marginBottom: 2 },
-  statLabel:        { fontSize: TYPE.xs, color: c.textMuted },
-  progressTrack:    { height: 6, backgroundColor: c.bgElevated, borderRadius: 3, overflow: 'hidden', marginBottom: 4 },
-  progressFill:     { height: 6, backgroundColor: c.gold, borderRadius: 3 },
-  progressLabel:    { fontSize: TYPE.xs, color: c.textMuted, marginBottom: 12 },
-  checkRow:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: c.borderSubtle, gap: 10 },
-  checkRowDone:     { opacity: 0.6 },
-  checkIcon:        { fontSize: 16, width: 24 },
-  checkLabel:       { fontSize: TYPE.base, fontFamily: FONT.medium, color: c.text },
-  checkRequired:    { fontSize: TYPE.xs, color: c.emergency, marginTop: 1 },
-  actionGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  actionBtn:        { width: '47%', backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, alignItems: 'center' },
-  actionEmoji:      { fontSize: 24, marginBottom: 6 },
-  actionLabel:      { fontSize: TYPE.xs, fontFamily: FONT.medium, color: c.text, textAlign: 'center' },
-  upgradeCard:    { backgroundColor: c.bgElevated || COLORS.bgCard, borderRadius: RADIUS.md, padding: 16, marginTop: 12, borderWidth: 0.5, borderColor: c.borderSubtle },
-  upgradeTitle:   { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 4 },
-  upgradeBody:    { fontSize: TYPE.sm, color: c.textMuted, lineHeight: 18 },
-  upgradeBtn:     { flex: 1, paddingVertical: 10, borderRadius: RADIUS.sm, alignItems: 'center' },
-  upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: COLORS.white },
+const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
+  card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: colors.border },
+  h1: { fontSize: 20, ...FONTS.black, color: colors.textBrand, marginBottom: 4 },
+  title: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary },
+  line: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 4 },
+  label: { fontSize: 13, ...FONTS.semi, color: colors.textSecond, marginTop: 12, marginBottom: 4 },
+  field: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, minHeight: 44, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  chipsPadded: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginHorizontal: 12 },
+  chip: { minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.bgCard },
+  chipText: { fontSize: 13, ...FONTS.semi, color: colors.textSecond },
+  primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 14, paddingHorizontal: 12 },
+  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 10, backgroundColor: colors.bgCard },
+  ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
+  badge: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.pill, fontSize: 13, ...FONTS.bold, overflow: 'hidden' },
+  statsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  stat: { flex: 1, backgroundColor: colors.bgSubtle, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
+  statVal: { fontSize: 18, ...FONTS.black, color: colors.textBrand },
+  statLabel: { fontSize: 12, color: colors.textSecond, textAlign: 'center' },
+  step: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 8 },
+  stepIcon: { fontSize: 16 },
 });
+
 export default React.memo(FirmAcquisitionScreen);

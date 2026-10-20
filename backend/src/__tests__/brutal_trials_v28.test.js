@@ -180,15 +180,25 @@ describe('9. docket.js — Deadline Calculation Engine', () => {
 describe('10. attorney/verification.js — Bar Verification', () => {
   test('10-01: verification.js has bar submit + admin approve', async () => {
     const fs = await import('fs');
+    // Section G: admins decide bar numbers in the admin review queue (POST /api/admin/queue/bar/:userId,
+    // audit-logged); attorney/verification.js only takes the submission.
     const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js', 'utf8');
-    expect(src).toContain('Bar verification submit');
-    expect(src).toContain('admin approve');
+    expect(src).toContain("router.post('/verify-bar'");
+    expect(src).not.toContain("router.post('/approve-verification'");
+    const q = fs.readFileSync(__REPO + '/backend/src/routes/admin/queue.js', 'utf8');
+    expect(q).toContain("router.post('/bar/:userId'");
+    expect(fs.readFileSync(__REPO + '/backend/src/services/adminQueues.js', 'utf8')).toContain('ADMIN_BAR_APPROVED');
   });
   test('10-02: verification.js has 2 handlers', async () => {
     const fs = await import('fs');
+    // Section G: admins decide bar numbers in the admin review queue (POST /api/admin/queue/bar/:userId,
+    // audit-logged); attorney/verification.js only takes the submission.
     const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js', 'utf8');
-    const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
-    expect(h.length).toBeGreaterThanOrEqual(2);
+    expect(src).toContain("router.post('/verify-bar'");
+    expect(src).not.toContain("router.post('/approve-verification'");
+    const q = fs.readFileSync(__REPO + '/backend/src/routes/admin/queue.js', 'utf8');
+    expect(q).toContain("router.post('/bar/:userId'");
+    expect(fs.readFileSync(__REPO + '/backend/src/services/adminQueues.js', 'utf8')).toContain('ADMIN_BAR_APPROVED');
   });
 });
 
@@ -350,7 +360,7 @@ describe('13. i18n Final Sweep — 211 remaining keys', () => {
     expect(en['bail_directions']).toBe('🗺  Directions');
     expect(en['booking_done']).toBe('Done');
     expect(en['juv_cta_ai']).toBe('Ask AI About Your Situation');
-    expect(en['atty_office_name']).toBe('Office Name');
+    expect(en['ad_office_id']).toBe('Office ID');   // section G: the dashboard's office field
     expect(en['help_now_loading_search']).toContain('bail bondsmen and attorneys');
   });
 });

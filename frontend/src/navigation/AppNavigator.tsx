@@ -197,7 +197,7 @@ function MoreNavigator() {
           <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: t('x_nav_mbe_progress'), headerShown: false }} />
           <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: t('x_nav_study_schedule'), headerShown: false }} />
           <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: t('x_nav_quiz_results'), headerShown: false }} />
-      <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: t('x_nav_bar_verification') }} />
+      <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: t('adm_title') }} />
       <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: t('x_nav_advocacy_stats') }} />
       {/* RecoveryAgent screen suspended — pending license verification */}
           <MoreStack.Screen name="BondsmanDashboard"     component={BondsmanDashboardScreen}     options={{ title: t('x_nav_lead_dashboard') }} />

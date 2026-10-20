@@ -90,9 +90,15 @@ describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
   });
   test('S1-05: billing/bondsman.js verified-badge/status returns subscription details', async () => {
     const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain("'/bondsman/verified-badge/status'");
-    expect(src).toContain("'/bondsman/verified-badge/cancel'");
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
   test('S1-06: cases.js — revoke a family follower', async () => {
     const fs = await import('fs');
@@ -212,10 +218,13 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   test('S6-07: AttorneyDashboardScreen — templates+CLE APIs, Tab navigation', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('/attorney/templates?status=approved');
-    expect(src).toContain('/attorney/cle');
-    expect(src).toContain('/attorney/cases');
-    expect(src).toContain('useMemo');
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
 });
 

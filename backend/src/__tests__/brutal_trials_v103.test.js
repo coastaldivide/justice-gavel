@@ -134,18 +134,23 @@ describe('PSH. push.js — Push Token + Notifications', () => {
 describe('PAY. pay.js — Stripe Payment Link System', () => {
   test('PAY-01: POST /create — create Stripe payment link for family', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("router.post('/create'");
-    expect(src).toContain('create');
-    expect(src).toContain('stripe');
-    // Emergency: family receives $20 QuickConnect payment link by SMS
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('PAY-02: POST /checkout — initiate Stripe checkout session', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js','utf8');
-    expect(src).toContain("router.post('/checkout'");
-    expect(src).toContain('checkout');
-    // Stripe hosted checkout: family completes payment on Stripe-hosted page
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
 });
 
@@ -205,12 +210,12 @@ describe('APP. app.js — Complete 61-Route Mount Manifest', () => {
   });
   test('APP-02: key routes present — matters, firms, time, push, pay, match', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');
-    for (const route of ['/api/matters','/api/firms','/api/time','/api/push',
-                          '/api/pay','/api/match','/api/alerts',
-                          '/api/billing','/api/webhooks/outbound']) {
+    const src = fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8');
+    for (const route of ['/api/matters', '/api/firms', '/api/time', '/api/push',
+                         '/api/match', '/api/alerts', '/api/billing', '/api/webhooks/outbound']) {
       expect(src).toContain(route);
     }
+    expect(src).not.toMatch(/['"]\/api\/pay['"]/);   // section G: routes/pay.js removed
   });
   test('APP-03: /api/jobs route — background job management', async () => {
     const fs = await import('fs');

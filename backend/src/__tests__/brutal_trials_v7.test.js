@@ -1254,10 +1254,10 @@ describe('16. offlineCache — TTL Constants & Cache Pairs', () => {
 describe('17. billing/_shared — getOrCreateStripeCustomer', () => {
 
   test('17-01: getOrCreateStripeCustomer checks existing customer first', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/_shared.js', 'utf8');
     expect(src).toContain('customers.list');
-    expect(src).toContain('existing.data.length');
+    expect(src).toContain('existing?.data?.length');
   });
 
   test('17-02: getOrCreateStripeCustomer creates customer if not found', async () => {
@@ -1268,9 +1268,11 @@ describe('17. billing/_shared — getOrCreateStripeCustomer', () => {
   });
 
   test('17-03: getOrCreateStripeCustomer returns null when Stripe not configured', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/_shared.js', 'utf8');
-    expect(src).toContain('if (!stripe) return null');
+    // stripeClient() is null without STRIPE_SECRET_KEY; getOrCreateStripeCustomer then returns null
+    expect(src).toContain('if (!key) return null');
+    expect(src).toContain('if (!s) return null');
   });
 
   test('17-04: getOrCreateStripeCustomer logs errors and returns null on failure', async () => {

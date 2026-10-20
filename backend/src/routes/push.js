@@ -3,7 +3,8 @@ import { err400, truncateStr } from '../utils/routeHelpers.js';
 import { sanitizeStr } from '../utils/sanitize.js';
 import { isValidTimeZone } from '../utils/timezone.js';
 import { rememberTimeZone, rescheduleUserCourtReminders } from '../services/courtReminders.js';
-import { normalizeLang, rememberLanguage, resolveLang, msg } from '../i18n/index.js';
+import { normalizeLang, rememberLanguage, resolveLang, msg, userLang } from '../i18n/index.js';
+import { TIERS, usd } from './billing/plans.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
@@ -100,33 +101,37 @@ router.get('/tip', (req, res) =>{
 // ── Post-purchase retention trigger ───────────────────────────────────────────
 // Called after Quick Connect purchase — writes to scheduled_pushes for delivery
 router.post('/retention/post-purchase', authRequired, async (req, res) => {
-  const { purchase_type = 'quickconnect' } = req.body;
+  const purchase_type = req.body?.purchase_type === 'emergency_connection' ? 'emergency_connection' : 'quickconnect';
+  const db0 = await getDb();
+  const lang = await userLang(db0, req.user.id).catch(() => resolveLang(req));
+  // Price and wording come from the real plan (routes/billing/plans.js): Legal Pro
+  // includes arrest monitors, which are checked against new public records nightly.
   const messages = {
     quickconnect: {
-      title: 'Want to know if this happens again?',
-      body:  'Pro plan monitors arrest records 24/7 and alerts you instantly. $14.99/mo.',
+      title: msg(lang, 'push.retention.monitor_title'),
+      body:  msg(lang, 'push.retention.monitor_body', { price: usd(TIERS.legal_pro.monthly_cents) }),
       data:  JSON.stringify({ screen: 'ConsumerSubscription' }),
       delay_hours: 48,
     },
     emergency_connection: {
-      title: 'You handled that well.',
-      body:  "Save your lawyer as a contact for next time — it's free in your account.",
+      title: msg(lang, 'push.retention.saved_title'),
+      body:  msg(lang, 'push.retention.saved_body'),
       data:  JSON.stringify({ screen: 'CasesTab' }),
       delay_hours: 24,
     },
   };
-  const msg = messages[purchase_type] || messages.quickconnect;
+  const note = messages[purchase_type];
 
   try {
     const db = await getDb();
     // Calculate delivery time
-    const deliverAt = new Date(Date.now() + msg.delay_hours * 3600 * 1000).toISOString();
+    const deliverAt = new Date(Date.now() + note.delay_hours * 3600 * 1000).toISOString();
     await db.run(
       `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type)
        SELECT ?, push_token, ?, ?, ?, ?, 'engagement' FROM users WHERE id=? AND push_token IS NOT NULL`,
-      [req.user.id, msg.title, msg.body, msg.data, deliverAt, req.user.id]
+      [req.user.id, note.title, note.body, note.data, deliverAt, req.user.id]
     ).catch(logIgnored('routes/push')); // graceful — table may not exist yet in demo
-    return res.json({ scheduled: true, deliver_at: deliverAt, message: msg });
+    return res.json({ scheduled: true, deliver_at: deliverAt, message: note });
   } catch {
     return res.json({ scheduled: false, error: 'Could not schedule push. Please try again.' });
   }

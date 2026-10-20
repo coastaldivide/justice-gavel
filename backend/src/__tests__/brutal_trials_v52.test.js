@@ -188,8 +188,14 @@ describe('TRAN. Phase Transitions — All Documented', () => {
   test('TRAN-03: FirmAcquisitionScreen Flow = browse|activate|status', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain("type Flow = 'browse' | 'activate' | 'status'");
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
     expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
   test('TRAN-04: TenantRightsScreen Situation = eviction_notice|lockout|utility_shutoff+', async () => {
     const fs = await import('fs');

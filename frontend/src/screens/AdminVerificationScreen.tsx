@@ -1,220 +1,185 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
 /**
- * AdminVerificationScreen -- Bar Verification Approval Queue
+ * AdminVerificationScreen — the staff review queues (admin role only; the server
+ * checks the role on every call: routes/admin/queue.js). Every decision is audit-logged.
  *
- * Admin-only screen. Accessed via Settings when user has is_admin flag.
- * Lists attorneys who have submitted their bar number and are pending
- * verification (bar_verified=0 with a bar_number set).
- *
- * Admin approves → bar_verified=1 appears in search results immediately.
- * Admin rejects → bar_number cleared, attorney notified (future: push).
- *
- * Works offline: shows cached pending list from last load.
+ *   Bar numbers      attorneys' submissions: look the number up on the state bar's site
+ *                    (link), then approve, or reject with a reason the attorney sees
+ *   Listing claims   "this listing is mine": approval links the claimant's profile
+ *   Listing reports  "something is wrong with this listing": resolved / dismissed
+ *   Reviews          held or reported reviews: publish / hide
+ * Directory rows are never edited from here.
  */
-import { getItem as getSecureItem } from '../utils/secureStorage';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, LayoutAnimation } from 'react-native';
+import { ActivityIndicator, Linking, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-import { t, useLang } from '../i18n';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
+import { useStoredUser, isAdminUser } from '../hooks/useStoredUser';
+import { useConfirm } from '../hooks/useConfirm';
+import { stateName } from '../utils/userState';
+import { FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
 
-interface PendingAtty {
-  user_id:      number;
-  name:         string;
-  email:        string;
-  bar_number:   string;
-  office_id:    string | null;
-  submitted_at: string | null;
-  provider_id:  number | null;
-}
+type Q = 'bar' | 'claims' | 'reports' | 'reviews';
+type Bar = { user_id: number; display_name: string | null; email: string; bar_number: string; bar_state: string; bar_submitted_at: string | null; lookup_url: string | null };
+type Claim = { id: number; table_name: string; listing_name: string | null; listing_state: string | null; claimant_name: string | null; claimant_email: string; license_number: string | null; license_state: string | null; listing_bar_number: string | null; listing_license: string | null; note: string | null; created_at: string };
+type Report = { id: number; table_name: string; listing_name: string | null; listing_city: string | null; listing_state: string | null; reason: string; details: string | null; created_at: string };
+type Review = { id: number; entity_type: string; listing_name: string | null; rating: number; comment: string | null; status: string; open_reports: number; report_reasons: string | null; created_at: string };
+const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
-  const { confirm } = useConfirm();
-  const { showToast } = useToast();
-
-  // Mounted guard -- prevents setState after unmount (crash in strict mode)
-  const mountedRef = React.useRef(true);
-  // Admin-only gate
-  const [isAuthorized, setIsAuthorized] = React.useState<boolean>(false);
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    getSecureItem('user').then(raw => {
-      if (raw) {
-        const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
-        if (u?.is_admin || u?.role === 'admin') { setIsAuthorized(true); return; }
-      }
-      navigation.navigate('HomeTab' as never);
-    }).catch(() => { (navigation as any).replace('HomeTab'); });
-  }, [navigation]);
-  // Note: isAuthorized gate renders nothing until auth is checked
-
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
-
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
-  const [pending,     setPending]   = useState<PendingAtty[]>([]);
-  const [loading,     setLoading]   = useState(true);
-  const [refreshing,  setRefreshing]= useState(false);
-  const [acting,      setActing]    = useState<number | null>(null);
-  const [error,       setError]     = useState('');
+  const s = makeStyles(colors);
+  const { confirm } = useConfirm();
+  const { hasSession, recheck } = useHasSession();
+  const { user, ready } = useStoredUser();
+  const [q, setQ] = useState<Q>('bar');
+  const [counts, setCounts] = useState<Record<Q, number> | null>(null);
+  const [rows, setRows] = useState<unknown[] | null>(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const allowed = isAdminUser(user);
 
-  const load = useCallback(async () => {
-    setError('');
+  const load = useCallback(async (which: Q) => {
+    setError(''); setRows(null);
     try {
-      const res = await api.get('/attorney/pending-verification');
-      setPending(res.data?.pending || []);
-    } catch (e: any) {
-      setError(apiErrorMessage(e, t('x_admin_verification_could_not_load_pending')));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      const [sum, list] = await Promise.all([api.get('/admin/queue/summary'), api.get(`/admin/queue/${which}`)]);
+      setCounts(sum.data as Record<Q, number>);
+      const key = which === 'bar' ? 'pending' : which;
+      setRows((list.data?.[key] || []) as unknown[]);
+    } catch (e) { setError(apiErrorMessage(e, t('adm_load_error'))); setRows([]); }
+    finally { setRefreshing(false); }
   }, []);
+  useEffect(() => { if (hasSession && allowed) load(q); }, [hasSession, allowed, q, load]);
 
-  useEffect(() => { load(); }, [load]);
+  const decide = (key: string, path: string, body: object, title: string) => confirm(title, t('adm_confirm_body'), { confirmLabel: t('adm_confirm_cta') }).then(async ok => {
+    if (!ok) return;
+    setBusy(key); setNotice(null);
+    try { await api.post(path, body); setNotice({ text: t('adm_done'), tone: 'ok' }); load(q); }
+    catch (e) { setNotice({ text: apiErrorMessage(e, t('adm_failed')), tone: 'error' }); }
+    finally { setBusy(null); }
+  });
 
-  const approve = async (userId: number, name: string) => {
-confirm(t('x_admin_verification_approve', { name }), t('x_admin_verification_their_bar_number_will'),
-      { confirmLabel: t('x_admin_verification_approve_2') }).then(async ok => { if (!ok) return;
-      setActing(userId);
-            try {
-              await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
-              setPending(p => p.filter(a => a.user_id !== userId));
-              showToast(t('x_admin_verification_now_bar_verified', { name }), 'success');
-            } catch (e: any) {
-              showToast(apiErrorMessage(e, t('x_admin_verification_could_not_approve_application')), 'info');
-            } finally { setActing(null); }
-    })
-  };
+  if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('adm_title')} body={t('adm_signin_body')} onSignedIn={recheck} /></View>;
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (!allowed) return <View testID="admin-not-allowed" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}><Text maxFontSizeMultiplier={1.4} style={[s.title, { textAlign: 'center' }]}>{t('adm_forbidden')}</Text></View>;
 
-  const reject = async (userId: number, name: string) => {
-confirm(t('x_admin_verification_reject', { name }),t('x_admin_verification_their_submission_will_be'),
-      { confirmLabel:t('x_admin_verification_reject_2'), destructive:true }).then(async ok=>{ if(!ok) return;
-      setActing(userId);
-            try {
-              await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
-              setPending(p => p.filter(a => a.user_id !== userId));
-            } catch (e: any) {
-              showToast(apiErrorMessage(e, t('x_admin_verification_could_not_reject_application')), 'info');
-            } finally { setActing(null); }
-    })
-  };
-
-  if (!isAuthorized) return <></>;
+  const tabs: Q[] = ['bar', 'claims', 'reports', 'reviews'];
   return (
-    <ScrollView
-      testID="admin-verification-screen"
-      style={[styles.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={styles.scroll}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.steel} />}
-    >
-      <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_admin_verification_bar_verification_queue')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
-          {t('x_admin_verification_attorneys_awaiting_verification_pend', { length: pending.length })}
-        </Text>
-      </View>
+    <View testID="admin-verification-screen" style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabBar}>
+        {tabs.map(x => (
+          <TouchableOpacity key={x} accessibilityRole="tab" aria-selected={q === x} accessibilityState={{ selected: q === x }} testID={`adm-tab-${x}`}
+            style={[s.tab, q === x && { borderBottomColor: colors.navy }]} onPress={() => setQ(x)}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.tabText, q === x && { color: colors.textPrimary }]}>{t(`adm_tab_${x}`)}{counts ? ` (${counts[x]})` : ''}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(q); }} />}>
+        {!!notice && <View testID="adm-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
+        {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
+        {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />}
+        {rows?.length === 0 && !error && <View style={s.card} testID="adm-empty"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_empty')}</Text></View>}
 
-      {!!error && (
-        <View style={[styles.errorBox, { borderColor: colors.emergency }]}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12 }}>⚠ {error}</Text>
-        </View>
-      )}
-
-      {loading && !refreshing && (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colors.steel} />
-      )}
-
-      {!loading && pending.length === 0 && (
-        <View style={[styles.empty, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-          <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_admin_verification_no_pending_verifications')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textSecond }]}>
-            {t('x_admin_verification_all_bar_number_submissions')}
-          </Text>
-        </View>
-      )}
-
-      {pending.map((atty) => (
-        <View
-          key={atty.user_id}
-          style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-        >
-          <View style={styles.cardTop}>
-            <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} numberOfLines={1} ellipsizeMode="tail" style={[styles.attyName, { color: colors.textPrimary }]}>{atty.name}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.attyEmail, { color: colors.textMuted }]}>{atty.email}</Text>
-            </View>
-            <View style={[styles.barBadge, { backgroundColor: colors.bgElevated }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.barNum, { color: colors.info }]}>{atty.bar_number}</Text>
+        {q === 'bar' && (rows as Bar[] | null)?.map(b => (
+          <View key={b.user_id} style={s.card} testID="adm-bar">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{b.display_name || b.email}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{b.email}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_bar_line', { bar: b.bar_number, state: stateName(b.bar_state) })} · {fmtDay(b.bar_submitted_at)}</Text>
+            {!!b.lookup_url && (
+              <TouchableOpacity accessibilityRole="link" style={s.ghostBtn} onPress={() => Linking.openURL(b.lookup_url as string).catch(() => {})}>
+                <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('adm_bar_lookup', { state: stateName(b.bar_state) })} ↗</Text>
+              </TouchableOpacity>
+            )}
+            <TextInput style={s.field} value={reasons[b.user_id] || ''} onChangeText={v => setReasons(r => ({ ...r, [b.user_id]: v }))} maxLength={500}
+              placeholder={t('adm_reject_reason')} placeholderTextColor={colors.placeholder} accessibilityLabel={t('adm_reject_reason')} />
+            <View style={s.row}>
+              <TouchableOpacity accessibilityRole="button" testID="adm-bar-approve" style={[s.okBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null}
+                onPress={() => decide(`b${b.user_id}`, `/admin/queue/bar/${b.user_id}`, { approved: true }, t('adm_bar_approve_title', { name: b.display_name || b.email }))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_approve')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" testID="adm-bar-reject" style={[s.noBtn, (busy !== null || !(reasons[b.user_id] || '').trim()) && { opacity: 0.5 }]} disabled={busy !== null || !(reasons[b.user_id] || '').trim()}
+                onPress={() => decide(`b${b.user_id}`, `/admin/queue/bar/${b.user_id}`, { approved: false, reason: (reasons[b.user_id] || '').trim() }, t('adm_bar_reject_title', { name: b.display_name || b.email }))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_reject')}</Text>
+              </TouchableOpacity>
             </View>
           </View>
+        ))}
 
-          {atty.office_id && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.office, { color: colors.textSecond }]}>
-              {t('x_admin_verification_office', { office_id: atty.office_id })}
-            </Text>
-          )}
-          <View style={styles.actions}>
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          activeOpacity={0.6}
-              style={[styles.approveBtn, { opacity: acting === atty.user_id ? 0.6 : 1 }]}
-              onPress={() => approve(atty.user_id, atty.name)}
-              disabled={acting === atty.user_id}
-              accessibilityLabel={t('x_admin_verification_approve_3', { name: atty.name })}
-            >
-              {acting === atty.user_id
-                ? <ActivityIndicator color={colors.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.approveBtnText}>{t('x_admin_verification_approve_4')}</Text>
-              }
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              style={[styles.rejectBtn, { borderColor: colors.emergency, opacity: acting === atty.user_id ? 0.6 : 1 }]}
-              onPress={() => reject(atty.user_id, atty.name)}
-              disabled={acting === atty.user_id}
-              accessibilityLabel={t('x_admin_verification_reject_3', { name: atty.name })}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.rejectBtnText}>{t('x_admin_verification_reject_4')}</Text>
-            </TouchableOpacity>
+        {q === 'claims' && (rows as Claim[] | null)?.map(c => (
+          <View key={c.id} style={s.card} testID="adm-claim">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{c.listing_name}{c.listing_state ? ` · ${stateName(c.listing_state)}` : ''}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t(c.table_name === 'lawyers' ? 'adm_claim_lawyer' : 'adm_claim_agent')} · {c.claimant_name || ''} ({c.claimant_email})</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_claim_license', { given: [c.license_number, c.license_state].filter(Boolean).join(' / ') || '—', listed: (c.listing_bar_number || c.listing_license) || '—' })}</Text>
+            {!!c.note && <Text maxFontSizeMultiplier={1.4} style={s.line}>“{c.note}”</Text>}
+            <View style={s.row}>
+              <TouchableOpacity accessibilityRole="button" style={[s.okBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`c${c.id}`, `/admin/queue/claims/${c.id}`, { decision: 'approve' }, t('adm_claim_approve_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_approve')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" style={[s.noBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`c${c.id}`, `/admin/queue/claims/${c.id}`, { decision: 'reject' }, t('adm_claim_reject_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_reject')}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      ))}
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        ))}
+
+        {q === 'reports' && (rows as Report[] | null)?.map(r => (
+          <View key={r.id} style={s.card} testID="adm-report">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{r.listing_name}{r.listing_city ? ` · ${r.listing_city}` : ''}{r.listing_state ? `, ${r.listing_state}` : ''}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{r.reason} · {fmtDay(r.created_at)}</Text>
+            {!!r.details && <Text maxFontSizeMultiplier={1.4} style={s.line}>“{r.details}”</Text>}
+            <View style={s.row}>
+              <TouchableOpacity accessibilityRole="button" style={[s.okBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`r${r.id}`, `/admin/queue/reports/${r.id}`, { status: 'resolved' }, t('adm_report_resolve_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_resolved')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" style={[s.noBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`r${r.id}`, `/admin/queue/reports/${r.id}`, { status: 'dismissed' }, t('adm_report_dismiss_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_dismiss')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+
+        {q === 'reviews' && (rows as Review[] | null)?.map(r => (
+          <View key={r.id} style={s.card} testID="adm-review">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{r.listing_name} · {'★'.repeat(Math.max(0, Math.min(5, r.rating)))}</Text>
+            {!!r.comment && <Text maxFontSizeMultiplier={1.4} style={s.line}>“{r.comment}”</Text>}
+            <Text maxFontSizeMultiplier={1.3} style={s.line}>{fmtDay(r.created_at)}{r.open_reports ? ` · ${t('adm_reports_n', { n: r.open_reports })}` : ''}</Text>
+            <View style={s.row}>
+              <TouchableOpacity accessibilityRole="button" style={[s.okBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`v${r.id}`, `/admin/queue/reviews/${r.id}`, { action: 'publish' }, t('adm_review_publish_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_publish')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" style={[s.noBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => decide(`v${r.id}`, `/admin/queue/reviews/${r.id}`, { action: 'hide' }, t('adm_review_hide_title'))}>
+                <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('adm_hide')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen:        { flex: 1 },
-  scroll:        { padding: 16 },
-  header:        { borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, alignItems: 'center' },
-  headerTitle:   { color: COLORS.bgCard, fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
-  headerSub:     { color: colors.steel, fontSize: 12 },
-  errorBox:      { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 12, backgroundColor: colors.emergencyBg },
-  empty:         { borderRadius: RADIUS.lg, borderWidth: 1, padding: 32, alignItems: 'center', marginTop: 8 },
-  emptyIcon:     { fontSize: 40, marginBottom: 12 },
-  emptyTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
-  emptySub:      { fontSize: 12, lineHeight: 20, textAlign: 'center' },
-  card:          { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, marginBottom: 10 },
-  cardTop:       { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
-  attyName:      { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 2 },
-  attyEmail:     { fontSize: 12 },
-  barBadge:      { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 5 },
-  barNum:        { fontSize: 12, lineHeight: 20, fontWeight: '800', fontFamily: 'monospace' },
-  office:        { fontSize: 12, marginBottom: 10 },
-  actions:       { flexDirection: 'row', gap: 8, marginTop: 4 },
-  approveBtn:    { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center', backgroundColor: colors.legal },
-  approveBtnText:{ color: colors.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  rejectBtn:     { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center', borderWidth: 1, backgroundColor: 'transparent' },
-  rejectBtnText: { color: colors.textSecond, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabBar: { flexGrow: 0, backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tab: { minHeight: 46, paddingHorizontal: 14, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabText: { fontSize: 14, ...FONTS.bold, color: colors.textMuted },
+  notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
+  card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 10, borderRadius: RADIUS.lg, padding: 14, borderWidth: 1, borderColor: colors.border },
+  title: { fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
+  line: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 2 },
+  row: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+  okBtn: { minHeight: 44, paddingHorizontal: 16, borderRadius: RADIUS.md, backgroundColor: colors.legalDark, justifyContent: 'center' },
+  noBtn: { minHeight: 44, paddingHorizontal: 16, borderRadius: RADIUS.md, backgroundColor: colors.emergencyDark, justifyContent: 'center' },
+  btnText: { color: colors.textOnNavy, fontSize: 14, ...FONTS.heavy },
+  ghostBtn: { minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 8 },
+  ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
+  field: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, minHeight: 44, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14, marginTop: 10 },
 });
+
 export default React.memo(AdminVerificationScreen);

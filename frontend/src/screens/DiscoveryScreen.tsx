@@ -575,15 +575,6 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: colors.textPrimary }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>{t('x_discovery_19_99_per_document')}</Text>
             </Text>
-            <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              accessibilityLabel={t('x_discovery_upgrade_discovery_pro')}
-              onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Subscription' })}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.proLink, { color: COLORS.steel }]}>
-                {t('x_discovery_discovery_pro_149_99')}
-              </Text>
-            </TouchableOpacity>
           </View>
         )}
       </View>

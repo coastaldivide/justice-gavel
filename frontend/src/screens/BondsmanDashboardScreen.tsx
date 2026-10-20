@@ -1,749 +1,402 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
-
-import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 /**
- * BondsmanDashboardScreen -- lead dashboard for bail bondsmen (leads come from
- * the public arrest feeds configured server-side via ARREST_FEED_URLS)
+ * BondsmanDashboardScreen — the bail agent's workspace.
  *
- * Shows incoming arrest leads sorted by bail amount.
- * One-tap accept charges the bondsman's card and reveals full contact info.
- * Lead fee is a flat fee per accepted lead (same for every bail amount); the
- * amount comes from the server (backend/src/routes/billing/leadFee.js).
+ *   Leads     recent arrests with bail set and no attorney (GET /billing/leads): initials,
+ *             county, bail and charges only. "Buy" pays the flat lead fee (services/purchase.ts:
+ *             payment sheet / Stripe Checkout, then POST /billing/leads/:id/confirm, which the
+ *             server checks with Stripe) and reveals the full record — to this agent only.
+ *   My leads  records the agent bought (GET /api/bondsman/leads) with a status and notes.
+ *   Clients   the agent's check-in clients (CheckInManager).
+ *   Profile   company, license, the states and counties the agent works in.
+ * The counts at the top are real counts from GET /api/bondsman/dashboard (no estimates).
  */
-
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { ScreenProps } from '../types/navigation';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-
 import { api, apiErrorMessage } from '../services/api';
-import {  useTheme, COLORS } from '../constants/theme';
-import { ScreenCapture } from '../utils/webCompat';
-import * as secureStorage from '../utils/secureStorage';
-import { useAuthGate } from '../components/AuthGate';
-import { leadFeeLabel } from '../constants/leadFee';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { SampleRecordBadge } from '../components/SampleRecordBadge';
-import { t, useLang } from '../i18n';
+import { StatePicker } from '../components/StatePicker';
+import { ScreenCapture } from '../utils/webCompat';
+import { useConfirm } from '../hooks/useConfirm';
+import { usePurchase, takePendingCheckout } from '../services/purchase';
+import { usd } from '../services/plans';
+import { leadFeeLabel } from '../constants/leadFee';
+import { FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
+import { stateName } from '../utils/userState';
 
-// Lead fee: FLAT, from the server (lead.lead_fee_display) — see constants/leadFee.ts.
+type Tab = 'leads' | 'mine' | 'clients' | 'profile';
+type Lead = { id: number; name: string; booking_date: string | null; charges: string | null; bail_amount: number; county: string | null; state: string | null; purchased: boolean; is_sample?: boolean; lead_fee_cents: number; lead_fee_display: string };
+type MyLead = { id: number; arrest_id: number; name: string; charges: string | null; bail_amount: number; county: string | null; state: string | null; jail_location: string | null; case_number: string | null; court_date: string | null; booking_date: string | null; crm_status: CrmStatus; crm_notes: string | null; created_at: string; lead_fee_cents: number };
+type CrmStatus = 'new' | 'contacted' | 'bonded' | 'closed';
+type Dash = { leads_open_48h: number; leads_bought_30d: number; spent_30d_cents: number; leads_bought: number; clients_active: number; clients_total: number; pipeline: Record<CrmStatus, number> };
+type Profile = { company_name: string; license_number: string | null; license_state: string | null; states: string[]; counties: string[]; alert_counties: string[] | 'all' };
+const STATUSES: CrmStatus[] = ['new', 'contacted', 'bonded', 'closed'];
+const HOURS = [24, 48, 72, 168];
+const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+const money = (n: number) => `$${Math.round(n).toLocaleString(locale())}`;
 
-function bailTier(bailAmount: number): { label: string; color: string; bg: string } {
-  if (!bailAmount || bailAmount <= 0) return { label: t('x_bondsman_dashboard_bail_tbd'), color: COLORS.textMuted, bg: COLORS.bg };
-  if (bailAmount < 5000)   return { label: t('x_bondsman_dashboard_low_bail'),    color: COLORS.legalDark, bg: COLORS.legalBg };
-  if (bailAmount < 25000)  return { label: t('x_bondsman_dashboard_mid_bail'),    color: COLORS.warnDark, bg: COLORS.warnBg };
-  if (bailAmount < 100000) return { label: t('x_bondsman_dashboard_high_bail'),   color: COLORS.blue, bg: COLORS.bgSubtle };
-  return { label: t('x_bondsman_dashboard_premium'),     color: COLORS.emergencyDark, bg: COLORS.emergencyBg };
-}
-
-function timeAgo(dateStr: string): string {
-  if (!dateStr) return '';
-  const diff = Date.now() - (new Date(dateStr ?? 0).getTime() || Date.now());
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  if (h > 0) return t('x_bondsman_dashboard_h_ago', { h });
-  return t('x_bondsman_dashboard_m_ago', { m });
-}
-
-// ── Lead card ─────────────────────────────────────────────────────────────────
-function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
+function BondsmanDashboardScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
-  const { showToast } = useToast();
-  const [expanded, setExpanded] = useState(false);
-  const tier = bailTier(lead.bail_amount);
-  return (
-    <TouchableOpacity accessibilityRole="button" testID="lead-card"
-      style={[styles.card, lead.purchased && styles.cardPurchased]}
-      onPress={() => setExpanded(e => !e)}
-      activeOpacity={0.85}
-    >
-      {/* Top row */}
-      <View style={styles.cardTop}>
-        <View style={{ flex: 1 }}>
-          <SampleRecordBadge row={lead} />
-          <Text testID="lead-defendant-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.leadLocation}>
-            {lead.county ? t('x_bondsman_dashboard_county', { county: lead.county }) : ''}{lead.state ? `, ${lead.state}` : ''}
-          </Text>
-        </View>
-        <View style={styles.bailBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bailAmount}>
-            {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : t('x_bondsman_dashboard_tbd')}
-          </Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.bailLabel}>{t('x_bondsman_dashboard_bail')}</Text>
-        </View>
-      </View>
-
-      {/* Tier + timing badges */}
-      <View style={styles.badgeRow}>
-        <View style={[styles.badge, { backgroundColor: tier.bg }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: tier.color }]}>{tier.label}</Text>
-        </View>
-        <View style={styles.badge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.badgeText}>⏱ {timeAgo(lead.booking_date)}</Text>
-        </View>
-        {lead.purchased && (
-          <View style={[styles.badge, styles.purchasedBadge]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>{t('x_bondsman_dashboard_purchased')}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Charges */}
-      {lead.charges && (
-        <Text testID="lead-charge" maxFontSizeMultiplier={1.4} style={styles.charges} numberOfLines={expanded ? undefined : 1}>
-          📋 {lead.charges}
-        </Text>
-      )}
-
-      {/* Expanded: full details + accept */}
-      {expanded && (
-        <View testID="lead-detail-screen" style={styles.expandedSection}>
-          {lead.jail_location && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>🏛 {lead.jail_location}</Text>
-          )}
-          {lead.case_number && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>{t('x_bondsman_dashboard_case', { case_number: lead.case_number })}</Text>
-          )}
-          {lead.court_date && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>{t('x_bondsman_dashboard_court', { value: lead.court_date ? new Date(lead.court_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"}) : "" })}</Text>
-          )}
-
-          {lead.purchased ? (
-            // Already purchased -- full contact revealed
-            <View style={styles.revealedBlock}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>{t('x_bondsman_dashboard_contact_information_unlocked')}</Text>
-              {lead.phone && (
-                <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={t('x_bondsman_dashboard_call_lead', { phone: lead.phone })} onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast(t('action_failed'), 'error'))}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
-                </TouchableOpacity>
-              )}
-              <Text maxFontSizeMultiplier={1.4} style={styles.revealedName}>{lead.name}</Text>
-            </View>
-          ) : (
-            // Not purchased -- show accept button
-            <TouchableOpacity
-              accessibilityRole="button"
-              style={styles.acceptBtn}
-              testID="lead-accept-button" onPress={() => onAccept()}
-              activeOpacity={0.85}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnText}>
-                {t('x_bondsman_dashboard_accept_lead', { lead: leadFeeLabel(lead) })}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnSub}>
-                {t('x_bondsman_dashboard_reveals_full_name_contact')}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-      <Text maxFontSizeMultiplier={1.4} style={styles.expandHint}>
-        {expanded ? t('lawyers_less') : t('x_bondsman_dashboard_details_lead_fee', { lead: leadFeeLabel(lead) })}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-// ── Profile setup modal ───────────────────────────────────────────────────────
-function ProfileModal({ visible, onClose, onSaved }: any) {
-  useLang();
-  const { showToast } = useToast();
-  const [company, setCompany] = useState('');
-  const [license, setLicense]         = useState('');
-  const [licenseState, setLicenseState] = useState('');
-  const [counties, setCounties]         = useState('davidson, shelby');
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (!company.trim()) { showToast(t('x_bondsman_dashboard_enter_company_name')); return; }
-    setSaving(true);
-    try {
-      await api.post('/billing/bondsman/profile', {
-        company_name: company,
-        license_number: license,
-        license_state: licenseState,
-        counties: counties.split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
-        states: licenseState ? [licenseState.toUpperCase()] : []});
-      onSaved();
-    } catch {
-      showToast(t('x_bondsman_dashboard_check_internet_pull_down'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
-        onRequestClose={() => {}}>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{t('x_bondsman_dashboard_set_up_profile')}</Text>
-          <TouchableOpacity onPress={onClose}
-            accessibilityRole="button">
-            <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
-          </TouchableOpacity>
-        </View>
-              <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
-<ScrollView keyboardShouldPersistTaps='handled' style={styles.modalBody}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_company_name')}</Text>
-          <TextInput
-            style={styles.input}
-            value={company}
-            onChangeText={setCompany}
-            placeholder={t('x_bondsman_dashboard_abc_bail_bonds')}
-            placeholderTextColor={COLORS.textMuted}
-          returnKeyType="next"
-          blurOnSubmit
-          maxLength={120}
-        />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_license_number')}</Text>
-          <TextInput
-            style={styles.input}
-            value={license}
-            onChangeText={setLicense}
-            placeholder={t('x_bondsman_dashboard_tn_12345')}
-            placeholderTextColor={COLORS.textMuted}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_license_state')}</Text>
-          <TextInput
-            testID="bondsman-license-state"
-            style={styles.input}
-            value={licenseState}
-            onChangeText={v => setLicenseState(v.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase())}
-            placeholder="TN"
-            placeholderTextColor={COLORS.textMuted}
-            autoCapitalize="characters"
-            maxLength={2}
-            accessibilityLabel={t('x_bondsman_dashboard_license_state_2_letter')}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>{t('x_bondsman_dashboard_counties_cover_comma_separated')}</Text>
-          <TextInput
-            style={styles.input}
-            value={counties}
-            onChangeText={setCounties}
-            placeholder={t('x_bondsman_dashboard_davidson_shelby_knox')}
-            placeholderTextColor={COLORS.textMuted}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-          <Text maxFontSizeMultiplier={1.4} style={styles.helpText}>
-            {t('x_bondsman_dashboard_ll_receive_leads_arrests')}
-          </Text>
-          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-            accessibilityLabel={t('atty_save_profile')}
-          accessibilityHint={t('cp_double_tap')}
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={save}
-            disabled={saving}
-          >
-            {saving
-              ? <ActivityIndicator color={COLORS.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{t('atty_save_profile')}</Text>
-            }
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-}
-
-// ── Accept confirmation modal ─────────────────────────────────────────────────
-function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
-  useLang();
-  if (!lead) return null;
-  return (
-    <Modal accessibilityViewIsModal={true} visible={visible} animationType="fade" transparent
-        onRequestClose={() => {}}>
-      <View style={styles.overlay}>
-        <View style={styles.confirmCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>{t('x_bondsman_dashboard_accept_this_lead')}</Text>
-
-          <View style={styles.confirmDetail}>
-            <SampleRecordBadge row={lead} />
-            <Text maxFontSizeMultiplier={1.4} style={styles.confirmName}>{lead.name}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.confirmCharges}>{lead.charges}</Text>
-            <View style={styles.confirmRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>{t('x_bondsman_dashboard_bail_amount')}</Text>
-              <Text testID="lead-bail-amount-detail" maxFontSizeMultiplier={1.4} style={styles.confirmValue}>
-                {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : t('x_bondsman_dashboard_tbd')}
-              </Text>
-            </View>
-            <View style={styles.confirmRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>{t('x_bondsman_dashboard_county_2')}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmValue}>{lead.county}, {lead.state}</Text>
-            </View>
-            <View style={[styles.confirmRow, styles.feeRow]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.feeLabel}>{t('x_bondsman_dashboard_lead_fee_charged_now')}</Text>
-              <Text testID="lead-bail-amount" maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead)}</Text>
-            </View>
-          </View>
-
-          <Text maxFontSizeMultiplier={1.4} style={styles.confirmNote}>
-            {t('x_bondsman_dashboard_card_file_will_be', { lead: leadFeeLabel(lead) })}
-          </Text>
-
-          <View style={styles.confirmBtns}>
-            <TouchableOpacity
-              accessibilityRole="button" style={styles.confirmCancel} onPress={onClose}
-             accessibilityLabel={t('case_cancel')}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmCancelText}>{t('case_cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-              accessibilityLabel={t('x_bondsman_dashboard_charge', { lead: leadFeeLabel(lead) })}
-              style={[styles.confirmAccept, loading && { opacity: 0.6 }]}
-              onPress={onConfirm}
-              disabled={loading}
-            >
-              {loading
-                ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.confirmAcceptText}>{t('x_bondsman_dashboard_charge', { lead: leadFeeLabel(lead) })}</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// ── Main screen ───────────────────────────────────────────────────────────────
-function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
-  useLang();
+  const s = makeStyles(colors);
   const { confirm } = useConfirm();
-  const { showToast } = useToast();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
-
-  // Prevent screenshots on this sensitive screen
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  const { hasSession, recheck } = useHasSession();
+  const purchase = usePurchase();
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
     ScreenCapture.preventScreenCaptureAsync().catch(() => {});
     return () => { ScreenCapture.allowScreenCaptureAsync().catch(() => {}); };
   }, []);
 
-  // Mounted guard
-  const mountedRef = React.useRef(true);
-  React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => { return () => { mountedRef.current = false; };
-    });
-    return () => _task.cancel();
-  }, []);
-  const [leads, setLeads]         = useState<any[]>([]);
-  const [profile, setProfile]     = useState<any>(null);
-  const [loading, setLoading]     = useState(true);
+  const [tab, setTab] = useState<Tab>('leads');
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [notAgent, setNotAgent] = useState(false);
+  const [dash, setDash] = useState<Dash | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [feeds, setFeeds] = useState(true);
+  const [hours, setHours] = useState(48);
+  const [mine, setMine] = useState<MyLead[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
-  const [showProfile, setShowProfile] = useState(false);
-  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
-  const [accepting, setAccepting] = useState(false);
-  const [acceptedMsg, setAcceptedMsg] = useState('');
-  const [filterHours, setFilterHours] = useState(48);
-  const [badgeStatus, setBadgeStatus] = useState<any>(null);
-  const [badgeLoading, setBadgeLoading] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [buying, setBuying] = useState<number | null>(null);
 
   const loadProfile = useCallback(async () => {
     try {
-      const res = await api.get('/billing/bondsman/profile');
-      setProfile(res.data?.profile);
-      return res.data?.profile;
-    } catch { return null; }
+      const r = await api.get('/billing/bondsman/profile');
+      if (!mounted.current) return null;
+      const p = (r.data?.profile ?? null) as Profile | null;
+      setProfile(p);
+      if (!p) setTab('profile');
+      return p;
+    } catch { if (mounted.current) setProfile(null); return null; }
   }, []);
 
-  const loadLeads = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setStatusMsg('');
+  const loadAll = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/billing/leads', {
-        params: { hours: filterHours, limit: 50 }
-      });
-      setLeads(res.data?.leads || []);
-      if ((res.data?.leads || []).length === 0) {
-        // feeds_configured === false means no public arrest feed is wired up,
-        // so an empty list is missing coverage — say so instead of implying
-        // a live feed that is quiet right now.
-        setStatusMsg(res.data?.feeds_configured === false
-          ? t('x_bondsman_dashboard_no_public_arrest_feeds')
-          : t('x_bondsman_dashboard_no_new_leads_last', { filterHours }));
-      }
-    } catch {
-      setStatusMsg(t('x_bondsman_dashboard_could_not_load_leads'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [filterHours]);
+      const [d, l, m] = await Promise.all([
+        api.get('/bondsman/dashboard'),
+        api.get('/billing/leads', { params: { hours } }),
+        api.get('/bondsman/leads'),
+      ]);
+      if (!mounted.current) return;
+      setDash(d.data as Dash);
+      setLeads((l.data?.leads || []) as Lead[]);
+      setFeeds(l.data?.feeds_configured !== false);
+      setMine((m.data?.leads || []) as MyLead[]);
+    } catch (e) {
+      if (mounted.current) setNotice({ text: apiErrorMessage(e, t('bd_load_error')), tone: 'error' });
+    } finally { if (mounted.current) { setLoading(false); setRefreshing(false); } }
+  }, [hours]);
 
-  useEffect(() => {
-    // Check auth on mount -- browsing users shown sign-in prompt
-    secureStorage.getToken().then(token => {
-      if (!token) {
-        setLoading(false);
-        // Will show AuthGateModal via requireAuth when they tap any action
-      } else {
-        loadProfile().then(p => { if (!p) setShowProfile(true); });
-        api.get('/billing/bondsman/verified-badge/status')
-          .then(r => setBadgeStatus(r.data || null))
-          .catch((e) => { __DEV__ && console.warn(e?.message); });
-      }
-    });
-  }, [loadProfile]);
-
-  // Lead feed: loads on focus (so it is fresh when returning to the screen) and
-  // whenever the hours filter changes (loadLeads is re-created with it).
   useFocusEffect(useCallback(() => {
-    secureStorage.getToken().then(token => { if (token) loadLeads(); }).catch(() => {});
-  }, [loadLeads]));
+    if (!hasSession) return;
+    loadProfile().then(p => { if (p) loadAll(); });
+  }, [hasSession, loadProfile, loadAll]));
 
-  const handleAccept = (lead: Record<string,unknown>) => requireAuth(() => setSelectedLead(lead));
+  const confirmLead = useCallback((arrestId: number) => async (ids: Record<string, string | undefined>) =>
+    (await api.post(`/billing/leads/${arrestId}/confirm`, ids)).data as { fee_charged: string }, []);
 
-  const handleBadgeSubscribe = () => requireAuth(async () => {
-    setBadgeLoading(true);
-    try {
-      const res = await api.post('/billing/bondsman/verified-badge/subscribe');
-      setBadgeStatus({ active: true, verified_badge: true });
-      showToast(res.data?.message, 'success');
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_bondsman_dashboard_check_internet_pull_down')));
-    } finally { setBadgeLoading(false); }
-  });
+  // Back from Stripe Checkout (web)
+  const sessionId = (route?.params as { checkout_session_id?: string } | undefined)?.checkout_session_id;
+  useEffect(() => {
+    if (!sessionId || !hasSession) return;
+    const pending = takePendingCheckout('bail_lead');
+    const arrestId = Number(pending?.ctx?.arrestId);
+    if (!arrestId) return;
+    purchase.finish(confirmLead(arrestId), { checkout_session_id: sessionId }).then(r => {
+      if (!mounted.current) return;
+      if (r.status === 'done') { setNotice({ text: t('bd_bought', { fee: r.data.fee_charged }), tone: 'ok' }); setTab('mine'); loadAll(); }
+      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, hasSession, confirmLead, loadAll]);
 
-  const handleBadgeCancel = () => {
-confirm(t('x_bondsman_dashboard_cancel_badge'), t('x_bondsman_dashboard_verified_badge_will_be'),
-      { confirmLabel: t('x_bondsman_dashboard_cancel_badge_2'), destructive: true }).then(async ok => { if (!ok) return;
-      try {
-          await api.post('/billing/bondsman/verified-badge/cancel');
-          setBadgeStatus({ active: false, verified_badge: false });
-          showToast(t('x_bondsman_dashboard_badge_subscription_cancelled'));
-        } catch {
-          showToast(t('x_bondsman_dashboard_check_internet_pull_down'));
-            }
-    })
+  const buy = (lead: Lead) => {
+    confirm(t('bd_buy_title', { fee: leadFeeLabel(lead) }), t('bd_buy_body', { fee: leadFeeLabel(lead) }), { confirmLabel: t('bd_buy_cta', { fee: leadFeeLabel(lead) }) }).then(async ok => {
+      if (!ok) return;
+      setBuying(lead.id); setNotice(null);
+      const r = await purchase.run({
+        key: 'bail_lead', ctx: { arrestId: lead.id },
+        start: async (ui) => (await api.post(`/billing/leads/${lead.id}/accept`, { ui, return_path: '/bondsman-dashboard' })).data,
+        confirm: confirmLead(lead.id),
+      });
+      if (!mounted.current) return;
+      setBuying(null);
+      if (r.status === 'done') { setNotice({ text: t('bd_bought', { fee: r.data.fee_charged }), tone: 'ok' }); setTab('mine'); loadAll(); }
+      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    });
   };
 
-  const confirmAccept = async () => {
-    if (!selectedLead) return;
-    setAccepting(true);
-    try {
-      const res = await api.post(`/billing/leads/${selectedLead.id}/accept`, {});
-      setSelectedLead(null);
-showToast(t('x_bondsman_dashboard_lead_accepted_contact_info', { fee_charged: res.data?.fee_charged }), 'success');
-      loadLeads(true);
-      setAcceptedMsg(t('x_bondsman_dashboard_lead_accepted_charged', { value: res.data?.fee_charged || '' }));
-    } catch {
-      showToast(t('x_bondsman_dashboard_could_not_process_payment'));
-    } finally {
-      setAccepting(false);
-    }
-  };
+  if (hasSession === false) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <SignInNeeded navigation={navigation} title={t('x_bondsman_dashboard_lead_dashboard')} body={t('bd_signin_body')} onSignedIn={recheck} />
+      </View>
+    );
+  }
+  if (hasSession === null || profile === undefined) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.navy} size="large" /></View>;
 
-  const totalLeads    = leads.length;
-  const purchasedLeads = leads.filter(l => l.purchased).length;
-  const highValueLeads = leads.filter(l => l.bail_amount >= 25000).length;
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'leads', label: t('bd_tab_leads') }, { key: 'mine', label: t('bd_tab_mine') },
+    { key: 'clients', label: t('bd_tab_clients') }, { key: 'profile', label: t('bd_tab_profile') },
+  ];
 
   return (
-    <View testID="bondsman-dashboard-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('x_bondsman_dashboard_lead_dashboard')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-            {profile?.company_name || t('x_bondsman_dashboard_bail_bondsman_portal')}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('x_bondsman_dashboard_go_checkinmanager')}
-            style={styles.checkInMgrBtn}
-            onPress={() => navigation.navigate('CheckInManager')}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>{t('x_bondsman_dashboard_check_ins')}</Text>
-          </TouchableOpacity>
-          {/* Recovery-agent directory suspended (see AppNavigator: unverified, prohibited in some states) */}
-          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => setShowProfile(true)}
-          >
-            <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Stats strip */}
-      <View style={styles.statsStrip}>
-        <View style={styles.statBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statNum}>{totalLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_new_leads')}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: colors.emergencyDark }]}>{highValueLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_high_value')}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: colors.legalDark }]}>{purchasedLeads}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{t('x_bondsman_dashboard_purchased_2')}</Text>
-        </View>
-      </View>
-
-      {/* Revenue + Performance stats */}
-      <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8 }}>
-        {[
-          { label:t('x_bondsman_dashboard_accepted'),   value: String(leads.filter((l: import('../types/api').BondsmanLead) =>l.purchased).length),  color:colors.legalDark },
-          { label:t('x_bondsman_dashboard_accept_rate'), value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/ (leads.length || 1)*100)+'%' : '--', color:colors.blue },
-          { label:t('x_bondsman_dashboard_avg_bail'),   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
-          { label:t('x_bondsman_dashboard_high_value_2'), value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
-        ].map((s,i) => (
-          <View key={`row-${i}`} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
-            padding:8, alignItems:'center', borderWidth:1, borderColor:colors.border }}>
-            <Text testID="stat-avg-bail" maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'800', color:s.color }}>{s.value}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:10, color:colors.textMuted, marginTop:1, textAlign:'center' }}>{s.label}</Text>
+    <View testID="bondsman-dashboard-screen" style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={s.header}>
+        <Text maxFontSizeMultiplier={1.3} style={s.heading} accessibilityRole="header">{profile?.company_name || t('x_bondsman_dashboard_lead_dashboard')}</Text>
+        {dash && (
+          <View style={s.stats} testID="bd-stats">
+            {[[dash.leads_open_48h, t('bd_stat_open')], [dash.leads_bought_30d, t('bd_stat_bought')], [usd(dash.spent_30d_cents), t('bd_stat_spent')], [dash.clients_active, t('bd_stat_clients')]].map(([v, l]) => (
+              <View key={String(l)} style={s.stat}>
+                <Text maxFontSizeMultiplier={1.2} style={s.statVal}>{String(v)}</Text>
+                <Text maxFontSizeMultiplier={1.2} style={s.statLabel}>{String(l)}</Text>
+              </View>
+            ))}
           </View>
+        )}
+      </View>
+      <View style={s.tabs}>
+        {tabs.map(x => (
+          <TouchableOpacity key={x.key} accessibilityRole="tab" aria-selected={tab === x.key} accessibilityState={{ selected: tab === x.key }} testID={`bd-tab-${x.key}`}
+            style={[s.tab, tab === x.key && { borderBottomColor: colors.navy }]} onPress={() => setTab(x.key)} disabled={!profile && x.key !== 'profile'}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.tabText, tab === x.key && { color: colors.textPrimary }, !profile && x.key !== 'profile' && { opacity: 0.4 }]}>{x.label}</Text>
+          </TouchableOpacity>
         ))}
       </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); if (profile) loadAll(); else setRefreshing(false); }} />}>
+        {!!notice && (
+          <View testID="bd-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger, fontSize: 14, lineHeight: 20 }}>{notice.text}</Text>
+          </View>
+        )}
+        {notAgent && (
+          <View style={s.card} testID="bd-not-agent"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_not_agent')}</Text></View>
+        )}
 
-      {/* Verified Badge Banner */}
-      {badgeStatus !== null && (
-        badgeStatus.active ? (
-          <View style={styles.badgeBannerActive}>
-            <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerTitle}>{t('x_bondsman_dashboard_verified_by_justice_gavel')}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>{t('x_bondsman_dashboard_listings_show_verified_badge')}</Text>
+        {tab === 'leads' && profile && (
+          <>
+            <View style={s.chips}>
+              <Text maxFontSizeMultiplier={1.3} style={s.chipLabel}>{t('x_bondsman_dashboard_show_last')}</Text>
+              {HOURS.map(h => (
+                <TouchableOpacity key={h} accessibilityRole="radio" aria-checked={hours === h} accessibilityState={{ checked: hours === h }}
+                  style={[s.chip, hours === h && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setHours(h)}>
+                  <Text maxFontSizeMultiplier={1.2} style={[s.chipText, hours === h && { color: colors.textOnNavy }]}>{h < 168 ? t('bd_hours', { h }) : t('bd_week')}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <TouchableOpacity
-              accessibilityRole="button" onPress={handleBadgeCancel}
-              accessibilityLabel={t('case_cancel')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerCancel}>{t('case_cancel')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('bd_leads_hint', { fee: leadFeeLabel(leads[0]) })}</Text>
+            {loading && !leads.length && <ActivityIndicator style={{ marginTop: 20 }} color={colors.navy} />}
+            {!loading && leads.length === 0 && (
+              <View style={s.card} testID="bd-no-leads">
+                <Text maxFontSizeMultiplier={1.4} style={s.line}>{feeds ? t('bd_no_leads', { state: profile.states[0] ? stateName(profile.states[0]) : '' }) : t('x_bondsman_dashboard_no_public_arrest_feeds')}</Text>
+              </View>
+            )}
+            {leads.map(l => (
+              <View key={l.id} style={s.card} testID="lead-card">
+                <SampleRecordBadge row={l} />
+                <View style={s.rowBetween}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.title} testID="lead-defendant-name">{l.name}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.line}>{[l.county ? t('x_bondsman_dashboard_county', { county: l.county }) : '', l.state ? stateName(l.state) : ''].filter(Boolean).join(', ')}{l.booking_date ? ` · ${fmtDay(l.booking_date)}` : ''}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text maxFontSizeMultiplier={1.3} style={s.bail}>{money(l.bail_amount)}</Text>
+                    <Text maxFontSizeMultiplier={1.2} style={s.line}>{t('x_bondsman_dashboard_bail')}</Text>
+                  </View>
+                </View>
+                {!!l.charges && <Text maxFontSizeMultiplier={1.4} style={s.line} testID="lead-charge">📋 {l.charges}</Text>}
+                {l.purchased ? (
+                  <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => setTab('mine')}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('bd_owned')}</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity accessibilityRole="button" testID={`buy-lead-${l.id}`} style={[s.primaryBtn, buying !== null && { opacity: 0.6 }]} disabled={buying !== null} onPress={() => buy(l)}>
+                    {buying === l.id ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('bd_buy_cta', { fee: leadFeeLabel(l) })}</Text>}
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </>
+        )}
+
+        {tab === 'mine' && profile && <MyLeads leads={mine} reload={loadAll} pipeline={dash?.pipeline} />}
+
+        {tab === 'clients' && profile && (
+          <View style={s.card} testID="bd-clients">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('bd_clients_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_clients_body', { active: dash?.clients_active ?? 0, total: dash?.clients_total ?? 0 })}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="bd-open-checkins" style={s.primaryBtn} onPress={() => navigation.navigate('CheckInManager' as never)}>
+              <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('bd_open_checkins')}</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('x_bondsman_dashboard_badge_subscribe')}
-            style={styles.badgeBannerPromo}
-            onPress={handleBadgeSubscribe}
-            disabled={badgeLoading}
-            activeOpacity={0.85}
-          >
-            <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoTitle}>
-                {badgeLoading ? t('x_bondsman_dashboard_activating') : t('x_bondsman_dashboard_get_verified_by_justice')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoSub}>
-                {t('x_bondsman_dashboard_show_trusted_badge_listings')}
-              </Text>
-            </View>
-            <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoArrow}>→</Text>
-          </TouchableOpacity>
-        )
-      )}
+        )}
 
-      {/* Filter strip */}
-      <View style={styles.filterStrip}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>{t('x_bondsman_dashboard_show_last')}</Text>
-        {[12, 24, 48, 72].map(h => (
-          <TouchableOpacity
-            accessibilityRole="button"
-            key={h}
-            style={[styles.filterChip, filterHours === h && styles.filterChipActive]}
-            accessibilityLabel={t('x_bondsman_dashboard_last_hours', { h })} onPress={() => setFilterHours(h)}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, filterHours === h && styles.filterChipTextActive]}>
-              {h}h
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Lead list */}
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.warnDark} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>{t('x_bondsman_dashboard_loading_leads')}</Text>
-        </View>
-      ) : (
-        <>
-        <FlashList
-          testID="lead-list"
-          data={leads}
-          keyExtractor={i => String(i.id)}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadLeads(true)} />}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{statusMsg || t('x_bondsman_dashboard_no_leads_right_now')}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>{t('x_bondsman_dashboard_pull_refresh_change_time')}</Text>
-              {!statusMsg && (
-                <View style={styles.howLeadsWork}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsTitle}>{t('x_bondsman_dashboard_how_leads_work')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_leads_come_from_public')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_set_counties_profile_receive')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>{t('x_bondsman_dashboard_tap_lead_pay_flat')}</Text>
-                </View>
-              )}
-            </View>
-          }
-          renderItem={({ item }) => (
-            <LeadCard lead={item} onAccept={() => handleAccept(item)} />
-          )}
-        />
-      {!!acceptedMsg && <View testID="lead-accepted-confirmation" style={{ backgroundColor: COLORS.legalBg, borderRadius: 8, padding: 12, margin: 12, borderWidth: 1, borderColor: COLORS.legal }}><Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.legalDark, fontSize: 13 }}>✅ {acceptedMsg}</Text></View>}
-        </>
-      )}
-
-      {/* Modals */}
-      <AuthGateModal />
-      <ProfileModal
-        visible={showProfile}
-        onClose={() => setShowProfile(false)}
-        onSaved={() => { setShowProfile(false); loadProfile(); }}
-      />
-
-      <AcceptModal
-        lead={selectedLead}
-        visible={!!selectedLead}
-        onClose={() => setSelectedLead(null)}
-        onConfirm={confirmAccept}
-        loading={accepting}
-      />
+        {tab === 'profile' && (
+          <ProfileForm profile={profile} onSaved={async () => { const p = await loadProfile(); if (p) { setNotice({ text: t('bd_profile_saved'), tone: 'ok' }); setTab('leads'); loadAll(); } }}
+            onNotAgent={() => setNotAgent(true)} onPlans={() => navigation.navigate('Subscription' as never)} />
+        )}
+      </ScrollView>
     </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'transparent' },
+function MyLeads({ leads, reload, pipeline }: { leads: MyLead[]; reload: () => void; pipeline?: Record<CrmStatus, number> }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const [filter, setFilter] = useState<CrmStatus | null>(null);
+  const shown = filter ? leads.filter(l => l.crm_status === filter) : leads;
+  if (!leads.length) return <View style={s.card} testID="bd-no-mine"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_no_mine')}</Text></View>;
+  return (
+    <>
+      <View style={s.chips}>
+        {STATUSES.map(st => (
+          <TouchableOpacity key={st} accessibilityRole="radio" aria-checked={filter === st} accessibilityState={{ checked: filter === st }}
+            style={[s.chip, filter === st && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setFilter(f => (f === st ? null : st))}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.chipText, filter === st && { color: colors.textOnNavy }]}>{t(`bd_status_${st}`)} ({pipeline?.[st] ?? 0})</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {shown.map(l => <MyLeadCard key={l.id} lead={l} onSaved={reload} />)}
+    </>
+  );
+}
 
-  header: { backgroundColor: colors.emergencyBg, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-end' },
-  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textPrimary },
-  subheading: { fontSize: 12, lineHeight: 20, color: colors.emergency, marginTop: 2 },
-  profileBtn: { padding: 8 },
-  checkInMgrBtn: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  checkInMgrBtnText: { color: colors.textPrimary, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  profileBtnText: { fontSize: 22 },
+function MyLeadCard({ lead, onSaved }: { lead: MyLead; onSaved: () => void }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const [notes, setNotes] = useState(lead.crm_notes || '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const save = async (patch: { status?: CrmStatus; notes?: string }) => {
+    setSaving(true); setErr('');
+    try { await api.patch(`/bondsman/leads/${lead.id}`, patch); onSaved(); }
+    catch (e) { setErr(apiErrorMessage(e, t('bd_save_error'))); }
+    finally { setSaving(false); }
+  };
+  return (
+    <View style={s.card} testID="my-lead">
+      <View style={s.rowBetween}>
+        <Text maxFontSizeMultiplier={1.4} style={[s.title, { flex: 1 }]}>{lead.name}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={s.bail}>{money(lead.bail_amount)}</Text>
+      </View>
+      <Text maxFontSizeMultiplier={1.4} style={s.line}>{[lead.county ? t('x_bondsman_dashboard_county', { county: lead.county }) : '', lead.state ? stateName(lead.state) : ''].filter(Boolean).join(', ')}</Text>
+      {!!lead.charges && <Text maxFontSizeMultiplier={1.4} style={s.line}>📋 {lead.charges}</Text>}
+      {!!lead.jail_location && <Text maxFontSizeMultiplier={1.4} style={s.line}>🏛 {lead.jail_location}</Text>}
+      {!!lead.case_number && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('x_bondsman_dashboard_case', { case_number: lead.case_number })}</Text>}
+      {!!lead.court_date && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_court_date', { date: fmtDay(lead.court_date) })}</Text>}
+      <Text maxFontSizeMultiplier={1.3} style={[s.line, { marginTop: 6 }]}>{t('bd_bought_on', { date: fmtDay(lead.created_at), fee: usd(lead.lead_fee_cents) })}</Text>
+      <View style={s.chips}>
+        {STATUSES.map(st => (
+          <TouchableOpacity key={st} accessibilityRole="radio" aria-checked={lead.crm_status === st} accessibilityState={{ checked: lead.crm_status === st }} testID={`lead-status-${st}`}
+            style={[s.chip, lead.crm_status === st && { backgroundColor: colors.legalDark, borderColor: colors.legalDark }]} disabled={saving} onPress={() => save({ status: st })}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.chipText, lead.crm_status === st && { color: colors.textOnNavy }]}>{t(`bd_status_${st}`)}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <TextInput style={s.input} value={notes} onChangeText={setNotes} multiline maxLength={2000} placeholder={t('bd_notes')} placeholderTextColor={colors.placeholder} accessibilityLabel={t('bd_notes')} />
+      {notes !== (lead.crm_notes || '') && (
+        <TouchableOpacity accessibilityRole="button" testID="lead-notes-save" style={s.ghostBtn} onPress={() => save({ notes })} disabled={saving}>
+          <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('bd_save_notes')}</Text>
+        </TouchableOpacity>
+      )}
+      {!!err && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger, marginTop: 6 }}>{err}</Text>}
+    </View>
+  );
+}
 
-  statsStrip: { backgroundColor: colors.bgCard, flexDirection: 'row', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bg, elevation: 1 },
-  statBlock: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand },
-  statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: COLORS.bgSubtle, marginVertical: 4 },
+function ProfileForm({ profile, onSaved, onNotAgent, onPlans }: { profile: Profile | null; onSaved: () => void; onNotAgent: () => void; onPlans: () => void }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const [company, setCompany] = useState(profile?.company_name || '');
+  const [license, setLicense] = useState(profile?.license_number || '');
+  const [licenseState, setLicenseState] = useState(profile?.license_state || '');
+  const [state, setState] = useState(profile?.states?.[0] || profile?.license_state || '');
+  const [counties, setCounties] = useState((profile?.counties || []).join(', '));
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const save = async () => {
+    if (!company.trim()) { setErr(t('bd_company_required')); return; }
+    setSaving(true); setErr('');
+    try {
+      await api.post('/billing/bondsman/profile', {
+        company_name: company.trim(), license_number: license.trim() || undefined, license_state: licenseState || undefined,
+        states: state ? [state] : [], counties: counties.split(',').map(c => c.trim()).filter(Boolean),
+      });
+      onSaved();
+    } catch (e) {
+      const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code === 'bail_agent_account_required') onNotAgent();
+      setErr(apiErrorMessage(e, t('bd_save_error')));
+    } finally { setSaving(false); }
+  };
+  const alerts = profile?.alert_counties;
+  return (
+    <View style={s.card} testID="bd-profile">
+      {!profile && <Text maxFontSizeMultiplier={1.4} style={[s.line, { marginBottom: 8 }]}>{t('bd_profile_first')}</Text>}
+      <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('bd_company')}</Text>
+      <TextInput testID="bd-company" style={s.field} value={company} onChangeText={setCompany} maxLength={200} accessibilityLabel={t('bd_company')} placeholderTextColor={colors.placeholder} />
+      <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('bd_license')}</Text>
+      <TextInput style={s.field} value={license} onChangeText={setLicense} maxLength={60} autoCapitalize="characters" accessibilityLabel={t('bd_license')} placeholderTextColor={colors.placeholder} />
+      <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('bd_license_state')}</Text>
+      <StatePicker value={licenseState} onChange={setLicenseState} remember={false} testID="bd-license-state" />
+      <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('bd_work_state')}</Text>
+      <StatePicker value={state} onChange={setState} remember={false} testID="bd-work-state" />
+      <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('bd_counties')}</Text>
+      <TextInput testID="bd-counties" style={s.field} value={counties} onChangeText={setCounties} maxLength={600} placeholder={t('bd_counties_ph')} accessibilityLabel={t('bd_counties')} placeholderTextColor={colors.placeholder} />
+      <Text maxFontSizeMultiplier={1.3} style={s.hint}>
+        {alerts === 'all' ? t('bd_alerts_all') : Array.isArray(alerts) && alerts.length ? t('bd_alerts_some', { counties: alerts.join(', ') }) : t('bd_alerts_none')}
+      </Text>
+      <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={onPlans}>
+        <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('bd_see_plans')}</Text>
+      </TouchableOpacity>
+      {!!err && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger, marginTop: 8 }} testID="bd-profile-error">{err}</Text>}
+      <TouchableOpacity accessibilityRole="button" testID="bd-profile-save" style={[s.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={save}>
+        {saving ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('bd_save_profile')}</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+}
 
-  filterStrip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg, gap: 8 },
-  filterLabel: { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: COLORS.bgCard },
-  filterChipActive: { borderColor: colors.emergency, backgroundColor: colors.emergency },
-  filterChipText: { fontSize: 12, color: COLORS.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  filterChipTextActive: { color: colors.textOnAccent },
+const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
+  heading: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy },
+  stats: { flexDirection: 'row', marginTop: 10, gap: 6 },
+  stat: { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: RADIUS.md, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' },
+  statVal: { fontSize: 17, ...FONTS.black, color: colors.textOnNavy },
+  statLabel: { fontSize: 11, color: colors.textOnNavy, opacity: 0.85, textAlign: 'center', marginTop: 2 },
+  tabs: { flexDirection: 'row', backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tab: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent', paddingHorizontal: 2 },
+  tabText: { fontSize: 13, ...FONTS.bold, color: colors.textMuted, textAlign: 'center' },
+  notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
+  card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 10, borderRadius: RADIUS.lg, padding: 14, borderWidth: 1, borderColor: colors.border },
+  title: { fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
+  line: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 2 },
+  hint: { fontSize: 12, lineHeight: 17, color: colors.textMuted, marginHorizontal: 16, marginTop: 8 },
+  bail: { fontSize: 16, ...FONTS.heavy, color: colors.textBrand },
+  rowBetween: { flexDirection: 'row', alignItems: 'flex-start' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginHorizontal: 12, marginTop: 10, alignItems: 'center' },
+  chipLabel: { fontSize: 13, color: colors.textSecond, marginRight: 2 },
+  chip: { minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.bgCard },
+  chipText: { fontSize: 13, ...FONTS.semi, color: colors.textSecond },
+  primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 10, paddingHorizontal: 12 },
+  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 10 },
+  ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
+  label: { fontSize: 13, ...FONTS.semi, color: colors.textSecond, marginTop: 10, marginBottom: 4 },
+  field: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, minHeight: 44, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14 },
+  input: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, padding: 10, minHeight: 56, marginTop: 10, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14, textAlignVertical: 'top' },
+});
 
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: Platform.OS === 'ios' ? 60 : 48 },
-  loadingText: { marginTop: 12, color: colors.textMuted, fontSize: 14,
-    lineHeight: 21},
-  emptyIcon: { fontSize: 40, marginBottom: 12 },
-  emptyText: { fontSize: 15, lineHeight: 22, color: colors.textMuted, fontFamily: 'Inter_600SemiBold', fontWeight: '600', textAlign: 'center' },
-  emptyHint: { fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'center' },
-
-  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  cardPurchased: { borderWidth: 1.5, borderColor: colors.legal },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  leadName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand },
-  leadLocation: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  bailBlock: { alignItems: 'flex-end', marginLeft: 8 },
-  bailAmount: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency },
-  bailLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, backgroundColor: colors.bg },
-  badgeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: colors.textMuted },
-  purchasedBadge: { backgroundColor: colors.legalBg },
-  charges: { fontSize: 12, color: colors.info, marginBottom: 4, lineHeight: 16 },
-  expandedSection: { marginTop: 10, borderTopWidth: 1, borderTopColor: COLORS.bg, paddingTop: 10 },
-  detailRow: { fontSize: 12, color: colors.textMuted, marginBottom: 4, lineHeight: 18 },
-  revealedBlock: { backgroundColor: colors.legalBg, borderRadius: 8, padding: 12, marginTop: 8 },
-  revealedTitle: { fontSize: 12, lineHeight: 20, fontWeight: '700', color: colors.legal, marginBottom: 6 },
-  revealedPhone: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, marginBottom: 4 },
-  revealedName: { fontSize: 12, lineHeight: 20, color: colors.legal },
-  acceptBtn: { backgroundColor: colors.emergencyBg, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
-  acceptBtnText: { color: colors.textPrimary, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
-    lineHeight: 22},
-  acceptBtnSub: { color: colors.emergency, fontSize: 11, marginTop: 3 },
-  expandHint: { fontSize: 12, color: colors.textMuted, textAlign: 'right', marginTop: 8 },
-
-  badgeBannerActive: {
-    backgroundColor: COLORS.navy, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.navy},
-  badgeBannerTitle:  { color: COLORS.steel, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
-  badgeBannerSub:    { color: colors.textOnNavy, fontSize: 11, marginTop: 1 },
-  badgeBannerCancel: { color: colors.textOnNavy, fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  badgeBannerPromo: {
-    backgroundColor: colors.infoBg, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: COLORS.steelMid},
-  badgeBannerPromoTitle:  { color: colors.info, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
-  badgeBannerPromoSub:    { color: colors.textMuted, fontSize: 11, marginTop: 1 },
-  badgeBannerPromoArrow:  { fontSize: 18, color: colors.info, fontFamily: 'Inter_900Black', fontWeight: '900' },
-
-  howLeadsWork: { backgroundColor: colors.infoBg, borderRadius: 12, padding: 16, margin: 16, borderWidth: 1, borderColor: COLORS.steelMid, alignSelf: 'stretch' },
-  howLeadsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, marginBottom: 8, textAlign: 'center' },
-  howLeadsItem:  { fontSize: 12, color: colors.info, lineHeight: 20 },
-  // Profile modal
-  modalContainer: { flex: 1, backgroundColor: colors.bg },
-  modalHeader: { backgroundColor: colors.emergency, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
-  modalClose: { fontSize: 20, color: colors.bgCard, fontWeight: '600' },
-  modalBody: { padding: 20 },
-  fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary, marginBottom: 6, marginTop: 14 },
-  input: { backgroundColor: COLORS.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.surface, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.bgCard },
-  helpText: { fontSize: 12, color: colors.textMuted, marginTop: 4, lineHeight: 16 },
-  saveBtn: { backgroundColor: colors.emergency, borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
-  saveBtnText: { color: colors.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 16,
-    lineHeight: 24},
-
-  // Accept confirm modal
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  confirmCard: { backgroundColor: colors.bgCard, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 },
-  confirmTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginBottom: 16, textAlign: 'center' },
-  confirmDetail: { backgroundColor: colors.bg, borderRadius: 12, padding: 16, marginBottom: 14 },
-  confirmName: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
-  confirmCharges: { fontSize: 12, color: colors.textMuted, marginBottom: 10, lineHeight: 16 },
-  confirmRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  confirmLabel: { fontSize: 12, lineHeight: 20, color: colors.textMuted },
-  confirmValue: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary },
-  feeRow: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.bgSubtle },
-  feeLabel: { fontSize: 14, lineHeight: 21, fontWeight: '700', color: colors.emergency },
-  feeAmount: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency },
-  confirmNote: { fontSize: 12, color: colors.textMuted, lineHeight: 17, marginBottom: 16, textAlign: 'center' },
-  confirmBtns: { flexDirection: 'row', gap: 10 },
-  confirmCancel: { flex: 1, paddingVertical: 16, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, alignItems: 'center' },
-  confirmCancelText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textMuted },
-  confirmAccept: { flex: 1.5, paddingVertical: 16, borderRadius: 12, backgroundColor: colors.emergency, alignItems: 'center' },
-  confirmAcceptText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bgCard },
-  licenseBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.legal, borderRadius: 8, padding: 10,
-    marginTop: 8, borderWidth: 1, borderColor: colors.legal},
-  licenseBadgeIcon:   { fontSize: 20 },
-  licenseBadgeLabel:  { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, letterSpacing: 0.8, textTransform: 'uppercase' },
-  licenseBadgeNum:    { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.legal },
-  licenseVerifiedPill:{ marginLeft: 'auto', backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  licenseVerifiedText:{ fontSize: 11, color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  licenseWarning: {
-    backgroundColor: COLORS.steelMid, borderRadius: 8, padding: 10,
-    marginTop: 8, borderWidth: 1, borderColor: COLORS.steelMid},
-  licenseWarningText: { fontSize: 12, color: COLORS.steelMid, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }});
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(BondsmanDashboardScreen);

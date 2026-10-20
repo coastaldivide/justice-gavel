@@ -193,7 +193,7 @@ router.post('/:id/members/invite', authRequired, firmLimiter, requireFirmMember(
     const db     = await getDb();
     const firmId = req.firmMembership.firm_id;
 
-    const { email, role = 'associate', title } = req.body || {};
+    const { email, role = 'associate' } = req.body || {};
     if (!email) return err400(res, 'email is required.');
     if (!validateEmail(email)) return err400(res, 'Invalid email address.');
 
@@ -212,6 +212,14 @@ router.post('/:id/members/invite', authRequired, firmLimiter, requireFirmMember(
       if (alreadyMember) return res.status(409).json({ error: 'User is already a firm member.' });
     }
 
+    // Nobody is added without accepting (POST /accept-invite, or the app's
+    // /api/firm-acquisition/invites/:id/accept). Seats are checked here (before any invite
+    // is stored) and again there.
+    const seat = await db.get(
+      `SELECT f.seat_limit, (SELECT COUNT(*)::int FROM firm_members fm WHERE fm.firm_id = f.id AND ${ACTIVE_MEMBER_SQL}) AS used
+         FROM firms f WHERE f.id = ?`, [firmId]);
+    if (seat && Number(seat.used) >= Number(seat.seat_limit || 10)) return res.status(403).json({ error: 'No seats left on this firm plan.', code: 'no_seats' });
+
     // Create invite token
     const { randomBytes } = await import('crypto');
     const token     = randomBytes(24).toString('hex');
@@ -219,22 +227,12 @@ router.post('/:id/members/invite', authRequired, firmLimiter, requireFirmMember(
 
     // Upsert invite (allow re-invite with new token)
     await db.run(
-      `INSERT INTO firm_invites (firm_id, email, role, invited_by, token, expires_at)
-       VALUES (?,?,?,?,?,?)
-       ON CONFLICT DO NOTHING`,
+      `INSERT INTO firm_invites (firm_id, email, role, invited_by, token, expires_at, accepted)
+       VALUES (?,?,?,?,?,?,0)
+       ON CONFLICT (firm_id, email) DO UPDATE SET role = excluded.role, invited_by = excluded.invited_by,
+         token = excluded.token, expires_at = excluded.expires_at, accepted = 0`,
       [firmId, safeEmail, role, req.user.id, token, expiresAt]
     );
-
-    // If user already has an account, auto-add them to the firm
-    if (existingUser) {
-      await db.run(
-        `INSERT INTO firm_members (firm_id, user_id, firm_role, role, title, invited_by, active, status)
-         VALUES (?,?,?,?,?,?,1,'active')
-         ON CONFLICT (firm_id, user_id) DO UPDATE SET firm_role=excluded.firm_role, role=excluded.role,
-           title=excluded.title, invited_by=excluded.invited_by, active=1, status='active'`,
-        [firmId, existingUser.id, role, role, title || null, req.user.id]
-      );
-    }
 
     await writeAuditLog(db, {
       user_id: req.user.id, firm_id: firmId,
@@ -250,7 +248,6 @@ router.post('/:id/members/invite', authRequired, firmLimiter, requireFirmMember(
       role,
       token,
       expires_at: expiresAt,
-      auto_added: !!existingUser,
       invite_url: `${process.env.CORS_ORIGIN || 'https://justicegavel.app'}/join-firm?token=${token}`,
     });
   } catch (e) {
@@ -374,6 +371,11 @@ router.post('/accept-invite', authRequired, async (req, res) => {
     if (user.email !== invite.email) {
       return err403(res, `This invite was sent to ${invite.email}. Please log in with that account.`);
     }
+
+    const seat = await db.get(
+      `SELECT f.seat_limit, (SELECT COUNT(*)::int FROM firm_members fm WHERE fm.firm_id = f.id AND ${ACTIVE_MEMBER_SQL}) AS used
+         FROM firms f WHERE f.id = ?`, [invite.firm_id]);
+    if (seat && Number(seat.used) >= Number(seat.seat_limit || 10)) return res.status(403).json({ error: 'No seats left on this firm plan.', code: 'no_seats' });
 
     // Add to firm
     await db.run(

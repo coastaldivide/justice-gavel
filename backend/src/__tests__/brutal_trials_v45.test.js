@@ -194,13 +194,14 @@ describe('S6. Screens — 15-19 Hit Range', () => {
   test('S6-03: BondsmanDashboardScreen — expanded accordion + useFocusEffect + /billing/leads', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    // Step 6: the docblock no longer claims a "real-time" feed — leads come
-    // from the public arrest feeds configured via ARREST_FEED_URLS.
-    expect(src).toContain('lead dashboard for bail bondsmen');
-    expect(src).toContain('ARREST_FEED_URLS');
-    expect(src).toContain('expanded');
-    expect(src).toContain('useFocusEffect');
+    // Section G: tabs Leads / My leads / Clients / Profile; a lead is bought through services/purchase.ts
+    expect(src).toContain("type Tab = 'leads' | 'mine' | 'clients' | 'profile'");
     expect(src).toContain('/billing/leads');
+    expect(src).toContain('/billing/bondsman/profile');
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useFocusEffect');
+    expect(src).not.toMatch(/handleBadge|Verified by Justice Gavel/);
+    expect(src).toContain("the bail agent's workspace");
     expect(src).toContain('company');
     expect(src).toContain('license');
   });
@@ -225,9 +226,16 @@ describe('S7. A11Y — Remaining Unconfirmed Patterns', () => {
   test('S7-03: SubscriptionScreen providerType is "lawyer" | "bail_agent"', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain("'lawyer' | 'bail_agent'");
-    expect(src).toContain('providerType');
+    // Section G: attorney and bail-agent plans from the server; purchase via services/purchase.ts;
+    // failures shown in the notice banner
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).toContain("type ProviderType = 'lawyer' | 'bail_agent';");
+    expect(src).toContain('usePurchase');
     expect(src).toContain('useAuthGate');
+    expect(src).toContain('testID="subscription-notice"');
+    expect(src).toContain('colors.errorBg');
+    expect(src).toContain("Platform.OS === 'ios'");
   });
 });
 

@@ -17,6 +17,7 @@ import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
 import { msg, userLang } from '../i18n/index.js';
+import { notifyCoveredBondsmen } from './leadAlerts.js';
 
 
 // Charge keywords mapped to practice areas
@@ -284,6 +285,8 @@ export async function sendArrestAlerts(options = {}) {
 
   // ── User arrest monitors (push alerts + last_checked bookkeeping) ──
   const monitorStats = await checkArrestMonitors(db, newArrests, options);
+  // ── Bail-agent plans: new-arrest alerts for covered counties ──
+  const leadStats = await notifyCoveredBondsmen(db, newArrests, options);
 
   // Mark all processed arrests as alerted
   const ids = newArrests.map(a => a.id);
@@ -295,5 +298,5 @@ export async function sendArrestAlerts(options = {}) {
   }
 
   logger.info(`[alerts] ✅ ${alertsSent} alerts sent, ${newArrests.length} arrests marked`);
-  return { alerts_sent: alertsSent, arrests_processed: newArrests.length, ...monitorStats };
+  return { alerts_sent: alertsSent, arrests_processed: newArrests.length, ...monitorStats, ...leadStats };
 }

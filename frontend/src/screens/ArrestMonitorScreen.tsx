@@ -18,8 +18,6 @@ import { getToken } from '../utils/secureStorage';
 
 const MAX_WATCHES = 5;
 // Plans that include arrest monitoring (billing TIERS keys) and the statuses that count as paid.
-const PRO_TIERS = ['legal_pro', 'pro_annual', 'esquire', 'esquire_annual'];
-const PRO_STATUSES = ['active', 'trialing'];
 
 interface Watch {
   id: number;
@@ -73,11 +71,12 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
       setIsPro(false); setLoading(false); return;
     }
     try {
-      // Check subscription tier: GET /billing/subscription → { subscription: { tier, status } | null, tiers }
-      const subRes = await api.get<{ subscription: { tier?: string; status?: string } | null; tiers?: { key: string; monthly_cents?: number }[] }>('/billing/subscription')
+      // The server's plan says what it includes: GET /billing/subscription →
+      // { subscription: { paid, features[] } | null, tiers } (same matrix that gates POST /arrests/monitors).
+      const subRes = await api.get<{ subscription: { paid?: boolean; features?: string[] } | null; tiers?: { key: string; monthly_cents?: number }[] }>('/billing/subscription')
         .catch(() => ({ data: { subscription: null, tiers: [] } }));
       const sub = subRes.data?.subscription;
-      setIsPro(!!sub && PRO_STATUSES.includes(String(sub.status)) && PRO_TIERS.includes(String(sub.tier)));
+      setIsPro(!!sub?.paid && Array.isArray(sub.features) && sub.features.includes('arrest_monitor'));
       showProPrice(subRes.data?.tiers);
 
       // Load existing watches

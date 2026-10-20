@@ -35,6 +35,9 @@ export const AUDIT_ACTIONS = {
   PAYMENT_SUCCEEDED:        'billing.payment_succeeded',
   PAYMENT_FAILED:           'billing.payment_failed',
   REFUND_ISSUED:            'billing.refund_issued',
+  REFUND_REQUESTED:         'billing.refund_requested',
+  SUBSCRIPTION_CHANGED:     'billing.subscription_changed',
+  LEAD_PURCHASED:           'billing.lead_purchased',
 
   // Attorney platform
   ATTORNEY_VERIFIED:        'attorney.verified',
@@ -56,6 +59,11 @@ export const AUDIT_ACTIONS = {
   // Admin
   ADMIN_USER_ACCESSED:      'admin.user_accessed',
   ADMIN_SUBSCRIPTION_MODIFIED: 'admin.subscription_modified',
+  ADMIN_BAR_APPROVED:       'admin.bar_approved',
+  ADMIN_BAR_REJECTED:       'admin.bar_rejected',
+  ADMIN_CLAIM_DECIDED:      'admin.listing_claim_decided',
+  ADMIN_REPORT_DECIDED:     'admin.listing_report_decided',
+  ADMIN_REVIEW_MODERATED:   'admin.review_moderated',
 };
 
 /**

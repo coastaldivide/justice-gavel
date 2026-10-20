@@ -884,9 +884,11 @@ describe('13. research.js — AI Research Route', () => {
   });
 
   test('13-07: research comes with the real plans (FEATURE_TIERS.research), no invented add-on', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
-    expect(src).toContain('FEATURE_TIERS.research');
+    // Section G: research comes with the plans whose features list legal_research (billing/plans.js)
+    expect(src).toContain('hasFeature(db, user.id, FEATURES.LEGAL_RESEARCH)');
+    expect(src).toContain('RESEARCH_PLANS');
     expect(src).not.toContain("'legal_research','legal_research_annual'");
   });
 });

@@ -10,7 +10,7 @@
  *   connections.js    — /family/connect, /quickconnect
  *   consumer.js       — /consumer/*, /admin/stats
  *   pi_leads.js       — /pi-lead/*, /pi-leads
- *   webhooks.js       — POST /webhook (raw body — Stripe signature verification)
+ *   POST /webhook     — Stripe webhook (services/stripeWebhook.js; raw body)
  *
  * To add a new billing feature:
  *   1. Decide which domain it belongs to (or create a new sub-router).
@@ -20,13 +20,14 @@
 
 import express, { Router } from 'express';
 import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../../config.js';
+import { resolveLang, msg } from '../../i18n/index.js';
+import { stripeWebhookHandler } from '../../services/stripeWebhook.js';
 
 import subscriptionsRouter from './subscriptions.js';
 import bondsmanRouter      from './bondsman.js';
 import connectionsRouter   from './connections.js';
 import consumerRouter      from './consumer.js';
 import piLeadsRouter       from './pi_leads.js';
-import webhooksRouter      from './webhooks.js';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/, 
 router.use((req, res, next) => {
   if (stripeConfigured() || req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
   if (NO_STRIPE_NEEDED.some(re => re.test(req.path))) return next();
-  return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
+  return res.status(503).json({ ...PAYMENTS_UNAVAILABLE, message: msg(resolveLang(req), 'billing.err.payments_unavailable') });
 });
 
 // ── Standard billing routes (JSON body) ───────────────────────────────────────
@@ -49,19 +50,9 @@ router.use('/', connectionsRouter);
 router.use('/', consumerRouter);
 router.use('/', piLeadsRouter);
 
-// ── Stripe webhook — MUST use raw body parser for signature verification ──────
-// express.json() must NOT run before this route.
-// The global express.json() in app.js uses a path exclusion via app.use()
-// ordering; the webhook route is mounted last and uses its own raw middleware.
-router.post('/webhook',
-  express.raw({ type: 'application/json' }),
-  (req, res, next) => {
-    // Attach raw body for Stripe verification
-    req.rawBody = req.body;
-    next();
-  },
-  webhooksRouter
-);
+// ── Stripe webhook — raw body (app.js skips the JSON parser for this path) ───
+// Same handler as /api/webhooks/stripe: signature check + replay protection.
+router.post('/webhook', express.raw({ type: () => true, limit: '1mb' }), stripeWebhookHandler);
 
 // Re-export shared billing helpers for use by other modules
 export { getOrCreateStripeCustomer, TIERS, stripe, LIVE } from './_shared.js';

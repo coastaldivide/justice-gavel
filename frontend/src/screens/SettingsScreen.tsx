@@ -37,7 +37,8 @@ interface User { id?: number; displayName?: string; name?: string; email?: strin
 /** Attorney / firm tools in "My Tools" (the screens send everyone else back). */
 const PRO_ROLES = new Set(['attorney', 'defender', 'admin']);
 const isProfessional = (u: User) => u.accountType === 'attorney' || PRO_ROLES.has(String(u.role || ''));
-const PRO_TOOLS = new Set(['FirmVertical', 'FirmAcquisition', 'AttorneyDashboard']);
+const PRO_TOOLS = new Set(['FirmVertical', 'FirmAcquisition', 'AttorneyDashboard', 'AttorneyInbox', 'ConflictCheck']);
+const AGENT_TOOLS = new Set(['BondsmanDashboard']);
 const IS_WEB = Platform.OS === 'web';
 
 interface NotifPrefs {
@@ -223,7 +224,7 @@ function SettingsScreen({ navigation }: any) {
           const parsed = JSON.parse(u);
           setUser(parsed);
           // Shows the Admin section; the server still enforces admin on every admin endpoint.
-          setIsAdmin(!!(parsed?.is_admin || parsed?.role === 'admin'));
+          setIsAdmin(['admin', 'super_admin'].includes(String(parsed?.role)));
         } catch { /* corrupt stored user: the account rows stay empty */ }
       }
       const lang = await AsyncStorage.getItem('lang').catch(() => null);
@@ -632,6 +633,10 @@ function SettingsScreen({ navigation }: any) {
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_my_tools')}</Text>
       <View style={card}>
         {[
+          { icon: '💳', label: t('bill_title'),               hint: t('st_billing_hint'),                       screen: 'Payments' },
+          { icon: '📬', label: t('x_nav_attorney_inbox'),     hint: t('st_inbox_hint'),                         screen: 'AttorneyInbox' },
+          { icon: '🔎', label: t('x_nav_conflict_check'),     hint: t('st_conflicts_hint'),                     screen: 'ConflictCheck' },
+          { icon: '📋', label: t('x_nav_lead_dashboard'),     hint: t('st_leads_hint'),                         screen: 'BondsmanDashboard' },
           { icon: '🏢', label: t('x_st_firm_vertical_setup'),   hint: t('x_st_configure_practice_area_pricing'), screen: 'FirmVertical' },
           { icon: '🚀', label: t('x_st_start_firm_trial'),       hint: t('x_st_self_serve_onboarding_activate'),  screen: 'FirmAcquisition' },
           { icon: '⭐', label: t('saved_title'),         hint: t('x_st_personal_attorney_contact_list'),        screen: 'SavedLawyers' },
@@ -649,7 +654,7 @@ function SettingsScreen({ navigation }: any) {
           { icon: '⚖️', label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
           { icon: '📵', label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
           { icon: '📊', label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
-        ].filter(item => !PRO_TOOLS.has(item.screen) || isProfessional(user)).map((item, i, arr) => (
+        ].filter(item => (!PRO_TOOLS.has(item.screen) || isProfessional(user)) && (!AGENT_TOOLS.has(item.screen) || user?.accountType === 'bail_agent')).map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
             key={item.screen}
@@ -676,9 +681,9 @@ function SettingsScreen({ navigation }: any) {
   accessibilityRole="button"
               style={[styles.navRow, { borderBottomWidth: 0 }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'AdminVerification' })}
-              accessibilityLabel={t('x_st_bar_verification_queue')}
+              accessibilityLabel={t('adm_title')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.textPrimary }]}>{t('x_st_bar_verification_queue_2')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.textPrimary }]}>{t('adm_title')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.navRowArrow, { color: colors.textMuted }]}>›</Text>
             </TouchableOpacity>
           </View>

@@ -227,7 +227,7 @@ describe('4. computePDSignals — Public Defense', () => {
 // 5. BUSINESS_CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 describe('5. BUSINESS_CONSTANTS — Canonical Pricing', () => {
-  test('5-02: Bondsman badge $49.00 = 4900 cents', () => expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900));
+  test('5-02: Bondsman badge $49.00 = 4900 cents', () => expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

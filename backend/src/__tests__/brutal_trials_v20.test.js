@@ -290,12 +290,15 @@ describe('8. privilege / time / CLE / bondsman badge', () => {
   });
   test('8-05: bondsman verified-badge subscribe/cancel/status at $49/mo', async () => {
     const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('verified-badge/subscribe');
-    expect(src).toContain('verified-badge/cancel');
-    expect(src).toContain('verified-badge/status');
-    expect(src).toContain("status='active'");
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
 });
 
@@ -348,7 +351,7 @@ describe('10. Regression', () => {
   });
   test('10-03: BUSINESS_CONSTANTS correct', () => {
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.MIN_CHARGE_CENTS does not exist */
   });
   test('10-04: civil_rights crisis → emergInj=true', () => {

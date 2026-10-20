@@ -112,24 +112,28 @@ describe('S3. Payment & Subscription Flows', () => {
     expect(src).toContain('catch');
   });
   test('S3-02: Backend POST /subscribe has demo mode + live Stripe path', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js','utf8');
-    expect(src).toContain("'/subscribe'");
-    expect(src).toContain('LIVE'); // demo/live flag
-    expect(src).toContain('mock'); // demo mode response
-    expect(src).toContain('stripe.subscriptions.create'); // live Stripe path
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
+    // Section G: no demo / mock mode — without Stripe every POST is 503 (billing/index.js gate); the Stripe
+    // calls live in services/stripeBilling.js; plans and prices come from billing/plans.js
+    expect(src).toContain("router.post('/subscribe'");
+    expect(src).toContain("router.get('/subscription'");
+    expect(src).toContain("router.post('/cancel'");
+    expect(src).toContain("router.post('/refund'");
+    expect(src).not.toMatch(/'demo'|mock:/);
+    expect(src).toContain('startSubscription');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8')).toContain('stripe.subscriptions.create');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain('payments_unavailable');
     expect(src).toContain('authRequired');
-    // When STRIPE_SECRET not set: 30-day trial, no card charged
-    // When STRIPE_SECRET set: real Stripe subscription created
   });
   test('S3-03: Stripe webhook verifies HMAC + handles all 5 payment events', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
-    for(const ev of ['payment_intent.succeeded','invoice.payment_failed',
-                     'customer.subscription.deleted','customer.subscription.updated',
-                     'checkout.session.completed'])
-      expect(src).toContain(ev);
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
   test('S3-05: Billing sub-routers all mounted in billing/index.js', async () => {
     const fs=await import('fs');
@@ -154,11 +158,15 @@ describe('S3. Payment & Subscription Flows', () => {
     expect(be).toContain('try {');
   });
   test('S3-08: Bondsman verified badge: subscribe + status + cancel', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    expect(src).toContain('/bondsman/verified-badge/subscribe');
-    expect(src).toContain('/bondsman/verified-badge/status');
-    expect(src).toContain('/bondsman/verified-badge/cancel');
+    const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
     expect(src).toContain('authRequired');
   });
 });

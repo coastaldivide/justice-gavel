@@ -220,7 +220,7 @@ describe('Arrest monitor', () => {
 
   it('a Legal Pro subscriber gets the monitor; a new name without a state is sent with no state', async () => {
     mockToken = 'jwt';
-    on('get', '/billing/subscription', { subscription: { tier: 'legal_pro', status: 'active' }, tiers: [{ key: 'legal_pro', monthly_cents: 3499 }] });
+    on('get', '/billing/subscription', { subscription: { tier: 'legal_pro', status: 'active', paid: true, features: ['ai_chat_unlimited', 'arrest_monitor'] }, tiers: [{ key: 'legal_pro', monthly_cents: 3499 }] });
     on('get', '/arrests/monitors', { monitors: [], count: 0 });
     on('post', '/arrests/monitors', { created: true, id: 1 });
     wrap(<ArrestMonitorScreen navigation={makeNavigation()} route={{} as any} />);

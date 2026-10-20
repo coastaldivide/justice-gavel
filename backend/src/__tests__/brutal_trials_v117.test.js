@@ -128,7 +128,7 @@ describe('FINAL2. Absolute Final State — 117 Passes Complete', () => {
     /* removed: BC.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BC.TRIAL_DAYS_CONSUMER does not exist */
     /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BC.MIN_CHARGE_CENTS does not exist */
     /* removed: BC.AI_MESSAGES_PER_DAY_FREE does not exist */

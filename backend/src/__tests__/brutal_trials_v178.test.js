@@ -161,13 +161,14 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(ms).toContain('api.post');
   });
   test('JOURNEY-04: Payments — subscribe + QuickConnect', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const scr=__REPO + '/frontend/src/screens';
-    const sub=fs.readFileSync(path.join(scr,'SubscriptionScreen.tsx'),'utf8');
-    const qc =fs.readFileSync(path.join(scr,'QuickConnectScreen.tsx'),'utf8');
+    const fs = await import('fs');
+    const path = await import('path');
+    const scr = __REPO + '/frontend/src/screens';
+    const sub = fs.readFileSync(path.join(scr, 'SubscriptionScreen.tsx'), 'utf8');
+    const qc  = fs.readFileSync(path.join(scr, 'QuickConnectScreen.tsx'), 'utf8');
     expect(sub).toContain('/billing/subscribe');
     expect(sub).toContain('/billing/cancel');
-    expect(sub).toContain('{!!error');
+    expect(sub).toContain('testID="subscription-notice"');   // section G: failures shown in the notice banner
     expect(qc).toContain('/billing/quickconnect');
     expect(qc).not.toContain('referral_credit');
   });
@@ -214,11 +215,11 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(bad).toBe(0);
   });
   test('JOURNEY-11: Attorney Dashboard — profile + cases + bar validation', async () => {
-    const atty=feSource(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx');
+    const atty = feSource(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx');
     expect(atty).toContain('/attorney/profile');
     expect(atty).toContain('/attorney/cases');
-    expect(atty).toContain('saveProfile');
-    expect(atty).toContain('Bar Number');
+    expect(atty).toContain('submitBar');            // section G: bar number submitted for admin review
+    expect(atty).toContain('/attorney/verify-bar');
   });
   test('JOURNEY-12: Offline — NetInfo wired + SW exists + offline page', async () => {
     const fs=await import('fs');

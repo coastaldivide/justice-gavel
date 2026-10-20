@@ -120,16 +120,21 @@ describe('SESSION. Complete User Sessions', () => {
 describe('PAY. Payment System Verified', () => {
   test('PAY-01: subscription flow complete', async () => {
     const fs = await import('fs');
-    const sub = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js','utf8');
-    expect(sub).toContain("router.post('/subscribe'");
-    expect(sub).toContain("TIERS[tier]");
-    expect(sub).toContain("'demo'");
-    expect(sub).toContain("stripe.subscriptions.create");
-    // FE
-    const feSub = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
+    // Section G: no demo / mock mode — without Stripe every POST is 503 (billing/index.js gate); the Stripe
+    // calls live in services/stripeBilling.js; plans and prices come from billing/plans.js
+    expect(src).toContain("router.post('/subscribe'");
+    expect(src).toContain("router.get('/subscription'");
+    expect(src).toContain("router.post('/cancel'");
+    expect(src).toContain("router.post('/refund'");
+    expect(src).not.toMatch(/'demo'|mock:/);
+    expect(src).toContain('startSubscription');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8')).toContain('stripe.subscriptions.create');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain('payments_unavailable');
+    const feSub = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(feSub).toContain('/billing/subscribe');
-    expect(feSub).toContain('{!!error');  // error shown to user
-    expect(feSub).toContain("Platform.OS === 'ios'"); // iOS App Store gate
+    expect(feSub).toContain('testID="subscription-notice"');
+    expect(feSub).toContain("Platform.OS === 'ios'");
   });
   test('PAY-02: QuickConnect charges + returns contacts', async () => {
     const fs = await import('fs');
@@ -141,11 +146,16 @@ describe('PAY. Payment System Verified', () => {
   });
   test('PAY-03: Stripe webhook handles 5 events + updates DB', async () => {
     const fs = await import('fs');
-    const wh = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    for(const ev of ['customer.subscription.deleted','customer.subscription.updated',
-                     'invoice.payment_failed','checkout.session.completed'])
-      expect(wh).toContain(ev);
-    expect(wh).toContain('UPDATE');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
   });
 });
 

@@ -71,7 +71,7 @@ const mkMatter = (v, o = {}) => ({
 describe('BIZ. BUSINESS_CONSTANTS — Complete Business Rule Coverage', () => {
   test('BIZ-02: pricing — QUICKCONNECT=$20, BONDSMAN_BADGE=$49, CONSULTATION=$15, MIN=$0.50', () => {
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MIN_CHARGE_CENTS does not exist */
   });
@@ -103,14 +103,13 @@ describe('S6a. Promise.allSettled — Resilient Concurrent API Pattern', () => {
   test('S6a-02: AttorneyDashboardScreen allSettled for [cases,templates,cle,profile]', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('Promise.allSettled');
-    expect(src).toContain("'/attorney/cases'");
-    expect(src).toContain("'/attorney/templates?status=approved'");
-    expect(src).toContain("'/attorney/cle'");
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
     expect(src).toContain("'/attorney/profile'");
-    // AttorneyDashboard uses allSettled — checks fulfilled via .status
-    expect(src).toContain('allSettled');
-    expect(src).toContain('.status');
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
   test('S6a-03: CaseScreen allSettled for [/cases, /cases/family]', async () => {
     const fs = await import('fs');

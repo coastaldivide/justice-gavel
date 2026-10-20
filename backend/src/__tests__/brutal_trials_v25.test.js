@@ -101,7 +101,7 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
   test('2-04: subscriptions.js handles attorney + general subscriptions', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
-    expect(src).toContain('Attorney & general subscriptions');
+    expect(src).toContain('consumer and attorney plans');
     expect(src).toContain('subscribe');
     expect(src).toContain('cancel');
     expect(src).toContain('refund');
@@ -109,8 +109,9 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
   test('2-05: subscriptions.js has 5 route handlers (incl. public GET /tiers — audit11 M3)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
+    // Section G: tiers, subscription, subscribe, confirm, change, cancel, refund, overview
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
-    expect(h.length).toBe(5);
+    expect(h.length).toBe(8);
   });
   test('2-06: both use billingLimiter rate protection', async () => {
     const fs = await import('fs');
@@ -125,35 +126,63 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
 describe('3. Stripe Webhook System', () => {
   test('3-01: billing/webhooks.js requires express.raw() body parser', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js', 'utf8');
-    expect(src).toContain('express.raw()');
-    expect(src).toContain('signature verification will fail');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    expect(src).toContain('express.json would break the HMAC');
   });
   test('3-02: billing/webhooks.js verifies Stripe signature before processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js', 'utf8');
-    expect(src).toContain('Stripe signature');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    expect(src).toContain('Stripe signature');
   });
   test('3-03: local dev command: stripe listen --forward-to', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js', 'utf8');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
     expect(src).toContain('stripe listen --forward-to');
   });
   test('3-04: webhooks/stripe.js handles 5 payment event types', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8');
-    expect(src).toContain('payment_intent.succeeded');
-    expect(src).toContain('payment_link.completed');
-    expect(src).toContain('invoice.payment_succeeded');
-    expect(src).toContain('invoice.payment_failed');
-    expect(src).toContain('customer.subscription.deleted');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
   });
   test('3-05: webhooks/stripe.js uses express.raw() and STRIPE_WEBHOOK_SECRET', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8');
-    expect(src).toContain('express.raw()');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
     expect(src).toContain('Signature verified');
   });
   test('3-06: payment event model', () => {

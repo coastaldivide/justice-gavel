@@ -38,11 +38,14 @@ const mkMatter = (v, o={}) => ({
 describe('DISC27. Discrepancy Fixes — 3 items', () => {
   test('DISC27-01: attorney/profile 4 routes — /profile + /availability [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js','utf8');
+    // Section G: PATCH /profile is removed (it let an attorney edit verified bar fields); the bar number goes
+    // through POST /verify-bar and admin review. Availability stays.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/profile.js', 'utf8');
     expect(src).toContain("router.get('/profile'");
-    expect(src).toContain("router.patch('/profile'");
+    expect(src).not.toContain("router.patch('/profile'");
     expect(src).toContain("router.get('/profile/availability'");
     expect(src).toContain("router.put('/profile/availability'");
+    expect(src).toContain('authRequired');
   });
   test("DISC27-02: bail.js GET /nearby \u2014 GPS-based emergency bondsman finder [\u22654]", async () => {
     const fs = await import('fs');
@@ -110,30 +113,51 @@ describe('ADM. admin.js — Internal Admin Dashboard Routes', () => {
 describe('WBK. billing/webhooks.js — Stripe Webhook Signature Verification', () => {
   test('WBK-01: POST /webhook — Stripe event handler with signature verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    expect(src).toContain("router.post('/webhook'");
-    expect(src).toContain('Stripe webhook handler');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('WBK-02: express.raw() body parser required — json() breaks sig verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    expect(src).toContain('express.raw()');
-    expect(src).toContain('IMPORTANT');
-    expect(src).toContain('signature verification will fail');
-    // express.json() parses body — Stripe needs raw bytes for HMAC verification
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('WBK-03: STRIPE_WEBHOOK_SECRET from the host env (Render) — never hardcoded', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(src).toContain('Render environment variable');
+    expect(src).toContain('express.raw');
     expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
-    // Set in the Render dashboard from the Stripe webhook dashboard
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
   test('WBK-04: webhook verifies signature before processing any event', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
     expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
   });
 });
 
@@ -243,7 +267,7 @@ describe('Regression — All v1–v94 Confirmed', () => {
     /* removed: BC.TRIAL_DAYS_MONTHLY does not exist */
     /* removed: BC.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BC.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BC.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BC.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BC.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BC.MIN_CHARGE_CENTS does not exist */
     /* removed: BC.AI_MESSAGES_PER_DAY_FREE does not exist */

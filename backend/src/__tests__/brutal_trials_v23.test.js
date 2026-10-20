@@ -390,11 +390,12 @@ describe('10. i18n — Final Category Sweeps', () => {
   test('10-02: atty_ dashboard tab labels', async () => {
     const en = await getEn();
     expect(en['atty_title']).toBe('Attorney Dashboard');
-    expect(en['atty_tab_cases']).toBe('Cases');
     expect(en['atty_tab_templates']).toBe('Templates');
     expect(en['atty_tab_cle']).toBe('CLE');
     expect(en['atty_tab_profile']).toBe('Profile');
-    expect(en['atty_complete_cle']).toContain('CLE Credit');
+    // Section G: Overview / Leads tabs are ad_*; Cases uses nav_cases
+    expect(en['ad_tab_overview']).toBe('Overview');
+    expect(en['ad_tab_leads']).toBe('Leads');
   });
 
   test('10-03: lawyers_ need-help prompts', async () => {
@@ -416,9 +417,10 @@ describe('10. i18n — Final Category Sweeps', () => {
   test('10-05: res_ AI legal research paywall', async () => {
     const en = await getEn();
     expect(en['res_title']).toBe('AI Legal Research');
-    expect(en['res_paywall_subscribe']).toContain('$49.99/mo');
-    expect(en['res_paywall_annual']).toContain('$374.99/yr');
-    expect(en['res_paywall_disclaimer']).toContain('Cancel any time');
+    // Section G: "$49.99/mo" / "$374.99/yr" were no real plan; the screen lists the real plans (res_paywall_plans)
+    expect(en['res_paywall_subscribe']).toBeUndefined();
+    expect(en['res_paywall_annual']).toBeUndefined();
+    expect(en['res_price_month']).toBe('{price}/month');
   });
 
   test('10-06: booking_ full consultation flow', async () => {

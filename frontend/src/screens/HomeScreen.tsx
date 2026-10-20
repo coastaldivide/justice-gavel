@@ -8,6 +8,7 @@ import type { ScreenProps } from '../types/navigation';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
+import { consumerPlansFrom, featureLabel, type ConsumerPlan } from '../services/plans';
 import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
@@ -51,7 +52,7 @@ const TILES = perLang((): Tile[] => [
   { key: 'Diversion',     icon: '🔄', label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'FamilyConn',    icon: '👨‍👩‍👧', label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'FamilyCourt',   icon: '🏛️', label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FirmAcq',       icon: '🏢', label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FirmAcq',       icon: '🏢', label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false, roles: ATTORNEY_ROLES },
   { key: 'HousingRts',    icon: '🏠', label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'Immigration',   icon: '🛂', label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
   { key: 'Insurance',     icon: '🛡️', label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
@@ -87,12 +88,22 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   return () => { mountedRef.current = false; };
   }, []);
 
-  // Subscription tier for analytics preview
+  // Plans card: the cheapest consumer plan from the server price list, hidden
+  // when the signed-in person already has a paid plan (server says `paid`).
   const [isPro, setIsPro] = useState(false);
+  const [cheapest, setCheapest] = useState<ConsumerPlan | null>(null);
   useEffect(() => {
-    AsyncStorage.getItem('user_subscription')
-      .then(tier => setIsPro(!!tier && tier !== 'free'))
-      .catch(() => {});
+    api.get('/billing/tiers', { params: { audience: 'consumer' } })
+      .then(r => {
+        const plans = consumerPlansFrom(r.data).sort((a, b) => a.monthlyCents - b.monthlyCents);
+        if (mountedRef.current) setCheapest(plans[0] || null);
+      }).catch(() => {});
+    secureStorage.getToken().then(token => {
+      if (!token) return;
+      return api.get('/billing/subscription').then(r => {
+        if (mountedRef.current) setIsPro(!!r.data?.subscription?.paid);
+      });
+    }).catch(() => {});
   }, []);
 
   const [refreshing, setRefreshing] = React.useState(false);
@@ -299,11 +310,13 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           </Text>
         </TouchableOpacity>
 
-          {/* County analytics preview for non-Pro users — drives Intel tier subscriptions */}
-          {!isPro && (
+          {/* Plans card for people without a paid plan. Price and features come from
+              GET /billing/tiers (the list the server charges from); nothing is hard-coded. */}
+          {!isPro && cheapest && (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
+              accessibilityHint={t('cp_double_tap')}
+              testID="home-plans-card"
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
                 backgroundColor: colors.bgCard,
@@ -311,35 +324,16 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
                 borderWidth: 1, borderColor: colors.border,
                 marginBottom: 12,
               }}
-              accessibilityLabel={t('home_analytics_a11y')}>
-              {/* Locked stat row — placeholders only. Never show invented arrest
-                  counts here (the seeded arrest rows are sample data). */}
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
-                {[
-                  { label: t('home_stat_arrests'), value: '•••' },
-                  { label: t('home_stat_top_charge'), value: '•••' },
-                  { label: t('home_stat_avg_bail'), value: '•••' },
-                ].map(stat => (
-                  <View key={stat.label}
-                    style={{ flex: 1, backgroundColor: colors.bgCard, borderRadius: 10,
-                      padding: 10, alignItems: 'center', opacity: 0.85 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textBrand }}>
-                      {stat.value}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: colors.textSecond, textAlign: 'center' }}>
-                      {stat.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: colors.textBrand, flex: 1 }}>
-                  {t('home_analytics_cta')}
-                </Text>
-                <Text style={{ fontSize: 11, color: colors.textBrand, fontWeight: '600' }}>
-                  {t('home_analytics_price')}
-                </Text>
-              </View>
+              accessibilityLabel={t('home_plans_a11y', { price: cheapest.price })}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>
+                {t('home_plans_title')}
+              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textSecond, marginBottom: 8 }}>
+                {cheapest.features.map(featureLabel).join(' · ')}
+              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textBrand, fontWeight: '600' }}>
+                {t('home_plans_from', { price: cheapest.price })}
+              </Text>
             </TouchableOpacity>
           )}
 

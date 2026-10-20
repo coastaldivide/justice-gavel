@@ -146,13 +146,14 @@ describe('MISC_E. motions + billing + attorney + single-routes → ≥15', () =>
     expect(fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js','utf8')).toContain('/:type');
   });
   test('MISC_E-05: expungement/attorneys + motions/review + billing subs + pi_leads + verif + templates', async () => {
-    const fs=await import('fs');
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/expungement/attorneys.js','utf8')).toContain("router.get('/attorneys'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/motions/review.js','utf8')).toContain("router.patch('/:id/status'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js','utf8')).toContain("router.post('/refund'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js','utf8')).toContain("router.post('/pi-lead/accept/:id'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js','utf8')).toContain("router.post('/approve-verification'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/attorney/templates.js','utf8')).toContain("router.patch('/templates/:id/approve'");
+    const fs = await import('fs');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/expungement/attorneys.js', 'utf8')).toContain("router.get('/attorneys'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/motions/review.js', 'utf8')).toContain("router.patch('/:id/status'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8')).toContain("router.post('/refund'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/pi_leads.js', 'utf8')).toContain("router.post('/pi-lead/accept/:id'");
+    // section G: bar numbers are decided in the admin review queue
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/admin/queue.js', 'utf8')).toContain("router.post('/bar/:userId'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/attorney/templates.js', 'utf8')).toContain("router.patch('/templates/:id/approve'");
   });
   test('MISC_E-06: golden_gavel evaluate + hall/opt-in + eligibility', async () => {
     const fs=await import('fs');

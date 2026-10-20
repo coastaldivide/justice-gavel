@@ -11,8 +11,11 @@
 import { err400, truncateStr, err404, safeInt, sanitizeStr, escapeLike } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
+import { hasFeature } from '../services/entitlements.js';
+import { FEATURES } from './billing/plans.js';
 import express from 'express';
 import { getDb } from '../db/index.js';
+import { msg, resolveLang } from '../i18n/index.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
@@ -179,6 +182,10 @@ router.post('/monitors', authMiddleware, validate(schemas.arrests.create_monitor
   if (watch_name) watch_name = truncateStr(watch_name, 200);  if (!watch_name) return err400(res, 'watch_name required');
   try {
     const db = await getDb();
+    // Arrest monitors are part of the plans that list them (routes/billing/plans.js).
+    if (!await hasFeature(db, req.user.id, FEATURES.ARREST_MONITOR)) {
+      return res.status(402).json({ error: msg(resolveLang(req), 'arrests.err.plan_required'), code: 'upgrade_required', upgrade_url: '/plans' });
+    }
     // Limit: 5 per user
     const count = await db.get('SELECT COUNT(*) as n FROM arrest_monitors WHERE user_id=? AND active=1', [req.user.id]);
     if ((count?.n ?? 0) >= 5) return res.status(429).json({ error: 'Monitor limit reached (5 max)' });

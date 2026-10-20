@@ -169,9 +169,15 @@ describe('S1c. arrests.js + recap + privilege + bondsman + conflicts', () => {
   });
   test('S1c-04: billing/bondsman.js POST /bondsman/verified-badge/subscribe checks existing', async () => {
     const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('/bondsman/verified-badge/subscribe');
-    expect(src).toContain('verified_badge_subscriptions');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
   test('S1c-05: conflicts.js GET /report/:firmId — full conflict report for a firm', async () => {
     const fs = await import('fs');

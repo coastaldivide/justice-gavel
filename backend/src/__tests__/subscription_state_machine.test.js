@@ -19,20 +19,20 @@ describe('Subscription tiers — configuration', () => {
     expect(existsSync(SHARED_PATH)).toBe(true);
   });
 
-  test('all 4 paid tiers are defined', () => {
-    const c = readFileSync(SHARED_PATH, 'utf-8');
-    for (const tier of ['legal_radar','advisor','legal_pro','esquire']) {
-      expect(c).toMatch(new RegExp(tier, 'i'));
-    }
+  // Section G: the plans live in billing/plans.js (re-exported by _shared.js)
+  test('all 4 paid tiers are defined', async () => {
+    expect(readFileSync(SHARED_PATH, 'utf-8')).toContain("from './plans.js'");
+    const { TIERS } = await import('../routes/billing/plans.js');
+    for (const tier of ['legal_radar', 'advisor', 'legal_pro', 'esquire']) expect(TIERS[tier]).toBeTruthy();
   });
 
-  test('tier prices match product specification', () => {
-    const c = readFileSync(SHARED_PATH, 'utf-8');
-    // At least one price tier should be defined
-    expect(c).toMatch(/display_price|monthly_cents|price_id/i);
-    // Check any of the configured tier prices exist (prices may differ from initial spec)
-    const hasPrices = /\d{2}\.\d{2}/.test(c);
-    expect(hasPrices).toBe(true);
+  test('tier prices match product specification', async () => {
+    const { TIERS } = await import('../routes/billing/plans.js');
+    expect(Object.fromEntries(['legal_radar', 'advisor', 'legal_pro', 'esquire'].map(k => [k, TIERS[k].monthly_cents])))
+      .toEqual({ legal_radar: 1999, advisor: 2499, legal_pro: 3499, esquire: 4900 });
+    for (const k of ['legal_radar', 'advisor', 'legal_pro', 'esquire']) {
+      expect(TIERS[k].display_price).toContain((TIERS[k].monthly_cents / 100).toFixed(2));   // shown = charged
+    }
   });
 
   test('annual pricing concept is valid', () => {

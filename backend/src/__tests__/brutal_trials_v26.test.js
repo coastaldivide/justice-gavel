@@ -291,12 +291,14 @@ describe('6. i18n chat_ — AI Chat (35 keys)', () => {
   test('6-04: upgrade limit gate labels', async () => {
     const en = await getEn();
     expect(en['chat_limit_body']).toContain('3 AI messages per day');
-    expect(en['chat_limit_upgrade']).toBe('Upgrade — $9.99/mo');
+    // Section G: "$9.99/mo" was no real plan; the upgrade copy names no price (the plans screen shows them)
+    expect(en['chat_limit_upgrade']).toBeUndefined();
+    expect(en['chat_upgrade_cta']).not.toMatch(/\$/);
     expect(en['chat_limit_dismiss']).toBe('Maybe later');
   });
   test('6-05: chat_ total key count = 49 (+ streaming, stop, retry, crisis, sign-in keys)', async () => {
     const en = await getEn();
-    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(49);
+    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(48);   // section G: chat_limit_upgrade ($9.99) removed
   });
 });
 
@@ -362,11 +364,11 @@ describe('8. i18n mh_ + juv_ + atty_ — Specialized Screens', () => {
   });
   test('8-04: atty_ dashboard labels', async () => {
     const en = await getEn();
-    expect(en['atty_cle_earned']).toBe('CLE hours earned');
-    expect(en['atty_save_profile']).toBe('Save Profile');
-    expect(en['atty_bar_number']).toBe('Bar Number');
-    expect(en['atty_office_id']).toBe('Office ID');
-    expect(en['atty_transcript']).toBe('View Full Transcript →');
+    // Section G: the dashboard was rewritten; its labels are ad_* (bar review, CLE, office)
+    expect(en['atty_cle_earned']).toBeUndefined();
+    expect(en['ad_bar_submit']).toBe('Submit for review');
+    expect(en['ad_cle_mark']).toBe('Mark completed');
+    expect(en['ad_office_id']).toBe('Office ID');
   });
 });
 

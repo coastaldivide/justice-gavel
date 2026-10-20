@@ -338,7 +338,7 @@ describe('Regression — All v1–v87 Confirmed', () => {
   });
   test('R-06: BUSINESS_CONSTANTS + CONFIG', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);

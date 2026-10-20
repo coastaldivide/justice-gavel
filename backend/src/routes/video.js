@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 /**
  * routes/video.js — Attorney-client video consultations via Daily.co
  *
@@ -22,7 +23,8 @@ import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
 import { sanitizeStr }  from '../utils/sanitize.js';
 import { safeInt }      from '../utils/routeHelpers.js';
-import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
+import { hasFeature } from '../services/entitlements.js';
+import { FEATURES } from './billing/plans.js';
 import { auditLog }     from '../utils/auditLog.js';
 import logger           from '../utils/logger.js';
 import { resolveLang, msg } from '../i18n/index.js';
@@ -56,8 +58,7 @@ router.post('/session', authRequired, async (req, res) => {
 
   // Feature gate — Legal Pro and above
   const db  = await getDb();
-  const sub = await db.get(`SELECT tier FROM user_subscriptions WHERE user_id = ?`, [req.user.id])
-              .catch(() => null);
+
   if (!process.env.DAILY_API_KEY) {
     logger.warn('DAILY_API_KEY not set — video sessions disabled');
     return res.status(503).json({ error: msg(lang, 'video.err.unavailable'), code: 'video_unavailable' });
@@ -70,7 +71,7 @@ router.post('/session', authRequired, async (req, res) => {
     if (!m) return res.status(404).json({ error: msg(lang, 'video.err.matter_not_found'), code: 'not_found' });
   }
 
-  if (!canAccessFeature(sub?.tier, 'video_consultation')) {
+  if (!await hasFeature(db, req.user.id, FEATURES.VIDEO_CONSULTATION)) {
     return res.status(403).json({
       error:    msg(lang, 'video.err.upgrade'),
       code:     'upgrade_required',
@@ -185,7 +186,7 @@ router.delete('/session/:name', authRequired, async (req, res) => {
   try {
     if (!(await ownSession(req))) return res.status(404).json({ error: msg(resolveLang(req), 'video.err.not_found'), code: 'not_found' });
     await dailyRequest('DELETE', `/rooms/${encodeURIComponent(req.params.name)}`);
-    await (await getDb()).run('UPDATE video_sessions SET ended_at = NOW() WHERE daily_room_name = ? AND user_id = ?', [req.params.name, req.user.id]).catch(() => {});
+    await (await getDb()).run('UPDATE video_sessions SET ended_at = NOW() WHERE daily_room_name = ? AND user_id = ?', [req.params.name, req.user.id]).catch(logIgnored('routes/video'));
     await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_ENDED',
       entityType: 'video', entityId: req.params.name, req });
     return res.json({ ended: true });

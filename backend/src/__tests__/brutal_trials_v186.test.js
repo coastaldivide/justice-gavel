@@ -44,15 +44,12 @@ describe('BODY. Async Handler Function Bodies', () => {
   });
   test('BODY-03: SubscriptionScreen.loadSubscription catch is intentional (no sub = upgrade UI)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     const fnIdx = src.indexOf('const load = useCallback');
-    const body  = src.slice(fnIdx, fnIdx+1400);
-    // The subscription lookup's catch is intentional: not subscribed = show plans (not an error)
-    expect(body).toContain("api.get('/billing/subscription').catch(() => null)");
-    expect(body).toContain('catch');
-    // loading cleared via finally or explicit setLoading(false)
-    const hasCleanup = body.includes('.finally(') || body.includes('setLoading(false)');
-    expect(hasCleanup).toBe(true);
+    const body = src.slice(fnIdx, fnIdx + 2600);
+    // Not subscribed = show plans (not an error)
+    expect(body).toContain("api.get('/billing/subscription', { params: { provider_type: 'lawyer' } }).catch(() => null)");
+    expect(body.includes('.finally(') || body.includes('setLoading(false)')).toBe(true);
   });
   test('BODY-04: all large screens have try/catch in every api-calling async function', async () => {
     const fs   = await import('fs');
@@ -79,21 +76,17 @@ describe('BODY. Async Handler Function Bodies', () => {
   });
   test('BODY-05: StyleSheet keys verified present in actual create blocks (not false positives)', async () => {
     const fs = await import('fs');
-    // Representative sample: admin screen 'empty', chat screen 'iconBtn'
-    for(const [f, key] of [
-      ['AdminVerificationScreen.tsx', 'empty'],
+    for (const [f, key] of [
+      ['AdminVerificationScreen.tsx', 'card'],     // section G: rewritten admin screen
       ['ChatScreen.tsx', 'iconBtn'],
       ['AgeGateScreen.tsx', 'subtitle'],
-    ]){
-      const src = fs.readFileSync(__REPO + '/frontend/src/screens/'+f,'utf8');
+    ]) {
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/' + f, 'utf8');
       const ssIdx = src.lastIndexOf('StyleSheet.create(');
-      if(ssIdx < 0) continue;
-      // Extract the full StyleSheet block
-      let depth=0, i=src.indexOf('(',ssIdx);
-      while(i<src.length){ if(src[i]==='(')depth++; else if(src[i]===')'){depth--;if(!depth)break;} i++; }
-      const block = src.slice(ssIdx, i+1);
-      // Style key should be present
-      expect(block).toContain(key+':');
+      if (ssIdx < 0) continue;
+      let depth = 0, i = src.indexOf('(', ssIdx);
+      while (i < src.length) { if (src[i] === '(') depth++; else if (src[i] === ')') { depth--; if (!depth) break; } i++; }
+      expect(src.slice(ssIdx, i + 1)).toContain(key + ':');
     }
   });
 });

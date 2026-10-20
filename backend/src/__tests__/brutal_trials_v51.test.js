@@ -169,7 +169,14 @@ describe('TYPE. Screen Type Aliases — State Machine Types', () => {
   test('TYPE-01: FirmAcquisitionScreen Flow = browse|activate|status', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
-    expect(src).toContain("type Flow = 'browse' | 'activate' | 'status'");
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
+    expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
   test('TYPE-02: BookingScreen Step = duration|datetime|confirm|confirmed|callback_sent', async () => {
     const fs = await import('fs');
@@ -187,7 +194,13 @@ describe('TYPE. Screen Type Aliases — State Machine Types', () => {
   test('TYPE-04: AttorneyDashboardScreen Tab = cases|templates|cle|profile', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    expect(src).toContain("type Tab = 'cases' | 'templates' | 'cle' | 'profile'");
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
   test('TYPE-05: CheckInScreen CheckInPhase has already_done state (idempotent check-in)', async () => {
     const fs = await import('fs');

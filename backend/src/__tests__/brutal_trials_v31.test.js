@@ -111,10 +111,15 @@ describe('S1. Route Zero-Hit Endpoints — All 28 Documented', () => {
   });
   test('S1-09: billing/bondsman.js verified-badge subscribe checks active sub', async () => {
     const fs = await import('fs');
+    // Section G: the paid "Verified by Justice Gavel" badge is removed (it sold a verification nobody
+    // performed). Bail-agent plans are new-arrest alert coverage (billing/plans.js BONDSMAN_TIERS).
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js', 'utf8');
-    expect(src).toContain('/bondsman/verified-badge/subscribe');
-    expect(src).toContain("status='active'");
-    expect(src).toContain('verified_badge_subscriptions');
+    expect(src).not.toContain('verified-badge');
+    expect(src).not.toContain('verified_badge_subscriptions');
+    expect(src).toContain("router.get('/bondsman/tiers'");
+    expect(src).toContain("router.post('/bondsman/subscribe'");
+    expect(src).toContain("router.post('/bondsman/subscription/cancel'");
+    expect(src).toContain('authRequired');
   });
 });
 
@@ -182,11 +187,14 @@ describe('S6. Screens — UX Weakness Audit (Flags Documented)', () => {
   test('S6-01: AdminVerificationScreen no error state — uses loading guard instead', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AdminVerificationScreen.tsx', 'utf8');
-    expect(src).toContain('pending-verification');
-    expect(src).toContain('approve-verification');
-    expect(src).toContain('mountedRef');
-    // Admin-only screen — errors handled by auth gate not inline error state
-    expect(src).toContain('loading');
+    // Section G: four admin queues (bar numbers, listing claims, listing reports, reviews) from /admin/queue
+    expect(src).toContain("'/admin/queue/summary'");
+    expect(src).toContain('/admin/queue/${which}');
+    expect(src).toContain('/admin/queue/bar/${b.user_id}');
+    expect(src).toContain('isAdminUser');
+    expect(src).toContain('refreshing');
+    expect(src).toContain('busy');
+    expect(src).toContain('adm_load_error');   // errors are shown to the admin
   });
   test('S6-02: LawyerProfileScreen — reviews + saved state, PTR, mountedRef', async () => {
     const fs = await import('fs');
@@ -436,7 +444,7 @@ describe('S12. UX Deep Audit — Navigation + Platform + A11y', () => {
       .filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('KeyboardAvoidingView'))
       .length;
-    expect(count).toBeGreaterThanOrEqual(34);   // SpecialtyCourts dropped a KeyboardAvoidingView around a chip row (section F)
+    expect(count).toBeGreaterThanOrEqual(31);   // 31: Payments lost its amount form; Bondsman / Attorney dashboards scroll their forms (section G)   // SpecialtyCourts dropped a KeyboardAvoidingView around a chip row (section F)
   });
   test('S12-06: 48 screens use Platform.OS for cross-platform differences', async () => {
     const fs   = await import('fs');

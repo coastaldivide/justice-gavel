@@ -339,13 +339,12 @@ describe('4. i18n — 19 Untested Categories', () => {
   });
 
   test('4-08: atty_ keys — attorney dashboard (12 keys)', async () => {
-    const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    const fs = await import('fs');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
     expect(en['atty_title']).toBe('Attorney Dashboard');
-    expect(en['atty_tab_cases']).toBe('Cases');
     expect(en['atty_tab_cle']).toBe('CLE');
-    const attyKeys = Object.keys(en).filter(k => k.startsWith('atty_'));
-    expect(attyKeys.length).toBeGreaterThanOrEqual(10);
+    // Section G: the rewritten dashboard's labels are ad_*
+    expect(Object.keys(en).filter(k => k.startsWith('ad_')).length).toBeGreaterThanOrEqual(40);
   });
 
   test('4-09: messages_ and msg_ keys — messaging flows', async () => {
@@ -396,12 +395,11 @@ describe('4. i18n — 19 Untested Categories', () => {
   });
 
   test('4-14: res_ keys — AI legal research screen (22 keys)', async () => {
-    const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    const fs = await import('fs');
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
     expect(en['res_title']).toBe('AI Legal Research');
-    expect(en['res_paywall_subscribe']).toContain('$49');
-    const resKeys = Object.keys(en).filter(k => k.startsWith('res_'));
-    expect(resKeys.length).toBeGreaterThanOrEqual(15);
+    expect(en['res_paywall_subscribe']).toBeUndefined();   // section G: no invented $49.99 add-on
+    expect(Object.keys(en).filter(k => k.startsWith('res_')).length).toBeGreaterThanOrEqual(15);
   });
 
   test('4-15: help_ keys — help now screen (22 keys)', async () => {

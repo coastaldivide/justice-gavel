@@ -36,6 +36,8 @@ import { safeInt, sanitizeStr }     from '../utils/routeHelpers.js';
 import { msg, resolveLang }         from '../i18n/index.js';
 import { isValidTimeZone, todayInZone, parseDateOnly, DEFAULT_TIME_ZONE } from '../utils/timezone.js';
 import logger                       from '../utils/logger.js';
+import { hasFeature }               from '../services/entitlements.js';
+import { FEATURES }                 from './billing/plans.js';
 
 const err400 = (res, key, req) => res.status(400).json({ error: key, code: key, message: msg(resolveLang(req), `barprep.err.${key}`) });
 const err404 = (res, key, req) => res.status(404).json({ error: key, code: key, message: msg(resolveLang(req), `barprep.err.${key}`) });
@@ -59,7 +61,6 @@ router.use(authRequired);
 
 // ── FIX #2: module-scope constants (one allocation, not one per request) ──────
 const BAR_SAMPLE_LIMIT = 10;
-const PAID_TIERS       = new Set(['legal_radar', 'advisor', 'legal_pro', 'esquire']);
 const VALID_REASONS    = new Set(['incorrect', 'confusing', 'outdated', 'typo', 'other']);
 
 // ── Safe question projection — never leak correct_answer before submit ────────
@@ -78,13 +79,8 @@ function toSafeQuestion(q) {
 }
 
 // ── FREE-TIER SAMPLE GATE ─────────────────────────────────────────────────────
-// Paid = an active / trialing subscription to one of PAID_TIERS (the
-// subscriptions table is the record; users.subscription_tier is not kept up to date).
-async function hasPaidPlan(db, userId) {
-  const rows = await db.all(
-    `SELECT tier FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing') LIMIT 20`, [userId]).catch(() => []);
-  return rows.some(r => PAID_TIERS.has(r.tier));
-}
+// Paid = a plan that includes bar prep (routes/billing/plans.js, services/entitlements.js).
+const hasPaidPlan = (db, userId) => hasFeature(db, userId, FEATURES.BAR_PREP);
 
 async function checkSampleLimit(req, res, next) {
   try {

@@ -49,10 +49,15 @@ describe('SEC. Security Checks', () => {
     expect(risky).toBe(0);
   });
   test('SEC-03: CORS no wildcard, Stripe HMAC, AI disclaimer', async () => {
-    const fs=await import('fs');
-    expect(fs.readFileSync(__REPO + '/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8')).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js','utf8')).toContain('not_legal_advice');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8')).toContain('not_legal_advice');
   });
   test('SEC-04: auth rate limiting + GDPR delete', async () => {
     const fs=await import('fs');
@@ -175,13 +180,14 @@ describe('ALL. 75-Screen Zero-Defect Verification', () => {
     expect(bare).toBeGreaterThanOrEqual(0);
   });
   test('ALL-07: Stripe 5 events + TCPA + GDPR', async () => {
-    const fs=await import('fs');
-    const stripe=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    for(const ev of ['payment_intent.succeeded','invoice.payment_failed',
-                     'customer.subscription.deleted','customer.subscription.updated',
-                     'checkout.session.completed'])
-      expect(stripe).toContain(ev);
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    const fs = await import('fs');
+    // Section G: routes/webhooks/stripe.js is a thin router; the events are handled in services/stripeWebhook.js
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8')).toContain('stripeWebhookHandler');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('stripe_event_log');   // a replayed event is processed once
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8')).toContain('DELETE FROM users');
   });
   test('ALL-08: discovery + motions/generate + /family/contacts all exist', async () => {
     const fs=await import('fs');

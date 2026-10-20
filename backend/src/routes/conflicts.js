@@ -29,269 +29,194 @@ import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { err400, err403, err404, err409, safeInt,
          sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
+import { resolveLang, msg } from '../i18n/index.js';
 
 const router = Router();
 
 const conflictLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Conflict check limit reached.' });
 const wallLimiter     = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'Ethics wall operation limit reached.' });
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
+// ── Name matching ─────────────────────────────────────────────────────────────
+// "O'Brien, José" / "Jose OBrien" / "JOSE O BRIEN" → tokens {jose, obrien}; company
+// suffixes (Inc., LLC …) and a leading "the" are ignored. Two names match when one
+// name's tokens are all whole tokens of the other (order-free): equal sets are an
+// exact match, a subset ("Smith" vs "John Smith") is a possible match — conflict
+// screening errs on the side of showing it.
+const NAME_STOP = new Set(['the', 'inc', 'incorporated', 'llc', 'llp', 'lllp', 'lp', 'ltd', 'co', 'corp', 'corporation', 'company', 'pc', 'pllc', 'pa', 'plc']);
 
-/** Normalize party name for consistent matching */
-function normalizeName(raw) {
+/** Normalized form stored in conflict_index.party_name_norm (tokens joined by single spaces). */
+export function normalizeName(raw) {
   return String(raw || '')
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-    .replace(/[.,\-'"/#!$%^&*;:{}=`~()<>[\]]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/&/g, ' and ')
+    .replace(/(\p{L})['’.](?=\p{L})/gu, '$1')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .split(' ')
+    .filter(t => t && !NAME_STOP.has(t))
+    .join(' ');
 }
 
-/** Compact form: lowercase alphanumerics only (o'brien → obrien) */
+/** 'exact' | 'partial' | null for two normalized names. */
+export function nameMatch(a, b) {
+  if (!a || !b) return null;
+  if (a === b || a.replace(/ /g, '') === b.replace(/ /g, '')) return 'exact';
+  const ta = new Set(a.split(' ')), tb = new Set(b.split(' '));
+  const [small, big] = ta.size <= tb.size ? [ta, tb] : [tb, ta];
+  if (![...small].some(t => t.length >= 2)) return null;
+  for (const t of small) if (!big.has(t)) return null;
+  return small.size === big.size ? 'exact' : 'partial';
+}
 
-/** Check for fuzzy match (one-way containment) */
-
-// ethics_wall_log, conflict_waivers, conflict_index, matter_team_members, soc2_controls — managed by db/index.js Year 1.5.
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CONFLICT SCREENING
-// ══════════════════════════════════════════════════════════════════════════════
+const say = (req, k, p) => msg(resolveLang(req), `conflicts.err.${k}`, p);
+const MAX_NAMES = 20;
+const MAX_ROWS  = 50_000;
 
 /**
- * GET /api/conflicts/check
- * Query params: names (comma-separated), firm_id (optional — uses JWT firm if omitted)
- * Returns: { conflicts: [], clear: bool }
+ * POST /api/conflicts/check { parties: [{ name } | 'name'] }   (the app)
+ * GET  /api/conflicts/check?names=a,b
+ * Checks the names against the caller's firm only: its conflict index, the parties on
+ * its matters and its matters' clients / opposing parties. 403 without a firm.
  */
-// POST /check — body form used by the app: { parties: [{ name, role }], firm_id? }
-router.post('/check', authRequired, conflictLimiter, (req, res, next) => {
+router.post('/check', authRequired, conflictLimiter, (req, res) => {
   const parties = Array.isArray(req.body?.parties) ? req.body.parties : [];
-  const names = parties.map(p => (typeof p === 'string' ? p : p?.name)).filter(Boolean)
-    .map(n => String(n).replace(/,/g, ' ').trim());
-  if (Array.isArray(req.body?.names)) names.push(...req.body.names.map(String));
-  req.query = { ...req.query, names: names.join(','), ...(req.body?.firm_id ? { firm_id: String(req.body.firm_id) } : {}) };
-  return conflictCheckHandler(req, res, next);
+  const names = parties.map(p => (typeof p === 'string' ? p : p?.name)).filter(v => typeof v === 'string');
+  if (Array.isArray(req.body?.names)) names.push(...req.body.names.filter(v => typeof v === 'string'));
+  return conflictCheck(req, res, names, req.body?.firm_id);
 });
+router.get('/check', authRequired, conflictLimiter, (req, res) =>
+  conflictCheck(req, res, String(req.query.names || '').split(','), req.query.firm_id));
 
-router.get('/check', authRequired, conflictLimiter, (req, res, next) => conflictCheckHandler(req, res, next));
-
-async function conflictCheckHandler(req, res) {
+async function conflictCheck(req, res, rawNames, askedFirm) {
   try {
-    const db  = await getDb();
-    const ctx    = await loadFirmContext(req);
-    const firmId = ctx?.firm_id || safeInt(req.query.firm_id);
-    if (!firmId) return err400(res, 'Firm context required. Join a firm first or pass firm_id.');
+    const ctx = await loadFirmContext(req);
+    if (!ctx?.firm_id) return res.status(403).json({ error: say(req, 'firm_required'), code: 'firm_required' });
+    if (askedFirm != null && askedFirm !== '' && safeInt(askedFirm) !== ctx.firm_id) {
+      return res.status(403).json({ error: say(req, 'other_firm'), code: 'forbidden' });
+    }
+    const firmId = ctx.firm_id;
+    const names = [...new Set(rawNames.map(n => String(n).trim()).filter(Boolean))];
+    if (!names.length) return res.status(400).json({ error: say(req, 'names_required'), code: 'names_required' });
+    if (names.length > MAX_NAMES) return res.status(400).json({ error: say(req, 'too_many', { n: MAX_NAMES }), code: 'too_many' });
+    const searched = names.map(n => ({ name: n.slice(0, 200), norm: normalizeName(n) })).filter(x => x.norm);
 
-    const rawNames = String(req.query.names || '').split(',').map(n => n.trim()).filter(Boolean);
-    if (!rawNames.length) return err400(res, 'names parameter required (comma-separated party names).');
-    if (rawNames.length > 20) return err400(res, 'Maximum 20 party names per check.');
+    const db = await getDb();
+    const [indexRows, partyRows, matterRows] = await Promise.all([
+      db.all(`SELECT ci.party_name_orig AS name, ci.party_role AS role, ci.matter_id, m.title AS matter_title, m.status AS matter_status
+                FROM conflict_index ci LEFT JOIN matters m ON m.id = ci.matter_id AND m.firm_id = ci.firm_id
+               WHERE ci.firm_id = ? LIMIT ${MAX_ROWS}`, [firmId]),
+      db.all(`SELECT COALESCE(mp.party_name, mp.name) AS name, COALESCE(mp.party_type, mp.role) AS role, mp.matter_id,
+                     m.title AS matter_title, m.status AS matter_status
+                FROM matter_parties mp LEFT JOIN matters m ON m.id = mp.matter_id AND m.firm_id = mp.firm_id
+               WHERE mp.firm_id = ? LIMIT ${MAX_ROWS}`, [firmId]),
+      db.all(`SELECT id, title, status, client_name, opposing_party FROM matters WHERE firm_id = ? LIMIT ${MAX_ROWS}`, [firmId]),
+    ]);
+    const candidates = [
+      ...indexRows.map(r => ({ ...r, source: 'conflict_index' })),
+      ...partyRows.map(r => ({ ...r, source: 'matter_parties' })),
+      ...matterRows.flatMap(m => [
+        m.client_name ? { name: m.client_name, role: 'client', matter_id: m.id, matter_title: m.title, matter_status: m.status, source: 'matter' } : null,
+        m.opposing_party ? { name: m.opposing_party, role: 'adverse', matter_id: m.id, matter_title: m.title, matter_status: m.status, source: 'matter' } : null,
+      ].filter(Boolean)),
+    ].map(c => ({ ...c, norm: normalizeName(c.name) })).filter(c => c.norm);
 
     const conflicts = [];
-    const checked   = [];
-
-    // ── Batch conflict query — replaces N+1 loop ────────────────────────────────
-    // Normalise all names up front, skip empties
-    const normedNames = rawNames
-      .map(n => ({ orig: n, norm: normalizeName(n) }))
-      .filter(({ norm }) => !!norm);
-
-    if (normedNames.length > 0) {
-      // Build a single OR clause for all names: one pass over conflict_index
-      const ciOrClauses = normedNames.map(() =>
-        '(ci.party_name_norm = ? OR ci.party_name_norm LIKE ?)'
-      ).join(' OR ');
-      const ciParams = [firmId, ...normedNames.flatMap(({ norm }) => [norm, `%${norm}%`])];
-
-      const allCiRows = await db.all(
-        `SELECT ci.party_name_orig, ci.party_name_norm, ci.party_role,
-                ci.matter_id, ci.added_at,
-                m.title AS matter_title, m.client_name, m.status AS matter_status
-         FROM conflict_index ci
-         LEFT JOIN matters m ON m.id = ci.matter_id
-         WHERE ci.firm_id=? AND (${ciOrClauses})`,
-        ciParams
-      ).catch(() => []);
-
-      // Batch matter_parties query
-      const mpOrClauses = normedNames.map(() =>
-        '(LOWER(mp.party_name) = ? OR LOWER(mp.party_name) LIKE ?)'
-      ).join(' OR ');
-      const mpParams = [firmId, ...normedNames.flatMap(({ norm }) => [norm, `%${norm}%`])];
-
-      const allMpRows = await db.all(
-        `SELECT mp.party_name, mp.party_type, mp.case_id, c.title AS case_title
-         FROM matter_parties mp
-         LEFT JOIN cases c ON c.id = mp.case_id
-         WHERE mp.firm_id=? AND (${mpOrClauses})`,
-        mpParams
-      ).catch(() => []);
-
-      // Assign results back to each searched name
-      for (const { orig: name, norm } of normedNames) {
-        const rows = allCiRows.filter(r =>
-          r.party_name_norm === norm || r.party_name_norm?.includes(norm)
-        );
-        const partyRows = allMpRows.filter(r =>
-          r.party_name?.toLowerCase() === norm ||
-          r.party_name?.toLowerCase().includes(norm)
-        );
-
-        const allMatches = [
-          ...rows.map(r => ({
-            searched_name: name,
-            matched_name:  r.party_name_orig,
-            role:          r.party_role,
-            matter_id:     r.matter_id,
-            matter_title:  r.matter_title || null,
-            matter_status: r.matter_status || null,
-            source:        'conflict_index',
-          })),
-          ...partyRows.map(r => ({
-            searched_name: name,
-            matched_name:  r.party_name,
-            role:          r.party_type,
-            matter_id:     r.case_id,
-            matter_title:  r.case_title || null,
-            source:        'matter_parties',
-          })),
-        ];
-
-        if (allMatches.length) {
-          conflicts.push({
-            name,
-            matches: allMatches,
-            conflict_types: [...new Set(allMatches.map(m => m.role))],
-          });
-        }
-
-        checked.push(name);
+    for (const s of searched) {
+      const matches = [];
+      const seen = new Set();
+      for (const c of candidates) {
+        const m = nameMatch(s.norm, c.norm);
+        if (!m) continue;
+        const key = `${c.norm}|${c.role}|${c.matter_id ?? ''}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        matches.push({
+          matched_name: c.name, role: c.role || null, match: m,
+          matter_id: c.matter_id ? Number(c.matter_id) : null, matter_title: c.matter_title || null,
+          matter_status: c.matter_status || null, source: c.source,
+        });
       }
+      matches.sort((x, y) => (x.match === y.match ? 0 : x.match === 'exact' ? -1 : 1));
+      if (matches.length) conflicts.push({ name: s.name, matches });
     }
 
-    // Audit the conflict check
     await writeAuditLog(db, {
-      user_id:  req.user.id,
-      firm_id:  firmId,
-      action:   'conflict_check',
-      resource: 'conflict',
-      detail:   JSON.stringify({ names: rawNames, conflict_count: conflicts.length }),
-      ip:       req.ip,
-      ua:       req.headers['user-agent'],
+      user_id: req.user.id, firm_id: firmId, action: 'conflict_check', resource: 'conflict',
+      detail: JSON.stringify({ count: names.length, conflict_count: conflicts.length }),
+      ip: req.ip, ua: req.headers['user-agent'],
     });
-
     res.json({
-      clear:     conflicts.length === 0,
-      conflicts,
-      checked,
-      checked_count: checked.length,
-      conflict_count: conflicts.length,
-      firm_id:   firmId,
+      clear: conflicts.length === 0, conflicts,
+      checked: searched.map(s => s.name), checked_count: searched.length,
+      conflict_count: conflicts.length, index_size: candidates.length, firm_id: firmId,
     });
   } catch (e) {
     logger.error('[conflicts/check]', e.message);
-    res.status(500).json({ error: 'Conflict check failed.' });
+    res.status(500).json({ error: say(req, 'server'), code: 'server_error' });
   }
 }
 
 /**
- * POST /api/conflicts/index — add parties to conflict index
- * Body: { matter_id?, parties: [{ name, role }] }
+ * POST /api/conflicts/index — add parties to the firm's conflict index
+ * Body: { matter_id?, parties: [{ name, role }] } — matter_id must be one of the firm's matters.
  */
 router.post('/index', authRequired, requireFirmRole('associate'), async (req, res) => {
   try {
     const db  = await getDb();
     const ctx    = req.firmCtx;
     const firmId = ctx?.firm_id;
-    if (!firmId) return err403(res, 'Firm membership required.');
+    if (!firmId) return res.status(403).json({ error: say(req, 'firm_required'), code: 'firm_required' });
 
     const { matter_id, parties = [] } = req.body || {};
-    if (!Array.isArray(parties) || !parties.length) return err400(res, 'parties array required.');
-    if (parties.length > 50) return err400(res, 'Maximum 50 parties per request.');
+    if (!Array.isArray(parties) || !parties.length) return res.status(400).json({ error: say(req, 'names_required'), code: 'names_required' });
+    if (parties.length > 50) return res.status(400).json({ error: say(req, 'too_many', { n: 50 }), code: 'too_many' });
+    let matterId = null;
+    if (matter_id != null && matter_id !== '') {
+      const m = await db.get('SELECT id FROM matters WHERE id = ? AND firm_id = ?', [safeInt(matter_id), firmId]);
+      if (!m) return res.status(404).json({ error: say(req, 'matter_not_found'), code: 'not_found' });
+      matterId = Number(m.id);
+    }
 
     const PARTY_ROLES = ['client', 'adverse', 'former_client', 'witness', 'expert'];
-    const added = [];
-    const conflicts_found = [];
-
-    // Normalise all parties up front
-    const normalisedParties = parties
+    const list = parties
       .map(p => ({
-        name: truncateStr(sanitizeStr(String(p.name || ''), 200), 200),
-        role: PARTY_ROLES.includes(p.role) ? p.role : 'client',
+        name: truncateStr(sanitizeStr(String(typeof p === 'string' ? p : p?.name || ''), 200), 200).trim(),
+        role: PARTY_ROLES.includes(p?.role) ? p.role : 'client',
       }))
       .filter(p => p.name)
-      .map(p => ({ ...p, norm: normalizeName(p.name) }));
+      .map(p => ({ ...p, norm: normalizeName(p.name) }))
+      .filter(p => p.norm);
+    if (!list.length) return res.status(400).json({ error: say(req, 'names_required'), code: 'names_required' });
 
-    if (!normalisedParties.length) return res.json({ added: [], added_count: 0, conflicts_found: [], conflict_count: 0, requires_waiver: false });
-
-    // ── BATCH query: pull all potentially conflicting index rows in ONE query ──
-    const clientNorms  = normalisedParties.filter(p => p.role === 'client' ).map(p => p.norm);
-    const adverseNorms = normalisedParties.filter(p => p.role === 'adverse').map(p => p.norm);
-
-    const [adverseRows, clientRows] = await Promise.all([
-      clientNorms.length
-        ? db.all(
-            `SELECT party_name_orig, party_name_norm, matter_id FROM conflict_index
-             WHERE firm_id=? AND party_role='adverse'
-             AND party_name_norm IN (${clientNorms.map(() => '?').join(',')})`,
-            [firmId, ...clientNorms]
-          ).catch(() => [])
-        : [],
-      adverseNorms.length
-        ? db.all(
-            `SELECT party_name_orig, party_name_norm, matter_id FROM conflict_index
-             WHERE firm_id=? AND party_role='client'
-             AND party_name_norm IN (${adverseNorms.map(() => '?').join(',')})`,
-            [firmId, ...adverseNorms]
-          ).catch(() => [])
-        : [],
-    ]);
-
-    // Build lookup maps for O(1) conflict detection
-    const adverseMap = new Map(adverseRows.map(r => [r.party_name_norm, r]));
-    const clientMap  = new Map(clientRows.map(r  => [r.party_name_norm, r]));
-
-    // Process each party against the pre-fetched results (no more DB calls in loop)
-    for (const { name, role, norm } of normalisedParties) {
-      if (role === 'client' && adverseMap.has(norm)) {
-        conflicts_found.push({ party: name, type: 'new_client_is_existing_adverse',  existing_matters: [adverseMap.get(norm)] });
-      }
-      if (role === 'adverse' && clientMap.has(norm)) {
-        conflicts_found.push({ party: name, type: 'adverse_party_is_existing_client', existing_matters: [clientMap.get(norm)] });
-      }
-      added.push({ name, role });
+    // Opposite-side conflicts with what is already indexed (a new client who is an adverse party, …)
+    const existing = await db.all(`SELECT party_name_orig, party_name_norm, party_role, matter_id FROM conflict_index WHERE firm_id = ? LIMIT ${MAX_ROWS}`, [firmId]);
+    const conflicts_found = [];
+    for (const p of list) {
+      const opposite = p.role === 'client' ? 'adverse' : p.role === 'adverse' ? 'client' : null;
+      if (!opposite) continue;
+      const hits = existing.filter(r => r.party_role === opposite && nameMatch(p.norm, normalizeName(r.party_name_orig || r.party_name_norm)));
+      if (hits.length) conflicts_found.push({ party: p.name, type: p.role === 'client' ? 'new_client_is_existing_adverse' : 'adverse_party_is_existing_client', existing_matters: hits.map(h => ({ name: h.party_name_orig, matter_id: h.matter_id })) });
     }
-
-    // ── BATCH insert all new parties in one statement ──────────────────────────
-    if (added.length) {
-      const placeholders = added.map(() => '(?,?,?,?,?)').join(',');
-      const values = normalisedParties.flatMap(p => [firmId, matter_id ? safeInt(matter_id) : null, p.norm, p.name, p.role]);
-      await db.run(
-        `INSERT INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role) VALUES ${placeholders} ON CONFLICT DO NOTHING`,
-        values
-      ).catch(logIgnored('routes/conflicts'));
-    }
+    const placeholders = list.map(() => '(?,?,?,?,?, NOW())').join(',');
+    await db.run(
+      `INSERT INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role, added_at) VALUES ${placeholders}`,
+      list.flatMap(p => [firmId, matterId, p.norm, p.name, p.role]));
 
     await writeAuditLog(db, {
-      user_id:  req.user.id,
-      firm_id:  firmId,
-      action:   'conflict_index_add',
-      resource: 'conflict',
-      detail:   JSON.stringify({ matter_id, count: added.length, conflicts_found: conflicts_found.length }),
-      ip:       req.ip,
-      ua:       req.headers['user-agent'],
+      user_id: req.user.id, firm_id: firmId, action: 'conflict_index_add', resource: 'conflict',
+      detail: JSON.stringify({ matter_id: matterId, count: list.length, conflicts_found: conflicts_found.length }),
+      ip: req.ip, ua: req.headers['user-agent'],
     });
-
-    if (conflicts_found.length > 0 && ctx?.firm_id) {
-      dispatchWebhookEvent(db, ctx.firm_id, 'conflict.detected', { matter_id: matter_id||null, conflict_count: conflicts_found.length, query_names: parties ? parties.map(p => p.name || p) : [] }).catch(logIgnored('routes/conflicts'));
+    if (conflicts_found.length) {
+      dispatchWebhookEvent(db, firmId, 'conflict.detected', { matter_id: matterId, conflict_count: conflicts_found.length }).catch(logIgnored('routes/conflicts'));
     }
-    res.json({
-      added,
-      added_count:      added.length,
-      conflicts_found,
-      conflict_count:   conflicts_found.length,
-      requires_waiver:  conflicts_found.length > 0,
+    res.status(201).json({
+      added: list.map(({ name, role }) => ({ name, role })), added_count: list.length,
+      conflicts_found, conflict_count: conflicts_found.length, requires_waiver: conflicts_found.length > 0,
     });
   } catch (e) {
     logger.error('[conflicts/index]', e.message);
-    res.status(500).json({ error: 'Could not index parties.' });
+    res.status(500).json({ error: say(req, 'server'), code: 'server_error' });
   }
 });
 

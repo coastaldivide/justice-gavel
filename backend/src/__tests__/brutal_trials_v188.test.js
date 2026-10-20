@@ -123,17 +123,16 @@ describe('PAY. Payment Flow Verification', () => {
   });
   test('PAY-02: webhook handles all 5 critical Stripe events', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    for(const event of [
-      'customer.subscription.deleted',
-      'customer.subscription.updated',
-      'invoice.payment_failed',
-      'checkout.session.completed',
-      'invoice.payment_succeeded',
-    ]){
-      expect(src).toContain(event);
-    }
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
   });
   test('PAY-03: payment modes guarded (demo vs live)', async () => {
     const fs   = await import('fs');

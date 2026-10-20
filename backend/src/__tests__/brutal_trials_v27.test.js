@@ -161,14 +161,17 @@ describe('4. i18n disc_ — Discovery AI (36 keys full)', () => {
   });
   test('4-03: pricing and history labels', async () => {
     const en = await getEn();
-    expect(en['disc_pay_label']).toBe('Analyze Document — $19.99');
+    // Section G: the unused "Analyze Document — $19.99" label is removed; the price shown is
+    // x_discovery_19_99_per_document, the amount discovery/analyze.js charges (DISCOVERY_PRICE_CENTS 1999)
+    expect(en['disc_pay_label']).toBeUndefined();
+    expect(en['x_discovery_19_99_per_document']).toBe('$19.99 per document');
     expect(en['disc_history_title']).toBe('Previous Analyses');
     expect(en['disc_history_empty']).toBe('No analyses yet.');
     expect(en['disc_load_error']).toBe('Could not load analysis');
   });
   test('4-04: disc_ total key count = 36', async () => {
     const en = await getEn();
-    expect(Object.keys(en).filter(k => k.startsWith('disc_')).length).toBe(36);
+    expect(Object.keys(en).filter(k => k.startsWith('disc_')).length).toBe(35);   // section G: disc_pay_label removed
   });
 });
 
@@ -192,9 +195,11 @@ describe('5. i18n case_ — Case Management (37 keys full)', () => {
     const en = await getEn();
     expect(en['case_tools_section']).toBe('Defender Tools');
     expect(en['case_ai_sub']).toContain('Defender Mode');
-    expect(en['case_motion_sub']).toContain('$9.99 each');
+    // Section G: only prices that are charged are shown — motions are not charged, research comes with a plan
+    expect(en['case_motion_sub']).not.toMatch(/\$/);
     expect(en['case_discovery_sub']).toContain('$19.99/doc');
-    expect(en['case_research_sub']).toContain('$49.99/mo');
+    expect(en['case_research_sub']).not.toContain('$49.99');
+    expect(en['case_research_sub']).toContain('paid plan');
     expect(en['case_interpreter_sub']).toContain('$50–200/hr');
   });
   test('5-04: lawyers and messages empty states', async () => {
@@ -282,7 +287,8 @@ describe('8. i18n help_ — Help Now Screen (22 keys full)', () => {
     const en = await getEn();
     expect(en['help_now_more_bail']).toContain('Bail Agents');
     expect(en['help_now_more_lawyers']).toContain('Lawyers');
-    expect(en['help_now_quick_connect']).toContain('$19.99');
+    // Section G: the unused "Quick Connect $19.99" label is removed (Quick Connect is $20, quoted by the server)
+    expect(en['help_now_quick_connect']).toBeUndefined();
     expect(en['help_now_refresh']).toContain('Refresh');
   });
   test('8-03: error states', async () => {
@@ -322,8 +328,9 @@ describe('10. i18n res_ — AI Legal Research (22 keys full)', () => {
       const en = await getEn();
       expect(en['res_paywall_sub']).toContain('citations you can check');
       expect(en['res_paywall_sub']).not.toContain('Westlaw');
-      expect(en['res_paywall_subscribe']).toBe('Subscribe — $49.99/mo');
-      expect(en['res_paywall_annual']).toContain('save 37%');
+      // Section G: "$49.99/mo" / "save 37%" named no real plan; the screen lists the real plans
+      expect(en['res_paywall_subscribe']).toBeUndefined();
+      expect(en['res_paywall_annual']).toBeUndefined();
     });
   test('10-02: research session UI', async () => {
     const en = await getEn();
@@ -438,7 +445,8 @@ describe('13. Regression — All v1–v26 Confirmed', () => {
   });
   test('13-05: disc_ has $19.99 pricing label', async () => {
     const en = await getEn();
-    expect(en['disc_pay_label']).toBe('Analyze Document — $19.99');
+    expect(en['disc_pay_label']).toBeUndefined();                          // section G: unused label removed
+    expect(en['x_discovery_19_99_per_document']).toBe('$19.99 per document');
   });
   test('13-06: encryption 1000 round-trips', () => {
     for (let i = 0; i < 1000; i++) expect(decrypt(encrypt(`p-${i}`))).toBe(`p-${i}`);

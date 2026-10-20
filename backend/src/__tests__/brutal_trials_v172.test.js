@@ -19,24 +19,28 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('HANDLER. Form Submit Validation', () => {
   test('HANDLER-01: AttorneyDashboard saveProfile validates bar number before API call', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
-    const idx = src.indexOf('const saveProfile');
-    const block = src.slice(idx, idx+400);
-    // Must check barInput before making the API call
-    expect(block).toContain('barInput');
-    expect(block).toMatch(/Alert\.alert|return;|!barInput/);
-    // Before fix: empty bar number was silently submitted to backend
-    // After fix: Alert shown + early return if bar number is missing
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    // Section G: the bar number is submitted for review (POST /attorney/verify-bar); empty input cannot be sent
+    const idx = src.indexOf('const submitBar');
+    expect(idx).toBeGreaterThan(-1);
+    expect(src.slice(idx, idx + 400)).toContain('/attorney/verify-bar');
+    expect(src).toMatch(/disabled=\{sending \|\| !bar\.trim\(\) \|\| !barState\}/);
+    expect(src).toMatch(/testID="ad-bar-number"[^>]*maxLength=\{20\}/);
   });
   test('HANDLER-02: SubscriptionScreen error state rendered in JSX', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
-    // doSubscribe calls setError on failure — must be displayed to user
-    expect(src).toContain('setError(');
-    expect(src).toContain('{!!error');  // error banner in JSX
-    expect(src).toContain('colors.errorBg'); // uses theme colors not hardcoded hex
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    // Section G: attorney and bail-agent plans from the server; purchase via services/purchase.ts;
+    // failures shown in the notice banner
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).toContain("type ProviderType = 'lawyer' | 'bail_agent';");
+    expect(src).toContain('usePurchase');
+    expect(src).toContain('useAuthGate');
+    expect(src).toContain('testID="subscription-notice"');
+    expect(src).toContain('colors.errorBg');
+    expect(src).toContain("Platform.OS === 'ios'");
     expect(src).toContain('colors.danger');
-    // Before fix: setError called but error state never rendered — user saw nothing on payment failure
   });
   test('HANDLER-03: SubscriptionScreen iOS gate blocks purchase + redirects to web', async () => {
     const fs = await import('fs');
@@ -97,15 +101,18 @@ describe('STATE. Loading/Error/Empty State Machines', () => {
 // ── PAYMENT COMPLETE FLOW ─────────────────────────────────────────────────
 describe('PAY. Payment System — All Routes and Logic', () => {
   test('PAY-01: subscription POST/GET/cancel all exist + validated', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js','utf8');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
+    // Section G: no demo / mock mode — without Stripe every POST is 503 (billing/index.js gate); the Stripe
+    // calls live in services/stripeBilling.js; plans and prices come from billing/plans.js
     expect(src).toContain("router.post('/subscribe'");
     expect(src).toContain("router.get('/subscription'");
     expect(src).toContain("router.post('/cancel'");
-    expect(src).toContain("TIERS[tier]");
-    expect(src).toContain("Already subscribed");
-    expect(src).toContain("'demo'");
-    expect(src).toContain("stripe.subscriptions.create");
+    expect(src).toContain("router.post('/refund'");
+    expect(src).not.toMatch(/'demo'|mock:/);
+    expect(src).toContain('startSubscription');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8')).toContain('stripe.subscriptions.create');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain('payments_unavailable');
   });
   test('PAY-02: quickconnect creates PaymentIntent + checks status + logs revenue', async () => {
     const fs=await import('fs');
@@ -116,27 +123,31 @@ describe('PAY. Payment System — All Routes and Logic', () => {
     expect(src).toContain('vLat, vLat, vLng, vLng'); // geospatial params
   });
   test('PAY-03: Stripe webhook verifies HMAC + handles 5 events + updates DB', async () => {
-    const fs=await import('fs');
-    const swh=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js','utf8');
-    const wh =fs.readFileSync(__REPO + '/backend/src/routes/billing/webhooks.js','utf8');
-    expect(swh).toContain('STRIPE_WEBHOOK_SECRET');
-    for(const ev of ['customer.subscription.deleted','customer.subscription.updated',
-                     'invoice.payment_failed','checkout.session.completed'])
-      expect(wh).toContain(ev);
-    expect(wh).toContain('UPDATE'); // modifies subscription status in DB
+    const fs = await import('fs');
+    // Section G: one Stripe webhook handler (services/stripeWebhook.js) serves /api/billing/webhook
+    // and /api/webhooks/stripe; the second copy (routes/billing/webhooks.js) is gone.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/billing/webhooks.js')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/backend/src/services/stripeWebhook.js', 'utf8');
+    expect(src).toContain('constructEvent');
+    expect(src).toContain('STRIPE_WEBHOOK_SECRET');
+    expect(src).toContain('express.raw');
+    expect(src).not.toMatch(/whsec_[A-Za-z0-9]{8,}/);
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js', 'utf8')).toContain("router.post('/webhook', express.raw(");
+    for (const ev of ['payment_intent.succeeded', 'invoice.payment_failed', 'invoice.payment_succeeded', 'customer.subscription.deleted', 'customer.subscription.updated', 'checkout.session.completed', 'charge.refunded']) expect(src).toContain(ev);
   });
   test('PAY-04: all payment frontend screens wired correctly', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const scr=__REPO + '/frontend/src/screens';
-    const screens={
+    const fs = await import('fs');
+    const path = await import('path');
+    const scr = __REPO + '/frontend/src/screens';
+    const screens = {
       'SubscriptionScreen.tsx':         '/billing/subscribe',
       'ConsumerSubscriptionScreen.tsx': '/billing/consumer/subscribe',
       'QuickConnectScreen.tsx':         '/billing/quickconnect',
-      'PaymentsScreen.tsx':             '/pay/create',
+      'PaymentsScreen.tsx':             '/billing/overview',   // section G: no "pay anything" form
       'BondsmanDashboardScreen.tsx':    '/billing/leads',
     };
-    for(const [f,api] of Object.entries(screens)){
-      const src=fs.readFileSync(path.join(scr,f),'utf8');
+    for (const [f, api] of Object.entries(screens)) {
+      const src = fs.readFileSync(path.join(scr, f), 'utf8');
       expect(src).toContain(api);
       expect(src).toContain('catch');
     }

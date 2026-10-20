@@ -247,10 +247,13 @@ describe('MTH. match.js — Two-Stage Claude Lawyer Matching', () => {
 describe('PAY3. pay.js + audit.js — Payment + Audit Log', () => {
   test('PAY3-01: pay.js POST /create + /checkout — payment session creation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/pay.js', 'utf8');
-    expect(src).toContain('Payment session creation');
-    expect(src).toContain("'/create'");
-    expect(src).toContain("'/checkout'");
+    // Section G: routes/pay.js (charged whatever amount the client sent) is removed. Every purchase has a
+    // server-chosen price: services/stripeBilling.js startPayment / startSubscription, verified on confirm.
+    expect(fs.existsSync(__REPO + '/backend/src/routes/pay.js')).toBe(false);
+    expect(fs.readFileSync(__REPO + '/backend/src/app.js', 'utf8')).not.toMatch(/['"]\/api\/pay['"]/);
+    const sb = fs.readFileSync(__REPO + '/backend/src/services/stripeBilling.js', 'utf8');
+    expect(sb).toContain('export async function startPayment');
+    expect(sb).toContain('export async function verifyPayment');
   });
   test('PAY3-02: audit.js provides paginated audit log with 4 query endpoints', async () => {
     const fs = await import('fs');

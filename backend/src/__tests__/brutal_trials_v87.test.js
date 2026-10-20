@@ -205,10 +205,14 @@ describe('VER. attorney/verification.js — Bar License Verification System', ()
   });
   test('VER-02: POST /approve-verification — admin approves attorney verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js','utf8');
-    expect(src).toContain("router.post('/approve-verification'");
-    expect(src).toContain('approve');
-    // Admin reviews state bar number, approves verified attorney badge
+    // Section G: admins decide bar numbers in the admin review queue (POST /api/admin/queue/bar/:userId,
+    // audit-logged); attorney/verification.js only takes the submission.
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/verification.js', 'utf8');
+    expect(src).toContain("router.post('/verify-bar'");
+    expect(src).not.toContain("router.post('/approve-verification'");
+    const q = fs.readFileSync(__REPO + '/backend/src/routes/admin/queue.js', 'utf8');
+    expect(q).toContain("router.post('/bar/:userId'");
+    expect(fs.readFileSync(__REPO + '/backend/src/services/adminQueues.js', 'utf8')).toContain('ADMIN_BAR_APPROVED');
   });
 });
 
@@ -231,7 +235,7 @@ describe('Regression — All v1–v86 Confirmed', () => {
   });
   test('R-05: BUSINESS_CONSTANTS + CONFIG all verified', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     expect(CONFIG.DEMO_MODE).toBeDefined();

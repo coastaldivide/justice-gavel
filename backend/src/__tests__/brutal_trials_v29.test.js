@@ -400,7 +400,7 @@ describe('7. Regression — All v1–v28 Confirmed', () => {
   });
   test('7-03: BUSINESS_CONSTANTS all correct', () => {
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE does not exist */
   });
   test('7-04: encryption 1000 round-trips', () => {

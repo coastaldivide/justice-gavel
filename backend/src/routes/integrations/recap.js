@@ -335,6 +335,7 @@ router.get('/status/:matterId', authRequired, async (req, res) => {
   try {
     const db       = await getDb();
     const ctx      = await loadFirmContext(req);
+    if (!ctx) return err403(res, 'Not a firm member.');
     const matterId = safeInt(req.params.matterId);
 
     const linkRow = await db.get(

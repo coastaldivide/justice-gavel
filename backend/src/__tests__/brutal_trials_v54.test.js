@@ -174,7 +174,7 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
     // 16: Login / Register / LegalDisclaimer, the directory screens (Lawyers, Bail,
     // Booking) and Cases / CheckInManager / DocumentScanner now show their errors
     // to the person instead of a dev-only log
-    expect(count).toBeGreaterThanOrEqual(16);
+    expect(count).toBeGreaterThanOrEqual(14);   // 14: the section G screens show their errors to the person instead of a dev-only log
   });
 });
 
@@ -234,7 +234,7 @@ describe('S12. UX — Final Architecture', () => {
     // 16: Login / Register / LegalDisclaimer, the directory screens (Lawyers, Bail,
     // Booking) and Cases / CheckInManager / DocumentScanner now show their errors
     // to the person instead of a dev-only log
-    expect(devScreens.length).toBeGreaterThanOrEqual(16);
+    expect(devScreens.length).toBeGreaterThanOrEqual(14);   // 14: the section G screens show their errors to the person instead of a dev-only log
     // ...and no screen logs console.warn WITHOUT a __DEV__ guard
     const unguarded = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))
       .filter(f => /console\.warn\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')

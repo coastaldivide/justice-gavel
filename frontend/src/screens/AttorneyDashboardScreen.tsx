@@ -1,953 +1,486 @@
-import { apiErrorMessage } from '../services/api';
-import { useToast } from '../components/ToastProvider';
-import { getItem as getSecureItem } from '../utils/secureStorage';
-import { AppIcon } from '../components/AppIcon';
 /**
- * AttorneyDashboardScreen -- Practice Management Hub
+ * AttorneyDashboardScreen — the attorney's workspace.
  *
- * Four-tab layout:
- *   1. My Cases      -- assigned caseload with client names + court dates
- *   2. Templates     -- shared motion library for the office
- *   3. CLE           -- continuing legal education courses + credit tracker
- *   4. Profile       -- attorney profile, bar number, office, stats
- *
- * Entry points:
- *   - HomeScreen attorney tile
- *   - SubscriptionScreen CTA after subscribing to attorney plan
- *   - SettingsScreen My Tools
+ *   Overview   real counts (GET /attorney/profile → stats) and the tools: Inbox, Conflict check,
+ *              Firm, Plans
+ *   Cases      cases the attorney is counsel on (GET /attorney/cases)
+ *   Leads      case leads people submitted (PI / civil rights / employment / ICE): type, severity,
+ *              city and state only until bought; the flat fee per type is charged through
+ *              services/purchase.ts and checked by the server (POST /billing/pi-lead/confirm/:id);
+ *              bought leads show the description and the person's contact details
+ *   Templates  office motion templates
+ *   CLE        courses on record (none yet → said so)
+ *   Profile    bar number for review (verification by an admin), office, weekly availability
  */
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
-import { api }      from '../services/api';
-import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-
-import { ScreenCapture } from '../utils/webCompat';
-import { daysUntil } from '../utils/dateUtils';
+import { ActivityIndicator, Linking, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { t, useLang, perLang } from '../i18n';
+import { api, apiErrorMessage } from '../services/api';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
+import { StatePicker } from '../components/StatePicker';
+import { ScreenCapture } from '../utils/webCompat';
+import { useConfirm } from '../hooks/useConfirm';
+import { useToast } from '../components/ToastProvider';
+import { useStoredUser, isAttorneyUser } from '../hooks/useStoredUser';
+import { usePurchase, takePendingCheckout } from '../services/purchase';
+import { usd } from '../services/plans';
+import { formatPhone, telUrl } from '../utils/contact';
+import { stateName } from '../utils/userState';
+import { FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
 
-type Tab = 'cases' | 'templates' | 'cle' | 'profile';
+type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile';
+type Stats = { active_cases: number; pending_assignments: number; hearings_this_week: number; unread_messages: number; motions_generated: number; cle_hours: number; upcoming_consultations: number | null; avg_rating: number | null; review_count: number | null };
+type Profile = { name: string | null; bar_number: string | null; bar_state: string | null; bar_verified: boolean; pending_bar_verification: boolean; bar_rejection_reason: string | null; office_id: number | null; office_name: string | null; listing: { id: number; name: string } | null; plan: { tier: string; status: string } | null; stats: Stats };
+type CaseRow = { id: number; title: string | null; status: string | null; state: string | null; client_name: string | null; next_hearing_date: string | null; unread_count: number; assignment_notes: string | null };
+type OpenLead = { id: number; case_type: string; severity: string | null; city: string | null; state: string | null; lead_fee_cents: number; lead_fee_display: string; created_at: string };
+type MyLead = { id: number; case_type: string; severity: string | null; city: string | null; state: string | null; description: string; incident_date: string | null; contact_name: string | null; contact_email: string | null; contact_phone: string | null; lead_fee_cents: number; accepted_at: string };
+type Template = { id: number; motion_type: string; title: string; status: string; created_by_name: string | null; notes: string | null };
+type Course = { id: number; title: string; credit_hours: number; completed_at: string | null; description: string | null };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const urgencyColor = (days: number | null) => {
-  if (days === null) return COLORS.textMuted;
-  if (days <= 7)  return COLORS.emergency;
-  if (days <= 30) return COLORS.warn;
-  return COLORS.legal;
-};
+const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+const LEAD_TYPE_KEYS: Record<string, string> = { personal_injury: 'lead_type_personal_injury', medical: 'lead_type_medical', civil_rights: 'lead_type_civil_rights', employment: 'lead_type_employment', ice_detention: 'lead_type_ice_detention' };
+const SEVERITY_KEYS: Record<string, string> = { minor: 'x_pilead_minor', moderate: 'x_pilead_moderate', serious: 'x_pilead_serious', catastrophic: 'x_pilead_catastrophic' };
+const STATUS_KEYS: Record<string, string> = { open: 'case_status_open', active: 'case_status_active', pending: 'case_status_pending', closed: 'case_status_closed', dismissed: 'case_status_dismissed' };
+const leadType = (k: string) => (LEAD_TYPE_KEYS[k] ? t(LEAD_TYPE_KEYS[k]) : k);
+const caseStatus = (st: string | null) => (st && STATUS_KEYS[st.toLowerCase()] ? t(STATUS_KEYS[st.toLowerCase()]) : st || '');
 
-// ── CLE difficulty badge ──────────────────────────────────────────────────────
-const DiffBadge = ({ diff }: { diff: string }) => {
-  useLang();
-  const map: Record<string, { bg: string; color: string }> = {
-    beginner:     { bg: COLORS.legalBg, color: COLORS.legal },
-    intermediate: { bg: COLORS.bgElevated, color: COLORS.steel },
-    advanced:     { bg: COLORS.emergencyBg, color: COLORS.emergency },
-  };
-  const s = map[diff] || map.intermediate;
-  return (
-    <View style={[styles.diffBadge, { backgroundColor: s.bg }]}>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.diffBadgeText, { color: s.color }]}>{diff}</Text>
-    </View>
-
-
-  );
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-
-// ── Availability grid component ───────────────────────────────────────────────
-const DAYS  = ['mon','tue','wed','thu','fri','sat','sun'] as const;
-const SLOTS = ['morning','afternoon','evening'] as const;
-const DAY_LABELS = perLang((): Record<string, string> => ({ mon:t('x_attorney_dashboard_mon'),tue:t('x_attorney_dashboard_tue'),wed:t('x_attorney_dashboard_wed'),thu:t('x_attorney_dashboard_thu'),fri:t('x_attorney_dashboard_fri'),sat:t('x_attorney_dashboard_sat'),sun:t('x_attorney_dashboard_sun') }));
-const SLOT_LABELS = perLang((): Record<string, string> => ({ morning:'AM',afternoon:'PM',evening:t('x_attorney_dashboard_eve') }));
-
-function AvailabilityGrid() {
+function AttorneyDashboardScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
   const { colors } = useTheme();
-  const { showToast } = useToast();
-  const [schedule, setSchedule] = React.useState<Record<string, string[]>>({});
-  const [note, setNote]         = React.useState('');
-  const [saving, setSaving]     = React.useState(false);
-  const [saved, setSaved]       = React.useState(false);
-
-  React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    api.get('/attorney/profile/availability')
-      .then(r => { setSchedule(r.data?.schedule || {}); setNote(r.data?.note || ''); })
-      .catch(() => {});
-    });
-    return () => _task.cancel();
-  }, []);
-
-  const toggle = (day: string, slot: string) => {
-    setSchedule(prev => {
-      const slots = prev[day] || [];
-      const next  = slots.includes(slot) ? slots.filter(s => s !== slot) : [...slots, slot];
-      return { ...prev, [day]: next };
-    });
-    setSaved(false);
-  };
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await api.put('/attorney/profile/availability', { schedule, note });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save_availability')), 'error');
-    }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <View style={{ marginTop: 20 }}>
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22,
-        fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>
-        {t('x_attorney_dashboard_weekly_availability')}
-      </Text>
-      {/* Grid */}
-      <View style={{ flexDirection: 'row', gap: 4 }}>
-        {/* Slot labels */}
-        <View style={{ width: 36, paddingTop: 24 }}>
-          {SLOTS.map(s => (
-            <Text key={s} maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 22,
-              color: colors.textMuted, height: 30, textAlignVertical: 'center' }}>
-              {SLOT_LABELS()[s]}
-            </Text>
-          ))}
-        </View>
-        {/* Days */}
-        {DAYS.map(day => (
-          <View key={day} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 14,
-              color: colors.textMuted, fontWeight: '700', marginBottom: 4 }}>
-              {DAY_LABELS()[day]}
-            </Text>
-            {SLOTS.map(slot => {
-              const active = (schedule[day] || []).includes(slot);
-              return (
-                <TouchableOpacity
-                accessibilityRole="button"
-
-                key={slot}
-                  style={{ width: '100%', height: 28, borderRadius: 4,
-                    backgroundColor: active ? colors.navy : colors.bgSubtle,
-                    borderWidth: 1, borderColor: active ? colors.navy : colors.border }}
-                  onPress={() => toggle(day, slot)}
-                  hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
-                  accessibilityState={{ checked: active }}
-                  accessibilityLabel={`${DAY_LABELS()[day]} ${SLOT_LABELS()[slot]}`}
-                />
-              );
-            })}
-          </View>
-        ))}
-      </View>
-      {/* Note */}
-      <TextInput
-        style={{ marginTop: 12, borderWidth: 1, borderColor: colors.inputBorder,
-          borderRadius: 8, padding: 10, fontSize: 13, lineHeight: 19,
-          color: colors.inputText, backgroundColor: colors.inputBg }}
-        placeholder={t('x_attorney_dashboard_availability_note_e_g')}
-        placeholderTextColor={colors.placeholder}
-        value={note}
-        onChangeText={(tItem) => { setNote(tItem); setSaved(false); }}
-
-        maxLength={200}
-        returnKeyType="done"
-        blurOnSubmit
-        accessibilityLabel={t('x_attorney_dashboard_availability_note')}
-      />
-      <TouchableOpacity
-  accessibilityRole="button"
-        style={{ marginTop: 10, backgroundColor: saving ? colors.bgSubtle : colors.navy,
-          borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-        onPress={save} disabled={saving}
-      
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? colors.textMuted : colors.textOnNavy,
-          fontWeight: '700', fontSize: 13, lineHeight: 19 }}>
-          {saved ? t('x_attorney_dashboard_saved') : saving ? t('x_attorney_dashboard_saving') : t('x_attorney_dashboard_save_availability')}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
-  useLang();
-  const { showToast } = useToast();
-
-  // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
-  React.useEffect(() => {
+  const s = makeStyles(colors);
+  const { hasSession, recheck } = useHasSession();
+  const { user, ready } = useStoredUser();
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
     ScreenCapture.preventScreenCaptureAsync().catch(() => {});
     return () => { ScreenCapture.allowScreenCaptureAsync().catch(() => {}); };
   }, []);
-
-  const { colors } = useTheme();
-  // Themed styles (shadows the static module-level fallback used by helpers)
-  const styles = makeStyles(colors);
-
-  // ── Role gate -- only attorneys and defenders can access this screen ──────────
-  // Any authenticated user can navigate here via deep link or direct navigation.
-  // This check prevents consumer users from seeing attorney-only features.
-  const [roleChecked, setRoleChecked] = React.useState(false);
-  const [isAuthorized, setIsAuthorized] = React.useState(false);
-  React.useEffect(() => {
-    const leave = () => {
-      if (navigation.canGoBack()) navigation.goBack();
-      else (navigation as any).navigate('HomeTab');
-    };
-    getSecureItem('user').then(raw => {
-      if (raw) {
-        const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
-        const allowed = ['attorney','defender','admin'].includes(u?.role);
-        setIsAuthorized(allowed);
-        if (!allowed) {
-          // Redirect immediately -- consumer users should not see this screen
-          leave();
-        }
-      } else {
-        leave();
-      }
-      setRoleChecked(true);
-    }).catch(() => { leave(); });
-  }, [navigation]);
-
-
-  const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
-
-  const [tab, setTab]               = useState<Tab>('cases');
+  const params = route?.params as { tab?: Tab; checkout_session_id?: string } | undefined;
+  // Back from Stripe Checkout for a case lead (the only Checkout started here).
+  const [tab, setTab] = useState<Tab>(params?.checkout_session_id ? 'leads' : params?.tab || 'overview');
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading]       = useState(true);
 
-  // Cases
-  const [cases,    setCases]    = useState<any[]>([]);
-  // Templates
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [tplFilter, setTplFilter] = useState<'approved'|'pending'|'all'>('approved');
-  // CLE
-  const [courses,   setCourses]   = useState<any[]>([]);
-  const [cleTotal,  setCleTotal]  = useState(0);
-  const [completing, setCompleting] = useState<number | null>(null);
-  const [expandedCourse, setExpandedCourse] = useState<number | null>(null);
-  // Profile
-  const [profile,  setProfile]   = useState<any>(null);
-  const [motionViewMode, setMotionViewMode] = React.useState<'cards'|'table'>('cards');
-  const [barInput, setBarInput]  = useState('');
-  const [officeInput, setOfficeInput] = useState('');
-  const [officeNameInput, setOfficeNameInput] = useState('');
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [sortBy, setSortBy] = React.useState<'date'|'name'|'status'>('date');
-
-  const loadAll = useCallback(async () => {
+  const loadProfile = useCallback(async () => {
     try {
-      const [casesRes, templatesRes, cleRes, profileRes] = await Promise.allSettled([
-        api.get('/attorney/cases'),
-        api.get('/attorney/templates?status=approved'),
-        api.get('/attorney/cle'),
-        api.get('/attorney/profile'),
-      ]);
-      if (casesRes.status    === 'fulfilled') setCases(casesRes.value.data?.cases || []);
-      if (templatesRes.status=== 'fulfilled') setTemplates(templatesRes.value.data?.templates || []);
-      if (cleRes.status      === 'fulfilled') {
-        setCourses(cleRes.value.data?.courses || []);
-        setCleTotal(cleRes.value.data?.total_earned || 0);
-      }
-      if (profileRes.status  === 'fulfilled') {
-        setProfile(profileRes.value.data);
-        setBarInput(profileRes.value.data?.bar_number || '');
-        setOfficeInput(profileRes.value.data?.office_id || '');
-      }
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
-    setLoading(false);
-    setRefreshing(false);
+      const r = await api.get<Profile>('/attorney/profile');
+      if (mounted.current) { setProfile(r.data); setError(''); }
+    } catch (e) {
+      if (mounted.current) setError(apiErrorMessage(e, t('ad_load_error')));
+    } finally { if (mounted.current) setRefreshing(false); }
   }, []);
+  useFocusEffect(useCallback(() => { if (hasSession && isAttorneyUser(user)) loadProfile(); }, [hasSession, user, loadProfile]));
 
-  // Loads on first focus and reloads when returning from CaseScreen, BookingScreen, etc.
-  // (a separate mount effect would fetch everything twice on open).
-  useFocusEffect(React.useCallback(() => { loadAll(); }, [loadAll]));
-
-  const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, [loadAll]);
-
-  const completeCLE = async (courseId: number) => {
-    setCompleting(courseId);
-    try {
-      const res = await api.post(`/attorney/cle/${courseId}/complete`, {});
-      const msg = res.data?.already_completed
-        ? t('x_attorney_dashboard_already_completed_credit_transcript')
-        : `✓ ${res.data?.message}`;
-      showToast(msg, 'info');
-      loadAll();
-    } catch (e: any) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_complete_course')), 'info'); }
-    setCompleting(null);
-  };
-
-  const saveProfile = async () => {
-      if (!barInput?.trim()) { showToast(t('x_attorney_dashboard_please_enter_state_bar')); return; }
-      setSavingProfile(true);
-    try {
-      await api.patch('/attorney/profile', { bar_number: barInput, is_defender: 1 });
-      if (officeInput && officeNameInput) {
-        await api.post('/attorney/office/join', {
-          office_id: officeInput.trim().toLowerCase().replace(/\s+/g,'_'),
-          office_name: officeNameInput.trim(),
-        });
-      }
-      showToast(t('x_attorney_dashboard_profile_updated'));
-      loadAll();
-    } catch (e: any) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save')), 'info'); }
-    setSavingProfile(false);
-  };
-
-  const barRenewalReminder = React.useMemo(() => {
-    const verifiedAt = profile?.bar_verified_at || profile?.bar_verified_date;
-    if (!verifiedAt) return null;
-    const verifiedDate = new Date(verifiedAt);
-    const now = new Date();
-    const monthsSince = (now.getFullYear() - verifiedDate.getFullYear()) * 12
-      + (now.getMonth() - verifiedDate.getMonth());
-    if (monthsSince >= 10) {
-      return {
-        months: monthsSince,
-        urgent: monthsSince >= 12,
-        message: monthsSince >= 12
-          ? t('x_attorney_dashboard_bar_verification_over_1')
-          : t('x_attorney_dashboard_bar_verification_months_old', { monthsSince }),
-      };
-    }
-    return null;
-  }, [profile]);
-
-  // Role gate: render nothing until the role check passes (redirects otherwise)
-  if (!roleChecked || !isAuthorized) return null;
-
-  if (loading) return (
-    <View style={[styles.screen, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.steel} />
-    </View>
-  );
-
-  // Bar license renewal reminder
-  // Most state bars renew annually or biennially. Remind after 10 months.
-  return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}
-      testID="attorney-dashboard-screen">
-      {/* ── Dashboard greeting header ──────────────────────────────────── */}
-      <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 36,
-        paddingBottom: 12, backgroundColor: colors.bg,
-        borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 20, fontWeight: '800',
-              color: colors.textPrimary, letterSpacing: -0.3 }}>{t('x_attorney_dashboard_dashboard')}</Text>
-            {cases.length > 0 && (
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                {t('x_attorney_dashboard_active', { length: cases.length, value: cases.length === 1 ? 'case' : 'cases', value2: (cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length > 0
-                  ? ' ' + t('x_attorney_dashboard_critical', { length: (cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length })
-                  : '' })}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-  accessibilityRole="button"
-            onPress={() => navigation.navigate('MoreTab', { screen: 'MatterIntelligence' })}
-            accessibilityLabel={t('x_attorney_dashboard_open_matter_intelligence')}
-            style={{ backgroundColor: colors.navy, paddingHorizontal: 12,
-              paddingVertical: 7, borderRadius: 8 }}>
-            <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '700',
-              color: colors.textOnNavy, letterSpacing: 0.3 }}>{t('x_attorney_dashboard_intelligence')}</Text>
-          </TouchableOpacity>
-        </View>
+  if (hasSession === false) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('atty_title')} body={t('ad_signin_body')} onSignedIn={recheck} /></View>;
+  }
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (!isAttorneyUser(user)) {
+    return (
+      <View testID="attorney-dashboard-not-attorney" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[s.title, { textAlign: 'center' }]}>{t('ad_not_attorney')}</Text>
+        <TouchableOpacity accessibilityRole="button" style={s.primaryBtn} onPress={() => navigation.navigate('HomeTab' as never)}>
+          <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_go_home')}</Text>
+        </TouchableOpacity>
       </View>
+    );
+  }
 
-      {/* Tab bar */}
-      <View style={[styles.tabBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
-        {([
-          { key:'cases',     label:t('nav_cases'),     badge: cases.length },
-          { key:'templates', label:t('atty_tab_templates'), badge: null },
-          { key:'cle',       label:'CLE',       badge: null },
-          { key:'profile',   label:t('atty_tab_profile'),   badge: null },
-        ] as { key: Tab; label: string; badge: number | null }[]).map(tItem => (
-          <TouchableOpacity
-            accessibilityRole="tab"
-            key={tItem.key}
-            style={[styles.tabBtn, tab===tItem.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
-            onPress={() => setTab(tItem.key)}
-            accessibilityState={{ selected: tab === tItem.key }}
-            accessibilityLabel={tItem.label}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===tItem.key ? colors.textPrimary : colors.textMuted }]}>
-              {tItem.label}
-              {tItem.badge !== null && tItem.badge > 0 ? ` (${tItem.badge})` : ''}
-            </Text>
+  const tabs: { key: Tab; label: string; badge?: number }[] = [
+    { key: 'overview', label: t('ad_tab_overview') }, { key: 'cases', label: t('nav_cases'), badge: profile?.stats.active_cases },
+    { key: 'leads', label: t('ad_tab_leads') }, { key: 'templates', label: t('atty_tab_templates') },
+    { key: 'cle', label: t('atty_tab_cle') }, { key: 'profile', label: t('atty_tab_profile') },
+  ];
+
+  return (
+    <View testID="attorney-dashboard-screen" style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabBar} contentContainerStyle={{ paddingHorizontal: 4 }}>
+        {tabs.map(x => (
+          <TouchableOpacity key={x.key} accessibilityRole="tab" aria-selected={tab === x.key} accessibilityState={{ selected: tab === x.key }} testID={`ad-tab-${x.key}`}
+            style={[s.tab, tab === x.key && { borderBottomColor: colors.navy }]} onPress={() => setTab(x.key)}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.tabText, tab === x.key && { color: colors.textPrimary }]}>{x.label}{x.badge ? ` (${x.badge})` : ''}</Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
-      <ScrollView keyboardShouldPersistTaps='handled'
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.steel} />}
-      >
-
-      {/* Attorney-client privilege notice */}
-      <View style={{ backgroundColor: COLORS.navyLight, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
-        <Text style={{ fontSize: 11, color: colors.textOnNavy, lineHeight: 15 }}>
-          {t('x_attorney_dashboard_all_matter_data_handled')}
-        </Text>
-      </View>
-        {/* ── MY CASES ─────────────────────────────────────────────────── */}
-        {tab === 'cases' && (
-          <>
-            {cases.length === 0 ? (
-              <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_no_assigned_cases')}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
-                  {t('x_attorney_dashboard_cases_assigned_when_client')}
-                </Text>
-              </View>
-            ) : (
-              <></>
-            )}
-
-            {/* Sort controls */}
-            {cases.length > 1 && (
-              <View style={{ flexDirection:'row', gap:6, marginBottom:10 }}>
-                {(['date','name','status'] as const).map(opt => (
-                  <TouchableOpacity
-                    key={opt}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: sortBy === opt }}
-                    accessibilityLabel={t('x_attorney_dashboard_sort_cases_by', { opt })}
-                    onPress={() => setSortBy(opt)}
-                    style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
-                      borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
-                      backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'600',
-                      color:sortBy===opt?colors.bgCard:colors.textMuted }}>
-                      {opt==='date'?t('x_attorney_dashboard_soonest'):opt==='name'?t('x_attorney_dashboard_name'):t('x_attorney_dashboard_status')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            {[...cases].sort((a,b)=>{ if(sortBy==='name') return (a.title||'').localeCompare(b.title||''); if(sortBy==='status') return (a.status||'').localeCompare(b.status||''); const da=a.next_court_date?new Date(a.next_court_date).getTime():Infinity; const db2=b.next_court_date?new Date(b.next_court_date).getTime():Infinity; return da-db2; }).map((cas) => {
-              const days = daysUntil(cas.next_court_date);
-              return (
-                <TouchableOpacity accessibilityRole="button"
-                  key={cas.id}
-                  style={[styles.caseCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-                  onPress={() => navigation.navigate('Cases')}
-                  accessibilityLabel={t('x_attorney_dashboard_open_case', { title: cas.title })}
-                >
-                  <View style={styles.caseHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-                        {cas.title || t('x_attorney_dashboard_case', { id: cas.id })}
-                      </Text>
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseMeta, { color: colors.textMuted }]}>
-                        {cas.client_name || t('x_attorney_dashboard_client')} · {cas.status || t('case_status_active')}
-                      </Text>
-                    </View>
-                    {cas.next_court_date && (
-                      <View style={[styles.courtDateBadge, { backgroundColor: days !== null && days <= 7 ? colors.emergencyBg : colors.bgElevated }]}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.courtDateDays, { color: urgencyColor(days) }]}>
-                          {days !== null ? t('x_attorney_dashboard_days_short', { days }) : '--'}
-                        </Text>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.courtDateLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_court')}</Text>
-                      </View>
-                    )}
-                  </View>
-                  {cas.assignment_notes ? (
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.caseNote, { color: colors.textSecond }]} numberOfLines={1}>
-                      {t('x_attorney_dashboard_note', { assignment_notes: cas.assignment_notes })}
-                    </Text>
-                  ) : null}
-                  <View style={styles.caseActions}>
-                    <TouchableOpacity accessibilityRole="button"
-                      style={[styles.caseActionBtn, { borderColor: colors.border }]}
-                      onPress={() => navigation.navigate('Messages', { caseId: cas.id, caseTitle: cas.title })}
-                      accessibilityLabel={t('x_attorney_dashboard_message_client')}
-                    >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>{t('x_attorney_dashboard_message')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity accessibilityRole="button"
-                      style={[styles.caseActionBtn, { borderColor: colors.border }]}
-                      onPress={() => navigation.navigate('MotionLibrary', { caseId: cas.id })}
-                      accessibilityLabel={t('x_attorney_dashboard_draft_motion_this_case')}
-                    >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>{t('x_attorney_dashboard_motion')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </>
-        )}
-
-        {/* ── TEMPLATES ────────────────────────────────────────────────── */}
-        {tab === 'templates' && (
-          <>
-
-            {/* Cards / Table view toggle */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600',
-                color: colors.textMuted, marginRight: 4 }}>{t('x_attorney_dashboard_view')}</Text>
-              {(['cards','table'] as const).map(mode => (
-                <TouchableOpacity accessibilityRole="button" key={mode}
-                  onPress={() => setMotionViewMode(mode)}
-                  style={{ paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: motionViewMode === mode ? colors.blue : colors.border,
-                    backgroundColor: motionViewMode === mode ? colors.infoBg : colors.bgCard }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600',
-                    color: motionViewMode === mode ? colors.blue : colors.textMuted }}>
-                    {mode === 'cards' ? t('x_attorney_dashboard_cards') : t('x_attorney_dashboard_table')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.filterRow}>
-              {(['approved','pending','all'] as const).map(f => (
-                <TouchableOpacity accessibilityRole="button"
-                  key={f}
-                  style={[styles.filterChip,
-                    { backgroundColor: tplFilter===f ? colors.steel : colors.bgCard,
-                      borderColor: tplFilter===f ? colors.steel : colors.border }]}
-                  onPress={() => setTplFilter(f)}
-                  accessibilityLabel={f}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, { color: tplFilter===f ? colors.bg : colors.textMuted }]}>
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {templates.length === 0 ? (
-              <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_no_templates_yet')}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
-                  {t('x_attorney_dashboard_generate_motion_motion_library')}
-                </Text>
-                <TouchableOpacity accessibilityRole="button"
-                  style={[styles.emptyBtn, { backgroundColor: colors.steel }]}
-                  onPress={() => navigation.navigate('MotionLibrary')}
-                  accessibilityLabel={t('x_attorney_dashboard_go_motion_library')}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>{t('x_attorney_dashboard_open_motion_library')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : templates.map((tpl) => (
-              <View key={tpl.id} style={[styles.tplCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <View style={styles.tplHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text maxFontSizeMultiplier={1.4} numberOfLines={2} ellipsizeMode="tail" style={[styles.tplTitle, { color: colors.textPrimary }]}>{tpl.title}</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.tplMeta, { color: colors.textMuted }]}>
-                      {tpl.motion_type} · {tpl.created_by_name || t('x_attorney_dashboard_unknown')}
-                      {tpl.approved_by_name ? ` · ✓ ${tpl.approved_by_name}` : ''}
-                    </Text>
-                  </View>
-                  <View style={[styles.statusPill, {
-                    backgroundColor: tpl.status==='approved' ? colors.legalBg : tpl.status==='pending' ? colors.bgElevated : colors.emergencyBg,
-                  }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.statusPillText, {
-                      color: tpl.status==='approved' ? colors.legal : tpl.status==='pending' ? colors.steel : colors.emergency,
-                    }]}>
-                      {tpl.status}
-                    </Text>
-                  </View>
-                </View>
-                {tpl.notes ? <Text maxFontSizeMultiplier={1.4} style={[styles.tplNote, { color: colors.textSecond }]} numberOfLines={2} ellipsizeMode="tail">{tpl.notes}</Text> : null}
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* ── CLE ──────────────────────────────────────────────────────── */}
-        {tab === 'cle' && (
-          <>
-            <View style={[styles.cleHeader, { backgroundColor: colors.bgElevated, borderColor: colors.steel }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHours, { color: colors.info }]}>{cleTotal.toFixed(1)}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHoursLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_cle_hours_earned_justice')}</Text>
-            </View>
-
-            {courses.map((course) => {
-              const done      = !!course.completed_at;
-              const expanded  = expandedCourse === course.id;
-
-              return (
-                <View key={course.id} style={[styles.cleCard, { backgroundColor: colors.bgCard, borderColor: done ? colors.legalDark : colors.border }]}>
-                  <TouchableOpacity
-  accessibilityRole="button"
-                    style={styles.cleCardHeader}
-                    onPress={() => setExpandedCourse(expanded ? null : course.id)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={course.title}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <View style={styles.cleTitleRow}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.cleTitle, { color: done ? colors.legal : colors.textPrimary }]}>
-                          {done ? '✓ ' : ''}{course.title}
-                        </Text>
-                      </View>
-                      <View style={styles.cleMeta}>
-                        <DiffBadge diff={course.difficulty} />
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.cleMetaText, { color: colors.textMuted }]}>
-                          {course.credit_hours}h · {course.category.replace('_',' ')}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.chevron, { color: colors.textMuted }]}>{expanded ? '▲' : '▼'}</Text>
-                  </TouchableOpacity>
-
-                  {expanded && (
-                    <View style={styles.cleBody}>
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.cleDesc, { color: colors.textSecond }]}>{course.description}</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.cleContent, { color: colors.textSecond }]}>{course.content}</Text>
-                      {!done ? (
-                        <TouchableOpacity
-  accessibilityRole="button"
-                          style={[styles.completeBtn, { backgroundColor: colors.steel },
-                            completing === course.id && { opacity: 0.6 }]}
-                          onPress={() => completeCLE(course.id)}
-                          disabled={completing === course.id}
-                          accessibilityLabel={t('x_attorney_dashboard_mark_complete', { title: course.title })}
-                        >
-                          {completing === course.id
-                            ? <ActivityIndicator color={colors.bg} size="small" />
-                            : <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>
-                                {t('x_attorney_dashboard_mark_complete_earn_h', { credit_hours: course.credit_hours })}
-                              </Text>
-                          }
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={[styles.completedBanner, { backgroundColor: colors.legalBg, borderColor: colors.legalDark }]}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.legal, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
-                            {t('x_attorney_dashboard_completed_h_earned', { credit_hours: course.credit_hours })}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-            <TouchableOpacity
-  accessibilityRole="button"
-              style={[styles.transcriptBtn, { borderColor: colors.steel }]}
-              onPress={() => showToast(t('x_attorney_dashboard_cle_hours_earned_justice_2', { cleTotal: cleTotal.toFixed(1) }), 'info')}
-              accessibilityLabel={t('x_attorney_dashboard_view_cle_transcript')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.info }]}>{t('atty_transcript')}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* ── PROFILE ──────────────────────────────────────────────────── */}
-        {tab === 'profile' && !profile && !loading && (
-          <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <AppIcon name="person-outline" size={20} color={COLORS.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_attorney_dashboard_profile_not_loaded')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>{t('x_attorney_dashboard_pull_refresh_check_connection')}</Text>
-          </View>
-        )}
-        {tab === 'profile' && profile && (
-          <>
-            {barRenewalReminder && (
-              <View testID="bar-renewal-reminder" style={{ borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 12,
-                borderColor: barRenewalReminder.urgent ? colors.emergency : colors.warn, backgroundColor: colors.bgCard }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 17,
-                  color: barRenewalReminder.urgent ? colors.emergency : colors.textSecond }}>
-                  {barRenewalReminder.urgent ? '⚠️ ' : '🗓 '}{barRenewalReminder.message}
-                </Text>
-              </View>
-            )}
-            {/* Bar Verification Status */}
-            <View style={[styles.barStatusCard, {
-              backgroundColor: profile.bar_verified ? COLORS.legal : COLORS.steelMid,
-              borderColor: profile.bar_verified ? COLORS.legal : COLORS.warn,
-            }]}>
-              <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
-                  color: profile.bar_verified ? COLORS.legal : COLORS.steelMid
-                }]}>
-                  {profile.bar_verified ? t('x_attorney_dashboard_bar_verified_jtb_badge') : t('x_attorney_dashboard_bar_verification_pending')}
-                </Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.barStatusSub}>
-                  {profile.bar_verified
-                    ? (t('x_attorney_dashboard_bar_plan', { value: (profile.bar_number || t('x_attorney_dashboard_file')), value2: (profile.subscription_tier || t('x_attorney_dashboard_attorney')) }))
-                    : profile.bar_number
-                      ? (t('x_attorney_dashboard_bar_submitted_review_within', { bar_number: profile.bar_number }))
-                      : t('x_attorney_dashboard_submit_bar_number_field')}
-                </Text>
-              </View>
-              {!profile.bar_verified && (
-                <TouchableOpacity
-  accessibilityRole="button"
-                  style={styles.barStatusAction}
-                  onPress={() => setTab('profile')}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.barStatusActionText}>
-                    {profile.bar_number ? t('x_attorney_dashboard_view_status') : t('x_attorney_dashboard_verify_now')}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Profile completion indicator */}
-            {(() => {
-              const fields = [
-                profile.bar_number, profile.bar_verified,
-                profile.bio, profile.specialties?.length,
-                profile.phone, profile.office_name || profile.office_id,
-              ];
-              const done = fields.filter(Boolean).length;
-              const pct  = fields.length ? Math.round((done / fields.length) * 100) : 0;
-              return pct < 100 ? (
-                <View style={[styles.completionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.completionLabel, { color: colors.textPrimary }]}>
-                      {t('x_attorney_dashboard_profile_complete', { pct })}
-                    </Text>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.completionLabel, { color: colors.textMuted }]}>
-                      {t('x_attorney_dashboard_fields', { done, length: fields.length })}
-                    </Text>
-                  </View>
-                  <View style={[styles.completionBar, { backgroundColor: colors.border }]}>
-                    <View style={[styles.completionFill, { width: (pct + '%') as any,
-                      backgroundColor: pct >= 80 ? colors.legalDark : pct >= 50 ? colors.warnDark : colors.emergencyDark
-                    }]} />
-                  </View>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.completionHint, { color: colors.textMuted }]}>
-                    {!profile.bar_verified && t('x_attorney_dashboard_verify_bar_number_jtb')}
-                    {!profile.bio && t('x_attorney_dashboard_add_bio_so_clients')}
-                    {!profile.office_name && !profile.office_id && t('x_attorney_dashboard_add_office_name_appear')}
-                  </Text>
-                </View>
-              ) : null;
-            })()}
-
-            {/* Stats */}
-            <View style={[styles.statsGrid, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              {[
-                { label: t('x_attorney_dashboard_active_cases'),  value: String(profile.stats?.active_cases      || 0), color: colors.blue },
-                { label: t('x_attorney_dashboard_this_week'),     value: String(profile.stats?.hearings_this_week || 0), color: colors.warn },
-                { label: t('x_attorney_dashboard_motions_filed'), value: String(profile.stats?.motions_generated  || 0), color: colors.legal },
-                { label: t('x_attorney_dashboard_avg_rating'),    value: profile.stats?.avg_rating ? profile.stats.avg_rating.toFixed(1) + '★' : 'N/A', color: colors.gold },
-                { label: t('x_attorney_dashboard_unread_msgs'),   value: String(profile.stats?.unread_messages    || 0), color: colors.emergency },
-                { label: t('x_attorney_dashboard_response_rate'), value: profile.stats?.response_rate ? profile.stats.response_rate + '%' : 'N/A', color: colors.steel },
-                { label: t('x_attorney_dashboard_cle_hours'), value: (profile.stats?.cle_hours_earned || 0).toFixed(1) + 'h', color: colors.legal },
-              ].map((s,i,arr) => (
-                <View key={s.label} style={[styles.statCell,
-                  i < arr.length-1 && { borderRightWidth:1, borderRightColor: colors.border }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.statValue, { color: colors.info }]}>{s.value}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Gavel level */}
-            {profile.gavel_level > 0 && (
-              <View style={[styles.gavelBadge, { backgroundColor: colors.warnBg, borderColor: colors.gold }]}>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>
-                  {t('x_attorney_dashboard_gavel_holder', { value: ['', t('x_attorney_dashboard_gavel_bronze'), t('x_attorney_dashboard_gavel_silver'), t('x_attorney_dashboard_gavel_golden')][profile.gavel_level] || '' })}
-                </Text>
-              </View>
-            )}
-
-            {/* Edit fields */}
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_bar_number')}</Text>
-            <TextInput
-                  maxLength={15}
-              style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-              value={barInput}
-              onChangeText={setBarInput}
-              placeholder={t('x_attorney_dashboard_state_bar_number')}
-              placeholderTextColor={colors.textMuted}
-              accessibilityLabel={t('x_attorney_dashboard_state_bar_number')}
-          returnKeyType="next"
-          blurOnSubmit
-        keyboardType="numeric"
-        />
-
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_office_id_e_g')}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-              value={officeInput}
-              onChangeText={setOfficeInput}
-              placeholder="office_id"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              accessibilityLabel={t('atty_office_id')}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('x_attorney_dashboard_office_name')}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-              value={officeNameInput}
-              onChangeText={setOfficeNameInput}
-              placeholder={t('x_attorney_dashboard_davidson_county_public_defender')}
-              placeholderTextColor={colors.textMuted}
-              accessibilityLabel={t('x_attorney_dashboard_office_name_2')}
-          returnKeyType="next"
-          blurOnSubmit
-        keyboardType="numeric"
-        />
-
-            <TouchableOpacity
-  accessibilityRole="button"
-              style={[styles.saveBtn, { backgroundColor: colors.steel }, savingProfile && { opacity: 0.6 }]}
-              onPress={saveProfile}
-              disabled={savingProfile}
-              accessibilityLabel={t('x_attorney_dashboard_save_profile')}
-          accessibilityHint={t('cp_double_tap')}
-            >
-              {savingProfile
-                ? <ActivityIndicator color={colors.bg} />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{t('atty_save_profile')}</Text>
-              }
-            </TouchableOpacity>
-
-            <AvailabilityGrid />
-
-            <TouchableOpacity accessibilityRole="button"
-              style={[styles.outlineBtn, { borderColor: colors.legalDark }]}
-              onPress={async () => {
-                if (!barInput.trim()) {
-                  showToast(t('x_attorney_dashboard_enter_bar_number_field'), 'error');
-                  return;
-                }
-                try {
-                  await api.post('/attorney/verify-bar', { bar_number: barInput, state: officeInput.slice(0,2) || 'TN' });
-                  showToast(t('x_attorney_dashboard_bar_number_has_been'));
-                } catch (e: any) {
-                  showToast(apiErrorMessage(e, t('x_attorney_dashboard_try_again')), 'info');
-                }
-              }}
-              accessibilityLabel={t('x_attorney_dashboard_submit_bar_number_verification')}
-          accessibilityHint={t('cp_double_tap')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>{t('x_attorney_dashboard_submit_bar_number_verification_2')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity accessibilityRole="button"
-              style={[styles.outlineBtn, { borderColor: colors.border }]}
-              onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
-              accessibilityLabel={t('x_attorney_dashboard_view_gavel_program')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>{t('x_attorney_dashboard_gavel_program_status')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity accessibilityRole="button"
-              style={[styles.outlineBtn, { borderColor: colors.border }]}
-              onPress={() => navigation.navigate('Subscription')}
-              accessibilityLabel={t('x_attorney_dashboard_manage_subscription')}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>{t('x_attorney_dashboard_manage_subscription_2')}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        <View style={{ height: 48 }} />
       </ScrollView>
-      </KeyboardAvoidingView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadProfile(); }} />}>
+        {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
+        {tab === 'overview' && <Overview profile={profile} navigation={navigation} />}
+        {tab === 'cases' && <Cases navigation={navigation} />}
+        {tab === 'leads' && <Leads profile={profile} route={route} />}
+        {tab === 'templates' && <Templates navigation={navigation} />}
+        {tab === 'cle' && <Cle />}
+        {tab === 'profile' && profile && <ProfileTab profile={profile} onSaved={loadProfile} />}
+      </ScrollView>
     </View>
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen:           { flex: 1 },
-  scroll:           { padding: 16 },
-  tabBar:           { flexDirection: 'row', borderBottomWidth: 1 },
-  tabBtn:           { flex: 1, alignItems: 'center', paddingVertical: 13 },
-  tabLabel:         { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  emptyCard:        { borderRadius: RADIUS.lg, borderWidth: 1, padding: 24, alignItems: 'center', marginTop: 8 },
-  emptyIcon:        { fontSize: 36, marginBottom: 10 },
-  emptyTitle:       { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
-  emptyBody:        { fontSize: 12, lineHeight: 19, textAlign: 'center', marginBottom: 16 },
-  emptyBtn:         { borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 20 },
-  emptyBtnText:     { color: colors.textOnGold, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  caseCard:         { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, marginBottom: 10 },
-  caseHeader:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-  caseTitle:        { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 2 },
-  caseMeta:         { fontSize: 12 },
-  caseNote:         { fontSize: 12, marginBottom: 8, fontStyle: 'italic' },
-  courtDateBadge:   { borderRadius: RADIUS.sm, padding: 8, alignItems: 'center', minWidth: 48 },
-  courtDateDays:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  courtDateLabel:   { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  caseActions:      { flexDirection: 'row', gap: 8 },
-  caseActionBtn:    { flex: 1, borderRadius: RADIUS.sm, borderWidth: 1, paddingVertical: 9, alignItems: 'center' },
-  caseActionText:   { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  filterRow:        { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  filterChip:       { paddingHorizontal: 16, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1 },
-  filterChipText:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  tplCard:          { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, marginBottom: 8 },
-  tplHeader:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  tplTitle:         { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 3 },
-  tplMeta:          { fontSize: 11 },
-  tplNote:          { fontSize: 12, marginTop: 8, lineHeight: 17 },
-  statusPill:       { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  statusPillText:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  cleHeader:        { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, alignItems: 'center', marginBottom: 14 },
-  cleHours:         { fontSize: 48, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
-  cleHoursLabel:    { fontSize: 12 },
-  cleCard:          { borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 10 },
-  cleCardHeader:    { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 10 },
-  cleTitleRow:      { marginBottom: 4 },
-  cleTitle:         { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 18 },
-  cleMeta:          { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
-  cleMetaText:      { fontSize: 11 },
-  chevron:          { fontSize: 11 },
-  diffBadge:        { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2 },
-  diffBadgeText:    { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  cleBody:          { paddingHorizontal: 16, paddingBottom: 14 },
-  cleDesc:          { fontSize: 12, lineHeight: 19, marginBottom: 10 },
-  cleContent:       { fontSize: 12, lineHeight: 19, marginBottom: 12 },
-  completeBtn:      { borderRadius: RADIUS.md, paddingVertical: 12, alignItems: 'center' },
-  completeBtnText:  { color: colors.textOnGold, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  completedBanner:  { borderRadius: RADIUS.sm, borderWidth: 1, padding: 10, alignItems: 'center' },
-  transcriptBtn:    { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
-  transcriptBtnText:{ fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  statsGrid:        { flexWrap: 'wrap' as const, flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 14, overflow: 'hidden' },
-  statCell:         { width: '33%', flex: 1, alignItems: 'center', paddingVertical: 16 },
-  statValue:        { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 3 },
-  statLabel:        { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  gavelBadge:       { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 14, alignItems: 'center' },
-  fieldLabel:       { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 14 },
-  input:            { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, fontSize: 14, lineHeight: 21, marginBottom: 4 },
-  saveBtn:          { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  saveBtnText:      { color: colors.textOnGold, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  outlineBtn:       { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
-  outlineBtnText:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+function Overview({ profile, navigation }: { profile: Profile | null; navigation: ScreenProps['navigation'] }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  if (!profile) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />;
+  const st = profile.stats;
+  const cells: [string, string][] = [
+    [String(st.active_cases), t('x_attorney_dashboard_active_cases')],
+    [String(st.pending_assignments), t('ad_stat_invites')],
+    [String(st.hearings_this_week), t('ad_stat_hearings')],
+    [String(st.unread_messages), t('x_attorney_dashboard_unread_msgs')],
+    [String(st.motions_generated), t('ad_stat_motions')],
+    ...(st.upcoming_consultations != null ? [[String(st.upcoming_consultations), t('ad_stat_consults')] as [string, string]] : []),
+    ...(st.review_count ? [[`${st.avg_rating}★`, t('ad_stat_rating', { n: st.review_count })] as [string, string]] : []),
+  ];
+  const tools: { key: string; label: string; sub: string; go: () => void }[] = [
+    { key: 'inbox', label: t('ad_tool_inbox'), sub: st.unread_messages ? t('ad_tool_inbox_unread', { n: st.unread_messages }) : t('ad_tool_inbox_sub'), go: () => navigation.navigate('AttorneyInbox' as never) },
+    { key: 'conflicts', label: t('x_nav_conflict_check'), sub: t('ad_tool_conflicts_sub'), go: () => navigation.navigate('ConflictCheck' as never) },
+    { key: 'firm', label: t('ad_tool_firm'), sub: t('ad_tool_firm_sub'), go: () => navigation.navigate('FirmAcquisition' as never) },
+    { key: 'plans', label: t('ad_tool_plans'), sub: profile.plan ? t('ad_tool_plan_on', { plan: profile.plan.tier }) : t('ad_tool_plans_sub'), go: () => navigation.navigate('Subscription' as never) },
+  ];
+  return (
+    <>
+      <View style={s.card}>
+        <Text maxFontSizeMultiplier={1.4} style={s.title}>{profile.name || t('atty_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[s.line, profile.bar_verified ? { color: colors.legal } : null]} testID="ad-bar-status">
+          {profile.bar_verified ? t('ad_bar_verified', { bar: profile.bar_number || '', state: profile.bar_state ? stateName(profile.bar_state) : '' })
+            : profile.pending_bar_verification ? t('ad_bar_pending', { bar: profile.bar_number || '' })
+              : profile.bar_rejection_reason ? t('ad_bar_rejected', { reason: profile.bar_rejection_reason }) : t('ad_bar_none')}
+        </Text>
+        {profile.listing && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_listing', { name: profile.listing.name })}</Text>}
+      </View>
+      <View style={s.grid} testID="ad-stats">
+        {cells.map(([v, l]) => (
+          <View key={l} style={s.cell}>
+            <Text maxFontSizeMultiplier={1.2} style={s.cellVal}>{v}</Text>
+            <Text maxFontSizeMultiplier={1.2} style={s.cellLabel}>{l}</Text>
+          </View>
+        ))}
+      </View>
+      {tools.map(x => (
+        <TouchableOpacity key={x.key} accessibilityRole="button" testID={`ad-tool-${x.key}`} style={s.card} onPress={x.go}>
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{x.label} ›</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{x.sub}</Text>
+        </TouchableOpacity>
+      ))}
+    </>
+  );
+}
 
-  // Bar verification status card
-  barStatusCard:       { flexDirection:'row', alignItems:'center', borderRadius:12, borderWidth:1, padding:14, marginBottom:12, gap:10 },
-  barStatusTitle:      { fontSize:13, fontWeight:'700', marginBottom:3 },
-  barStatusSub:        { fontSize:12, color:colors.steel, lineHeight:17 },
-  barStatusAction:     { backgroundColor:COLORS.navy, borderRadius:8, paddingHorizontal:12, paddingVertical:8 },
-  barStatusActionText: { fontSize:12, fontWeight:'700', color:COLORS.bgCard },
-  // Profile completion bar
-  completionCard:  { borderRadius:12, borderWidth:1, padding:14, marginBottom:12 },
-  completionLabel: { fontSize:12, fontWeight:'600' },
-  completionBar:   { height:6, borderRadius:4, overflow:'hidden', marginBottom:8 },
-  completionFill:  { height:6, borderRadius:4 },
-  completionHint:  { fontSize:11, lineHeight:17 },
+function Cases({ navigation }: { navigation: ScreenProps['navigation'] }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const [rows, setRows] = useState<CaseRow[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    api.get('/attorney/cases').then(r => setRows((r.data?.cases || []) as CaseRow[])).catch(e => setErr(apiErrorMessage(e, t('ad_load_error'))));
+  }, []);
+  if (err) return <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{err}</Text></View>;
+  if (!rows) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />;
+  if (!rows.length) return <View style={s.card} testID="ad-no-cases"><Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_no_assigned_cases')}</Text><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_no_cases_body')}</Text></View>;
+  return (
+    <>
+      {rows.map(c => (
+        <View key={c.id} style={s.card} testID="ad-case">
+          <Text maxFontSizeMultiplier={1.4} style={s.title} numberOfLines={2}>{c.title || t('x_attorney_dashboard_case', { id: c.id })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{[c.client_name, caseStatus(c.status), c.state ? stateName(c.state) : ''].filter(Boolean).join(' · ')}</Text>
+          {!!c.next_hearing_date && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_next_hearing', { date: fmtDay(c.next_hearing_date) })}</Text>}
+          <View style={s.rowWrap}>
+            <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('Messages', { caseId: c.id, caseTitle: c.title || undefined })}>
+              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{c.unread_count ? t('ad_messages_unread', { n: c.unread_count }) : t('x_attorney_dashboard_message')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('MotionLibrary', { caseId: c.id })}>
+              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('x_attorney_dashboard_motion')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps['route'] }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const { confirm } = useConfirm();
+  const purchase = usePurchase();
+  const [state, setState] = useState(profile?.bar_state || '');
+  const [open, setOpen] = useState<OpenLead[] | null>(null);
+  const [mine, setMine] = useState<MyLead[]>([]);
+  const [busy, setBusy] = useState<number | null>(null);
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const load = useCallback(async () => {
+    try {
+      const [o, m] = await Promise.all([api.get('/billing/pi-leads', { params: state ? { state } : {} }), api.get('/billing/pi-leads/mine')]);
+      setOpen(Array.isArray(o.data) ? (o.data as OpenLead[]) : []);
+      setMine((m.data?.leads || []) as MyLead[]);
+    } catch (e) { setOpen([]); setNotice({ text: apiErrorMessage(e, t('ad_load_error')), tone: 'error' }); }
+  }, [state]);
+  useEffect(() => { load(); }, [load]);
+
+  const confirmLead = useCallback((id: number) => async (ids: Record<string, string | undefined>) => (await api.post(`/billing/pi-lead/confirm/${id}`, ids)).data, []);
+  const sessionId = (route?.params as { checkout_session_id?: string } | undefined)?.checkout_session_id;
+  useEffect(() => {
+    if (!sessionId) return;
+    const pending = takePendingCheckout('case_lead');
+    const id = Number(pending?.ctx?.leadId);
+    if (!id) return;
+    purchase.finish(confirmLead(id), { checkout_session_id: sessionId }).then(r => {
+      if (r.status === 'done') { setNotice({ text: t('ad_lead_bought'), tone: 'ok' }); load(); }
+      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, confirmLead, load]);
+
+  const buy = (l: OpenLead) => confirm(t('ad_lead_buy_title', { fee: l.lead_fee_display }), t('ad_lead_buy_body', { fee: l.lead_fee_display }), { confirmLabel: t('ad_lead_buy_cta', { fee: l.lead_fee_display }) }).then(async ok => {
+    if (!ok) return;
+    setBusy(l.id); setNotice(null);
+    const r = await purchase.run({
+      key: 'case_lead', ctx: { leadId: l.id },
+      start: async (ui) => (await api.post(`/billing/pi-lead/accept/${l.id}`, { ui, return_path: '/attorney-dashboard' })).data,
+      confirm: confirmLead(l.id),
+    });
+    setBusy(null);
+    if (r.status === 'done') { setNotice({ text: t('ad_lead_bought'), tone: 'ok' }); load(); }
+    else {
+      if (r.status === 'cancelled') api.post(`/billing/pi-lead/release/${l.id}`, {}).catch(() => {});
+      if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    }
+  });
+
+  return (
+    <>
+      {!!notice && <View testID="ad-leads-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
+      {!profile?.bar_verified && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_leads_verify_first')}</Text></View>}
+      {mine.length > 0 && <Text maxFontSizeMultiplier={1.4} style={s.section}>{t('ad_leads_mine')}</Text>}
+      {mine.map(l => (
+        <View key={l.id} style={s.card} testID="ad-my-lead">
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{leadType(l.case_type)} · {[l.city, l.state ? stateName(l.state) : ''].filter(Boolean).join(', ')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{l.description}</Text>
+          {!!l.contact_name && <Text maxFontSizeMultiplier={1.4} style={[s.line, { marginTop: 6 }]}>👤 {l.contact_name}</Text>}
+          {!!l.contact_phone && <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.info }]} onPress={() => { const u = telUrl(l.contact_phone || ''); if (u) Linking.openURL(u).catch(() => {}); }}>📞 {formatPhone(l.contact_phone)}</Text>}
+          {!!l.contact_email && <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.info }]} onPress={() => Linking.openURL(`mailto:${l.contact_email}`).catch(() => {})}>✉️ {l.contact_email}</Text>}
+          <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('ad_lead_bought_on', { date: fmtDay(l.accepted_at), fee: usd(l.lead_fee_cents) })}</Text>
+        </View>
+      ))}
+      <Text maxFontSizeMultiplier={1.4} style={s.section}>{t('ad_leads_open')}</Text>
+      <View style={{ marginHorizontal: 12, marginTop: 8 }}><StatePicker value={state} onChange={setState} allowAll remember={false} testID="ad-leads-state" /></View>
+      <Text maxFontSizeMultiplier={1.3} style={s.hint}>{t('ad_leads_hint')}</Text>
+      {open === null && <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />}
+      {open?.length === 0 && <View style={s.card} testID="ad-no-leads"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_no_leads')}</Text></View>}
+      {open?.map(l => (
+        <View key={l.id} style={s.card} testID="ad-open-lead">
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{leadType(l.case_type)}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{[l.severity && SEVERITY_KEYS[l.severity] ? t(SEVERITY_KEYS[l.severity]) : '', l.city, l.state ? stateName(l.state) : ''].filter(Boolean).join(' · ')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={s.line}>{fmtDay(l.created_at)}</Text>
+          <TouchableOpacity accessibilityRole="button" testID={`ad-buy-lead-${l.id}`} style={[s.primaryBtn, (busy !== null || !profile?.bar_verified) && { opacity: 0.5 }]} disabled={busy !== null || !profile?.bar_verified} onPress={() => buy(l)}>
+            {busy === l.id ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_lead_buy_cta', { fee: l.lead_fee_display })}</Text>}
+          </TouchableOpacity>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Templates({ navigation }: { navigation: ScreenProps['navigation'] }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const [filter, setFilter] = useState<'approved' | 'pending' | 'all'>('approved');
+  const [rows, setRows] = useState<Template[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    setRows(null);
+    api.get('/attorney/templates', { params: { status: filter } }).then(r => setRows((r.data?.templates || []) as Template[])).catch(e => setErr(apiErrorMessage(e, t('ad_load_error'))));
+  }, [filter]);
+  return (
+    <>
+      <View style={s.rowWrap}>
+        {(['approved', 'pending', 'all'] as const).map(f => (
+          <TouchableOpacity key={f} accessibilityRole="radio" aria-checked={filter === f} accessibilityState={{ checked: filter === f }} style={[s.chip, filter === f && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => setFilter(f)}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.chipText, filter === f && { color: colors.textOnNavy }]}>{t(`ad_tpl_${f}`)}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {!!err && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{err}</Text></View>}
+      {rows === null && !err && <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />}
+      {rows?.length === 0 && (
+        <View style={s.card} testID="ad-no-templates">
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_no_templates_yet')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('x_attorney_dashboard_generate_motion_motion_library')}</Text>
+          <TouchableOpacity accessibilityRole="button" style={s.primaryBtn} onPress={() => navigation.navigate('MotionLibrary' as never)}>
+            <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('x_attorney_dashboard_open_motion_library')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {rows?.map(x => (
+        <View key={x.id} style={s.card}>
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{x.title}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{[x.motion_type, x.created_by_name, t(`ad_tpl_${x.status === 'approved' || x.status === 'pending' ? x.status : 'all'}`)].filter(Boolean).join(' · ')}</Text>
+          {!!x.notes && <Text maxFontSizeMultiplier={1.4} style={s.line} numberOfLines={3}>{x.notes}</Text>}
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Cle() {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const { showToast } = useToast();
+  const [rows, setRows] = useState<Course[] | null>(null);
+  const [busy, setBusy] = useState<number | null>(null);
+  const load = useCallback(() => api.get('/attorney/cle').then(r => setRows((r.data?.courses || []) as Course[])).catch(() => setRows([])), []);
+  useEffect(() => { load(); }, [load]);
+  const complete = async (id: number) => {
+    setBusy(id);
+    try { const r = await api.post(`/attorney/cle/${id}/complete`, {}); showToast(r.data?.message || t('ad_cle_logged'), 'info'); load(); }
+    catch (e) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_complete_course')), 'error'); }
+    finally { setBusy(null); }
+  };
+  if (rows === null) return <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />;
+  if (!rows.length) return <View style={s.card} testID="ad-no-cle"><Text maxFontSizeMultiplier={1.4} style={s.title}>{t('ad_cle_none')}</Text><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_cle_note')}</Text></View>;
+  return (
+    <>
+      <Text maxFontSizeMultiplier={1.3} style={s.hint}>{t('ad_cle_note')}</Text>
+      {rows.map(c => (
+        <View key={c.id} style={s.card}>
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{c.completed_at ? '✓ ' : ''}{c.title}</Text>
+          {!!c.description && <Text maxFontSizeMultiplier={1.4} style={s.line}>{c.description}</Text>}
+          {c.completed_at ? <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_cle_done', { date: fmtDay(c.completed_at) })}</Text> : (
+            <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} disabled={busy === c.id} onPress={() => complete(c.id)}>
+              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('ad_cle_mark')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ))}
+    </>
+  );
+}
+
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const SLOTS = ['morning', 'afternoon', 'evening'] as const;
+
+function ProfileTab({ profile, onSaved }: { profile: Profile; onSaved: () => void }) {
+  useLang();
+  const { colors } = useTheme();
+  const s = makeStyles(colors);
+  const { showToast } = useToast();
+  const [bar, setBar] = useState(profile.bar_number || '');
+  const [barState, setBarState] = useState(profile.bar_state || '');
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [schedule, setSchedule] = useState<Record<string, string[]>>({});
+  const [note, setNote] = useState('');
+  const [savingAvail, setSavingAvail] = useState(false);
+  const [officeId, setOfficeId] = useState('');
+  const [officeName, setOfficeName] = useState('');
+  useEffect(() => {
+    api.get('/attorney/profile/availability').then(r => { setSchedule(r.data?.schedule || {}); setNote(r.data?.note || ''); }).catch(() => {});
+  }, []);
+  const submitBar = async () => {
+    setSending(true); setMsg(null);
+    try { const r = await api.post('/attorney/verify-bar', { bar_number: bar, state: barState }); setMsg({ text: r.data?.message, tone: 'ok' }); onSaved(); }
+    catch (e) { setMsg({ text: apiErrorMessage(e, t('x_attorney_dashboard_try_again')), tone: 'error' }); }
+    finally { setSending(false); }
+  };
+  const toggle = (d: string, slot: string) => setSchedule(p => { const cur = p[d] || []; return { ...p, [d]: cur.includes(slot) ? cur.filter(x => x !== slot) : [...cur, slot] }; });
+  const saveAvail = async () => {
+    setSavingAvail(true);
+    try { await api.put('/attorney/profile/availability', { schedule, note }); showToast(t('x_attorney_dashboard_saved'), 'success'); }
+    catch (e) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save_availability')), 'error'); }
+    finally { setSavingAvail(false); }
+  };
+  const joinOffice = async () => {
+    try { await api.post('/attorney/office/join', { office_id: officeId.trim(), office_name: officeName.trim() }); showToast(t('x_attorney_dashboard_profile_updated'), 'success'); onSaved(); }
+    catch (e) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_save')), 'error'); }
+  };
+  const changed = bar.trim().toUpperCase() !== (profile.bar_number || '') || barState !== (profile.bar_state || '');
+  return (
+    <>
+      <View style={s.card} testID="ad-bar">
+        <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('ad_bar_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_bar_body')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('x_attorney_dashboard_bar_number')}</Text>
+        <TextInput testID="ad-bar-number" style={s.field} value={bar} onChangeText={setBar} maxLength={20} autoCapitalize="characters" accessibilityLabel={t('x_attorney_dashboard_bar_number')} placeholderTextColor={colors.placeholder} />
+        <Text maxFontSizeMultiplier={1.3} style={s.label}>{t('ad_bar_state')}</Text>
+        <StatePicker value={barState} onChange={setBarState} remember={false} testID="ad-bar-state" />
+        {profile.bar_verified && changed && <Text maxFontSizeMultiplier={1.3} style={[s.hint, { marginHorizontal: 0 }]}>{t('ad_bar_change_warning')}</Text>}
+        {!!msg && <Text maxFontSizeMultiplier={1.4} testID="ad-bar-msg" style={{ color: msg.tone === 'ok' ? colors.legalDark : colors.danger, marginTop: 8 }}>{msg.text}</Text>}
+        <TouchableOpacity accessibilityRole="button" testID="ad-bar-submit" style={[s.primaryBtn, (sending || !bar.trim() || !barState) && { opacity: 0.5 }]} disabled={sending || !bar.trim() || !barState} onPress={submitBar}>
+          {sending ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_bar_submit')}</Text>}
+        </TouchableOpacity>
+      </View>
+
+      <View style={s.card}>
+        <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_office_name')}</Text>
+        {profile.office_name ? <Text maxFontSizeMultiplier={1.4} style={s.line}>{profile.office_name}</Text> : (
+          <>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_office_body')}</Text>
+            <TextInput style={[s.field, { marginTop: 8 }]} value={officeId} onChangeText={setOfficeId} keyboardType="number-pad" maxLength={12} placeholder={t('ad_office_id')} accessibilityLabel={t('ad_office_id')} placeholderTextColor={colors.placeholder} />
+            <TextInput style={[s.field, { marginTop: 8 }]} value={officeName} onChangeText={setOfficeName} maxLength={200} placeholder={t('x_attorney_dashboard_davidson_county_public_defender')} accessibilityLabel={t('x_attorney_dashboard_office_name_2')} placeholderTextColor={colors.placeholder} />
+            <TouchableOpacity accessibilityRole="button" style={[s.ghostBtn, (!officeId.trim() || !officeName.trim()) && { opacity: 0.5 }]} disabled={!officeId.trim() || !officeName.trim()} onPress={joinOffice}>
+              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('ad_office_save')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
+      <View style={s.card} testID="ad-availability">
+        <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_weekly_availability')}</Text>
+        {DAYS.map(d => (
+          <View key={d} style={[s.rowWrap, { marginHorizontal: 0, alignItems: 'center' }]}>
+            <Text maxFontSizeMultiplier={1.2} style={[s.line, { width: 44 }]}>{t(`x_attorney_dashboard_${d}`)}</Text>
+            {SLOTS.map(slot => {
+              const on = (schedule[d] || []).includes(slot);
+              return (
+                <TouchableOpacity key={slot} accessibilityRole="checkbox" aria-checked={on} accessibilityState={{ checked: on }} accessibilityLabel={`${t(`x_attorney_dashboard_${d}`)} ${t(`ad_slot_${slot}`)}`}
+                  style={[s.chip, on && { backgroundColor: colors.navy, borderColor: colors.navy }]} onPress={() => toggle(d, slot)}>
+                  <Text maxFontSizeMultiplier={1.2} style={[s.chipText, on && { color: colors.textOnNavy }]}>{t(`ad_slot_${slot}`)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+        <TextInput style={[s.field, { marginTop: 10 }]} value={note} onChangeText={setNote} maxLength={200} placeholder={t('x_attorney_dashboard_availability_note_e_g')} accessibilityLabel={t('x_attorney_dashboard_availability_note')} placeholderTextColor={colors.placeholder} />
+        <TouchableOpacity accessibilityRole="button" testID="ad-availability-save" style={[s.primaryBtn, savingAvail && { opacity: 0.6 }]} disabled={savingAvail} onPress={saveAvail}>
+          <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('x_attorney_dashboard_save_availability')}</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+}
+
+const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabBar: { flexGrow: 0, backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tab: { minHeight: 46, paddingHorizontal: 12, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabText: { fontSize: 14, ...FONTS.bold, color: colors.textMuted },
+  notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
+  card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 10, borderRadius: RADIUS.lg, padding: 14, borderWidth: 1, borderColor: colors.border },
+  section: { fontSize: 12, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginTop: 18, marginHorizontal: 16, textTransform: 'uppercase' },
+  title: { fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
+  line: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 2 },
+  hint: { fontSize: 12, lineHeight: 17, color: colors.textMuted, marginHorizontal: 16, marginTop: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 8, marginTop: 6 },
+  cell: { width: '33.33%', padding: 4 },
+  cellVal: { fontSize: 20, ...FONTS.black, color: colors.textBrand, textAlign: 'center', backgroundColor: colors.bgCard, borderTopLeftRadius: RADIUS.md, borderTopRightRadius: RADIUS.md, paddingTop: 10 },
+  cellLabel: { fontSize: 11, lineHeight: 15, color: colors.textSecond, textAlign: 'center', backgroundColor: colors.bgCard, borderBottomLeftRadius: RADIUS.md, borderBottomRightRadius: RADIUS.md, paddingBottom: 10, paddingHorizontal: 4, minHeight: 40 },
+  rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginHorizontal: 12, marginTop: 8 },
+  chip: { minHeight: 44, paddingHorizontal: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.bgCard },
+  chipText: { fontSize: 13, ...FONTS.semi, color: colors.textSecond },
+  primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 10, paddingHorizontal: 12 },
+  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 8 },
+  ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
+  label: { fontSize: 13, ...FONTS.semi, color: colors.textSecond, marginTop: 10, marginBottom: 4 },
+  field: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, minHeight: 44, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14 },
 });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 
 export default React.memo(AttorneyDashboardScreen);

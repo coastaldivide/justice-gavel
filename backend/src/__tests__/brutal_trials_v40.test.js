@@ -1,4 +1,3 @@
-import { feSource } from './helpers/feSource.js';
 // Repo root, resolved relative to this test file (was a hard-coded /tmp path)
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
@@ -155,19 +154,25 @@ describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => 
     expect(src).toContain('/auth/me');
   });
   test('S6-04: FirmAcquisitionScreen Switch is in feature-list rendering (not form toggle)', async () => {
-    const src = feSource(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx');
-    expect(src).toContain('Switch vertical any time');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    // Section G: no pitch / demo flow with invented stats; the screen shows the firm's real trial state
+    expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
     expect(src).toContain('/firm-acquisition/status');
+    expect(src).toContain('/firm-acquisition/checklist');
+    expect(src).toContain('/firm-acquisition/invites');
+    expect(src).toContain('/firm-acquisition/upgrade');
+    expect(src).toContain('RefreshControl');
+    expect(src).toContain('useConfirm');
   });
   test('S6-05: PaymentsScreen — BiometricLockView gate, purpose/amount/method states, /pay/create', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('Seamless, context-aware payment flow');
-    expect(src).toContain('BiometricLockView');
-    expect(src).toContain('useBiometricGate');
-    expect(src).toContain('purpose');
-    expect(src).toContain('amount');
-    expect(src).toContain('/pay/create');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('S6-06: TranslatorScreen — phase+langA+langB states, /translate/session + session messages', async () => {
       const fs = await import('fs');
@@ -210,9 +215,12 @@ describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => 
 describe('S12. UX — Product Architecture', () => {
   test('S12-01: PaymentsScreen BiometricLockView gates payment confirmation', async () => {
     const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('BiometricLockView');
-    expect(src).toContain('Seamless, context-aware');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
   test('S12-02: matters /:id/history paginates with limit/offset (max 200)', async () => {
     const fs = await import('fs');

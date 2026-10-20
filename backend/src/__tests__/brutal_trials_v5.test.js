@@ -902,9 +902,9 @@ describe('13. Regression — Prior Fixes Still Hold', () => {
   });
 
   test('13-04: conflicts.js batched name query (no N+1)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/conflicts.js', 'utf8');
-    expect(src).toContain('normedNames');
+    expect(src).toContain('normalizeName');   // section G: names matched on normalized tokens, firm data read once
   });
 
   test('13-05: api.ts has deduplicatedGet + _inFlight Map', async () => {

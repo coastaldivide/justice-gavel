@@ -361,42 +361,63 @@ describe('6. MatchScreen — AI Lawyer Matching', () => {
 describe('7. PaymentsScreen — Payment Purposes & Flow', () => {
 
   test('7-01: PURPOSES array has consultation, retainer, bail entries', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('PURPOSES');
-    expect(src).toContain("'consultation'");
-    expect(src).toContain("'retainer'");
-    expect(src).toContain("'bail'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 
   test('7-02: consultation defaultAmount is $150', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain("defaultAmount: '150'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 
   test('7-03: retainer defaultAmount is $1500', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain("defaultAmount: '1500'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 
   test('7-04: PaymentsScreen POSTs to /pay/create', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain("'/pay/create'");
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 
   test('7-05: PaymentsScreen uses Linking.openURL (payment opens in browser)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('Linking.openURL');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 
   test('7-06: PaymentsScreen has KeyboardAvoidingView (amount input)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
+    // Section G: the "pay anything" form (purposes, typed amounts, /pay/create) is removed — the app never asks
+    // for an amount. Billing shows the plan, real purchases and refund requests.
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
-    expect(src).toContain('KeyboardAvoidingView');
+    expect(src).not.toMatch(/PURPOSES|defaultAmount|\/pay\/create/);
+    expect(src).toContain("'/billing/overview'");
+    expect(src).toContain("'/billing/refund'");
   });
 });
 
@@ -464,9 +485,12 @@ describe('9. ConsumerSubscriptionScreen — Individual Tiers', () => {
   });
 
   test('9-04: free-trial length comes from the backend (trial_days)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('trial_days');
+    const plans = fs.readFileSync(__REPO + '/frontend/src/services/plans.ts', 'utf8');
+    // Section G: plan cards come from services/plans.ts, which reads trial_days from the server
+    expect(src).toContain('consumerPlansFrom');
+    expect(plans).toContain('trial_days');
   });
 
   test('9-05: has /billing/cancel endpoint', async () => {
@@ -511,13 +535,13 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
   test('10-04: trial CTA only when the backend plan has trial days', async () => {
     const src = feSource(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx');
     expect(src).toContain('trialDays');
-    expect(src).toContain('-Day Free Trial');
+    expect(src).toContain("plan.trialDays ? t('plan_start_trial', { days: plan.trialDays })");
   });
 
   test('10-05: no placement / ranking promises for paid plans', async () => {
     const src = feSource(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx');
     expect(src).not.toMatch(/top placement|top of search|#1 in search|priority placement/i);
-    expect(src).toContain('does not change where you appear');
+    expect(src).toContain('plan_bondsman_leads_note');   // section G: what a plan includes, from the server
   });
 
   test('10-06: SubscriptionScreen uses haptic feedback', async () => {
@@ -773,9 +797,9 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
   });
 
   test('15-05: TRIAL_DAYS = 14', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
-    expect(src).toContain('TRIAL_DAYS     = 14');
+    expect(src).toContain('export const TRIAL_DAYS = 14;');
   });
 
   test('15-06: family expedTRO requires crisis + dv', () => {

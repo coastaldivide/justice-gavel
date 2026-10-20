@@ -270,10 +270,11 @@ describe('JOURNEY. All 7 Critical Flows End to End', () => {
     expect(fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js','utf8')).toContain('AbortController');
   });
   test('JOURNEY-04: Payments verified', async () => {
-    const fs=await import('fs');
-    const sub=fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
-    const conn=fs.readFileSync(__REPO + '/backend/src/routes/billing/connections.js','utf8');
-    expect(sub).toContain('/billing/subscribe'); expect(sub).toContain('{!!error');
+    const fs = await import('fs');
+    const sub = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const conn = fs.readFileSync(__REPO + '/backend/src/routes/billing/connections.js', 'utf8');
+    expect(sub).toContain('/billing/subscribe');
+    expect(sub).toContain('testID="subscription-notice"');   // section G: failures shown in the notice banner
     expect(conn).toContain('QUICKCONNECT_PRICE_CENTS');
     expect(conn).not.toContain('referral_credit');
   });

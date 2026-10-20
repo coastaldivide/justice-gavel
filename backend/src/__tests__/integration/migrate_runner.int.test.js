@@ -45,7 +45,7 @@ run('migrate.sh (Render pre-deploy migrations)', () => {
     for (const d of Object.values(dbs)) await admin.query(`DROP DATABASE IF EXISTS ${d} WITH (FORCE)`).catch(() => {});
     await admin.end();
     fs.rmSync(tmp, { recursive: true, force: true });
-  });
+  }, 60_000);   // dropping the scratch databases can take a few seconds on a loaded machine
 
   const migrate = (db, args = [], env = {}) => spawnSync('sh', [SCRIPT, ...args], {
     env: { ...process.env, DATABASE_URL: withDb(PG_URL, db), MIGRATIONS_DATABASE_URL: '', MIGRATIONS_DIR: '', ...env },

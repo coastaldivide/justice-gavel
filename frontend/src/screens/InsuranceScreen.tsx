@@ -13,7 +13,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { useTheme } from '../constants/theme';
-import { consumerPlansFrom } from './ConsumerSubscriptionScreen';
+import { consumerPlansFrom, featureLabel } from '../services/plans';
 import { t, useLang, locale } from '../i18n';
 
 interface Plan { key: string; label: string; monthly: number | null; features: string[] }
@@ -66,7 +66,7 @@ function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={[s.cardTitle, { flex: 1 }]}>{p.label}</Text>
             {p.monthly != null && <Text maxFontSizeMultiplier={1.3} style={s.price} testID={`insurance-price-${p.key}`}>{money(p.monthly)}{t('x_check_in_manager_mo')}</Text>}
           </View>
-          {p.features.slice(0, 4).map(f => <Text key={f} maxFontSizeMultiplier={1.4} style={s.body}>• {f}</Text>)}
+          {p.features.slice(0, 4).map(f => <Text key={f} maxFontSizeMultiplier={1.4} style={s.body}>• {featureLabel(f)}</Text>)}
         </View>
       ))}
       {plans.length > 0 && (

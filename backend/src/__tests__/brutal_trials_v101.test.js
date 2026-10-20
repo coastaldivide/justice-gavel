@@ -46,7 +46,7 @@ describe('DISC33. S0 Threshold Fixes — 6 items to ≥5', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(35);
+    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
   });
   test('DISC33-06: CENTENNIAL — 100th pass confirmed [≥4]', async () => {
     const fs  = await import('fs');
@@ -202,7 +202,7 @@ describe('Regression — All v1–v100 Confirmed', () => {
   });
   test('R-05: BUSINESS_CONSTANTS + CONFIG final', () => {
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.COURT_REMINDER_DAYS does not exist */
     /* removed: BUSINESS_CONSTANTS.MAX_MESSAGES_PER_THREAD does not exist */
     expect(CONFIG.AI_CONCURRENCY).toBe(8);

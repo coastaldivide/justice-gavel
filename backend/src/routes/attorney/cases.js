@@ -43,6 +43,8 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
                          ca.assigned_at, ca.status as assignment_status,
                          ca.notes as assignment_notes,
                          u.display_name as client_name, u.email as client_email, u.phone as client_phone,
+                         (SELECT MIN(cd.court_date) FROM court_dates cd
+                           WHERE cd.case_id = c.id AND cd.deleted_at IS NULL AND cd.court_date >= CURRENT_DATE) as next_hearing_date,
                          (SELECT COUNT(*) FROM case_messages cm
                            WHERE cm.case_id = c.id
                              AND cm.read_at IS NULL
@@ -58,7 +60,7 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
                   FROM cases c
                   JOIN case_assignments ca ON ca.case_id = c.id
                   LEFT JOIN users u ON u.id = c.user_id
-                  WHERE ca.defender_id=? AND ca.status=?`;
+                  WHERE ca.defender_id=? AND ca.status=? AND c.deleted_at IS NULL`;
     const args = [req.user.id, 'active'];
 
     if (status) { sql += ' AND c.status=?'; args.push(status); }
@@ -70,39 +72,15 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
       db.get(
         `SELECT COUNT(*) as total FROM cases c
          JOIN case_assignments ca ON ca.case_id=c.id
-         WHERE ca.defender_id=? AND ca.status='active'${status ? ' AND c.status=?' : ''}`,
+         WHERE ca.defender_id=? AND ca.status='active' AND c.deleted_at IS NULL${status ? ' AND c.status=?' : ''}`,
         status ? [req.user.id, status] : [req.user.id]
       ),
     ]);
 
     const total = countRow?.total ?? 0;
 
-    // Enrich cases with AI intake context so attorneys can review defendant's situation
-    const enriched = await Promise.all(cases.map(async (cas) => {
-      try {
-        if (!cas.client_email) return { ...cas, ai_intake_context: null };
-        const clientUser = await db.get(
-          'SELECT id FROM users WHERE email = ? LIMIT 1', [cas.client_email]);
-        if (!clientUser) return { ...cas, ai_intake_context: null };
-        const session = await db.get(
-          'SELECT id FROM chat_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1',
-          [clientUser.id]);
-        if (!session) return { ...cas, ai_intake_context: null };
-        const msg = await db.get(
-          `SELECT content FROM chat_messages
-            WHERE session_id = ? AND role = 'assistant'
-            ORDER BY created_at DESC LIMIT 1`, [session.id]);
-        return {
-          ...cas,
-          ai_intake_context: msg?.content
-            ? msg.content.slice(0, 300).replace(/\n/g, ' ')
-            : null,
-        };
-      } catch { return { ...cas, ai_intake_context: null }; }
-    }));
-
     res.json({
-      cases: enriched,
+      cases,
       count:      cases.length,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });

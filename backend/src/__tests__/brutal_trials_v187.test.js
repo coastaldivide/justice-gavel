@@ -105,13 +105,13 @@ describe('FLOW. 5 Runtime Flow Traces', () => {
 describe('INPUT. Form Input Quality', () => {
   test('INPUT-01: attorney bar number input has maxLength={15}', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
-    // Bar numbers vary by state (6-9 digits) — maxLength prevents garbage input
-    // and ensures server validation pass consistently
-    const textInputs = [...src.matchAll(/<TextInput([^>]+)>/gs)];
-    const barInput   = textInputs.find(m => m[1].includes('barInput'));
-    expect(barInput).toBeTruthy();
-    expect(barInput[1]).toContain('maxLength');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    // Section G: the bar number is submitted for review (POST /attorney/verify-bar); empty input cannot be sent
+    const idx = src.indexOf('const submitBar');
+    expect(idx).toBeGreaterThan(-1);
+    expect(src.slice(idx, idx + 400)).toContain('/attorney/verify-bar');
+    expect(src).toMatch(/disabled=\{sending \|\| !bar\.trim\(\) \|\| !barState\}/);
+    expect(src).toMatch(/testID="ad-bar-number"[^>]*maxLength=\{20\}/);
   });
   test('INPUT-03: expungement/rules.js is a pure data module — 50 US states', async () => {
     const fs = await import('fs');

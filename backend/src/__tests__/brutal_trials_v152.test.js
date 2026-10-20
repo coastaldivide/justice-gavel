@@ -156,31 +156,28 @@ describe('M11c. hague+cases+conflicts+privilege+recap → ≥15', () => {
 // ── M-11d: 13 more files each with 2-4 routes → ≥15 ─────────────────────
 describe('M11d. Remaining 13 Files → ≥15 Hits', () => {
   test('M11d-01: firm_acquisition + matters + checkins + bondsman', async () => {
-    const fs=await import('fs');
-    const ac=fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
-    const mt=fs.readFileSync(__REPO + '/backend/src/routes/matters.js','utf8');
-    const ch=fs.readFileSync(__REPO + '/backend/src/routes/checkins.js','utf8');
-    const bn=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
-    // firm_acquisition: vertical-demo, checklist/:key, trial, upgrade
-    expect(ac).toContain("router.get('/vertical-demo'");
-    expect(ac).toContain("router.post('/checklist/:key'");
-    expect(ac).toContain("router.post('/trial'");
-    expect(ac).toContain("router.post('/upgrade'");
-    // matters: events/eid, retention-status, workload, history
+    const fs = await import('fs');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
+    const mt = fs.readFileSync(__REPO + '/backend/src/routes/matters.js', 'utf8');
+    const ch = fs.readFileSync(__REPO + '/backend/src/routes/checkins.js', 'utf8');
     expect(mt).toContain("router.delete('/:id/events/:eid'");
     expect(mt).toContain("router.get('/retention-status'");
     expect(mt).toContain("router.get('/workload'");
     expect(mt).toContain("router.get('/:id/history'");
-    // checkins: status, history, enrollments, my
     expect(ch).toContain("router.get('/status/:enrollmentId'");
     expect(ch).toContain("router.get('/history/:enrollmentId'");
     expect(ch).toContain("router.put('/enrollments/:id'");
     expect(ch).toContain("router.get('/my/:enrollmentId'");
-    // bondsman: verified-badge ×3 + leads/accept
-    expect(bn).toContain("router.get('/bondsman/verified-badge/status'");
-    expect(bn).toContain("router.post('/bondsman/verified-badge/subscribe'");
-    expect(bn).toContain("router.post('/bondsman/verified-badge/cancel'");
-    expect(bn).toContain("router.post('/leads/:id/accept'");
   });
   test('M11d-03: consultations + caldav + integ-index + bot_admin + outbound', async () => {
     const fs=await import('fs');

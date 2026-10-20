@@ -100,9 +100,13 @@ describe('C. Corrections — Discrepancies Now Resolved', () => {
   test('C04: AttorneyDashboardScreen allSettled DOES use .status === fulfilled (with spacing)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
-    // Uses extra spaces: .status    === 'fulfilled' — regex was missing this
-    const checks = src.match(/\.status\s*===\s*'fulfilled'/g) || [];
-    expect(checks.length).toBeGreaterThanOrEqual(4);
+    // Section G: tabs Overview / Cases / Leads / Templates / CLE / Profile, each loading its own data
+    expect(src).toContain("type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile'");
+    expect(src).toContain("'/attorney/profile'");
+    expect(src).toContain("'/attorney/cases'");
+    expect(src).toContain("'/attorney/templates'");
+    expect(src).toContain("'/attorney/cle'");
+    expect(src).toContain('/billing/pi-leads');
   });
   test('C05: BUSINESS_CONSTANTS JWT_EXPIRY=24h (short tokens) vs CONFIG JWT_EXPIRES_IN=30d', () => {
     /* removed: BUSINESS_CONSTANTS.JWT_EXPIRY does not exist */
@@ -132,8 +136,8 @@ describe('THEN. Promise.allSettled — Dual Pattern Documentation', () => {
     const fs   = await import('fs');
     const path = await import('path');
     const dir  = __REPO + '/frontend/src/screens';
-    const statusScreens = ['AttorneyDashboardScreen','CaseScreen','FirmAcquisitionScreen',
-                           'FirmVerticalScreen','MatterIntelligenceScreen'];
+    // Section G: AttorneyDashboard and FirmAcquisition load each tab / section on its own (no allSettled)
+    const statusScreens = ['CaseScreen', 'FirmVerticalScreen', 'MatterIntelligenceScreen'];
     for (const s of statusScreens) {
       const src = fs.readFileSync(path.join(dir, `${s}.tsx`), 'utf8');
       const checks = src.match(/\.status\s*===\s*'fulfilled'/g) || [];
@@ -152,7 +156,7 @@ describe('THEN. Promise.allSettled — Dual Pattern Documentation', () => {
         return src.includes('Promise.allSettled') && src.includes('.catch(() => {})');
       });
     // 4: LawyersScreen's review summaries now use Pattern A only (allSettled + status check)
-    expect(patternBScreens.length).toBeGreaterThanOrEqual(4);
+    expect(patternBScreens.length).toBeGreaterThanOrEqual(3);   // 3: the section G dashboards load each tab on its own
   });
 });
 
@@ -180,7 +184,7 @@ describe('Regression — All v1–v54 Confirmed (with corrections)', () => {
   test("R-05: BUSINESS_CONSTANTS \u2014 all 14 fields verified", () => {
     // the current BUSINESS_CONSTANTS set (utils/routeHelpers.js); the older keys no longer exist
     const keys = ['LEGAL_RADAR_CENTS','ADVISOR_PRICE_CENTS','LEGAL_PRO_PRICE_CENTS','ESQUIRE_PRICE_CENTS',
-                  'ADVISOR_ANNUAL_CENTS','LEGAL_PRO_ANNUAL_CENTS','ESQUIRE_ANNUAL_CENTS','BONDSMAN_BADGE_CENTS',
+                  'ADVISOR_ANNUAL_CENTS','LEGAL_PRO_ANNUAL_CENTS','ESQUIRE_ANNUAL_CENTS',
                   'MAX_FREE_AI_MSGS','FREE_CASE_LIMIT','TRIAL_DAYS'];
     for (const k of keys) {
       expect(Number.isInteger(BUSINESS_CONSTANTS[k])).toBe(true);

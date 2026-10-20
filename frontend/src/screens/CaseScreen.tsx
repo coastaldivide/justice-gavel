@@ -62,6 +62,7 @@ export interface Case {
   notes: string; created_at: string; state?: string | null; charge?: string | null;
 }
 interface Thread { case_id: number; title: string; status: string; unread: number; last_message_at: string | null; counsel_count: number; role: string }
+interface DirectThread { user_id: number; name: string | null; last_message: string; last_from_me: boolean; last_at: string; unread: number }
 interface SavedLawyer { id: number; provider_id?: number; name?: string; address?: string; specialties?: string[] }
 type Draft = { id?: number; title: string; status: string; next_court_date: string; state: string; notes: string };
 
@@ -232,14 +233,18 @@ function CaseScreen({ navigation }: any) {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
 
+  const [direct, setDirect] = useState<DirectThread[]>([]);
   const unreadByCase = useMemo(() => new Map(threads.map(th => [th.case_id, th.unread])), [threads]);
-  const totalUnread = useMemo(() => threads.reduce((n, th) => n + th.unread, 0), [threads]);
+  const totalUnread = useMemo(() => threads.reduce((n, th) => n + th.unread, 0) + direct.reduce((n, d) => n + d.unread, 0), [threads, direct]);
 
   const loadThreads = useCallback(async () => {
-    if (!(await secureStorage.getToken().catch(() => null))) { if (mounted.current) { setThreads([]); setThreadsState('ok'); } return; }
+    if (!(await secureStorage.getToken().catch(() => null))) { if (mounted.current) { setThreads([]); setDirect([]); setThreadsState('ok'); } return; }
     try {
-      const r = await api.get<{ threads: Thread[] }>('/messages/threads');
-      if (mounted.current) { setThreads((r.data?.threads || []).filter(th => th.role === 'client')); setThreadsState('ok'); }
+      const [r, d] = await Promise.all([
+        api.get<{ threads: Thread[] }>('/messages/threads'),
+        api.get<{ threads: DirectThread[] }>('/messages/direct/threads').catch(() => null),
+      ]);
+      if (mounted.current) { setThreads((r.data?.threads || []).filter(th => th.role === 'client')); setDirect(d?.data?.threads || []); setThreadsState('ok'); }
     } catch { if (mounted.current) setThreadsState('error'); }
   }, []);
 
@@ -551,7 +556,18 @@ function CaseScreen({ navigation }: any) {
           <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={loadThreads}><Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('try_again')}</Text></TouchableOpacity>
         </View>
       )}
-      {threadsState === 'ok' && threads.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_messages_messages_live_inside_case')}</Text>}
+      {threadsState === 'ok' && threads.length === 0 && direct.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_messages_messages_live_inside_case')}</Text>}
+      {direct.map(d => (
+        <TouchableOpacity key={`d${d.user_id}`} accessibilityRole="button" testID="case-direct-row" style={styles.row}
+          onPress={() => navigation.navigate('Messages', { directWith: d.user_id, directName: d.name || undefined })}>
+          <View style={{ flex: 1 }}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle} numberOfLines={1}>✉️ {d.name || t('ai_someone')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowSub} numberOfLines={1}>{d.last_from_me ? `${t('ai_you')}: ` : ''}{d.last_message}</Text>
+          </View>
+          {d.unread > 0 && <View style={styles.unread}><Text maxFontSizeMultiplier={1.2} style={styles.unreadText}>{d.unread > 9 ? '9+' : d.unread}</Text></View>}
+          <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      ))}
       {threads.map(th => (
         <TouchableOpacity key={th.case_id} accessibilityRole="button" testID="case-thread-row" style={styles.row}
           onPress={() => navigation.navigate('Messages', { caseId: th.case_id, caseTitle: th.title })} accessibilityLabel={t('x_messages_open_messages', { title: th.title })}>

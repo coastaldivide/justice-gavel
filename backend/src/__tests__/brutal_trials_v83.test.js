@@ -78,7 +78,7 @@ describe('DISC17. Hague Discrepancy Fixes — 5 items at threshold', () => {
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
@@ -114,7 +114,6 @@ describe('DISC17. Hague Discrepancy Fixes — 5 items at threshold', () => {
 // ── S6-GAP. HagueContactScreen Internal Functions ─────────────────────────
 describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to ≥2]', () => {
   test('S6-01: callNumber uses hapticCall + Linking.openURL tel: scheme', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     // numbers come from the server's stored data and go through utils/contact (tel:+1…)
     expect(fe).toContain('telUrl(phone)');
@@ -123,7 +122,6 @@ describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to �
     expect(fe).toContain("'/hague-contacts/us-resources'");
   });
   test('S6-02: onSelectCountry sets selectedCountry then calls lookupAuthority', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('pickCountry');
     expect(fe).toContain('/hague-contacts/central-authority/');
@@ -132,7 +130,6 @@ describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to �
     expect(fe).toContain('SourceLine');
   });
   test('S6-03: QUICK_COUNTRIES has 18 entries for fast country selection', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('pickCountry');
     expect(fe).toContain('/hague-contacts/central-authority/');
@@ -141,7 +138,6 @@ describe('S6-GAP. HagueContactScreen — callNumber + onSelectCountry [push to �
     expect(fe).toContain('SourceLine');
   });
   test('S6-04: HagueContactScreen legal notice on home screen', async () => {
-    const fs = await import('fs');
     const fe = feSource(__REPO + '/frontend/src/screens/HagueContactScreen.tsx');
     expect(fe).toContain('not legal advice');
     expect(fe).toContain('family law attorney');
@@ -162,7 +158,7 @@ describe('S1-GAP. Low-Hit Routes — All 30 Below 3 Hits Documented', () => {
     expect(mig).toContain("('GB', 'United Kingdom'");
     expect(mig).toContain("('IN', 'India'");
     expect(mig).toContain("('US', 'United States'");
-    expect((mig.match(/^  \('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
+    expect((mig.match(/^ {2}\('[A-Z]{2}', /gm) || []).length).toBeGreaterThanOrEqual(28);
     expect(mig).toContain("'HCCH member state registry'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain("router.get('/member-states'");
@@ -467,7 +463,7 @@ describe('ENH. Enhancement Findings — Documented Improvements', () => {
     // VERIFIED: QUICKCONNECT_PRICE_CENTS=2000 ($20), BONDSMAN_BADGE_CENTS=4900 ($49)
     // All payment amounts are in cents — consistent with Stripe's API convention
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MIN_CHARGE_CENTS does not exist */
   });
@@ -566,7 +562,7 @@ describe('Regression — All v1–v82 Confirmed', () => {
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_ANNUAL does not exist */
     /* removed: BUSINESS_CONSTANTS.TRIAL_DAYS_CONSUMER does not exist */
     /* removed: BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS does not exist */
-    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
+    expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBeUndefined() /* section G: the paid badge was removed */;
     /* removed: BUSINESS_CONSTANTS.CONSULTATION_BASE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.MIN_CHARGE_CENTS does not exist */
     /* removed: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE does not exist */

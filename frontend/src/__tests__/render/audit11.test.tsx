@@ -7,8 +7,7 @@
  *   H12  BailCalculatorScreen — /legaldata/bail answers { data: [...] }; the
  *        screen must render the schedule and the bond breakdown, not crash with
  *        "x.filter is not a function".
- *   M3   SubscriptionScreen — prices come from the backend, no hard-coded or
- *        placement claims.
+ *   (M3 SubscriptionScreen moved to proDashboards.test.tsx)
  *   M7   OnboardingScreen — slides take the carousel's measured width, not the
  *        window width (desktop web showed a blank centre slide).
  */
@@ -21,7 +20,6 @@ jest.mock('../../services/api', () => jest.requireActual<typeof import('./apiMoc
 
 import TermsAcceptanceModal, { contentFitsViewport } from '../../screens/TermsAcceptanceModal';
 import BailCalculatorScreen from '../../screens/BailCalculatorScreen';
-import SubscriptionScreen from '../../screens/SubscriptionScreen';
 import OnboardingScreen from '../../screens/OnboardingScreen';
 import { apiMock, makeNavigation } from './apiMock';
 
@@ -98,30 +96,7 @@ describe('H12 — bail calculator renders the { data: [...] } envelope', () => {
   });
 });
 
-describe('M3 — provider plans come from the backend', () => {
-  it('shows the backend attorney and bondsman prices, no hard-coded or placement claims', async () => {
-    on('get', '/billing/tiers', { tiers: [
-      { key: 'esquire', audience: 'attorney', name: 'Justice Gavel Esquire', display_price: '$49.00/mo', billing: 'monthly', trial_days: 14 },
-      { key: 'advisor', audience: 'consumer', name: '24 Hour Advisor', display_price: '$24.99/mo' },
-    ] });
-    on('get', '/billing/subscription', { subscription: null });
-    on('get', '/billing/bondsman/tiers', { tiers: [
-      { key: 'starter', name: 'Starter', display: '$49/mo', label: '1 county', annual_display: '$490/yr' },
-      { key: 'pro', name: 'Pro', display: '$149/mo', label: '3 counties' },
-      { key: 'market', name: 'Market', display: '$349/mo', label: 'DMA' },
-    ] });
-    on('get', '/billing/bondsman/subscription', { active: false });
-    wrap(<SubscriptionScreen navigation={makeNavigation()} route={{ params: {} } as any} />);
-    expect(await screen.findByTestId('plan-price-esquire')).toBeTruthy();
-    expect(screen.getByText('$49.00/mo')).toBeTruthy();
-    expect(screen.queryByText(/24 Hour Advisor/)).toBeNull();     // consumer plan not on the provider screen
-    fireEvent.press(screen.getByTestId('provider-type-bail_agent'));
-    expect(await screen.findByText('$149/mo')).toBeTruthy();
-    expect(screen.getByText('$349/mo')).toBeTruthy();
-    expect(screen.queryByText(/78\.99|198\.99|348\.99|48\.99/)).toBeNull();
-    expect(screen.queryByText(/top placement/i)).toBeNull();
-  });
-});
+// M3 (provider plans from the backend) moved to proDashboards.test.tsx with the section G plan screens.
 
 describe('M7 — onboarding carousel uses the measured width', () => {
   it('slides are as wide as the carousel, not the window', async () => {

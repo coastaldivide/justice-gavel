@@ -22,18 +22,25 @@ beforeAll(async () => {
 // ── M-12 PASS 2: All remaining 48 files ──────────────────────────────────
 describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
   test('M12B-01: firm_acquisition + checkins + caldav + practice-mgmt', async () => {
-    const fs=await import('fs');
-    const acq=fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js','utf8');
-    expect(acq).toContain("router.get('/vertical-demo'");
-    expect(acq).toContain("router.post('/trial'");
-    expect(acq).toContain("router.post('/upgrade'");
-    const chk=fs.readFileSync(__REPO + '/backend/src/routes/checkins.js','utf8');
+    const fs = await import('fs');
+    // Section G: the invented per-vertical demo stats (GET /vertical-demo, VERTICAL_PITCH) are removed; the
+    // checklist is worked out from the firm's own data (no POST /checklist/:key to tick steps by hand).
+    const s = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
+    expect(s).not.toContain("router.get('/vertical-demo'");
+    expect(s).not.toContain('VERTICAL_PITCH');
+    expect(s).not.toContain("router.post('/checklist/:key'");
+    expect(s).toContain("router.post('/trial'");
+    expect(s).toContain("router.post('/upgrade'");
+    expect(s).toContain("router.get('/checklist'");
+    expect(s).toContain("router.post('/invite'");
+    expect(s).toContain("router.post('/invites/:id/accept'");
+    const chk = fs.readFileSync(__REPO + '/backend/src/routes/checkins.js', 'utf8');
     expect(chk).toContain("router.get('/status/:enrollmentId'");
     expect(chk).toContain("router.get('/history/:enrollmentId'");
-    const cal=fs.readFileSync(__REPO + '/backend/src/routes/integrations/caldav.js','utf8');
+    const cal = fs.readFileSync(__REPO + '/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(cal).toContain("router.get('/ical-token/:firmId'");
     expect(cal).toContain("router.post('/push/matter/:matterId'");
-    const pm=fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js','utf8');
+    const pm = fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(pm).toContain("router.get('/contacts'");
     expect(pm).toContain("router.post('/matters/:matterId/push'");
   });
