@@ -1,12 +1,19 @@
 import { safeJson, safeInt } from '../utils/routeHelpers.js';
 /**
- * GET /api/legaldata/:type
- * Serves structured legal reference data by state.
- * Types: bail, dui, drugs, sol, federal-courts, victim-comp, clinics, bar-complaints
+ * GET /api/legaldata/:type — public, read-only legal reference data by state
+ * (guests reach DUI laws, drug penalties, courts and clinics from Home).
+ * Types: bail, dui, drugs, sol, federal-courts, victim-comp, clinics, bar-complaints, …
+ *
+ * meta: { type, state, count, disclaimer (request language), source_labels,
+ *         recorded_at (when the rows were imported), last_verified (latest
+ *         last_reviewed_at — null when no row was ever reviewed), reviewed }
+ * The rows carry their own `source` / `source_url`; nothing here says the data
+ * was verified unless a row records a review.
  */
 import { Router } from "express";
 import { getDb }   from "../db/index.js";
-import { authRequired } from '../middleware/auth.js';
+import { apiLimiter } from '../middleware/rateLimiters.js';
+import { msg, resolveLang } from '../i18n/index.js';
 import logger from '../utils/logger.js';
 
 const router = Router();
@@ -25,12 +32,13 @@ const TABLE_MAP = {
   "courthouses":   { table: "courthouses",              stateCol: "state" },
 };
 
-router.get("/:type", authRequired, async (req, res) => {
+router.get("/:type", apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   try {
     const { type } = req.params;
     const { state, q } = req.query;
     const cfg = TABLE_MAP[type];
-    if (!cfg) return res.status(404).json({ error: "Unknown data type" });
+    if (!cfg) return res.status(404).json({ error: 'unknown_type', code: 'unknown_type', message: msg(lang, 'legaldata.err.unknown_type') });
 
     const db = await getDb();
     // SELECT * is intentional here — each table in TABLE_MAP has a different schema.
@@ -61,29 +69,29 @@ router.get("/:type", authRequired, async (req, res) => {
     });
 
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.setHeader('Vary', 'Accept-Language');
 
-    const DISCLAIMERS = {
-      dui:    'DUI data sourced from NHTSA, IIHS, MADD, and state statutes. Last verified April 2026. Laws change frequently.',
-      drugs:  'Drug penalty data from DEA scheduling and state criminal codes. Penalties vary by county, prior record, and judge. Last verified April 2026.',
-      bail:   'Bail amounts are general ranges. Actual bail is set by a judge based on your specific circumstances.',
-      sol:    'Statute of limitations data from published state criminal codes. Tolling rules and exceptions apply.',
-    };
-    const disclaimer = DISCLAIMERS[type] || 'General legal reference data. Not legal advice. Verify with a licensed attorney.';
-
+    const times = (k) => parsed.map(r => r[k]).filter(Boolean).map(v => new Date(v).getTime()).filter(Number.isFinite);
+    const latest = (k) => { const t = times(k); return t.length ? new Date(Math.max(...t)).toISOString() : null; };
+    const lastVerified = latest('last_reviewed_at');
+    const disclaimerKey = ['dui', 'drugs', 'bail', 'sol'].includes(type) ? type : 'general';
     res.json({
       data: parsed,
       meta: {
         type,
         state: (state || 'ALL').toUpperCase(),
         count: parsed.length,
-        disclaimer,
-        last_verified: '2026-04-29',
+        disclaimer: msg(lang, `legaldata.disclaimer.${disclaimerKey}`),
+        source_labels: [...new Set(parsed.map(r => r.source).filter(Boolean))],
+        recorded_at: latest('created_at'),
+        last_verified: lastVerified,
+        reviewed: !!lastVerified,
         not_legal_advice: true,
       },
     });
   } catch (e) {
     logger.error('[legaldata]', e.message);
-    res.status(500).json({ error: "Could not load legal data" });
+    res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(lang, 'legaldata.err.server') });
   }
 });
 

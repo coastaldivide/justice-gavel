@@ -1,4 +1,4 @@
-import { anthropicFetch } from '../../services/aiClient.js';
+import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
 import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
 import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 /**
@@ -29,7 +29,6 @@ import logger              from '../../utils/logger.js';
 
 const router      = Router();
 const pdfLimiter  = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'PDF export limit reached.' });
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
 // ── POST /api/motions/export/preview — render any motion text to PDF ──────────
 router.post('/preview', authRequired, pdfLimiter, async (req, res) => {
@@ -45,7 +44,7 @@ router.post('/preview', authRequired, pdfLimiter, async (req, res) => {
       bar_number,
     } = req.body || {};
 
-    if (!motion_text?.trim()) return err400(res, 'motion_text is required.');
+    if (typeof motion_text !== 'string' || !motion_text.trim()) return err400(res, 'motion_text is required.');
 
     const meta = {
       motion_type:    truncateStr(sanitizeStr(motion_type, 200), 200),
@@ -112,11 +111,6 @@ router.post('/:id/refine', authRequired, requireAi, pdfLimiter, async (req, res)
     );
     if (!motion) return err404(res, 'Motion not found.');
 
-    if (!ANTHROPIC_KEY) {
-      // In demo mode, just export the existing draft
-      return res.redirect(307, `/api/motions/export/${req.params.id}/pdf`);
-    }
-
     const jobId = await enqueue('motion_refine', async () => {
       // Ask Claude to clean up the draft for PDF (remove markdown, fix formatting)
       const cleanPrompt = `${MOTION_PDF_SYSTEM_PROMPT}
@@ -127,25 +121,18 @@ numbered, and ensure the document reads as clean, professional legal text.
 Do NOT change the substance — only clean up formatting and remove AI meta-commentary.
 
 DRAFT:
-${motion.draft.slice(0, 8000)}
+${String(motion.draft || "").slice(0, 8000)}
 
 OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
 
       const resp = await anthropicFetch({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
-          'anthropic-version': '2023-06-01',
-        },
         body: JSON.stringify({
           model:       CLAUDE_MODEL,
-          temperature: 0.05,
           max_tokens:  8000,
           messages:    [{ role: 'user', content: cleanPrompt }],
         }),
-      }, { route: 'motions_export' });
-
+      }, { route: 'motions_export', userId: req.user.id, timeoutMs: 180_000, retries: 1 });
+      if (!resp.ok) throw await aiHttpError(resp, 'motions_export');
       const data    = await resp.json();
       const refined = data.content?.[0]?.text || motion.draft;
 
@@ -163,7 +150,7 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
 
       const pdfBuffer = await generateMotionPDF(refined, meta);
       return { pdf_base64: pdfBuffer.toString('base64'), pdf_size_kb: Math.round(pdfBuffer.length / 1024) };
-    });
+    }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,
       message: `Motion refinement and PDF generation queued. Poll /api/jobs/${jobId}.` });

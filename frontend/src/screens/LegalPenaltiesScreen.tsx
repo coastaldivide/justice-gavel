@@ -1,250 +1,206 @@
-import { COLORS } from '../constants/theme';
 /**
- * LegalPenaltiesScreen.tsx — Legal penalties reference (merged)
+ * LegalPenaltiesScreen — recorded drug penalties and DUI laws for a state.
  *
- * Replaces: DrugPenaltiesScreen.tsx + DUILawsScreen.tsx
- * Both screens answered the same question with the same UX pattern:
- * "What are the penalties for X in my state?"
- *
- * Tabs: Drug Offenses | DUI / Traffic | Other Offenses
+ * Opened as "DUILaws" (DUI tab) or "DrugPenalties" (drug tab). Data comes from
+ * the public GET /api/legaldata/drugs|dui?state=XX (state rows plus federal
+ * "FED" rows), shown exactly as recorded with each row's source label and the
+ * date it was recorded. None of it has been reviewed by a lawyer (the server's
+ * `meta.reviewed` says so), and the screen says that plainly — it never shows
+ * penalty figures of its own.
  */
-
-import React, { useState } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, LayoutAnimation,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
+import { cachedGet, apiErrorMessage } from '../services/api';
 import { useTheme } from '../constants/theme';
-import { t, perLang, useLang } from '../i18n';
+import { getUserState, setUserState, stateName, localizedStateList } from '../utils/userState';
+import { t, useLang, locale } from '../i18n';
 
-const TABS = perLang(() => [
-  { key: 'drug', label: t('hn_charge_drug') },
-  { key: 'dui',  label: t('x_legal_penalties_dui_traffic') },
-  { key: 'other',label: t('x_legal_penalties_other_charges') },
-] as const);
+type TabKey = 'drug' | 'dui';
 
-type TabKey = ReturnType<typeof TABS>[number]['key'];
+interface DrugRow {
+  id: number; state: string; drug_schedule: string; offense_type: string; amount_threshold: string | null;
+  charge_level: string; notes: string | null; source: string | null; source_url: string | null; created_at: string | null;
+}
+interface DuiRow {
+  id: number; state: string; bac_limit: number | null; bac_limit_cdl: number | null; bac_limit_under21: number | null;
+  first_jail_min: number | null; first_jail_max: number | null; first_fine_min: number | null; first_fine_max: number | null;
+  first_license_days: number | null; implied_consent: number | null; ignition_interlock: string | null;
+  notes: string | null; source: string | null; source_url: string | null; created_at: string | null;
+}
+interface Meta { disclaimer?: string; recorded_at?: string | null; reviewed?: boolean }
 
-// Drug penalty data preserved from DrugPenaltiesScreen
-const DRUG_SCHEDULES = perLang(() => [
-  { schedule: t('x_legal_penalties_schedule_i'), examples: t('x_legal_penalties_heroin_lsd_ecstasy_peyote'), max_years: 20, max_fine: 250000 },
-  { schedule: t('x_legal_penalties_schedule_ii'), examples: t('x_legal_penalties_cocaine_meth_oxycodone_fentanyl'), max_years: 15, max_fine: 100000 },
-  { schedule: t('x_legal_penalties_schedule_iii'), examples: t('x_legal_penalties_anabolic_steroids_ketamine_codeine'), max_years: 5, max_fine: 15000 },
-  { schedule: t('x_legal_penalties_schedule_iv'), examples: t('x_legal_penalties_xanax_valium_ambien'), max_years: 3, max_fine: 10000 },
-  { schedule: t('x_legal_penalties_schedule_v'), examples: t('x_legal_penalties_cough_preps_pregabalin'), max_years: 1, max_fine: 5000 },
-]);
+const OFFENSES = ['possession', 'distribution', 'trafficking', 'delivery', 'manufacture', 'cultivation', 'sale'];
+const offenseLabel = (o: string) => (OFFENSES.includes(o) ? t(`pen_offense_${o}`) : o);
+const levelLabel = (l: string) => (['felony', 'misdemeanor', 'infraction'].includes(l) ? t(`pen_level_${l}`) : l);
+const scheduleLabel = (s: string) => {
+  if (/^(I|II|III|IV|V)(\/(I|II|III|IV|V))?$/.test(s)) return t('pen_schedule', { schedule: s });
+  return ({ cannabis: t('pen_drug_cannabis'), meth: t('pen_drug_meth'), cocaine: t('pen_drug_cocaine'), heroin: t('pen_drug_heroin'), fentanyl: t('pen_drug_fentanyl') } as Record<string, string>)[s] || s;
+};
+const money = (n: number | null | undefined) => (n == null ? '' : Number(n).toLocaleString(locale(), { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }));
+const dayText = (d: number | null | undefined) => {
+  if (d == null) return '';
+  if (d >= 365 && d % 365 === 0) return d === 365 ? t('pen_year_one') : t('pen_years', { n: d / 365 });
+  return t('pen_days', { n: d });
+};
+const recorded = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '');
 
-// DUI data preserved from DUILawsScreen
-const DUI_FACTS = perLang(() => [
-  { label: t('x_legal_penalties_legal_bac_limit'), value: t('x_legal_penalties_bac_value') },
-  { label: t('x_legal_penalties_1st_offense'), value: t('x_legal_penalties_first_value') },
-  { label: t('x_legal_penalties_2nd_offense'), value: t('x_legal_penalties_second_value') },
-  { label: t('x_legal_penalties_felony_dui'), value: t('x_legal_penalties_felony_value') },
-  { label: t('x_legal_penalties_implied_consent'), value: t('x_legal_penalties_implied_value') },
-  { label: t('x_legal_penalties_aggravating_factors'), value: t('x_legal_penalties_aggravating_value') },
-]);
-
-function LegalPenaltiesScreen({ navigation }: any) {
+function LegalPenaltiesScreen({ route }: ScreenProps) {
   useLang();
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabKey>('drug');
-  const styles = makeStyles();
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
+  const initialTab: TabKey = route?.name === 'DUILaws' ? 'dui' : 'drug';
+  const [tab, setTab] = useState<TabKey>(initialTab);
+  const [state, setState] = useState<string>('TN');
+  const [stateReady, setStateReady] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [rows, setRows] = useState<(DrugRow | DuiRow)[]>([]);
+  const [meta, setMeta] = useState<Meta>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  useEffect(() => {
+    getUserState().then(s => { if (s?.code) setState(s.code); }).finally(() => setStateReady(true));
   }, []);
 
-  const switchTab = (key: TabKey) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setActiveTab(key);
-  };
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const r = await cachedGet(`/legaldata/${tab === 'dui' ? 'dui' : 'drugs'}?state=${encodeURIComponent(state)}`);
+      const data = Array.isArray(r.data?.data) ? r.data.data : [];
+      // The state's own rows first, then federal ones.
+      data.sort((a: DrugRow, b: DrugRow) => Number(a.state === 'FED') - Number(b.state === 'FED'));
+      setRows(data);
+      setMeta(r.data?.meta || {});
+    } catch (e) {
+      setError(apiErrorMessage(e, t('pen_load_error')));
+    } finally {
+      setLoading(false);
+    }
+  }, [tab, state]);
+  useEffect(() => { if (stateReady) load(); }, [stateReady, load]);
+
+  const chooseState = (code: string) => { setPicking(false); setState(code); setUserState(code).catch(() => {}); };
+
+  const sourceLine = (r: { source: string | null; created_at: string | null }) =>
+    t('pen_source', { source: r.source || t('pen_source_unknown'), date: recorded(r.created_at) || '—' });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).bg ?? COLORS.bg }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          accessibilityLabel={t('x_gradient_header_go_back')}
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Text style={[styles.back, { color: colors.primary }]}>{t('ja_back')}</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {t('x_legal_penalties_legal_penalties')}
-        </Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      {/* Disclaimer */}
-      <View style={[styles.disclaimer, { backgroundColor: (colors as any).warningBg ?? colors.warnBg }]}>
-        <Text style={[styles.disclaimerText, { color: (colors as any).warning ?? colors.warnDark }]}>
-          {t('x_legal_penalties_penalties_vary_by_state')}
-        </Text>
-      </View>
-
-      {/* Tabs */}
-      <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {(TABS() as any)?.length === 0 ? (
-
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            {t('empty_state_nothing')}
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            {t('x_attorney_privacy_results_will_appear_here')}
-          </Text>
-        </View>
-        ) : TABS().map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => switchTab(tab.key)}
-
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === tab.key }}
-          >
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === tab.key ? colors.primary : (colors as any).subtext ?? COLORS.textMuted }
-            ]}>
-              {tab.label}
+    <View style={[styles.screen, { backgroundColor: colors.bg }]} testID="penalties-screen">
+      <View style={styles.tabBar} accessibilityRole="tablist">
+        {(['drug', 'dui'] as TabKey[]).map(k => (
+          <TouchableOpacity key={k} testID={`penalties-tab-${k}`} accessibilityRole="tab" accessibilityState={{ selected: tab === k }}
+            style={[styles.tab, tab === k && { borderBottomColor: colors.navy }]} onPress={() => setTab(k)}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.tabText, { color: tab === k ? colors.textBrand : colors.textMuted }]}>
+              {k === 'drug' ? t('hn_charge_drug') : t('pen_tab_dui')}
             </Text>
-            {activeTab === tab.key && (
-              <View style={[styles.tabIndicator, { backgroundColor: colors.primary }]} />
-            )}
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {activeTab === 'drug' && (
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('x_legal_penalties_federal_drug_schedules_maximum')}
-            </Text>
-            {DRUG_SCHEDULES().map((s, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
-                <Text style={[styles.scheduleLabel, { color: colors.primary }]}>
-                  {s.schedule}
-                </Text>
-                <Text style={[styles.examples, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                  {s.examples}
-                </Text>
-                <View style={styles.penaltyRow}>
-                  <View style={styles.penaltyItem}>
-                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
-                      {t('x_legal_penalties_yrs', { max_years: s.max_years })}
-                    </Text>
-                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                      {t('x_legal_penalties_max_prison')}
-                    </Text>
-                  </View>
-                  <View style={styles.penaltyItem}>
-                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
-                      ${s.max_fine.toLocaleString()}
-                    </Text>
-                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                      {t('x_legal_penalties_max_fine')}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+      <ScrollView contentContainerStyle={styles.content}>
+        <TouchableOpacity accessibilityRole="button" testID="penalties-state" style={styles.statePick} onPress={() => setPicking(true)}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.stateText}>📍 {stateName(state)}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.stateChange}>{t('pen_change_state')}</Text>
+        </TouchableOpacity>
 
-        {activeTab === 'dui' && (
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('x_legal_penalties_dui_dwi_key_facts')}
-            </Text>
-            {DUI_FACTS().map((fact, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
-                <Text style={[styles.factLabel, { color: colors.primary }]}>
-                  {fact.label}
-                </Text>
-                <Text style={[styles.factValue, { color: colors.text }]}>
-                  {fact.value}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <View style={styles.notice} testID="penalties-notice">
+          <Text maxFontSizeMultiplier={1.4} style={styles.noticeText}>
+            ⚠️ {meta.disclaimer || t('pen_not_reviewed')}
+          </Text>
+        </View>
 
-        {activeTab === 'other' && (
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('x_legal_penalties_common_criminal_penalties')}
-            </Text>
-            {[
-              { charge: 'Simple Assault', class: 'Misdemeanor', prison: '0–1 yr', fine: 'Up to $2,500' },
-              { charge: 'Aggravated Assault', class: 'Felony', prison: '2–10 yrs', fine: 'Up to $25,000' },
-              { charge: 'Theft (< $500)', class: 'Misdemeanor', prison: '0–1 yr', fine: 'Up to $2,000' },
-              { charge: 'Theft ($500–$25k)', class: 'Felony', prison: '1–5 yrs', fine: 'Up to $10,000' },
-              { charge: 'Burglary', class: 'Felony', prison: '2–15 yrs', fine: 'Up to $25,000' },
-              { charge: 'Robbery', class: 'Felony', prison: '5–25 yrs', fine: 'Up to $50,000' },
-              { charge: 'Identity Theft', class: 'Felony', prison: '2–10 yrs', fine: 'Up to $250,000' },
-            ].map((item, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
-                <View style={styles.rowBetween}>
-                  <Text style={[styles.chargeName, { color: colors.text }]}>{item.charge}</Text>
-                  <Text style={[styles.chargeClass, {
-                    color: item.class === 'Felony' ? ((colors as any).error ?? COLORS.emergency) : ((colors as any).warn ?? COLORS.warn),
-                    backgroundColor: item.class === 'Felony' ? colors.emergencyBg : colors.warnBg,
-                  }]}>
-                    {item.class}
-                  </Text>
-                </View>
-                <Text style={[styles.sentenceText, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
-                  {t('x_legal_penalties_prison_fine', { prison: item.prison, fine: item.fine })}
+        {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />
+          : error ? (
+            <View style={styles.empty} testID="penalties-error">
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{error}</Text>
+              <TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={load}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.retryText}>{t('try_again')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : rows.length === 0 ? (
+            <Text maxFontSizeMultiplier={1.4} style={styles.emptyText} testID="penalties-empty">{t('pen_none', { state: stateName(state) })}</Text>
+          ) : tab === 'drug' ? (rows as DrugRow[]).map(r => (
+            <View key={r.id} style={styles.card} testID="penalties-row">
+              <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>
+                {r.state === 'FED' ? t('pen_federal') : stateName(r.state)} · {scheduleLabel(r.drug_schedule)} · {offenseLabel(r.offense_type)}
+              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.cardMeta}>
+                {levelLabel(r.charge_level)}{r.amount_threshold && r.amount_threshold !== 'any' ? ` · ${t('pen_amount', { amount: r.amount_threshold })}` : ''}
+              </Text>
+              {!!r.notes && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{r.notes}</Text>}
+              <Text maxFontSizeMultiplier={1.3} style={styles.source}>{sourceLine(r)}</Text>
+            </View>
+          )) : (rows as DuiRow[]).map(r => (
+            <View key={r.id} style={styles.card} testID="penalties-row">
+              <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>{stateName(r.state)}</Text>
+              {r.bac_limit != null && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{t('pen_dui_bac', { bac: r.bac_limit, cdl: r.bac_limit_cdl ?? '—', under21: r.bac_limit_under21 ?? '—' })}</Text>}
+              {(r.first_jail_max != null || r.first_fine_max != null) && (
+                <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>
+                  {t('pen_dui_first', { jail_min: dayText(r.first_jail_min ?? 0), jail_max: dayText(r.first_jail_max), fine_min: money(r.first_fine_min), fine_max: money(r.first_fine_max) })}
                 </Text>
-              </View>
-            ))}
-          </View>
+              )}
+              {r.first_license_days != null && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{t('pen_dui_license', { days: dayText(r.first_license_days) })}</Text>}
+              {r.implied_consent != null && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{Number(r.implied_consent) ? t('pen_dui_implied_yes') : t('pen_dui_implied_no')}</Text>}
+              {!!r.ignition_interlock && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{t('pen_dui_iid', { value: r.ignition_interlock })}</Text>}
+              {!!r.notes && <Text maxFontSizeMultiplier={1.4} style={styles.cardBody}>{r.notes}</Text>}
+              <Text maxFontSizeMultiplier={1.3} style={styles.source}>{sourceLine(r)}</Text>
+            </View>
+          ))}
+        {!loading && !error && rows.length > 0 && (
+          <Text maxFontSizeMultiplier={1.3} style={styles.footer}>{t('pen_notes_english')}</Text>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)}>
+        <View style={styles.modalBack}>
+          <View style={styles.modalCard}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.modalTitle} accessibilityRole="header">{t('pen_change_state')}</Text>
+            <FlatList
+              data={localizedStateList()}
+              keyExtractor={s => s.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity accessibilityRole="button" testID={`penalties-state-${item.code}`} style={styles.modalRow} onPress={() => chooseState(item.code)}>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.modalRowText, item.code === state && { fontWeight: '800' }]}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity accessibilityRole="button" style={styles.retry} onPress={() => setPicking(false)}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.retryText}>{t('cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
-function makeStyles() {
-  return StyleSheet.create({
-    container:    { flex: 1 },
-    header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-    back:         { fontSize: 16, fontWeight: '500' },
-    title:        { fontSize: 18, fontWeight: '700', textAlign: 'center' },
-    disclaimer:   { marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 8 },
-    disclaimerText:{ fontSize: 12, lineHeight: 16 },
-    tabBar:       { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 8 },
-    tab:          { flex: 1, alignItems: 'center', paddingVertical: 12, position: 'relative' },
-    tabActive:    {},
-    tabText:      { fontSize: 13, fontWeight: '600' },
-    tabIndicator: { position: 'absolute', bottom: 0, left: 8, right: 8, height: 2, borderRadius: 1 },
-    sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-    card:         { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: COLORS.textPrimary, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:3, elevation:1 },
-    scheduleLabel:{ fontSize: 15, fontWeight: '700', marginBottom: 4 },
-    examples:     { fontSize: 13, lineHeight: 18, marginBottom: 10 },
-    penaltyRow:   { flexDirection: 'row', gap: 16 },
-    penaltyItem:  { flex: 1, alignItems: 'center', backgroundColor: COLORS.emergencyBg, borderRadius: 8, padding: 10 },
-    penaltyValue: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-    penaltyLabel: { fontSize: 11 },
-    factLabel:    { fontSize: 14, fontWeight: '700', marginBottom: 6 },
-    factValue:    { fontSize: 13, lineHeight: 20 },
-    rowBetween:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-    chargeName:   { fontSize: 14, fontWeight: '600', flex: 1 },
-    chargeClass:  { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
-    sentenceText: { fontSize: 13 },
-  });
-}
+const makeStyles = (c: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+  screen: { flex: 1 },
+  tabBar: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border },
+  tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tabText: { fontSize: 14, fontWeight: '700' },
+  content: { padding: 16, paddingBottom: 40, width: '100%', maxWidth: 760, alignSelf: 'center' },
+  statePick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.bgCard, marginBottom: 12 },
+  stateText: { fontSize: 15, fontWeight: '700', color: c.textPrimary, flexShrink: 1 },
+  stateChange: { fontSize: 13, fontWeight: '700', color: c.textBrand },
+  notice: { backgroundColor: c.warnBg, borderRadius: 10, padding: 12, marginBottom: 12 },
+  noticeText: { fontSize: 13, lineHeight: 19, color: c.textPrimary },
+  card: { backgroundColor: c.bgCard, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border, gap: 4 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+  cardMeta: { fontSize: 13, fontWeight: '700', color: c.textSecond },
+  cardBody: { fontSize: 14, lineHeight: 20, color: c.textPrimary },
+  source: { fontSize: 12, lineHeight: 17, color: c.textMuted, marginTop: 4 },
+  empty: { alignItems: 'center', gap: 10, marginTop: 24 },
+  emptyText: { fontSize: 14, lineHeight: 20, color: c.textSecond, textAlign: 'center', marginTop: 16 },
+  retry: { minHeight: 44, paddingHorizontal: 20, borderRadius: 10, borderWidth: 1, borderColor: c.navy, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginTop: 8 },
+  retryText: { fontSize: 14, fontWeight: '700', color: c.textBrand },
+  footer: { fontSize: 12, lineHeight: 17, color: c.textMuted, marginTop: 8 },
+  modalBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 16 },
+  modalCard: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, maxHeight: '80%', width: '100%', maxWidth: 480, alignSelf: 'center' },
+  modalTitle: { fontSize: 17, fontWeight: '800', color: c.textPrimary, marginBottom: 8 },
+  modalRow: { minHeight: 44, justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  modalRowText: { fontSize: 15, color: c.textPrimary },
+});
 
 export default React.memo(LegalPenaltiesScreen);

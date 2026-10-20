@@ -525,25 +525,30 @@ export function rightsPromptBlock(rawState) {
   return parts.join('\n');
 }
 
+// English, Spanish, Portuguese and Vietnamese words for each section's topic.
 const REF_RULES = [
-  [/silen|miranda|question|interrogat|talk to (the )?police/i, 'rc_1'],
-  [/lawyer|attorney|public defender|counsel/i, 'rc_2'],
-  [/search|warrant|consent|phone.*(look|unlock)|car.*search/i, 'rc_3'],
-  [/charge|arraign|accus/i, 'rc_4'],
-  [/traffic|pulled over|pull(ed)? me over|license|registration|drinking/i, 'rc_5'],
-  [/arrest|handcuff|resist/i, 'rc_6'],
-  [/bail|bond|release/i, 'rc_7'],
-  [/phone call|one call|call (my )?(family|mom|dad)/i, 'rc_8'],
+  [/silen|silên|miranda|question|interrogat|talk to (the )?police|callad|interrog|im lặng|thẩm vấn|hỏi cung/i, 'rc_1'],
+  [/lawyer|attorney|public defender|counsel|abogad|defensor|advogad|luật sư/i, 'rc_2'],
+  [/search|warrant|consent|phone.*(look|unlock)|car.*search|\bregistra(r|ron|rme)?\b|cateo|orden judicial|consentimiento|revist|mandado|busca e apreens|khám|lục soát|lệnh/i, 'rc_3'],
+  [/charge|arraign|accus|cargo|acusa|denuncia|cáo buộc|truy tố|tội danh/i, 'rc_4'],
+  [/traffic|pulled over|pull(ed)? me over|license|registration|drinking|tráfico|me pararon|licencia|trânsito|carteira|giao thông|bằng lái|bị chặn xe/i, 'rc_5'],
+  [/arrest|handcuff|resist|detenid|esposas|\bpres[oa]s?\b|algema|bắt giữ|bị bắt|còng/i, 'rc_6'],
+  [/bail|bond|release|fianza|libertad|fiança|soltura|tại ngoại|bảo lãnh/i, 'rc_7'],
+  [/phone call|one call|call (my )?(family|mom|dad)|llamada|llamar a mi|ligação|ligar para|cuộc gọi|gọi điện/i, 'rc_8'],
 ];
 
-/** Which rights-card sections a question is about (for "From your rights card →" links). */
-export function rightsRefsFor(text, reply = '') {
+/**
+ * Which rights-card sections a question is about (for "From your rights card →"
+ * links), with heading and source in `lang`.
+ */
+export function rightsRefsFor(text, reply = '', lang = 'en') {
   const refs = new Set();
   const cited = String(reply).match(/\brc_[1-8]\b/g) || [];
   cited.forEach(k => refs.add(k));
   for (const [re, key] of REF_RULES) if (re.test(String(text))) refs.add(key);
+  const sections = generalSections(lang);
   return [...refs].slice(0, 3).map(key => {
-    const s = GENERAL_SECTIONS.find(x => x.key === key);
+    const s = sections.find(x => x.key === key);
     return { key, heading: s.heading, source: s.source, last_reviewed: s.last_reviewed };
   });
 }

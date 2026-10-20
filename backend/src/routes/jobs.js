@@ -8,15 +8,20 @@
  *   pending:    { id, type, status: 'pending',    queuedAt }
  *   processing: { id, type, status: 'processing', queuedAt, startedAt }
  *   done:       { id, type, status: 'done',       result, completedAt }
- *   failed:     { id, type, status: 'failed',     error,  completedAt }
+ *   failed:     { id, type, status: 'failed',     code, error, completedAt }
+ *               code: ai_unavailable | ai_busy | ai_timeout | ai_failed;
+ *               error: the same, worded in the caller's language
  */
-import { err400, err404 } from '../utils/routeHelpers.js';
+import { err400 } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getJobAsync, queueStats } from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
 import { requireStaff } from '../utils/staff.js';
+import { msg, resolveLang } from '../i18n/index.js';
+
+const JOB_ERROR_CODES = new Set(['ai_unavailable', 'ai_busy', 'ai_timeout', 'ai_failed']);
 
 const router = Router();
 
@@ -37,14 +42,16 @@ router.get('/:id', authRequired, async (req, res) => {
     if (!/^[\w-]{1,64}$/.test(id)) return err400(res, 'Invalid id');
     const job = await getJobAsync(id);
     if (!job || (job.userId != null && String(job.userId) !== String(req.user.id))) {
-      return err404(res, 'Job not found or expired (15 minute TTL)');
+      return res.status(404).json({ error: msg(resolveLang(req), 'ai.job.not_found'), code: 'job_not_found' });
     }
+    const code = job.status === 'failed' ? (JOB_ERROR_CODES.has(job.code) ? job.code : 'ai_failed') : null;
     res.json({
       id:          job.id,
       type:        job.type,
       status:      job.status,
       result:      job.status === 'done'   ? job.result : null,
-      error:       job.status === 'failed' ? job.error  : null,
+      code,
+      error:       code ? msg(resolveLang(req), `ai.job.${code}`) : null,
       queuedAt:    job.queuedAt,
       startedAt:   job.startedAt   || null,
       completedAt: job.completedAt || null,

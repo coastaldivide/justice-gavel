@@ -50,10 +50,12 @@ describeIntegration('bail calculator, legaldata, expungement (real Postgres)', (
     }
   });
 
-  it('legaldata: unknown type 404, no token 401 (table allowlist + auth)', async () => {
+  it('legaldata: unknown type 404 (table allowlist); public reference data readable without a token', async () => {
     expect((await ctx.request().get('/api/legaldata/users;drop').set(user.headers)).status).toBe(404);
-    expect((await ctx.request().get('/api/legaldata/secrets').set(user.headers)).status).toBe(404);
-    expect((await ctx.request().get('/api/legaldata/dui')).status).toBe(401);
+    expect((await ctx.request().get('/api/legaldata/secrets')).status).toBe(404);
+    const dui = await ctx.request().get('/api/legaldata/dui');   // guests use the DUI / drug penalty screens
+    expect(dui.status).toBe(200);
+    expect(dui.body.meta).toHaveProperty('disclaimer');
   });
 
   // ── expungement ─────────────────────────────────────────────────────────────

@@ -158,7 +158,7 @@ describe('FLOW. All 11 Core Flows Pass', () => {
   });
   test('FLOW-04: AI features — chat→motions→discovery (async job queue)', async () => {
     const fs=await import('fs');
-    const chat=fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
+    const chat=(fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     const ml=  fs.readFileSync(__REPO + '/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     const disc=fs.readFileSync(__REPO + '/frontend/src/screens/DiscoveryScreen.tsx','utf8');
     expect(chat).toContain('/chat/ask'); expect(chat).toContain('jobId');

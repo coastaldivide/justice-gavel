@@ -13,13 +13,17 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl, ActivityIndicator, Alert,
+  TextInput, RefreshControl, ActivityIndicator,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { api }            from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
+import { useToast } from '../components/ToastProvider';
+import { validCourtDate } from '../utils/dateUtils';
+import { categoryLabel } from '../constants/barPrepCategories';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
-import { t, useLang, perLang, locale } from '../i18n';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
+import { t, useLang, locale } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ScheduleDay {
@@ -29,9 +33,10 @@ interface ScheduleDay {
   goal_met:       boolean;
 }
 
+/** GET /bar-prep/schedule (services/barPrepAnalytics.js getStudySchedule), days in the person's zone */
 interface StudySchedule {
-  exam_date?:          string;
-  days_until_exam?:    number;
+  exam_date?:          string | null;
+  days_until_exam?:    number | null;
   daily_goal:          number;
   due_today:           number;
   completed_today:     number;
@@ -41,14 +46,7 @@ interface StudySchedule {
   estimated_study_mins: number;
 }
 
-const CATEGORY_LABELS = perLang((): Record<string, string> => ({
-  homicide: t('x_bar_prep_home_homicide'), theft_property: t('x_bar_prep_home_theft_property'),
-  defenses: t('x_bar_prep_home_defenses'), criminal_procedure: t('x_bar_prep_home_crim_procedure'),
-  fifth_sixth_amendment: t('x_bar_prep_home_5th_6th_amendment'),
-  fourth_amendment: t('x_bar_prep_home_4th_amendment'), due_process: t('x_bar_prep_home_due_process'),
-  equal_protection: t('x_bar_prep_home_equal_protection'), first_amendment: t('x_bar_prep_home_1st_amendment'),
-  incorporation_14th: t('x_bar_prep_home_incorporation_14th'),
-}));
+
 
 function daysUntilColor(days: number): string {
   if (days <= 7)  return COLORS.bail;
@@ -66,45 +64,56 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
   const [examDate, setExamDate] = useState('');
   const [savingDate, setSavingDate] = useState(false);
 
-  const load = useCallback(async (date?: string) => {
+  const { showToast } = useToast();
+  const load = useCallback(async () => {
     try {
-      const url = date ? `/bar-prep/schedule?exam_date=${date}` : '/bar-prep/schedule';
-      const res = await api.get(url);
+      const res = await api.get('/bar-prep/schedule');
       setSchedule(res.data);
       if (res.data.exam_date) {
         // Keep whatever the user has typed; only fill an empty field.
         setExamDate(prev => prev || res.data.exam_date);
       }
-    } catch {
-      /* silently handle */
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_bar_prep_home_could_not_load_bar')), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  const { hasSession, recheck } = useHasSession();
+  useEffect(() => { if (hasSession) load(); else if (hasSession === false) setLoading(false); }, [hasSession, load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
   const saveExamDate = useCallback(async () => {
-    if (!examDate || !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
-      Alert.alert(t('x_bar_prep_schedule_invalid_date'), t('x_bar_prep_schedule_please_enter_date_yyyy'));
+    const day = examDate.trim();
+    if (!validCourtDate(day)) {
+      showToast(`${t('x_bar_prep_schedule_invalid_date')} ${t('x_bar_prep_schedule_please_enter_date_yyyy')}`, 'error');
       return;
     }
     setSavingDate(true);
     try {
-      await api.put('/bar-prep/progress', { exam_date: examDate });
-      await load(examDate);
-      Alert.alert(t('x_bar_prep_schedule_saved'), t('x_bar_prep_schedule_exam_date_updated_schedule'));
-    } catch {
-      Alert.alert(t('error'), t('x_bar_prep_schedule_could_not_save_exam'));
+      await api.put('/bar-prep/progress', { exam_date: day });
+      await load();
+      showToast(t('x_bar_prep_schedule_exam_date_updated_schedule'), 'success');
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_bar_prep_schedule_could_not_save_exam')), 'error');
     } finally {
       setSavingDate(false);
     }
-  }, [examDate, load]);
+  }, [examDate, load, showToast]);
 
   const styles = makeStyles(colors);
+
+  if (hasSession === false) {
+    return (
+      <View style={styles.container}>
+        <GradientHeader title={t('x_bar_prep_schedule_study_schedule')} onBack={() => navigation.goBack()} />
+        <SignInNeeded navigation={navigation} body={t('barprep_signin_body')} onSignedIn={recheck} />
+      </View>
+    );
+  }
 
   if (loading) {
   return (
@@ -155,7 +164,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               <Text style={styles.saveBtnText}>{savingDate ? '…' : t('case_save')}</Text>
             </TouchableOpacity>
           </View>
-          {schedule?.days_until_exam !== undefined && (
+          {typeof schedule?.days_until_exam === 'number' && (
             <View style={styles.countdownRow}>
               <Text style={[styles.countdownNum, {
                 color: daysUntilColor(schedule.days_until_exam),
@@ -217,7 +226,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
                 <View key={cat} style={[styles.recommendChip, { backgroundColor: colors.card }]}>
                   <Text style={styles.recommendRank}>{i + 1}</Text>
                   <Text style={styles.recommendName}>
-                    {CATEGORY_LABELS()[cat] || cat}
+                    {categoryLabel(cat)}
                   </Text>
                 </View>
               ))}
@@ -230,8 +239,8 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
           <View style={styles.calendarGrid}>
             {(schedule?.calendar || []).map(day => {
-              const date  = new Date(day.date);
-              const label = date.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric' });
+              // A calendar day (no time, no zone): noon UTC names the same day everywhere.
+              const label = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
               const bg    = day.goal_met  ? COLORS.legal
                           : day.is_today  ? colors.primary
                           : day.due_count > 0 ? colors.primary + '44'
@@ -261,6 +270,10 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         </View>
 
         <View style={{ height: 30 }} />
+        <Text maxFontSizeMultiplier={1.2} testID="bar-prep-disclaimer"
+          style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 16 }}>
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -273,15 +286,6 @@ function LegendDot({ color, label }: { color: string; label: string }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
       <Text style={{ fontSize: 11, color: colors.textMuted }}>{label}</Text>
-
-        {/* Bar prep disclaimer */}
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
-        >
-          {t('x_bar_prep_explanation_supplemental_study_only_not')}
-        </Text>
     </View>
   );
 }
@@ -296,12 +300,12 @@ function makeStyles(colors: any) {
     examCardTitle:   { fontSize: 14, ...FONTS.bold, color: colors.text, marginBottom: 12 },
     examInputRow:    { flexDirection: 'row', gap: 10 },
     examInput:       {
-      flex: 1, paddingHorizontal: 14, paddingVertical: 10,
+      flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 14, paddingVertical: 10,
       borderRadius: RADIUS.md, borderWidth: 1.5,
       fontSize: 14, ...FONTS.medium,
     },
     saveBtn:         {
-      paddingHorizontal: 20, paddingVertical: 10,
+      paddingHorizontal: 16, paddingVertical: 10, minHeight: 44, flexShrink: 0,
       borderRadius: RADIUS.md, justifyContent: 'center',
     },
     saveBtnText:     { fontSize: 14, ...FONTS.bold, color: colors.textOnAccent },

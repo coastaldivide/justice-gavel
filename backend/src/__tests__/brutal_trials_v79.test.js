@@ -101,23 +101,23 @@ describe('LDT. legaldata.js — State Legal Reference Data API', () => {
     expect(src).toContain('clinics');
     expect(src).toContain('bar-complaints');
   });
-  test('LDT-03: legaldata is state-specific (query by state param)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js', 'utf8');
-    expect(src).toContain('state');
-    expect(src).toContain('authRequired');
-  });
+  test('LDT-03: legaldata is state-specific (query by state param), public + rate limited', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js', 'utf8');
+      expect(src).toContain('state');
+      expect(src).toContain('apiLimiter');
+    });
 });
 
 // ── RES. resources.js — Legal Education Resources ─────────────────────────
 describe('RES. resources.js — Legal Rights Education Resources', () => {
-  test('RES-01: GET / lists legal education resources (filterable by category)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/resources.js', 'utf8');
-    expect(src).toContain("router.get('/'");
-    expect(src).toContain('resource');
-    expect(src).toContain('authRequired');
-  });
+  test('RES-01: GET / lists legal help resources (filterable by category), public', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/resources.js', 'utf8');
+      expect(src).toContain("router.get('/'");
+      expect(src).toContain('resource');
+      expect(src).toContain('category');
+    });
   test('RES-02: GET /categories returns resource category list', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/resources.js', 'utf8');

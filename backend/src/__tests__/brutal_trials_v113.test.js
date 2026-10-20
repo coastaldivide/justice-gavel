@@ -138,7 +138,7 @@ describe('ADV. advocacy.js — Legal Advocacy Stats', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/advocacy.js','utf8');
     expect(src).toContain("router.get('/stats'");
     expect(src).toContain('stats');
-    expect(src).toContain('authRequired');
+    expect(src).toContain('apiLimiter');   // public aggregate counts, IP rate limited
   });
   test('ADV-02: advocacy.js is 3,171 chars — focused advocacy feature', async () => {
     const fs = await import('fs');

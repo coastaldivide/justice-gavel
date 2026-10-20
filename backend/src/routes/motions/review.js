@@ -1,9 +1,11 @@
-import { anthropicFetch } from '../../services/aiClient.js';
+import { anthropicFetch, aiHttpError, aiErrorCode } from '../../services/aiClient.js';
 import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
+import { msg, resolveLang } from '../../i18n/index.js';
 /**
  * motions/review.js — Motion status updates and AI quality review
  */
-import { err400, safeInt } from '../../utils/routeHelpers.js';
+import { safeInt } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
@@ -13,6 +15,7 @@ import logger             from '../../utils/logger.js';
 
 
 const router = Router();
+const refuse = (res, req, status, code) => res.status(status).json({ error: code, code, message: msg(resolveLang(req), `motions.err.${code}`) });
 
 
 router.patch('/:id/status', authRequired, async (req, res) => {
@@ -21,30 +24,23 @@ router.patch('/:id/status', authRequired, async (req, res) => {
     const { status } = req.body;
 
     const valid = ['draft','filed','granted','denied','pending'];
-    if (!valid.includes(status)) {
-      return res.status(400).json({ error: `Status must be one of: ${valid.join(', ')}` });
-    }
+    if (!valid.includes(status)) return refuse(res, req, 400, 'bad_status');
     const filed_at = status === 'filed' ? new Date().toISOString() : null;
-    await db.run(
+    const r = await db.run(
       'UPDATE motion_history SET filing_status=?, filed_at=? WHERE id=? AND user_id=?',
       [status, filed_at, safeInt(req.params.id), req.user.id]
     );
+    if (!r.changes) return refuse(res, req, 404, 'not_found');
     res.json({ updated: true, status, filed_at });
-  } catch (e) { logger.error('[motions/status]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+  } catch (e) { logger.error('[motions/status]', e.message); refuse(res, req, 500, 'server'); }
 });
 
 // ── GET /api/motions/history ──────────────────────────────────────────────────
 
-router.post('/review', authRequired, requireAi, perUserAiLimit, async (req, res) => {
-  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-    logger.error('[motions/review] ANTHROPIC_API_KEY not set');
-    return res.status(503).json({ error: 'AI review temporarily unavailable.' });
-  }
+router.post('/review', authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   try {
-    const { draft = '', motion_type = '', state = '' } = req.body;
-    if (!draft.trim()) {
-      return err400(res, 'Draft text is required.');
-    }
+    const { draft = '', motion_type = '', state = '' } = req.body || {};
+    if (typeof draft !== 'string' || !draft.trim()) return refuse(res, req, 400, 'draft_required');
 
     const REVIEW_PROMPT = `You are an experienced criminal defense attorney reviewing a motion draft for procedural correctness and completeness.
 
@@ -80,19 +76,13 @@ ${draft.slice(0, 6000)}
 Respond ONLY with the JSON object. No other text.`;
 
     const response = await anthropicFetch({
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
-        'anthropic-version': '2023-06-01',
-      },
       body: JSON.stringify({
         model:       CLAUDE_MODEL,
-        temperature: 0.10,
         max_tokens:  800,
         messages: [{ role: 'user', content: REVIEW_PROMPT }],
       }),
-    }, { route: 'motions_review' });
+    }, { route: 'motions_review', userId: req.user.id });
+    if (!response.ok) throw await aiHttpError(response, 'motions_review');
     const data = await response.json();
     const raw  = data.content?.[0]?.text || '{}';
     let result;
@@ -100,12 +90,18 @@ Respond ONLY with the JSON object. No other text.`;
       result = JSON.parse(raw.replace(/```json|```/g, '').trim());
     } catch (e) {
       logger.warn('[motions/review] JSON parse:', e?.message);
-      result = { score: 'warn', issues: ['Review could not be parsed.'], suggestions: [], missing_fields: [] };
+      return refuse(res, req, 502, 'review_unreadable');
     }
-    return res.json(result);
+    return res.json({
+      score: ['pass', 'warn', 'fail'].includes(result?.score) ? result.score : 'warn',
+      issues: Array.isArray(result?.issues) ? result.issues.map(String) : [],
+      suggestions: Array.isArray(result?.suggestions) ? result.suggestions.map(String) : [],
+      missing_fields: Array.isArray(result?.missing_fields) ? result.missing_fields.map(String) : [],
+    });
   } catch (e) {
     logger.error('[motions/review]', e.message);
-    return res.status(500).json({ error: 'Motion review failed. Please try again.' });
+    const code = aiErrorCode(e);
+    return res.status(code === 'ai_failed' ? 500 : 503).json({ error: code, code, message: msg(resolveLang(req), `ai.job.${code}`) });
   }
 });
 

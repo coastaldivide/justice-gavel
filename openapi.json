@@ -1975,21 +1975,14 @@
         "tags": [
           "advocacy"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -16074,21 +16067,14 @@
         "tags": [
           "legaldata"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -16116,21 +16102,14 @@
         "tags": [
           "lessons"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -18177,6 +18156,9 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           },
@@ -20006,10 +19988,17 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -20161,21 +20150,14 @@
         "tags": [
           "resources"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -20193,21 +20175,14 @@
         "tags": [
           "resources"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -20225,21 +20200,14 @@
         "tags": [
           "resources"
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
+        "security": [],
+        "x-auth": "public",
         "responses": {
           "200": {
             "$ref": "#/components/responses/Success"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"

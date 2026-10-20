@@ -73,6 +73,11 @@ export function t(key: string, params?: TParams): string {
   return key;
 }
 
+/** A key's text in a given language (no placeholders) — e.g. keyword lists matched in every language. */
+export function tIn(l: Lang, key: string): string {
+  return (dict[l] && dict[l][key]) || dict.en[key] || '';
+}
+
 /**
  * Module-level text (option lists, tile tables, templates) must not call t()
  * at import time — that freezes it in the start-up language. Wrap it:

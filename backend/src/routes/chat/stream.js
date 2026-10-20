@@ -1,255 +1,172 @@
-import { logIgnored } from '../../utils/ignored.js';
-import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
-import { safeJson, err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
-import { anthropicFetch, streamUsageMeter } from '../../services/aiClient.js';
-import { requireDisclaimer } from '../../middleware/disclaimer.js';
 /**
- * chat/stream.js — POST /stream — Server-Sent Events streaming
+ * chat/stream.js — POST /stream — the answer as Server-Sent Events streaming
+ * (the preferred path on web; chat/ask.js is the job fallback).
+ *
+ * Before the stream starts every refusal is plain JSON with its own status
+ * (400 / 401 / 402 chat_limit_reached / 429 / 451 / 503 ai_unavailable), with
+ * `message` in the request language. After that the response is an event
+ * stream of `data: {json}` frames:
+ *   { type: 'disclaimer', required: true }
+ *   { type: 'token', text }                       — repeated
+ *   { type: 'done', full_text, replayed, partial, intent, suggestLawyerSearch, rights_refs }
+ *   { type: 'error', code, message }               — ai_unavailable | ai_busy | ai_timeout | ai_failed
+ *
+ * The exchange is saved when the answer is complete. When the person presses
+ * Stop (or the connection closes) the part they already saw is saved with
+ * status 'stopped'. A retry with the same clientMessageId replays a finished
+ * answer and replaces a partial one (chat/_helpers.js findReplay).
  */
 import { Router }         from 'express';
+import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { safeJson }       from '../../utils/routeHelpers.js';
+import { anthropicFetch, streamUsageMeter, aiHttpError, aiErrorCode } from '../../services/aiClient.js';
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
 import { authRequired }   from '../../middleware/auth.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import { getDb }          from '../../db/index.js';
+import { rightsRefsFor }  from '../../services/rightsContent.js';
+import { msg, resolveLang } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
-import rateLimit          from 'express-rate-limit';
-import { rightsPromptBlock, rightsRefsFor } from '../../services/rightsContent.js';
-import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION } from './_prompts.js';
+import { chatBurstLimiter } from './ask.js';
 import {
-  getHistory, saveMessage, detectLawyerHandoff, classifyIntent,
-  buildCaseNote, buildJurisdictionNote,
+  chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
+  getHistory, detectLawyerHandoff, classifyIntent,
 } from './_helpers.js';
 
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 50,
-  standardHeaders: true, legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id?.toString() ?? req.ip,
-  message: { error: 'AI rate limit reached — please wait.' },
-});
+export const STREAM_TIMEOUT_MS = 120_000;
 
 const router = Router();
 
-router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
-  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-    return res.status(503).json({
-      error:   'AI service not configured.',
-      code:    'api_key_missing',
-      message: 'ANTHROPIC_API_KEY is not set. Add it to backend/.env to enable the AI assistant.',
-    });
-  }
-
-  // ── Defender mode flag — hoisted so both rate-limit check and stream use it
-  const isDefender = req.body?.mode === 'defender';
-
-  // Single DB handle — shared across rate-limit check and main handler.
-  // Declared here with let so both try blocks can reference it; getDb()
-  // is called inside the outer try so a DB init failure returns a clean error.
-  let db;
-
-  // ── Daily message limit — mirrors ask.js exactly ─────────────────────────
-  // Defender mode bypasses the daily limit — they're using professional tools.
+router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
+  const lang = resolveLang(req);
+  let db, body, ctx;
   try {
     db = await getDb();
-    const sub = await db.get(
-      `SELECT id FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing')`,
-      [req.user.id]
-    ).catch(() => null);
-    if (!sub) {
-      const todayCount = await db.get(
-        `SELECT COUNT(*) as n FROM chat_sessions
-         WHERE user_id = ? AND role = 'user'
-         AND created_at >= CURRENT_DATE`,
-        [req.user.id]
-      ).catch(() => ({ n: 0 }));
-      if (!isDefender && (todayCount?.n ?? 0) >= BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE) {
-        const d = new Date();
-        const resetsAt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
-        return res.status(402).json({
-          error: 'Daily limit reached',
-          code: 'chat_limit_reached',
-          message: 'Free accounts include 3 AI messages per day. Upgrade for unlimited access.',
-          upgrade_url: '/subscribe',
-          limit: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE,
-          used: todayCount?.n ?? 0,
-          remaining: 0,
-          resets_at: resetsAt,
-        });
-      }
-    }
-  } catch (e) {
-    // Limit check failed — allow through rather than blocking the request
-    logger.warn('[chat/stream] rate limit check failed:', e.message);
+    body = readChatBody(req, lang);
+    if (body.error) return res.status(400).json(body.error);
+    ctx = await chatContext(db, req);
+  } catch (err) {
+    logger.error({ err: err?.message }, '[chat/stream] before stream');
+    return res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(lang, 'chat.err.server') });
+  }
+  const userId = req.user.id;
+  const meta = (text, extra = {}) => ({
+    type: 'done', full_text: text, partial: false, replayed: false,
+    intent: classifyIntent(body.message),
+    suggestLawyerSearch: detectLawyerHandoff(body.message, text),
+    rights_refs: ctx.defender ? [] : rightsRefsFor(body.message, text, lang),
+    ...extra,
+  });
+
+  let replay = null;
+  try {
+    replay = await findReplay(db, userId, body.sessionId, body.clientMessageId);
+  } catch (err) {
+    logger.warn({ err: err?.message }, '[chat/stream] replay lookup failed');
+  }
+  if (replay == null && !ctx.unlimited && ctx.limited) return res.status(402).json(limitBody(ctx));
+
+  // ── SSE headers — flushed before the first frame ─────────────────────────
+  res.status(200);
+  res.setHeader('Content-Type',  'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection',    'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+  const send = (obj) => {
+    if (res.writableEnded || res.destroyed) return;
+    res.write('data: ' + JSON.stringify(obj) + '\n\n');
+  };
+  const fail = (code) => send({ type: 'error', code, message: msg(lang, `ai.job.${code}`) });
+  send({ type: 'disclaimer', required: true });
+
+  if (replay != null) {
+    send({ type: 'token', text: replay });
+    send(meta(replay, { replayed: true }));
+    return res.end();
   }
 
+  // 120 s for the whole answer; the upstream call is aborted when the person leaves.
+  const upstream = new AbortController();
+  let timedOut = false, clientGone = false;
+  const stTimer = setTimeout(() => { timedOut = true; upstream.abort(); }, STREAM_TIMEOUT_MS);
+  const onClientClose = () => { if (!res.writableEnded) { clientGone = true; upstream.abort(); } };
+  res.on('close', onClientClose);
+
+  const route = ctx.defender ? 'chat_stream_defender' : 'chat_stream';
+  let fullText = '';
+  let meter = null;
+  let saved = false;
+  const save = async (status) => {
+    if (saved || !fullText) return;
+    saved = true;
+    await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: fullText, clientMessageId: body.clientMessageId, status })
+      .catch((e) => logger.warn({ err: e.message }, '[chat/stream] could not save the exchange'));
+  };
   try {
-    // Ensure db is ready — may be undefined if rate-limit check threw before getDb() resolved
-    if (!db) db = await getDb();
+    const history = await getHistory(db, body.sessionId, 20, userId);
+    const request = buildChatRequest({ history, body, lang, defender: ctx.defender });
+    const response = await anthropicFetch({
+      signal: upstream.signal,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: request.max_tokens, stream: true, system: request.system, messages: request.messages }),
+    }, { route, userId, stream: true });
 
-    const {
-      message: _msg = '', sessionId, city, lat, lng,
-      mode = 'consumer', caseContext = null,
-      user_state = null, user_state_name = null,
-    } = req.body || {};
-    const message    = String(_msg);
-    const trimmedMsg = message.trim();
-
-    if (message.length > 4000) return err400(res, 'Message too long. Please keep messages under 4,000 characters.');
-    if (caseContext && typeof caseContext === 'string' && caseContext.length > 8000)
-      return err400(res, 'Case context too long. Please summarise your case details.');
-    if (!trimmedMsg) return err400(res, 'message is required.');
-    if (typeof sessionId !== 'string' || !sessionId.trim()) return err400(res, 'sessionId is required.');
-
-    // Only this user's own turns — a sessionId never pulls another account's history.
-    const history = await getHistory(db, sessionId, 20, req.user.id);
-
-    // Build case context note — delegates to shared buildCaseNote() in _helpers.js
-    const caseNote = buildCaseNote(caseContext, mode);
-
-    // Build location context
-    let locationContext = null;
-    const cityTrimmed = city?.trim() ?? '';
-    if (cityTrimmed) locationContext = `City: ${cityTrimmed}`;
-    if (Number.isFinite(lat) && Number.isFinite(lng)) locationContext = `${locationContext ? locationContext + ' ' : ''}Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-
-    // Consumer answers about rights are grounded in the verified rights card
-    // (services/rightsContent.js) and cite its sections; "talk to a lawyer" otherwise.
-    const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rightsPromptBlock(user_state))
-      + RESPONSE_FOOTER_INSTRUCTION;
-
-    // Build jurisdiction note — delegates to shared buildJurisdictionNote() in _helpers.js
-    const jurisdictionNote = buildJurisdictionNote(user_state, user_state_name);
-
-    // Format location note for prompt injection
-    const contextNote = locationContext
-      ? `\n\n[User location context: ${locationContext}]` : '';
-
-    const messages = [
-      ...history.map(h => ({ role: h.role, content: h.content })),
-      { role: 'user', content: caseNote + trimmedMsg + contextNote + jurisdictionNote },
-    ];
-
-    // ── SSE headers — set and flushed BEFORE the first frame ──────────────
-    // Every validation / limit / disclaimer response above is plain JSON with
-    // its own status; from here on the response is an event stream and errors
-    // are reported as `error` frames (headers are already on the wire).
-    res.status(200);
-    res.setHeader('Content-Type',  'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection',    'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-
-    const send = (obj) => {
-      if (res.writableEnded || res.destroyed) return;
-      res.write('data: ' + JSON.stringify(obj) + '\n\n');
-    };
-    send({ type: 'disclaimer', required: true });
-
-    // 120-second stream timeout; also abort the upstream call when the client goes away.
-    const upstream = new AbortController();
-    let timedOut = false;
-    const stTimer = setTimeout(() => { timedOut = true; upstream.abort(); }, 120_000);
-    const onClientClose = () => { if (!res.writableEnded) upstream.abort(); };
-    res.on('close', onClientClose);
-
-    let fullText = '';
-    let metered = null;
-    try {
-      // Budget check, connect timeout and transient retries: aiClient. The
-      // stream itself is bounded by the 120 s timer above; usage is metered
-      // from the stream's message_start / message_delta events.
-      const response = await anthropicFetch({
-        signal: upstream.signal,
-        body: JSON.stringify({
-          model:       CLAUDE_MODEL,
-          temperature: isDefender ? 0.3 : 0.4,  // defenders: precise; consumers: conversational
-          max_tokens:  isDefender ? 1500 : 600,
-          stream:      true,   // ← enables token streaming
-          system:      systemPrompt,
-          messages,
-        }),
-      }, { route: isDefender ? 'chat_stream_defender' : 'chat_stream', userId: req.user.id, stream: true });
-
-      if (!response.ok || !response.body) {
-        const errDetail = response.ok ? 'no body' : `HTTP ${response.status}`;
-        logger.error('[chat/stream] Anthropic unavailable:', errDetail);
-        send({ type: 'error', message: 'AI service unavailable. Please try again.' });
-        return;
-      }
-
-      // ── Stream token chunks to client ─────────────────────────────────────
-      // SSE lines can be split across network reads: keep the incomplete tail.
-      const meter   = streamUsageMeter();
-      metered = meter;
-      const reader  = response.body.getReader();
-      const decoder = new TextDecoder();
-      let pending = '';
-      let upstreamError = null;
-      const handleLine = (line) => {
-        if (!line.startsWith('data:')) return;
-        const data = line.slice(5).trim();
-        if (!data || data === '[DONE]') return;
-        const parsed = safeJson(data);
-        if (!parsed || typeof parsed !== 'object') return;
-        meter.onEvent(parsed);
-        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-          const token = parsed.delta.text ?? '';
-          fullText += token;
-          send({ type: 'token', text: token });
-        } else if (parsed.type === 'error') {
-          upstreamError = parsed.error?.message || 'upstream error';
-        }
-      };
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        pending += decoder.decode(value, { stream: true });
-        const lines = pending.split('\n');
-        pending = lines.pop() ?? '';
-        lines.forEach(handleLine);
-      }
-      pending += decoder.decode();
-      if (pending) handleLine(pending);
-
-      if (upstreamError) {
-        logger.error('[chat/stream] Anthropic stream error:', upstreamError);
-        if (!fullText) { send({ type: 'error', message: 'AI service unavailable. Please try again.' }); return; }
-      }
-
-      // ── Save complete exchange to DB ─────────────────────────────────────
-      // Only persist when tokens were actually received, so a failed stream
-      // never leaves an orphan user turn (the client may retry via /chat/ask).
-      if (fullText) {
-        await saveMessage(db, sessionId, 'user', trimmedMsg, req.user.id).catch(logIgnored('routes/chat/stream'));
-        await saveMessage(db, sessionId, 'assistant', fullText, req.user.id).catch(logIgnored('routes/chat/stream'));
-      }
-
-      // ── Final event with metadata ───────────────────────────────────────
-      send({
-        type: 'done',
-        full_text: fullText,
-        partial: !!upstreamError,
-        intent: classifyIntent(trimmedMsg),
-        suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, fullText),
-        rights_refs: isDefender ? [] : rightsRefsFor(trimmedMsg, fullText),
-      });
-    } catch (err) {
-      if (upstream.signal.aborted && !timedOut) return; // client disconnected — nothing to send
-      logger.error('[chat/stream]', err?.message || String(err));
-      send({ type: 'error', message: timedOut ? 'Response timed out. Please try again.' : 'Stream error.' });
-    } finally {
-      clearTimeout(stTimer);
-      res.off('close', onClientClose);
-      if (metered) {
-        metered.record({ route: isDefender ? 'chat_stream_defender' : 'chat_stream', userId: req.user.id, status: fullText ? 'completed' : 'failed' })
-          .catch((e) => logger.warn({ err: e.message }, '[chat/stream] usage metering failed'));
-      }
-      if (!res.writableEnded) res.end();
+    if (!response.ok || !response.body) {
+      const e = response.ok ? Object.assign(new Error('no body'), { code: 'ai_failed' }) : await aiHttpError(response, route);
+      return fail(e.code);
     }
 
+    // SSE lines can be split across network reads: keep the incomplete tail.
+    meter = streamUsageMeter();
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    let upstreamError = null;
+    const handleLine = (line) => {
+      if (!line.startsWith('data:')) return;
+      const data = line.slice(5).trim();
+      if (!data || data === '[DONE]') return;
+      const parsed = safeJson(data);
+      if (!parsed || typeof parsed !== 'object') return;
+      meter.onEvent(parsed);
+      if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+        const token = parsed.delta.text ?? '';
+        fullText += token;
+        send({ type: 'token', text: token });
+      } else if (parsed.type === 'error') {
+        upstreamError = parsed.error?.type === 'overloaded_error' || parsed.error?.type === 'rate_limit_error' ? 'ai_busy' : 'ai_failed';
+        logger.warn({ route, error: parsed.error }, '[chat/stream] upstream stream error');
+      }
+    };
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split('\n');
+      pending = lines.pop() ?? '';
+      lines.forEach(handleLine);
+    }
+    pending += decoder.decode();
+    if (pending) handleLine(pending);
+
+    if (upstreamError) {
+      // A broken answer is not saved: the app keeps what arrived and offers a retry.
+      return fail(upstreamError);
+    }
+    if (!fullText) return fail('ai_failed');
+    await save('complete');
+    send(meta(fullText));
   } catch (err) {
-    // Only reached before the stream started (headers not yet sent).
-    logger.error('[chat/stream]', err?.message || String(err));
-    if (!res.headersSent) return res.status(500).json({ error: 'Stream error.' });
+    if (clientGone) { await save('stopped'); return; }
+    logger.error({ err: err?.message, timedOut }, '[chat/stream]');
+    fail(timedOut ? 'ai_timeout' : aiErrorCode(err));
+  } finally {
+    clearTimeout(stTimer);
+    res.off('close', onClientClose);
+    if (meter) {
+      meter.record({ route, userId, status: fullText ? 'completed' : 'failed' })
+        .catch((e) => logger.warn({ err: e.message }, '[chat/stream] usage metering failed'));
+    }
     if (!res.writableEnded) res.end();
   }
 });

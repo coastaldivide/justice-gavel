@@ -2,10 +2,11 @@ import { safeInt } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
-import { authRequired } from '../middleware/auth.js';
+import { authRequired, optionalAuth } from '../middleware/auth.js';
+
 import { getDb } from '../db/index.js';
 import { buildLegacyRightsCard } from '../services/rightsContent.js';
-import { resolveLang } from '../i18n/index.js';
+import { msg, resolveLang } from '../i18n/index.js';
 
 const router = Router();
 
@@ -15,45 +16,52 @@ const router = Router();
 const lessonsLimiter = makeUserLimiter({ windowMs: 3600000, max: 100, message: 'Lesson completion limit reached. Try again later.' });
 
 
-router.get('/', authRequired, async (req, res) => {
+const fail = (res, lang, status, key) => res.status(status).json({ error: key, code: key, message: msg(lang, `lessons.err.${key}`) });
+const reqLang = (req) => resolveLang(req);
+
+// GET /api/lessons — public (the "Know your rights" lessons are free to read).
+// The lesson text is in English only (content: the column migration 22 reworded).
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const db = await getDb();
-    const rows = await db.all('SELECT id, title, category, body, body as content, difficulty, duration_min FROM lessons ORDER BY id ASC LIMIT 200');
+    const rows = await db.all(
+      `SELECT id, title, category, COALESCE(content, body) AS content, COALESCE(points, 10) AS points,
+              difficulty, duration_min, 'en' AS language
+         FROM lessons WHERE COALESCE(needs_review, 0) = 0 ORDER BY id ASC LIMIT 200`);
     res.setHeader('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
-    return res.json(rows);
+    return res.json(rows.map(r => ({ ...r, points: Number(r.points) })));
   } catch (e) {
-    logger.error({ msg: '[lessons]', error: e?.message }); res.status(500).json({ error: 'Could not load lessons' }); }
+    logger.error({ msg: '[lessons]', error: e?.message }); fail(res, reqLang(req), 500, 'load'); }
 });
 
+// POST /api/lessons/:id/complete — once per person per lesson; the lesson's points are added once.
 router.post('/:id/complete', authRequired, lessonsLimiter, async (req, res) => {
+  const lang = reqLang(req);
   try {
     const db = await getDb();
-    // Always use authenticated user ID — never trust user_id from body
-    const user_id = req.user.id;
-    const lesson_id = safeInt(req.params.id);
-    // Upsert progress
-    const existing = await db.get('SELECT id, user_id, lesson_id, completed, completed_at FROM lesson_progress WHERE user_id=? AND lesson_id=? LIMIT 1', [user_id, lesson_id]);
-    if (!existing) {
+    const lesson = await db.get('SELECT id, COALESCE(points, 10) AS points FROM lessons WHERE id = ?', [safeInt(req.params.id)]);
+    if (!lesson) return fail(res, lang, 404, 'not_found');
+    const ins = await db.run(
+      `INSERT INTO lesson_progress (user_id, lesson_id, completed, completed_at)
+       VALUES (?, ?, 1, NOW()) ON CONFLICT (user_id, lesson_id) DO NOTHING`,
+      [req.user.id, lesson.id]
+    );
+    const points = Number(lesson.points);
+    if (ins.changes) {
       await db.run(
-        `INSERT INTO lesson_progress (user_id, lesson_id, completed, completed_at)
-         VALUES (?,?,1,NOW())`,
-        [user_id, lesson_id]
+        'INSERT INTO rewards (user_id, points, updated_at) VALUES (?, ?, NOW()) ON CONFLICT(user_id) DO UPDATE SET points = rewards.points + excluded.points, updated_at = NOW()',
+        [req.user.id, points]
       );
     }
-    // Award points
-    await db.run(
-      'INSERT INTO rewards (user_id, points, updated_at) VALUES (?,10, NOW()) ON CONFLICT(user_id) DO UPDATE SET points = rewards.points + 10, updated_at = NOW()',
-      [user_id]
-    );
-    return res.json({ ok: true, pointsAwarded: 10 });
+    return res.json({ ok: true, lesson_id: Number(lesson.id), alreadyCompleted: !ins.changes, pointsAwarded: ins.changes ? points : 0 });
   } catch (e) {
-    logger.error({ msg: '[lessons]', error: e?.message }); res.status(500).json({ error: 'Could not mark complete' }); }
+    logger.error({ msg: '[lessons]', error: e?.message }); fail(res, lang, 500, 'complete'); }
 });
 
 router.get('/progress/:userId', authRequired, async (req, res, next) => {
   if (req.params.userId === 'me') return next('route');      // handled by /progress/me below
   if (String(req.params.userId) !== String(req.user.id) && !['admin', 'super_admin'].includes(req.user.role)) {
-    return res.status(403).json({ error: 'You can only view your own progress.' });
+    return fail(res, reqLang(req), 403, 'own_progress');
   }
   try {
     const db = await getDb();
@@ -61,7 +69,7 @@ router.get('/progress/:userId', authRequired, async (req, res, next) => {
     const rewards = await db.get('SELECT points FROM rewards WHERE user_id=?', [req.params.userId]);
     return res.json({ completed: rows.map(r => r.lesson_id), points: rewards?.points || 0 });
   } catch (e) {
-    logger.error({ msg: '[lessons]', error: e?.message }); res.status(500).json({ error: 'Could not load progress' }); }
+    logger.error({ msg: '[lessons]', error: e?.message }); fail(res, reqLang(req), 500, 'load'); }
 });
 
 // ── GET /api/lessons/rights-card?state=XX ─────────────────────────────────────
@@ -95,12 +103,11 @@ router.get('/progress/me', authRequired, async (req, res) => {
       if (d.getTime() === expected.getTime()) streak++;
       else break;
     }
-    return res.json({ completed: completed.length, streak, lesson_ids: completed.map(r => r.lesson_id) });
+    const rewards = await db.get('SELECT points FROM rewards WHERE user_id=?', [req.user.id]);
+    return res.json({ completed: completed.length, streak, lesson_ids: completed.map(r => Number(r.lesson_id)), points: Number(rewards?.points || 0) });
   } catch (e) {
     logger.error({ msg: '[lessons]', error: e?.message });
-    const statusCode = e?.status || e?.statusCode || 500;
-        const clientMsg = statusCode < 500 ? (e?.message || 'Request failed') : 'An error occurred. Please try again.';
-        return res.status(statusCode).json({ error: clientMsg, code: e?.code || 'internal_error' });
+    return fail(res, reqLang(req), 500, 'load');
   }
 });
 
@@ -109,6 +116,8 @@ router.get('/progress/me', authRequired, async (req, res) => {
 router.get('/streak/:userId', authRequired, async (req, res) => {
   const _rawUid = parseInt(req.params.userId, 10);
   const uid    = isNaN(_rawUid) || _rawUid <= 0 ? req.user.id : _rawUid;
+  // Your own streak only (staff may look at anyone's).
+  if (String(uid) !== String(req.user.id) && !['admin', 'super_admin'].includes(req.user.role)) return fail(res, reqLang(req), 403, 'own_progress');
   try {
     const db = await getDb();
     const progress = await db.all(
@@ -141,8 +150,9 @@ router.get('/streak/:userId', authRequired, async (req, res) => {
       total_points:     totalCompleted?.total_points || 0,
       last_7_days:      progress.slice(0, 7),
     });
-  } catch {
-    return res.status(500).json({ error: 'Could not fetch streak' });
+  } catch (e) {
+    logger.error({ msg: '[lessons/streak]', error: e?.message });
+    return fail(res, reqLang(req), 500, 'load');
   }
 });
 

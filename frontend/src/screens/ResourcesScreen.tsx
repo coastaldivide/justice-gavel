@@ -8,6 +8,8 @@ import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
+import { helpLine, websiteUrl, websiteLabel, directionsUrl } from '../utils/contact';
+import { stateName } from '../utils/userState';
 
 
 const CATEGORIES = perLang(() => [
@@ -67,7 +69,7 @@ function ResourcesScreen(): React.JSX.Element {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await cachedGet('/resources?limit=500');
+      const res = await cachedGet('/resources?limit=1000');
       // Rows carry either title/body/url or name/description/website; normalise once.
       const items = (Array.isArray(res.data) ? res.data : []).map((r: any) => ({
         ...r,
@@ -138,13 +140,13 @@ function ResourcesScreen(): React.JSX.Element {
       {/* Category chips */}
       <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}>
+          style={{ flexGrow: 0 }}>
         <ScrollView keyboardShouldPersistTaps="handled"
         horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
         {CATEGORIES().map(cat => {
           const active = category === cat.key;
-          const cc = CAT_COLORS[cat.key] || CAT_COLORS.textMuted;
+          const cc = CAT_COLORS[cat.key] || CAT_COLORS.ALL;
           return (
             <TouchableOpacity
   accessibilityRole="button"
@@ -197,7 +199,10 @@ function ResourcesScreen(): React.JSX.Element {
           }
           renderItem={({ item }: { item: any }) => {
             const isOpen = expanded === item.id;
-            const cc = CAT_COLORS[item.category] || CAT_COLORS.textMuted;
+            const cc = CAT_COLORS[item.category] || CAT_COLORS.ALL;
+            const line = helpLine(item.phone);
+            const site = websiteUrl(item.url);
+            const directions = directionsUrl({ address: [item.address, item.city, item.state].filter(Boolean).join(', '), name: item.title });
             const cat = CATEGORIES().find(c => c.key === item.category);
             return (
               <TouchableOpacity
@@ -219,7 +224,7 @@ function ResourcesScreen(): React.JSX.Element {
                     paddingHorizontal:8, paddingVertical:4, flexShrink:0,
                   }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'700', color:cc.text }}>
-                      {cat?.icon} {item.state || t('x_resources_national')}
+                      {cat?.icon} {item.state ? stateName(item.state) : t('x_resources_national')}
                     </Text>
                   </View>
                   <View style={{ flex:1 }}>
@@ -246,31 +251,34 @@ function ResourcesScreen(): React.JSX.Element {
 
                     {/* Contact info grid */}
                     <View style={{ marginTop:12, gap:6 }}>
-                      {item.phone ? (
-                        <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast(t('action_failed'), 'error'))}
-                          style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <AppIcon name="call-outline" size={20} color={colors.legal} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
-                            {item.phone}
+                      {line ? (
+                        <TouchableOpacity accessibilityRole="button" testID="resource-call"
+                          accessibilityLabel={line.kind === 'sms' ? t('crisis_text_a11y', { name: item.title }) : t('hn_call_a11y', { name: item.title })}
+                          onPress={() => Linking.openURL(line.url).catch(() => showToast(t('x_crisis_resources_please_dial_manually', { number: line.label }), 'warning'))}
+                          style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
+                          <AppIcon name={line.kind === 'sms' ? 'chatbubble-outline' : 'call-outline'} size={20} color={colors.legal} />
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textBrand, fontWeight:'600', fontSize:14, flexShrink:1 }}>
+                            {line.label}{line.after ? ` — ${/press (\d)/i.test(line.after) ? t('res_then_press', { n: (/press (\d)/i.exec(line.after) as RegExpExecArray)[1] }) : line.after}` : ''}
                           </Text>
                         </TouchableOpacity>
+                      ) : item.phone ? (
+                        <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{item.phone}</Text>
                       ) : null}
-                      {item.url ? (
-                        <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(item.url).catch(() => showToast(t('action_failed'), 'error'))}
-                          style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
+                      {site ? (
+                        <TouchableOpacity accessibilityRole="link" testID="resource-website"
+                          onPress={() => Linking.openURL(site).catch(() => showToast(t('action_failed'), 'error'))}
+                          style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🌐</Text>
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textBrand, fontWeight:'600', fontSize:14, flexShrink:1 }}
                             numberOfLines={1}>
-                            {item.url.replace(/^https?:\/\//, '').slice(0,40)}
+                            {websiteLabel(site)}
                           </Text>
                         </TouchableOpacity>
                       ) : null}
-                      {item.address ? (
+                      {item.address && directions ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => showToast(t('action_failed'), 'error'))}
-                          style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
+                          onPress={() => Linking.openURL(directions).catch(() => showToast(t('action_failed'), 'error'))}
+                          style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
                         </TouchableOpacity>

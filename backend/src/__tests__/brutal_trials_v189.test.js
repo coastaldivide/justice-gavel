@@ -113,8 +113,8 @@ describe('DATA. Data Integrity Checks', () => {
   });
   test('DATA-04: ChatScreen streaming fetch has error handling (Promise reject)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
-    // ChatScreen uses raw fetch() for SSE streaming (correct — axios can't stream)
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8');
+    // ChatScreen streams through services/chatStream.ts: raw fetch() for SSE (axios can't stream)
     // It wraps in Promise with reject handler for error propagation
     const streamIdx = src.indexOf('fetch(');
     expect(streamIdx).toBeGreaterThan(0);

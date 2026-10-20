@@ -204,14 +204,14 @@ describe('S6. Screens — UX Weakness Audit (Flags Documented)', () => {
     expect(src).toContain('/golden-gavel/hall');
     expect(src).toContain('mountedRef');
   });
-  test('S6-04: TranslatorScreen — session + message APIs, PTR, mountedRef', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
-    expect(src).toContain('/translate/session');
-    expect(src).toContain('/translate/message');
-    expect(src).toContain('mountedRef');
-    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
-  });
+  test('S6-04: TranslatorScreen — session + session message APIs, PTR, mountedRef', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+      expect(src).toContain('/translate/session');
+      expect(src).toContain('/message`');
+      expect(src).toContain('mountedRef');
+      expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
+    });
   test('S6-05: CourtFormsScreen — /chat/ask (AI form completion), no mountedRef', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');

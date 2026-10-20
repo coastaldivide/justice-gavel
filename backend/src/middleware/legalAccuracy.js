@@ -62,20 +62,15 @@ export function legalAccuracyMiddleware(contentType = 'legal_information') {
 }
 
 /**
- * Express middleware for AI chat routes — adds disclaimer to every AI message.
- * Applied globally in app.js to /api/chat.
+ * Express middleware for AI chat routes (app.js, /api/chat) — marks every
+ * successful JSON answer with `_accuracy_meta`. Text fields are never
+ * changed: the app shows the legal notice under each answer in the person's
+ * language, and an error `message` must stay a plain sentence.
  */
 export function chatAccuracyMiddleware(req, res, next) {
-  // For streaming responses, we can't intercept — the route adds it inline.
-  // For non-streaming (ask.js), wrap res.json.
   const originalJson = res.json.bind(res);
   res.json = function (body) {
-    if (body && (body.response || body.message || body.answer)) {
-      const field = body.response ? 'response' : body.message ? 'message' : 'answer';
-      // Don't double-append
-      if (body[field] && !body[field].includes('not legal advice')) {
-        body[field] += `\n\n---\n*${MANDATORY_DISCLAIMER}*`;
-      }
+    if (body && typeof body === 'object' && !Array.isArray(body) && res.statusCode < 400 && !body._accuracy_meta) {
       body._accuracy_meta = {
         not_legal_advice: true,
         disclaimer: MANDATORY_DISCLAIMER,
@@ -86,4 +81,3 @@ export function chatAccuracyMiddleware(req, res, next) {
   };
   next();
 }
-

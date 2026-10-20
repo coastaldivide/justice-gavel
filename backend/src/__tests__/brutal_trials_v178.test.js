@@ -174,7 +174,7 @@ describe('JOURNEY. All 12 User Journeys', () => {
   test('JOURNEY-05: AI Chat — send + poll + disclaimer', async () => {
     const fs=await import('fs'); const path=await import('path');
     const scr=__REPO + '/frontend/src/screens';
-    const chat=fs.readFileSync(path.join(scr,'ChatScreen.tsx'),'utf8');
+    const chat=fs.readFileSync(path.join(scr,'ChatScreen.tsx'),'utf8') + fs.readFileSync(path.join(scr,'../services/chatStream.ts'),'utf8');
     expect(chat).toContain('/chat/ask');
     expect(chat).toContain('pollJob');
     expect(chat).toMatch(/not legal advice|disclaimer/i);

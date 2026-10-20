@@ -150,13 +150,13 @@ describe('BLC2. billing/connections.js — Emergency $20 QuickConnect', () => {
 
 // ── LDT2. legaldata.js — State Legal Reference Data ──────────────────────
 describe('LDT2. legaldata.js — State Legal Reference Data', () => {
-  test('LDT2-01: GET /:type — fetch state-specific legal data by type', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js','utf8');
-    expect(src).toContain('/:type') || expect(src).toContain('authRequired');
-    expect(src).toContain('authRequired');
-    expect(src).toContain('authRequired');
-  });
+  test('LDT2-01: GET /:type — public state legal data by type, rate limited', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js','utf8');
+      expect(src).toContain('/:type');
+      expect(src).toContain('apiLimiter');
+      expect(src).toContain('last_verified');
+    });
   test('LDT2-02: types include bail, dui, drugs, sol, federal-courts', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/legaldata.js','utf8');

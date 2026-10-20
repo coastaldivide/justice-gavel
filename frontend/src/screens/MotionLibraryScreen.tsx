@@ -15,14 +15,13 @@ import type { ScreenProps } from '../types/navigation';
  * typography, no decoration that distracts from the task. Feels like
  * a well-designed legal software product, not a consumer app.
  *
- * The tension: it costs $9.99 per motion. The price must feel like
- * nothing compared to the 1-3 hours it saves. The UX communicates
- * that value before the paywall appears.
+ * No per-motion charge exists (the server never bills a draft), so the
+ * screen shows no price.
  *
  * Flow:
  *   Library → Select motion type → Fill fields (smart form)
- *   → Review & Pay ($9.99) → Generated draft (full text)
- *   → Edit → Copy / Share → History
+ *   → Confirm → Generated draft (job, polled) → Edit → Copy / Share / PDF
+ *   → History (motion_history: open, filing status, delete)
  *
  * Entry points:
  *   1. CaseScreen → "Motions" tab (primary -- pre-fills case data)
@@ -260,15 +259,13 @@ function MotionCard({ m, onPress }: { m: ReturnType<typeof MOTION_TYPES>[0]; onP
           accessibilityHint={t('cp_double_tap')}
         style={[styles.motionCard, { backgroundColor: m.bg, borderColor: m.color + '44' }]}
         onPress={handlePress}
+        testID={`motion-card-${m.key}`}
         activeOpacity={1}
         accessibilityLabel={`${m.label} -- ${m.desc}`}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.motionIcon}>{m.icon}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.motionLabel, { color: m.color }]}>{m.label}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.motionDesc,  { color: COLORS.textMuted }]}>{m.desc}</Text>
-        <View style={[styles.motionPrice, { backgroundColor: m.color }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.motionPriceText}>$9.99</Text>
-        </View>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -594,7 +591,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         const jobId = res.data?.jobId;
         // Stay in 'generating' phase while polling
         const job = await pollJob(jobId, {
-          timeoutMs: 120_000 });  // phase stays 'generating' -- the spinner keeps showing
+          timeoutMs: 210_000 });  // phase stays 'generating' -- the spinner keeps showing
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setEditDraft(content);
         Analytics.motionGenerated(selected.key);
@@ -709,9 +706,9 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
   // ── RENDER: Library ───────────────────────────────────────────────────────
   if (phase === 'library') return (
-    <ScrollView>
-      <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 12,
-        marginBottom: 0, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.libraryScroll} testID="motion-library">
+      <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, marginBottom: 12,
+        borderLeftWidth: 4, borderLeftColor: colors.gold }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
           {t('x_motion_library_ai_generated_drafts_attorney')}
         </Text>
@@ -736,12 +733,12 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>{t('x_cs_motion_library')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageSub, { color: colors.textMuted }]}>
-        {t('x_motion_library_ai_generated_court_ready')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textBrand }}>{t('x_motion_library_9_99_per_motion')}</Text>
+        {t('x_motion_library_ai_generated_court_ready')}
       </Text>
 
       {/* Value prop banner */}
       <View style={[styles.valueBanner, { backgroundColor: isDark ? colors.bgCard : colors.bgSubtle, borderColor: COLORS.navy + '33' }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.valueBannerText, { color: COLORS.navy }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.valueBannerText, { color: colors.textBrand }]}>
           {t('x_motion_library_average_time_saved_per')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>{t('x_motion_library_1_3_hours')}</Text>
         </Text>
       </View>
@@ -813,9 +810,6 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         <View style={[styles.selectedBadge, { backgroundColor: selected.bg, borderColor: selected.color + '55' }]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.selectedIcon}>{selected.icon}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.selectedLabel, { color: selected.color }]}>{selected.label}</Text>
-          <View style={[styles.selectedPrice, { backgroundColor: selected.color }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.selectedPriceText}>$9.99</Text>
-          </View>
         </View>
 
         {/* Progress bar */}
@@ -869,12 +863,12 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           accessibilityHint={t('cp_double_tap')}
           style={[styles.generateBtn, { backgroundColor: selected.color }]}
           onPress={() => {
-            confirm(t('x_motion_library_generate_9_99', { label: selected.label }), t('x_motion_library_this_will_charge_9'),
-              { confirmLabel: t('x_motion_library_generate_9_99_2') }).then(ok => { if (ok) generate(); });
+            confirm(t('motion_generate_confirm_title', { label: selected.label }), t('motion_generate_confirm_body'),
+              { confirmLabel: t('motion_generate_confirm_btn') }).then(ok => { if (ok) generate(); });
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>
-            {t('x_motion_library_generate_9_99_3', { label: selected.label })}
+            {t('motion_generate_btn', { label: selected.label })}
           </Text>
         </TouchableOpacity>
 
@@ -1132,6 +1126,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               color: colors.textPrimary }]}
             multiline
               maxLength={2000}
+            testID="motion-draft"
             value={editDraft}
             onChangeText={setEditDraft}
             textAlignVertical="top"
@@ -1254,8 +1249,6 @@ const makeStyles = () => StyleSheet.create({
   motionIcon:  { fontSize: 28, marginBottom: 8 },
   motionLabel: { fontSize: 12, ...FONTS.black, marginBottom: 4, lineHeight: 17 },
   motionDesc:  { fontSize: 11, lineHeight: 15, marginBottom: 12, flex: 1 },
-  motionPrice: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  motionPriceText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 
   // Form
   formScroll: { padding: 16, paddingBottom: 40 },
@@ -1263,8 +1256,6 @@ const makeStyles = () => StyleSheet.create({
     borderWidth: 1.5, padding: 12, marginBottom: 14 },
   selectedIcon:  { fontSize: 22 },
   selectedLabel: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  selectedPrice: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  selectedPriceText: { color: COLORS.bgCard, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 
   progressBg:   { height: 4, borderRadius: 2, marginBottom: 6, overflow: 'hidden' },
   progressFill: { height: 4, borderRadius: 2 },
@@ -1310,7 +1301,8 @@ const makeStyles = () => StyleSheet.create({
   historyLabel:  { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2 },
   historyDate:   { fontSize: 12 },
   historyDelete: { padding: 6 },
-  sectionHeader:     { paddingHorizontal: 4, paddingVertical: 10, marginTop: 8, marginBottom: 4,
+  // a full-width row inside the wrapping card grid
+  sectionHeader:     { width: '100%', paddingHorizontal: 4, paddingVertical: 10, marginTop: 8, marginBottom: 4,
     borderRadius: RADIUS.md, borderWidth: 1, paddingLeft: 12 },
   sectionHeaderText: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 1.2 },
   sectionHeaderSub:  { fontSize: 11, fontWeight: '600', marginTop: 2 },

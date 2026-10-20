@@ -564,11 +564,13 @@ describe('8. App.tsx — Root Auth State Machine', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('9. ChatScreen — AI Chat API Contract', () => {
 
-  test('9-01: ChatScreen POSTs to /chat/ask', async () => {
+  test('9-01: ChatScreen asks through services/chatStream.ts (POST /chat/ask fallback)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain("'/chat/ask'");
-    expect(src).toContain('api.post');
+    const svc = fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+    expect(src).toContain('askChat(');
+    expect(svc).toContain("'/chat/ask'");
+    expect(svc).toContain('api.post');
   });
 
   test('9-02: ChatScreen manages sessionId state', async () => {
@@ -588,19 +590,19 @@ describe('9. ChatScreen — AI Chat API Contract', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('messages');
-    expect(src).toContain('loading');
+    expect(src).toContain('busy');
     expect(src).toContain('input');
   });
 
-  test('9-05: ChatScreen uses useFocusEffect', async () => {
+  test('9-05: ChatScreen re-checks the session on focus (useHasSession)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('useFocusEffect');
+    expect(src).toContain('useHasSession');
   });
 
   test('9-06: ChatScreen uses jobPoller for async AI responses', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
     expect(src).toContain('pollJob');
     expect(src).toContain('jobPoller');
   });
@@ -704,10 +706,11 @@ describe('12. LegalResearchScreen — AI Research Paywall', () => {
     expect(src).toContain('has_access');
   });
 
-  test('12-02: LegalResearchScreen has subscribe endpoint ($49.99/mo)', async () => {
+  test('12-02: LegalResearchScreen paywall lists the real plans (GET /billing/tiers), no invented add-on', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
-    expect(src).toContain("'/billing/subscribe'");
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).not.toContain('49.99');
   });
 
   test('12-03: LegalResearchScreen has research history', async () => {

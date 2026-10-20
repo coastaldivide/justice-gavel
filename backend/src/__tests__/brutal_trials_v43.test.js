@@ -240,14 +240,14 @@ describe('S12. UX — Final Remaining Gaps', () => {
     expect(src).toContain('detectAndSaveUserState');
     expect(src).toContain('First-time user intro');
   });
-  test('S12-04: ResourcesScreen cachedGet /resources?limit=500', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ResourcesScreen.tsx', 'utf8');
-    expect(src).toContain('cachedGet');
-    expect(src).toContain('/resources?limit=500');
-    expect(src).toContain('allItems');
-    expect(src).toContain('filtered');
-  });
+  test('S12-04: ResourcesScreen cachedGet /resources?limit=1000 (whole directory)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ResourcesScreen.tsx', 'utf8');
+      expect(src).toContain('cachedGet');
+      expect(src).toContain('/resources?limit=1000');
+      expect(src).toContain('allItems');
+      expect(src).toContain('filtered');
+    });
   test('S12-05: firm_verticals /pricing returns full pricing matrix from DB', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_verticals.js', 'utf8');

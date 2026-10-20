@@ -274,12 +274,12 @@ describe('F7. Attorney Dashboard Flow', () => {
     expect(src).toContain('/research/history');
     expect(src).toContain('loading');
   });
-  test('F7-05: TranslatorScreen has session + message API + language select', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx','utf8');
-    expect(src).toContain('/translate/session');
-    expect(src).toContain('/translate/message');
-    expect(src).toContain('language');
+  test('F7-05: TranslatorScreen uses /translate/session (create, join, message, poll)', async () => {
+    const fs  = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    expect(src).toContain("'/translate/session'");
+    expect(src).toContain('/translate/session/${sessionCode}/message');
+    expect(src).toContain('X-Translate-Token');
   });
 });
 

@@ -127,7 +127,6 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      temperature: 0.25,
       max_tokens: 1000,
       system: MATCH_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],

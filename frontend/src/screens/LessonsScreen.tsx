@@ -4,18 +4,32 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getItem as getSecureItem } from '../utils/secureStorage';
+import { getToken } from '../utils/secureStorage';
 import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
+import { useAuthGate } from '../components/AuthGate';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { t, useLang } from '../i18n';
+import { t, useLang, getLang } from '../i18n';
+
+/**
+ * LessonsScreen — "Know your rights" lessons (public; GET /api/lessons).
+ * Completing one needs an account: POST /lessons/:id/complete (once per
+ * lesson, its points added once). Completed lessons come from the server
+ * (GET /lessons/progress/me), so they follow the person to every device.
+ * Lesson text is English only — es / pt / vi readers are told so.
+ */
+/** "State Rights - CA" → the translated "State rights" label + the state. */
+export function lessonCategoryLabel(cat: string): string {
+  const st = /^State Rights - ([A-Z]{2})$/.exec(cat || '');
+  if (st) return t('lesson_cat_state_rights', { state: st[1] });
+  const key = `lesson_cat_${String(cat || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`;
+  const label = t(key);
+  return label === key ? cat : label;
+}
 
 interface Lesson { id: number; title: string; category: string; content: string; points: number; }
 
-const CAT_COLORS: Record<string, string> = {
-  Criminal: COLORS.emergencyDark, General: COLORS.blue, Civil: COLORS.legalDark, Constitutional: COLORS.blue,
-};
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
   useLang();
@@ -38,16 +52,25 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
-  const [userId, setUserId]     = useState(1);
+  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+
+  /** Completed lessons from the account (signed in), else none. */
+  const loadProgress = useCallback(async () => {
+    if (!(await getToken())) return;
+    try {
+      const r = await api.get('/lessons/progress/me');
+      const ids: number[] = Array.isArray(r.data?.lesson_ids) ? r.data.lesson_ids.map(Number) : [];
+      if (mountedRef.current) setCompleted(new Set(ids));
+    } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
+  }, []);
 
   useEffect(() => {
     (async () => {
-      const u = await getSecureItem('user');
-      if (u) { try { const user = JSON.parse(u); if (user?.id) setUserId(user.id); } catch {} }
-      const done = await AsyncStorage.getItem('completed_lessons');
-      if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }
-      if (incomingCategory) setFilterCat(incomingCategory as string);
-      const loaded = await loadLessons();
+      // Completion used to live only on the device; the account is the record now.
+      AsyncStorage.removeItem('completed_lessons').catch(() => {});
+      const [loaded] = await Promise.all([loadLessons(), loadProgress()]);
+      // A category from a link applies only when lessons have it.
+      if (incomingCategory && loaded.some(l => l.category === incomingCategory)) setFilterCat(incomingCategory as string);
       // Deep link from the Home "tip of the day": open the first matching lesson.
       if (incomingQuery && mountedRef.current) {
         const q = String(incomingQuery).toLowerCase();
@@ -59,7 +82,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
       if (mountedRef.current) setLoading(false);
     })();
-  }, [incomingCategory, incomingQuery]);
+  }, [incomingCategory, incomingQuery, loadProgress]);
 
   const loadLessons = async (fresh = false): Promise<Lesson[]> => {
       try {
@@ -78,41 +101,41 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       }
   };
 
-  const markComplete = useCallback(async (id: number, pts: number) => {
+  const markComplete = useCallback((id: number) => {
     if (completed.has(id)) return;
-    try {
-      await api.post(`/lessons/${id}/complete`, { user_id: userId });
-      const next = new Set(completed).add(id);
-      setCompleted(next);
-      await AsyncStorage.setItem('completed_lessons', JSON.stringify(Array.from(next))).catch(() => {}); // non-fatal storage write
-      // Update local points
-      const stored = await AsyncStorage.getItem(`points_${userId}`);
-      const newPts = (parseInt(stored || '0', 10) + pts);
-      await AsyncStorage.setItem(`points_${userId}`, String(newPts));
-      showToast(t('x_lessons_points_added_rewards', { pts }), 'success');
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_lessons_could_not_mark_complete')), 'info');
-    }
-  }, [completed, userId, showToast]);
+    requireAuth(async () => {
+      try {
+        const r = await api.post(`/lessons/${id}/complete`, {});
+        setCompleted(prev => new Set(prev).add(id));
+        const pts = Number(r.data?.pointsAwarded || 0);
+        if (pts > 0) showToast(t('x_lessons_points_added_rewards', { pts }), 'success');
+      } catch (e) {
+        showToast(apiErrorMessage(e, t('x_lessons_could_not_mark_complete')), 'error');
+      }
+    });
+  }, [completed, requireAuth, showToast]);
+
+  const categories = React.useMemo(() => [...new Set((lessons ?? []).map(l => l.category).filter(Boolean))], [lessons]);
 
   const displayLessons = filterCat
     ? (lessons ?? []).filter(l => l.category === filterCat)
     : lessons;
 
   const { totalPts, earnedPts, pct } = React.useMemo(() => {
-    const total  = (lessons ?? []).reduce((s, l) => s + l.points, 0);
-    const earned = (lessons ?? []).filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
+    const total  = (lessons ?? []).reduce((s, l) => s + (Number(l.points) || 0), 0);
+    const earned = (lessons ?? []).filter(l => completed.has(l.id)).reduce((s, l) => s + (Number(l.points) || 0), 0);
     return { totalPts: total, earnedPts: earned, pct: total > 0 ? earned / total : 0 };
   }, [lessons, completed]);
 
   const renderLesson = useCallback(({ item }: { item: any }) => {
             const done = completed.has(item.id);
             const open = expanded === item.id;
-            const color = CAT_COLORS[item.category] || colors.blue;
+            const color = colors.blue;
             return (
               <TouchableOpacity
                 accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
+                testID={`lesson-${item.id}`}
                 style={[styles.card, done && styles.cardDone]}
                 onPress={() => setExpanded(open ? null : item.id)}
                 activeOpacity={0.85}
@@ -125,7 +148,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                     <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, done && styles.cardTitleDone]}>{item.title}</Text>
                     <View style={styles.metaRow}>
                       <View style={[styles.catBadge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{['Criminal', 'General', 'Civil', 'Constitutional'].includes(item.category) ? t(`x_lessons_cat_${String(item.category).toLowerCase()}`) : item.category}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{lessonCategoryLabel(item.category)}</Text>
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>{t('x_lessons_pts', { points: item.points })}</Text>
                     </View>
@@ -135,16 +158,16 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
 
                 {open && (
                   <View style={styles.contentArea}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
+                    <Text maxFontSizeMultiplier={1.4} testID="lesson-content" style={styles.contentText}>{item.content}</Text>
                     {!done && (
                       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={styles.completeBtn}
-                        onPress={() => markComplete(item.id, item.points || 0)}
+          accessibilityHint={t('cp_double_tap')} style={styles.completeBtn} testID="lesson-complete"
+                        onPress={() => markComplete(item.id)}
                         >
                         <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>{t('x_lessons_mark_as_complete_pts', { points: item.points })}</Text>
                       </TouchableOpacity>
                     )}
-                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.completedLabel}>{t('x_lessons_completed_points_earned', { points: item.points })}</Text>}
+                    {done && <Text maxFontSizeMultiplier={1.4} testID="lesson-done" style={styles.completedLabel}>{t('x_lessons_completed_points_earned', { points: item.points })}</Text>}
                   </View>
                 )}
               </TouchableOpacity>
@@ -158,7 +181,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       <View style={styles.progressCard}>
         <View style={styles.progressTop}>
           <Text maxFontSizeMultiplier={1.4} style={styles.progressTitle}>{t('education')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.progressPts}>{t('x_lessons_pts_2', { earnedPts, totalPts })}</Text>
+          <Text maxFontSizeMultiplier={1.4} testID="lessons-points" style={styles.progressPts}>{t('x_lessons_pts_2', { earnedPts, totalPts })}</Text>
         </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any }]} />
@@ -172,25 +195,29 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
         <View style={styles.empty}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{t('x_lessons_no_lessons_available_yet')}</Text></View>
       ) : (
         <>
-        {/* Category filter chips */}
-        {filterCat && (
-          <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingTop: 8, gap: 6 }}>
-            {['Criminal','General','Civil','Constitutional'].map(cat => ( // i18n-exempt: lesson category values; label below
-              <TouchableOpacity
-                accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                key={cat}
-                style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
-                  backgroundColor: filterCat === cat ? (CAT_COLORS[cat] || colors.navy) : colors.bg }}
-                onPress={() => setFilterCat(filterCat === cat ? null : cat)}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700',
-                  color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{t(`x_lessons_cat_${cat.toLowerCase()}`)}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {getLang() !== 'en' && (
+          <Text maxFontSizeMultiplier={1.4} testID="lessons-english-only" style={styles.englishOnly}>{t('lessons_english_only')}</Text>
         )}
+        {/* Category filter chips (the categories the lessons actually have) */}
+        <FlashList
+          horizontal
+          data={categories}
+          keyExtractor={c => c}
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 8, gap: 6 }}
+          renderItem={({ item: cat }) => (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityState={{ selected: filterCat === cat }}
+              testID={`lessons-cat-${cat}`}
+              style={[styles.catChip, { backgroundColor: filterCat === cat ? colors.navy : colors.bgCard, marginRight: 6 }]}
+              onPress={() => setFilterCat(filterCat === cat ? null : cat)}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={[styles.catChipText, { color: filterCat === cat ? colors.textOnNavy : colors.textPrimary }]}>{lessonCategoryLabel(cat)}</Text>
+            </TouchableOpacity>
+          )}
+        />
         <FlashList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLessons(true).finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
           data={displayLessons}
@@ -229,6 +256,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       </>
       )
     }
+      <AuthGateModal />
     </View>
   );
 }
@@ -271,6 +299,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   lifeSub:   { fontSize: 12, color: colors.info, lineHeight: 17 },
   lifeBtn:   { backgroundColor: COLORS.navy, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 },
   lifeBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  englishOnly: { marginHorizontal: 12, marginTop: 4, fontSize: 12, lineHeight: 18, color: colors.textSecond },
+  catChip: { paddingHorizontal: 12, minHeight: 44, justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: colors.border },
+  catChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   streakBanner: { flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: COLORS.steelMid, borderRadius: RADIUS.lg, borderWidth: 1,
     borderColor: COLORS.steelMid, margin: 12, padding: 12 },

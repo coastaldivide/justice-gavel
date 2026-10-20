@@ -226,7 +226,7 @@ export const ALL_ENV_VARS = {
 
   // ── AI ──────────────────────────────────────────────────────────────────
   ANTHROPIC_API_KEY:        process.env.ANTHROPIC_API_KEY          || '',
-  CLAUDE_MODEL:             process.env.CLAUDE_MODEL               || 'claude-sonnet-4-6', // utils/ai.js
+  CLAUDE_MODEL:             process.env.CLAUDE_MODEL               || 'claude-sonnet-5-5', // utils/ai.js
   ANTHROPIC_BASE_URL:       process.env.ANTHROPIC_BASE_URL         || '',    // test/mock override only
   AI_JOB_TIMEOUT_MS:        process.env.AI_JOB_TIMEOUT_MS          || '45000',
   AI_CONCURRENCY:           process.env.AI_CONCURRENCY             || '8',

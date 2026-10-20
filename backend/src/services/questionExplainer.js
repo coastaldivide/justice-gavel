@@ -67,8 +67,7 @@ export async function getExplanation(questionId, userId) {
       const result = await generateExplanation(q, questionId, userId);
       return { explanation: result, status: 'cached' };
     } catch (e) {
-      // Daily AI budget reached (or provider down): the curated explanation still helps.
-      if (e?.code !== 'ai_budget_exceeded' && !(e?.status >= 500)) throw e;
+      // AI busy / down / over budget: the curated explanation that ships with the question still helps.
       logger.warn({ err: e.message, questionId }, '[explainer] AI unavailable — serving the static explanation');
       return { explanation: q.explanation ?? null, status: q.explanation ? 'static' : 'unavailable' };
     }

@@ -141,12 +141,12 @@ describe('S1. 2-Hit Routes — matters + firms + integrations + privilege', () =
 // ── S6. Screens — New Patterns (Pressable + Switch + deeper) ──────────────
 describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => {
   test('S6-01: ChatScreen uses Pressable for long-press message bubbles', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('Pressable');
-    expect(src).toContain('long-press');
-    expect(src).toContain('/chat/ask');
-  });
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain('Pressable');
+      expect(src).toContain('onLongPress');
+      expect(src).toContain('/chat/ask');
+    });
   test('S6-03: SettingsScreen Switch integrates LocalAuth (biometric lock)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx', 'utf8');
@@ -169,25 +169,26 @@ describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => 
     expect(src).toContain('amount');
     expect(src).toContain('/pay/create');
   });
-  test('S6-06: TranslatorScreen — phase+langA+langB states, /translate/session + /translate/message', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
-    expect(src).toContain('phase');
-    expect(src).toContain('langA');
-    expect(src).toContain('langB');
-    expect(src).toContain('/translate/session');
-    expect(src).toContain('/translate/message');
-    expect(src).toContain('Animated.Value');
-  });
-  test('S6-07: LegalResearchScreen — disclaimerVisible+phase+query+messages, /research/history', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
-    expect(src).toContain('disclaimerVisible');
-    expect(src).toContain('phase');
-    expect(src).toContain('query');
-    expect(src).toContain('/research/history');
-    expect(src).toContain('/billing/subscribe');
-  });
+  test('S6-06: TranslatorScreen — phase+langA+langB states, /translate/session + session messages', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+      expect(src).toContain('phase');
+      expect(src).toContain('langA');
+      expect(src).toContain('langB');
+      expect(src).toContain('/translate/session');
+      expect(src).toContain('/messages?since=');
+      expect(src).toContain('Animated.Value');
+    });
+  test('S6-07: LegalResearchScreen — disclaimerVisible+phase+query+messages, /research/history, real plans', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
+      expect(src).toContain('disclaimerVisible');
+      expect(src).toContain('phase');
+      expect(src).toContain('query');
+      expect(src).toContain('/research/history');
+      expect(src).toContain('/billing/tiers');
+      expect(src).not.toContain('/billing/subscribe');
+    });
   test('S6-08: DeadlineCalculatorScreen — expanded accordion, rule.compute(arrest, judgment, state)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');

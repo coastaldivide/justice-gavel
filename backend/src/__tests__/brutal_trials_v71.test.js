@@ -144,29 +144,33 @@ describe('PAY2. payments/ — Stripe + Multi-Provider Orchestration', () => {
 
 // ── CST. chat/stream.js + chat/ask.js ─────────────────────────────────────
 describe('CST. chat/ — SSE Streaming + REST Fallback Routes', () => {
-  test('CST-01: chat/stream.js is POST /stream — SSE preferred streaming path', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
-    expect(src).toContain('POST /stream');
-    expect(src).toContain('Server-Sent Events streaming');
-    // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
-    expect(src).toContain('anthropicFetch');
-  });
-  test('CST-02: chat/ask.js is POST /ask — standard request/response fallback', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
-    expect(src).toContain('POST /ask');
-    expect(src).toContain('main AI chat');
-    expect(src).toContain('BUSINESS_CONSTANTS');
-  });
-  test('CST-03: both chat routes enforce AI_MESSAGES_PER_DAY_FREE=3 limit', async () => {
-    const fs = await import('fs');
-    const askSrc    = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
-    const streamSrc = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
-    // Both enforce the free tier limit
-    expect(askSrc).toContain('BUSINESS_CONSTANTS');
-    expect(streamSrc).toContain('BUSINESS_CONSTANTS');
-  });
+  test('CST-01: chat/stream.js is POST /stream — Server-Sent Events streaming path', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
+      expect(src).toContain('POST /stream');
+      expect(src).toContain('Server-Sent Events streaming');
+      expect(src).toContain("router.post('/stream'");
+      // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
+      expect(src).toContain('anthropicFetch');
+      expect(src).toContain('chatContext');            // free-tier quota + defender gating
+    });
+  test('CST-02: chat/ask.js is POST /ask — main AI chat request/response fallback', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
+      expect(src).toContain('POST /ask');
+      expect(src).toContain('main AI chat');
+      expect(src).toContain("router.post('/ask'");
+      expect(src).toContain('chatContext');
+    });
+  test('CST-03: both chat routes enforce the free limit of 3 questions a day', async () => {
+      const fs = await import('fs');
+      const helpers   = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
+      const askSrc    = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
+      const streamSrc = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
+      expect(helpers).toContain('FREE_CHAT_MESSAGES_PER_DAY = 3');
+      expect(askSrc).toContain('ctx.limited');
+      expect(streamSrc).toContain('ctx.limited');
+    });
 });
 
 // ── SCH. search.js — Global FTS5 Search ──────────────────────────────────

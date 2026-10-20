@@ -36,7 +36,7 @@ const onLimitReached = (label) => (req, res, options) => {
 
 /**
  * Translation — 20 translation requests per user per 10 minutes
- * Each call invokes Claude claude-sonnet-4-6 for legal translation
+ * Each call invokes Claude claude-sonnet-5-5 for legal translation
  */
 export const translateLimiter = rateLimit({
   windowMs:         10 * 60 * 1000,

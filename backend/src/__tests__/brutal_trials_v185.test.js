@@ -159,7 +159,7 @@ describe('FLOW. 5 Critical Function Flows End-to-End', () => {
   });
   test('FLOW-02: AI Chat send → enqueue → jobId → poll → result', async () => {
     const fs = await import('fs');
-    const chat   = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
+    const chat   = (fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     const ask    = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js','utf8');
     const poller = fs.readFileSync(__REPO + '/frontend/src/services/jobPoller.ts','utf8');
     expect(chat).toContain('/chat/ask');

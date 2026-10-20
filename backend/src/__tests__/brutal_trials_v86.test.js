@@ -84,13 +84,12 @@ describe('AIR. chat/_prompts.js — AI Persona + Legal Disclaimer System', () =>
     expect(src).toContain('AI system prompts');
     expect(src).toContain('Edit this file to update the AI persona');
   });
-  test('AIR-02: RESPONSE_FOOTER_INSTRUCTION appended to every AI response', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_prompts.js','utf8');
-    expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
-    expect(src).toContain('appended to every AI response');
-    // Legal disclaimer always present regardless of chat content
-  });
+  test('AIR-02: the legal notice is shown by the app under every AI answer (not an English footer)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_prompts.js','utf8');
+      expect(src).not.toContain('RESPONSE_FOOTER_INSTRUCTION');
+      expect(src).toContain('app shows the legal notice under every answer');
+    });
   test('AIR-03: DEFENDER_SYSTEM_PROMPT for public defender context', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_prompts.js','utf8');

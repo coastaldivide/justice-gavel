@@ -48,7 +48,9 @@ interface TurnMessage {
   id?: number;
   side: 'a' | 'b';
   original: string;
-  translated: string;
+  /** null: the message could not be translated (the other side sees the original) */
+  translated: string | null;
+  translation_error?: string;
   src_lang: string;
   tgt_lang: string;
   created_at?: string;
@@ -88,7 +90,7 @@ function TurnBubble({
   const bColor  = COLORS.textSecond;
 
   return (
-    <Animated.View style={[
+    <Animated.View testID="translator-bubble" style={[
       styles.turnBubble,
       { opacity: fade, transform: [{ translateY: slide }] },
       isA
@@ -107,15 +109,22 @@ function TurnBubble({
 
       {/* Original */}
       <TouchableOpacity
-          accessibilityRole="button" onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
+          accessibilityRole="button" accessibilityHint={t('translator_tap_copy')} onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleOriginal, { color: COLORS.textPrimary }]}>
           {msg.original}
         </Text>
       </TouchableOpacity>
 
+      {/* Not translated (AI unavailable / busy): say so, never pass the original off as a translation */}
+      {!msg._pending && msg.translated == null && (
+        <Text maxFontSizeMultiplier={1.4} testID="translator-not-translated" style={[styles.notTranslated, { color: COLORS.textSecond }]}>
+          ⚠️ {t('translator_not_translated', { lang: tgtLang.native })}
+        </Text>
+      )}
+
       {/* Translation */}
-      {msg.translated && msg.translated !== msg.original && (
+      {!msg._pending && !!msg.translated && msg.translated !== msg.original && (
         <View style={[styles.translationBox, {
           backgroundColor: isA
             ? (isDark ? COLORS.textPrimary : COLORS.bgSubtle)
@@ -126,7 +135,7 @@ function TurnBubble({
             {tgtLang.flag} {tgtLang.native}
           </Text>
           <TouchableOpacity
-          accessibilityRole="button" onPress={() => { hapticSelection(); Clipboard.setString(msg.translated); }}
+          accessibilityRole="button" accessibilityHint={t('translator_tap_copy')} onPress={() => { hapticSelection(); Clipboard.setString(msg.translated || ''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.translationText, { color: COLORS.textPrimary }]}>
               {msg.translated}
@@ -202,6 +211,21 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
 
   const scrollRef = useRef<ScrollView>(null);
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  // The per-session token from create / join: a guest who joined by code is
+  // known to the server only by it (X-Translate-Token on every call).
+  const tokenRef  = useRef<string | null>(null);
+  const sessionHeaders = () => (tokenRef.current ? { headers: { 'X-Translate-Token': tokenRef.current } } : {});
+
+  /** Add messages once each (the poll and the send answer can bring the same one). */
+  const mergeMessages = useCallback((incoming: TurnMessage[]) => {
+    if (!incoming.length) return;
+    setMessages(prev => {
+      const ids = new Set(prev.filter(m => !m._pending).map(m => m.id));
+      return [...prev, ...incoming.filter(m => !ids.has(m.id))];
+    });
+    const maxId = Math.max(lastMsgIdRef.current, ...incoming.map(m => Number(m.id) || 0));
+    lastMsgIdRef.current = maxId;
+  }, []);
 
   useEffect(() => {
     navigation.setOptions({ title: t('x_nav_interpreter') });
@@ -219,24 +243,12 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
     if (phase !== 'session' || mode !== 'split' || !sessionCode) return;
     pollRef.current = setInterval(async () => {
       try {
-        const res = await api.get(
-          `/translate/session/${sessionCode}/messages?since=${lastMsgIdRef.current}`,
-          { headers: {} }
-        ).catch(() => api.get(`/translate/session/${sessionCode}/messages?since=${lastMsgIdRef.current}`));
-        const newMsgs = unwrapList<TurnMessage>(res.data, 'messages');
-        if (newMsgs.length > 0) {
-          setMessages(prev => {
-            const ids = new Set(prev.map(m => m.id));
-            return [...prev, ...newMsgs.filter(m => !ids.has(m.id))];
-          });
-          const newId = newMsgs[newMsgs.length - 1].id || lastMsgIdRef.current;
-          lastMsgIdRef.current = newId;
-        }
-      } catch (e: any) {
-      __DEV__ && console.warn(e?.message); }
+        const res = await api.get(`/translate/session/${sessionCode}/messages?since=${lastMsgIdRef.current}`, sessionHeaders());
+        mergeMessages(unwrapList<TurnMessage>(res.data, 'messages'));
+      } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [phase, mode, sessionCode]); // lastMsgId via ref -- no restart on each message
+  }, [phase, mode, sessionCode, mergeMessages]); // lastMsgId via ref -- no restart on each message
 
   // ── Create session ────────────────────────────────────────────────────────
   const createSession = useCallback(async (selectedMode: 'solo'|'split') => {
@@ -246,12 +258,16 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       try {
         const res = await api.post('/translate/session', { lang_a: langA, lang_b: langB });
         if (!mountedRef.current) return;
+        tokenRef.current = res.data?.session_token || null;
+        lastMsgIdRef.current = 0;
         setCode(res.data?.code);
+        setJoiningAs('a');
         setMessages([]);
         setPhase('session');
-      } catch (e: any) {
-showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'error');
-        setCreating(false);
+      } catch (e) {
+        showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'error');
+      } finally {
+        if (mountedRef.current) setCreating(false);
       }
     };
     // POST /translate/session requires an account: prompt guests to sign in first.
@@ -269,6 +285,7 @@ showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'err
     try {
       const res = await api.get(`/translate/session/${code}`);
       if (!mountedRef.current) return;
+      if (res.data?.session_token) tokenRef.current = res.data.session_token;
       setLangA(res.data?.lang_a);
       setLangB(res.data?.lang_b);
       setCode(code);
@@ -276,19 +293,15 @@ showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'err
       setMode('split');
 
       // Load existing messages
-      const msgs = await api.get(`/translate/session/${code}/messages?since=0`);
-      const existing = unwrapList<TurnMessage>(msgs.data, 'messages');
-      setMessages(existing);
-      if (existing.length) {
-        const id = existing[existing.length - 1].id ?? 0;
-        lastMsgIdRef.current = id;
-      }
-
+      lastMsgIdRef.current = 0;
+      setMessages([]);
+      const msgs = await api.get(`/translate/session/${code}/messages?since=0`, sessionHeaders());
+      mergeMessages(unwrapList<TurnMessage>(msgs.data, 'messages'));
       setPhase('session');
-    } catch {
-      setJoinError(t('x_translator_session_not_found_check'));
+    } catch (e) {
+      setJoinError(apiErrorMessage(e, t('x_translator_session_not_found_check')));
     }
-  }, [joinCode]);
+  }, [joinCode, mergeMessages]);
 
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (side: 'a' | 'b') => {
@@ -310,35 +323,33 @@ showToast(apiErrorMessage(e, t('x_translator_translation_session_failed')), 'err
     setMessages(prev => [...prev, optimistic]);
 
     try {
-      let res;
-      if (mode === 'split' || sessionCode) {
-        res = await api.post(`/translate/session/${sessionCode}/message`, { text, side });
-      } else {
-        res = await api.post('/translate/message', {
-          text,
-          src_lang: side === 'a' ? langA : langB,
-          tgt_lang: side === 'a' ? langB : langA,
-        });
-      }
+      const res = await api.post(`/translate/session/${sessionCode}/message`, { text, side }, sessionHeaders());
       const confirmed: TurnMessage = {
         side,
-        original:   res.data?.original,
-        translated: res.data?.translated,
-        src_lang:   side === 'a' ? langA : langB,
-        tgt_lang:   side === 'a' ? langB : langA,
-        id: res.data?.id || Date.now() + 1,
+        original:   res.data?.original ?? text,
+        translated: res.data?.translated ?? null,
+        translation_error: res.data?.translation_error,
+        src_lang:   res.data?.src_lang || optimistic.src_lang,
+        tgt_lang:   res.data?.tgt_lang || optimistic.tgt_lang,
+        id: res.data?.id,
       };
-      setMessages(prev => prev.map(m => m._pending && m.id === optimistic.id ? confirmed : m));
-      if (res.data?.id) { lastMsgIdRef.current = res.data?.id; }
-    } catch (e: any) {
+      // The poll may already have brought this message: keep one copy.
+      setMessages(prev => {
+        const rest = prev.filter(m => m.id !== optimistic.id);
+        return confirmed.id != null && rest.some(m => m.id === confirmed.id) ? rest : [...rest, confirmed];
+      });
+      if (confirmed.id) lastMsgIdRef.current = Math.max(lastMsgIdRef.current, Number(confirmed.id));
+      if (res.data?.translation_error) showToast(res.data?.message || t('translator_not_translated', { lang: getLang(confirmed.tgt_lang).native }), 'warning');
+    } catch (e) {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
       else              setInputB(text);
-showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
+      showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
+    } finally {
       if (side === 'a') setSendingA(false);
       else              setSendingB(false);
     }
-  }, [inputA, inputB, langA, langB, sessionCode, mode, showToast]);
+  }, [inputA, inputB, langA, langB, sessionCode, showToast]);
 
   const shareCode = useCallback(() => {
     try {
@@ -373,6 +384,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
             borderColor: joinError ? COLORS.emergency : colors.border,
             color: colors.textPrimary,
           }]}
+          testID="translator-code-input"
           value={joinCode}
           onChangeText={v => { setJoinCode(v.toUpperCase()); setJoinError(''); }}
           placeholder="K7M2PX"
@@ -393,6 +405,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
           style={[styles.joinBtn, { backgroundColor: COLORS.navy },
             joinCode.length !== 6 && { opacity: 0.45 }]}
           onPress={joinSession}
+          testID="translator-join-submit"
           disabled={joinCode.length !== 6}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.joinBtnText}>{t('x_translator_join_session')}</Text>
@@ -435,6 +448,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
             <TouchableOpacity
               accessibilityRole="button"
               key={m.key}
+              testID={`translator-mode-${m.key}`}
               style={[styles.modeCard, {
                 backgroundColor: colors.bgCard,
                 borderColor: colors.border,
@@ -472,6 +486,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
 
         <TouchableOpacity
           accessibilityRole="button"
+          testID="translator-join-existing"
           style={[styles.joinExisting, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
           onPress={() => setPhase('join')}
         >
@@ -502,7 +517,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
           borderBottomColor: COLORS.navy + '33',
         }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarLabel, { color: colors.textMuted }]}>{t('translator_session_code')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarCode, { color: COLORS.navy }]}>{sessionCode}</Text>
+          <Text maxFontSizeMultiplier={1.4} testID="translator-session-code" style={[styles.codeBarCode, { color: COLORS.navy }]}>{sessionCode}</Text>
           {mode === 'split' && (
             <TouchableOpacity
               accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
@@ -514,6 +529,8 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
             accessibilityRole="button"
             onPress={() => {
               if (pollRef.current) clearInterval(pollRef.current);
+              tokenRef.current = null;
+              lastMsgIdRef.current = 0;
               setPhase('setup');
               setMessages([]);
               setCode('');
@@ -578,10 +595,11 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
                 }]}
                 placeholder={t('x_translator_type', { native: langAObj.native })}
                 placeholderTextColor={COLORS.textSecond}
+                testID="translator-input-a"
                 value={inputA}
                 onChangeText={setInputA}
                 multiline
-                maxLength={500}
+                maxLength={2000}
                 accessibilityLabel={t('x_translator_type_2', { label: langAObj.label })}
               />
               <TouchableOpacity
@@ -589,6 +607,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
                 style={[styles.sendBtn, {
                   backgroundColor: inputA.trim() && !sendingA ? COLORS.navy : colors.border
                 }]}
+                testID="translator-send-a"
                 onPress={() => sendMessage('a')}
                 disabled={!inputA.trim() || sendingA}
                 accessibilityLabel={t('x_translator_send_translate')}
@@ -622,10 +641,11 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
               }]}
               placeholder={t('x_translator_type', { native: langBObj.native })}
               placeholderTextColor={COLORS.textSecond}
+              testID="translator-input-b"
               value={inputB}
               onChangeText={setInputB}
               multiline
-              maxLength={500}
+              maxLength={2000}
               accessibilityLabel={t('x_translator_type_2', { label: langBObj.label })}
             />
             <TouchableOpacity
@@ -633,6 +653,7 @@ showToast(apiErrorMessage(e, t('x_translator_check_connection')), 'error');
               style={[styles.sendBtn, {
                 backgroundColor: inputB.trim() && !sendingB ? colors.textSecond : colors.border
               }]}
+              testID="translator-send-b"
               onPress={() => sendMessage('b')}
               disabled={!inputB.trim() || sendingB}
               accessibilityLabel={t('x_translator_send_translate')}
@@ -727,6 +748,7 @@ const makeStyles = () => StyleSheet.create({
   translationLang:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
     letterSpacing: 0.5, marginBottom: 5 },
   translationText:   { fontSize: 15, lineHeight: 22 },
+  notTranslated:     { fontSize: 12, lineHeight: 18, marginTop: 2 },
 
   // Input halves
   inputHalf:     { borderTopWidth: 0.5, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },

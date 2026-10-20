@@ -8,6 +8,7 @@ import { getDb }         from '../../db/index.js';
 import { generateMotion } from './_helpers.js';
 import { MOTION_TYPES }  from './_motion_types.js';
 import { enqueueAIJob as enqueue } from '../../services/aiQueue.js';
+import { msg, resolveLang } from '../../i18n/index.js';
 
 const router = Router();
 
@@ -15,12 +16,12 @@ const router = Router();
 // Body (app): { motion_type, fields: { defendant_name, state, case_number, ... } }
 // Legacy:     { motionType, facts, jurisdiction, additionalNotes, caseId }
 // Returns 202 { jobId } — poll GET /api/jobs/:jobId → result { content, draft, motion_id }
+// (motion_id is the motion_history row: history, status and PDF export use it)
 router.post('/generate', authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   try {
     const body       = req.body || {};
     const motionType = String(body.motion_type || body.motionType || '').trim();
-    if (!motionType) return res.status(400).json({ error: 'motion_type is required' });
-    if (!MOTION_TYPES[motionType]) return res.status(400).json({ error: 'Unknown motion type' });
+    if (!motionType || !MOTION_TYPES[motionType]) return res.status(400).json({ error: 'unknown_motion_type', code: 'unknown_motion_type', message: msg(resolveLang(req), 'motions.err.unknown_type') });
 
     const fields = (body.fields && typeof body.fields === 'object') ? { ...body.fields } : {};
     if (body.facts)           fields.facts = String(body.facts).slice(0, 10_000);
@@ -37,11 +38,11 @@ router.post('/generate', authRequired, requireDisclaimer, requireAi, perUserAiLi
       let motionId = null;
       try {
         const db = await getDb();
+        // History, filing status and PDF export all read motion_history.
         const r = await db.run(
-          `INSERT INTO motions (user_id, case_id, motion_type, type, title, draft, fields, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'draft')`,
-          [userId, caseId, motionType, motionType, MOTION_TYPES[motionType].label || motionType,
-           draft, JSON.stringify(fields)]
+          `INSERT INTO motion_history (user_id, case_id, motion_type, draft, case_fields, filing_status, jurisdiction, status)
+           VALUES (?, ?, ?, ?, ?, 'draft', ?, 'active')`,
+          [userId, caseId, motionType, draft, JSON.stringify(fields), fields.state ? String(fields.state).slice(0, 50) : null]
         );
         motionId = r.lastID || null;
       } catch (e) {
@@ -53,7 +54,7 @@ router.post('/generate', authRequired, requireDisclaimer, requireAi, perUserAiLi
     res.status(202).json({ jobId, status: 'pending', async: true });
   } catch (e) {
     logger.error('[motions/generate POST]', e.message);
-    res.status(500).json({ error: 'Motion generation failed' });
+    res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(resolveLang(req), 'motions.err.server') });
   }
 });
 

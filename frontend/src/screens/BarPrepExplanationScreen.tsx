@@ -12,15 +12,17 @@
 import { RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { api }            from '../services/api';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
+import { useToast } from '../components/ToastProvider';
+import { categoryLabel } from '../constants/barPrepCategories';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { useHaptics }     from '../hooks/useHaptics';
 import { t, useLang } from '../i18n';
 
 interface ExplanationData {
-  question_id:   number;
+  question_id:   string;
   stem:          string;
   correct_answer: string;
   correct_text:  string;   // derived: option_{correct_answer.toLowerCase()}
@@ -29,7 +31,17 @@ interface ExplanationData {
   case_citation?: string;
   category:      string;
   difficulty:    string;
-  ai_explanation?: string;  // richer GPT-4 expansion if available
+  ai_explanation?: string | null;  // the AI deep-dive, when one was generated
+}
+/** GET /bar-prep/explain/:id → { explanation, ai_explanation, question: { stem, options, correct_answer, … } } */
+interface ExplainResponse {
+  question_id: string;
+  explanation: string | null;
+  ai_explanation: string | null;
+  question: {
+    stem: string; options: Record<'A' | 'B' | 'C' | 'D', string>; correct_answer: string;
+    explanation: string | null; rule_tested: string | null; case_citation: string | null; category: string; difficulty: string;
+  };
 }
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -40,7 +52,8 @@ export default function BarPrepExplanationScreen({
   route, navigation
 }: ScreenProps<'BarPrepExplanation'>) {
   useLang();
-  const { question_id } = (route?.params ?? {}) as { question_id: number };
+  const { question_id } = (route?.params ?? {}) as { question_id: string };
+  const { showToast } = useToast();
   const { colors }  = useTheme();
   const { impact }  = useHaptics();
   const [data, setData]       = useState<ExplanationData | null>(null);
@@ -49,20 +62,28 @@ export default function BarPrepExplanationScreen({
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get(`/bar-prep/explain/${question_id}`);
-      const expl = res.data.explanation;
-      // correct_text is not a DB column — derive it from the option letter
-      if (expl && expl.correct_answer) {
-        const key = `option_${expl.correct_answer.toLowerCase()}` as keyof typeof expl;
-        expl.correct_text = (expl[key] as string) ?? expl.correct_answer;
-      }
-      setData(expl);
-    } catch {
-      Alert.alert(t('error'), t('x_bar_prep_explanation_could_not_load_explanation'));
+      const res = await api.get<ExplainResponse>(`/bar-prep/explain/${question_id}`);
+      const q = res.data.question;
+      const letter = String(q.correct_answer || '').trim().toUpperCase() as 'A' | 'B' | 'C' | 'D';
+      const curated = q.explanation || res.data.explanation || '';
+      setData({
+        question_id:    res.data.question_id,
+        stem:           q.stem,
+        correct_answer: letter,
+        correct_text:   q.options?.[letter] ?? letter,
+        explanation:    curated,
+        rule_tested:    q.rule_tested || '',
+        case_citation:  q.case_citation || undefined,
+        category:       q.category || '',
+        difficulty:     q.difficulty || 'medium',
+        ai_explanation: res.data.ai_explanation && res.data.ai_explanation !== curated ? res.data.ai_explanation : null,
+      });
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_bar_prep_explanation_could_not_load_explanation')), 'error');
     } finally {
       setLoading(false);
     }
-  }, [question_id]);
+  }, [question_id, showToast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -70,13 +91,13 @@ export default function BarPrepExplanationScreen({
     setFlagging(true);
     try {
       await api.post(`/bar-prep/questions/${question_id}/flag`, { reason: 'confusing' });
-      Alert.alert(t('x_bar_prep_explanation_thanks'), t('x_bar_prep_explanation_question_flagged_review'));
-    } catch {
-      Alert.alert(t('error'), t('x_bar_prep_explanation_could_not_flag_question'));
+      showToast(`${t('x_bar_prep_explanation_thanks')} ${t('x_bar_prep_explanation_question_flagged_review')}`, 'success');
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_bar_prep_explanation_could_not_flag_question')), 'error');
     } finally {
       setFlagging(false);
     }
-  }, [question_id]);
+  }, [question_id, showToast]);
 
   const shareExplanation = useCallback(async () => {
     if (!data) return;
@@ -112,7 +133,7 @@ export default function BarPrepExplanationScreen({
     <View style={styles.container}>
       <GradientHeader
         title={t('x_bar_prep_explanation_mbe_explanation_2')}
-        subtitle={data.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+        subtitle={categoryLabel(data.category)}
         onBack={() => navigation.goBack()}
         rightAction={
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_bar_prep_explanation_share_explanation')} onPress={shareExplanation}>
@@ -127,12 +148,9 @@ export default function BarPrepExplanationScreen({
           <View style={styles.questionMeta}>
             <View style={[styles.diffBadge, { backgroundColor: DIFFICULTY_COLOR[data.difficulty] + '22' }]}>
               <Text style={[styles.diffText, { color: DIFFICULTY_COLOR[data.difficulty] }]}>
-                {data.difficulty.toUpperCase()}
+                {t(`barprep_diff_${data.difficulty}`)}
               </Text>
             </View>
-            <Text style={styles.categoryBadge}>
-              Q {data.question_id}
-            </Text>
           </View>
           <Text style={styles.stemText}>{data.stem}</Text>
           <View style={styles.correctAnswerRow}>
@@ -151,7 +169,7 @@ export default function BarPrepExplanationScreen({
           colors={colors}
           accent={colors.primary}
         >
-          <Text style={styles.ruleText}>{data.rule_tested}</Text>
+          <Text style={styles.ruleText}>{data.rule_tested || t('barprep_rule_not_recorded')}</Text>
           {data.case_citation && (
             <Text style={styles.citationText}>📖 {data.case_citation}</Text>
           )}
@@ -208,6 +226,10 @@ export default function BarPrepExplanationScreen({
             <Text style={styles.doneBtnText}>{t('x_bar_prep_explanation_done')}</Text>
           </TouchableOpacity>
         </View>
+        <Text maxFontSizeMultiplier={1.2} testID="bar-prep-disclaimer"
+          style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 16 }}>
+          {t('x_bar_prep_explanation_supplemental_study_only_not')}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -221,15 +243,6 @@ function SectionCard({
     <View style={[cardStyles.card, { backgroundColor: colors.card, borderLeftColor: accent }]}>
       <Text style={[cardStyles.title, { color: (colors as any).text }] as any}>{title}</Text>
       {children}
-
-        {/* Bar prep disclaimer */}
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
-        >
-          {t('x_bar_prep_explanation_supplemental_study_only_not')}
-        </Text>
     </View>
   );
 }

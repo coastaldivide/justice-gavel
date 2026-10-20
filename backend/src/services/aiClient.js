@@ -29,6 +29,35 @@ import logger from '../utils/logger.js';
 export const AI_TIMEOUT_MS = 60_000;
 export const AI_MAX_RETRIES = 2;
 
+/**
+ * What went wrong with an AI call, in words a person can be shown (the
+ * upstream body is logged, never shown):
+ *   ai_unavailable — no / invalid key, daily budget spent (503 / 401 / 403)
+ *   ai_busy        — the provider is rate-limiting or overloaded (429 / 529 / 5xx)
+ *   ai_timeout     — no answer in time
+ *   ai_failed      — anything else
+ */
+export function aiErrorCode(err) {
+  if (!err) return 'ai_failed';
+  if (['ai_unavailable', 'ai_busy', 'ai_timeout', 'ai_failed'].includes(err.code)) return err.code;
+  if (err instanceof AiBudgetExceededError || err.code === 'budget_exceeded') return 'ai_unavailable';
+  if (err.code === 'ETIMEDOUT' || err.name === 'TimeoutError' || /timed out/i.test(String(err.message))) return 'ai_timeout';
+  const status = Number(err.status ?? err.statusCode ?? (/\b([45]\d\d)\b/.exec(String(err.message || '')) || [])[1]);
+  if (status === 503 || status === 401 || status === 403) return 'ai_unavailable';
+  if (status === 429 || status === 529 || (status >= 500 && status < 600)) return 'ai_busy';
+  return 'ai_failed';
+}
+
+/** An Error for a non-2xx Anthropic response: status + code, upstream text only in the log. */
+export async function aiHttpError(res, route = 'unknown') {
+  const body = await res.text().catch(() => '');
+  logger.warn({ route, status: res.status, body: body.slice(0, 300) }, '[ai] upstream error');
+  const e = new Error(`AI provider error ${res.status}`);
+  e.status = res.status;
+  e.code = aiErrorCode(e);
+  return e;
+}
+
 function budgetResponse() {
   return new Response(JSON.stringify({ type: 'error', error: { type: 'budget_exceeded', message: AI_BUDGET_BODY.message }, ...AI_BUDGET_BODY }), {
     status: 503, headers: { 'content-type': 'application/json', 'x-ai-budget': 'exhausted' },

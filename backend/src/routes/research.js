@@ -1,19 +1,22 @@
-import { anthropicFetch } from '../services/aiClient.js';
+import { anthropicFetch, aiHttpError } from '../services/aiClient.js';
 import { isStaff } from '../utils/staff.js';
 import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
-import { asyncRoute, err400, err404, safeInt } from '../utils/routeHelpers.js';
+import { asyncRoute, safeInt } from '../utils/routeHelpers.js';
+import { canAccessFeature, FEATURE_TIERS } from '../utils/subscriptionStateMachine.js';
+import { msg, resolveLang } from '../i18n/index.js';
 /**
- * research.js — AI Legal Research ($49/mo add-on)
+ * research.js — AI Legal Research (included in the paid plans that list
+ * `research` in utils/subscriptionStateMachine.js FEATURE_TIERS; attorneys and
+ * public defenders always)
  *
- * POST /api/research/ask          — run a legal research query
+ * POST /api/research/ask          — run a legal research query → { jobId, session_id }
  * GET  /api/research/history      — past research sessions
  * GET  /api/research/session/:id  — full session with all queries
  * DELETE /api/research/session/:id
- * POST /api/research/subscribe    — subscribe to $49/mo add-on
- * GET  /api/research/status       — check subscription status
+ * GET  /api/research/status       — { has_access, plans } (plans that include research)
  *
- * Model: CLAUDE_MODEL (utils/ai.js, default claude-sonnet-4-6) with a legal research system prompt.
+ * Model: CLAUDE_MODEL (utils/ai.js, default claude-sonnet-5-5) with a legal research system prompt.
  * Optimised for:
  *   - Case law queries with jurisdiction awareness
  *   - Statutory interpretation
@@ -40,26 +43,27 @@ const aiLimiter = rateLimit({
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many AI requests — please wait before trying again.' },
+  handler: (req, res) => refuse(res, req, 429, 'rate'),
   keyGenerator: (req) => req.user?.id ? `user_${req.user.id}` : req.ip,
 });
 
 const router = express.Router();
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
+const say = (req, key) => msg(resolveLang(req), `research.err.${key}`);
+const refuse = (res, req, status, code) => res.status(status).json({ error: code, code, message: say(req, code) });
 
-// Tables are defined in db/index.js Year 2 block — no per-request DDL needed.
+const PROFESSIONAL_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
+/** The plans whose subscribers get research (for the paywall). */
+export const RESEARCH_PLANS = Object.freeze([...FEATURE_TIERS.research]);
 
-// ── Check research subscription ───────────────────────────────────────────────
-async function hasResearchAccess(db, userId) {
-  // No demo bypass — subscription required in all environments
-  const sub = await db.get(
-    `SELECT id FROM subscriptions
-     WHERE user_id=? AND tier IN ('legal_research','legal_research_annual')
-     AND status IN ('active','trialing')
-     ORDER BY id DESC LIMIT 1`,
-    [userId]
-  ).catch(() => null);
-  return !!sub;
+// ── Research access: an attorney / public defender, or an active paid plan that includes it ──
+async function hasResearchAccess(db, user) {
+  if (PROFESSIONAL_ROLES.has(user?.role) || Number(user?.is_defender) === 1) return true;
+  const rows = await db.all(
+    `SELECT tier, status, current_period_end FROM subscriptions
+      WHERE user_id = ? AND status IN ('active','trialing') ORDER BY id DESC LIMIT 5`,
+    [user.id]
+  ).catch(() => []);
+  return rows.some(r => canAccessFeature(r, 'research'));
 }
 
 // ── Legal research system prompt ──────────────────────────────────────────────
@@ -115,112 +119,66 @@ IMPORTANT:
 
 You are a comprehensive legal research partner for the full arc of criminal defense — from arrest through direct appeal through post-conviction. Be thorough, cite precisely, and be honest about uncertainty.`;
 
-// ── Claude research call ──────────────────────────────────────────────────────
-async function callResearch(history, query) {
-  if (!ANTHROPIC_KEY) {
-    throw new Error('ANTHROPIC_API_KEY not configured. Add it to backend/.env to enable legal research.');
-  }
+const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
 
+// ── Claude research call ──────────────────────────────────────────────────────
+async function callResearch(history, query, lang, context) {
   const messages = [
     ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: 'user', content: query },
+    { role: 'user', content: (context ? `[Case: ${context}]\n\n` : '') + query },
   ];
-
+  const language = lang === 'en' ? '' : `\n\nLANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`;
   const res = await anthropicFetch({
-    method: 'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model:      CLAUDE_MODEL,
-      max_tokens: 1500,
-      temperature: 0.2,    // 0.2: precision drafting
-
-      system:     RESEARCH_SYSTEM,
-      messages,
-    }),
-  }, { route: 'research' });
-
-  if (!res.ok) throw new Error(`Claude error ${res.status}`);
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500, system: RESEARCH_SYSTEM + language, messages }),
+  }, { route: 'research', timeoutMs: 100_000, retries: 1 });
+  if (!res.ok) throw await aiHttpError(res, 'research');
   const data = await res.json();
-  return data.content?.[0]?.text || 'No response generated.';
+  const text = data.content?.[0]?.text;
+  if (!text) throw Object.assign(new Error('empty answer'), { code: 'ai_failed' });
+  return text;
 }
 
 // ── POST /api/research/ask ────────────────────────────────────────────────────
-// ── API key guard — fail fast with clear error rather than cryptic undefined ─
-if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-  logger.debug('[research.js] ANTHROPIC_API_KEY not set — AI research disabled');
-}
-
+// The question and the answer are saved together when the answer is ready, so
+// a failed attempt leaves nothing behind and a retry is not a duplicate.
 router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   try {
     const db = await getDb();
-    if (!await hasResearchAccess(db, req.user.id)) {
-      return res.status(402).json({
-        error: 'Legal Research subscription required',
-        code:  'research_required',
-        upgrade_url: '/subscribe/legal_research',
-      });
+    if (!await hasResearchAccess(db, req.user)) {
+      return res.status(402).json({ error: 'research_required', code: 'research_required', message: say(req, 'research_required'), plans: RESEARCH_PLANS });
     }
 
-    const { query, session_id } = req.body;
-    if (!query?.trim()) return err400(res, 'query is required');
-    if (query.trim().length > 2000) return err400(res, 'Query too long');
+    const { query, session_id, context } = req.body || {};
+    if (typeof query !== 'string' || !query.trim()) return refuse(res, req, 400, 'query_required');
+    if (query.trim().length > 2000) return refuse(res, req, 400, 'query_too_long');
+    const ctx = typeof context === 'string' ? context.trim().slice(0, 300) : '';
 
-    // Get or create session
-    let sessionId = session_id;
-    if (!sessionId) {
-      // New session — title from first 60 chars of query
-      const title = query.trim().slice(0, 60) + (query.trim().length > 60 ? '…' : '');
-      const r = await db.run(
-        `INSERT INTO research_sessions (user_id, title) VALUES (?,?)`,
-        [req.user.id, title]
-      );
-      sessionId = r.lastID;
+    let sessionId = null;
+    if (session_id != null && session_id !== '') {
+      const sess = await db.get('SELECT id FROM research_sessions WHERE id=? AND user_id=?', [safeInt(session_id), req.user.id]);
+      if (!sess) return refuse(res, req, 404, 'session_not_found');
+      sessionId = sess.id;
     } else {
-      // Verify session belongs to user
-      const sess = await db.get(
-        'SELECT id FROM research_sessions WHERE id=? AND user_id=?',
-        [sessionId, req.user.id]
-      );
-      if (!sess) return err404(res, 'Session not found');
+      const title = query.trim().slice(0, 60) + (query.trim().length > 60 ? '…' : '');
+      sessionId = (await db.run('INSERT INTO research_sessions (user_id, title) VALUES (?,?)', [req.user.id, title])).lastID;
     }
 
-    // Load history for this session
     const history = await db.all(
-      `SELECT role, content FROM research_messages WHERE session_id=? ORDER BY created_at ASC LIMIT 20`,
-      [sessionId]
-    );
-
-    // Save user message
-    await db.run(
-      `INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)`,
-      [sessionId, 'user', query.trim()]
-    );
-
-    // Call Claude
-    try {
-      const _q = query.trim(); const _h = [...history]; const _sid = sessionId;
-      const jobId = await enqueue('research', async () => {
-        const a = await callResearch(_h, _q);
-        const db2 = await getDb();
-        await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [_sid, 'assistant', a]);
-        return {
-          session_id: _sid,
-          answer: a,
-          disclaimer: 'AI-generated legal research is general information only — not legal advice. Verify all citations independently. Consult a licensed attorney for advice specific to your situation.',
-          not_legal_advice: true,
-        };
-      });
-      return res.json({ jobId, session_id: sessionId, status: 'pending', async: true });
-    } catch {
-      return res.status(502).json({ error: 'Upstream service error. Please try again.' });
-    }
+      `SELECT role, content FROM research_messages WHERE session_id=? ORDER BY created_at ASC, id ASC LIMIT 20`, [sessionId]);
+    const q = query.trim();
+    const lang = resolveLang(req);
+    const jobId = await enqueue('research', async () => {
+      const answer = await callResearch(history, q, lang, ctx);
+      const db2 = await getDb();
+      await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'user', q]);
+      await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'assistant', answer]);
+      await db2.run('UPDATE research_sessions SET updated_at = NOW() WHERE id = ?', [sessionId]);
+      return { session_id: sessionId, answer, not_legal_advice: true };
+    }, req.user.id);
+    return res.json({ jobId, session_id: sessionId, status: 'pending', async: true });
   } catch (e) {
     logger.error('[research/ask]', e.message);
-    res.status(500).json({ error: 'Research error. Try again.' });
+    refuse(res, req, 500, 'server');
   }
 });
 
@@ -228,15 +186,17 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
 router.get('/history', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const _histPage = Math.max(0, safeInt(req.query.page || '0'));
+    // Only sessions with at least one answer (a failed first question leaves an empty one)
     const sessions = await db.all(
-      `SELECT id, title, created_at, updated_at FROM research_sessions
-       WHERE user_id=? ORDER BY updated_at DESC LIMIT 20 OFFSET ?`,
+      `SELECT s.id, s.title, s.created_at, s.updated_at FROM research_sessions s
+        WHERE s.user_id=? AND EXISTS (SELECT 1 FROM research_messages m WHERE m.session_id = s.id)
+        ORDER BY s.updated_at DESC NULLS LAST, s.id DESC LIMIT 20 OFFSET ?`,
       [req.user.id, Math.max(0, safeInt(req.query.page || '0')) * 20]
     );
     res.json(sessions);
-  } catch {
-    res.status(500).json({ error: 'Could not load history' });
+  } catch (e) {
+    logger.error('[research/history]', e.message);
+    refuse(res, req, 500, 'server');
   }
 });
 
@@ -248,28 +208,33 @@ router.get('/session/:id', authRequired, async (req, res) => {
       'SELECT id, user_id, title, created_at, updated_at FROM research_sessions WHERE id=? AND user_id=?',
       [safeInt(req.params.id), req.user.id]
     );
-    if (!sess) return err404(res, 'Session not found');
+    if (!sess) return refuse(res, req, 404, 'session_not_found');
     const messages = await db.all(
-      'SELECT id, session_id, role, content, created_at FROM research_messages WHERE session_id=? ORDER BY created_at ASC LIMIT 500',
-      [safeInt(req.params.id)]
+      'SELECT id, session_id, role, content, created_at FROM research_messages WHERE session_id=? ORDER BY created_at ASC, id ASC LIMIT 500',
+      [sess.id]
     );
     res.json({ ...sess, messages });
-  } catch {
-    res.status(500).json({ error: 'Could not load session' });
+  } catch (e) {
+    logger.error('[research/session]', e.message);
+    refuse(res, req, 500, 'server');
   }
 });
 
 // ── DELETE /api/research/session/:id ─────────────────────────────────────────
+// Only the owner's session (another account's id → 404, nothing deleted).
 router.delete('/session/:id', authRequired, async (req, res) => {
-    const idVal = safeInt(req.params.id);
-    if (!idVal) return res.status(400).json({ error: 'Invalid id' });
+  const idVal = safeInt(req.params.id);
+  if (!idVal) return refuse(res, req, 404, 'session_not_found');
   try {
     const db = await getDb();
-    await db.run('DELETE FROM research_messages WHERE session_id=?', [safeInt(req.params.id)]);
-    await db.run('DELETE FROM research_sessions WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
+    const sess = await db.get('SELECT id FROM research_sessions WHERE id=? AND user_id=?', [idVal, req.user.id]);
+    if (!sess) return refuse(res, req, 404, 'session_not_found');
+    await db.run('DELETE FROM research_messages WHERE session_id=?', [sess.id]);
+    await db.run('DELETE FROM research_sessions WHERE id=? AND user_id=?', [sess.id, req.user.id]);
     res.json({ ok: true });
-  } catch {
-    res.status(500).json({ error: 'Could not delete session' });
+  } catch (e) {
+    logger.error('[research/delete]', e.message);
+    refuse(res, req, 500, 'server');
   }
 });
 
@@ -277,16 +242,10 @@ router.delete('/session/:id', authRequired, async (req, res) => {
 router.get('/status', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const hasAccess = await hasResearchAccess(db, req.user.id);
-    const sub = await db.get(
-      `SELECT tier, status, created_at FROM subscriptions
-       WHERE user_id=? AND tier IN ('legal_research','legal_research_annual')
-       AND status IN ('active','trialing') ORDER BY id DESC LIMIT 1`,
-      [req.user.id]
-    ).catch(() => null);
-    res.json({ has_access: hasAccess, subscription: sub || null });
-  } catch {
-    res.json({ has_access: false, subscription: null, demo: false });
+    res.json({ has_access: await hasResearchAccess(db, req.user), plans: RESEARCH_PLANS });
+  } catch (e) {
+    logger.error('[research/status]', e.message);
+    refuse(res, req, 500, 'server');
   }
 });
 
@@ -294,10 +253,12 @@ router.get('/status', authRequired, async (req, res) => {
 // ── RAG Legal Research — grounded in retrieved case law ────────────────────
 // Replaces plain Claude queries with retrieval-augmented generation.
 // Embeds the user query → searches pgvector index → Claude cites real docs.
-router.post('/rag', authRequired, async (req, res) => {
-  const { query, practice_area, jurisdiction } = req.body;
-  if (!query || typeof query !== 'string' || query.trim().length < 5) {
-    return res.status(400).json({ error: 'query must be at least 5 characters' });
+router.post('/rag', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
+  const { query, practice_area, jurisdiction } = req.body || {};
+  if (!query || typeof query !== 'string' || query.trim().length < 5) return refuse(res, req, 400, 'query_required');
+  if (query.length > 2000) return refuse(res, req, 400, 'query_too_long');
+  if (!await hasResearchAccess(await getDb(), req.user)) {
+    return res.status(402).json({ error: 'research_required', code: 'research_required', message: say(req, 'research_required'), plans: RESEARCH_PLANS });
   }
 
   try {
@@ -315,7 +276,7 @@ router.post('/rag', authRequired, async (req, res) => {
     });
   } catch (e) {
     logger?.warn('[research/rag]', e?.message);
-    return res.status(500).json({ error: 'Research temporarily unavailable' });
+    return refuse(res, req, 503, 'unavailable');
   }
 });
 
@@ -330,7 +291,8 @@ router.post('/index', authRequired, asyncRoute(async (req, res) => {
     const doc = await indexLegalDocument({ docType: doc_type, citation, title, content, jurisdiction, practiceArea: practice_area, year, sourceUrl: source_url });
     return res.json(doc);
   } catch (e) {
-    return res.status(500).json({ error: e?.message });
+    logger.error('[research/index]', e?.message);
+    return refuse(res, req, 500, 'server');
   }
 }));
 

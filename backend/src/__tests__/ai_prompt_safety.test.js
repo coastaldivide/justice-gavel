@@ -47,8 +47,8 @@ describe('AI route — safety gates', () => {
   beforeAll(() => { ask = readFileSync(ASK_ROUTE, 'utf-8'); });
 
   test('ask route validates user input before sending to AI', () => {
-    // ask route accesses req.body for mode, message, or other parameters
-    expect(ask).toMatch(/req\.body|body\?\./i);
+    // the ask route validates the body (chat/_helpers.js readChatBody) before any AI call
+    expect(ask).toMatch(/readChatBody\(req|req\.body/);
   });
 
   test('ask route has authentication check', () => {
@@ -105,8 +105,10 @@ describe('AI prompts — content safety', () => {
     expect(prompts).not.toMatch(/\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/); // SSN
   });
 
-  test('RESPONSE_FOOTER_INSTRUCTION contains disclaimer', () => {
-    expect(prompts).toMatch(/RESPONSE_FOOTER/i);
+  test('the legal notice is shown by the app, not written by the model', () => {
+    // (the old model-written English footer was garbled and never translated)
+    expect(prompts).toMatch(/app shows the legal notice/i);
+    expect(prompts).not.toMatch(/RESPONSE_FOOTER_INSTRUCTION =/);
   });
 
   test('system prompts encourage professional referral', () => {

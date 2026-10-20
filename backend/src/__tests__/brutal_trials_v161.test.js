@@ -242,7 +242,7 @@ describe('D. Legal Compliance — Zero Risk Items', () => {
   test('D-03: AI chat not_legal_advice disclaimer', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js','utf8');
-    expect(src.toLowerCase()).toContain('not legal advice');
+    expect(src).toContain('not_legal_advice: true');
   });
 
   test('D-04: AgeGateScreen exists and is non-trivial', async () => {

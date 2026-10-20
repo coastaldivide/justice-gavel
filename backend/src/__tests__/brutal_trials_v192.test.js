@@ -110,7 +110,7 @@ describe('JOURNEY. 10 Critical User Journeys', () => {
   });
   test('JOURNEY-04: AI Chat → enqueue → poll → result → disclaimer', async () => {
     const fs = await import('fs');
-    const chat = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
+    const chat = (fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     expect(chat).toContain('/chat/ask');
     expect(chat).toContain('pollJob');
     expect(chat).toMatch(/not legal advice|disclaimer/i);

@@ -63,20 +63,20 @@ describe('ARCH1. app.js — 61-Mount Server Architecture (19,194 chars)', () => 
 
 // ── CHAT2. chat/ — AI Chat Submodule ──────────────────────────────────────
 describe('CHAT2. chat/ — AI Chat Submodule (4 active files)', () => {
-  test('CHAT2-01: ask.js — POST /ask streaming AI chat response', async () => {
+  test('CHAT2-01: ask.js — POST /ask chat answer as a job', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js','utf8');
     expect(src).toContain("router.post('/ask'");
     expect(src).toContain('authRequired');
-    expect(src.length).toBeGreaterThan(5000);
+    expect(src).toContain('findReplay');   // a retry replays, never asks twice
   });
   test('CHAT2-02: stream.js — POST /stream SSE streaming chat', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js','utf8');
     expect(src).toContain("router.post('/stream'");
     expect(src).toContain('authRequired');
-    expect(src.length).toBeGreaterThan(8000);
-    // SSE: server-sent events for real-time chat token streaming
+    expect(src).toContain('text/event-stream');
+    expect(src).toContain("save('stopped')");   // Stop keeps what the person saw
   });
   test('CHAT2-03: history.js — GET + DELETE /history/:sessionId', async () => {
     const fs = await import('fs');

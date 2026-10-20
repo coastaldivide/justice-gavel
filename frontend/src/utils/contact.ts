@@ -68,3 +68,26 @@ export function websiteLabel(url: string | null | undefined): string {
   if (!u) return '';
   try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; }
 }
+
+/**
+ * A help line as stored in the resources directory, which writes numbers the
+ * way people say them: "1-800-799-7233", "988", "988 then press 1",
+ * "Text HOME to 741741". Returns what to show and what to open:
+ *   { kind: 'tel', url: 'tel:988', label: '988', after: 'press 1' }
+ *   { kind: 'sms', url: 'sms:741741?body=HOME', label: 'Text HOME to 741741' }
+ * Short codes (211, 311, 711, 911, 988) are dialed as they are; everything else
+ * goes through dialable(). null when nothing can be dialed or texted.
+ */
+export function helpLine(phone: string | null | undefined): { kind: 'tel' | 'sms'; url: string; label: string; after?: string } | null {
+  const raw = String(phone ?? '').trim();
+  if (!raw) return null;
+  const text = /^text\s+(\S+)\s+to\s+(\d{3,7})\b/i.exec(raw);
+  if (text) {
+    return { kind: 'sms', url: `sms:${text[2]}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(text[1])}`, label: raw };
+  }
+  const then = /^(\d{3})\s+then\s+(.+)$/i.exec(raw);
+  if (then) return { kind: 'tel', url: `tel:${then[1]}`, label: then[1], after: then[2] };
+  if (/^(211|311|711|911|988)$/.test(raw)) return { kind: 'tel', url: `tel:${raw}`, label: raw };
+  const tel = telUrl(raw);
+  return tel ? { kind: 'tel', url: tel, label: formatPhone(raw) } : null;
+}

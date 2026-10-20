@@ -121,7 +121,8 @@ describe('1. AI Queue — Lifecycle, TTL, Concurrency', () => {
     await sleep(200);
     const job = getJob(jobId);
     if (job?.status === 'failed') {
-      expect(job.error).toContain('intentional test failure');
+      expect(job.code).toBe('ai_failed');            // coded; the raw text stays in the server log
+      expect(job.error).not.toContain('intentional test failure');
     } else {
       expect(['pending','processing','failed']).toContain(job?.status);
     }

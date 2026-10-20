@@ -15,6 +15,8 @@ import { ScreenParams } from '../navigation/NavigationTypes';
 import { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { api, apiErrorMessage } from '../services/api';
+import { useToast } from '../components/ToastProvider';
 
 type Props = ScreenProps<'BarPrepResults'>;
 
@@ -29,7 +31,7 @@ function ScoreRing({ pct }: { pct: number }) {
   return (
     <View style={styles.ringWrapper} accessibilityRole="none">
       <View style={[styles.ring, { borderColor: color }]}>
-        <Text style={[styles.ringPct, { color }]} accessibilityLabel={t('x_bar_prep_results_score_percent', { pct })}>
+        <Text testID="barprep-score" style={[styles.ringPct, { color }]} accessibilityLabel={t('x_bar_prep_results_score_percent', { pct })}>
           {pct}%
         </Text>
         <Text style={styles.ringLabel}>{verdict}</Text>
@@ -42,12 +44,13 @@ function ScoreRing({ pct }: { pct: number }) {
 }
 
 function AnswerRow({
-  q, userAnswer, isCorrect, index,
+  q, userAnswer, isCorrect, index, onExplain,
 }: {
   q: any;
   userAnswer: string | undefined;
   isCorrect: boolean;
   index: number;
+  onExplain: () => void;
 }) {
   useLang();
   const { colors } = useTheme();
@@ -63,7 +66,8 @@ function AnswerRow({
       style={[styles.ansRow, isCorrect ? styles.ansCorrect : styles.ansWrong]}
       onPress={() => setExpanded(v => !v)}
       accessibilityRole="button"
-      accessibilityLabel={t('x_bar_prep_results_question_tap', { value: index + 1, value2: isCorrect ? 'correct' : 'incorrect', value3: expanded ? 'collapse' : 'expand' })}
+      accessibilityLabel={t('x_bar_prep_results_question_tap', { value: index + 1, value2: isCorrect ? t('x_bar_prep_results_correct') : t('x_bar_prep_results_wrong'), })}
+      accessibilityState={{ expanded }}
     >
       <View style={styles.ansHeader}>
         <Text style={styles.ansIcon}>{isCorrect ? '✓' : '✗'}</Text>
@@ -91,7 +95,7 @@ function AnswerRow({
           ) : null}
           <TouchableOpacity
             style={styles.explainBtn}
-            onPress={() => {/* parent will handle */}}
+            onPress={onExplain}
             accessibilityRole="button"
             accessibilityLabel={t('x_bar_prep_results_view_full_explanation')}
           >
@@ -121,29 +125,40 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
     answers, questions, timed_out,
   } = (route.params ?? {}) as ScreenParams<'BarPrepResults'>;
 
-  // Build a quick-lookup: question_id → answer data
+  const { showToast } = useToast();
+  const [retrying, setRetrying] = useState(false);
+  // question_id → the graded answer (selected_answer, is_correct, correct_answer, rule_tested)
   const answerMap = useMemo(() => {
-    const map: Record<string, { answer: string; is_correct: boolean }> = {};
-    Object.entries(answers ?? {}).forEach(([qid, a]: [string, any]) => {
-      map[qid] = a;
-    });
+    const map: Record<string, { selected_answer?: string; is_correct?: boolean; correct_answer?: string; rule_tested?: string | null }> = {};
+    Object.entries(answers ?? {}).forEach(([qid, a]: [string, any]) => { map[qid] = a; });
     return map;
   }, [answers]);
 
+  // Missed or unanswered questions
   const wrongQuestions = useMemo(
     () => (questions ?? []).filter((q: any) => !answerMap[q.id]?.is_correct),
     [questions, answerMap],
   );
 
-  const handleRetryWrong = () => {
-    if (wrongQuestions.length === 0) return;
-    // Re-launch the quiz with only wrong questions as a practice session
-    navigation.replace('BarPrepQuiz', {
-      session_id: 0,   // new session created server-side on first answer
-      questions: wrongQuestions,
-      mode: 'practice',
-      time_limit_seconds: null,
-    });
+  const handleRetryWrong = async () => {
+    if (wrongQuestions.length === 0 || retrying) return;
+    setRetrying(true);
+    try {
+      // A new practice session with exactly these questions.
+      const res = await api.post('/bar-prep/sessions', { mode: 'practice', question_ids: wrongQuestions.map((q: any) => q.id) });
+      navigation.replace('BarPrepQuiz', {
+        session_id: res.data.session_id,
+        questions: res.data.questions,
+        mode: 'practice',
+        time_limit_seconds: null,
+      });
+    } catch (e) {
+      setRetrying(false);
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      showToast(apiErrorMessage(e, t('x_bar_prep_home_could_not_start_session')), status === 402 ? 'info' : 'error');
+      // the free sample is used up: show the plans
+      if (status === 402) navigation.navigate('ConsumerSubscription');
+    }
   };
 
   const handleViewProgress = () => {
@@ -200,6 +215,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
         {wrongQuestions.length > 0 && (
           <TouchableOpacity
             style={[styles.ctaBtn, styles.ctaPrimary]}
+            testID="barprep-retry-wrong"
             onPress={handleRetryWrong}
             accessibilityRole="button"
             accessibilityLabel={t('x_bar_prep_results_retry_wrong_questions', { length: wrongQuestions.length })}
@@ -227,10 +243,11 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
         return (
           <AnswerRow
             key={q.id}
-            q={q}
+            q={{ ...q, correct_answer: ans?.correct_answer ?? q.correct_answer, rule_tested: ans?.rule_tested ?? q.rule_tested }}
             index={i}
-            userAnswer={ans?.answer}
+            userAnswer={ans?.selected_answer}
             isCorrect={!!ans?.is_correct}
+            onExplain={() => navigation.navigate('BarPrepExplanation', { question_id: q.id })}
           />
         );
       })}
@@ -286,9 +303,10 @@ const styles = StyleSheet.create({
   ansWrong:   { backgroundColor: COLORS.bailBg  ?? COLORS.bailBg, borderLeftWidth: 3, borderLeftColor: COLORS.bail },
 
   ansHeader:  { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8 },
-  ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: COLORS.surface, marginTop: 1 },
-  ansNum:     { ...FONTS.bold, fontSize: 13, color: COLORS.steel, width: 30 },
-  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: COLORS.surface, lineHeight: 18 },
+  // rows sit on the light legalBg / bailBg tints: dark text
+  ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: COLORS.navy, marginTop: 1 },
+  ansNum:     { ...FONTS.bold, fontSize: 13, color: COLORS.navy, width: 30 },
+  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: COLORS.navy, lineHeight: 18 },
   ansChevron: { ...FONTS.regular, fontSize: 11, color: COLORS.steel, marginTop: 2 },
 
   ansDetail:     { paddingHorizontal: 12, paddingBottom: 12 },

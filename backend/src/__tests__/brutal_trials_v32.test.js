@@ -334,7 +334,7 @@ describe('S10. Config — Final Low-Hit Keys', () => {
 describe('S11. Error Handling — Screen Catch Pattern', () => {
   test('S11-01: ChatScreen uses .catch() for AI request failures', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = (fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     expect(src).toContain('catch');
     expect(src).toContain('/chat/ask');
   });

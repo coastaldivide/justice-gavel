@@ -10,7 +10,7 @@ interface Stats {
   alertsSent: number;
   userCount: number;
   citiesCovered: number;
-  coverage: { city: string; n: number }[];
+  coverage: { city: string; state?: string | null; n: number }[];
   lastUpdated: string;
 }
 
@@ -105,10 +105,11 @@ function AdvocacyScreen(): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_advocacy_city_coverage')}</Text>
               <View style={styles.coverageCard}>
                 {stats.coverage.map((c, i) => (
-                  <View key={c.city} style={[styles.coverageRow, i < stats.coverage.length - 1 && styles.coverageRowBorder]}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.coverageCity}>{c.city}</Text>
+                  <View key={`${c.city}-${c.state || ''}`} style={[styles.coverageRow, i < stats.coverage.length - 1 && styles.coverageRowBorder]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.coverageCity}>{c.state ? `${c.city}, ${c.state}` : c.city}</Text>
                     <View style={styles.coverageBar}>
-                      <View style={[styles.coverageFill, { width: `${Math.min(100, (c.n / 5) * 100)}%` as any }]} />
+                      {/* bar length relative to the best-covered city */}
+                      <View style={[styles.coverageFill, { width: `${Math.max(4, Math.round((c.n / Math.max(1, stats.coverage[0]?.n || 1)) * 100))}%` }]} />
                     </View>
                     <Text maxFontSizeMultiplier={1.4} style={styles.coverageCount}>{t('x_advocacy_lawyers', { n: c.n })}</Text>
                   </View>

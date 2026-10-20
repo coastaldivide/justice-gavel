@@ -72,7 +72,8 @@ describe('AI. Anthropic Call Reliability', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
     const ai  = fs.readFileSync(__REPO + '/backend/src/utils/ai.js', 'utf8');
-    expect(src).toContain('aiLimiter');
+    expect(src).toContain('chatBurstLimiter');
+    expect(src).toContain('limitBody(ctx)');
     expect(src).toContain('not_legal_advice');
     expect(src).toContain('requireAi');                  // no key → 503 ai_unavailable (utils/ai.js)
     expect(ai).toContain('status(503)');
@@ -139,13 +140,13 @@ describe('AUTH. Token Lifecycle', () => {
 
 // ── CHAT FLOW ─────────────────────────────────────────────────────────────
 describe('CHAT. End-to-End Chat Flow', () => {
-  test('CHAT-01: ChatScreen posts to /chat/ask and polls jobId', async () => {
+  test('CHAT-01: ChatScreen streams, falls back to /chat/ask and polls the jobId', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('/chat/ask');
-    expect(src).toContain('jobId');
-    expect(src).toContain('pollJob'); // polls for async result
-    // Chat is async: POST → get jobId → poll /api/jobs/:jobId for result
+    const chat = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+    expect(chat).toContain('/chat/stream');
+    expect(chat).toContain('/chat/ask');
+    expect(chat).toContain('jobId');
+    expect(chat).toContain('pollJob');
   });
 
   test('CHAT-02: chat/ask queue returns jobId immediately (non-blocking)', async () => {

@@ -83,7 +83,8 @@ describeIntegration('chat ask + jobs polling + history (real Postgres, mock Anth
     expect(ask.status).toBe(200);
     const failed = await ctx.pollJob(user, ask.body.jobId);
     expect(failed.body.status).toBe('failed');
-    expect(String(failed.body.error)).toMatch(/Anthropic API error: 500/);
+    expect(failed.body.code).toBe('ai_busy');                       // coded…
+    expect(String(failed.body.error)).not.toMatch(/Anthropic|500/);   // …and worded for people, no upstream text
     ctx.anthropic.status = 200;
   });
 

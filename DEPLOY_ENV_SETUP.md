@@ -82,7 +82,7 @@ A "feature disabled" line is logged at boot for each missing key:
 
 ```
 ANTHROPIC_API_KEY=<sk-ant-...>           AI chat/research/motions (else 503 ai_unavailable)
-CLAUDE_MODEL=claude-sonnet-4-6           model override (default claude-sonnet-4-6)
+CLAUDE_MODEL=claude-sonnet-5-5           model override (default claude-sonnet-5-5)
 STRIPE_SECRET_KEY=<sk_live_/sk_test_...> payments; unset → charging/subscribing endpoints return
                                           503 payments_unavailable and the app shows "Payments aren't
                                           available yet". Setting it re-enables Stripe, no code change.

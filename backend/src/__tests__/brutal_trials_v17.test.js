@@ -546,11 +546,11 @@ describe('12. webhooks/bot_admin.js — Admin Controls', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('13. jobPoller.ts — Progressive Backoff', () => {
 
-  test('13-01: pollJob progressive backoff: 1s → 1.5 → 2 → 2.5 → 3 → 4 (cap)', async () => {
+  test('13-01: pollJob progressive backoff: 1s → 1.5 → 2 → … → 4s (cap)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/jobPoller.ts', 'utf8');
     expect(src).toContain('Progressive backoff');
-    expect(src).toContain('1s → 1.5s → 2s → 2.5s → 3s → 4s (cap)');
+    expect(src).toContain('Math.min(pollCount * 500, 3_000)');
   });
 
   test('13-02: nextInterval uses Math.min(pollCount * 500, 3_000) step', async () => {
@@ -561,11 +561,11 @@ describe('13. jobPoller.ts — Progressive Backoff', () => {
     expect(src).toContain('nextInterval');
   });
 
-  test('13-03: timeout is 120,000ms (2 minutes)', async () => {
+  test('13-03: timeout is 120,000ms (2 minutes) and is a coded JobError', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/jobPoller.ts', 'utf8');
     expect(src).toContain('120_000');
-    expect(src).toContain('timed out');
+    expect(src).toContain("new JobError('timeout'");
   });
 
   test('13-04: network error retries at nextInterval × 1.5', async () => {
@@ -574,21 +574,17 @@ describe('13. jobPoller.ts — Progressive Backoff', () => {
     expect(src).toContain('nextInterval() * 1.5');
   });
 
-  test('13-05: useJobPoller hook has loading/result/error/phase/startJob/cancel', async () => {
+  test('13-05: pollJob can be cancelled (AbortSignal → JobError aborted)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/jobPoller.ts', 'utf8');
-    expect(src).toContain('useJobPoller');
-    expect(src).toContain('loading');
-    expect(src).toContain('startJob');
-    expect(src).toContain('cancel');
-    expect(src).toContain('abortRef');
+    expect(src).toContain('signal?.addEventListener(\'abort\'');
+    expect(src).toContain("new JobError('aborted'");
   });
 
-  test('13-06: processing phase shows progress: Thinking→Analyzing→Almost there', async () => {
+  test('13-06: failures are worded in the app language (no raw server text)', async () => {
     const src = feSource(__REPO + '/frontend/src/services/jobPoller.ts');
-    expect(src).toContain("'Thinking…'");
-    expect(src).toContain("'Analyzing…'");
-    expect(src).toContain("'Almost there…'");
+    expect(src).toContain("t('chat_err_busy')");
+    expect(src).toContain("t('job_err_expired')");
   });
 
   test('13-07: progressive backoff model', () => {

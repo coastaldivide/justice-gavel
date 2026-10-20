@@ -1,20 +1,23 @@
 /**
- * jobPoller.ts — polls /api/jobs/:id until done or failed
+ * jobPoller.ts — polls GET /api/jobs/:id until the AI job is done or failed.
  *
- * Usage:
- *   const result = await pollJob(jobId, { onProgress });
+ *   const job = await pollJob(jobId, { signal, timeoutMs, onProgress });
  *
- * Options:
- *   intervalMs   — polling interval (default 1500ms)
- *   timeoutMs    — max wait before giving up (default 120s)
- *   onProgress   — called each poll with { status, elapsed }
+ * Rejects with JobError:
+ *   code  ai_unavailable | ai_busy | ai_timeout | ai_failed — from the server
+ *         (its `error` text is already in the app language);
+ *         'timeout' — no answer within timeoutMs; 'lost' — the connection kept
+ *         failing; 'expired' — the job is gone (server restarted / 15 min TTL);
+ *         'aborted' — the caller's signal fired (Stop / left the screen).
+ *   message  always a sentence in the app language.
  */
-
 import { api } from './api';
+import { t } from '../i18n';
 
 interface PollOptions {
   intervalMs?: number;
   timeoutMs?:  number;
+  signal?:     AbortSignal;
   onProgress?: (info: { status: string; elapsed: number }) => void;
 }
 
@@ -22,131 +25,74 @@ export interface JobResult {
   id:          string;
   type:        string;
   status:      'pending' | 'processing' | 'done' | 'failed';
-  result?: unknown;
-  error?:      string;
-  queuedAt?:   number;
-  startedAt?:  number;
-  completedAt?:number;
+  result?:     unknown;
+  code?:       string | null;
+  error?:      string | null;
+  queuedAt?:   string;
+  startedAt?:  string | null;
+  completedAt?:string | null;
 }
 
-export async function pollJob(
-  jobId: string,
-  options: PollOptions = {}
-): Promise<JobResult> {
-  const {
-    intervalMs = 1_000,   // base interval — grows progressively
-    timeoutMs  = 120_000,
-    onProgress,
-  } = options;
+export class JobError extends Error {
+  code: string;
+  constructor(code: string, message: string) { super(message); this.code = code; }
+}
 
+export function jobErrorText(code: string): string {
+  switch (code) {
+    case 'ai_unavailable': return t('x_api_ai_features_temporarily_unavailable');
+    case 'ai_busy':        return t('chat_err_busy');
+    case 'timeout':
+    case 'ai_timeout':     return t('chat_err_timeout');
+    case 'lost':           return t('chat_err_connection_lost');
+    case 'expired':        return t('job_err_expired');
+    default:               return t('x_error_state_something_went_wrong_please');
+  }
+}
+
+export function pollJob(jobId: string, options: PollOptions = {}): Promise<JobResult> {
+  const { intervalMs = 1_000, timeoutMs = 120_000, signal, onProgress } = options;
   const start = Date.now();
 
   return new Promise((resolve, reject) => {
     let pollCount = 0;
+    let failures = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onAbort = () => { if (timer) clearTimeout(timer); reject(new JobError('aborted', '')); };
+    if (signal?.aborted) { onAbort(); return; }
+    signal?.addEventListener('abort', onAbort, { once: true });
+    const finish = (fn: () => void) => { signal?.removeEventListener('abort', onAbort); fn(); };
 
-    // Progressive backoff: 1s → 1.5s → 2s → 2.5s → 3s → 4s (cap)
-    // Fast jobs resolve in 1–2 polls; slow jobs don't hammer the server
-    function nextInterval(): number {
-      const step = Math.min(pollCount * 500, 3_000);
-      return intervalMs + step;
-    }
+    // Progressive backoff: 1s → 1.5s → 2s → … → 4s (cap)
+    const nextInterval = () => intervalMs + Math.min(pollCount * 500, 3_000);
 
     const tick = async () => {
+      if (signal?.aborted) return;
       const elapsed = Date.now() - start;
-
-      if (elapsed > timeoutMs) {
-        reject(new Error('AI request timed out. Please try again.'));
-        return;
-      }
-
+      if (elapsed > timeoutMs) return finish(() => reject(new JobError('timeout', jobErrorText('timeout'))));
       try {
-        const res  = await api.get(`/jobs/${jobId}`);
-        const job: JobResult = res.data;
-
+        const res = await api.get<JobResult>(`/jobs/${jobId}`, { signal });
+        if (signal?.aborted) return;
+        const job = res.data;
         pollCount++;
+        failures = 0;
         onProgress?.({ status: job.status, elapsed });
-
-        if (job.status === 'done') {
-          resolve(job);
-        } else if (job.status === 'failed') {
-          reject(new Error(job.error || 'AI request failed. Please try again.'));
-        } else {
-          // Still pending/processing — back off progressively
-          setTimeout(tick, nextInterval());
+        if (job.status === 'done') return finish(() => resolve(job));
+        if (job.status === 'failed') {
+          const code = job.code || 'ai_failed';
+          return finish(() => reject(new JobError(code, job.error || jobErrorText(code))));
         }
-      } catch {
-        // Network error — use next progressive interval before retrying
-        if (elapsed < timeoutMs - 5_000) {
-          setTimeout(tick, nextInterval() * 1.5);
-        } else {
-          reject(new Error('Lost connection while waiting for AI response.'));
+        timer = setTimeout(tick, nextInterval());
+      } catch (e) {
+        if (signal?.aborted) return;
+        if ((e as { response?: { status?: number } })?.response?.status === 404) {
+          return finish(() => reject(new JobError('expired', jobErrorText('expired'))));
         }
+        failures++;
+        if (failures >= 5 || elapsed > timeoutMs - 5_000) return finish(() => reject(new JobError('lost', jobErrorText('lost'))));
+        timer = setTimeout(tick, nextInterval() * 1.5);
       }
     };
-
-    // Start immediately
     tick();
   });
-}
-
-/**
- * useJobPoller — React hook for polling a job with loading state.
- *
- * const { loading, result, error, startJob } = useJobPoller();
- *
- * startJob(jobId)   — begins polling, sets loading=true
- * result            — the job.result when done
- * error             — string if failed
- */
-import { useState, useCallback, useRef } from 'react';
-import { t } from '../i18n';
-
-export function useJobPoller<T = any>() {
-  const [loading,  setLoading]  = useState(false);
-  const [result,   setResult]   = useState<T | null>(null);
-  const [error,    setError]    = useState('');
-  const [phase,    setPhase]    = useState('');
-  const abortRef = useRef(false);
-
-  const startJob = useCallback(async (jobId: string, opts: PollOptions = {}) => {
-    setLoading(true);
-    setError('');
-    setResult(null);
-    abortRef.current = false;
-
-    try {
-      const job = await pollJob(jobId, {
-        ...opts,
-        onProgress: ({ status, elapsed }) => {
-          if (abortRef.current) return;
-          const sec = Math.round(elapsed / 1000);
-          if (status === 'processing') {
-            setPhase(sec < 10 ? t('x_job_poller_thinking') : sec < 30 ? t('x_job_poller_analyzing') : t('x_job_poller_almost_there'));
-          } else {
-            setPhase(t('x_job_poller_waiting_queue'));
-          }
-          opts.onProgress?.({ status, elapsed });
-        },
-      });
-      if (!abortRef.current) {
-        setResult(job.result as T);
-        setPhase('');
-      }
-    } catch {
-      if (!abortRef.current) {
-        setError(t('x_error_state_something_went_wrong_please'));
-        setPhase('');
-      }
-    } finally {
-      if (!abortRef.current) setLoading(false);
-    }
-  }, []);
-
-  const cancel = useCallback(() => {
-    abortRef.current = true;
-    setLoading(false);
-    setPhase('');
-  }, []);
-
-  return { loading, result, error, phase, startJob, cancel };
 }

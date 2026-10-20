@@ -33,14 +33,13 @@ export async function hasContractPro(db, userId) {
 }
 
 // ── callClaude — shared AI call wrapper ───────────────────────────────────────
-async function callClaude({ system, userMessage, maxTokens = 4000, temperature = 0.10 }) {
+async function callClaude({ system, userMessage, maxTokens = 4000 }) {
   if (!ANTHROPIC_KEY) return null; // demo mode handled by caller
 
   // Timeout + retries + budget + metering: services/aiClient.js
   const res = await anthropicFetch({
     body: JSON.stringify({
       model:       MODEL,
-      temperature,
       max_tokens:  maxTokens,
       system,
       messages:    [{ role: 'user', content: userMessage }],
@@ -177,7 +176,7 @@ Analyze this contract and respond with JSON in this exact format:
 CONTRACT TEXT:
 ${contractText.slice(0, 12000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 3000, temperature: 0.05 });
+  const raw = await callClaude({ system, userMessage, maxTokens: 3000 });
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -246,7 +245,7 @@ ${originalText.slice(0, 6000)}
 REVISED CONTRACT:
 ${revisedText.slice(0, 6000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 3000, temperature: 0.05 });
+  const raw = await callClaude({ system, userMessage, maxTokens: 3000 });
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -301,7 +300,7 @@ Respond with JSON in this exact format:
 CONTRACT:
 ${contractText.slice(0, 8000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 2500, temperature: 0.15 });
+  const raw = await callClaude({ system, userMessage, maxTokens: 2500 });
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();

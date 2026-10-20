@@ -82,23 +82,24 @@ const mkMatter = (v, o = {}) => ({
 
 // ── DISC7. Discrepancy Fixes ──────────────────────────────────────────────
 describe('DISC7. Discrepancy Fixes — chat/stream + reviews + saved', () => {
-  test('DISC7-01: chat/stream.js is Server-Sent Events streaming path [FIX ≥5]', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
-    expect(src).toContain('Server-Sent Events streaming');
-    expect(src).toContain("router.post('/stream'");
-    // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
-    expect(src).toContain('anthropicFetch');
-    // SSE path streams tokens as data: events
-    expect(src).toContain('BUSINESS_CONSTANTS');
-  });
-  test('DISC7-02: chat/ask.js is main AI chat POST/response route [FIX ≥5]', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
-    expect(src).toContain('main AI chat');
-    expect(src).toContain("router.post('/ask'");
-    expect(src).toContain('BUSINESS_CONSTANTS');
-  });
+  test('DISC7-01: chat/stream.js is POST /stream — Server-Sent Events streaming path', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
+      expect(src).toContain('POST /stream');
+      expect(src).toContain('Server-Sent Events streaming');
+      expect(src).toContain("router.post('/stream'");
+      // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
+      expect(src).toContain('anthropicFetch');
+      expect(src).toContain('chatContext');            // free-tier quota + defender gating
+    });
+  test('DISC7-02: chat/ask.js is POST /ask — main AI chat request/response fallback', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
+      expect(src).toContain('POST /ask');
+      expect(src).toContain('main AI chat');
+      expect(src).toContain("router.post('/ask'");
+      expect(src).toContain('chatContext');
+    });
   test('DISC7-03: reviews.js GET /summary returns aggregated rating [FIX ≥5]', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/reviews.js', 'utf8');
@@ -156,14 +157,16 @@ describe('EXR. expungement/rules.js — State Expungement Rules Data', () => {
 
 // ── MOH. motions/history.js ───────────────────────────────────────────────
 describe('MOH. motions/history.js — Motion History CRUD', () => {
-  test('MOH-01: GET/DELETE /history + POST /review handlers', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/history.js', 'utf8');
-    expect(src).toContain("router.get('/history'");
-    expect(src).toContain("router.delete('/history/:id'");
-    expect(src).toContain("router.post('/review'");
-    expect(src).toContain('authRequired');
-  });
+  test('MOH-01: GET/DELETE /history handlers (POST /review lives in review.js)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/history.js', 'utf8');
+      const rev = fs.readFileSync(__REPO + '/backend/src/routes/motions/review.js', 'utf8');
+      expect(src).toContain("router.get('/history'");
+      expect(src).toContain("router.delete('/history/:id'");
+      expect(src).not.toContain("router.post('/review'");
+      expect(rev).toContain("router.post('/review'");
+      expect(src).toContain('authRequired');
+    });
 });
 
 // ── DIS. discovery/analyze.js ─────────────────────────────────────────────

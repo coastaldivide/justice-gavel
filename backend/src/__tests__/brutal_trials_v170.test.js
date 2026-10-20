@@ -201,7 +201,7 @@ describe('S4. Case Management Complete Flow', () => {
 describe('S5. AI Chat End-to-End', () => {
   test('S5-01: ChatScreen posts + polls jobId for async response', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
+    const src=(fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     expect(src).toContain('/chat/ask');
     expect(src).toContain('jobId');
     expect(src).toContain('pollJob');
@@ -210,7 +210,7 @@ describe('S5. AI Chat End-to-End', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
     const ai  = fs.readFileSync(__REPO + '/backend/src/utils/ai.js', 'utf8');
-    expect(src).toContain('aiLimiter');
+    expect(src).toContain('chatBurstLimiter');
     expect(src).toContain('not_legal_advice');
     expect(src).toContain('requireAi');                  // no key → 503 ai_unavailable (utils/ai.js)
     expect(ai).toContain('status(503)');

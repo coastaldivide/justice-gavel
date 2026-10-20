@@ -82,6 +82,10 @@ export const linking: LinkingOptions<any> = {
               InterrogationRecorder: 'encounter-recorder',
               Education:          'learn',
               Resources:          'resources',
+              BarPrepHome:        'bar-prep',
+              BarPrepProgress:    'bar-prep/progress',
+              BarPrepSchedule:    'bar-prep/schedule',
+              Advocacy:           'advocacy',
               Search:             'search',
 
               // Providers

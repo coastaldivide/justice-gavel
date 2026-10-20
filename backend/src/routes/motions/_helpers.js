@@ -1,4 +1,4 @@
-import { anthropicFetch } from '../../services/aiClient.js';
+import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
 import { CLAUDE_MODEL } from '../../utils/ai.js';
 
 // UPL compliance: all AI responses include disclaimer metadata
@@ -13,47 +13,15 @@ import { CLAUDE_MODEL } from '../../utils/ai.js';
  */
 import { MOTION_TYPES } from './_motion_types.js';
 
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
-
 // motion_history managed by db/index.js Year 2 block.
 // ensureTables kept as a no-op export to avoid import-side errors in legacy callers.
 export async function ensureTables(_db) { /* no-op — table created at startup */ }
 
 // ── Claude motion generation ──────────────────────────────────────────────────
+// Throws an AI error with a code (aiClient.aiErrorCode); routes/jobs.js words it.
 export async function generateMotion(motionType, fields) {
   const motionDef = MOTION_TYPES[motionType];
   if (!motionDef) throw new Error('Unknown motion type');
-
-  if (!ANTHROPIC_KEY) {
-    // Demo mode — return realistic mock
-    return `IN THE ${(fields.court_name || 'CIRCUIT COURT').toUpperCase()}
-${(fields.state || 'STATE').toUpperCase()}
-
-Case No. ${fields.case_number || 'XX-XXXX'}
-
-STATE OF ${(fields.state || 'STATE').toUpperCase()}
-v.
-${fields.defendant_name || 'DEFENDANT'}
-
-${motionDef.label.toUpperCase()}
-
-[DEMO MODE — Add ANTHROPIC_API_KEY to .env for live generation]
-
-Comes now the Defendant, ${fields.defendant_name || 'Defendant'}, by and through undersigned counsel, and respectfully moves this Court pursuant to the applicable rules of criminal procedure for the following relief:
-
-INTRODUCTION
-This motion is submitted in the above-captioned matter. The Defendant respectfully requests that this Court grant the relief requested herein based on the grounds set forth below.
-
-[Full motion would be generated here with ANTHROPIC_API_KEY configured]
-
-WHEREFORE, Defendant respectfully requests that this Court grant this motion.
-
-Respectfully submitted,
-
-_______________________________
-Defense Counsel
-Date: ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}`;
-  }
 
   const fieldSummary = Object.entries(fields)
     .filter(([, v]) => v && String(v).trim())
@@ -134,32 +102,23 @@ GENERAL REQUIREMENTS:
 - Flag [ATTORNEY TO VERIFY: cite] next to every case citation — AI citations must
    NEVER be relied upon without verification. If uncertain of a citation,
    write [CASE CITATION NEEDED] rather than guessing. Real harm results
-   from filing motions with fabricated case law. be independently verified
+   from filing motions with fabricated case law.
 - Do NOT include explanatory notes or meta-commentary — output the motion only
 
 Generate the complete motion now:`;
 
   const res = await anthropicFetch({
-    method: 'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-    },
     body: JSON.stringify({
       model:      CLAUDE_MODEL,
-      temperature: 0.15,
       max_tokens: isAppellatMotion ? 8000 : 2000, // appellate briefs need more room
       messages:   [{ role: 'user', content: prompt }],
     }),
-  }, { route: 'motions_generate' });
+  }, { route: 'motions_generate', timeoutMs: 180_000, retries: 1 });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Claude error ${res.status}: ${err}`);
-  }
+  if (!res.ok) throw await aiHttpError(res, 'motions_generate');
   const data = await res.json();
   const motionText = data.content?.[0]?.text || '';
+  if (!motionText) throw Object.assign(new Error('empty motion'), { code: 'ai_failed' });
   return motionText + '\n\n---\n*This AI-generated motion requires attorney review before filing. All citations must be independently verified. Not legal advice.*';
 }
 

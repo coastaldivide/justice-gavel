@@ -259,12 +259,12 @@ describe('ADV. advocacy.js — Public-Interest Stats Dashboard', () => {
     expect(src).toContain('Public-interest stats');
     expect(src).toContain('advocacy dashboard');
   });
-  test('ADV-02: advocacy stats route uses statsLimiter to prevent abuse', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/advocacy.js', 'utf8');
-    expect(src).toContain('statsLimiter');
-    expect(src).toContain('Limiter');
-  });
+  test('ADV-02: public advocacy stats route is rate limited (apiLimiter)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/advocacy.js', 'utf8');
+      expect(src).toContain("router.get('/stats', apiLimiter");
+      expect(src).toContain('Limiter');
+    });
 });
 
 // ── S12A. UX — Enterprise + Security Architecture ────────────────────────

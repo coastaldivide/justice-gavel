@@ -566,19 +566,19 @@ describe('9. chat callClaude — AI Call Architecture', () => {
     expect(src).toContain('SYSTEM_PROMPT');
   });
 
-  test('9-02: defender mode selects DEFENDER_SYSTEM_PROMPT', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
-    expect(src).toContain("mode === 'defender'");
-    expect(src).toContain('isDefender');
-  });
+  test('9-02: defender mode selects DEFENDER_SYSTEM_PROMPT (professionals only)', async () => {
+      const fs  = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
+      expect(src).toContain("mode === 'defender' && isProfessional(req.user)");
+      expect(src).toContain('defender ? DEFENDER_SYSTEM_PROMPT');
+    });
 
-  test('9-03: callClaude appends RESPONSE_FOOTER_INSTRUCTION to system prompt', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
-    expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
-    expect(src).toContain('systemPrompt');
-  });
+  test('9-03: no English footer is appended to the system prompt (app shows the legal notice)', async () => {
+      const fs  = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
+      expect(src).not.toContain('RESPONSE_FOOTER_INSTRUCTION');
+      expect(src).toContain('languageInstruction(lang)');
+    });
 
   test('9-04: callClaude accepts user_state and user_state_name for jurisdiction', async () => {
     const fs  = await import('fs');
@@ -595,11 +595,10 @@ describe('9. chat callClaude — AI Call Architecture', () => {
     expect(src).toContain('caseContext');
   });
 
-  test('9-06: RESPONSE_FOOTER_INSTRUCTION is always appended', () => {
-    // The footer contains the legal disclaimer and is appended to EVERY system prompt
-    expect(RESPONSE_FOOTER_INSTRUCTION).toContain('ALWAYS');
-    expect(RESPONSE_FOOTER_INSTRUCTION.length).toBeGreaterThan(50);
-  });
+  test('9-06: prompts tell the model the app shows the legal notice (no footer constant)', () => {
+      expect(RESPONSE_FOOTER_INSTRUCTION).toBeUndefined();
+      expect(SYSTEM_PROMPT).toContain('app shows the legal notice');
+    });
 
   test('9-07: system prompt selection is binary — consumer or defender', () => {
     // Only two modes: consumer (default) or defender (attorney)
@@ -629,30 +628,21 @@ describe('10. motions generateMotion — Demo Mode & Type Validation', () => {
     expect(src).toContain("throw new Error('Unknown motion type')");
   });
 
-  test('10-03: generateMotion has demo mode when no ANTHROPIC_KEY', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/_helpers.js', 'utf8');
-    expect(src).toContain('DEMO MODE');
-    expect(src).toContain('ANTHROPIC_API_KEY');
-  });
+  test('10-03: generateMotion has no fake demo mode — requireAi refuses without a key', async () => {
+      const fs  = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/_helpers.js', 'utf8');
+      const gen = fs.readFileSync(__REPO + '/backend/src/routes/motions/generate.js', 'utf8');
+      expect(src).not.toContain('DEMO MODE');
+      expect(gen).toContain('requireAi');
+    });
 
-  test('10-04: demo motion interpolates court name, case number, defendant name', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/_helpers.js', 'utf8');
-    expect(src).toContain('court_name');
-    expect(src).toContain('case_number');
-    expect(src).toContain('defendant_name');
-  });
-
-  test('10-05: all 12 motion types in MOTION_TYPES are valid generateMotion inputs', () => {
-    const EXPECTED = ['suppress','continuance','dismiss','bail_reduction','discovery',
-                      'limine','speedy_trial','compel','notice_of_appeal','appeal_brief',
-                      'sentence_reduction','habeas_corpus'];
-    for (const type of EXPECTED) {
-      expect(MOTION_TYPES[type]).toBeDefined();
-      expect(MOTION_TYPES[type].label).toBeDefined();
-    }
-  });
+  test('10-04: motion prompt carries the case fields and asks for the caption (court, case number, parties)', async () => {
+      const fs  = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/_helpers.js', 'utf8');
+      expect(src).toContain('${fieldSummary}');
+      expect(src).toContain('court, case number, parties');
+      expect(src).toContain('[CITATION NEEDED]');
+    });
 
   test('10-06: ensureTables is a no-op (tables created at startup)', async () => {
     const fs  = await import('fs');

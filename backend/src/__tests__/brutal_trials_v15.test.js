@@ -388,11 +388,12 @@ describe('11. TranslatorScreen — Attorney-Client Interpreter', () => {
     expect(src).toContain('SPLIT');
   });
 
-  test('11-02: uses /translate/session and /translate/message endpoints', async () => {
+  test('11-02: TranslatorScreen uses /translate/session (create, join, message, poll)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain("'/translate/session'");
-    expect(src).toContain("'/translate/message'");
+    expect(src).toContain('/translate/session/${sessionCode}/message');
+    expect(src).toContain('X-Translate-Token');
   });
 
   test('11-03: has langA and langB states (defender and client languages)', async () => {

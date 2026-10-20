@@ -6,17 +6,22 @@
  *   timed    — 100Q / 2.5hr simulation; explanations revealed at end
  *
  * Flow:
- *   question display → answer tap → (practice: inline reveal) → next
- *   → submit batch → navigate to BarPrepProgress
+ *   question display → answer tap → (practice: graded by the server, inline
+ *   reveal) → next → finish → BarPrepResults with the server's score
+ *   (correct / all questions of the session; unanswered = wrong).
  */
 
 import type { ScreenProps } from '../types/navigation';
 import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { useToast } from '../components/ToastProvider';
+import { apiErrorMessage } from '../services/api';
+import { categoryLabel } from '../constants/barPrepCategories';
 // FIX #9: removed unused `useMemo` from import
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, BackHandler, Platform, Animated, Vibration,
+  BackHandler, Platform, Animated, Vibration,
 } from 'react-native';
 import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -25,7 +30,7 @@ import { t, useLang } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Question {
-  id:         number;
+  id:         string;
   category:   string;
   difficulty: 'easy' | 'medium' | 'hard';
   stem:       string;
@@ -36,11 +41,18 @@ interface Question {
 }
 
 interface Answer {
-  question_id:     number;
+  question_id:     string;
   selected_answer: string;
   time_spent_ms:   number;
-  /** Set from the server's grading (practice: per answer; timed: on submit). */
+  /** From the server's grading (practice: per answer; timed: on submit). */
   is_correct?:     boolean;
+  correct_answer?: string;
+  explanation?:    string | null;
+  rule_tested?:    string | null;
+}
+interface GradeResponse {
+  completed: boolean; correct: number; answered: number; total: number; score_pct: number;
+  results: { question_id: string; is_correct: boolean; correct_answer: string; explanation: string | null; rule_tested: string | null }[];
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
@@ -56,8 +68,8 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'BarPrepQuiz'>) {
   useLang();
   const { session_id, questions, mode, time_limit_seconds, subject_id = null } = (route?.params ?? { questions: [] }) as {
-    session_id:         number;
-    subject_id?:        number | null;
+    session_id:         string;
+    subject_id?:        string | null;
     questions:          Question[];
     mode:               'practice' | 'timed';
     time_limit_seconds: number | null;
@@ -65,8 +77,11 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
   const { colors }                        = useTheme();
   const { impact }                        = useHaptics();
+  const { confirm }                       = useConfirm();
+  const { showToast }                     = useToast();
   const [currentIndex, setCurrentIndex]   = useState(0);
-  const [answers, setAnswers]             = useState<Record<number, Answer>>({});
+  const [answers, setAnswers]             = useState<Record<string, Answer>>({});
+  const gradeRef                          = useRef<GradeResponse | null>(null);
   const [selected, setSelected]           = useState<OptionLetter | null>(null);
   const [revealed, setRevealed]           = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
@@ -88,11 +103,10 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
   // ── Confirm exit helper (FIX #11: shared by ✕ button and hardware back) ────
   const confirmExit = useCallback(() => {
-    Alert.alert(t('x_bar_prep_quiz_exit_quiz'), t('x_bar_prep_quiz_progress_will_be_lost'), [
-      { text: t('continue'), style: 'cancel' },
-      { text: t('x_bar_prep_quiz_exit'), style: 'destructive', onPress: () => navigation.goBack() },
-    ]);
-  }, [navigation]);
+    confirm(t('x_bar_prep_quiz_exit_quiz'), t('x_bar_prep_quiz_progress_will_be_lost'),
+      { confirmLabel: t('x_bar_prep_quiz_exit'), cancelLabel: t('continue'), destructive: true })
+      .then(ok => { if (ok) navigation.goBack(); });
+  }, [navigation, confirm]);
 
   // ── Countdown timer (timed mode) ──────────────────────────────────────────
   useEffect(() => {
@@ -150,24 +164,25 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
     if (mode === 'practice') {
       try {
-        const submitRes = await api.post(`/bar-prep/sessions/${session_id}/answers`, {
-          answers: [ans],
-        });
+        const submitRes = await api.post<GradeResponse>(`/bar-prep/sessions/${session_id}/answers`, { answers: [ans] });
+        gradeRef.current = submitRes.data;
         const result = submitRes.data.results?.[0];
-        if (result) {
-          setAnswers(prev => ({ ...prev, [current.id]: { ...ans, is_correct: !!result.is_correct } }));
-          setCorrectAnswer(result.correct_answer);
-          setExplanation(result.explanation);
-          result.is_correct ? impact('heavy') : Vibration.vibrate(200);
-        }
-      } catch {
-        // Reveal without data — user still sees selected state
+        if (!result) throw new Error(t('x_bar_prep_quiz_failed_submit_answers_try'));
+        setAnswers(prev => ({ ...prev, [current.id]: { ...ans, is_correct: !!result.is_correct, correct_answer: result.correct_answer, explanation: result.explanation, rule_tested: result.rule_tested } }));
+        setCorrectAnswer(result.correct_answer);
+        setExplanation(result.explanation);
+        if (result.is_correct) impact('heavy'); else if (Platform.OS !== 'web') Vibration.vibrate(200);
+        setRevealed(true);
+      } catch (e) {
+        // Not graded: the answer is not kept, so the person can pick again.
+        setSelected(null);
+        setAnswers(prev => { const next = { ...prev }; delete next[current.id]; return next; });
+        showToast(apiErrorMessage(e, t('x_bar_prep_quiz_failed_submit_answers_try')), 'error');
       }
-      setRevealed(true);
     }
 
     isSelectingRef.current = false;
-  }, [revealed, submitting, current, mode, session_id, impact]);
+  }, [revealed, submitting, current, mode, session_id, impact, showToast]);
 
   // ── Move to next question ─────────────────────────────────────────────────
   const goNext = useCallback(() => {
@@ -191,39 +206,39 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
     setSubmitting(true);
 
     try {
-      // Graded answers: practice answers were graded one by one as they were
-      // revealed; timed answers are graded here in one batch.
-      let graded: Record<number, Answer> = answers;
-      if (mode === 'timed') {
-        const res = await api.post(`/bar-prep/sessions/${session_id}/answers`, {
-          answers: Object.values(answers),
+      // Practice answers were graded one by one; timed answers are graded here.
+      // Either way the server closes the session and gives the score.
+      let grade = gradeRef.current;
+      let graded: Record<string, Answer> = answers;
+      if (mode === 'timed' || !grade?.completed) {
+        const res = await api.post<GradeResponse>(`/bar-prep/sessions/${session_id}/answers`, {
+          answers: mode === 'timed' ? Object.values(answers) : [],
+          complete: true,
         });
-        const serverResults: { question_id: number; is_correct: boolean }[] = res.data?.results ?? [];
+        grade = res.data;
         graded = { ...answers };
-        for (const r of serverResults) {
-          if (graded[r.question_id]) graded[r.question_id] = { ...graded[r.question_id], is_correct: !!r.is_correct };
+        for (const r of grade.results ?? []) {
+          if (graded[r.question_id]) {
+            graded[r.question_id] = { ...graded[r.question_id], is_correct: !!r.is_correct, correct_answer: r.correct_answer, explanation: r.explanation, rule_tested: r.rule_tested };
+          }
         }
       }
-
-      // Navigate to results screen with full session context
-      const totalAns  = Object.keys(graded).length;
-      const correctAns = Object.values(graded).filter(a => a.is_correct).length;
       navigation.replace('BarPrepResults', {
         session_id,
-        score_pct:        totalAns > 0 ? Math.round((correctAns / totalAns) * 100) : 0,
-        correct:          correctAns,
-        total:            totalAns || total,
+        score_pct:        grade.score_pct,
+        correct:          grade.correct,
+        total:            grade.total || total,
         mode,
         subject_id,
-        answers:          graded,     // { [question_id]: { selected_answer, is_correct, time_spent_ms } }
+        answers:          graded,     // { [question_id]: { selected_answer, is_correct, correct_answer, … } }
         questions,
         timed_out:        isTimeout,
       });
-    } catch {
+    } catch (e) {
       setSubmitting(false);
-      Alert.alert(t('error'), t('x_bar_prep_quiz_failed_submit_answers_try'));
+      showToast(apiErrorMessage(e, t('x_bar_prep_quiz_failed_submit_answers_try')), 'error');
     }
-  }, [submitting, answers, mode, session_id, navigation, total, subject_id, questions]);
+  }, [submitting, answers, mode, session_id, navigation, total, subject_id, questions, showToast]);
 
   // Keep ref in sync with latest callback
   handleSubmitRef.current = handleSubmit;
@@ -270,7 +285,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
           { backgroundColor: DIFFICULTY_COLOR[current.difficulty] + '22' },
         ]}>
           <Text style={[styles.diffText, { color: DIFFICULTY_COLOR[current.difficulty] }]}>
-            {current.difficulty.toUpperCase()}
+            {t(`barprep_diff_${current.difficulty}`)}
           </Text>
         </View>
       </View>
@@ -285,7 +300,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.categoryLabel}>
-          {current.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          {categoryLabel(current.category)}
         </Text>
         <Text style={styles.stem}>{current.stem}</Text>
 
@@ -306,6 +321,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
                   isCorrect             && styles.optionCorrect,
                   isWrong               && styles.optionWrong,
                 ]}
+                testID={`barprep-option-${letter}`}
                 onPress={() => selectAnswer(letter)}
                 disabled={revealed || (mode === 'timed' && !!selected)}
                 activeOpacity={0.8}
@@ -330,7 +346,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
           })}
         </View>
 
-        {revealed && explanation && (
+        {revealed && (
           <View style={[
             styles.explanationCard,
             selected === correctAnswer ? styles.correctCard : styles.wrongCard,
@@ -338,7 +354,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             <Text style={styles.explanationIcon}>
               {selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}
             </Text>
-            <Text style={styles.explanationText}>{explanation}</Text>
+            {!!explanation && <Text style={styles.explanationText}>{explanation}</Text>}
             <TouchableOpacity accessibilityRole="button"
               style={styles.fullExplanationLink}
               onPress={() => navigation.navigate('BarPrepExplanation', { question_id: current.id })}
@@ -360,6 +376,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         {currentIndex < total - 1 ? (
           <TouchableOpacity accessibilityRole="button"
             style={[styles.nextBtn, !selected && !revealed && styles.nextBtnDisabled]}
+            testID="barprep-next"
             onPress={goNext}
             disabled={!selected && !revealed}
             activeOpacity={0.85}
@@ -369,6 +386,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         ) : (
           <TouchableOpacity accessibilityRole="button"
             style={[styles.submitBtn, submitting && styles.nextBtnDisabled]}
+            testID="barprep-submit"
             onPress={() => handleSubmit(false)}
             disabled={submitting}
             activeOpacity={0.85}

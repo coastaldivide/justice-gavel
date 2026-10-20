@@ -73,34 +73,32 @@ const mkMatter = (v, o = {}) => ({
 
 // ── STRM. ChatScreen Streaming Architecture ────────────────────────────────
 describe('STRM. ChatScreen — Dual-Mode Streaming Architecture', () => {
-  test('STRM-01: ChatScreen prefers EventSource (SSE) streaming when available', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('EventSource');
-    expect(src).toContain("typeof EventSource !== 'undefined'");
-    expect(src).toContain("Streaming path");
-  });
-  test('STRM-02: ChatScreen streams to /chat/stream with Bearer token header', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('/chat/stream');
-    expect(src).toContain('getToken');
-    expect(src).toContain('Bearer');
-  });
-  test('STRM-03: ChatScreen inserts placeholder message before streaming starts', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('placeholderId');
-    expect(src).toContain("role: 'assistant'");
-    expect(src).toContain("text: ''");
-  });
-  test('STRM-04: ChatScreen falls back to POST /chat/ask if EventSource unavailable', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain("streaming succeeded — skip fallback");
-    expect(src).toContain('/chat/ask');
-    expect(src).toContain('scrollToBottom');
-  });
+  test('STRM-01: chat streams over SSE on web (fetch + ReadableStream reader)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain("Platform.OS === 'web'");
+      expect(src).toContain('getReader');
+      expect(src).toContain('Server-Sent Events');
+    });
+  test('STRM-02: chat streams to /chat/stream with Bearer token header', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain('/chat/stream');
+      expect(src).toContain('getToken');
+      expect(src).toContain('Bearer');
+    });
+  test('STRM-03: ChatScreen inserts an empty streaming answer before tokens arrive', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain("role: 'assistant', text: '', status: 'streaming'");
+    });
+  test('STRM-04: falls back to POST /chat/ask + job polling when the stream never started', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain('/chat/ask');
+      expect(src).toContain('pollJob');
+      expect(src).toContain('scrollToBottom');
+    });
 });
 
 // ── PAY. PaymentsScreen PURPOSES ──────────────────────────────────────────
@@ -217,13 +215,12 @@ describe('CASE. CaseScreen — autoSaveNotes + exportCasePDF', () => {
 
 // ── S12. UX ───────────────────────────────────────────────────────────────
 describe('S12. UX — Final Architecture', () => {
-  test('S12-01: ChatScreen SSE streaming is the preferred path (lower latency)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain("Streaming path");
-    expect(src).toContain('EventSource');
-    expect(src).toContain('/chat/stream');
-  });
+  test('S12-01: SSE streaming is the preferred path on web (lower latency)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts', 'utf8');
+      expect(src).toContain('Server-Sent Events');
+      expect(src).toContain('/chat/stream');
+    });
   test('S12-02: ContactsScreen is purely local — emergency contacts never sent to server', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ContactsScreen.tsx', 'utf8');

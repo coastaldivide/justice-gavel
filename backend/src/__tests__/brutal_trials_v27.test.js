@@ -318,13 +318,13 @@ describe('9. i18n ice_ — ICE Detention (20 keys full)', () => {
 
 // ── 10. i18n res_ ───────────────────────────────────────────────────────
 describe('10. i18n res_ — AI Legal Research (22 keys full)', () => {
-  test('10-01: Westlaw pricing comparison context', async () => {
-    const en = await getEn();
-    expect(en['res_paywall_sub']).toContain('Westlaw');
-    expect(en['res_paywall_sub']).toContain('$100–500/mo');
-    expect(en['res_paywall_subscribe']).toBe('Subscribe — $49.99/mo');
-    expect(en['res_paywall_annual']).toContain('save 37%');
-  });
+  test('10-01: paywall copy is plain-language (no unverifiable competitor pricing)', async () => {
+      const en = await getEn();
+      expect(en['res_paywall_sub']).toContain('citations you can check');
+      expect(en['res_paywall_sub']).not.toContain('Westlaw');
+      expect(en['res_paywall_subscribe']).toBe('Subscribe — $49.99/mo');
+      expect(en['res_paywall_annual']).toContain('save 37%');
+    });
   test('10-02: research session UI', async () => {
     const en = await getEn();
     expect(en['res_placeholder_new']).toContain('suppression motion');

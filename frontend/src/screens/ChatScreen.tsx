@@ -1,95 +1,56 @@
+/**
+ * ChatScreen — the AI legal guide (signed-in accounts).
+ *
+ * One question at a time (services/chatStream.ts): on web the answer streams
+ * in as it is written; on native it arrives from the job queue. While an
+ * answer is coming the send button is a Stop button. If the connection drops
+ * or the AI is busy, the part that arrived stays on screen with "Try again" —
+ * the retry re-uses the question's id, so the server replays a finished
+ * answer instead of asking twice, and the question is never shown twice.
+ * Messages that mention self-harm or domestic violence (any of the four app
+ * languages) get the crisis lines first (utils/crisisDetect.ts), then the
+ * answer. Answers are drawn with MarkdownText (text only, never HTML). The
+ * conversation is kept on the server per session and reloads on open.
+ */
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable,
+  StyleSheet, Text, TextInput, TouchableOpacity, View,
+} from 'react-native';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ExpoCrypto from 'expo-crypto';
+import * as Clipboard from 'expo-clipboard';
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { MarkdownText } from '../components/MarkdownText';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { AppIcon } from '../components/AppIcon';
-/**
- * ChatScreen — Full conversation UI wired to Claude backend
- *
- * Fixes applied (v5.4.0):
- *   T1-A  Removed useFocusEffect + clearChat() from Bubble sub-component
- *   T1-B  Added isDefender prop to Bubble
- *   T1-C  Removed stray '>' after conditional close on avatar row
- *   T1-D  Changed <View onLongPress> → <Pressable> (View ignores touch props)
-        accessibilityRole="button" accessibilityLabel="Open chat options"
- *   T1-E  Fixed msg.reply/msg.content → msg.text in long-press handler
- *   T1-F  Added Alert to react-native imports
- *   T1-G  Replaced module-scope colors.* refs in PROMPT_CATEGORIES with hex literals
- *   T1-H  Removed misplaced hooks from inside getOfflineAnswer()
- *   T1-I  getOfflineAnswer now cleanly returns null at end
- *   T1-J  Repaired split ChatScreen function signature
- *   T1-K  Removed duplicate caseTitle declaration
- *   T1-L  Fixed listRef generic type; moved session load into useEffect
- *   T1-M  Removed inner sid re-declaration that shadowed the outer one
- *   T1-N  setSending(false) → setLoading(false)
- *   T1-O  Removed stray '>' after JSX Header comment
- *   T1-P  Fixed broken onPress split across lines in prompt chips
- *   T1-Q  Fixed renderItem and ListEmptyComponent props split mid-expression
- *   T1-R  Removed stray '>' after input-bar comments
- *   T1-S  Added missing closing bracket on send-button
- *   T2-A  Restored commented-out React hooks imports
- *   T2-B  Defined module-scope COLORS constant
- *   T2-C  Replaced undefined hasValidConsent() with AsyncStorage-based check
- *   T2-D  exportConversation catch binds error variable
- *   T2-E  Removed unused `sent` state; consolidated disclaimer to showDisclaimer
- *   T2-F  Removed unused offlineQAMap useMemo (getOfflineAnswer uses OFFLINE_QA directly)
- */
-
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  LayoutAnimation,
-  InteractionManager,
-} from 'react-native';
-import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { track } from '../services/analytics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import type { ScreenProps } from '../types/navigation';
-import { unwrapList, api, isAiUnavailable, isDisclaimerRequired, deviceTimeZone, API_BASE_URL } from '../services/api';
+import { unwrapList, api } from '../services/api';
 import { notifyDisclaimerRequired } from '../services/legalGate';
-
-/**
- * An HTTP answer from /chat/stream that the /chat/ask fallback would answer
- * the same way (auth, daily limit, disclaimer, rate limit, AI off). Re-sending
- * the question would only double-count it, so the stream path surfaces these
- * directly (shaped like an axios error for the shared handler below).
- */
-class StreamHttpError extends Error {
-  response: { status: number; data: Record<string, unknown> };
-  constructor(status: number, data: Record<string, unknown>) {
-    super(String(data?.message || data?.error || `HTTP ${status}`));
-    this.response = { status, data };
-  }
-}
-const TERMINAL_STREAM_STATUSES = new Set([400, 401, 402, 403, 429, 451, 503]);
-import { pollJob }        from '../services/jobPoller';
-import { isOnline }       from '../services/offlineCache';
-import { t, useLang, perLang, locale }              from '../i18n';
-import { getUserState }   from '../utils/userState';
-import { getToken }       from '../utils/secureStorage';
-import * as ExpoCrypto from 'expo-crypto';
-import * as Clipboard from 'expo-clipboard';
-import {  useTheme, COLORS }       from '../constants/theme';
+import { askChat, ChatError, chatErrorText, type RightsRef } from '../services/chatStream';
+import { isOnline } from '../services/offlineCache';
+import { detectCrisis } from '../utils/crisisDetect';
+import { t, useLang, perLang, locale } from '../i18n';
+import { getUserState } from '../utils/userState';
+import { useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 
-// ── Static colour palette used in module-scope constants and StyleSheet ────────
-// (useTheme() is hook-only; these mirror the dark-navy design system values)
-
 // ── Message shape ──────────────────────────────────────────────────────────────
-/** A rights-card section the answer is grounded in (server: rightsRefsFor). */
-interface RightsRef { key: string; heading: string; source: string; last_reviewed: string | null }
+type MsgStatus = 'streaming' | 'complete' | 'stopped' | 'error';
 interface Message {
   id:                  string;
   role:                'user' | 'assistant';
   text:                string;
+  status?:             MsgStatus;
+  /** assistant answers: the question and its id, for "Try again" */
+  question?:           string;
+  clientMessageId?:    string;
+  errorText?:          string;
+  crisis?:             'crisis' | 'dv';
   suggestLawyerSearch?: boolean;
   intent?:             string;
   rightsRefs?:         RightsRef[];
@@ -97,9 +58,8 @@ interface Message {
 }
 
 // ── Cryptographically secure id / session token ──────────────────────────────
-// expo-crypto works on Hermes (where global crypto.getRandomValues may be
-// missing) and on web. Falls back to Math.random if the native module is
-// unavailable (e.g. tests).
+// expo-crypto works on Hermes and on web; Math.random only if the native
+// module is unavailable (tests).
 function randomId(): string {
   try {
     const bytes = ExpoCrypto.getRandomBytes(8);
@@ -118,106 +78,117 @@ async function getSessionId(): Promise<string> {
     }
     return id;
   } catch {
-    // AsyncStorage unavailable — use in-memory session ID (resets on restart)
-    return randomId();
+    return randomId(); // storage unavailable: this visit only
   }
 }
 
-// ── hasValidConsent — AsyncStorage-based consent check ────────────────────────
-// Returns true if the user has previously accepted the AI disclaimer.
 async function hasValidConsent(): Promise<boolean> {
-  try {
-    const v = await AsyncStorage.getItem('chat_consent_accepted');
-    return v === '1';
-  } catch { return false; }
+  try { return (await AsyncStorage.getItem('chat_consent_accepted')) === '1'; } catch { return false; }
+}
+async function recordConsent(): Promise<void> {
+  try { await AsyncStorage.setItem('chat_consent_accepted', '1'); } catch { /* shown again next time */ }
 }
 
-async function recordConsent(): Promise<void> {
-  try { await AsyncStorage.setItem('chat_consent_accepted', '1'); } catch {}
-}
+const CRISIS_CALLS: Record<'crisis' | 'dv', { label: () => string; url: string }> = {
+  crisis: { label: () => t('chat_crisis_call_988'), url: 'tel:988' },
+  dv:     { label: () => t('chat_crisis_call_dv'),  url: 'tel:18007997233' },
+};
 
 // ── Message bubble ─────────────────────────────────────────────────────────────
-// T1-A: useFocusEffect removed — it does not belong in a pure display component
-// T1-B: isDefender passed as prop (was out-of-scope reference to parent variable)
-// T1-C: removed stray '>' after conditional close
-// T1-D: <View onLongPress> → <Pressable> (View silently ignores touch props)
-// T1-E: long-press handler uses msg.text (msg.reply / msg.content don't exist)
-// T1-F: Alert now imported at top of file
-
 interface BubbleProps {
   msg:          Message;
   isDefender:   boolean;
+  busy:         boolean;
   onFindLawyer: () => void;
   onUpgrade:    () => void;
-  onOpenRights?: () => void;
+  onOpenRights: () => void;
+  onOpenCrisis: () => void;
+  onRetry:      (m: Message) => void;
 }
 
-function Bubble({ msg, isDefender, onFindLawyer, onUpgrade, onOpenRights }: BubbleProps) {
+function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, onOpenCrisis, onRetry }: BubbleProps) {
   useLang();
   const { showToast } = useToast();
   const isUser = msg.role === 'user';
-
-  const handleLongPress = () => {
-    const text = msg.text || '';
-    Clipboard.setStringAsync(text).then(() => showToast(t('x_ch_copied_clipboard'), 'success')).catch(() => {});
+  const copy = () => {
+    Clipboard.setStringAsync(msg.text || '').then(() => showToast(t('x_ch_copied_clipboard'), 'success')).catch(() => {});
   };
+  const call = (url: string) => Linking.openURL(url).catch(() => showToast(t('x_crisis_resources_please_dial_manually', { number: url.replace('tel:', '') }), 'warning'));
 
   return (
-    <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}
-      testID="chat-screen">
+    <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}>
       {!isUser && (
-        <View style={[styles.avatarDot, isDefender && styles.avatarDotDefender]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>
-            {isDefender ? '⚖️' : 'JG'}
-          </Text>
+        <View style={styles.avatarDot}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>{isDefender ? '⚖️' : 'JG'}</Text>
         </View>
       )}
-      <Pressable
-        accessibilityRole="button" accessibilityLabel={t('x_ch_attach_file')}
-        onLongPress={handleLongPress}
-        delayLongPress={400}
-        style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}
-      >
-        <Text
-          maxFontSizeMultiplier={1.4}
-          style={[styles.bubbleText, isUser && styles.bubbleTextUser]}
+      {isUser ? (
+        <Pressable accessibilityRole="text" accessibilityHint={t('chat_copy_hint')} onLongPress={copy} delayLongPress={400}
+          testID="chat-msg-user" style={[styles.bubble, styles.bubbleUser]}>
+          <Text maxFontSizeMultiplier={1.4} selectable style={[styles.bubbleText, styles.bubbleTextUser]}>{msg.text}</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityRole="text"
+          accessibilityHint={t('chat_copy_hint')}
+          onLongPress={copy}
+          delayLongPress={400}
+          testID={msg.crisis ? 'chat-crisis-card' : 'chat-msg-assistant'}
+          style={[styles.bubble, styles.bubbleAssistant, msg.crisis && styles.bubbleCrisis]}
         >
-          {msg.text}
-        </Text>
-        {!isUser && !!msg.rightsRefs?.length && (
-          <View testID="chat-rights-refs" style={styles.rightsRefs}>
-            {msg.rightsRefs.map(r => (
-              <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={t('x_ch_from_rights_card', { heading: r.heading })}
-                style={styles.rightsRef} onPress={onOpenRights}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>{t('x_ch_from_rights_card_2', { value: r.heading.replace(/^\d+\.\s*/, '') })}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>{t('x_ch_source', { source: r.source })}</Text>
+          {msg.status === 'streaming' && !msg.text
+            ? <View style={styles.typingInline}><ActivityIndicator size="small" color={COLORS.navy} /><Text maxFontSizeMultiplier={1.4} style={styles.typingText}>{t('chat_thinking')}</Text></View>
+            : <MarkdownText text={msg.text} style={styles.bubbleText} testID="chat-answer-text" />}
+
+          {msg.crisis && (
+            <View style={styles.crisisActions}>
+              <TouchableOpacity accessibilityRole="button" testID="chat-crisis-call" style={styles.crisisBtn} onPress={() => call(CRISIS_CALLS[msg.crisis as 'crisis' | 'dv'].url)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.crisisBtnText}>📞 {CRISIS_CALLS[msg.crisis].label()}</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        {msg.suggestLawyerSearch && !isUser && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.lawyerCta}
-            onPress={onFindLawyer}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.lawyerCtaText}>
-              📍 {t('chat_find_lawyer')}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {msg.showUpgrade && !isUser && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.upgradeCta}
-            onPress={onUpgrade}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.upgradeCtaText}>
-              💎 {t('chat_upgrade_cta')}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </Pressable>
+              <TouchableOpacity accessibilityRole="button" testID="chat-crisis-all" style={styles.crisisBtnAlt} onPress={onOpenCrisis}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.crisisBtnAltText}>{t('chat_crisis_all_lines')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {msg.status === 'stopped' && (
+            <Text maxFontSizeMultiplier={1.3} testID="chat-stopped" style={styles.statusNote}>{t('chat_stopped')}</Text>
+          )}
+          {msg.status === 'error' && (
+            <View testID="chat-error">
+              <Text maxFontSizeMultiplier={1.3} style={styles.errorNote}>⚠️ {msg.errorText}</Text>
+              {!!msg.question && (
+                <TouchableOpacity accessibilityRole="button" testID="chat-retry" disabled={busy}
+                  style={[styles.retryBtn, busy && { opacity: 0.5 }]} onPress={() => onRetry(msg)}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.retryBtnText}>↻ {t('chat_retry')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {!!msg.rightsRefs?.length && (
+            <View testID="chat-rights-refs" style={styles.rightsRefs}>
+              {msg.rightsRefs.map(r => (
+                <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={t('x_ch_from_rights_card', { heading: r.heading })}
+                  style={styles.rightsRef} onPress={onOpenRights}>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>{t('x_ch_from_rights_card_2', { value: r.heading.replace(/^\d+\.\s*/, '') })}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>{t('x_ch_source', { source: r.source })}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {msg.suggestLawyerSearch && (
+            <TouchableOpacity accessibilityRole="button" style={styles.lawyerCta} onPress={onFindLawyer}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.lawyerCtaText}>📍 {t('chat_find_lawyer')}</Text>
+            </TouchableOpacity>
+          )}
+          {msg.showUpgrade && (
+            <TouchableOpacity accessibilityRole="button" style={styles.upgradeCta} onPress={onUpgrade}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.upgradeCtaText}>💎 {t('chat_upgrade_cta')}</Text>
+            </TouchableOpacity>
+          )}
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -393,15 +364,16 @@ function getOfflineAnswer(query: string): string | null {
 }
 
 // ── ChatScreen ─────────────────────────────────────────────────────────────────
-// T1-J: function signature is on one line; all hooks are inside the function body
+/** Streamed text is pushed to the screen at most this often (long answers stay smooth). */
+const FLUSH_MS = 60;
 
 function ChatScreen({ navigation, route }: ScreenProps) {
   useLang();
   const { confirm } = useConfirm();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
+  const { hasSession, recheck } = useHasSession();
 
-  // ── Route params ─────────────────────────────────────────────────────────────
   const {
     mode         = 'consumer',
     caseContext  = null,
@@ -412,100 +384,79 @@ function ChatScreen({ navigation, route }: ScreenProps) {
     caseTitle?: string | null; initialQuery?: string | null;
   };
   const isDefender = mode === 'defender';
-
-  // T1-K: caseId declared once; caseTitle comes only from destructured params above
   const caseId = (route?.params as Record<string, unknown>)?.caseId as string | null ?? null;
 
-  // ── State ─────────────────────────────────────────────────────────────────────
-  const [messages,      setMessages]      = useState<Message[]>([]);
-  const [input,         setInput]         = useState('');
+  const [messages,       setMessages]       = useState<Message[]>([]);
+  const [input,          setInput]          = useState('');
+  const [busy,           setBusy]           = useState(false);
+  const [sessionId,      setSessionId]      = useState('');
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [refreshing,     setRefreshing]     = useState(false);
 
-  const [loading,       setLoading]       = useState(false);
-  const [sessionId,     setSessionId]     = useState('');
-  const [showDisclaimer,setShowDisclaimer] = useState(true); // T2-E: unified disclaimer state
-  const [refreshing,    setRefreshing]    = useState(false);
-
-  // ── Refs ──────────────────────────────────────────────────────────────────────
   const mountedRef   = useRef(true);
   const listRef      = useRef<FlashListRef<Message>>(null);
   const userStateRef = useRef<{ code: string; name: string } | null>(null);
+  const abortRef     = useRef<AbortController | null>(null);
 
-  // ── Effects ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    });
-    return () => { mountedRef.current = false; _task.cancel(); };
-  }, []);
+  useEffect(() => () => { mountedRef.current = false; abortRef.current?.abort(); }, []);
+  useEffect(() => { getUserState().then(s => { userStateRef.current = s; }).catch(() => {}); }, []);
+  useEffect(() => { if (initialQuery) setInput(initialQuery); }, [initialQuery]);
+  useEffect(() => { hasValidConsent().then(ok => { if (ok) setShowDisclaimer(false); }).catch(() => {}); }, []);
 
-  useEffect(() => {
-    getUserState().then(s => { userStateRef.current = s; }).catch(() => {});
-  }, []);
-
-
-  useEffect(() => {
-    if (initialQuery) setInput(initialQuery);
-  }, [initialQuery]);
-
-  // T2-C: hasValidConsent() is now defined above (AsyncStorage-based)
-  useEffect(() => {
-    hasValidConsent().then(ok => {
-      if (ok) setShowDisclaimer(false);
-    }).catch(() => {});
-  }, []);
-
-  // ── Helpers ───────────────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
-    const st = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-    return () => clearTimeout(st);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
   }, []);
 
-  const loadHistory = useCallback(async (sid: string) => {
+  const update = useCallback((id: string, patch: Partial<Message> | ((m: Message) => Partial<Message>)) => {
+    if (!mountedRef.current) return;
+    setMessages(prev => prev.map(m => (m.id === id ? { ...m, ...(typeof patch === 'function' ? patch(m) : patch) } : m)));
+  }, []);
+
+  /**
+   * The saved conversation. On first load (keepLocal) anything the person
+   * already sent while it was loading stays after it instead of being wiped.
+   */
+  const loadHistory = useCallback(async (sid: string, keepLocal = false) => {
     try {
       const res = await api.get(`/chat/history/${sid}`);
-      const msgs: Message[] = unwrapList<Record<string, unknown>>(res.data, 'messages', 'history').map((h: Record<string, unknown>) => ({
-        id:   randomId(),
-        role: h.role as 'user' | 'assistant',
-        text: h.content as string,
+      const rows = unwrapList<Record<string, unknown>>(res.data, 'messages', 'history');
+      const msgs: Message[] = rows.map(h => ({
+        id:     randomId(),
+        role:   h.role === 'assistant' ? 'assistant' : 'user',
+        text:   String(h.content ?? ''),
+        status: h.status === 'stopped' ? 'stopped' : 'complete',
       }));
-      if (mountedRef.current) setMessages(msgs);
-    } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
+      if (mountedRef.current) setMessages(prev => (keepLocal ? [...msgs, ...prev] : msgs));
+    } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
   }, []);
 
-  // T1-L: session load on mount (declared after loadHistory, which it calls)
+  // Signed in: this device's session and its saved conversation.
   useEffect(() => {
-    getSessionId().then(id => {
-      setSessionId(id);
-      loadHistory(id);
-    });
-  }, [loadHistory]);
+    if (!hasSession) return;
+    getSessionId().then(id => { setSessionId(id); loadHistory(id, true); });
+  }, [hasSession, loadHistory]);
 
   const onRefresh = useCallback(async () => {
-    if (!sessionId) return;
+    if (!sessionId || busy) return;
     setRefreshing(true);
     await loadHistory(sessionId).catch(() => {});
     setRefreshing(false);
-  }, [sessionId, loadHistory]);
+  }, [sessionId, busy, loadHistory]);
 
-  // T2-D: exportConversation catch binds error variable
   const exportConversation = useCallback(async () => {
-    if (!messages || messages.length === 0) return;
+    if (!messages.length) return;
     try {
       const header = [
         t('x_ch_justice_gavel_ai_conversation'),
         '================================',
-        t('x_ch_export_exported', { date: new Date().toLocaleDateString(locale(), {
-          year: 'numeric', month: 'long', day: 'numeric',
-        }) }),
+        t('x_ch_export_exported', { date: new Date().toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' }) }),
         caseTitle ? t('x_ch_export_case', { title: caseTitle }) : '',
         '',
       ].filter(Boolean).join('\n');
-
-      const body = (messages ?? []).map(m => {
+      const body = messages.filter(m => m.text).map(m => {
         const sender = m.role === 'assistant' ? t('x_ch_justice_gavel_ai') : t('x_ch_export_you');
         return `[${sender}]\n${m.text}`;
       }).join('\n\n---\n\n');
-
       const footer = [
         '', '================================',
         t('x_ch_important_this_conversation_general'),
@@ -513,393 +464,197 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         t('x_ch_specific_situation'), '',
         'Justice Gavel · justicegavel.app',
       ].join('\n');
-
-      await RNShare.share({
-        message: header + '\n\n' + body + '\n\n' + footer,
-        title: t('x_ch_ai_legal_conversation'),
-      });
-    } catch { /* share cancelled by user — not an error */ }
+      await RNShare.share({ message: header + '\n\n' + body + '\n\n' + footer, title: t('x_ch_ai_legal_conversation') });
+    } catch { /* share cancelled */ }
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(() => {
-confirm(t('x_ch_clear_conversation'), t('x_ch_delete_all_messages_this'),
-      { confirmLabel: t('x_ch_clear'), destructive: true }).then(async ok => { if (!ok) return;
-  const sid = sessionId || await getSessionId();
-    try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
-    const newId = randomId();
-    await AsyncStorage.setItem('chat_session_id', newId);
-    setSessionId(newId);
-    setMessages([]);
-    })
+    confirm(t('x_ch_clear_conversation'), t('x_ch_delete_all_messages_this'), { confirmLabel: t('x_ch_clear'), destructive: true })
+      .then(async ok => {
+        if (!ok) return;
+        abortRef.current?.abort();
+        const sid = sessionId || await getSessionId();
+        try { await api.delete(`/chat/history/${sid}`); } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
+        const newId = randomId();
+        await AsyncStorage.setItem('chat_session_id', newId).catch(() => {});
+        setSessionId(newId);
+        setMessages([]);
+      });
   }, [sessionId, confirm]);
 
-  // ── Send ──────────────────────────────────────────────────────────────────────
-  const send = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: Message = { id: randomId(), role: 'user', text: text.trim() };
-    hapticImpact().catch(() => {});
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
-    scrollToBottom();
-
-    // ── Crisis keyword detection — route immediately, skip AI ─────────────────
-    const lower = text.trim().toLowerCase();
-    // English phrases always match; x_ch_crisis_words / x_ch_dv_words add them in the app language.
-    const localWords = (k: string) => t(k).split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
-    const CRISIS_WORDS = ['suicide', 'kill myself', 'end it', 'hurt myself', 'overdose', // i18n-exempt: matched, not shown
-      'dont want to live', 'want to die', 'harm myself', 'self harm', ...localWords('x_ch_crisis_words')]; // i18n-exempt: matched
-    const DV_WORDS = ['hitting me', 'beating me', 'choking me', 'he hit', 'she hit', // i18n-exempt: matched, not shown
-      'being abused', 'domestic violence', 'unsafe at home', ...localWords('x_ch_dv_words')]; // i18n-exempt: matched
-
-    if (CRISIS_WORDS.some(w => lower.includes(w))) {
-      setMessages(prev => [...prev, {
-        id: randomId(), role: 'assistant',
-        text: t('x_ch_i_hear_please_reach'),
-        suggestLawyerSearch: false,
-      }]);
-      setLoading(false);
-      return;
-    }
-
-    if (DV_WORDS.some(w => lower.includes(w))) {
-      setMessages(prev => [...prev, {
-        id: randomId(), role: 'assistant',
-        text: t('x_ch_safety_most_important_thing'),
-        suggestLawyerSearch: false,
-      }]);
-      setLoading(false);
-      return;
-    }
-
-    // ── Incoherent/too-short input ────────────────────────────────────────────
-    if (text.trim().length < 3) {
-      setMessages(prev => [...prev, {
-        id: randomId(), role: 'assistant',
-        text: t('x_ch_i_want_help_can'),
-        suggestLawyerSearch: false,
-      }]);
-      setLoading(false);
-      return;
-    }
-
+  /** Ask the AI for the answer that goes into assistant bubble `answerId`. */
+  const runAnswer = useCallback(async (answerId: string, question: string, clientMessageId: string) => {
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setBusy(true);
+    let pending = '';
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flush = () => {
+      flushTimer = null;
+      if (!pending) return;
+      const chunk = pending; pending = '';
+      update(answerId, m => ({ text: m.text + chunk }));
+    };
     try {
-      const online = await isOnline();
-      if (!online) {
-        const offlineAnswer = getOfflineAnswer(text.trim());
-        setMessages(prev => [...prev, {
-          id:   randomId(), role: 'assistant',
-          text: offlineAnswer || t('x_ch_re_offline_connect_internet'),
-          suggestLawyerSearch: false,
-        }]);
-        setLoading(false);
-        scrollToBottom();
+      if (!(await isOnline())) {
+        const offline = getOfflineAnswer(question);
+        update(answerId, { text: offline || t('x_ch_re_offline_connect_internet'), status: 'complete' });
         return;
       }
-
-      // T1-M: single sid resolution; inner re-declaration removed
-      const isFirstMsg = messages.length === 0;
-      if (isFirstMsg) track('first_ai_message', {}).catch(() => {});
       const sid = sessionId || await getSessionId();
-
-      // ── Streaming path (preferred) ────────────────────────────────────────
-      const useStream = typeof EventSource !== 'undefined';
-      if (useStream) {
-        const placeholderId = randomId();
-        setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: '' }]);
-        scrollToBottom();
-        let streamedText = '';
-        try {
-          const token = await getToken();
-          let gotContent = false;
-          await new Promise<void>((resolve, reject) => {
-            fetch(API_BASE_URL + '/chat/stream', {
-              method: 'POST',
-              headers: {
-                'Content-Type':  'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                ...(deviceTimeZone() ? { 'X-Timezone': deviceTimeZone() as string } : {}),
-              },
-              body: JSON.stringify({
-                message:         text.trim(),
-                sessionId:       sid,
-                caseId,
-                caseTitle,
-                mode,
-                caseContext,
-                user_state:      userStateRef.current?.code || null,
-                user_state_name: userStateRef.current?.name || null,
-              }),
-            }).then(async response => {
-              if (!response.ok || !response.body) {
-                if (TERMINAL_STREAM_STATUSES.has(response.status)) {
-                  const data = await response.json().catch(() => ({}));
-                  throw new StreamHttpError(response.status, data as Record<string, unknown>);
-                }
-                throw new Error('Stream unavailable');
-              }
-              const reader  = response.body.getReader();
-              const decoder = new TextDecoder();
-              let buffer = '';
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-                for (const line of lines) {
-                  if (!line.startsWith('data: ')) continue;
-                  try {
-                    const event = JSON.parse(line.slice(6));
-                    if (event.type === 'token') {
-                      gotContent = true;
-                      streamedText += event.text;
-                      setMessages(prev => prev.map(m =>
-                        m.id === placeholderId
-                          ? { ...m, text: m.text + event.text }
-                          : m
-                      ));
-                    } else if (event.type === 'done') {
-                      gotContent = true;
-                      setMessages(prev => prev.map(m =>
-                        m.id === placeholderId ? {
-                          ...m,
-                          text:                event.full_text,
-                          intent:              event.intent,
-                          suggestLawyerSearch: event.suggestLawyerSearch,
-                          rightsRefs:          Array.isArray(event.rights_refs) ? event.rights_refs : undefined,
-                        } : m
-                      ));
-                      scrollToBottom();
-                      resolve();
-                    } else if (event.type === 'error') {
-                      reject(new Error(event.message));
-                    }
-                  } catch { /* malformed SSE chunk — skip */ }
-                }
-              }
-              // A stream that ends without any content is treated as a failure
-              // so the request falls back to the job-queue endpoint below.
-              if (gotContent) resolve(); else reject(new Error('Empty stream'));
-            }).catch(reject);
-          });
-          // T1-N: setSending → setLoading
-          setLoading(false);
-          return; // streaming succeeded — skip fallback
-        } catch (streamErr) {
-          if (streamErr instanceof StreamHttpError) {
-            // Same answer /chat/ask would give — handle it once, don't re-send.
-            setMessages(prev => prev.filter(m => m.id !== placeholderId));
-            throw streamErr;
-          }
-          if (streamedText) {
-            // The answer was already streaming (and billed): keep what arrived
-            // instead of asking the same question a second time.
-            setMessages(prev => prev.map(m => m.id === placeholderId
-              ? { ...m, text: t('x_ch_answer_was_cut_off', { streamedText }) }
-              : m));
-            setLoading(false);
-            return;
-          }
-          // Nothing arrived (no SSE support / proxy / network) — fall back to the job queue once.
-          setMessages(prev => prev.filter(m => m.id !== placeholderId));
-        }
-      }
-
-      // ── Fallback: async job queue ─────────────────────────────────────────
-      const res = await api.post('/chat/ask', {
-        message:         text.trim(),
-        caseId:          caseId    || undefined,
-        caseTitle:       caseTitle || undefined,
-        sessionId:       sid,
-        mode,
-        caseContext,
-        user_state:      userStateRef.current?.code || null,
+      const answer = await askChat({
+        message: question, sessionId: sid, clientMessageId, mode,
+        caseContext, caseId, caseTitle,
+        user_state: userStateRef.current?.code || null,
         user_state_name: userStateRef.current?.name || null,
+      }, {
+        signal: ctrl.signal,
+        onToken: (tok) => { pending += tok; if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_MS); },
       });
-
-      if (res.data?.jobId) {
-        const jobId         = res.data?.jobId;
-        const placeholderId = randomId();
-        setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: t('x_ch_thinking') }]);
-        scrollToBottom();
-        pollJob(jobId, {
-          onProgress: ({ status, elapsed }: { status: string; elapsed: number }) => {
-            const sec   = Math.round(elapsed / 1000);
-            const phase = status === 'processing'
-              ? (sec < 5 ? t('x_ch_thinking') : sec < 20 ? t('x_ch_analyzing') : t('x_ch_almost_there'))
-              : t('x_ch_waiting_queue');
-            setMessages(prev => prev.map(m => m.id === placeholderId ? { ...m, text: phase } : m));
-          },
-        }).then((job: any) => {
-          const d = job.result || {};
-          setMessages(prev => prev.map(m =>
-            m.id === placeholderId
-              ? {
-                  id: randomId(), role: 'assistant',
-                  text:                (d.reply as string) || (d.answer as string) || t('x_ch_done'),
-                  suggestLawyerSearch: d.suggestLawyerSearch as boolean,
-                  intent:              d.intent as string,
-                  rightsRefs:          Array.isArray(d.rights_refs) ? (d.rights_refs as RightsRef[]) : undefined,
-                }
-              : m
-          ));
-          setLoading(false);
-          scrollToBottom();
-        }).catch((e: Error) => {
-          setMessages(prev => prev.map(m =>
-            m.id === placeholderId
-              ? { id: randomId(), role: 'assistant', text: '⚠️ ' + (e.message || t('x_ch_request_failed_try_again')) }
-              : m
-          ));
-          setLoading(false);
-          scrollToBottom();
-        });
-        return;
-      }
-
-      // Sync fallback
-      setMessages(prev => [...prev, {
-        id: randomId(), role: 'assistant',
-        text:                res.data?.reply,
-        suggestLawyerSearch: res.data?.suggestLawyerSearch,
-        intent:              res.data?.intent,
-      }]);
-
-    } catch (e: any) {
-      const status = (e as { response?: { status?: number; data?: { code?: string; error?: string } } }).response?.status;
-      const code   = (e as { response?: { data?: { code?: string } } }).response?.data?.code;
-
-      if (isDisclaimerRequired(e)) {
+      if (flushTimer) clearTimeout(flushTimer);
+      pending = '';
+      update(answerId, {
+        text: answer.text, status: 'complete', errorText: undefined,
+        intent: answer.intent, suggestLawyerSearch: answer.suggestLawyerSearch, rightsRefs: answer.rightsRefs,
+      });
+    } catch (e) {
+      if (flushTimer) clearTimeout(flushTimer);
+      flush();
+      const err = e instanceof ChatError ? e : new ChatError('ai_failed', chatErrorText('ai_failed'));
+      if (err.code === 'stopped') {
+        update(answerId, m => (m.text ? { status: 'stopped' } : { status: 'stopped', text: '' }));
+      } else if (err.code === 'chat_limit_reached') {
+        update(answerId, { text: chatErrorText(err.code), status: 'complete', showUpgrade: true, question: undefined });
+      } else if (err.code === 'disclaimer_required') {
         notifyDisclaimerRequired();
-        setMessages(prev => [...prev, {
-          id: randomId(), role: 'assistant',
-          text: t('x_ch_before_using_ai_chat'),
-          suggestLawyerSearch: false,
-        }]);
-      } else if (status === 402 || code === 'chat_limit_reached') {
-        setMessages(prev => [...prev, {
-          id: randomId(), role: 'assistant',
-          text: t('x_ch_ve_used_free_ai'),
-          suggestLawyerSearch: false,
-          showUpgrade: true,
-        }]);
-      } else if (status === 503 || status === 500) {
-        const aiDown = isAiUnavailable(e) || status === 503;
-        setMessages(prev => [...prev, {
-          id: randomId(), role: 'assistant',
-          text: aiDown
-            ? t('x_ch_ai_chat_temporarily_unavailable')
-            : t('x_ch_server_had_error_please'),
-          suggestLawyerSearch: false,
-        }]);
-      } else if (!status) {
-        setMessages(prev => [...prev, {
-          id: randomId(), role: 'assistant',
-          text: t('x_ch_no_connection_check_internet'),
-          suggestLawyerSearch: false,
-        }]);
+        update(answerId, { text: chatErrorText(err.code), status: 'complete', question: undefined });
+      } else if (err.status === 401) {
+        recheck();
+        update(answerId, { text: '', status: 'error', errorText: t('chat_signin_body'), question: undefined });
       } else {
-        setMessages(prev => [...prev, {
-          id: randomId(), role: 'assistant',
-          text: t('x_ch_sorry_i_had_trouble'),
-          suggestLawyerSearch: false,
-        }]);
+        // Keep what arrived; offer the same question again (same id → no duplicate).
+        update(answerId, m => ({ text: m.text || err.partial, status: 'error', errorText: err.message || chatErrorText(err.code) }));
       }
     } finally {
-      setLoading(false);
+      if (abortRef.current === ctrl) abortRef.current = null;
+      if (mountedRef.current) setBusy(false);
       scrollToBottom();
     }
-  }, [sessionId, loading, scrollToBottom, caseContext, caseId, caseTitle, mode, messages.length]);
+  }, [sessionId, mode, caseContext, caseId, caseTitle, update, recheck, scrollToBottom]);
 
-  // ── Navigation helpers ────────────────────────────────────────────────────────
+  const send = useCallback(async (raw: string) => {
+    const text = raw.trim();
+    if (!text || busy) return;
+    hapticImpact().catch(() => {});
+    setInput('');
+    if (!messages.length) track('first_ai_message', {}).catch(() => {});
+
+    const userMsg: Message = { id: randomId(), role: 'user', text };
+    const added: Message[] = [userMsg];
+    // Self-harm / domestic violence: the crisis lines first, always (also offline).
+    const crisis = detectCrisis(text);
+    if (crisis) {
+      added.push({ id: randomId(), role: 'assistant', crisis, status: 'complete',
+        text: crisis === 'crisis' ? t('x_ch_i_hear_please_reach') : t('x_ch_safety_most_important_thing') });
+    }
+    if (text.length < 3) {
+      added.push({ id: randomId(), role: 'assistant', status: 'complete', text: t('x_ch_i_want_help_can') });
+      setMessages(prev => [...prev, ...added]);
+      scrollToBottom();
+      return;
+    }
+    const clientMessageId = randomId();
+    const answer: Message = { id: randomId(), role: 'assistant', text: '', status: 'streaming', question: text, clientMessageId };
+    setMessages(prev => [...prev, ...added, answer]);
+    scrollToBottom();
+    await runAnswer(answer.id, text, clientMessageId);
+  }, [busy, messages.length, runAnswer, scrollToBottom]);
+
+  const retry = useCallback((m: Message) => {
+    if (busy || !m.question || !m.clientMessageId) return;
+    update(m.id, { text: '', status: 'streaming', errorText: undefined });
+    runAnswer(m.id, m.question, m.clientMessageId);
+  }, [busy, update, runAnswer]);
+
+  const stop = useCallback(() => { abortRef.current?.abort(); }, []);
+
   const onFindLawyer = () => navigation.navigate('Match');
   const onUpgrade    = () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' });
+  const onOpenRights = () => navigation.navigate('MoreTab', { screen: 'RightsCard' });
+  const onOpenCrisis = () => navigation.navigate('MoreTab', { screen: 'CrisisResources' });
 
+  const header = (
+    <View style={styles.header}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_ch_legal_help')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>{t('x_ch_ai_powered_rights_guide')}</Text>
+      </View>
+      {messages.length > 0 && (
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={exportConversation} style={styles.clearBtn}
+            testID="chat-export-button" accessibilityLabel={t('x_ch_share_conversation')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('share')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" onPress={clearChat} style={styles.clearBtn}
+            testID="chat-clear-button" accessibilityLabel={t('x_ch_clear')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('x_ch_clear')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
 
-  const isEmpty = messages.length === 0 && !loading;
+  if (hasSession === false) {
+    return (
+      <View style={[styles.screen, { backgroundColor: colors.bg }]} testID="chat-screen">
+        {header}
+        <SignInNeeded navigation={navigation} title={t('chat_signin_title')} body={t('chat_signin_body')} onSignedIn={recheck} testID="chat-sign-in" />
+        <TouchableOpacity accessibilityRole="button" testID="chat-guest-crisis" style={styles.guestCrisis} onPress={onOpenCrisis}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.guestCrisisText}>{t('chat_guest_crisis')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  const isEmpty = messages.length === 0;
+  const canSend = !!input.trim() && !busy;
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
+      testID="chat-screen"
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_ch_legal_help')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>{t('x_ch_ai_powered_rights_guide')}</Text>
-        </View>
-        {messages.length > 0 && (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={exportConversation}
-              style={styles.clearBtn}
-              testID="chat-export-button"
-             accessibilityLabel={t('x_ch_share_conversation')}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('share')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={clearChat}
-              style={styles.clearBtn}
-             accessibilityLabel={t('x_ch_clear')}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('x_ch_clear')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      {header}
 
-      {/* Disclaimer banner — dismisses after user taps */}
       {showDisclaimer && (
         <TouchableOpacity
           accessibilityRole="button"
           activeOpacity={0.6}
-          onPress={() => {
-            setShowDisclaimer(false);
-            recordConsent();
-          }}
-          style={{
-            backgroundColor: colors.bgCard, borderRadius: 8,
-            padding: 12, margin: 12,
-            borderLeftWidth: 3, borderLeftColor: colors.gold,
-          }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 }}>
-            {t('x_ch_ai_legal_information_not')}
-          </Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, fontSize: 11, lineHeight: 16 }}>
-            {t('x_ch_i_am_ai_guide')}
-          </Text>
+          testID="chat-disclaimer"
+          onPress={() => { setShowDisclaimer(false); recordConsent(); }}
+          style={[styles.disclaimerCard, { backgroundColor: colors.bgCard, borderLeftColor: colors.gold }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerTitle, { color: colors.goldText }]}>{t('x_ch_ai_legal_information_not')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerBody, { color: colors.textSecond }]}>{t('x_ch_i_am_ai_guide')}</Text>
         </TouchableOpacity>
       )}
 
-      {/* Messages or empty state */}
       {isEmpty ? (
         <View style={styles.emptyState}>
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('ja_s1')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
-            {t('x_ch_ask_anything_about_legal')}
-          </Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_ch_ask_anything_about_legal')}</Text>
           <View style={styles.quickPrompts}>
-            {/* T1-P: onPress fixed — no longer split across lines */}
             {QUICK_PROMPTS().map(p => (
-              <TouchableOpacity
-                accessibilityRole="button"
-                key={p.label}
-                style={styles.quickChip}
-                accessibilityLabel={p.label} onPress={() => send(p.text)}
-              >
+              <TouchableOpacity accessibilityRole="button" key={p.label} style={styles.quickChip}
+                accessibilityLabel={p.label} onPress={() => send(p.text)}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.quickChipText}>{p.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
       ) : (
-        // T1-Q: renderItem and ListEmptyComponent are separate props, cleanly formatted
         <FlashList<Message>
           ref={listRef}
           keyboardShouldPersistTaps="handled"
@@ -908,93 +663,62 @@ confirm(t('x_ch_clear_conversation'), t('x_ch_delete_all_messages_this'),
           onRefresh={onRefresh}
           refreshing={refreshing}
           renderItem={({ item }) => (
-            <Bubble
-              msg={item}
-              isDefender={isDefender}
-              onFindLawyer={onFindLawyer}
-              onUpgrade={onUpgrade}
-              onOpenRights={() => (navigation as any).navigate('MoreTab', { screen: 'RightsCard' })}
-            />
+            <Bubble msg={item} isDefender={isDefender} busy={busy}
+              onFindLawyer={onFindLawyer} onUpgrade={onUpgrade} onOpenRights={onOpenRights}
+              onOpenCrisis={onOpenCrisis} onRetry={retry} />
           )}
-          ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              {t('x_ch_start_conversation_ask_any')}
-            </Text>
-          }
           contentContainerStyle={styles.messageList}
           onContentSizeChange={scrollToBottom}
         />
       )}
 
-      {/* Typing indicator */}
-      {loading && (
-        <View style={styles.typingRow}>
-          <View style={[styles.avatarDot, isDefender && styles.avatarDotDefender]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>
-              {isDefender ? '⚖️' : 'JG'}
-            </Text>
-          </View>
-          <View style={styles.typingBubble}>
-            <ActivityIndicator size="small" color={colors.navy} />
-            <Text maxFontSizeMultiplier={1.4} style={styles.typingText}>{t('chat_thinking')}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Input bar */}
-      {/* T1-R: stray '>' after JSX comments removed throughout */}
       <View style={styles.inputBar}>
-        {/* Voice input button */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={styles.iconBtn}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote'})}
+        <TouchableOpacity accessibilityRole="button" style={styles.iconBtn}
+          onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote' })}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}
-        >
+          accessibilityLabel={t('x_nav_voice_note')}
+          accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🎙</Text>
         </TouchableOpacity>
 
         <TextInput
+          testID="chat-input"
           style={styles.textInput}
           placeholder={t('x_ch_ask_anything_what_should')}
           placeholderTextColor={colors.textMuted}
           value={input}
           onChangeText={setInput}
           multiline
-          maxLength={500}
+          maxLength={2000}
           returnKeyType="send"
           onSubmitEditing={() => send(input)}
+          accessibilityLabel={t('x_ch_ask_anything_what_should')}
         />
 
-        {/* Translate button */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={styles.iconBtn}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'Translator'})}
+        <TouchableOpacity accessibilityRole="button" style={styles.iconBtn}
+          onPress={() => navigation.navigate('MoreTab', { screen: 'Translator' })}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_ch_open_interpreter')}
-          accessibilityHint={t('x_ch_opens_real_time_translation')}
-        >
+          accessibilityHint={t('x_ch_opens_real_time_translation')}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🌐</Text>
         </TouchableOpacity>
 
-        {/* T1-S: closing '>' on TouchableOpacity restored */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-          onPress={() => send(input)}
-          disabled={!input.trim() || loading}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sendBtnText, (!input.trim() || loading) && styles.sendBtnTextDisabled]}>↑</Text>
-        </TouchableOpacity>
+        {busy ? (
+          <TouchableOpacity accessibilityRole="button" testID="chat-stop" style={[styles.sendBtn, styles.stopBtn]}
+            onPress={stop} accessibilityLabel={t('chat_stop')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>■</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity accessibilityRole="button" testID="chat-send"
+            style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
+            onPress={() => send(input)} disabled={!canSend} accessibilityLabel={t('chat_send')}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.sendBtnText, !canSend && styles.sendBtnTextDisabled]}>↑</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
-        {t('x_ch_not_legal_advice_emergencies')}
-      </Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>{t('x_ch_not_legal_advice_emergencies')}</Text>
       <AIDisclaimer variant="banner" />
-
     </KeyboardAvoidingView>
   );
 }
@@ -1023,8 +747,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   bubbleWrap:       { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
   bubbleWrapUser:   { justifyContent: 'flex-end' },
   avatarDot:        { width: 30, height: 30, borderRadius: 16, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 2, borderWidth: 1.5, borderColor: 'rgba(133,183,235,0.4)' },
-  avatarDotDefender:{ backgroundColor: COLORS.navy },
-  avatarText:       { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
+  avatarText:       { color: COLORS.white, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
   bubble:           { maxWidth: '78%', borderRadius: 20, padding: 12 },
   bubbleAssistant:  { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 3 },
   bubbleUser:       { backgroundColor: COLORS.navy, borderBottomRightRadius: 4 },
@@ -1038,9 +761,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
   lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   upgradeCta:       { marginTop: 10, backgroundColor: COLORS.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },
   upgradeCtaText:   { fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  typingRow:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 8 },
-  typingBubble:     { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderRadius: 16, padding: 10, gap: 8, elevation: 1 },
+  typingInline:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typingText:       { fontSize: 12, lineHeight: 20, color: colors.textMuted },
+  bubbleCrisis:     { borderColor: colors.emergency, borderWidth: 2 },
+  crisisActions:    { marginTop: 10, gap: 8 },
+  crisisBtn:        { backgroundColor: colors.emergencyDark, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  crisisBtnText:    { color: COLORS.white, fontSize: 14, fontWeight: '800' },
+  crisisBtnAlt:     { borderWidth: 1, borderColor: colors.border, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  crisisBtnAltText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  statusNote:       { marginTop: 6, fontSize: 12, lineHeight: 18, color: colors.textMuted, fontStyle: 'italic' },
+  errorNote:        { marginTop: 8, fontSize: 13, lineHeight: 19, color: colors.textPrimary },
+  retryBtn:         { marginTop: 8, alignSelf: 'flex-start', borderRadius: 10, borderWidth: 1, borderColor: colors.navy, minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
+  retryBtnText:     { color: colors.textBrand, fontSize: 14, fontWeight: '700' },
+  stopBtn:          { backgroundColor: colors.emergencyDark },
+  disclaimerCard:   { borderRadius: 8, padding: 12, margin: 12, borderLeftWidth: 3 },
+  disclaimerTitle:  { fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 },
+  disclaimerBody:   { fontSize: 11, lineHeight: 16 },
+  guestCrisis:      { alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 },
+  guestCrisisText:  { color: colors.textBrand, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' },
   inputBar:         { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 10 : 10, backgroundColor: COLORS.bgCard, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
   textInput:        { flex: 1, backgroundColor: COLORS.bg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendBtn:          { width: 52, height: 52, borderRadius: 20, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' },

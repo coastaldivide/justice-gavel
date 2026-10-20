@@ -16,11 +16,13 @@ import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
-import { api }            from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { toLocalISODate } from '../utils/dateUtils';
-import { t, useLang, perLang } from '../i18n';
+import { t, useLang, locale } from '../i18n';
+import { categoryLabel } from '../constants/barPrepCategories';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CategoryStat {
@@ -31,7 +33,7 @@ interface CategoryStat {
 }
 
 interface Session {
-  id:             number;
+  id:             string;
   started_at:     string;
   mode:           string;
   correct_count:  number;
@@ -41,8 +43,7 @@ interface Session {
 
 interface Dashboard {
   streak_days:       number;
-  pass_probability:  number;
-  peer_percentile:   number;
+  peer_percentile:   number | null;
   questions_due:     number;
   total_answered:    number;
   correct_total:     number;
@@ -51,14 +52,7 @@ interface Dashboard {
   streak_calendar:   string[];   // ISO date strings with activity
 }
 
-const CATEGORY_LABELS = perLang((): Record<string, string> => ({
-  homicide: t('x_bar_prep_home_homicide'), theft_property: t('x_bar_prep_home_theft_property'),
-  defenses: t('x_bar_prep_home_defenses'), criminal_procedure: t('x_bar_prep_home_crim_procedure'),
-  fifth_sixth_amendment: t('x_bar_prep_progress_5th_6th_amend'),
-  fourth_amendment: t('x_bar_prep_home_4th_amendment'), due_process: t('x_bar_prep_home_due_process'),
-  equal_protection: t('x_bar_prep_home_equal_protection'), first_amendment: t('x_bar_prep_home_1st_amendment'),
-  incorporation_14th: t('x_bar_prep_home_incorporation_14th'),
-}));
+
 
 function getAccuracyColor(pct: number): string {
   if (pct >= 75) return COLORS.legal;
@@ -73,24 +67,36 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
   const [data, setData]         = useState<Dashboard | null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]       = useState('');
 
   const load = useCallback(async () => {
+    setError('');
     try {
       const res = await api.get('/bar-prep/progress');
       setData(res.data);
-    } catch {
-      /* silently handle */
+    } catch (e) {
+      setError(apiErrorMessage(e, t('x_bar_prep_home_could_not_load_bar')));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { hasSession, recheck } = useHasSession();
+  useEffect(() => { if (hasSession) load(); else if (hasSession === false) setLoading(false); }, [hasSession, load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
   const styles = makeStyles(colors);
+
+  if (hasSession === false) {
+    return (
+      <View style={styles.container}>
+        <GradientHeader title={t('x_bar_prep_progress_progress_dashboard')} onBack={() => navigation.goBack()} />
+        <SignInNeeded navigation={navigation} body={t('barprep_signin_body')} onSignedIn={recheck} />
+      </View>
+    );
+  }
 
   if (loading) {
   return (
@@ -117,19 +123,13 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {!!error && (
+          <TouchableOpacity accessibilityRole="button" testID="barprep-progress-error" onPress={load} style={[styles.heroCard, { marginBottom: 12 }]}>
+            <Text style={styles.heroSub}>{error} · {t('try_again')}</Text>
+          </TouchableOpacity>
+        )}
         {/* ── Hero Stats ──────────────────────────────────────────── */}
         <View style={styles.heroRow}>
-          {/* Pass Probability */}
-          <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>{t('x_bar_prep_progress_pass_probability')}</Text>
-            <Text style={[styles.heroValue, {
-              color: getAccuracyColor(data?.pass_probability || 0),
-            }]}>
-              {data?.pass_probability || 0}%
-            </Text>
-            <Text style={styles.heroSub}>{t('x_bar_prep_progress_target_66')}</Text>
-          </View>
-
           {/* Overall Accuracy */}
           <View style={styles.heroCard}>
             <Text style={styles.heroLabel}>{t('x_bar_prep_progress_overall_accuracy')}</Text>
@@ -145,7 +145,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             <Text style={[styles.heroValue, { color: colors.primary }]}>
               🔥 {data?.streak_days || 0}d
             </Text>
-            <Text style={styles.heroSub}>{t('x_bar_prep_progress_top', { value: data?.peer_percentile || '--' })}</Text>
+            <Text style={styles.heroSub}>{t('x_bar_prep_progress_top', { value: data?.peer_percentile ?? '—' })}</Text>
           </View>
         </View>
 
@@ -155,7 +155,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           {(data?.category_stats || []).map(stat => (
             <View key={stat.category} style={[styles.categoryRow, { backgroundColor: colors.card }]}>
               <Text style={styles.categoryName} numberOfLines={1}>
-                {CATEGORY_LABELS()[stat.category] || stat.category}
+                {categoryLabel(stat.category)}
               </Text>
               <View style={styles.categoryBarTrack}>
                 <View style={[
@@ -209,10 +209,10 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             <View key={ses.id} style={[styles.sessionRow, { backgroundColor: colors.card }]}>
               <View style={styles.sessionLeft}>
                 <Text style={styles.sessionMode}>
-                  {ses.mode === 'timed' ? '⏱' : '✏️'} {ses.mode}
+                  {ses.mode === 'timed' ? `⏱ ${t('x_bar_prep_results_timed_mode')}` : `✏️ ${t('x_bar_prep_results_practice_mode')}`}
                 </Text>
                 <Text style={styles.sessionDate}>
-                  {new Date(ses.started_at).toLocaleDateString()}
+                  {new Date(ses.started_at).toLocaleDateString(locale())}
                 </Text>
               </View>
               <View style={styles.sessionRight}>

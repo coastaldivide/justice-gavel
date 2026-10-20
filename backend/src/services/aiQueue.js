@@ -1,5 +1,5 @@
 import { CLAUDE_MODEL } from '../utils/ai.js';
-import { sdkMessagesCreate } from './aiClient.js';
+import { sdkMessagesCreate, aiErrorCode } from './aiClient.js';
 /**
  * services/aiQueue.js — BullMQ job queue for AI (Claude) calls
  *
@@ -55,9 +55,12 @@ export const barVerifyQueue  = connection ? new Queue('bar-verification', { conn
 // Closures cannot be serialised into Redis, so they always run in this process
 // with bounded concurrency; clients poll GET /api/jobs/:id.
 //   statuses: pending → processing → done | failed
-//   TTL 15 min after completion; per-job timeout 45 s (JOB_TIMEOUT_MS env).
+//   TTL 15 min after completion; per-job timeout 45 s (AI_JOB_TIMEOUT_MS env),
+//   longer for the job types that write long documents (JOB_TIMEOUT_BY_TYPE).
 const JOB_TTL_MS      = 15 * 60 * 1000;
 const JOB_TIMEOUT_MS  = parseInt(process.env.AI_JOB_TIMEOUT_MS || '45000', 10);
+export const JOB_TIMEOUT_BY_TYPE = Object.freeze({ research: 120_000, motion: 200_000, motion_refine: 200_000 });
+const jobTimeout = (type) => Math.max(JOB_TIMEOUT_MS, JOB_TIMEOUT_BY_TYPE[type] || 0);
 const MAX_CONCURRENCY = parseInt(process.env.AI_CONCURRENCY || '8', 10);
 const _jobs    = new Map();   // id → job
 const _pending = [];          // ids waiting for a slot
@@ -76,16 +79,21 @@ function _pump() {
     let timer;
     Promise.race([
       Promise.resolve().then(() => job._fn()),
-      new Promise((_, rej) => { timer = setTimeout(() => rej(new Error(`Job timed out after ${JOB_TIMEOUT_MS / 1000}s`)), JOB_TIMEOUT_MS); timer.unref?.(); }),
+      new Promise((_, rej) => {
+        const ms = jobTimeout(job.type);
+        timer = setTimeout(() => rej(Object.assign(new Error(`Job timed out after ${ms / 1000}s`), { code: 'ai_timeout' })), ms);
+        timer.unref?.();
+      }),
     ])
       .then(result => { job.status = 'done'; job.result = result ?? null; _done++; })
       .catch(err => {
         job.status = 'failed';
         _failed++;
-        job.error  = err?.code === 'ai_unavailable' || err?.status === 503
-          ? 'AI features are not available right now.'
-          : (err?.message || 'Job failed');
-        logger.error({ msg: '[ai_queue] in-process job failed', id, type: job.type, error: err?.message });
+        // Only a code leaves the server (routes/jobs.js words it in the
+        // caller's language); the upstream text stays in the log.
+        job.code  = aiErrorCode(err);
+        job.error = job.code;
+        logger.error({ msg: '[ai_queue] in-process job failed', id, type: job.type, code: job.code, error: err?.message });
       })
       .finally(() => {
         clearTimeout(timer);
@@ -264,9 +272,11 @@ export async function getJobAsync(jobId) {
         const state = await job.getState();
         const status = state === 'completed' ? 'done' : state === 'failed' ? 'failed'
           : state === 'active' ? 'processing' : 'pending';
+        const code = status === 'failed' ? aiErrorCode({ message: job.failedReason }) : null;
         return {
           id: job.id, type: q.name, userId: job.data?.userId ?? null, status,
-          result: job.returnvalue ?? null, error: job.failedReason ?? null,
+          result: job.returnvalue ?? null,
+          code, error: code,
           queuedAt: job.timestamp ? new Date(job.timestamp).toISOString() : null,
           startedAt: job.processedOn ? new Date(job.processedOn).toISOString() : null,
           completedAt: job.finishedOn ? new Date(job.finishedOn).toISOString() : null,

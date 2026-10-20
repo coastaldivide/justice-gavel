@@ -242,8 +242,9 @@ async function withRetry<T>(
     } catch (err: unknown) {
       lastErr = err;
       const status = (err as any)?.response?.status;
-      // Don't retry auth errors or bad requests
+      // Don't retry auth errors, bad requests or a request the caller cancelled
       if (status && !RETRY_CODES.has(status)) throw err;
+      if ((err as { code?: string })?.code === 'ERR_CANCELED') throw err;
       if (i < attempts - 1) await sleep(delayMs * 2 ** i);
     }
   }
@@ -275,16 +276,18 @@ async function request<T = any>(
   signal?: AbortSignal,
 ): Promise<ApiResponse<T>> {
   const method = (config.method || 'GET').toUpperCase();
+  // A caller's AbortSignal may come either way (api.get(url, { signal })).
+  const abortSignal = signal ?? (config.signal as AbortSignal | undefined);
   // Create endpoints the server de-duplicates (constants/idempotency.ts): send
   // an Idempotency-Key and retry a dropped / timed-out request with the SAME
   // key — the server replays the first answer instead of creating a duplicate.
   if (method === 'POST' && isIdempotentPost(config.url)) {
     const headers = { ...(config.headers as Record<string, string> | undefined) };
     if (!headers['Idempotency-Key']) headers['Idempotency-Key'] = newIdempotencyKey();
-    const sendKeyed = () => instance.request<T>({ ...config, headers, signal });
+    const sendKeyed = () => instance.request<T>({ ...config, headers, signal: abortSignal });
     return retryKeyedPost(sendKeyed);
   }
-  const send = () => instance.request<T>({ ...config, signal });
+  const send = () => instance.request<T>({ ...config, signal: abortSignal });
   // Other writes are never retried automatically: retrying a POST without a
   // key (login, payment) after a timeout could submit it twice.
   return method === 'GET' || method === 'HEAD' ? withRetry(send) : send();

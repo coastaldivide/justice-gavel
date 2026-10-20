@@ -54,6 +54,10 @@ export const IDEMPOTENT_POST_PATHS = [
   '/api/following/accept',
   '/api/help/reports',
   '/api/help/claims',
+  // AI jobs: a retried request gets the first job id back (no second paid AI call)
+  '/api/motions/generate',
+  '/api/research/ask',
+  '/api/translate/session/:code/message',
 ];
 
 const PATH_RES = IDEMPOTENT_POST_PATHS.map(p => new RegExp(`^${p.replace(/:[A-Za-z]+/g, '[^/]+')}/?$`));

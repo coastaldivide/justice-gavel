@@ -89,12 +89,12 @@ const mkMatter = (v, o = {}) => ({
 // ── DISC8. All 6 Discrepancies Fixed ─────────────────────────────────────
 describe('DISC8. Discrepancy Fixes — 6 threshold items', () => {
   test('DISC8-01: chat/stream Server-Sent Events streaming [≥5]', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
-    expect(src).toContain('Server-Sent Events streaming');
-    expect(src).toContain("router.post('/stream'");
-    expect(src).toContain('BUSINESS_CONSTANTS');
-  });
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
+      expect(src).toContain('Server-Sent Events streaming');
+      expect(src).toContain("router.post('/stream'");
+      expect(src).toContain('chatContext');
+    });
   test('DISC8-02: reviews.js GET /summary aggregates published reviews only', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/reviews.js', 'utf8');
@@ -108,13 +108,13 @@ describe('DISC8. Discrepancy Fixes — 6 threshold items', () => {
     expect(src).toContain('note');
     expect(src).toContain('Saved lawyers');
   });
-  test('DISC8-05: motions/history.js POST /review submits for attorney review [≥5]', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/history.js', 'utf8');
-    expect(src).toContain("router.post('/review'");
-    expect(src).toContain('review');
-    expect(src).toContain('authRequired');
-  });
+  test('DISC8-05: motions/review.js POST /review submits for attorney review [≥5]', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/motions/review.js', 'utf8');
+      expect(src).toContain("router.post('/review'");
+      expect(src).toContain('review');
+      expect(src).toContain('authRequired');
+    });
   test('DISC8-06: transcribe.js POST /note transcribes voice to case note [≥5]', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/transcribe.js', 'utf8');

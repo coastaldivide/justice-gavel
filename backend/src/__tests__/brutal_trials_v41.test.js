@@ -64,23 +64,24 @@ const mkMatter = (v, o = {}) => ({
 
 // ── S1a. research.js ──────────────────────────────────────────────────────
 describe('S1a. research.js — AI Legal Research ($49/mo)', () => {
-  test("S1a-01: research.js is a $49/mo add-on using Claude sonnet", async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
-    expect(src).toContain('$49/mo');
-    expect(src).toContain('model:      CLAUDE_MODEL');          // pinned once in utils/ai.js
-    expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
-    expect(src).toContain('legal research');
-  });
-  test('S1a-02: POST /ask, GET /history, GET/DELETE /session/:id, POST /subscribe, GET /status', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
-    expect(src).toContain('/ask');
-    expect(src).toContain('/history');
-    expect(src).toContain('/session/:id');
-    expect(src).toContain('/subscribe');
-    expect(src).toContain('/status');
-  });
+  test("S1a-01: research.js is a paid-plan feature using Claude sonnet", async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
+      expect(src).toContain('RESEARCH_PLANS');
+      expect(src).toContain("canAccessFeature(r, 'research')");
+      expect(src).toContain('model: CLAUDE_MODEL');                // pinned once in utils/ai.js
+      expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
+      expect(src).toContain('legal research');
+    });
+  test('S1a-02: POST /ask, GET /history, GET/DELETE /session/:id, GET /status (no unpaid /subscribe)', async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
+      expect(src).toContain('/ask');
+      expect(src).toContain('/history');
+      expect(src).toContain('/session/:id');
+      expect(src).not.toContain("router.post('/subscribe'");
+      expect(src).toContain('/status');
+    });
   test('S1a-03: optimised for case law, statutory interpretation, and jurisdiction', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
@@ -252,14 +253,14 @@ describe('S6d. RewardsScreen + DrugPenaltiesScreen', () => {
 
 // ── S12. UX ────────────────────────────────────────────────────────────────
 describe('S12. UX — Architecture Depth', () => {
-  test("S12-01: research.js uses Claude sonnet-4 with legal system prompt", async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
-    expect(src).toContain('$49/mo');
-    expect(src).toContain('model:      CLAUDE_MODEL');          // pinned once in utils/ai.js
-    expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
-    expect(src).toContain('legal research');
-  });
+  test("S12-01: research.js uses Claude sonnet with legal system prompt", async () => {
+      const fs = await import('fs');
+      const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
+      expect(src).toContain('RESEARCH_SYSTEM');
+      expect(src).toContain('model: CLAUDE_MODEL');                // pinned once in utils/ai.js
+      expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
+      expect(src).toContain('legal research');
+    });
   test('S12-02: auth /accept-tos creates immutable clickwrap audit record', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8');

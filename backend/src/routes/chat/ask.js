@@ -1,137 +1,71 @@
-import { logIgnored } from '../../utils/ignored.js';
-import { requireAi } from '../../utils/ai.js';
-import { requireDisclaimer } from '../../middleware/disclaimer.js';
 /**
- * chat/ask.js — POST /ask — main AI chat
+ * chat/ask.js — POST /ask — main AI chat request/response fallback: the answer
+ * is a job (poll GET /api/jobs/:id).
+ *
+ * Used when the app cannot read a stream (native, old browsers, a proxy that
+ * buffers SSE). Same rules as /stream: free accounts get
+ * FREE_CHAT_MESSAGES_PER_DAY questions per local day, defender mode only for
+ * attorneys, answers in the request language, and a retry with the same
+ * clientMessageId returns the answer already given instead of asking again.
  */
-import { err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
-import { authRequired }   from '../../middleware/auth.js';
-import { getDb }          from '../../db/index.js';
-import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
-import logger             from '../../utils/logger.js';
-import { rightsRefsFor }  from '../../services/rightsContent.js';
 import rateLimit          from 'express-rate-limit';
+import { requireAi }      from '../../utils/ai.js';
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
+import { authRequired }   from '../../middleware/auth.js';
+import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
+import { getDb }          from '../../db/index.js';
+import { enqueueAIJob as enqueue } from '../../services/aiQueue.js';
+import { rightsRefsFor }  from '../../services/rightsContent.js';
+import { msg, resolveLang } from '../../i18n/index.js';
+import logger             from '../../utils/logger.js';
 import {
-  getHistory, saveMessage, detectLawyerHandoff, callClaude, classifyIntent,
+  chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
+  getHistory, detectLawyerHandoff, callClaude, classifyIntent,
 } from './_helpers.js';
 
-const aiLimiter = rateLimit({
+export const chatBurstLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 50,
   standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => req.user?.id?.toString() ?? req.ip,
-  message: { error: 'AI rate limit reached — please wait.' },
+  validate: false,
+  handler: (req, res) => res.status(429).json({ error: 'rate_limited', code: 'rate_limited', message: msg(resolveLang(req), 'chat.err.rate') }),
 });
 
 const router = Router();
 
-router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
-  // Compute isDefender early — rate limit check runs before full body destructuring
-  const isDefender = req.body?.mode === 'defender';
-
-  // Single DB handle — shared across rate-limit check and main handler.
-  // Declared here with let so both try blocks can reference it; getDb()
-  // is called inside the outer try so a DB init failure returns 500 cleanly.
-  let db;
+router.post('/ask', chatBurstLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
+  const lang = resolveLang(req);
   try {
-    db = await getDb();
-    // Check if user has active subscription
-    const sub = await db.get(
-      `SELECT id FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing')`,
-      [req.user.id]
-    ).catch(() => null);
+    const db = await getDb();
+    const body = readChatBody(req, lang);
+    if (body.error) return res.status(400).json(body.error);
+    const ctx = await chatContext(db, req);
+    const userId = req.user.id;
 
-    if (!sub) {
-      // Count today's messages for this user
-      // Use indexed user_id column — avoids full-table LIKE scan on every request
-      const todayCount = await db.get(
-        `SELECT COUNT(*) as n FROM chat_sessions
-         WHERE user_id = ? AND role = 'user'
-         AND created_at >= CURRENT_DATE`,
-        [req.user.id]
-      ).catch(() => ({ n: 0 }));
-
-      // Defender mode bypasses the daily limit — they're using professional tools.
-      if (!isDefender && (todayCount?.n ?? 0) >= BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE) {
-        const d = new Date();
-        const resetsAt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)).toISOString();
-        return res.status(402).json({
-          error: 'Daily limit reached',
-          code: 'chat_limit_reached',
-          message: 'Free accounts include 3 AI messages per day. Upgrade for unlimited access.',
-          upgrade_url: '/subscribe',
-          limit: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE,
-          used: todayCount?.n ?? 0,
-          remaining: 0,
-          resets_at: resetsAt,
-        });
-      }
-    }
-  } catch (e) {
-    // Limit check failed — allow through rather than blocking the request
-    logger.warn('[chat/ask] rate limit check failed:', e.message);
-  }
-
-  try {
-    // Ensure db is ready — may be undefined if rate-limit check threw before getDb() resolved
-    if (!db) db = await getDb();
-
-    const {
-      message: _msg = '', sessionId, city, lat, lng,
-      mode = 'consumer', caseContext = null,
-      user_state = null, user_state_name = null,
-    } = req.body || {};
-    const message    = String(_msg);
-    const trimmedMsg = message.trim();
-
-    // ── Input length limits — prevent abuse and runaway API costs ──────────────
-    // AI input: 4,000 chars ≈ 1,000 tokens — sufficient for any legitimate question
-    // Excessive input costs ~$0.01–0.05 per call at current pricing
-    if (message.length > 4000) return err400(res, 'Message too long. Please keep messages under 4,000 characters.');
-    if (caseContext && typeof caseContext === 'string' && caseContext.length > 8000) return err400(res, 'Case context too long. Please summarise your case details.');
-
-    if (!trimmedMsg) return err400(res, 'message is required.');
-    if (typeof sessionId !== 'string' || !sessionId.trim()) return err400(res, 'sessionId is required.');
-
-    let locationContext = null;
-    const cityTrimmed = city?.trim() ?? '';
-    if (cityTrimmed) locationContext = `City: ${cityTrimmed}`;
-    if (Number.isFinite(lat) && Number.isFinite(lng)) locationContext = `${locationContext ? locationContext + ' ' : ''}Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-
-    const history = await getHistory(db, sessionId, 20, req.user.id);
-
-    // Async: enqueue the Claude call — event loop stays free for other requests
-    const jobId = await enqueue('chat', async () => {
-      const r = await callClaude({
-        history, newMessage: trimmedMsg, locationContext,
-        mode, caseContext, user_state, user_state_name, userId: req.user.id,
-      });
-      await saveMessage(db, sessionId, 'user',      trimmedMsg, req.user.id).catch(logIgnored('routes/chat/ask'));
-      await saveMessage(db, sessionId, 'assistant', r,          req.user.id).catch(logIgnored('routes/chat/ask'));
-      return {
-        role: 'assistant', reply: r,
-        suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, r),
-        intent: classifyIntent(trimmedMsg),
-        rights_refs: isDefender ? [] : rightsRefsFor(trimmedMsg, r),
-      };
-    }, req.user.id);
-
-    res.json({
-      jobId,
-      status:          'pending',
-      async:           true,
-      not_legal_advice: true,
-      disclaimer:      'AI responses are general information only — not legal advice.',
-      message:         `Request queued. Poll /api/jobs/${jobId} for the response.`,
+    const replay = await findReplay(db, userId, body.sessionId, body.clientMessageId);
+    const answerOf = (reply, replayed) => ({
+      role: 'assistant', reply, replayed,
+      suggestLawyerSearch: detectLawyerHandoff(body.message, reply),
+      intent: classifyIntent(body.message),
+      rights_refs: ctx.defender ? [] : rightsRefsFor(body.message, reply, lang),
     });
+    if (replay == null && !ctx.unlimited && ctx.limited) return res.status(402).json(limitBody(ctx));
+
+    const history = replay == null ? await getHistory(db, body.sessionId, 20, userId) : [];
+    const request = buildChatRequest({ history, body, lang, defender: ctx.defender });
+    const jobId = await enqueue('chat', async () => {
+      if (replay != null) return answerOf(replay, true);
+      const reply = await callClaude({ ...request, defender: ctx.defender, userId });
+      await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: reply, clientMessageId: body.clientMessageId });
+      return answerOf(reply, false);
+    }, userId);
+
+    res.json({ jobId, status: 'pending', async: true, not_legal_advice: true });
   } catch (err) {
-    logger.error('[chat/ask]', err);
-    res.status(500).json({ error: 'Chat service error. Please try again.' });
+    logger.error({ err: err?.message }, '[chat/ask]');
+    res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(lang, 'chat.err.server') });
   }
 });
 
-// For streaming responses, use POST /api/chat/stream (stream.js)
-// ask.js handles non-streaming (complete response) requests
 export default router;
-

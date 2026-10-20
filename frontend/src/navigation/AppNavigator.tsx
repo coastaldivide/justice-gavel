@@ -193,9 +193,9 @@ function MoreNavigator() {
       <MoreStack.Screen name="GoldenGavel"           component={GoldenGavelScreen}           options={{ title: t('x_nav_golden_gavel') }} />
           <MoreStack.Screen name="BarPrepHome"        component={BarPrepHomeScreen}        options={{ title: t('x_nav_bar_exam_prep'), headerShown: false }} />
           <MoreStack.Screen name="BarPrepQuiz"        component={BarPrepQuizScreen}        options={{ headerShown: false }} />
-          <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: t('x_nav_explanation') }} />
-          <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: t('x_nav_mbe_progress') }} />
-          <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: t('x_nav_study_schedule') }} />
+          <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: t('x_nav_explanation'), headerShown: false }} />
+          <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: t('x_nav_mbe_progress'), headerShown: false }} />
+          <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: t('x_nav_study_schedule'), headerShown: false }} />
           <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: t('x_nav_quiz_results'), headerShown: false }} />
       <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: t('x_nav_bar_verification') }} />
       <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: t('x_nav_advocacy_stats') }} />

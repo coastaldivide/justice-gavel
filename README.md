@@ -21,7 +21,7 @@ frontend/   React Native app — iOS, Android, Web (PWA + Electron wrapper)
 
 backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             AES-256-GCM encryption for messages/case notes at rest
-            AI: Anthropic Claude (CLAUDE_MODEL, default claude-sonnet-4-6)
+            AI: Anthropic Claude (CLAUDE_MODEL, default claude-sonnet-5-5)
             Email: Resend (emails are logged, not sent, until RESEND_API_KEY is set)
             Queue: BullMQ when REDIS_URL is set, in-process otherwise
 

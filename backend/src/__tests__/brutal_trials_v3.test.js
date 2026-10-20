@@ -285,6 +285,7 @@ describe('2. perUserAiLimit — Quota Model', () => {
     perUserAiLimit(
       { user: { id: userId } },
       {
+        setHeader: () => {},              // 429 also sets Retry-After
         status: (code) => ({
           json: (body) => {
             if (code === 429) responseBody = body;

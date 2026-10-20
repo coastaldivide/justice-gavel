@@ -60,7 +60,6 @@ Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY A
       },
       body: JSON.stringify({
         model:       CLAUDE_MODEL,
-        temperature: 0.10,
         max_tokens:  4000,
         messages: [{ role: 'user', content: prompt }],
       }),

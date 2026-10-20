@@ -883,10 +883,11 @@ describe('13. research.js — AI Research Route', () => {
     expect(src).toContain('perUserAiLimit');
   });
 
-  test('13-07: research subscription is $49/mo add-on', async () => {
+  test('13-07: research comes with the real plans (FEATURE_TIERS.research), no invented add-on', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
-    expect(src).toContain('$49');
+    expect(src).toContain('FEATURE_TIERS.research');
+    expect(src).not.toContain("'legal_research','legal_research_annual'");
   });
 });
 

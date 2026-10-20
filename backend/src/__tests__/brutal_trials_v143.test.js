@@ -150,13 +150,11 @@ describe('HAG3. hague_contacts.js — GET /intake/:caseId Final', () => {
 
 // ── SCRF. Screen Functions — ChatScreen + ExpungementScreen + HelpNow ────
 describe('SCRF. Screen-Level Functions — Low Corpus Hits', () => {
-  test('SCRF-01: ChatScreen scrollToBottom + handleLongPress', async () => {
+  test('SCRF-01: ChatScreen scrollToBottom + long-press copy', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
     expect(src).toContain('scrollToBottom');
-    expect(src).toContain('handleLongPress');
-    // scrollToBottom: useCallback with setTimeout for chat scroll after new message
-    // handleLongPress: copy message text on long press — accessibility feature
+    expect(src).toContain('onLongPress={copy}');
   });
   test('SCRF-03: HelpNowScreen searchCity — city search returns local help incl. public defender', async () => {
     const fs = await import('fs');

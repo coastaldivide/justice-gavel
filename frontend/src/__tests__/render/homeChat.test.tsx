@@ -31,7 +31,13 @@ const mockPollJob = jest.fn();
 jest.mock('../../services/jobPoller', () => ({
   __esModule: true,
   pollJob: (...a: unknown[]) => mockPollJob(...a),
+  JobError: class JobError extends Error { code: string; constructor(code: string, m: string) { super(m); this.code = code; } },
 }));
+jest.mock('@react-navigation/native', () => {
+  const actual = jest.requireActual('@react-navigation/native');
+  const R = jest.requireActual('react');
+  return { ...actual, useFocusEffect: (cb: () => void) => R.useEffect(cb, [cb]), useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }) };
+});
 
 import HomeScreen from '../../screens/HomeScreen';
 import ChatScreen from '../../screens/ChatScreen';
@@ -96,6 +102,7 @@ describe('HomeScreen', () => {
 });
 
 describe('ChatScreen', () => {
+  beforeEach(() => { mockToken = 'jwt'; });
   const sendViaInput = async (text: string) => {
     const input = screen.getByPlaceholderText(/Ask anything/);
     fireEvent.changeText(input, text);
@@ -131,7 +138,8 @@ describe('ChatScreen', () => {
     expect(api.post).toHaveBeenCalledWith('/chat/ask', expect.objectContaining({
       message: 'Can police search my car?',
       sessionId: expect.any(String),
-    }));
+      clientMessageId: expect.any(String),     // a retry re-sends the same id: no duplicate answer
+    }), expect.objectContaining({ signal: expect.any(Object) }));   // Stop aborts the request
     expect(mockPollJob).toHaveBeenCalledWith('job-1', expect.any(Object));
   });
 
@@ -175,5 +183,35 @@ describe('ChatScreen', () => {
     expect(await screen.findByText(/AI chat is temporarily unavailable/)).toBeTruthy();
     // the user's own message is kept in the thread
     expect(screen.getByText('hello?')).toBeTruthy();
+    expect(screen.getByTestId('chat-retry')).toBeTruthy();
+  });
+
+  it('an answer is shown as text: HTML in it is never interpreted', async () => {
+    on('get', '/chat/history/', []);
+    on('post', '/chat/ask', { jobId: 'job-3', status: 'pending', async: true });
+    mockPollJob.mockResolvedValue({ status: 'done', result: { reply: '**Stay calm.** <img src=x onerror=alert(1)>' } });
+    wrap(<ChatScreen navigation={makeNavigation()} route={{ params: {} }} />);
+    await screen.findByText('Know your rights');
+    await sendViaInput('What now?');
+    expect(await screen.findByText('Stay calm.')).toBeTruthy();
+    expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeTruthy();
+  });
+
+  it('a crisis message shows the crisis lines before (and instead of waiting for) the AI', async () => {
+    on('get', '/chat/history/', []);
+    on('post', '/chat/ask', { jobId: 'job-4', status: 'pending', async: true });
+    mockPollJob.mockReturnValue(new Promise(() => {}));
+    wrap(<ChatScreen navigation={makeNavigation()} route={{ params: {} }} />);
+    await screen.findByText('Know your rights');
+    await sendViaInput('no quiero vivir');
+    expect(await screen.findByTestId('chat-crisis-card')).toBeTruthy();
+  });
+
+  it('a guest sees a sign-in card and the crisis lines, and nothing is sent', async () => {
+    mockToken = null;
+    wrap(<ChatScreen navigation={makeNavigation()} route={{ params: {} }} />);
+    expect(await screen.findByTestId('chat-sign-in')).toBeTruthy();
+    expect(screen.getByTestId('chat-guest-crisis')).toBeTruthy();
+    expect(api.post).not.toHaveBeenCalled();
   });
 });

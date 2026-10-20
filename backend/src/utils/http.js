@@ -88,7 +88,9 @@ export async function fetchWithTimeout(url, init = {}, {
       const clear = () => { clearTimeout(timer); callerSignal?.removeEventListener('abort', onCallerAbort); };
       return wrapBodyReaders(res, clear, () => timedOut, url, timeoutMs);
     }
-    callerSignal?.removeEventListener('abort', onCallerAbort);
+    // Streamed body (bodyTimeout: false): the caller's signal stays connected
+    // ({ once: true } listener), so a caller abort — the person pressed Stop,
+    // left, or the caller's own stream timer fired — still cancels the body.
     return res;
   }
 }

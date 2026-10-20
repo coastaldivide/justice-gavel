@@ -370,11 +370,12 @@ describe('5. chat/_prompts.js — AI Persona & Disclaimer', () => {
   });
 
 
-  test('5-03: RESPONSE_FOOTER_INSTRUCTION says "Laws vary by jurisdiction"', async () => {
+  test('5-03: the prompt says laws vary and never to guess (the app shows the legal notice)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_prompts.js', 'utf8');
-    expect(src).toContain('Laws vary by jurisdiction');
-    expect(src).toContain('change frequently');
+    expect(src).toContain('Laws vary by state');
+    expect(src).toContain('Never guess at a law, deadline, fee or penalty');
+    expect(src).toContain('the app shows the legal notice under every answer');
   });
 
   test('5-04: DEFENDER_SYSTEM_PROMPT is exported for public defender mode', async () => {
@@ -403,21 +404,21 @@ describe('6. chat/_helpers.js — Chat Utility Functions', () => {
     expect(src).toContain('buildJurisdictionNote');
   });
 
-  test('6-02: exports callClaude, getHistory, saveMessage, classifyIntent', async () => {
+  test('6-02: exports callClaude, getHistory, saveExchange, classifyIntent', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('callClaude');
     expect(src).toContain('getHistory');
-    expect(src).toContain('saveMessage');
+    expect(src).toContain('saveExchange');
     expect(src).toContain('classifyIntent');
   });
 
-  test('6-03: imports SYSTEM_PROMPT + DEFENDER_SYSTEM_PROMPT + RESPONSE_FOOTER', async () => {
+  test('6-03: imports SYSTEM_PROMPT + DEFENDER_SYSTEM_PROMPT and adds the answer language', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('SYSTEM_PROMPT');
     expect(src).toContain('DEFENDER_SYSTEM_PROMPT');
-    expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
+    expect(src).toContain('languageInstruction(lang)');
   });
 
   test('6-04: getHistory fetches last 20 messages for a session', async () => {

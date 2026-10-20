@@ -198,13 +198,13 @@ describe('HAIR. StyleSheet.hairlineWidth — Device-Independent 1px Borders', ()
     expect(src).toContain('hairlineWidth');
     expect(src).toContain('COLORS.border');
   });
-  test('HAIR-04: 3 screens use hairlineWidth — all list/form separation contexts', async () => {
+  test('HAIR-04: 4 screens use hairlineWidth — all list/form separation contexts', async () => {
     const fs   = await import('fs');
     const path = await import('path');
     const dir  = __REPO + '/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hairlineWidth')).length;
-    expect(count).toBe(3);
+    expect(count).toBe(4);   // + LegalPenaltiesScreen row separators
   });
 });
 

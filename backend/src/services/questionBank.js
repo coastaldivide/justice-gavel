@@ -115,6 +115,10 @@ export async function getSubjectsWithProgress(userId) {
   return await cache(key, USER_CACHE_TTL, async () => {
     const subjects = await db.all(`
       SELECT bs.*,
+             -- live count (the stored bar_subjects.question_count is never maintained)
+             (SELECT COUNT(*)::int FROM quiz_questions q WHERE q.subject_id = bs.id AND q.is_active) AS question_count,
+             (SELECT array_agg(DISTINCT q.category ORDER BY q.category) FROM quiz_questions q
+               WHERE q.subject_id = bs.id AND q.is_active) AS categories,
              ubp.total_answered,
              ubp.total_correct,
              ubp.accuracy_pct,
@@ -141,6 +145,6 @@ export async function invalidateUserCache(userId) {
   const redis = getRedis();
   if (!redis) return;
   try {
-    await redis.del(`bar:subjects:${userId}`);
+    await redis.del(`bar:subjects:${userId}`, `bar:dashboard:${userId}`);
   } catch { /* non-critical */ }
 }

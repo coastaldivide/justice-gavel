@@ -145,7 +145,7 @@ describe('FLOW. 57/57 Screens — Complete Function Flows', () => {
     const fs = await import('fs');
     const ml  = fs.readFileSync(__REPO + '/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     const disc= fs.readFileSync(__REPO + '/frontend/src/screens/DiscoveryScreen.tsx','utf8');
-    const chat= fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
+    const chat= (fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/chatStream.ts','utf8'));
     const lr  = fs.readFileSync(__REPO + '/frontend/src/screens/LegalResearchScreen.tsx','utf8');
     expect(ml).toContain('/motions/generate');
     expect(disc).toContain('/discovery/analyze');

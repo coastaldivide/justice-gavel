@@ -12,6 +12,8 @@
  *   router.post('/generate', authRequired, perUserAiLimit, async (req, res) => { ... });
  */
 
+import { msg, resolveLang } from '../i18n/index.js';
+
 const userCalls = new Map(); // userId → [timestamp, timestamp, ...]
 const WINDOW_MS  = 60 * 60 * 1000; // 1 hour
 const MAX_CALLS  = 60;              // 60 AI calls per user per hour
@@ -42,8 +44,11 @@ export function perUserAiLimit(req, res, next) {
     const oldest     = Math.min(...times);
     const resetInSec = Math.ceil((oldest + WINDOW_MS - now) / 1000);
     const resetInMin = Math.ceil(resetInSec / 60);
+    res.setHeader('Retry-After', String(resetInSec));
     return res.status(429).json({
-      error: `AI usage limit reached. You have used ${MAX_CALLS} AI calls this hour. Resets in ${resetInMin} minute${resetInMin !== 1 ? 's' : ''}.`,
+      error: 'ai_rate_limited',
+      code: 'ai_rate_limited',
+      message: msg(resolveLang(req), 'ai.err.hourly', { max: MAX_CALLS, minutes: resetInMin }),
       retry_after_seconds: resetInSec,
       limit: MAX_CALLS,
       window: '1 hour',

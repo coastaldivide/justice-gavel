@@ -21,6 +21,11 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   paywall → home (new research) → searching → result (threaded)
  *   → history sidebar → session reload
  *
+ * Access (GET /research/status): attorney accounts, and the paid plans that
+ * include research (server `plans`, prices from GET /billing/tiers). Signed
+ * out → SignInNeeded. A question is a job (POST /research/ask → poll); a
+ * failed one shows the reason with "Try again" (nothing was saved).
+ *
  * Entry points:
  *   1. CaseScreen → "Research" tab
  *   2. MotionLibraryScreen → "Research precedent" CTA
@@ -28,8 +33,10 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  */
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
+import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
+import { pollJob, JobError } from '../services/jobPoller';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang, perLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
@@ -49,7 +56,8 @@ const QUICK_PROMPTS = perLang(() => [
 ]);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; }
+interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; error?: boolean; retryQuery?: string }
+interface Tier { key: string; name: string; display_price?: string; monthly_cents?: number; billing?: string }
 interface Session { id: number; title: string; updated_at: string; }
 type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
@@ -92,7 +100,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
   };
 
   const elements: React.ReactElement[] = [];
-  const lines = text.split('\n');
+  const lines = String(text ?? '').split('\n');
   lines.forEach((line: string, i: number) => {
     const key = 'line-' + i;
     if (/^# /.test(line)) {
@@ -168,7 +176,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
       <View style={[styles.cutoffBanner, { backgroundColor: COLORS.warnBg,
         borderColor: COLORS.gold + '70' }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: COLORS.warnDark }]}>
-          {t('x_legal_research_knowledge_cutoff_august_2025')}
+          {t('res_may_be_outdated')}
         </Text>
       </View>
 
@@ -227,86 +235,52 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
   );
 }
 
-// ── Paywall screen ────────────────────────────────────────────────────────────
-function PaywallView({ onSubscribe, loading }: any) {
+// ── Paywall: the real plans that include research ─────────────────────────────
+function PaywallView({ plans, onPlans }: { plans: Tier[]; onPlans: () => void }) {
   useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
-    <ScrollView contentContainerStyle={styles.paywallScroll}>
+    <ScrollView contentContainerStyle={styles.paywallScroll} testID="research-paywall">
       <UPLDisclaimer compact />
-      <View style={[styles.paywallCard, {
-        backgroundColor: COLORS.bgSubtle,
-        borderColor: COLORS.navy + '33'
-      }]}>
+      <View style={[styles.paywallCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: COLORS.textPrimary }]}>
-          {t('res_title')}
-        </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: COLORS.textMuted }]}>
-          {t('x_legal_research_westlaw_costs_100_500')}
-        </Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: colors.textPrimary }]}>{t('res_title')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: colors.textMuted }]}>{t('res_paywall_sub')}</Text>
 
-        {/* Comparison table */}
-        {[
-          ['Casetext',          '$65/mo',      '❌'],
-          [t('x_legal_research_justice_gavel_research'), '$49.99/mo', '✅'],
-        ].map(([name, price, check]) => (
-          <View key={name} style={[styles.compareRow, {
-            backgroundColor: check === '✅'
-              ? (COLORS.legalBg)
-              : COLORS.bgCard,
-            borderColor: check === '✅' ? COLORS.legal + '55' : COLORS.border,
-          }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.compareName, { color: check === '✅' ? COLORS.legal : COLORS.textSecond,
-              fontWeight: check === '✅' ? '800' : '400' }]}>{name}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.comparePrice, { color: check === '✅' ? COLORS.legal : COLORS.textMuted }]}>{price}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.compareCheck}>{check}</Text>
-          </View>
-        ))}
-
-        {/* Features */}
-        <View style={[styles.featureList, { borderColor: COLORS.border }]}>
+        <View style={[styles.featureList, { borderColor: colors.border }]}>
           {[
             t('x_legal_research_case_law_with_full'),
             t('x_legal_research_jurisdiction_aware_research'),
             t('x_legal_research_motion_precedent_standards'),
             t('x_legal_research_constitutional_law_4th_5th'),
-            t('x_legal_research_sentencing_ranges_factors'),
-            t('x_legal_research_unlimited_queries_per_month'),
             t('x_legal_research_threaded_research_sessions'),
           ].map(f => (
             <View key={f} style={styles.featureRow}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: COLORS.legal }]}>✓</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.featureText, { color: COLORS.textSecond }]}>{f}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: colors.legal }]}>✓</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.featureText, { color: colors.textSecond }]}>{f}</Text>
             </View>
           ))}
         </View>
 
-        <TouchableOpacity accessibilityRole="button"
-          style={[styles.subscribeBtn, { backgroundColor: COLORS.navy }, loading && { opacity: 0.6 }]}
-          onPress={() => onSubscribe('legal_research')}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color={COLORS.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>{t('x_legal_research_start_14_day_free')}</Text>}
+        <Text maxFontSizeMultiplier={1.4} style={[styles.quickLabel, { color: colors.textMuted }]}>{t('res_paywall_plans')}</Text>
+        {plans.map(p => (
+          <View key={p.key} testID={`research-plan-${p.key}`} style={[styles.compareRow, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.compareName, { color: colors.textPrimary }]}>{p.name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.comparePrice, { color: colors.textSecond }]}>
+              {Number.isFinite(Number(p.monthly_cents)) ? t('res_price_month', { price: (Number(p.monthly_cents) / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' }) }) : ''}
+            </Text>
+          </View>
+        ))}
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: colors.textMuted, marginBottom: 12 }]}>{t('res_paywall_attorneys')}</Text>
+
+        <TouchableOpacity accessibilityRole="button" testID="research-see-plans"
+          style={[styles.subscribeBtn, { backgroundColor: COLORS.navy }]} onPress={onPlans}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>{t('res_see_plans')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button"
-          style={[styles.annualBtn, { borderColor: COLORS.navy + '55' }]}
-          onPress={() => onSubscribe('legal_research_annual')}
-          disabled={loading}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
-            {t('x_legal_research_annual_374_99_yr')}
-          </Text>
-        </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: COLORS.textMuted }]}>
-          {t('x_legal_research_cancel_anytime_verify_all')}
-        </Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: colors.textMuted }]}>{t('x_legal_research_cancel_anytime_verify_all')}</Text>
       </View>
       <AIDisclaimer variant="banner" />
-
     </ScrollView>
   );
 }
@@ -415,7 +389,8 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const { AuthGateModal } = useAuthGate(navigation);
+  const { hasSession, recheck } = useHasSession();
   const { initialQuery, caseContext } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,      setPhase]      = useState<Phase>('home');
@@ -424,42 +399,32 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const [sessionId,  setSessionId]  = useState<number | null>(null);
   const [searching,  setSearching]  = useState(false);
   const [hasAccess,  setHasAccess]  = useState<boolean | null>(null);
-  const [subLoading, setSubLoading] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const [plans,      setPlans]      = useState<Tier[]>([]);
   const [history,    setHistory]    = useState<Session[]>([]);
   const [histLoading,setHistLoad]   = useState(false);
 
   const listRef = useRef<ScrollView>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Check access on mount
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    api.get('/research/status')
-      .then(r => {
-        setHasAccess(r.data?.has_access);
-        if (!r.data?.has_access) setPhase('paywall');
-      })
-      .catch(() => setHasAccess(true)); // fail open in demo
-    });
-    return () => _task.cancel();
-  }, []);
-
-
-
-  const subscribe = useCallback(async (tier: string) => {
-    requireAuth(async () => {
-      setSubLoading(true);
-      try {
-        await api.post('/billing/subscribe', { tier, provider_type: 'addon' });
-        setHasAccess(true);
-        setPhase('home');
-        showToast(t('x_legal_research_legal_research_trial_active'));
-      } catch (e: any) {
-        const msg = apiErrorMessage(e, t('x_legal_research_could_not_start_subscription'));
-showToast(msg, 'error');
-        setSubLoading(false);
+  // Access: who may research, and the plans that include it.
+  const checkAccess = useCallback(async () => {
+    setStatusError('');
+    try {
+      const r = await api.get('/research/status');
+      setHasAccess(!!r.data?.has_access);
+      if (!r.data?.has_access) {
+        setPhase('paywall');
+        const wanted: string[] = Array.isArray(r.data?.plans) ? r.data.plans : [];
+        const tiers = await api.get<{ tiers: Tier[] }>('/billing/tiers').catch(() => null);
+        setPlans((tiers?.data?.tiers || []).filter(x => wanted.includes(x.key) && x.billing !== 'annual'));
       }
-    });
-  }, [requireAuth, showToast]);
+    } catch (e) {
+      setStatusError(apiErrorMessage(e, t('res_load_error')));
+    }
+  }, []);
+  useEffect(() => { if (hasSession) checkAccess(); }, [hasSession, checkAccess]);
 
   const loadHistory = useCallback(async () => {
     setHistLoad(true);
@@ -483,44 +448,38 @@ showToast(msg, 'error');
     }
   }, [showToast]);
 
-  const runSearch = useCallback(async (q: string) => {
+  const runSearch = useCallback(async (q: string, { retry = false }: { retry?: boolean } = {}) => {
     const text = q.trim();
     if (!text || searching) return;
     setSearching(true);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
-    const userMsg: Message = { role: 'user', content: text, created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => {
+      const kept = retry ? prev.filter(m => !m.error) : prev;
+      return retry ? kept : [...kept, { role: 'user', content: text, created_at: new Date().toISOString() }];
+    });
     setQuery('');
     setPhase('thread');
 
     try {
-      const res = await api.post('/research/ask', {
-        query: text,
-        session_id: sessionId,
-        context: caseContext,
-      });
-      setSessionId(res.data?.session_id);
-      const assistantMsg: Message = {
-        role: 'assistant',
-        content: res.data?.answer,
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
+      const res = await api.post('/research/ask', { query: text, session_id: sessionId, context: caseContext }, { signal: ctrl.signal });
+      if (res.data?.session_id) setSessionId(res.data.session_id);
+      const job = await pollJob(String(res.data?.jobId), { signal: ctrl.signal, timeoutMs: 120_000 });
+      const answer = String((job.result as { answer?: string } | null)?.answer || '');
+      if (!answer) throw new JobError('ai_failed', t('x_legal_research_research_failed_check_connection'));
+      setMessages(prev => [...prev, { role: 'assistant', content: answer, created_at: new Date().toISOString() }]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch (e: any) {
-      const errMsg = apiErrorMessage(e, t('x_legal_research_research_failed_check_connection'));
-      if (e.response?.status === 402) {
-        setPhase('paywall');
-      } else {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: t('x_legal_research_please_try_again', { errMsg }),
-        }]);
-      }
+    } catch (e) {
+      if (ctrl.signal.aborted) return;
+      if ((e as { response?: { status?: number } })?.response?.status === 402) { setPhase('paywall'); checkAccess(); return; }
+      const errMsg = e instanceof JobError ? e.message : apiErrorMessage(e, t('x_legal_research_research_failed_check_connection'));
+      setMessages(prev => [...prev, { role: 'assistant', content: errMsg, error: true, retryQuery: text }]);
     } finally {
-      setSearching(false);
+      if (abortRef.current === ctrl) abortRef.current = null;
+      if (!ctrl.signal.aborted) setSearching(false);
     }
-  }, [searching, sessionId, caseContext]);
+  }, [searching, sessionId, caseContext, checkAccess]);
 
   // Header buttons (declared after loadHistory, which they call)
   useEffect(() => {
@@ -554,7 +513,20 @@ showToast(msg, 'error');
     runSearch(initialQuery);
   }, [hasAccess, initialQuery, runSearch]);
 
-  // ── RENDER: Loading ───────────────────────────────────────────────────────
+  // ── RENDER: Signed out / loading / error ──────────────────────────────────
+  if (hasSession === false) return (
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={{ padding: 16 }}>
+      <SignInNeeded navigation={navigation} title={t('res_title')} body={t('res_signin_body')} onSignedIn={recheck} testID="research-sign-in" />
+    </ScrollView>
+  );
+  if (statusError) return (
+    <View style={[styles.screen, styles.centreWrap, { backgroundColor: colors.bg }]} testID="research-error">
+      <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary, textAlign: 'center' }]}>{statusError}</Text>
+      <TouchableOpacity accessibilityRole="button" style={[styles.subscribeBtn, { backgroundColor: COLORS.navy, paddingHorizontal: 24 }]} onPress={checkAccess}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>{t('try_again')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
   if (hasAccess === null) return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <ActivityIndicator style={{ flex: 1 }} color={COLORS.navy} />
@@ -565,7 +537,7 @@ showToast(msg, 'error');
   if (phase === 'paywall') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <AuthGateModal />
-      <PaywallView onSubscribe={subscribe} loading={subLoading} />
+      <PaywallView plans={plans} onPlans={() => navigation.navigate('ConsumerSubscription')} />
     </View>
   );
 
@@ -686,10 +658,18 @@ showToast(msg, 'error');
         )}
 
         {/* ── Thread ──────────────────────────────────────────────────────── */}
-        {(messages ?? []).map((msg, i) => (
+        {(messages ?? []).map((msg, i) => msg.error ? (
+          <View key={`msg-${i}`} testID="research-error-msg" style={[styles.searchingRow, { backgroundColor: colors.bgCard, borderColor: colors.border, flexDirection: 'column', alignItems: 'flex-start' }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.searchingText, { color: colors.textPrimary }]}>⚠️ {msg.content}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="research-retry" disabled={searching}
+              style={[styles.copyBtn, { borderColor: COLORS.navy }]} onPress={() => runSearch(msg.retryQuery || '', { retry: true })}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textBrand }]}>↻ {t('chat_retry')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <ResearchBubble key={`msg-${i}`} msg={msg}
             onDiscussWithAI={msg.role === 'assistant'
-              ? (content: string) => navigation.navigate('ChatTab', { mode: 'defender', caseContext: content.slice(0, 2000), caseTitle: 'Legal research' })
+              ? (content: string) => navigation.navigate('ChatTab', { mode: 'defender', caseContext: content.slice(0, 2000), caseTitle: t('legal_research') })
               : undefined} />
         ))}
 

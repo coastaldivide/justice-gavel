@@ -111,7 +111,7 @@ async function structureNote(text) {
       method: 'POST', signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': ANTHROPIC_VERSION },
       body: JSON.stringify({
-        model: CLAUDE_MODEL, max_tokens: 600, temperature: 0.2,
+        model: CLAUDE_MODEL, max_tokens: 600,
         system: 'You organise a person\'s personal notes about their legal case. Reply with ONLY a JSON object: '
           + '{"summary": string (2-3 sentences), "next_steps": string[], "flags": string[] (deadlines, court dates, risks)}. '
           + 'Do not give legal advice and do not invent facts.',

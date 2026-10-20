@@ -237,7 +237,6 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
           },
           body: JSON.stringify({
             model:       CLAUDE_MODEL,
-            temperature: 0.10,
             max_tokens:  4000,
             messages:    [{ role: 'user', content: prompt }],
           }),

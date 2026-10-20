@@ -12,13 +12,12 @@
  */
 
 import { Router }          from 'express';
-import { authRequired }    from '../middleware/auth.js';
 import { getDb }           from '../db/index.js';
-import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
+import { apiLimiter }      from '../middleware/rateLimiters.js';
+import { msg, resolveLang } from '../i18n/index.js';
 import logger              from '../utils/logger.js';
 
 const router       = Router();
-const statsLimiter = makeUserLimiter({ windowMs: 60_000, max: 10, message: 'Stats limit reached.' });
 
 // Provider data lives in the main Postgres database.
 async function getProvidersDb() {
@@ -39,7 +38,8 @@ router.get('/', (req, res) => res.json({
     { title: 'Expungement Reform',   topic: 'records' },
   ],
 }));
-router.get('/stats', authRequired, statsLimiter, async (req, res) => {
+// Public: aggregate counts only (no person is identifiable), shown on the Home tile's screen to guests too.
+router.get('/stats', apiLimiter, async (req, res) => {
   try {
     const db  = await getDb();
     const pdb = await getProvidersDb();
@@ -51,12 +51,13 @@ router.get('/stats', authRequired, statsLimiter, async (req, res) => {
       db.get('SELECT COUNT(*) as n FROM users').catch(()  => ({ n: 0 })),
       pdb
         ? pdb.all(
-            'SELECT city, COUNT(*) as n FROM lawyers WHERE active=1 GROUP BY city ORDER BY n DESC LIMIT 200'
+            `SELECT city, state, COUNT(*) as n FROM lawyers WHERE active=1 AND COALESCE(TRIM(city), '') <> ''
+              GROUP BY city, state ORDER BY n DESC, city ASC LIMIT 200`
           ).catch(() => [])
         : [],
     ]);
 
-    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Cache-Control', 'public, max-age=300');
     res.json({
       lawyerCount:   lawyers.n  || 0,
       bailCount:     bail.n     || 0,
@@ -68,7 +69,7 @@ router.get('/stats', authRequired, statsLimiter, async (req, res) => {
     });
   } catch (e) {
     logger.error('[advocacy/stats]', e?.message);
-    res.status(500).json({ error: 'Could not load advocacy stats.' });
+    res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(resolveLang(req), 'advocacy.err.load') });
   }
 });
 

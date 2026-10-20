@@ -253,24 +253,20 @@ describe('1. chat/_helpers — Handoff, Case Note, Jurisdiction', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('2. chat/_prompts — System Prompts & Footer', () => {
 
-  test('2-01: RESPONSE_FOOTER_INSTRUCTION is a non-empty string', () => {
-    expect(typeof RESPONSE_FOOTER_INSTRUCTION).toBe('string');
-    expect(RESPONSE_FOOTER_INSTRUCTION.length).toBeGreaterThan(50);
-  });
+  test('2-01: no English footer constant — the app shows the legal notice under every answer', () => {
+      expect(RESPONSE_FOOTER_INSTRUCTION).toBeUndefined();
+      expect(SYSTEM_PROMPT).toContain('the app shows the legal notice under every answer');
+    });
 
-  test('2-02: RESPONSE_FOOTER_INSTRUCTION contains legal disclaimer', () => {
-    const lower = RESPONSE_FOOTER_INSTRUCTION.toLowerCase();
-    const hasDisclaimer = lower.includes('legal advice') ||
-                          lower.includes('general guidance') ||
-                          lower.includes('not constitute') ||
-                          lower.includes('consult');
-    expect(hasDisclaimer).toBe(true);
-  });
+  test('2-02: SYSTEM_PROMPT tells the model to send people to a lawyer when unsure', () => {
+      const lower = SYSTEM_PROMPT.toLowerCase();
+      expect(lower).toContain('consult a lawyer or public defender');
+      expect(lower).toContain('legal advice');
+    });
 
-  test('2-03: RESPONSE_FOOTER_INSTRUCTION always ends AI responses (instruction included)', () => {
-    expect(RESPONSE_FOOTER_INSTRUCTION).toContain('ALWAYS');
-    expect(RESPONSE_FOOTER_INSTRUCTION).toContain('end your response');
-  });
+  test('2-03: SYSTEM_PROMPT forbids guessing at laws, deadlines, fees or penalties', () => {
+      expect(SYSTEM_PROMPT).toContain('Never guess at a law, deadline, fee or penalty');
+    });
 
   test('2-04: DEFENDER_SYSTEM_PROMPT is a non-empty string', () => {
     expect(typeof DEFENDER_SYSTEM_PROMPT).toBe('string');
@@ -286,13 +282,11 @@ describe('2. chat/_prompts — System Prompts & Footer', () => {
     expect(lower).toContain('innocent');
   });
 
-  test('2-07: RESPONSE_FOOTER_INSTRUCTION has jurisdiction warning', () => {
-    const lower = RESPONSE_FOOTER_INSTRUCTION.toLowerCase();
-    const hasJurisdiction = lower.includes('jurisdiction') ||
-                            lower.includes('state') ||
-                            lower.includes('laws vary');
-    expect(hasJurisdiction).toBe(true);
-  });
+  test('2-07: SYSTEM_PROMPT has a jurisdiction warning', () => {
+      const lower = SYSTEM_PROMPT.toLowerCase();
+      expect(lower).toContain('laws vary by state');
+      expect(lower).toContain('jurisdiction');
+    });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

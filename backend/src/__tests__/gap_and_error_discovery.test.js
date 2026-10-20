@@ -204,7 +204,8 @@ describe('2. AI Queue Service', () => {
     await new Promise(r => setTimeout(r, 200));
     const job = getJob(jobId);
     if (job && job.status === 'failed') {
-      expect(job.error).toContain('AI service unavailable');
+      expect(job.code).toBe('ai_failed');            // coded; upstream text never reaches the client
+      expect(job.error).not.toContain('AI service unavailable');
     }
     // Even if not yet failed, job should exist
     expect(job).toBeDefined();

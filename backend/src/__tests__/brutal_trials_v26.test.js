@@ -294,9 +294,9 @@ describe('6. i18n chat_ — AI Chat (35 keys)', () => {
     expect(en['chat_limit_upgrade']).toBe('Upgrade — $9.99/mo');
     expect(en['chat_limit_dismiss']).toBe('Maybe later');
   });
-  test('6-05: chat_ total key count = 35', async () => {
+  test('6-05: chat_ total key count = 49 (+ streaming, stop, retry, crisis, sign-in keys)', async () => {
     const en = await getEn();
-    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(35);
+    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(49);
   });
 });
 

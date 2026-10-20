@@ -223,7 +223,6 @@ If a field is not visible in the document, use an empty string. Do not guess.`;
       headers: { 'Content-Type': 'application/json', 'x-api-key': (process.env.ANTHROPIC_API_KEY ?? ''), 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: CLAUDE_MODEL,
-      temperature: 0.2,
         max_tokens: 600,
         messages: [{ role: 'user', content: [...fileBlocks, { type: 'text', text: intakePrompt }] }],
       }),

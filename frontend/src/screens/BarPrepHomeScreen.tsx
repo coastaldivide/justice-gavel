@@ -18,106 +18,40 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, Alert,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { api }              from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useHaptics }       from '../hooks/useHaptics';
 import { GradientHeader }   from '../components/GradientHeader';
 import { useAuthGate }      from '../components/AuthGate';
-import { t, useLang, perLang } from '../i18n';
+import { t, useLang } from '../i18n';
+import { categoryLabel } from '../constants/barPrepCategories';
+import { useToast } from '../components/ToastProvider';
+import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+/** GET /bar-prep/subjects → { subjects: Subject[] } */
 interface Subject {
-  id:            string;
-  name:          string;
-  mbe_weight:    number;
+  id:             string;
+  title:          string;
+  mbe_weight:     number;          // share of the MBE, in percent (12.5 = 12.5 %)
   question_count: number;
-  progress?: {
-    accuracy_pct:   number;
-    answered_count: number;
-    streak_days:    number;
-    pass_probability: number;
-  };
+  categories?:    string[] | null;
+  total_answered?: number | null;
+  accuracy_pct?:   number | null;
 }
 
+/** GET /bar-prep/progress (services/barPrepAnalytics.js getUserDashboard) */
 interface Dashboard {
   streak_days:       number;
-  pass_probability:  number;
-  peer_percentile:   number;
+  peer_percentile:   number | null;
   questions_due:     number;
   total_answered:    number;
 }
 
-const CATEGORY_MAP: Record<string, string[]> = {
-  'crim-law-001': [
-    'homicide','theft_property','defenses','criminal_procedure','fifth_sixth_amendment'
-  ],
-  'con-law-001': [
-    'fourth_amendment','due_process','equal_protection','first_amendment','incorporation_14th'
-  ],
-};
 
-const CATEGORY_LABELS = perLang((): Record<string, string> => ({
-  // Criminal Law
-  homicide:             t('x_bar_prep_home_homicide'),
-  theft_property:       t('x_bar_prep_home_theft_property'),
-  defenses:             t('x_bar_prep_home_defenses'),
-  criminal_procedure:   t('x_bar_prep_home_crim_procedure'),
-  // Constitutional Law
-  fourth_amendment:     t('x_bar_prep_home_4th_amendment'),
-  fifth_sixth_amendment:t('x_bar_prep_home_5th_6th_amendment'),
-  due_process:          t('x_bar_prep_home_due_process'),
-  equal_protection:     t('x_bar_prep_home_equal_protection'),
-  first_amendment:      t('x_bar_prep_home_1st_amendment'),
-  incorporation_14th:   t('x_bar_prep_home_incorporation_14th'),
-  commerce_clause:      t('x_bar_prep_home_commerce_clause'),
-  executive_power:      t('x_bar_prep_home_executive_power'),
-  takings_clause:       t('x_bar_prep_home_takings_clause'),
-  // Contracts
-  formation:            t('x_bar_prep_home_contract_formation'),
-  consideration:        t('x_bar_prep_home_consideration'),
-  performance_breach:   t('x_bar_prep_home_performance_breach'),
-  remedies:             t('x_bar_prep_home_remedies'),
-  contract_defenses:    t('x_bar_prep_home_contract_defenses'),
-  ucc_article_2:        t('x_bar_prep_home_ucc_article_2'),
-  // Civil Procedure
-  jurisdiction:         t('x_bar_prep_home_jurisdiction'),
-  pleading:             t('x_bar_prep_home_pleading'),
-  discovery_civ_pro:    t('x_motion_type_badge_discovery'),
-  summary_judgment:     t('x_bar_prep_home_summary_judgment'),
-  trial:                t('hearing_trial'),
-  preclusion:           t('x_bar_prep_home_preclusion'),
-  venue:                t('x_bar_prep_home_venue'),
-  class_actions:        t('x_bar_prep_home_class_actions'),
-  appeals:              t('x_bar_prep_home_appeals'),
-  // Evidence
-  relevance:            t('x_bar_prep_home_relevance'),
-  character_evidence:   t('x_bar_prep_home_character_evidence'),
-  hearsay:              t('x_bar_prep_home_hearsay'),
-  hearsay_exceptions:   t('x_bar_prep_home_hearsay_exceptions'),
-  impeachment:          t('x_bar_prep_home_impeachment'),
-  privileges:           t('x_bar_prep_home_privileges'),
-  expert_witnesses:     t('x_bar_prep_home_expert_witnesses'),
-  authentication:       t('x_bar_prep_home_authentication'),
-  // Real Property
-  ownership:            t('x_bar_prep_home_ownership'),
-  concurrent_ownership: t('x_bar_prep_home_concurrent_ownership'),
-  landlord_tenant:      t('x_bar_prep_home_landlord_tenant'),
-  recording_acts:       t('x_bar_prep_home_recording_acts'),
-  adverse_possession:   t('x_bar_prep_home_adverse_possession'),
-  easements:            t('x_bar_prep_home_easements'),
-  covenants:            t('x_bar_prep_home_covenants'),
-  mortgages:            t('x_bar_prep_home_mortgages'),
-  // Torts
-  intentional_torts:    t('x_bar_prep_home_intentional_torts'),
-  negligence:           t('x_bar_prep_home_negligence'),
-  strict_liability:     t('x_bar_prep_home_strict_liability'),
-  products_liability:   t('x_bar_prep_home_products_liability'),
-  defamation:           t('x_bar_prep_home_defamation'),
-  nuisance:             t('x_bar_prep_home_nuisance'),
-  damages_torts:        t('x_bar_prep_home_damages'),
-}));
+
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHome'>) {
@@ -125,6 +59,8 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   const { colors }                      = useTheme();
   const { impact }                      = useHaptics();
   const { AuthGateModal }               = useAuthGate(navigation);
+  const { showToast }                   = useToast();
+  const { hasSession, recheck }         = useHasSession();
   // Bar prep disclaimer — shown once in the UI, not on every question
   const BAR_PREP_DISCLAIMER = t('x_bar_prep_home_mbe_study_supplement_548');
   const [subjects, setSubjects]         = useState<Subject[]>([]);
@@ -148,17 +84,15 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
         // Default to the first subject only when none is selected yet.
         setSelectedSubject(prev => prev ?? subRes.data.subjects[0].id);
       }
-    } catch (e: any) {
-      if (e?.response?.status !== 402) {
-        Alert.alert(t('error'), t('x_bar_prep_home_could_not_load_bar'));
-      }
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_bar_prep_home_could_not_load_bar')), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (hasSession) load(); else if (hasSession === false) setLoading(false); }, [hasSession, load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
@@ -178,14 +112,12 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
         mode,
         time_limit_seconds: res.data.time_limit_seconds,
       });
-    } catch (e: any) {
-      if (e?.response?.status === 402) {
-        navigation.navigate('Settings', { showUpgrade: true });
-      } else {
-        Alert.alert(t('error'), t('x_bar_prep_home_could_not_start_session'));
-      }
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      showToast(apiErrorMessage(e, t('x_bar_prep_home_could_not_start_session')), status === 402 ? 'info' : 'error');
+      if (status === 402) navigation.navigate('ConsumerSubscription');
     }
-  }, [selectedSubject, selectedCategory, mode, questionCount, impact, navigation]);
+  }, [selectedSubject, selectedCategory, mode, questionCount, impact, navigation, showToast]);
 
   const styles = makeStyles(colors);
 
@@ -197,7 +129,16 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
     );
   }
 
-  const categories = selectedSubject ? (CATEGORY_MAP[selectedSubject] || []) : [];
+  if (hasSession === false) {
+    return (
+      <View style={styles.container}>
+        <GradientHeader title={t('x_bar_prep_home_bar_exam_prep')} subtitle={t('x_bar_prep_home_mbe_supplement_all_7')} />
+        <SignInNeeded navigation={navigation} body={t('barprep_signin_body')} onSignedIn={recheck} testID="barprep-sign-in" />
+      </View>
+    );
+  }
+
+  const categories = subjects.find(x => x.id === selectedSubject)?.categories || [];
 
   return (
     <View style={styles.container}>
@@ -219,10 +160,10 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Stats Banner ─────────────────────────────────────────── */}
           {dashboard && (
             <View style={styles.statsBanner}>
-              <StatPill label={t('x_bar_prep_home_streak')} value={`${dashboard.streak_days ?? 0}d`} />
-              <StatPill label={t('x_bar_prep_home_pass_prob')} value={`${dashboard.pass_probability}%`} accent />
-              <StatPill label={t('x_bar_prep_home_top')} value={`${dashboard.peer_percentile}%`} />
-              <StatPill label={t('x_bar_prep_home_due')} value={String(dashboard.questions_due)} />
+              <StatPill label={t('x_bar_prep_home_streak')} value={t('barprep_days_short', { n: dashboard.streak_days ?? 0 })} accent />
+              <StatPill label={t('barprep_answered')} value={String(dashboard.total_answered ?? 0)} />
+              <StatPill label={t('x_bar_prep_home_top')} value={dashboard.peer_percentile == null ? '—' : `${dashboard.peer_percentile}%`} />
+              <StatPill label={t('x_bar_prep_home_due')} value={String(dashboard.questions_due ?? 0)} />
             </View>
           )}
 
@@ -246,22 +187,22 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                   styles.subjectName,
                   selectedSubject === s.id && styles.subjectNameActive,
                 ]}>
-                  {s.name}
+                  {s.title}
                 </Text>
                 <Text style={styles.subjectMeta}>
-                  {t('x_bar_prep_home_mbe_q', { Math: Math.round(s.mbe_weight * 100), question_count: s.question_count })}
+                  {t('x_bar_prep_home_mbe_q', { Math: Math.round(Number(s.mbe_weight) || 0), question_count: s.question_count })}
                 </Text>
-                {s.progress && (
+                {!!s.total_answered && (
                   <View style={styles.progressBar}>
                     <View style={[
                       styles.progressFill,
-                      { width: `${Math.min(100, s.progress.accuracy_pct)}%` as any },
+                      { width: `${Math.min(100, Number(s.accuracy_pct) || 0)}%` },
                     ]} />
                   </View>
                 )}
-                {s.progress && (
+                {!!s.total_answered && (
                   <Text style={styles.accuracyText}>
-                    {t('x_bar_prep_home_accuracy_answered', { accuracy_pct: s.progress.accuracy_pct, answered_count: s.progress.answered_count })}
+                    {t('x_bar_prep_home_accuracy_answered', { accuracy_pct: Math.round(Number(s.accuracy_pct) || 0), answered_count: s.total_answered })}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -288,7 +229,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                     onPress={() => { impact('light'); setSelectedCategory(cat); }}
                   >
                     <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextActive]}>
-                      {CATEGORY_LABELS()[cat] || cat}
+                      {categoryLabel(cat)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -345,6 +286,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Start Button ─────────────────────────────────────────── */}
           <TouchableOpacity accessibilityRole="button"
             style={[styles.startBtn, !selectedSubject && styles.startBtnDisabled]}
+            testID="barprep-start"
             onPress={startSession}
             disabled={!selectedSubject}
             activeOpacity={0.85}
@@ -376,14 +318,6 @@ function StatPill({ label, value, accent }: { label: string; value: string; acce
       <Text style={[pillStyles.label, { color: colors.textMuted }]}>{label}</Text>
       <Text style={[pillStyles.value, { color: colors.textPrimary }, accent && { color: colors.textBrand }]}>{value}</Text>
 
-        {/* Bar prep disclaimer */}
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
-        >
-          {t('x_bar_prep_explanation_supplemental_study_only_not')}
-        </Text>
     </View>
   );
 }
@@ -412,9 +346,10 @@ function makeStyles(colors: any) {
       textTransform: 'uppercase', letterSpacing: 0.8,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
     },
-    subjectRow:     { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
+    // 7 subjects: wrap into as many ~150 pt columns as fit (2 on a phone)
+    subjectRow:     { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
     subjectCard:    {
-      flex: 1, padding: 14, borderRadius: RADIUS.lg,
+      flexGrow: 1, flexBasis: 150, maxWidth: 360, minHeight: 44, padding: 14, borderRadius: RADIUS.lg,
       backgroundColor: colors.card, borderWidth: 2, borderColor: colors.border,
       ...SHADOW.sm,
     },
