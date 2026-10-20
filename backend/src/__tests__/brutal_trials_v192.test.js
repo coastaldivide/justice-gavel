@@ -91,7 +91,8 @@ describe('JOURNEY. 10 Critical User Journeys', () => {
     const login = fs.readFileSync(__REPO + '/frontend/src/screens/LoginScreen.tsx','utf8');
     const app   = fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
     expect(login).toContain('/auth/login');
-    expect(login).toMatch(/setToken|secureStorage/i);
+    expect(login).toContain('startSession');   // services/session.ts stores the tokens
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/session.ts','utf8')).toMatch(/setToken/);
     expect(app).toContain('getToken');
     expect(app).toContain("'authed'");
     expect(app).toContain("'guest'");

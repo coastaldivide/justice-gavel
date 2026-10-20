@@ -18,9 +18,11 @@ import React, { useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
-import { t, perLang, useLang } from '../i18n';
+import { t, perLang, useLang, locale } from '../i18n';
 
-const EFFECTIVE_DATE = 'May 25, 2026';
+/** Effective date (shown in the reader's language, e.g. "1 de mayo de 2026"). */
+const EFFECTIVE_ISO = '2026-05-25';
+const effectiveDate = () => new Date(`${EFFECTIVE_ISO}T12:00:00Z`).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 const COMPANY = 'Justice Gavel LLC';
 const CONTACT_EMAIL = 'legal@justicegavel.app';
 const WEBSITE       = 'https://justicegavel.app';
@@ -138,7 +140,7 @@ function TermsOfServiceScreen(): React.JSX.Element {
           {t('onb_terms_tos')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerMeta}>
-          {t('x_privacy_policy_effective', { EFFECTIVE_DATE })}
+          {t('x_privacy_policy_effective', { EFFECTIVE_DATE: effectiveDate() })}
         </Text>
       </View>
 

@@ -35,8 +35,9 @@ describe('1. auth.js — Forgot/Reset Password', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain('/forgot-password');
-    expect(src).toContain('Invalid email format');
-    expect(src).toContain('Email required');
+    // messages come from the catalogs in the request's language
+    expect(src).toContain('auth.err.email_invalid');
+    expect(src).toContain('auth.err.email_required');
   });
   test('1-02: reset link goes to justicegavel.app/reset-password', async () => {
     const fs = await import('fs');

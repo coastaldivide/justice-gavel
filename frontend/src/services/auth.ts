@@ -24,6 +24,12 @@ export function setAppAuth(s: AuthState): void {
   }
 }
 
+/** First screen of the signed-out flow: the intro slides the first time, Sign in afterwards. */
+export type GuestStart = 'Onboarding' | 'Login';
+let _guestStart: GuestStart = 'Onboarding'; // i18n-exempt: route name
+export function setGuestStart(r: GuestStart): void { _guestStart = r; }
+export function getGuestStart(): GuestStart { return _guestStart; }
+
 /** True if user can access protected features (cases, payments, SOS with contacts) */
 export function isAuthenticated(state: AuthState): boolean {
   return state === 'authed';

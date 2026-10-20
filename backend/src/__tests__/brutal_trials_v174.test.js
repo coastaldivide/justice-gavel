@@ -67,7 +67,9 @@ describe('SESSION. Complete User Sessions', () => {
     expect(reg).toContain('secureTextEntry');
     expect(reg).toContain("navigate('HomeTab')");
     // Token saved to secureStorage
-    const savesTok = reg.includes('setItem') || reg.includes('setToken') || reg.includes('secureStorage');
+    // the token is saved by services/session.ts startSession()
+    const session = fs.readFileSync(__REPO + '/frontend/src/services/session.ts','utf8');
+    const savesTok = reg.includes('startSession') && session.includes('setToken');
     expect(savesTok).toBe(true);
   });
   test('SESSION-03: Just arrested — rights script, lawyer + bail, court dates', async () => {

@@ -286,8 +286,11 @@ describe('JOURNEY. All 7 Critical Flows End to End', () => {
   test('JOURNEY-06: Settings/Logout verified', async () => {
     const fs=await import('fs');
     const s=fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx','utf8');
-    expect(s).toContain('clearAuth');
-    expect(s).toMatch(/reset.*Login/s);
+    // sign-out lives in services/session.ts (server logout + device data cleared)
+    const session=fs.readFileSync(__REPO + '/frontend/src/services/session.ts','utf8');
+    expect(s).toContain('signOut');
+    expect(session).toContain('clearAuth');
+    expect(session).toMatch(/setGuestStart\('Login'\)/);
     expect(s).not.toContain('/referrals/');
   });
 });

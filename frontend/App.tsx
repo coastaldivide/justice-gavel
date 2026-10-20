@@ -12,9 +12,9 @@ import OfflineBanner from './src/components/OfflineBanner';
  */
 import React, { useEffect, useState } from 'react';
 import {
-  AppState, Platform, StatusBar, Text, TouchableOpacity, View,
+  AppState, Modal, Platform, StatusBar, Text, TouchableOpacity, View,
 } from 'react-native';
-import { linking } from './src/navigation/linking';
+import { linkingFor } from './src/navigation/linking';
 import { ToastProvider } from './src/components/ToastProvider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Font from 'expo-font';
@@ -31,7 +31,9 @@ import NetInfo from '@react-native-community/netinfo';
 import { processSyncQueue } from './src/services/offlineSync';
 
 import { initLang, getLang, t, useLang } from './src/i18n';
-import { registerAuthSetter, AuthState, canBrowse } from './src/services/auth';
+import { registerAuthSetter, AuthState, canBrowse, setGuestStart } from './src/services/auth';
+import { signOut, takePendingHome } from './src/services/session';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -42,7 +44,6 @@ import AgeGateScreen from './src/screens/AgeGateScreen';
 import TermsAcceptanceModal from './src/screens/TermsAcceptanceModal';
 import { api } from './src/services/api';
 import { onDisclaimerRequired } from './src/services/legalGate';
-import { clearAuth } from './src/utils/secureStorage';
 
 // ── Sentry crash reporting ────────────────────────────────────────────────────
 Sentry.init({
@@ -90,6 +91,7 @@ const INTER_FONTS = {
 // electron/main.js calls window.__navigateTo('Settings') from the app menu and
 // window.__handleDeepLink('justicegavel://…') for protocol links.
 const TAB_ROUTES = new Set(['HomeTab', 'ChatTab', 'LawyersTab', 'BailTab', 'MoreTab']);
+let activeLinking = linkingFor(false);
 function installDesktopBridge() {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   const w = window as any;
@@ -103,10 +105,10 @@ function installDesktopBridge() {
   w.__handleDeepLink = (url: string) => {
     if (!navigationRef.isReady() || !url) return;
     try {
-      const prefix = linking.prefixes.find(p => url.startsWith(p));
+      const prefix = activeLinking.prefixes.find(p => url.startsWith(p));
       const path = prefix ? url.slice(prefix.length) : url;
-      const state = getStateFromPath(path.startsWith('/') ? path : '/' + path, linking.config as any);
-      const action = state && getActionFromState(state, linking.config as any);
+      const state = getStateFromPath(path.startsWith('/') ? path : '/' + path, activeLinking.config as any);
+      const action = state && getActionFromState(state, activeLinking.config as any);
       if (action) navigationRef.dispatch(action);
     } catch { /* malformed link */ }
   };
@@ -114,6 +116,19 @@ function installDesktopBridge() {
 
 // ── Root stack ────────────────────────────────────────────────────────────────
 const RootStack = createNativeStackNavigator();
+
+/** App lock: ask again when the app comes back after this long in the background. */
+const RELOCK_AFTER_MS = 60_000;
+async function unlockWithBiometrics(): Promise<boolean> {
+  try {
+    const r = await LocalAuthentication.authenticateAsync({
+      promptMessage: t('app_unlock_prompt'),
+      cancelLabel: t('app_unlock_use_passcode'),
+      disableDeviceFallback: false,
+    });
+    return r.success;
+  } catch { return false; }
+}
 
 function AppInner() {
   useLang(); // the shell's own text (lock screen, offline banner) follows the language
@@ -156,19 +171,14 @@ function AppInner() {
       // Biometric lock
       try {
         const bioOn = await AsyncStorage.getItem('biometric_enabled');
-        if (bioOn === 'true' && Platform.OS !== 'web') {
-          const enrolled = await LocalAuthentication.isEnrolledAsync();
-          if (enrolled) {
-            const result = await LocalAuthentication.authenticateAsync({
-              promptMessage: t('app_unlock_prompt'),
-              disableDeviceFallback: false,
-              cancelLabel: 'Use Passcode',
-            });
-            if (!result.success) setBioLocked(true);
-          }
+        if (bioOn === 'true' && Platform.OS !== 'web' && await LocalAuthentication.isEnrolledAsync()) {
+          if (!(await unlockWithBiometrics())) setBioLocked(true);
         }
-      } catch {}
+      } catch { /* biometrics unavailable: never lock the person out */ }
       setBioChecked(true);
+
+      // Someone who has seen the intro starts the signed-out flow at Sign in.
+      if (await AsyncStorage.getItem('onboarding_done').catch(() => null)) setGuestStart('Login');
 
       // Age gate
       const ageOk = await AsyncStorage.getItem('age_verified');
@@ -207,6 +217,7 @@ function AppInner() {
       ]);
       if (cancelled) return;
       if (tos?.data?.needs_acceptance || disc?.data?.required) setTosNeeded(true);
+      else openPendingHome();
       // Reminders fire at local wall-clock times: keep the account's zone current.
       const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
       if (tz) api.post('/push/timezone', { timezone: tz }).catch(() => {});
@@ -215,6 +226,12 @@ function AppInner() {
     })();
     return () => { cancelled = true; };
   }, [authState]);
+
+  // After sign-in: the attorney / bail-agent dashboard, once the Terms are done.
+  function openPendingHome() {
+    const home = takePendingHome();
+    if (home && navigationRef.isReady()) navigationRef.navigate('MainTabs', { screen: 'MoreTab', params: { screen: home } });
+  }
 
   useEffect(() => onDisclaimerRequired(() => {
     if (authStateRef.current === 'authed') setTosNeeded(true);
@@ -251,11 +268,23 @@ function AppInner() {
     return () => sub.remove();
   }, []);
 
-  // ── Clear badge count when app comes to foreground ─────────────────────────
+  // ── Clear badge count when app comes to foreground; app lock on return ─────
   useEffect(() => {
+    let backgroundAt: number | null = null;
     const sub = AppState.addEventListener('change', state => {
+      if (state === 'background') backgroundAt = Date.now();
       if (state === 'active') {
         Notifications.setBadgeCountAsync(0).catch(() => {});
+        const away = backgroundAt === null ? 0 : Date.now() - backgroundAt;
+        backgroundAt = null;
+        if (Platform.OS !== 'web' && away > RELOCK_AFTER_MS) {
+          AsyncStorage.getItem('biometric_enabled').then(async on => {
+            if (on === 'true' && await LocalAuthentication.isEnrolledAsync()) {
+              setBioLocked(true);
+              if (await unlockWithBiometrics()) setBioLocked(false);
+            }
+          }).catch(() => { /* biometrics unavailable */ });
+        }
       }
     });
     Notifications.setBadgeCountAsync(0).catch(() => {});
@@ -265,9 +294,19 @@ function AppInner() {
   // ── Loading / splash ────────────────────────────────────────────────────────
   if (authState === 'loading' || !bioChecked) return <SplashScreen />;
 
-  // ── Biometric lock screen ───────────────────────────────────────────────────
-  if (bioLocked) {
-    return (<View style={{ flex:1, justifyContent:'center', alignItems:'center',
+  // ── Age gate ────────────────────────────────────────────────────────────────
+  if (!ageVerified) {
+    return <AgeGateScreen onVerified={() => setAgeVerified(true)} />;
+  }
+
+  // Deep links for the navigator that is mounted (signed-out flow vs main app)
+  activeLinking = linkingFor(!canBrowse(authState));
+
+  // ── App lock: a full-screen modal OVER the app, so unlocking after a return
+  //    from the background keeps the person where they were ───────────────────
+  const lockScreen = (
+    <Modal visible={bioLocked} animationType="none" onRequestClose={() => { /* stays until unlocked */ }}>
+      <View style={{ flex:1, justifyContent:'center', alignItems:'center',
         backgroundColor: colors.bg }}>
         <Text style={{ fontSize:48, marginBottom:24 }}>🔒</Text>
         <Text style={{ fontSize:18, color:colors.textPrimary, fontWeight:'700',
@@ -279,15 +318,7 @@ function AppInner() {
         <TouchableOpacity
           style={{ backgroundColor:colors.navy, borderRadius:12,
             paddingHorizontal:32, paddingVertical:14 }}
-          onPress={async () => {
-            try {
-              const r = await LocalAuthentication.authenticateAsync({
-                promptMessage: t('app_unlock_prompt'),
-                disableDeviceFallback: false,
-              });
-              if (r.success) setBioLocked(false);
-            } catch {}
-          }}
+          onPress={async () => { if (await unlockWithBiometrics()) setBioLocked(false); }}
           accessibilityRole="button"
           accessibilityLabel={t('x_biometric_lock_view_unlock_with_biometric')}
         >
@@ -296,19 +327,14 @@ function AppInner() {
           </Text>
         </TouchableOpacity>
       </View>
-    );
-  }
-
-  // ── Age gate ────────────────────────────────────────────────────────────────
-  if (!ageVerified) {
-    return <AgeGateScreen onVerified={() => setAgeVerified(true)} />;
-  }
+    </Modal>
+  );
 
   return (
     <ErrorBoundary>
       <>
       <ToastProvider>
-      <NavigationContainer linking={linking}
+      <NavigationContainer linking={activeLinking}
           ref={navigationRef}
           onReady={installDesktopBridge}
           onStateChange={(state) => {
@@ -337,6 +363,8 @@ function AppInner() {
           ) : (
             <RootStack.Screen name="GuestNav" component={GuestNavigator} />
           )}
+          {/* The password-reset e-mail link works signed out, browsing or signed in */}
+          <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>
@@ -345,13 +373,14 @@ function AppInner() {
       </>
     <TermsAcceptanceModal
       visible={tosNeeded}
-      onAccepted={() => setTosNeeded(false)}
+      onAccepted={() => { setTosNeeded(false); openPendingHome(); }}
       onDecline={async () => {
         setTosNeeded(false);
-        await clearAuth().catch(() => {});
-        setAuthState('guest');
+        await signOut();
       }}
     />
+    {/* last = on top of the Terms modal too */}
+    {lockScreen}
     </ErrorBoundary>
     );
 }

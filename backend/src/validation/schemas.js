@@ -10,6 +10,7 @@
  */
 
 import { z } from 'zod';
+import { msg, resolveLang } from '../i18n/index.js';
 
 // ── Reusable field types ─────────────────────────────────────────────────
 const nonEmptyStr  = (max=500) => z.string().trim().min(1).max(max);
@@ -35,6 +36,7 @@ export const schemas = {
       displayName: z.string().trim().max(200).optional(),
       name:        z.string().trim().max(200).optional(),
       isAttorney:  z.boolean().optional(),
+      accountType: z.enum(['consumer', 'attorney', 'bail_agent']).optional(),
       barNumber:   z.string().trim().max(30).optional().nullable(),
       barState:    z.string().trim().max(3).optional().nullable(),
       firmName:    z.string().trim().max(200).optional().nullable(),
@@ -207,6 +209,8 @@ export function validate(schema) {
       }));
       return res.status(400).json({
         error:  'Validation failed',
+        // What the app shows the person, in the request's language.
+        message: msg(resolveLang(req), 'validation.failed'),
         errors,
         hint:   'Check the request body against the API documentation.',
       });

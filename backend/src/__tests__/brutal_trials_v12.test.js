@@ -672,9 +672,12 @@ describe('9. Screen Contracts — Alert.alert Confirm Dialogs', () => {
   test('9-02: SettingsScreen sign-out clears auth + chat session', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx', 'utf8');
-    expect(src).toContain('clearAuth');
-    expect(src).toContain('chat_session_id');
-    expect(src).toContain('multiRemove');
+    // sign-out (and account deletion) go through services/session.ts signOut()
+    const session = fs.readFileSync(__REPO + '/frontend/src/services/session.ts', 'utf8');
+    expect(src).toContain('signOut');
+    expect(session).toContain('clearAuth');
+    expect(session).toContain('chat_session_id');
+    expect(session).toContain('multiRemove');
   });
 
 

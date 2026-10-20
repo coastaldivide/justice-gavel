@@ -18,6 +18,7 @@ export type RootStackParamList = {
   // ── Auth ─────────────────────────────────────────────────────────────────
   Login:                    undefined;
   Register:                 undefined;
+  ResetPassword:            { token?: string };
   Onboarding:               undefined;
   AgeGate:                  undefined;
   TermsOfService:           undefined;

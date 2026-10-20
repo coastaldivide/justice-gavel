@@ -19,7 +19,7 @@ import { validate, schemas } from '../validation/schemas.js';
  * Responses for register/login/refresh: { token, refreshToken, user }
  */
 
-import { err400, truncateStr, err401, err404, sanitizeStr, validateEmail } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, sanitizeStr, validateEmail } from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
@@ -30,6 +30,7 @@ import { authRequired } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import { purgeAccountData, exportAccount } from '../services/accountDeletion.js';
 import logger from '../utils/logger.js';
+import { msg, reqMsg, resolveLang, requestedLang, normalizeLang } from '../i18n/index.js';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
 
@@ -41,9 +42,11 @@ const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET || process.env.J
 const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
 
 // ── Rate limits ───────────────────────────────────────────────────────────────
+// Messages are written in the request's language (?lang= / Accept-Language).
+const limitMessage = (key, code) => (req) => ({ error: msg(resolveLang(req), key), code });
 const resetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, max: 5,
-  message:  { error: 'Too many password reset requests. Try again in 1 hour.' },
+  message:  limitMessage('auth.err.too_many_resets', 'too_many_resets'),
   standardHeaders: true, legacyHeaders: false,
   skip: () => IS_TEST,
 });
@@ -51,12 +54,12 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: parseInt(process.env.AUTH_RATE_LIMIT || '10', 10),
   standardHeaders: true, legacyHeaders: false,
   skipSuccessfulRequests: true,     // only failures count toward the limit
-  message: { error: 'Too many login attempts — please wait 15 minutes before trying again.' },
+  message: limitMessage('auth.err.too_many_logins', 'too_many_logins'),
   skip: () => IS_TEST,
 });
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, max: parseInt(process.env.REGISTER_RATE_LIMIT || '5', 10),
-  message: { error: 'Too many accounts created from this device. Please try again in an hour.' },
+  message: limitMessage('auth.err.too_many_registrations', 'too_many_registrations'),
   standardHeaders: true, legacyHeaders: false,
   skip: () => IS_TEST,
 });
@@ -84,6 +87,14 @@ function defaultDisplayName(identifier, type) {
   return 'User';
 }
 
+/** What the app's navigator needs to send someone to their own home screen. */
+const ATTORNEY_ROLES = new Set(['attorney', 'defender']);
+function accountType(u) {
+  if (ATTORNEY_ROLES.has(u.role) || Number(u.is_defender) === 1) return 'attorney';
+  if (u.user_type === 'bail_agent' || u.has_bondsman_profile) return 'bail_agent';
+  return 'consumer';
+}
+
 function publicUser(u) {
   return {
     id:               u.id,
@@ -95,7 +106,16 @@ function publicUser(u) {
     subscriptionTier: u.subscription_tier || 'free',
     premium:          !!Number(u.is_premium || 0),
     createdAt:        u.created_at || null,
+    accountType:      accountType(u),
+    preferredLanguage: normalizeLang(u.preferred_language) || null,
   };
+}
+
+/** The user row plus whether a bail-agent (bondsman) profile exists. */
+function loadUser(db, id) {
+  return db.get(
+    `SELECT u.*, EXISTS (SELECT 1 FROM bondsman_profiles b WHERE b.user_id = u.id) AS has_bondsman_profile
+       FROM users u WHERE u.id = ?`, [id]);
 }
 
 // ── Token issuing ─────────────────────────────────────────────────────────────
@@ -152,24 +172,28 @@ async function findUserByIdentifier(db, type, value) {
 
 // ── POST /register ────────────────────────────────────────────────────────────
 router.post('/register', registerLimiter, validate(schemas.auth.register), async (req, res) => {
+  const m = reqMsg(req);
   try {
     const db = await getDb();
     const {
       password, displayName: rawDisplayName, name: rawName,
-      isAttorney = false, barNumber = null, barState = null, practiceAreas = null, firmName = null,
+      barNumber = null, barState = null, practiceAreas = null, firmName = null,
     } = req.body || {};
+    // accountType: 'consumer' | 'attorney' | 'bail_agent' (legacy clients send isAttorney)
+    const acctType = req.body?.accountType || (req.body?.isAttorney ? 'attorney' : 'consumer');
+    const isAttorney = acctType === 'attorney';
     const identifier = pickIdentifier(req.body);
-    if (!identifier || !password) return err400(res, 'identifier and password are required');
-    if (String(password).length < 8) return err400(res, 'password must be at least 8 characters');
+    if (!identifier || !password) return err400(res, m('auth.err.identifier_password_required'));
+    if (String(password).length < 8) return err400(res, m('auth.err.password_short'));
 
     const { type, value } = normalizeIdentifier(identifier);
-    if (type === 'unknown') return err400(res, 'identifier must be a valid email or phone number');
+    if (type === 'unknown') return err400(res, m('auth.err.identifier_invalid'));
 
     const exists = await findUserByIdentifier(db, type, value);
     const existsAny = exists || await db.get(
       type === 'email' ? 'SELECT id FROM users WHERE LOWER(email) = ?' : 'SELECT id FROM users WHERE phone = ?', [value]);
     if (existsAny) {
-      return res.status(409).json({ error: `${type === 'email' ? 'Email' : 'Phone number'} already registered` });
+      return res.status(409).json({ error: m(type === 'email' ? 'auth.err.email_taken' : 'auth.err.phone_taken'), code: 'already_registered' });
     }
 
     const hash = await bcrypt.hash(password, 12);
@@ -181,14 +205,17 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
     const safeBarState  = barState  ? sanitizeStr(String(barState), 3).toUpperCase() : null;
     const safeFirmName  = firmName  ? truncateStr(sanitizeStr(String(firmName), 100), 100) : null;
 
-    const user = await db.transaction(async (tx) => {
+    // The language the person signed up in: reminders and e-mails use it.
+    const lang = requestedLang(req);
+    const userType = acctType === 'bail_agent' ? 'bail_agent' : null;
+    const created = await db.transaction(async (tx) => {
       const r = await tx.run(
         `INSERT INTO users
            (email, phone, password_hash, name, display_name, login_identifier,
-            role, bar_number, bar_state, firm_name)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            role, bar_number, bar_state, firm_name, preferred_language, user_type)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [type === 'email' ? value : null, type === 'phone' ? value : null,
-         hash, name, name, value, userRole, safeBarNumber, safeBarState, safeFirmName]
+         hash, name, name, value, userRole, safeBarNumber, safeBarState, safeFirmName, lang, userType]
       );
       if (isAttorney && r.lastID) {
         await tx.run(
@@ -198,57 +225,59 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
           [r.lastID, safeBarNumber, safeBarState, safeFirmName, practiceAreas ? JSON.stringify(practiceAreas) : null]
         );
       }
-      return tx.get('SELECT * FROM users WHERE id = ?', [r.lastID]);
+      return r.lastID;
     });
-    if (!user) return res.status(500).json({ error: 'Registration failed' });
+    const user = created ? await loadUser(db, created) : null;
+    if (!user) return res.status(500).json({ error: m('auth.err.register_failed') });
 
     const out = await issueTokenPair(user, db);
     audit?.('auth.register', { userId: user.id, req })?.catch?.(() => {});
     if (type === 'email') {
       import('../services/email.js')
-        .then(m => m.sendWelcome(value, name))
+        .then(mod => mod.sendWelcome(value, name))
         .catch(e => logger.warn('[auth/register] welcome email:', e.message));
     }
     res.status(201).json(out);
   } catch (e) {
-    if (e.code === '23505') return res.status(409).json({ error: 'Account already registered' });
+    if (e.code === '23505') return res.status(409).json({ error: m('auth.err.email_taken'), code: 'already_registered' });
     logger.error('[auth/register]', e.message);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: m('auth.err.register_failed') });
   }
 });
 
 // ── POST /login ───────────────────────────────────────────────────────────────
+const lockedMinutes = (user) => Math.max(1, Math.ceil((new Date(user.lock_until) - Date.now()) / 60000));
+
 router.post('/login', authLimiter, validate(schemas.auth.login), async (req, res) => {
+  const m = reqMsg(req);
+  const badCredentials = () => res.status(401).json({ error: m('auth.err.invalid_credentials'), code: 'invalid_credentials' });
   try {
     const db = await getDb();
     const { password } = req.body || {};
     const identifier = pickIdentifier(req.body);
-    if (!identifier || !password) return err400(res, 'identifier and password are required');
+    if (!identifier || !password) return err400(res, m('auth.err.identifier_password_required'));
 
     const { type, value } = normalizeIdentifier(identifier);
-    if (type === 'unknown') return err401(res, 'Invalid credentials. Please check your email/phone and password.');
+    if (type === 'unknown') return badCredentials();
 
-    const user = await findUserByIdentifier(db, type, value);
-    if (!user || !user.password_hash) {
-      return err401(res, 'Invalid credentials. Please check your email/phone and password.');
-    }
-    if (isAccountLocked(user)) {
-      const mins = Math.max(1, Math.ceil((new Date(user.lock_until) - Date.now()) / 60000));
-      return res.status(423).json({ error: `Account temporarily locked. Try again in ${mins} minutes.`, code: 'account_locked' });
+    const found = await findUserByIdentifier(db, type, value);
+    if (!found || !found.password_hash) return badCredentials();
+    if (isAccountLocked(found)) {
+      return res.status(423).json({ error: m('auth.err.locked', { minutes: lockedMinutes(found) }), code: 'account_locked' });
     }
 
-    const ok = await bcrypt.compare(password, user.password_hash);
+    const ok = await bcrypt.compare(password, found.password_hash);
     if (!ok) {
-      await recordFailedLogin(db, user.id).catch(e => logger.warn('[auth/login] lockout update:', e.message));
-      return err401(res, 'Invalid credentials. Please check your email/phone and password.');
+      await recordFailedLogin(db, found.id).catch(e => logger.warn('[auth/login] lockout update:', e.message));
+      return badCredentials();
     }
-    if (user.failed_login_attempts || user.lock_until) await clearFailedLogins(db, user.id).catch(logIgnored('routes/auth'));
-    db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), user.id]).catch(logIgnored('routes/auth'));
+    if (found.failed_login_attempts || found.lock_until) await clearFailedLogins(db, found.id).catch(logIgnored('routes/auth'));
+    db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), found.id]).catch(logIgnored('routes/auth'));
 
-    res.json(await issueTokenPair(user, db));
+    res.json(await issueTokenPair(await loadUser(db, found.id) || found, db));
   } catch (e) {
     logger.error('[auth/login]', e.message);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: m('auth.err.login_failed') });
   }
 });
 
@@ -256,17 +285,18 @@ router.post('/login', authLimiter, validate(schemas.auth.login), async (req, res
 router.get('/me', authRequired, async (req, res) => {
   try {
     const db   = await getDb();
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
-    if (!user) return err404(res, 'User not found');
+    const user = await loadUser(db, req.user.id);
+    if (!user) return err404(res, msg(resolveLang(req), 'auth.err.account_not_found'));
     res.json(publicUser(user));
   } catch (e) {
     logger.error('[auth/me]', e.message);
-    res.status(500).json({ error: 'Could not load profile' });
+    res.status(500).json({ error: msg(resolveLang(req), 'auth.err.server') });
   }
 });
 
 // ── POST /update-profile ──────────────────────────────────────────────────────
 router.post('/update-profile', authRequired, async (req, res) => {
+  const m = reqMsg(req);
   try {
     const db = await getDb();
     const { displayName: rawDN, phone, email } = req.body || {};
@@ -280,38 +310,43 @@ router.post('/update-profile', authRequired, async (req, res) => {
     }
     if (phone) {
       const { type, value } = normalizeIdentifier(phone);
-      if (type !== 'phone') return err400(res, 'Invalid phone number');
+      if (type !== 'phone') return err400(res, m('auth.err.phone_invalid'));
       updates.push('phone = ?');
       vals.push(value);
     }
     if (email) {
-      if (!validateEmail(email)) return err400(res, 'Invalid email format');
+      if (!validateEmail(email)) return err400(res, m('auth.err.email_invalid'));
       updates.push('email = ?');
       vals.push(String(email).trim().toLowerCase());
     }
-    if (updates.length === 0) return err400(res, 'Nothing to update');
+    if (updates.length === 0) return err400(res, m('auth.err.nothing_to_update'));
 
     vals.push(req.user.id);
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, vals);
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
-    if (!user) return res.status(404).json({ error: 'Account not found.' });
+    const user = await loadUser(db, req.user.id);
+    if (!user) return res.status(404).json({ error: m('auth.err.account_not_found') });
     res.json(publicUser(user));
   } catch (e) {
-    if (e.code === '23505') return res.status(409).json({ error: 'That email or phone is already in use.' });
+    if (e.code === '23505') return res.status(409).json({ error: m('auth.err.in_use'), code: 'in_use' });
     logger.error('[auth/update-profile]', e.message);
-    res.status(500).json({ error: 'Profile update failed' });
+    res.status(500).json({ error: m('auth.err.server') });
   }
 });
 
 // ── POST /forgot-password ─────────────────────────────────────────────────────
 // Always 200 (prevents account enumeration). Stores only a SHA-256 of the token.
 router.post('/forgot-password', resetLimiter, async (req, res) => {
+  const m = reqMsg(req);
   try {
     const email = String(req.body?.email || req.body?.identifier || '').trim().toLowerCase();
-    if (!email) return err400(res, 'Email required');
-    if (!validateEmail(email)) return err400(res, 'Invalid email format');
+    if (!email) return res.status(400).json({ error: m('auth.err.email_required'), code: 'email_required' });
+    if (!validateEmail(email)) return res.status(400).json({ error: m('auth.err.email_invalid'), code: 'email_invalid' });
+    // No e-mail provider configured: say so (the same for every address, so it
+    // reveals nothing about which accounts exist) instead of "sent".
+    const { emailLive } = await import('../services/email.js');
+    if (!emailLive()) return res.status(503).json({ error: m('auth.err.reset_email_unavailable'), code: 'email_unavailable' });
     const db   = await getDb();
-    const user = await db.get('SELECT id, email FROM users WHERE LOWER(email) = ?', [email]);
+    const user = await db.get('SELECT id, email, preferred_language FROM users WHERE LOWER(email) = ?', [email]);
     if (!user) return res.json({ sent: true });
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -325,37 +360,39 @@ router.post('/forgot-password', resetLimiter, async (req, res) => {
     const url  = `${base}/reset-password?token=${token}`;
     try {
       const { sendPasswordReset } = await import('../services/email.js');
-      await sendPasswordReset(user.email, url);
+      // In the language the person asked in, else the one saved on the account.
+      await sendPasswordReset(user.email, url, requestedLang(req) || normalizeLang(user.preferred_language) || 'en');
     } catch (e) { logger.warn('[auth/forgot-password/email]', e?.message); }
     res.json({ sent: true });
   } catch (e) {
     logger.error('[auth/forgot-password]', e.message);
-    res.status(500).json({ error: 'Server error. Please try again.' });
+    res.status(500).json({ error: m('auth.err.server') });
   }
 });
 
 // ── POST /reset-password ──────────────────────────────────────────────────────
 router.post('/reset-password', resetLimiter, async (req, res) => {
+  const m = reqMsg(req);
   try {
     const { token, password } = req.body || {};
-    if (!token || !password) return err400(res, 'token and password are required');
-    if (String(password).length < 8) return err400(res, 'password must be at least 8 characters');
+    if (!token || !password) return err400(res, m('auth.err.reset_fields_required'));
+    if (String(password).length < 8) return err400(res, m('auth.err.password_short'));
     const db  = await getDb();
     const row = await db.get(
       'SELECT id, user_id FROM password_resets WHERE token = ? AND used_at IS NULL AND expires_at > NOW()',
       [sha256(token)]
     );
-    if (!row) return res.status(400).json({ error: 'Reset link is invalid or has expired.', code: 'invalid_reset_token' });
+    if (!row) return res.status(400).json({ error: m('auth.err.reset_invalid'), code: 'invalid_reset_token' });
     const hash = await bcrypt.hash(password, 12);
     await db.transaction(async (tx) => {
       await tx.run('UPDATE users SET password_hash = ?, failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [hash, row.user_id]);
       await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [row.user_id]);
       await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.user_id]);   // sign out other sessions
     });
-    res.json({ ok: true, message: 'Password updated. Please sign in.' });
+    res.json({ ok: true, message: m('auth.reset_done') });
   } catch (e) {
     logger.error('[auth/reset-password]', e.message);
-    res.status(500).json({ error: 'Could not reset password. Please try again.' });
+    res.status(500).json({ error: m('auth.err.server') });
   }
 });
 
@@ -387,7 +424,7 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
         await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [decoded.id]).catch(logIgnored('routes/auth'));
         return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
       }
-      const user = await db.get('SELECT * FROM users WHERE id = ?', [decoded.id]);
+      const user = await loadUser(db, decoded.id);
       if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
         return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
       }
@@ -402,9 +439,9 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
     try {
       claims = jwt.verify(token, JWT_SECRET(), { algorithms: ['HS256'] });
     } catch {
-      return res.status(401).json({ error: 'Session expired. Please log in again.', code: 'token_expired' });
+      return res.status(401).json({ error: msg(resolveLang(req), 'auth.err.session_expired'), code: 'token_expired' });
     }
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [claims.id]);
+    const user = await loadUser(db, claims.id);
     // Same disabled-account rule as middleware/auth.js — a suspended or deleted
     // account must not be able to mint fresh tokens either.
     if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
@@ -419,18 +456,19 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
 
 // ── DELETE /account ───────────────────────────────────────────────────────────
 router.delete('/account', authRequired, async (req, res) => {
+  const m = reqMsg(req);
   const { password } = req.body || {};
-  if (!password) return err400(res, 'Password required to delete account.');
+  if (!password) return err400(res, m('auth.err.delete_password_required'));
   try {
     const db = await getDb();
     const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
-    if (!user) return err404(res, 'Account not found.');
+    if (!user) return err404(res, m('auth.err.account_not_found'));
     if (isAccountLocked(user)) {
-      const mins = Math.ceil((new Date(user.lock_until) - new Date()) / 60000);
-      return res.status(423).json({ error: `Account temporarily locked. Try again in ${mins} minutes.` });
+      return res.status(423).json({ error: m('auth.err.locked', { minutes: lockedMinutes(user) }), code: 'account_locked' });
     }
+    // 403, not 401: the session is valid — a 401 would sign the person out of the app.
     const valid = await bcrypt.compare(password, user.password_hash || '');
-    if (!valid) return err401(res, 'Incorrect password.');
+    if (!valid) return res.status(403).json({ error: m('auth.err.wrong_password'), code: 'incorrect_password' });
 
     const uid = req.user.id;
     // Every table that references the user is handled by one registry
@@ -459,10 +497,10 @@ router.delete('/account', authRequired, async (req, res) => {
         }
       }).catch(logIgnored('routes/auth'));
     }
-    res.json({ ok: true, message: 'Account permanently deleted.' });
+    res.json({ ok: true, message: m('auth.deleted') });
   } catch (e) {
     logger.error('[auth/account/delete]', e.message);
-    res.status(500).json({ error: 'Could not delete account. Please try again.' });
+    res.status(500).json({ error: m('auth.err.server') });
   }
 });
 
@@ -496,26 +534,36 @@ async function sendExport(req, res) {
     });
   } catch (e) {
     logger.error('[auth/export]', e.message);
-    res.status(500).json({ error: 'Could not export data. Please try again.' });
+    res.status(500).json({ error: msg(resolveLang(req), 'auth.err.server') });
   }
 }
 router.get('/export', authRequired, sendExport);
 
 // ── POST /logout ──────────────────────────────────────────────────────────────
+// { refreshToken?, pushToken?, allDevices? } — this device's push token stops
+// receiving the account's notifications (the next person on the phone must not
+// see them); with allDevices every session and device token is removed.
 router.post('/logout', authRequired, async (req, res) => {
+  const m = reqMsg(req);
   try {
     const db = await getDb();
-    const { refreshToken, allDevices } = req.body || {};
+    const { refreshToken, allDevices, pushToken } = req.body || {};
     if (allDevices) {
       await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.user.id]);
-    } else if (refreshToken) {
-      await db.run('UPDATE refresh_tokens SET used = 1 WHERE user_id = ? AND token_hash = ?', [req.user.id, sha256(refreshToken)]);
+      await db.run('DELETE FROM push_tokens WHERE user_id = ?', [req.user.id]);
+    } else {
+      if (refreshToken) {
+        await db.run('UPDATE refresh_tokens SET used = 1 WHERE user_id = ? AND token_hash = ?', [req.user.id, sha256(refreshToken)]);
+      }
+      if (pushToken) {
+        await db.run('DELETE FROM push_tokens WHERE user_id = ? AND token = ?', [req.user.id, String(pushToken).slice(0, 300)]);
+      }
     }
     await db.run('UPDATE users SET push_token = NULL WHERE id = ?', [req.user.id]);
-    res.json({ ok: true, message: 'Logged out successfully.' });
+    res.json({ ok: true, message: m('auth.logged_out') });
   } catch (e) {
     logger.error('[auth/logout]', e?.message);
-    res.status(500).json({ error: 'Server error.' });
+    res.status(500).json({ error: m('auth.err.server') });
   }
 });
 
@@ -555,6 +603,7 @@ router.get('/tos-status', authRequired, async (req, res) => {
 // Both checkboxes must be checked. Scroll completion is tracked by client.
 // Creates an immutable audit log entry.
 router.post('/accept-tos', authRequired, async (req, res) => {
+  const m = reqMsg(req);
   try {
     const {
       tos_version,
@@ -566,27 +615,16 @@ router.post('/accept-tos', authRequired, async (req, res) => {
     } = req.body || {};
 
     // Validate both required checkboxes
-    if (!checkbox_tos) {
-      return res.status(400).json({
-        error: 'You must check "I have read and agree to the Terms of Service."',
-      });
-    }
-    if (!checkbox_no_advice) {
-      return res.status(400).json({
-        error: 'You must check "I understand that Justice Gavel is not a law firm and does not provide legal advice."',
-      });
-    }
-    if (!scroll_completed) {
-      return res.status(400).json({
-        error: 'Please scroll through the Terms of Service before accepting.',
-      });
-    }
+    if (!checkbox_tos) return res.status(400).json({ error: m('auth.tos.err.terms'), code: 'tos_unchecked' });
+    if (!checkbox_no_advice) return res.status(400).json({ error: m('auth.tos.err.no_advice'), code: 'no_advice_unchecked' });
+    if (!scroll_completed) return res.status(400).json({ error: m('auth.tos.err.scroll'), code: 'tos_not_read' });
 
     // Only accept the current version — prevents replay of old acceptances
     const version = tos_version || CURRENT_TOS_VERSION;
     if (version !== CURRENT_TOS_VERSION) {
       return res.status(400).json({
-        error: `ToS version mismatch. Please reload and accept version ${CURRENT_TOS_VERSION}.`,
+        error: m('auth.tos.err.version', { version: CURRENT_TOS_VERSION }),
+        code: 'tos_version_mismatch',
         current_version: CURRENT_TOS_VERSION,
       });
     }
@@ -631,11 +669,11 @@ router.post('/accept-tos', authRequired, async (req, res) => {
       ok:           true,
       accepted_at:  acceptedAt,
       version,
-      message: 'Terms of Service accepted. Thank you.',
+      message: m('auth.tos.accepted'),
     });
   } catch (e) {
     logger.error('[auth/accept-tos]', e.message);
-    res.status(500).json({ error: 'Could not record acceptance. Please try again.' });
+    res.status(500).json({ error: m('auth.tos.err.save') });
   }
 });
 
@@ -647,16 +685,21 @@ router.post('/disclaimer/accept', authRequired, async (req, res) => {
     const { recordDisclaimerAcceptance } = await import('../middleware/disclaimer.js');
     const result = await recordDisclaimerAcceptance(req.user.id, req);
     res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Could not record acceptance.' });
+  } catch (e) {
+    logger.error('[auth/disclaimer/accept]', e?.message);
+    res.status(500).json({ error: msg(resolveLang(req), 'auth.tos.err.save') });
   }
 });
 
 // GET /api/auth/disclaimer/status — check if user needs to accept
 router.get('/disclaimer/status', authRequired, async (req, res) => {
-  const { checkDisclaimerStatus } = await import('../middleware/disclaimer.js');
-  const status = await checkDisclaimerStatus(req.user.id);
-  res.json(status);
+  try {
+    const { checkDisclaimerStatus } = await import('../middleware/disclaimer.js');
+    res.json(await checkDisclaimerStatus(req.user.id));
+  } catch (e) {
+    logger.error('[auth/disclaimer/status]', e?.message);
+    res.status(500).json({ error: msg(resolveLang(req), 'auth.err.server') });
+  }
 });
 
 

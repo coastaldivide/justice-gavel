@@ -403,7 +403,9 @@ router.post('/remind-all', requireStaffOrAdminKey, remindAllLimiter, async (req,
       `SELECT DISTINCT ce.user_id
        FROM checkin_enrollments ce
        JOIN push_tokens pt ON pt.user_id = ce.user_id
+       JOIN users u ON u.id = ce.user_id
        WHERE ce.active = 1
+         AND COALESCE(u.notif_checkin_reminders, 1) = 1
          AND DATE(ce.next_check_in_at) = CURRENT_DATE
          AND pt.token IS NOT NULL`,
       []

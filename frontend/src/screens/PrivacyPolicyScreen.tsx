@@ -18,9 +18,11 @@ import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
-import { t, perLang, useLang } from '../i18n';
+import { t, perLang, useLang, locale } from '../i18n';
 
-const EFFECTIVE_DATE  = 'May 1, 2026';
+/** Effective date (shown in the reader's language, e.g. "1 de mayo de 2026"). */
+const EFFECTIVE_ISO = '2026-05-01';
+const effectiveDate = () => new Date(`${EFFECTIVE_ISO}T12:00:00Z`).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 const COMPANY = 'Justice Gavel LLC';
 const CONTACT_EMAIL   = 'privacy@justicegavel.app';
 const WEBSITE         = 'https://justicegavel.app';
@@ -196,7 +198,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           {t('onb_terms_pp')}
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerMeta}>
-          {t('x_privacy_policy_effective', { EFFECTIVE_DATE })}
+          {t('x_privacy_policy_effective', { EFFECTIVE_DATE: effectiveDate() })}
         </Text>
         <View style={styles.headerBadges}>
           {['GDPR', 'CCPA', 'Apple', 'Google Play'].map(badge => (

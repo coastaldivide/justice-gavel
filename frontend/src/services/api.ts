@@ -10,7 +10,7 @@
  */
 
 import axios, { AxiosRequestConfig } from 'axios';
-import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStorage';
+import { getToken, getItem, setItem, clearAuth, setToken as storeToken } from '../utils/secureStorage';
 import { setAppAuth } from './auth';
 import { notifyDisclaimerRequired } from './legalGate';
 import { isIdempotentPost, newIdempotencyKey } from '../constants/idempotency';
@@ -67,31 +67,54 @@ instance.interceptors.request.use(async (config) => {
 
 
 
-// ── Proactive token refresh ─────────────────────────────────────────────
-// Refresh JWT if it was issued more than 25 days ago (30d expiry)
-// Prevents users from being logged out mid-session
-const REFRESH_THRESHOLD_MS = 25 * 24 * 60 * 60 * 1000; // 25 days
-let _refreshing = false;
-instance.interceptors.request.use(async (config) => {
-  // Skip refresh for auth endpoints
-  if (config.url?.includes('/auth/')) return config;
+// ── Session refresh ───────────────────────────────────────────────────────
+// The access token (30 days) is renewed before it runs out, and once more when
+// the server says it already has (401 token_expired): with the single-use
+// refresh token saved at sign-in (60 days), else from the still-valid access
+// token. Only when both fail does the app sign the person out.
+const REFRESH_THRESHOLD_MS = 5 * 24 * 60 * 60 * 1000; // renew in the last 5 days
+
+/** The token's expiry (ms since epoch) from its payload; null when unreadable. */
+export function tokenExpiry(token: string | null | undefined): number | null {
   try {
-    const token = await getToken();
-    if (token) {
-      // Decode JWT payload (base64) to check iat
-      // Decode payload only for iat (issued-at) check — signature verified server-side
-      let ageMs = 0;
-      try { const payload = JSON.parse(atob(token.split('.')[1])); ageMs = Date.now() - (payload.iat ?? 0) * 1000; } catch { /* malformed token — skip iat check */ }
-      if (ageMs > REFRESH_THRESHOLD_MS && !_refreshing) {
-        _refreshing = true;
-        const { data } = await instance.post('/auth/refresh', {}, {
-          headers: { Authorization: 'Bearer ' + token },
-        });
-        if (data?.token) await storeToken(data.token)  // storeToken from secureStorage;
-        _refreshing = false;
-      }
-    }
-  } catch { _refreshing = false; }
+    const part = String(token || '').split('.')[1];
+    if (!part) return null;
+    const payload = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload?.exp === 'number' ? payload.exp * 1000 : null;
+  } catch { return null; }
+}
+
+let _refreshing: Promise<string | null> | null = null;
+/** Renew the session once (concurrent callers share the same attempt). Resolves the new access token or null. */
+export function refreshSession(): Promise<string | null> {
+  if (_refreshing) return _refreshing;
+  _refreshing = (async () => {
+    try {
+      const [access, refresh] = await Promise.all([getToken(), getItem('refresh_token')]);
+      if (!access && !refresh) return null;
+      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, refresh ? { refreshToken: refresh } : {}, {
+        timeout: 15_000,
+        headers: { 'Content-Type': 'application/json', ...(refresh ? {} : { Authorization: `Bearer ${access}` }) },
+      });
+      if (!data?.token) return null;
+      await storeToken(data.token);
+      if (data.refreshToken) await setItem('refresh_token', data.refreshToken);
+      if (data.user) await setItem('user', JSON.stringify(data.user));
+      return data.token as string;
+    } catch { return null; }
+    finally { _refreshing = null; }
+  })();
+  return _refreshing;
+}
+
+instance.interceptors.request.use(async (config) => {
+  if (config.url?.includes('/auth/')) return config;
+  const token = await getToken().catch(() => null);
+  const exp = tokenExpiry(token);
+  if (token && exp && exp - Date.now() < REFRESH_THRESHOLD_MS) {
+    const fresh = await refreshSession();
+    if (fresh) config.headers.Authorization = `Bearer ${fresh}`;
+  }
   return config;
 });
 
@@ -186,9 +209,17 @@ instance.interceptors.response.use(
     // Only auto-logout when we actually sent a token (an expired/revoked
     // session). Guests browsing without a token, or a failed login attempt,
     // must not be bounced out of the app.
-    const sentAuth = !!(error?.config?.headers?.Authorization);
-    if (error?.response?.status === 401 && sentAuth && !String(error?.config?.url || '').includes('/auth/login')) {
-      // Token expired or invalid — clear credentials and force re-login
+    const cfg = error?.config as (AxiosRequestConfig & { _sessionRetried?: boolean }) | undefined;
+    const sentAuth = !!(cfg?.headers?.Authorization);
+    const url = String(cfg?.url || '');
+    if (error?.response?.status === 401 && sentAuth && !url.includes('/auth/login')) {
+      // Expired: renew once and send the request again before giving up.
+      if (error?.response?.data?.code === 'token_expired' && cfg && !cfg._sessionRetried && !url.includes('/auth/refresh')) {
+        cfg._sessionRetried = true;
+        // The request interceptor puts the renewed token on the retry.
+        if (await refreshSession()) return instance.request(cfg);
+      }
+      // Revoked or not renewable — clear credentials and force re-login
       await clearAuth().catch(() => {});
       setAppAuth('guest');
     }

@@ -42,7 +42,8 @@ describeIntegration('auth routes (real Postgres)', () => {
 
     const bad = await ctx.request().post('/api/auth/login').send({ identifier: u.email, password: 'WrongPass123!' });
     expect(bad.status).toBe(401);
-    expect(bad.body.error).toMatch(/Invalid credentials/);
+    expect(bad.body).toMatchObject({ code: 'invalid_credentials' });
+    expect(bad.body.error).toMatch(/do not match/);
     const unknown = await ctx.request().post('/api/auth/login').send({ identifier: `${ctx.tag}-ghost@it.example.test`, password: 'Whatever123!' });
     expect(unknown.status).toBe(401);
     // failed attempt is recorded in the DB
@@ -132,7 +133,8 @@ describeIntegration('auth routes (real Postgres)', () => {
     const u = await ctx.register();
     await ctx.request().post('/api/cases').set(u.headers).send({ title: `${ctx.tag} delete-me case` });
     expect((await ctx.request().delete('/api/auth/account').set(u.headers).send({})).status).toBe(400);
-    expect((await ctx.request().delete('/api/auth/account').set(u.headers).send({ password: 'Wrong123!' })).status).toBe(401);
+    // 403: a wrong password must not look like an expired session (the app would sign out)
+    expect((await ctx.request().delete('/api/auth/account').set(u.headers).send({ password: 'Wrong123!' })).status).toBe(403);
     const del = await ctx.request().delete('/api/auth/account').set(u.headers).send({ password: u.password });
     expect(del.status).toBe(200);
     expect(await ctx.db.get('SELECT id FROM users WHERE id = ?', [u.user.id])).toBeUndefined();

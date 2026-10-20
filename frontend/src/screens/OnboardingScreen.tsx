@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList, NativeModules, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList, NativeModules, Platform, ScrollView } from 'react-native';
 import { setPendingRoute } from '../services/corePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
@@ -131,6 +131,8 @@ function OnboardingScreen({ navigation }: ScreenProps) {
   const next = () => {
     if (activeIndex < activeSlides.length - 1) {
       flatRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+      // Momentum events never fire on the web: move the dots / labels now.
+      setActiveIndex(activeIndex + 1);
     } else {
       browseNow(); // Last slide "Get Started" also goes to browse
     }
@@ -145,37 +147,23 @@ function OnboardingScreen({ navigation }: ScreenProps) {
       {/* Logo + Social proof */}
       <View style={styles.logoWrap}>
         <JTBLogo size={50} />
-
-        {/* ── Crisis resource footer ───────────────────────────────────────── */}
-        <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.15)' }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
-            {t('onb_help_q')}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
-            {t('x_onboarding_public_defender_project_1')}
-          </Text>
-        </View>
-
       </View>
-      <View style={{
-        flexDirection:'row', alignItems:'center', justifyContent:'center',
-        gap:16, paddingHorizontal:20, marginBottom:8,
-      }}>
-        <View style={{ alignItems:'center' }}>
-          {/* The app has no store rating yet — never show an invented one. */}
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>{t('onb_private')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_private_sub')}</Text>
-        </View>
-        <View style={{ width:1, height:28, backgroundColor:colors.border }} />
-        <View style={{ alignItems:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>{t('onb_free')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_free_sub')}</Text>
-        </View>
-        <View style={{ width:1, height:28, backgroundColor:colors.border }} />
-        <View style={{ alignItems:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>24/7</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_ai_sub')}</Text>
-        </View>
+      {/* Three facts; each column shares the width (long es / pt / vi labels wrap) */}
+      <View style={styles.statsRow} testID="onboarding-stats">
+        {/* The app has no store rating yet — never show an invented one. */}
+        {[
+          { k: 'private', title: t('onb_private'), sub: t('onb_private_sub') },
+          { k: 'free', title: t('onb_free'), sub: t('onb_free_sub') },
+          { k: 'ai', title: '24/7', sub: t('onb_ai_sub') },
+        ].map((st, i) => (
+          <React.Fragment key={st.k}>
+            {i > 0 && <View style={styles.statDivider} />}
+            <View style={styles.stat}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.statTitle}>{st.title}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.statSub}>{st.sub}</Text>
+            </View>
+          </React.Fragment>
+        ))}
       </View>
 
       {/* ── "Just arrested?" — the core path, no account required ── */}
@@ -216,13 +204,22 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         keyExtractor={s => s.key}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false },
+          {
+            useNativeDriver: false,
+            // Swipes on the web: no momentum event, so follow the scroll position.
+            listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / slideW);
+              if (i >= 0 && i < activeSlides.length && i !== activeIndex) setActiveIndex(i);
+            },
+          },
         )}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={e => {
           setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / slideW));
         }}
         renderItem={({ item }) => (
-          <View style={[styles.slide, { width: slideW }]} testID="onboarding-slide">
+          // Scrolls on short screens so long translations are never cut off.
+          <ScrollView style={{ width: slideW }} contentContainerStyle={styles.slide} testID="onboarding-slide" showsVerticalScrollIndicator={false}>
             <View style={[styles.iconCircle, {
               backgroundColor: item.accent + '18',
               borderColor: item.accent + '44' }]}>
@@ -230,7 +227,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.slideTitle}>{t(item.titleKey)}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.slideBody}>{t(item.bodyKey)}</Text>
-          </View>
+          </ScrollView>
         )}
       />
 
@@ -303,18 +300,23 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
     shadowColor: COLORS.steel, shadowOpacity: 0.2,
     shadowRadius: 10, elevation: 6 },
-  carousel: { alignSelf: 'stretch', width: '100%' },
+  carousel: { alignSelf: 'stretch', width: '100%', flex: 1 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', paddingHorizontal: 12, marginBottom: 8 },
+  stat: { flex: 1, minWidth: 0, alignItems: 'center', paddingHorizontal: 4 },
+  statTitle: { fontSize: 15, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  statSub: { fontSize: 12, color: colors.textMuted, marginTop: 1, textAlign: 'center' },
+  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
   slide: {
     alignItems: 'center',
     paddingHorizontal: 32, paddingTop: 16 },
   iconCircle: {
-    width: 110, height: 110, borderRadius: 45,
+    width: 92, height: 92, borderRadius: 40,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, marginBottom: 24 },
-  slideIcon:  { fontSize: 50 },
+    borderWidth: 1.5, marginBottom: 18 },
+  slideIcon:  { fontSize: 44 },
   slideTitle: {
-    fontSize: 30, ...FONTS.black, color: colors.textPrimary,
-    textAlign: 'center', lineHeight: 38, marginBottom: 14 },
+    fontSize: 28, ...FONTS.black, color: colors.textPrimary,
+    textAlign: 'center', lineHeight: 35, marginBottom: 12 },
   slideBody: {
     fontSize: 16, ...FONTS.medium, color: colors.textMuted,
     textAlign: 'center', lineHeight: 26 },

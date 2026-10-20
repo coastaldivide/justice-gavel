@@ -4,7 +4,8 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
+import { getToken } from '../utils/secureStorage';
 import { t, perLang, useLang } from '../i18n';
 
 const VERSION = '2026-01-01.1';
@@ -63,30 +64,27 @@ function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
     if (isBottom) setScrolledToBottom(true);
   };
 
+  // Signed in: the acceptance is recorded on the account (an error is shown,
+  // never skipped). Signed out (the guest deep link): there is no account yet —
+  // the Terms screen after sign-up records it — so just continue.
   const handleAccept = async () => {
-if (loading) return;
-        if (!agreed) {
+    if (loading) return;
+    if (!agreed) {
       showToast(t('x_legal_disclaimer_must_check_confirmation_box'));
       return;
     }
     setAccepting(true);
     setLoading(true);
     try {
-          try {
-            await api.post('/auth/disclaimer/accept', { version: VERSION });
-          } catch (_err) {
-            if (__DEV__) console.error(_err);
-          }
-      if (onAccepted) {
-        onAccepted();
-      } else if (navigation?.canGoBack()) {
-        // Mounted via the guest navigator (deep link) — no callback to invoke.
-        navigation.goBack();
-      }
-    } catch {
-      showToast(t('x_legal_disclaimer_could_not_record_acceptance'));
+      if (await getToken().catch(() => null)) await api.post('/auth/disclaimer/accept', { version: VERSION });
+      if (onAccepted) onAccepted();
+      else if (navigation?.canGoBack()) navigation.goBack();
+      else navigation?.navigate('Onboarding');
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_legal_disclaimer_could_not_record_acceptance')), 'error');
     } finally {
       setAccepting(false);
+      setLoading(false);
     }
   };
 

@@ -7,6 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger.js';
 import { escapeHtml as e, safeUrl, headerSafe } from '../utils/html.js';
+import { msg } from '../i18n/index.js';
 
 // Every value interpolated into the HTML templates below goes through e()
 // (text / attribute) or safeUrl() (href) — names, case titles, notes and
@@ -74,20 +75,22 @@ async function send({ to, subject, html, text }) {
 
 // ── Transactional emails ───────────────────────────────────────────────────────
 
-export async function sendPasswordReset(to, resetUrl) {
+/** Password reset link, written in `lang` (en / es / pt / vi). */
+export async function sendPasswordReset(to, resetUrl, lang = 'en') {
+  const m = (k) => e(msg(lang, k));
   return await send({
-    to, subject: 'Reset your Justice Gavel password',
+    to, subject: msg(lang, 'email.reset.subject'),
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
-        <h2 style="color:#042C53">Reset your password</h2>
-        <p>Click the button below to set a new password. This link expires in 1 hour.</p>
+        <h2 style="color:#042C53">${m('email.reset.title')}</h2>
+        <p>${m('email.reset.body')}</p>
         <a href="${safeUrl(resetUrl)}" style="display:inline-block;background:#042C53;color:#fff;
            padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
-          Reset password
+          ${m('email.reset.button')}
         </a>
-        <p style="color:#888;font-size:13px">If you didn't request this, you can safely ignore this email.</p>
+        <p style="color:#888;font-size:13px">${m('email.reset.ignore')}</p>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-        <p style="color:#888;font-size:12px">Justice Gavel — Legal rights, attorneys, and resources.</p>
+        <p style="color:#888;font-size:12px">${m('email.footer')}</p>
       </div>`,
   });
 }

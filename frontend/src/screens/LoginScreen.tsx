@@ -8,13 +8,13 @@ import React, { useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import {  } from '@react-native-async-storage/async-storage';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
-import { registerForPush } from '../services/push';
+import { startSession } from '../services/session';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import * as secureStorage from '../utils/secureStorage';
 import { t, useLang } from '../i18n';
+import { isEmail } from '../utils/identifier';
+
 
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
@@ -36,20 +36,15 @@ if (loading) return;
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/login', { identifier: identifier.trim(), password });
-      if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
-      await secureStorage.setToken(res.data.token);
-      await secureStorage.setItem('user', JSON.stringify(res.data?.user));
-      // registerForPush() posts the token to /push/token itself (native only).
-      registerForPush().catch((e: any) => { __DEV__ && console.warn(e?.message); });
-      await AsyncStorage.removeItem('has_browsed').catch(() => {});
-      setAppAuth('authed');
-      // When opened from inside the app (guest browsing → "Sign in"), return to
-      // where the user was. In the guest flow the whole navigator is replaced.
-      if (navigation.getParent()?.getState()?.routeNames?.includes('HomeTab') && navigation.canGoBack()) {
-        navigation.goBack();
-      }
-    } catch (e: any) {
-      setError(e.response?.data?.message || e.message || t('x_lg_login_failed_check_details'));
+      if (!res.data?.token) throw new Error(t('x_lg_login_failed_check_details'));
+      const inApp = !!navigation.getParent()?.getState()?.routeNames?.includes('HomeTab');
+      await startSession(res.data);
+      // In the guest flow the whole navigator is replaced. Opened from inside the
+      // app (browsing → "Sign in"): back to where the person was. Either way
+      // App.tsx then opens the account's home screen (after the Terms gate).
+      if (inApp && navigation.canGoBack()) navigation.goBack();
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e, t('x_lg_login_failed_check_details')));
     } finally { setLoading(false); }
   };
 
@@ -155,12 +150,14 @@ if (loading) return;
 
               const email = identifier.trim();
               if (!email) { showToast(t('x_lg_enter_email_first_then'), 'info'); return; }
+              // Reset links go by e-mail only (phone numbers cannot receive one).
+              if (!isEmail(email)) { setError(t('lg_reset_needs_email')); return; }
               confirm(t('x_lg_reset_password'), t('x_lg_send_reset_link', { email }),
                 { confirmLabel: t('x_lg_send_link') }).then(ok => {
                 if (!ok) return;
                 api.post('/auth/forgot-password', { email })
                   .then(() => showToast(t('x_lg_reset_link_sent_check'), 'success'))
-                  .catch(() => showToast(t('x_lg_could_not_send_reset'), 'error'));
+                  .catch((e: unknown) => showToast(apiErrorMessage(e, t('x_lg_could_not_send_reset')), 'error'));
               });
             }}
           >

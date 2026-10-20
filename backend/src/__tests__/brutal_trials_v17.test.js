@@ -356,10 +356,11 @@ describe('8. SettingsScreen + CaseScreen', () => {
 
 
 
-  test('8-04: SettingsScreen has Share for referral link', async () => {
+  test('8-04: SettingsScreen shares the data export as a file (share sheet / download)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx', 'utf8');
-    expect(src).toContain('Share');
+    expect(src).toContain('saveAccountExport');
+    expect(fs.readFileSync(__REPO + '/frontend/src/utils/dataExport.ts', 'utf8')).toContain('Sharing.shareAsync');
   });
 
   test('8-05: CaseScreen uses useFocusEffect and has offlineCases state', async () => {

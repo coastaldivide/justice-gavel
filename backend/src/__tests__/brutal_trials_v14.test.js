@@ -147,10 +147,11 @@ describe('2. RegisterScreen — Account Creation', () => {
     expect(src).toContain("'/push/d7-reengage'");
   });
 
-  test('2-05: RegisterScreen uses setAppAuth on success', async () => {
+  test('2-05: RegisterScreen starts the session on success (session.ts → setAppAuth)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx', 'utf8');
-    expect(src).toContain('setAppAuth');
+    expect(src).toContain('startSession');
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/session.ts', 'utf8')).toContain("setAppAuth('authed')");
   });
 
   test('2-06: password validation model', () => {

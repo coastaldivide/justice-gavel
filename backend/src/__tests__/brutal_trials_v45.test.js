@@ -173,7 +173,10 @@ describe('S6. Screens — 15-19 Hit Range', () => {
     expect(src).toContain('Redesigned with JTB logo');
     expect(src).toContain('dark brand');
     expect(src).toContain('/auth/login');
-    expect(src).toContain('/push/token');
+    // push token registration moved into services/session.ts → push.ts (POST /push/token)
+    expect(src).toContain('startSession');
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/session.ts', 'utf8')).toContain('registerForPush');
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/push.ts', 'utf8')).toContain('/push/token');
     expect(src).toContain('/auth/forgot-password');
     expect(src).toContain('identifier');
     expect(src).toContain('password');

@@ -7,12 +7,13 @@
  *   ├─ MainTabs  (signed in or browsing)
  *   │   ├─ HomeTab · ChatTab · LawyersTab · BailTab
  *   │   └─ MoreTab (MoreStack: every secondary screen)
- *   └─ GuestNav  (signed out: AgeGate · Onboarding · Login · Register · …)
+ *   ├─ GuestNav  (signed out: AgeGate · Onboarding · Login · Register · …)
+ *   └─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
  *
- * Only one of MainTabs / GuestNav is mounted at a time, so links into the main
- * app take effect once the user is browsing or signed in (App.tsx shows the
- * age gate / onboarding first). Login/Register are also registered in
- * MoreStack so "Sign in" links work while browsing.
+ * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
+ * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
+ * picks one with linkingFor). Login/Register exist in both, so /login and
+ * /register work in either state.
  *
  * Domains must match app.json: ios.associatedDomains (applinks:justicegavel.app)
  * and android.intentFilters (https://justicegavel.app).
@@ -118,10 +119,33 @@ export const linking: LinkingOptions<any> = {
           },
         },
       },
+      // Root level: the password-reset e-mail link (any auth state)
+      ResetPassword: 'reset-password',
+    },
+  },
+};
+
+/**
+ * Signed out only GuestNav is mounted, so its screens own the shared paths
+ * (/login, /register, /terms, /privacy …): the same path cannot point at two
+ * screens in one config, which is why App.tsx picks the config for the state
+ * it starts in (linkingFor).
+ */
+export const guestLinking: LinkingOptions<any> = {
+  prefixes: DEEP_LINK_PREFIXES,
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',
           AgeGate:         'age-check',
+          Login:           'login',
+          Register:        'register',
+          TermsOfService:  'terms',
+          PrivacyPolicy:   'privacy',
+          JustArrested:    'just-arrested',
+          Emergency:       'emergency',
           AttorneyPrivacy: 'attorney-privacy',
           LegalDisclaimer: 'legal-disclaimer',
         },
@@ -129,5 +153,10 @@ export const linking: LinkingOptions<any> = {
     },
   },
 };
+
+/** The deep-link config for the navigator that is mounted (signed out vs browsing / signed in). */
+export function linkingFor(signedOut: boolean): LinkingOptions<any> {
+  return signedOut ? guestLinking : linking;
+}
 
 export default linking;

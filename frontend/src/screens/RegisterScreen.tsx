@@ -1,24 +1,29 @@
-import { useToast } from '../components/ToastProvider';
 
 import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { setAppAuth } from '../services/auth';
+import { startSession, type AccountType } from '../services/session';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import * as secureStorage from '../utils/secureStorage';
 import JTBLogo from '../components/JTBLogo';
+import { isValidIdentifier } from '../utils/identifier';
 import { t, useLang } from '../i18n';
+
+const ACCOUNT_TYPES: { type: AccountType; labelKey: string; a11yKey: string }[] = [
+  { type: 'consumer',   labelKey: 'x_rg_i_need_legal_help', a11yKey: 'x_rg_defendant_family_member_account' },
+  { type: 'attorney',   labelKey: 'x_rg_i_am_attorney',     a11yKey: 'x_rg_attorney_account' },
+  { type: 'bail_agent', labelKey: 'rg_i_am_bail_agent',     a11yKey: 'rg_bail_agent_account' },
+];
 
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
-  const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [identifier, setIdentifier]   = useState('');
   const [password, setPassword]       = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [isAttorney, setIsAttorney] = useState(false);
+  const [accountType, setAccountType] = useState<AccountType>('consumer');
+  const isAttorney = accountType === 'attorney';
   const [barNumber, setBarNumber]   = useState('');
   const [barState, setBarState]     = useState('');
   const [firmName, setFirmName]     = useState('');
@@ -39,25 +44,32 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const onRegister = async () => {
 if (loading) return;
-        if (!normalizedIdentifier) { setError(t('x_rg_enter_email_phone_number')); return; }
+    if (!normalizedIdentifier) { setError(t('x_rg_enter_email_phone_number')); return; }
+    if (!isValidIdentifier(normalizedIdentifier)) { setError(t('rg_identifier_invalid')); return; }
     if (!password || password.length < 8) { setError(t('x_rg_password_must_be_at')); return; }
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/register', {
         identifier: normalizedIdentifier, password,
         displayName: displayName.trim() || undefined,
+        accountType,
         isAttorney,
         barNumber: isAttorney ? barNumber : undefined,
         barState: isAttorney ? barState : undefined,
         firmName: isAttorney ? firmName : undefined,
       });
-      if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
-      await secureStorage.setToken(res.data.token);
-      await secureStorage.setItem('user', JSON.stringify(res.data?.user));
+      if (!res.data?.token) throw new Error(t('x_rg_registration_failed_please_try'));
+      const inApp = !!navigation.getParent()?.getState()?.routeNames?.includes('HomeTab');
+      await startSession(res.data);
       // Schedule D7 re-engagement push (fires only if user stays free)
-      api.post('/push/d7-reengage').catch((e) => { __DEV__ && console.warn(e?.message); });
-      setAppAuth('authed');
-    } catch (e: any) {
+      api.post('/push/d7-reengage').catch(() => undefined);
+      // Opened from inside the app: leave the form (the guest flow swaps navigators
+      // itself). App.tsx then opens the account's home screen (after the Terms gate).
+      if (inApp) {
+        if (navigation.canGoBack()) navigation.goBack();
+        else navigation.navigate('HomeTab');
+      }
+    } catch (e: unknown) {
       setError(apiErrorMessage(e, t('x_rg_registration_failed_please_try')));
     } finally { setLoading(false); }
   };
@@ -117,36 +129,36 @@ if (loading) return;
           </View>
 
 {/* ── Account type selector ────────────────────────────────── */}
-      <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('x_rg_defendant_family_member_account')}
-          onPress={() => setIsAttorney(false)}
-          style={{
-            flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
-            backgroundColor: !isAttorney ? colors.navy : 'transparent',
-            borderWidth: 1, borderColor: !isAttorney ? colors.navy : colors.border,
-          }}
-        >
-          <Text style={{ color: !isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
-            {t('x_rg_i_need_legal_help')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('x_rg_attorney_account')}
-          onPress={() => setIsAttorney(true)}
-          style={{
-            flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
-            backgroundColor: isAttorney ? colors.navy : 'transparent',
-            borderWidth: 1, borderColor: isAttorney ? colors.navy : colors.border,
-          }}
-        >
-          <Text style={{ color: isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
-            {t('x_rg_i_am_attorney')}
-          </Text>
-        </TouchableOpacity>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>{t('rg_account_type')}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, gap: 8 }}>
+        {ACCOUNT_TYPES.map(opt => {
+          const on = accountType === opt.type;
+          return (
+            <TouchableOpacity
+              key={opt.type}
+              testID={`register-type-${opt.type}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on, checked: on }}
+              accessibilityLabel={t(opt.a11yKey)}
+              onPress={() => setAccountType(opt.type)}
+              style={{
+                flexGrow: 1, flexBasis: '30%', minWidth: 96, paddingVertical: 12, paddingHorizontal: 6, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: on ? colors.navy : 'transparent',
+                borderWidth: 1, borderColor: on ? colors.navy : colors.border,
+              }}
+            >
+              <Text maxFontSizeMultiplier={1.3} style={{ color: on ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>
+                {t(opt.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
+      {accountType === 'bail_agent' && (
+        <Text testID="register-bail-hint" maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 8 }}>
+          {t('rg_bail_agent_hint')}
+        </Text>
+      )}
       {/* ── Attorney-only fields ─────────────────────────────────── */}
       {isAttorney && (
         <View style={{ gap: 8, marginBottom: 8 }}>
@@ -156,8 +168,8 @@ if (loading) return;
             value={barNumber}
             onChangeText={setBarNumber}
             autoCapitalize="characters"
-            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-                     padding: 12, fontSize: 15 }}
+            placeholderTextColor={COLORS.textSecond}
+            style={styles.proInput}
           />
           <TextInput
             accessibilityLabel={t('x_rg_state_bar_e_g')}
@@ -166,16 +178,16 @@ if (loading) return;
             onChangeText={tItem => setBarState(tItem.toUpperCase().slice(0,2))}
             maxLength={2}
             autoCapitalize="characters"
-            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-                     padding: 12, fontSize: 15 }}
+            placeholderTextColor={COLORS.textSecond}
+            style={styles.proInput}
           />
           <TextInput
             accessibilityLabel={t('x_firm_acquisition_firm_name')}
             placeholder={t('x_rg_firm_name_optional')}
             value={firmName}
             onChangeText={setFirmName}
-            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-                     padding: 12, fontSize: 15 }}
+            placeholderTextColor={COLORS.textSecond}
+            style={styles.proInput}
           />
         </View>
       )}
@@ -233,7 +245,7 @@ if (loading) return;
           {t('x_rg_by_creating_account_agree')}{' '}
             <Text maxFontSizeMultiplier={1.4}
               style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
-              onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
+              onPress={() => navigation.navigate('TermsOfService')}
             >{t('onb_terms_tos')}</Text>{t('x_rg_we_never_sell_data')}
         </Text>
       </ScrollView>
@@ -265,6 +277,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
   },
   input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: COLORS.bgCard, ...FONTS.medium },
+  proInput: { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, padding: 12, fontSize: 15, color: COLORS.bgCard, backgroundColor: 'rgba(255,255,255,0.05)' },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
   showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.info, ...FONTS.semi },
   errorBox: {

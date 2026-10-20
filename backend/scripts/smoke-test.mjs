@@ -507,8 +507,16 @@ async function main() {
     return `${c.json.length} courthouses, ${b.json.data.length} bail rows`;
   });
 
-  await check('password reset request stores a token', async () => {
+  await check('password reset request stores a token (or says e-mail is off)', async () => {
     const r = await call('POST', '/api/auth/forgot-password', { body: { email } });
+    // Without an e-mail provider (RESEND_API_KEY) the server says so instead of "sent".
+    const health = await call('GET', '/health');
+    if (health.json?.features?.email === false) {
+      assert(r.status === 503 && r.json?.code === 'email_unavailable', `expected 503 email_unavailable, got ${brief(r)}`);
+      const none = await q('SELECT token FROM password_resets WHERE user_id = $1 AND used_at IS NULL', [userId]);
+      if (none) assert(none.length === 0, 'a reset token was stored although no e-mail can carry it');
+      return 'e-mail off → 503 email_unavailable, no token stored';
+    }
     assert(r.status === 200 && r.json?.sent === true, `expected 200, got ${brief(r)}`);
     const rows = await q('SELECT token, expires_at FROM password_resets WHERE user_id = $1 AND used_at IS NULL', [userId]);
     if (rows) {

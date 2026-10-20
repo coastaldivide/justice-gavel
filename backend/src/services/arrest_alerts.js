@@ -119,8 +119,10 @@ export function monitorMatches(monitor, arrest) {
  */
 async function checkArrestMonitors(db, newArrests, { dryRun = false } = {}) {
   const monitors = await db.all(
-    `SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, county, state
-       FROM arrest_monitors WHERE COALESCE(active, 1) = 1`
+    `SELECT m.id, m.user_id, COALESCE(m.watch_name, m.name) AS watch_name, m.county, m.state,
+            COALESCE(u.notif_arrest_alerts, 1) AS notif_arrest_alerts
+       FROM arrest_monitors m LEFT JOIN users u ON u.id = m.user_id
+      WHERE COALESCE(m.active, 1) = 1`
   ).catch(e => { logger.warn('[alerts] monitor query failed:', e?.message); return []; });
 
   let matched = 0;
@@ -128,7 +130,9 @@ async function checkArrestMonitors(db, newArrests, { dryRun = false } = {}) {
     const hits = newArrests.filter(a => monitorMatches(m, a));
     if (hits.length) {
       matched++;
-      if (!dryRun) {
+      // Settings › Notifications › Arrest alerts off: the match is still counted
+      // (and shown in the app), only the push is not sent.
+      if (!dryRun && Number(m.notif_arrest_alerts ?? 1) === 1) {
         try {
           const { sendPushToUser } = await import('./pushDelivery.js');
           const lang = await userLang(db, m.user_id);

@@ -33,6 +33,7 @@ import HelpNowScreen from '../screens/HelpNowScreen';
 import CourtDateDetailScreen from '../screens/CourtDateDetailScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import { Analytics } from '../services/analytics';
+import { getGuestStart } from '../services/auth';
 import AgeGateScreen            from '../screens/AgeGateScreen';
 import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
 // Bundled with the app (not lazy chunks): Home and every screen the app
@@ -324,8 +325,9 @@ function GuestNavigator() {
   return (
     <ErrorBoundary>
     {/* App.tsx already shows the age gate before any navigator mounts, so the
-        signed-out flow starts at Onboarding (AgeGate stays registered for links). */}
-    <GuestStack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false, animation: 'fade' }}>
+        signed-out flow starts at Onboarding the first time and at Login once the
+        intro was seen (services/auth getGuestStart; AgeGate stays registered for links). */}
+    <GuestStack.Navigator initialRouteName={getGuestStart()} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <GuestStack.Screen name="AgeGate"    component={AgeGateScreen}    />
       <GuestStack.Screen name="Onboarding" component={OnboardingScreen} />
       <GuestStack.Screen name="Login"      component={LoginScreen} />

@@ -14,6 +14,9 @@
  *  39  a double tap on "Save" (LawyerProfile) posts once
  *  49  in-app account deletion: asks for the password, shows the server's
  *      error, and on success signs out locally
+ *  B   Settings (section B): guests get "Sign in" and no account calls (no
+ *      401s); About rows open their links; there is no legal-tip switch (no
+ *      such notification exists); pull-to-refresh reads /auth/me's body
  */
 import React from 'react';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react-native';
@@ -34,7 +37,7 @@ jest.mock('../../utils/secureStorage', () => ({
   clearAuth: () => mockClearAuth(),
 }));
 const mockSetAppAuth = jest.fn();
-jest.mock('../../services/auth', () => ({ __esModule: true, setAppAuth: (...a: unknown[]) => mockSetAppAuth(...a), registerAuthSetter: jest.fn() }));
+jest.mock('../../services/auth', () => ({ __esModule: true, setAppAuth: (...a: unknown[]) => mockSetAppAuth(...a), registerAuthSetter: jest.fn(), setGuestStart: jest.fn(), getGuestStart: () => 'Onboarding' }));
 jest.mock('../../services/location', () => ({
   __esModule: true,
   getLocation: jest.fn(() => Promise.reject(new Error('denied'))),
@@ -48,6 +51,8 @@ jest.mock('../../services/permissions', () => ({
   requestLocationInContext: jest.fn(() => Promise.resolve('declined')),
   locationGranted: jest.fn(() => Promise.resolve(false)),
 }));
+// expo-haptics is loaded with a dynamic import (not available under jest)
+jest.mock('../../utils/webCompat', () => ({ ...jest.requireActual('../../utils/webCompat'), hapticImpact: jest.fn(() => Promise.resolve()) }));
 jest.mock('@react-navigation/native', () => {
   const actual = jest.requireActual('@react-navigation/native');
   const R = jest.requireActual('react');
@@ -197,7 +202,8 @@ describe('SettingsScreen — in-app account deletion', () => {
     let attempt = 0;
     on('delete', '/auth/account', (_u: string, { config }: any) => {
       attempt++;
-      if (config?.data?.password !== 'Correct9!') return Promise.reject(reject(401, { error: 'Incorrect password.', message: 'Incorrect password.' }));
+      // 403 (not 401): a wrong password must not end the session (section B)
+      if (config?.data?.password !== 'Correct9!') return Promise.reject(reject(403, { error: 'Incorrect password.', code: 'incorrect_password' }));
       return Promise.resolve({ data: { ok: true } });
     });
     wrap(<SettingsScreen navigation={makeNavigation()} route={route} />);
@@ -224,5 +230,38 @@ describe('SettingsScreen — in-app account deletion', () => {
     wrap(<SettingsScreen navigation={makeNavigation()} route={route} />);
     expect(await screen.findByTestId('account-delete-signed-out')).toBeTruthy();
     expect(screen.queryByTestId('account-delete-open')).toBeNull();
+  });
+});
+
+describe('SettingsScreen — section B', () => {
+  const route = { key: 's', name: 'Settings' } as any;
+  const { Linking } = jest.requireActual('react-native');
+
+  it('guest: "Sign in or create an account", no account requests', async () => {
+    mockToken = null;
+    const nav = makeNavigation();
+    wrap(<SettingsScreen navigation={nav} route={route} />);
+    fireEvent.press(await screen.findByTestId('settings-sign-in-button'));
+    expect(nav.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'Login' });
+    expect(screen.queryByTestId('settings-logout-button')).toBeNull();
+    expect(screen.getByTestId('settings-notifs-signed-out')).toBeTruthy();
+    expect(calls.filter(c => c.method === 'get')).toEqual([]);
+  });
+
+  it('signed in: About rows open their links; no legal-tip switch; arrest-alert switch is saved', async () => {
+    on('get', '/push/preferences', { notif_court_reminders: 1, notif_arrest_alerts: 1, notif_checkin_reminders: 1, notif_marketing: 0 });
+    on('get', '/golden-gavel/status', { golden_gavel: false });
+    on('post', '/push/preferences', { ok: true });
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+    wrap(<SettingsScreen navigation={makeNavigation()} route={route} />);
+    await screen.findByTestId('settings-logout-button');
+    expect(screen.queryByText(/Daily legal tip/)).toBeNull();
+    fireEvent.press(screen.getByLabelText('Website'));
+    fireEvent.press(screen.getByLabelText('Send Feedback'));
+    expect(open).toHaveBeenCalledWith('https://justicegavel.app');
+    expect(open).toHaveBeenCalledWith('mailto:support@justicegavel.app');
+    fireEvent(await screen.findByLabelText(/Arrest alerts/), 'valueChange', false);
+    await waitFor(() => expect(calls.find(c => c.method === 'post' && c.url === '/push/preferences')?.data).toMatchObject({ notif_arrest_alerts: 0 }));
+    open.mockRestore();
   });
 });

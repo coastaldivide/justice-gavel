@@ -9,7 +9,8 @@ import { AppIcon } from '../components/AppIcon';
  *   1. Account -- name, email, phone
  *   2. Appearance -- dark mode toggle
  *   3. Language -- English / Español
- *   4. Notifications -- per-category toggles (court reminders, legal tips,
+ *   4. Notifications -- this phone's push on/off (native) + per-category
+ *                       switches saved on the account (court reminders,
  *                       arrest alerts, check-in reminders, marketing)
  *   6. About -- ToS, Privacy, Feedback, version
  *   7. testID="settings-logout-button" Sign out
@@ -18,23 +19,29 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import type {} from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform, TextInput, Linking } from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
-import { ScreenCapture, StoreReview, hapticImpact, RNShare } from '../utils/webCompat';
+import { ScreenCapture, StoreReview, hapticImpact } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
 import { setLang, t, useLang } from '../i18n'  // t() already available;
 import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
-import { clearAuth, getToken, getItem as getSecureItem } from '../utils/secureStorage';
+import { getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { useInFlight } from '../hooks/useInFlight';
-import { setAppAuth } from '../services/auth';
-import { clearAllCaches } from '../services/offlineCache';
+import { signOut, unsyncedCaseCount } from '../services/session';
+import { registerForPush, unregisterPush } from '../services/push';
+import { saveAccountExport } from '../utils/dataExport';
 
-interface User { displayName?: string; name?: string; email?: string; phone?: string; }
+interface User { id?: number; displayName?: string; name?: string; email?: string; phone?: string; role?: string; accountType?: string; is_admin?: boolean }
+
+/** Attorney / firm tools in "My Tools" (the screens send everyone else back). */
+const PRO_ROLES = new Set(['attorney', 'defender', 'admin']);
+const isProfessional = (u: User) => u.accountType === 'attorney' || PRO_ROLES.has(String(u.role || ''));
+const PRO_TOOLS = new Set(['FirmVertical', 'FirmAcquisition', 'AttorneyDashboard']);
+const IS_WEB = Platform.OS === 'web';
 
 interface NotifPrefs {
   notif_court_reminders:   boolean;
-  notif_legal_tips:        boolean;
   notif_arrest_alerts:     boolean;
   notif_checkin_reminders: boolean;
   notif_marketing:         boolean;
@@ -42,7 +49,6 @@ interface NotifPrefs {
 
 const DEFAULT_PREFS: NotifPrefs = {
   notif_court_reminders:   true,
-  notif_legal_tips:        true,
   notif_arrest_alerts:     true,
   notif_checkin_reminders: true,
   notif_marketing:         true };
@@ -148,13 +154,16 @@ function SettingsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/auth/me')
-      .then(r => { if (mountedRef.current && r.data?.user) setUser(r.data.user); })
+    if (!signedInRef.current) { setRefreshing(false); return; }
+    // GET /auth/me answers the user itself (not { user })
+    api.get<User>('/auth/me')
+      .then(r => { if (mountedRef.current && r.data?.id) setUser(r.data); })
       .catch(() => showToast(t('x_consumer_subscription_could_not_refresh_check'), 'error'))
       .finally(() => { if (mountedRef.current) setRefreshing(false); });
   }, [showToast]);
 
   const [user, setUser]                   = useState<User>({});
+  const signedInRef = useRef(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [goldenGavel, setGoldenGavel] = useState(false);
   const [isAdmin,          setIsAdmin]          = useState(false);
@@ -203,40 +212,50 @@ function SettingsScreen({ navigation }: any) {
     await setUserState(code).catch(() => {});
   }, []);
 
-  useEffect(() => {
+  // Re-read on every focus: signing in from here (Sign in → back) or out elsewhere changes it.
+  const loadAccount = useCallback(() => {
     (async () => {
-      const u = await getSecureItem('user');
+      const u = await getSecureItem('user').catch(() => null);
+      setUser({});
+      setIsAdmin(false);
       if (u) {
         try {
           const parsed = JSON.parse(u);
           setUser(parsed);
           // Shows the Admin section; the server still enforces admin on every admin endpoint.
           setIsAdmin(!!(parsed?.is_admin || parsed?.role === 'admin'));
-        } catch {}
+        } catch { /* corrupt stored user: the account rows stay empty */ }
       }
-      const lang = await AsyncStorage.getItem('lang');
+      const lang = await AsyncStorage.getItem('lang').catch(() => null);
       if (lang) setLanguage(lang);
-      const n = await AsyncStorage.getItem('notifs');
+      const n = await AsyncStorage.getItem('notifs').catch(() => null);
       if (n !== null) setNotifMaster(n === 'true');
 
-
-      // Per-category notification prefs
+      // Account-only data: guests have none (and must not get 401s).
+      const tk = await getToken().catch(() => null);
+      signedInRef.current = !!tk;
+      setSignedIn(!!tk);
+      if (!tk) return;
       api.get('/golden-gavel/status').then(r => {
-        setGoldenGavel(r.data?.golden_gavel === true);
-      }).catch((e) => { __DEV__ && console.warn(e?.message); });
+        if (mountedRef.current) setGoldenGavel(r.data?.golden_gavel === true);
+      }).catch(() => { /* status stays "check eligibility" */ });
 
       setPrefsLoading(true);
       api.get('/push/preferences')
-        .then(r => setPrefs({
+        .then(r => { if (mountedRef.current) setPrefs({
           notif_court_reminders:   !!r.data?.notif_court_reminders,
-          notif_legal_tips:        !!r.data?.notif_legal_tips,
           notif_arrest_alerts:     !!r.data?.notif_arrest_alerts,
           notif_checkin_reminders: !!r.data?.notif_checkin_reminders,
-          notif_marketing:         !!r.data?.notif_marketing }))
-        .catch((e) => { __DEV__ && console.warn(e?.message); })
-        .finally(() => setPrefsLoading(false));
+          notif_marketing:         !!r.data?.notif_marketing }); })
+        .catch(e => showToast(apiErrorMessage(e, t('x_st_could_not_save_notification')), 'error'))
+        .finally(() => { if (mountedRef.current) setPrefsLoading(false); });
     })();
-  }, []);
+  }, [showToast]);
+  useEffect(() => {
+    loadAccount();
+    const unsub = navigation?.addListener?.('focus', loadAccount);
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [navigation, loadAccount]);
 
   const toggleLang = async (l: string) => {
     setLanguage(l);
@@ -246,11 +265,17 @@ function SettingsScreen({ navigation }: any) {
     if ((user as { id?: unknown })?.id) api.post('/push/language', { language: l }).catch(() => { /* offline: sent with the next court-date save */ });
   };
 
+  // This phone's push notifications (native only): on = permission + token sent
+  // to the server, off = the token is removed, so nothing is pushed here.
   const toggleMaster = async (val: boolean) => {
-    if (val && Platform.OS !== 'web') {
+    if (val) {
       // Turning reminders on is the moment to ask the OS (with the reason).
       const answer = await requestNotificationsInContext();
       if (answer !== 'granted') { showToast(t('x_st_notifications_stay_off_can'), 'info'); return; }
+      if (signedIn) await registerForPush().catch(() => null);
+    } else if (signedIn) {
+      try { await unregisterPush(); }
+      catch (e) { showToast(apiErrorMessage(e, t('st_push_off_failed')), 'error'); return; }
     }
     setNotifMaster(val);
     await AsyncStorage.setItem('notifs', String(val)).catch(() => {}); // non-fatal storage write
@@ -263,7 +288,6 @@ function SettingsScreen({ navigation }: any) {
     setPrefsSaving(true);
     api.post('/push/preferences', {
       notif_court_reminders:   next.notif_court_reminders   ? 1 : 0,
-      notif_legal_tips:        next.notif_legal_tips        ? 1 : 0,
       notif_arrest_alerts:     next.notif_arrest_alerts     ? 1 : 0,
       notif_checkin_reminders: next.notif_checkin_reminders ? 1 : 0,
       notif_marketing:         next.notif_marketing         ? 1 : 0 })
@@ -277,7 +301,6 @@ function SettingsScreen({ navigation }: any) {
 
   // ── Account deletion (in-app, App Store 5.1.1(v)) / data export ──────────
   const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => { getToken().then(tk => setSignedIn(!!tk)).catch(() => setSignedIn(false)); }, []);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -296,34 +319,35 @@ function SettingsScreen({ navigation }: any) {
     // The account is gone on the server: remove everything on this device too.
     setDeleteOpen(false);
     setDeletePassword('');
-    await clearAuth().catch(() => undefined);
-    await clearAllCaches().catch(() => undefined);
-    await AsyncStorage.multiRemove(['user', 'chat_session_id', 'has_browsed', 'last_push_token']).catch(() => undefined);
-    import('../services/analytics').then(m => m.reset()).catch(() => undefined);
     showToast(t('x_st_account_data_were_permanently'), 'success');
-    setAppAuth('guest');
+    await signOut({ serverDone: true });
   });
 
   const exportData = () => runExport(async () => {
     try {
       const res = await api.get('/auth/export');
-      await RNShare.share({ message: JSON.stringify(res.data, null, 2), title: t('x_st_my_justice_gavel_data') });
+      if (await saveAccountExport(res.data) === 'download') showToast(t('st_export_downloaded'), 'success');
     } catch (e) {
       showToast(apiErrorMessage(e, t('x_st_could_not_export_data')), 'error');
     }
   });
 
   const logout = async () => {
-    const ok = await confirm(t('x_st_sign_out'), t('x_st_can_sign_back_any'),
+    // Cases saved offline that never reached the server are lost on sign-out: say so.
+    const pending = await unsyncedCaseCount();
+    const ok = await confirm(t('x_st_sign_out'),
+      pending ? t('st_sign_out_unsynced', { count: pending }) : t('x_st_can_sign_back_any'),
       { confirmLabel: t('x_st_sign_out_2'), destructive: true });
     if (!ok) return;
-    await clearAuth();
-    await clearAllCaches().catch(() => {});
-    await AsyncStorage.multiRemove(['user', 'chat_session_id', 'has_browsed']).catch(() => {});
-    import('../services/analytics').then(m => m.reset()).catch(() => {});
     // Switching the root auth state swaps the navigator tree to the guest flow
     // (Login), so no manual navigation reset is needed.
-    setAppAuth('guest');
+    await signOut();
+  };
+
+  const openAbout = (item: { nav?: string; url?: string }) => {
+    hapticImpact();
+    if (item.nav) navigation.navigate('MoreTab', { screen: item.nav });
+    else if (item.url) Linking.openURL(item.url).catch(() => showToast(t('action_failed'), 'error'));
   };
 
 
@@ -378,15 +402,15 @@ function SettingsScreen({ navigation }: any) {
       <View style={card}>
         <InfoRow icon="👤" label={t("settings.display_name")} value={user.displayName || user.name} />
         {!!user.email && <InfoRow icon="✉️" label={t('email')} value={user.email} />}
-        {goldenGavel
-          ? <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
-            >
-              <InfoRow icon="🏆" label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
-            </TouchableOpacity>
-          : <InfoRow icon="⚖️" label={t('gg_title')} value={t('x_st_check_eligibility')} />
-        }
+        <TouchableOpacity
+          accessibilityRole="button"
+          testID="settings-golden-gavel"
+          onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
+        >
+          {goldenGavel
+            ? <InfoRow icon="🏆" label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
+            : <InfoRow icon="⚖️" label={t('gg_title')} value={t('x_st_check_eligibility')} />}
+        </TouchableOpacity>
         {!!user.phone && <InfoRow icon="📱" label={t('phone')} value={user.phone} />}
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity accessibilityRole="button"
@@ -524,16 +548,24 @@ function SettingsScreen({ navigation }: any) {
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_notifications')}</Text>
       <View style={card}>
 
-        {/* Master toggle */}
-        <SwitchRow
-          label={t('x_st_push_notifications')}
-          hint={t('x_st_turn_off_all_notifications')}
-          value={notifMaster}
-          onChange={toggleMaster}/>
+        {/* Master toggle: this phone's push notifications (there is no push on the web) */}
+        {!IS_WEB && (
+          <SwitchRow
+            label={t('x_st_push_notifications')}
+            hint={t('x_st_turn_off_all_notifications')}
+            value={notifMaster}
+            onChange={toggleMaster}/>
+        )}
 
-        {/* Per-category -- only visible when master is on */}
-        {notifMaster && (
-          <View style={[styles.subPrefs, { borderTopColor: colors.surface }]}>
+        {!signedIn && (
+          <Text testID="settings-notifs-signed-out" maxFontSizeMultiplier={1.4} style={[styles.cardHint, { color: colors.textMuted, marginBottom: 0 }]}>
+            {t('st_notifs_sign_in')}
+          </Text>
+        )}
+
+        {/* Per-category (saved on the account) -- only visible when master is on */}
+        {signedIn && (notifMaster || IS_WEB) && (
+          <View style={[styles.subPrefs, { borderTopColor: colors.surface }, IS_WEB && { marginTop: 0, paddingTop: 0, borderTopWidth: 0 }]}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.subPrefsLabel, { color: colors.textMuted }]}>
               {t('x_st_choose_what_receive')}
               {prefsSaving && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted }}>{' '}{t('x_st_saving')}</Text>}
@@ -548,12 +580,6 @@ function SettingsScreen({ navigation }: any) {
                   hint={t('x_st_7_days_3_days')}
                   value={prefs.notif_court_reminders}
                   onChange={v => togglePref('notif_court_reminders', v)}
-                />
-                <SwitchRow
-                  label={t('x_st_daily_legal_tip')}
-                  hint={t('x_st_one_practical_legal_fact')}
-                  value={prefs.notif_legal_tips}
-                  onChange={v => togglePref('notif_legal_tips', v)}
                 />
                 <SwitchRow
                   label={t('x_st_arrest_alerts')}
@@ -580,8 +606,8 @@ function SettingsScreen({ navigation }: any) {
         )}
       </View>
 
-      {/* ── Test push notification (debug / support) ──────────────────── */}
-      <TouchableOpacity
+      {/* ── Test push notification (debug / support; phones only) ──────── */}
+      {!IS_WEB && signedIn && <TouchableOpacity
   accessibilityRole="button"
         style={[styles.testPushBtn, { borderColor: colors.surface }]}
         onPress={async () => {
@@ -598,7 +624,7 @@ function SettingsScreen({ navigation }: any) {
           accessibilityHint={t('cp_double_tap')}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textOnNavy }]}>{t('x_st_send_test_notification')}</Text>
-      </TouchableOpacity>
+      </TouchableOpacity>}
 
       {/* Referral program removed (empty placeholder card) */}
 
@@ -623,7 +649,7 @@ function SettingsScreen({ navigation }: any) {
           { icon: '⚖️', label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
           { icon: '📵', label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
           { icon: '📊', label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
-        ].map((item, i, arr) => (
+        ].filter(item => !PRO_TOOLS.has(item.screen) || isProfessional(user)).map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
             key={item.screen}
@@ -673,7 +699,7 @@ function SettingsScreen({ navigation }: any) {
   accessibilityRole="button"
             key={item.label}
             style={[styles.menuRow, { borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: colors.surface }]}
-            onPress={() => { hapticImpact(); if (item.nav) navigation.navigate('MoreTab', { screen: item.nav }); }}
+            onPress={() => openAbout(item)}
             accessibilityLabel={item.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
@@ -689,14 +715,24 @@ function SettingsScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* ── Sign out ──────────────────────────────────────────────────────── */}
-      <TouchableOpacity accessibilityRole="button"
-        style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
-        onPress={logout}
-        accessibilityLabel={t('x_st_sign_out_2')}
-      >
-        <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>{t('x_st_sign_out_2')}</Text>
-      </TouchableOpacity>
+      {/* ── Sign out (signed in) / Sign in (guest) ───────────────────────── */}
+      {signedIn ? (
+        <TouchableOpacity accessibilityRole="button" testID="settings-logout-button"
+          style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
+          onPress={logout}
+          accessibilityLabel={t('x_st_sign_out_2')}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>{t('x_st_sign_out_2')}</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity accessibilityRole="button" testID="settings-sign-in-button"
+          style={[styles.logoutBtn, { backgroundColor: colors.navy, borderColor: colors.navy }]}
+          onPress={() => navigation.navigate('MoreTab', { screen: 'Login' })}
+          accessibilityLabel={t('st_sign_in_or_create')}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.logoutText, { color: colors.textOnNavy }]}>{t('st_sign_in_or_create')}</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={{ height: 40 }} />
 
@@ -749,8 +785,8 @@ function SettingsScreen({ navigation }: any) {
       </View>
 
 
-          {/* ── Rate the App ─────────────────────────────────────────── */}
-          <TouchableOpacity
+          {/* ── Rate the App (app stores only; nothing to rate on the web) ── */}
+          {!IS_WEB && <TouchableOpacity
             accessibilityRole="button"
             style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between',
               backgroundColor:colors.bgCard, borderRadius:10, padding:14,
@@ -768,7 +804,7 @@ function SettingsScreen({ navigation }: any) {
               {t('x_st_rate_justice_gavel')}
             </Text>
             <Text style={{ color:colors.textMuted, fontSize:12 }}>{t('x_st_tell_us_what_think')}</Text>
-          </TouchableOpacity>
+          </TouchableOpacity>}
 
       <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteOpen(false)}>
         <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.overlay }}>

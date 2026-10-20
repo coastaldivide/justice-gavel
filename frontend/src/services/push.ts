@@ -62,14 +62,20 @@ export async function syncPushToken(): Promise<string | null> {
 /** @deprecated name kept for callers — same as syncPushToken (no prompt). */
 export const registerForPush = syncPushToken;
 
-/** Unregister the current device token (call on logout) */
-export async function unregisterPush(): Promise<void> {
+/** This device's Expo push token without asking for permission; null on web / not allowed / no EAS project. */
+export async function currentPushToken(): Promise<string | null> {
   try {
     const projectId = easProjectId();
-    if (Platform.OS === 'web' || !projectId) return;
+    if (Platform.OS === 'web' || !projectId || !Device.isDevice) return null;
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return null;
     const tokenData = await Notifications.getExpoPushTokenAsync({ projectId }).catch(() => null);
-    if (tokenData?.data) {
-      await api.delete(`/push/token/${encodeURIComponent(tokenData.data)}`).catch(() => {});
-    }
-  } catch { /* silent — logout should always succeed */ }
+    return tokenData?.data || null;
+  } catch { return null; }
+}
+
+/** Stop push notifications to this device (Settings › Push notifications off). Throws when the server could not be told. */
+export async function unregisterPush(): Promise<void> {
+  const token = await currentPushToken();
+  if (token) await api.delete(`/push/token/${encodeURIComponent(token)}`);
 }

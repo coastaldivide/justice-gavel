@@ -33,7 +33,7 @@ jest.mock('../../utils/secureStorage', () => ({
   clearAuth: jest.fn(() => Promise.resolve()),
 }));
 const mockSetAppAuth = jest.fn();
-jest.mock('../../services/auth', () => ({ __esModule: true, setAppAuth: (...a: unknown[]) => mockSetAppAuth(...a), registerAuthSetter: jest.fn() }));
+jest.mock('../../services/auth', () => ({ __esModule: true, setAppAuth: (...a: unknown[]) => mockSetAppAuth(...a), registerAuthSetter: jest.fn(), setGuestStart: jest.fn(), getGuestStart: () => 'Onboarding' }));
 jest.mock('../../services/location', () => ({
   __esModule: true,
   getLocation: jest.fn(() => Promise.reject(new Error('denied'))),

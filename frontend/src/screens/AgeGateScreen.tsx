@@ -174,7 +174,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
             onChangeText={handleYear}
             keyboardType="number-pad"
             maxLength={4}
-            placeholder="e.g. 1990"
+            placeholder={t('ag_year_placeholder')}
             placeholderTextColor={COLORS.textSecond}
             returnKeyType="done"
             onSubmitEditing={verify}

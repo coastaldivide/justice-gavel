@@ -52,6 +52,12 @@ export async function saveCaseOffline(caseData: Record<string, unknown>): Promis
   return tempId;
 }
 
+/** Remove every queued / offline case (sign-out: the next person must not see or send them). */
+export async function clearOfflineData(): Promise<void> {
+  const d = await getDb();
+  await d.execAsync('DELETE FROM sync_queue; DELETE FROM offline_cases;');
+}
+
 /** Get all pending offline cases. */
 export async function getOfflineCases(): Promise<unknown[]> {
   try {
