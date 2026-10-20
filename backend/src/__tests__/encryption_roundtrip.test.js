@@ -54,7 +54,11 @@ describe('Encryption — round trip', () => {
   test('decryption fails if ciphertext is tampered', () => {
     const ct  = encrypt('secret data', TEST_KEY);
     const [iv, enc, tag] = ct.split(':');
-    const tampered = `${iv}:${enc.slice(0,-2)}ff:${tag}`;
+    // flip the last byte (XOR) so the ciphertext always changes — setting it to a
+    // fixed "ff" was a no-op 1 time in 256
+    const last = (parseInt(enc.slice(-2), 16) ^ 0x01).toString(16).padStart(2, '0');
+    const tampered = `${iv}:${enc.slice(0, -2)}${last}:${tag}`;
+    expect(tampered).not.toBe(ct);
     expect(() => decrypt(tampered, TEST_KEY)).toThrow();
   });
 
