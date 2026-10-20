@@ -1,5 +1,4 @@
 import { asyncRoute, err400 } from '../utils/routeHelpers.js';
-import { validate, schemas } from '../validation/schemas.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
@@ -8,21 +7,6 @@ import { apiLimiter } from '../middleware/rateLimiters.js';
 const router = Router();
 
 const FEE_NOTE = 'Bail agents set their own fees. Justice Gavel has no sourced fee data — ask the agent what they charge before you sign.';
-
-// ── Build share-ready summary for bail result ─────────────────────────────
-
-
-
-// ── Installment Plan — Integer Cents (IEEE 754 safe) ─────────────────────
-
-
-
-// ── Mandatory Minimum Flags ──────────────────────────────────────────────────
-// Federal charges with mandatory consecutive sentences that courts cannot waive.
-// Source: USSC 2023 guidelines + 18 USC 924(c), 21 USC 841(b)(1)
-
-
-
 
 // GET /api/bail?state=TN — return bail schedules for state (no GPS needed)
 router.get('/', async (req, res) => {
@@ -71,100 +55,10 @@ router.get('/nearby', async (req, res) => {
 });
 
 
-// POST /api/bail/calculate — compute bail recommendation from case factors
-router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), (req, res) => {
-  const {
-    state,
-    charge_type,      // 'felony' | 'misdemeanor' | 'dui' | 'domestic' | 'sexual' | 'dismissed'
-    severity,         // 'low' | 'medium' | 'high' | 'extreme'
-    prior_record,     // 'none' | 'minor' | 'significant' | 'extensive'
-    flight_risk,      // 'low' | 'medium' | 'high'
-    employed,         // boolean — community ties factor
-    ice_hold,         // boolean — ICE detainer
-    violent,          // boolean — violence flag
-  } = req.body;
-
-  if (!state || !charge_type) return err400(res, 'state and charge_type required');
-
-  // ── Immigration bond (8 U.S.C. § 1226(a)) ─────────────────────────────────
-  if (ice_hold) {
-    const bond_min = 1500;    // statutory minimum
-    const bond_max = flight_risk === 'high' ? 25000 : flight_risk === 'medium' ? 10000 : 5000;
-    return res.json({
-      type:         'immigration_bond',
-      bond_min,
-      bond_max,
-      // No bail-agent fee estimate: no sourced premium data (agents set their own fees).
-      fee_note:     FEE_NOTE,
-      statutory:    '8 U.S.C. § 1226(a)',
-      note:         'ICE detainer holds prevent state bail release. Immigration bond is separate and set by an immigration judge. Minimum $1,500 by statute. Bond may be denied for flight risk or danger to community.',
-      no_bail_risk: flight_risk === 'high' && prior_record === 'extensive',
-    });
-  }
-
-  // ── Criminal bail schedule ────────────────────────────────────────────────
-  // Base amounts by charge type and severity
-  const BASE = {
-    dismissed:   { low: 0,     medium: 0,      high: 0,       extreme: 0       },
-    misdemeanor: { low: 500,   medium: 2500,   high: 5000,    extreme: 10000   },
-    dui:         { low: 1500,  medium: 5000,   high: 15000,   extreme: 25000   },
-    domestic:    { low: 2500,  medium: 7500,   high: 20000,   extreme: 50000   },
-    felony:      { low: 5000,  medium: 25000,  high: 75000,   extreme: 250000  },
-    sexual:      { low: 25000, medium: 100000, high: 250000,  extreme: 500000  },
-  };
-
-  const sev = severity || 'medium';
-  const ct  = charge_type in BASE ? charge_type : 'felony';
-  const base  = BASE[ct][sev] || BASE['felony'][sev];
-
-  // ── Risk factor multipliers ───────────────────────────────────────────────
-  const PRIOR_MULT   = { none: 1.0, minor: 1.25, significant: 1.75, extensive: 2.5 };
-  const FLIGHT_MULT  = { low:  1.0, medium: 1.4,  high: 2.0 };
-  const EMPLOY_MULT  = employed ? 0.85 : 1.15;   // employed = lower flight risk
-  const VIOLENT_MULT = violent  ? 1.5  : 1.0;
-
-  const prior_mult  = PRIOR_MULT[prior_record  || 'none'];
-  const flight_mult = FLIGHT_MULT[flight_risk  || 'low'];
-
-  let recommended = Math.round(base * prior_mult * flight_mult * EMPLOY_MULT * VIOLENT_MULT);
-
-  // Round to nearest $500 for readability
-  recommended = Math.round(recommended / 500) * 500;
-
-  // ── No-bail / remand scenarios ────────────────────────────────────────────
-  const remand_risk =
-    (ct === 'sexual'   && sev === 'extreme') ||
-    (ct === 'felony'   && flight_risk === 'high' && prior_record === 'extensive') ||
-    (ct === 'domestic' && violent && sev === 'extreme');
-
-  // ── Supervision conditions ────────────────────────────────────────────────
-  const conditions = [];
-  if (ct === 'domestic')    conditions.push('No-contact order with victim required');
-  if (flight_risk !== 'low') conditions.push('Passport surrender likely required');
-  if (ct === 'dui')         conditions.push('Ignition interlock may be required');
-  if (prior_record !== 'none') conditions.push('Pre-trial supervision likely');
-  if (violent)              conditions.push('Electronic monitoring possible');
-
-  // No bail-agent fee estimate: the repo has no sourced per-state premium data.
-  res.json({
-    type:              'criminal_bail',
-    recommended,
-    bail_range_min:    Math.round(recommended * 0.75),
-    bail_range_max:    Math.round(recommended * 1.5),
-    fee_note:          FEE_NOTE,
-    cash_bail:         recommended,             // pay full amount directly to court
-    remand_risk,
-    conditions,
-    factors: {
-      base_amount:  base,
-      prior_mult,
-      flight_mult,
-      employ_mult:  EMPLOY_MULT,
-      violent_mult: VIOLENT_MULT,
-    },
-    disclaimer: 'Bail is set by a judge and varies significantly by jurisdiction, judge, and case facts. This is an estimate only. Actual bail may be higher, lower, or denied entirely.',
-  });
-});
+// POST /api/bail/calculate was removed: it multiplied invented base amounts by
+// invented risk percentages (prior record ×1.25–2.5, flight risk ×1.4–2, …)
+// with no source. The app shows recorded bail ranges with their source
+// (GET /api/help/bail-schedule) instead.
 
 // GET /api/bail/immigration — ICE bond schedule
 router.get('/immigration', apiLimiter, (req, res) => {

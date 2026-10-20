@@ -9,11 +9,10 @@ import type {} from '../types/navigation';
  * MatchScreen, or any lawyer profile card.
  *
  * Features:
- *   - Full saved lawyer card with call, SMS, message, and remove actions
+ *   - Card with call / text / directions / website (live directory data), profile, remove
  *   - Personal notes per saved lawyer (editable inline)
- *   - Empty state with CTA to lawyer search
- *   - Pull-to-refresh
- *   - Swipe-to-remove (via delete button)
+ *   - Empty state with CTA to lawyer search; signed out → sign-in prompt
+ *   - Pull-to-refresh; reloads on focus (saves made on other screens show up)
  *
  * Entry points:
  *   1. HomeScreen → "Saved Lawyers" tile (added below)
@@ -22,11 +21,13 @@ import type {} from '../types/navigation';
  */
 import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, RefreshControl, Platform, KeyboardAvoidingView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { t, useLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { ContactActions } from '../components/ContactActions';
+import * as secureStorage from '../utils/secureStorage';
 
 interface SavedLawyer {
   id:          number;
@@ -34,18 +35,14 @@ interface SavedLawyer {
   name:        string;
   phone:       string | null;
   address:     string | null;
+  website?:    string | null;
+  lat?:        number | null;
+  lng?:        number | null;
   specialties: string[];
   rating:      number | null;
   notes:       string | null;
   saved_at:    string;
-}
-
-// Module-level link helpers: no hooks; failures reported via onError.
-function callPhone(phone: string, onError?: () => void) {
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => onError?.());
-}
-function sendSMS(phone: string, onError?: () => void) {
-  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => onError?.());
+  gavel_level?: number;
 }
 
 // ── Saved lawyer card ─────────────────────────────────────────────────────────
@@ -60,16 +57,12 @@ function SavedCard({
   navigation: any;
 }) {
   useLang();
-  const { confirm } = useConfirm();
   const { showToast } = useToast();
+  const { colors } = useTheme();
   const styles = makeStyles();
   const [note,        setNote]        = useState(lawyer.notes || '');
   const [editingNote, setEditingNote] = useState(false);
   const [saving,      setSaving]      = useState(false);
-  const [reviewing,    setReviewing]    = useState(false);
-  const [rating,       setRating]       = useState(0);
-  const [reviewText,   setReviewText]   = useState('');
-  const [submitting,   setSubmitting]   = useState(false);
 
   const saveNote = useCallback(async () => {
     setSaving(true);
@@ -77,68 +70,48 @@ function SavedCard({
       await api.patch(`/saved/lawyers/${lawyer.id}`, { notes: note.trim() });
       onNoteChange(lawyer.id, note.trim());
       setEditingNote(false);
-    } catch {
-      showToast(t('home_sos_failed'));
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_lawyers_could_not_update_saved')), 'error');
     } finally {
       setSaving(false);
     }
   }, [lawyer.id, note, onNoteChange, showToast]);
-
-  const submitReview = async () => {
-    if (rating === 0) { showToast(t('x_saved_lawyers_tap_star_rate_before')); return; }
-    setSubmitting(true);
-    try {
-      await api.post('/reviews', {
-        entity_type: 'lawyer',
-        entity_id:   lawyer.provider_id || lawyer.id,
-        rating,
-        comment:     reviewText.trim(),
-        anonymous:   0 });
-      showToast(t('x_saved_lawyers_thank_review_helps_others'));
-      setReviewing(false);
-      setRating(0);
-      setReviewText('');
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_attorney_dashboard_try_again')), 'info');
-    } finally { setSubmitting(false); }
-  };
-
-  const confirmRemove = () => {
-    confirm(t('x_check_in_manager_remove', { name: lawyer.name }), t('x_saved_lawyers_they_will_be_removed'), { confirmLabel: t('saved_remove'), destructive: true })
-      .then(ok => { if (ok) onRemove(lawyer.id); });
-  };
 
   const savedDate = lawyer.saved_at
     ? new Date(lawyer.saved_at).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
 
   return (
-    <View style={[styles.card, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+    <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
       testID="saved-lawyers-screen">
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.cardName, { color: COLORS.textPrimary }]}>{lawyer.name}</Text>
+          <TouchableOpacity accessibilityRole="link" disabled={!lawyer.provider_id} testID="saved-open-profile"
+            onPress={() => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { lawyerId: lawyer.provider_id } })}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.cardName, { color: colors.textBrand }]}>{lawyer.name}</Text>
+          </TouchableOpacity>
           {lawyer.address && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.cardAddr, { color: COLORS.textMuted }]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.cardAddr, { color: colors.textMuted }]} numberOfLines={1}>
               {lawyer.address}
             </Text>
           )}
           {lawyer.rating != null && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.cardRating, { color: COLORS.goldText }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.cardRating, { color: colors.goldText }]}>
               ★ {lawyer.rating.toFixed(1)}
             </Text>
           )}
-          {(lawyer as import('../types/api').Lawyer).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>{t('x_match_bronze_gavel')}</Text>}
-          {(lawyer as import('../types/api').Lawyer).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>{t('x_match_silver_gavel')}</Text>}
-          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
+          {lawyer.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bail, marginTop: 3 }}>{t('x_match_bronze_gavel')}</Text>}
+          {lawyer.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textSecond, marginTop: 3 }}>{t('x_match_silver_gavel')}</Text>}
+          {(lawyer.gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
         </View>
         <TouchableOpacity accessibilityRole="button"
           style={styles.removeBtn}
-          onPress={confirmRemove}
+          onPress={() => onRemove(lawyer.id)}
+          testID="saved-remove"
           accessibilityLabel={t('x_saved_lawyers_remove_from_saved', { name: lawyer.name })}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.removeBtnText, { color: colors.textMuted }]}>✕</Text>
         </TouchableOpacity>
       </View>
 
@@ -146,103 +119,33 @@ function SavedCard({
       {lawyer.specialties?.length > 0 && (
         <View style={styles.tagRow}>
           {lawyer.specialties.slice(0, 4).map((s, i) => (
-            <View key={`row-${i}`} style={[styles.tag, { backgroundColor: COLORS.navy + '12', borderColor: COLORS.navy + '30' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color: COLORS.navy }]}>{s}</Text>
+            <View key={`row-${i}`} style={[styles.tag, { backgroundColor: colors.navy + '12', borderColor: colors.navy + '30' }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color: colors.navy }]}>{s}</Text>
             </View>
           ))}
         </View>
       )}
 
-      {/* Action buttons */}
-      <View style={styles.actionRow}>
-        {lawyer.phone && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.actionBtn, { backgroundColor: COLORS.legal }]}
-            accessibilityLabel={t('saved_call')} onPress={() => callPhone(String(lawyer.phone), () => showToast(t('x_bail_search_calling_unavailable_this_device'), 'error'))}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 {t('saved_call')}</Text>
-          </TouchableOpacity>
-        )}
-        {lawyer.phone && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.actionBtn, { backgroundColor: COLORS.blue }]}
-            accessibilityLabel={t('x_match_text')} onPress={() => sendSMS(String(lawyer.phone), () => showToast(t('x_saved_lawyers_texting_unavailable_this_device'), 'error'))}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_match_text')}</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.actionBtn, { backgroundColor: COLORS.navy }]}
-          onPress={() => navigation.navigate('MoreTab', {
-            screen: 'Booking',
-            params: { lawyerName: lawyer.name, lawyerPhone: lawyer.phone || '', lawyerId: lawyer.provider_id } })}
-          >
-          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_saved_lawyers_book')}</Text>
+      <ContactActions listing={lawyer} />
+      {!!lawyer.provider_id && (
+        <TouchableOpacity accessibilityRole="button" testID="saved-profile"
+          style={[styles.profileBtn, { borderColor: colors.border }]}
+          onPress={() => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { lawyerId: lawyer.provider_id } })}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.profileBtnText, { color: colors.textBrand }]}>{t('lw_profile')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
-          accessibilityLabel={t('x_lawyer_profile_write_review')} onPress={() => setReviewing(r => !r)}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>{t('x_saved_lawyers_review')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {reviewing && (
-        <View style={[styles.reviewBox, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.reviewTitle, { color: COLORS.textPrimary }]}>{t('x_saved_lawyers_leave_review')}</Text>
-          <View style={styles.starRow}>
-            {[1,2,3,4,5].map(s => (
-              <TouchableOpacity
-          accessibilityRole="button" key={s} onPress={() => setRating(s)}
-                accessibilityLabel={t(s === 1 ? 'x_saved_lawyers_star_one' : 'x_saved_lawyers_star_other', { s })}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={[styles.star, { color: s <= rating ? COLORS.gold : COLORS.border }]}>★</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TextInput
-            style={[styles.reviewInput, { backgroundColor: COLORS.bg, borderColor: COLORS.border, color: COLORS.textPrimary }]}
-            placeholder={t('x_saved_lawyers_optional_describe_experience')}
-            placeholderTextColor={COLORS.textMuted}
-            value={reviewText}
-            onChangeText={setReviewText}
-            multiline
-              maxLength={2000}
-            numberOfLines={3}
-
-          returnKeyType="next"
-          blurOnSubmit
-        />
-          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-            style={[styles.reviewSubmit, { backgroundColor: COLORS.warnDark, opacity: submitting ? 0.6 : 1 }]}
-            onPress={submitReview}
-            disabled={submitting}
-            accessibilityLabel={t('x_saved_lawyers_submit_review')}
-          accessibilityHint={t('cp_double_tap')}
-          >
-            {submitting
-              ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.reviewSubmitText}>{t('x_saved_lawyers_submit_review_2')}</Text>
-            }
-          </TouchableOpacity>
-        </View>
       )}
 
       {/* Notes */}
-      <View style={[styles.notesBlock, { borderTopColor: COLORS.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.notesLabel, { color: COLORS.textMuted }]}>{t('saved_notes_label')}</Text>
+      <View style={[styles.notesBlock, { borderTopColor: colors.border }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.notesLabel, { color: colors.textMuted }]}>{t('saved_notes_label')}</Text>
         {editingNote ? (
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <TextInput
-              style={[styles.notesInput, { borderColor: COLORS.navy + '40', color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
+              style={[styles.notesInput, { borderColor: colors.navy + '40', color: colors.textPrimary, backgroundColor: colors.bg }]}
               value={note}
               onChangeText={setNote}
               placeholder={t('saved_notes_placeholder')}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               multiline
               maxLength={2000}
               numberOfLines={3}
@@ -252,7 +155,7 @@ function SavedCard({
             <View style={styles.notesBtnRow}>
               <TouchableOpacity
                 accessibilityRole="button" activeOpacity={0.6}
-                style={[styles.notesBtn, { backgroundColor: COLORS.navy }]}
+                style={[styles.notesBtn, { backgroundColor: colors.navy }]}
                 onPress={saveNote}
                 disabled={saving}
                accessibilityLabel={saving ? t('x_attorney_dashboard_saving') : t('x_saved_lawyers_save_note')}>
@@ -260,10 +163,10 @@ function SavedCard({
               </TouchableOpacity>
               <TouchableOpacity
                 accessibilityRole="button"
-                style={[styles.notesBtn, { backgroundColor: COLORS.border }]}
+                style={[styles.notesBtn, { backgroundColor: colors.border }]}
                 accessibilityLabel={t('case_cancel')} onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
               >
-                <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: COLORS.textSecond }]}>{t('case_cancel')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: colors.textSecond }]}>{t('case_cancel')}</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
@@ -271,7 +174,7 @@ function SavedCard({
           <TouchableOpacity
           accessibilityRole="button" onPress={() => setEditingNote(true)} activeOpacity={0.75}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.notesValue, { color: note ? COLORS.textPrimary : COLORS.textSecond }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.notesValue, { color: note ? colors.textPrimary : colors.textSecond }]}>
               {note || t('saved_notes_placeholder')}
             </Text>
           </TouchableOpacity>
@@ -280,7 +183,7 @@ function SavedCard({
 
       {/* Saved date */}
       {savedDate && (
-        <Text maxFontSizeMultiplier={1.4} style={[styles.savedDate, { color: COLORS.textSecond }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.savedDate, { color: colors.textSecond }]}>
           {t('saved_saved_on')} {savedDate}
         </Text>
       )}
@@ -296,8 +199,8 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => () => { mountedRef.current = false; }, []);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   const { colors } = useTheme();
   const [lawyers,   setLawyers]   = useState<SavedLawyer[]>([]);
@@ -306,6 +209,9 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   const [error,     setError]     = useState('');
 
   const load = useCallback(async (refresh = false) => {
+    const token = await secureStorage.getToken().catch(() => null);
+    setSignedIn(!!token);
+    if (!token) { setLoading(false); setRefreshing(false); return; }
     if (refresh) setRefreshing(true); else setLoading(true);
     setError('');
     try {
@@ -326,10 +232,10 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
 confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_attorney_from'),
       { confirmLabel: t('saved_remove'), destructive: true }).then(async ok => { if (!ok) return;
       try {
-              await api.delete(`/saved/lawyers/${id}`);
+              await api.delete(`/saved/lawyers/${id}`).catch((e) => { if (e?.response?.status !== 404) throw e; });
               setLawyers(prev => prev.filter(l => l.id !== id));
-            } catch {
-              showToast(t('home_sos_failed'));
+            } catch (e) {
+              showToast(apiErrorMessage(e, t('x_lawyers_could_not_update_saved')), 'error');
             }
     })
   }, [confirm, showToast]);
@@ -339,6 +245,17 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
   }, []);
 
   if (loading) return <SkeletonLoader count={5} label={t('saved_title')} />;
+  if (signedIn === false) return (
+    <View style={[styles.empty, { backgroundColor: colors.bg }]} testID="saved-signed-out">
+      <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⭐</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('saved_sign_in_title')}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('saved_sign_in_sub')}</Text>
+      <TouchableOpacity accessibilityRole="button" style={[styles.findBtn, { backgroundColor: COLORS.navy }]}
+        onPress={() => navigation.navigate('MoreTab', { screen: 'Login' })}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.findBtnText}>{t('saved_sign_in_button')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -419,21 +336,13 @@ const makeStyles = () => StyleSheet.create({
   cardName:       { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy },
   cardAddr:       { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   cardRating:     { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', marginTop: 4 },
-  removeBtn:      { padding: 6, marginLeft: 8 },
-  removeBtnText:  { fontSize: 16, lineHeight: 24, color: COLORS.textMuted },
+  removeBtn:      { padding: 6, marginLeft: 8, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  removeBtnText:  { fontSize: 16, lineHeight: 24 },
   tagRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 12 },
   tag:            { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   tagText:        { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  actionRow:      { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  actionBtn:      { flex: 1, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center' },
-  reviewBox:       { marginTop: 10, borderRadius: 8, borderWidth: 1, padding: 12 },
-  reviewTitle:     { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 8 },
-  starRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  star:            { fontSize: 28 },
-  reviewInput:     { borderRadius: 8, borderWidth: 1, padding: 10, fontSize: 12, lineHeight: 20, minHeight: 60, textAlignVertical: 'top', marginBottom: 10 },
-  reviewSubmit:    { borderRadius: 8, paddingVertical: 11, alignItems: 'center' },
-  reviewSubmitText:{ color: COLORS.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  actionBtnText:  { color: COLORS.bgCard, fontSize: 12, fontWeight: '700' },
+  profileBtn:     { borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center', marginTop: 8, marginBottom: 12, minHeight: 44, justifyContent: 'center' },
+  profileBtnText: { fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   notesBlock:     { borderTopWidth: 1, paddingTop: 10 },
   notesLabel:     { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   notesValue:     { fontSize: 12, lineHeight: 18, minHeight: 32 },

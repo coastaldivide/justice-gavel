@@ -190,12 +190,11 @@ describe('SSE. SSE Auth Gap — Short-Lived Token Needed for EventSource', () =>
 
 // ── LGL. LawyersScreen Hague Specialty Filter ─────────────────────────────
 describe('LGL. LawyersScreen — Hague Specialty Filter Enhancement', () => {
-  test('LGL-01: LawyersScreen has specialty filter system', async () => {
+  test('LGL-01: LawyersScreen has a case-type filter (narrows on the server)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx','utf8');
-    expect(src).toContain('specialty');
-    // Specialty filter routes to dedicated screens for real estate etc
-    expect(src).toContain('navigation');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    expect(src).toContain('CASE_TYPE_OPTIONS');
+    expect(src).toContain('caseType');
   });
   test('LGL-02: [ENHANCEMENT] Add Hague specialty to LawyersScreen filter', () => {
     // DOCUMENTED ENHANCEMENT:

@@ -1,590 +1,321 @@
-import { useToast } from '../components/ToastProvider';
+/**
+ * BailSearchScreen — bail-agent directory (real listings; read only).
+ *
+ * Nearest first from the phone's location; without permission the person's
+ * state (or the whole directory) with a prompt to type a city, state, ZIP or
+ * name. Filters: open 24/7 (from the listing's stored hours) and payment
+ * plans — both narrow on the server. Infinite scroll to the end. Every card:
+ * call (number shown formatted) / text / directions / website. If the network
+ * fails, the last results are shown and labelled as saved.
+ */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
 import { AppIcon } from '../components/AppIcon';
-import { t, initLang, useLang } from '../i18n';
-import { hapticCall } from '../services/haptics';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useLatestRef } from '../hooks/useLatestRef';
-import {ActivityIndicator, Animated, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { getLocation, formatDistance } from '../services/location';
-import { unwrapList, api }             from '../services/api';
-import { getUserState } from '../utils/userState';
-import { COLORS, useTheme } from '../constants/theme';
+import { ContactActions } from '../components/ContactActions';
+import { t, useLang } from '../i18n';
+import { getLocationWithCity, formatDistance } from '../services/location';
+import { api, apiErrorMessage, unwrapList } from '../services/api';
+import { getUserState, stateName } from '../utils/userState';
+import { useTheme } from '../constants/theme';
 
-// RULES OF HOOKS FIX: `callPhone` is a plain helper, not a component, but
-// called Haptics, Toast hooks in its body -- React throws
-// "Invalid hook call" the instant this screen mounts. Converted to a
-// custom hook (`useCallPhone`) that returns the helper, so the
-// hooks run in a legal position and callers get the same function.
-function useCallPhone() {
-  const { showToast } = useToast();
-  return function callPhone(phone: string) {
-    hapticCall();
-    Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast(t('x_bail_search_calling_unavailable_this_device'), 'error'));
-  };
-}
-function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
-  const url = Platform.OS === 'ios'
-    ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => onError?.());
-}
+const PAGE_SIZE = 20;
 
+type BailAgent = {
+  id: number; name: string; company?: string | null; city?: string | null; state?: string | null;
+  phone?: string | null; address?: string | null; lat?: number | null; lng?: number | null; website?: string | null;
+  distanceKm?: number | null; rating?: number | null; reviews?: number | null;
+  license_number?: string | null; payment_plans?: boolean; open_now?: boolean | null; open_24_7?: boolean;
+};
+type Place = { kind: 'gps'; lat: number; lng: number; label: string } | { kind: 'query'; q: string } | { kind: 'state'; state: string } | { kind: 'all' };
 
-/** Cities offered in the GPS-denied fallback box. */
-const CITY_SUGGESTIONS = [
-  'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN',
-  'Atlanta, GA', 'Houston, TX', 'Dallas, TX', 'Austin, TX',
-  'Charlotte, NC', 'Phoenix, AZ', 'Denver, CO', 'Seattle, WA',
-  'Detroit, MI', 'Baltimore, MD', 'Kansas City, MO', 'Milwaukee, WI',
-  'Albuquerque, NM', 'Louisville, KY', 'Indianapolis, IN',
-];
-
-// ── Skeleton placeholder card ─────────────────────────────────────────────
-function SkeletonCard({ colors }: { colors: ThemeColors }) {
-  useLang();
-  const shimmer = React.useRef(new Animated.Value(0)).current;
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
-      ])
-    ).start();
-  return () => shimmer.stopAnimation();
+function SkeletonCard() {
+  const { colors } = useTheme();
+  const shimmer = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    // isInteraction:false — an endless loop must not hold InteractionManager.
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: Platform.OS !== 'web', isInteraction: false }),
+      Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: Platform.OS !== 'web', isInteraction: false }),
+    ]));
+    loop.start();
+    return () => loop.stop();
   }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
-  const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
-    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || colors.bg,
-      borderRadius: 14, padding: 16, marginBottom: 10,
-      borderWidth: 1, borderColor: colors?.border || COLORS.border }}>
-      {/* Avatar + name row */}
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bg }} />
-        <View style={{ flex: 1, gap: 6 }}>
-          <View style={{ height: 14, width: '65%', borderRadius: 6, backgroundColor: bg }} />
-          <View style={{ height: 11, width: '45%', borderRadius: 6, backgroundColor: bg }} />
-        </View>
-      </View>
-      {/* Detail rows */}
-      <View style={{ height: 11, width: '80%', borderRadius: 6, backgroundColor: bg, marginBottom: 8 }} />
-      <View style={{ height: 11, width: '55%', borderRadius: 6, backgroundColor: bg }} />
+    <Animated.View style={[styles.card, { opacity, backgroundColor: colors.bgCard }]}>
+      <View style={{ height: 14, width: '65%', borderRadius: 6, backgroundColor: colors.bgSubtle, marginBottom: 8 }} />
+      <View style={{ height: 11, width: '80%', borderRadius: 6, backgroundColor: colors.bgSubtle, marginBottom: 14 }} />
+      <View style={{ height: 48, borderRadius: 12, backgroundColor: colors.bgSubtle }} />
     </Animated.View>
   );
 }
 
+const AgentCard = React.memo(function AgentCard({ item }: { item: BailAgent }) {
+  useLang();
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: colors.bgCard }]} testID="bail-agent-card">
+      <View style={styles.cardTop}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={[styles.cardName, { color: colors.textPrimary }]}>{item.name}</Text>
+          {!!item.company && item.company !== item.name && <Text maxFontSizeMultiplier={1.3} style={[styles.cardSub, { color: colors.textSecond }]}>{item.company}</Text>}
+          {!!item.address && <Text maxFontSizeMultiplier={1.3} style={[styles.cardSub, { color: colors.textMuted }]}>{item.address}</Text>}
+        </View>
+        {item.rating != null && (
+          <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.goldText }}>★</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.badgeRow}>
+        {item.distanceKm != null && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>📍 {formatDistance(item.distanceKm)}</Text></View>}
+        {item.open_24_7 ? (
+          <View style={[styles.badge, { borderColor: colors.legal, backgroundColor: colors.legalBg }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.legal }]}>{t('lw_open_24_7')}</Text></View>
+        ) : item.open_now != null && (
+          <View style={[styles.badge, { borderColor: colors.border, backgroundColor: item.open_now ? colors.legalBg : colors.bgSubtle }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: item.open_now ? colors.legalDark : colors.textMuted }]}>{item.open_now ? t('lw_open_now') : t('lw_closed_now')}</Text></View>
+        )}
+        {item.payment_plans && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_bail_search_payment_plans')}</Text></View>}
+        {!!item.license_number && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_bail_search_lic', { value: '', license_number: item.license_number })}</Text></View>}
+      </View>
+      <ContactActions listing={item} primaryColor={colors.legalDark} />
+    </View>
+  );
+});
+
 function BailSearchScreen(): React.JSX.Element {
   useLang();
-  // These helpers are now custom hooks (they call useToast/useHaptics/
-  // useConfirm internally). Invoke them here, in the component body,
-  // where hooks are legal; the returned function behaves as before.
-  const callPhone = useCallPhone();
-  const { showToast } = useToast();
+  const { colors } = useTheme();
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const userStateRef = React.useRef<string>('');
-  React.useEffect(() => {
-    getUserState().then(s => { if (s?.code) userStateRef.current = s.code; }).catch(()=>{});
+  const [items, setItems] = useState<BailAgent[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [fromCache, setFromCache] = useState(false);
+  const [place, setPlace] = useState<Place | null>(null);
+  const [locationOff, setLocationOff] = useState(false);
+  const [queryText, setQueryText] = useState('');
+  const [open24, setOpen24] = useState(false);
+  const [paymentPlans, setPaymentPlans] = useState(false);
+  const reqSeq = useRef(0);
+
+  const paramsFor = useCallback((p: Place, extra: Record<string, unknown> = {}) => {
+    const params: Record<string, unknown> = { limit: PAGE_SIZE, ...extra };
+    if (open24) params.open24 = true;
+    if (paymentPlans) params.paymentPlans = true;
+    if (p.kind === 'gps') { params.lat = p.lat; params.lng = p.lng; }
+    if (p.kind === 'query') params.q = p.q;
+    if (p.kind === 'state') params.state = p.state;
+    return params;
+  }, [open24, paymentPlans]);
+
+  const resolveDefaultPlace = useCallback(async (): Promise<Place> => {
+    const loc = await getLocationWithCity({ reason: t('lw_location_reason') });
+    if (loc.permissionGranted && loc.source === 'gps') {
+      setLocationOff(false);
+      return { kind: 'gps', lat: loc.lat, lng: loc.lng, label: loc.city ? t('x_lawyers_near', { city: loc.city }) : t('x_lawyers_location') };
+    }
+    setLocationOff(true);
+    const st = await getUserState().catch(() => null);
+    return st?.code ? { kind: 'state', state: st.code } : { kind: 'all' };
   }, []);
 
-  // Mounted guard -- prevents setState after unmount (crash in strict mode)
-  const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
-
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [_fetchError, _setFetchError] = useState<string|null>(null);
-
-
-  const [cityQuery, setCityQuery] = useState('');
-  // Suggestions for the GPS-denied city box: matching known cities, plus the
-  // typed text itself so any city can be searched.
-  const filteredCities = useMemo(() => {
-    const q = cityQuery.trim().toLowerCase();
-    if (!q) return CITY_SUGGESTIONS;
-    const matches = CITY_SUGGESTIONS.filter(c => c.toLowerCase().includes(q));
-    return matches.some(c => c.toLowerCase() === q) ? matches : [cityQuery.trim(), ...matches];
-  }, [cityQuery]);
-
-  const [locationDenied, setLocationDenied] = useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [sortBy, setSortBy] = React.useState('rating');
-  const [items, setItems]   = useState<any[]>([]);
-  const [status, setStatus] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-
-  // Auto-search on mount -- no button tap required
-  useEffect(() => { return () => { if (timerRef.current) clearTimeout(timerRef.current); }; }, []);
-
-  // Mount-only auto-search; called through a ref so the effect does not
-  // re-run each render (search is re-created every render).
-  const searchRef = useLatestRef((cityOverride?: string) => search(cityOverride));
-  useEffect(() => { Promise.resolve(initLang()).then(() => searchRef.current()).catch(() => {}); }, [searchRef]);
-
-  const [retryCount, setRetryCount] = useState(0);
-  const [filterAvailNow, setFilterAvailNow] = React.useState(false);
-  const [filterVerified, setFilterVerified] = React.useState(false);
-  const [filterPaymentPlan, setFilterPaymentPlan] = React.useState(false);
-
-  const search = async (cityOverride?: string) => {
-    setLoading(true);
-    setLocationDenied(false);
-    setStatus(cityOverride ? t('x_bail_search_searching', { cityOverride }) : t('qc_loc_getting'));
-
+  const search = useCallback(async (p: Place | null, isRefresh = false) => {
+    const seq = ++reqSeq.current;
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError('');
     try {
-      let params: Record<string, unknown> = { radiusKm: 100, user_state: userStateRef.current || undefined };
-
-      if (cityOverride) {
-        // City provided directly -- no GPS needed
-        params.city = cityOverride;
+      const where = p || await resolveDefaultPlace();
+      if (seq !== reqSeq.current) return;
+      setPlace(where);
+      const res = await api.get('/providers/bail', { params: paramsFor(where) });
+      if (seq !== reqSeq.current || !mountedRef.current) return;
+      const rows = unwrapList<BailAgent>(res.data, 'agents');
+      const tot = Number(res.headers?.['x-total-count']);
+      setItems(rows);
+      setTotal(Number.isFinite(tot) ? tot : rows.length);
+      setPage(1);
+      setHasMore(Number.isFinite(tot) ? rows.length < tot : rows.length >= PAGE_SIZE);
+      setFromCache(false);
+      cacheBailAgents(rows).catch(() => {});
+    } catch (e) {
+      if (seq !== reqSeq.current || !mountedRef.current) return;
+      const cached = await getCachedBailAgents().catch(() => ({ agents: [] as unknown[] }));
+      if (cached.agents.length) {
+        setItems(cached.agents as BailAgent[]);
+        setTotal(null); setHasMore(false); setFromCache(true);
       } else {
-        try {
-          const { lat, lng } = await getLocation();
-          params.lat = lat;
-          params.lng = lng;
-          setStatus(t('x_bail_search_finding_nearby_bail_agents'));
-        } catch {
-          setLoading(false);
-          // GPS denied -- show city picker instantly
-          setLoading(false);
-          setLocationDenied(true);
-          setStatus('');
-          return;
-        }
+        setError(apiErrorMessage(e, t('x_bail_search_could_not_connect_check')));
       }
-
-      // Retry with exponential backoff (up to 3 attempts)
-      let res: { data?: BailAgent[] } | undefined;
-      let attempt = 0;
-      while (attempt < 3) {
-        try {
-          res = await api.get('/providers/bail', { params });
-          break;
-        } catch (apiErr: any) {
-          // CATCH BINDING MISMATCH. The catch bound `_`/`apiErr`/`shareErr` but the
-          // body referenced `e`, which is not in scope -- a ReferenceError thrown
-          // from inside an error handler, i.e. exactly when something has already
-          // gone wrong. TS2304 flagged it; nothing at runtime would until it fired.
-          __DEV__ && console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
-          attempt++;
-          if (attempt >= 3) throw apiErr;
-          setStatus(t('x_bail_search_connection_issue_retrying_3', { attempt }));
-          await new Promise<void>(r => { timerRef.current = setTimeout(r, attempt * 800); });
-        }
-      }
-
-      if (!res) throw new Error('Bail agent search failed after 3 attempts');
-      const agents = unwrapList(res.data, 'agents', 'bail_agents');
-      setItems(agents);
-      cacheBailAgents(agents).catch(() => {});
-      setSearched(true);
-      setRetryCount(0);
-      setStatus(agents.length === 0 ? t('bail_no_results') : '');
-    } catch {
-      // Try offline cache on failure
-      const { agents: cached } = (await getCachedBailAgents().catch(() => ({ agents: [] }))) as any;
-      if (cached.length > 0) {
-        setItems(cached);
-        setStatus(t('x_bail_search_showing_cached_results_check'));
-        setSearched(true);
-        setLoading(false);
-        return;
-      }
-      setStatus('');
-      setRetryCount(n => n + 1);
-      // After 2 failed attempts, offer city fallback
-      if (retryCount >= 1) {
-        setLocationDenied(true);
-      } else {
-        showToast(t('x_bail_search_could_not_connect_check'));
-      }
+    } finally {
+      if (seq === reqSeq.current && mountedRef.current) { setLoading(false); setRefreshing(false); }
     }
-    setLoading(false);
-  };
+  }, [paramsFor, resolveDefaultPlace]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMoreRef.current || !place || loading) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const seq = reqSeq.current;
+    try {
+      const res = await api.get('/providers/bail', { params: paramsFor(place, { page: page + 1 }) });
+      if (seq !== reqSeq.current || !mountedRef.current) return;
+      const rows = unwrapList<BailAgent>(res.data, 'agents');
+      setItems(prev => {
+        const seen = new Set(prev.map(a => a.id));
+        const next = [...prev, ...rows.filter(a => !seen.has(a.id))];
+        setHasMore(total != null ? next.length < total && rows.length > 0 : rows.length >= PAGE_SIZE);
+        return next;
+      });
+      setPage(n => n + 1);
+    } catch {
+      if (mountedRef.current) setHasMore(false);
+    } finally {
+      loadingMoreRef.current = false;
+      if (mountedRef.current) setLoadingMore(false);
+    }
+  }, [hasMore, place, loading, paramsFor, page, total]);
+
+  const startedRef = useRef(false);
+  useEffect(() => { if (!startedRef.current) { startedRef.current = true; search(null); } }, [search]);
+  const filtersRef = useRef({ open24, paymentPlans });
+  useEffect(() => {
+    if (filtersRef.current.open24 === open24 && filtersRef.current.paymentPlans === paymentPlans) return;
+    filtersRef.current = { open24, paymentPlans };
+    search(place);
+  }, [open24, paymentPlans, place, search]);
+
+  const submitQuery = () => { const q = queryText.trim(); search(q ? { kind: 'query', q } : null); };
+  const useMyLocation = () => { setQueryText(''); search(null); };
+
+  const placeLabel = useMemo(() => {
+    if (!place) return '';
+    if (place.kind === 'gps') return place.label;
+    if (place.kind === 'query') return t('lw_results_for', { q: place.q });
+    if (place.kind === 'state') return t('lw_in_state', { state: stateName(place.state) });
+    return t('lw_all_listings');
+  }, [place]);
+
+  const filterChip = (on: boolean, toggle: () => void, label: string, testID: string) => (
+    <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: on }} testID={testID} onPress={toggle}
+      style={[styles.chip, { borderColor: on ? colors.navy : colors.border, backgroundColor: on ? colors.navy : colors.bgCard }]}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.chipText, { color: on ? colors.textOnNavy : colors.textSecond }]}>{label}</Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}>
     <View testID="bail-search-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.emergencyBg }]}>
         <View style={styles.headerRow}>
-          <Text testID="bail-agent-bail-amount" maxFontSizeMultiplier={1.4} style={styles.heading}>{t('bail_heading')}</Text>
-          {items.length > 0 && !loading && (
-            <View style={styles.countPill}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.countPillText}>{t('x_bail_search_agents_nearby', { length: items.length })}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.heading, { color: colors.textPrimary }]} numberOfLines={1}>{t('bail_heading')}</Text>
+          {total != null && !loading && (
+            <View style={[styles.countPill, { backgroundColor: colors.bgCard }]} testID="bail-total">
+              <Text maxFontSizeMultiplier={1.3} style={[styles.countPillText, { color: colors.textPrimary }]}>{t('bs_count', { count: total })}</Text>
             </View>
           )}
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sub}>
-          {loading ? t('bail_sub_loading') : items.length > 0 ? t('bail_sub_results') : t('bail_sub_idle')}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-          accessibilityRole="button" activeOpacity={0.6} style={styles.searchBtn} testID="bail-search-submit-button" onPress={() => search()} disabled={loading}
-        accessibilityLabel={t('bail_searching')}
-      >
-        {loading
-          ? <><ActivityIndicator color={colors.bgCard} style={{ marginRight: 8 }} /><Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('bail_searching')}</Text></>
-          : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>{t('bail_search_again')}</Text>
-        }
-      </TouchableOpacity>
-
-      {loading && items.length === 0 && <>{/* SkeletonBailList never existed; SkeletonCard is the real component */}
-        {[0,1,2,3].map(i => <SkeletonCard key={i} colors={colors as any} />)}</>}
-      {!loading && !!status && <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>{status}</Text>}
-      {items.length > 0 && (
-
-      <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 8, gap: 8 }}>
-        {(['rating','distance','rate']).map(s => (
-          <TouchableOpacity
-      accessibilityLabel={t('x_bail_search_sort_by', { s })}
-          accessibilityRole="button" key={s} onPress={() => setSortBy(s)}
-            style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
-              backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
-              borderWidth: 1, borderColor: sortBy === s ? colors.blue : colors.border }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: sortBy === s ? colors.bgCard : colors.textSecond, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
-              {s === 'rating' ? t('x_bail_search_rating') : s === 'distance' ? t('x_bail_search_nearest') : t('x_bail_search_low_rate')}
-            </Text>
+        {!!placeLabel && <Text testID="bail-place" maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.sub, { color: colors.textSecond }]}>📍 {placeLabel}</Text>}
+        <View style={styles.searchRow}>
+          <TextInput testID="bail-search-city-input"
+            style={[styles.searchInput, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.inputText }]}
+            placeholder={t('lw_search_placeholder')} placeholderTextColor={colors.placeholder}
+            value={queryText} onChangeText={setQueryText} onSubmitEditing={submitQuery} returnKeyType="search" autoCorrect={false} maxLength={100}
+            accessibilityLabel={t('lw_search_placeholder')} />
+          <TouchableOpacity accessibilityRole="button" testID="bail-search-submit-button" style={[styles.searchBtn, { backgroundColor: colors.emergencyDark }]} onPress={submitQuery}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.searchBtnText, { color: colors.white }]}>{t('search')}</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-      )}
-
-      {/* Filter bar -- bail bondsman search */}
-      <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8,
-        borderBottomWidth:1, borderBottomColor:colors.border, backgroundColor:colors.bgSubtle }}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => setFilterVerified(v => !v)}
-          style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
-            paddingVertical:6, borderRadius:16, borderWidth:1,
-            borderColor:filterVerified?colors.navy:colors.border,
-            backgroundColor:filterVerified?colors.navy:colors.bgCard }}
-          accessibilityLabel={t('x_bail_search_filter_jtb_verified_only')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
-            color:filterVerified?colors.bgCard:colors.textSecond }}>
-            {t('x_bail_search_verified_only')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => setFilterAvailNow(v => !v)}
-          style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
-            paddingVertical:6, borderRadius:16, borderWidth:1,
-            borderColor:filterAvailNow?colors.legalDark:colors.border,
-            backgroundColor:filterAvailNow?colors.legalBg:colors.bgCard }}
-          accessibilityLabel={t('x_bail_search_filter_available_now')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
-            color:filterAvailNow?colors.legalDark:colors.textSecond }}>
-            {t('x_bail_search_available_now')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => setFilterPaymentPlan(v => !v)}
-          style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
-            paddingVertical:7, borderRadius:16, borderWidth:1,
-            borderColor:filterPaymentPlan?colors.gold:colors.border,
-            backgroundColor:filterPaymentPlan?colors.warnBg:colors.bgCard }}
-          accessibilityLabel={t('x_bail_search_filter_payment_plans_available')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontWeight:'600',
-            color:filterPaymentPlan?colors.warnDark:colors.textSecond }}>
-            {t('x_bail_search_payment_plans')}
-          </Text>
-        </TouchableOpacity>
+        </View>
+        <View style={styles.chipRow}>
+          <TouchableOpacity accessibilityRole="button" testID="bail-use-location" style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.bgCard }]} onPress={useMyLocation}>
+            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.chipText, { color: colors.textSecond }]}>{t('lw_use_location')}</Text>
+          </TouchableOpacity>
+          {filterChip(open24, () => setOpen24(v => !v), t('lw_open_24_7'), 'bail-filter-24')}
+          {filterChip(paymentPlans, () => setPaymentPlans(v => !v), t('x_bail_search_payment_plans'), 'bail-filter-plans')}
+        </View>
+        {locationOff && place?.kind !== 'query' && <Text testID="bail-location-off" maxFontSizeMultiplier={1.3} style={[styles.hint, { color: colors.textMuted }]}>{t('lw_location_off')}</Text>}
+        {fromCache && <Text testID="bail-from-cache" maxFontSizeMultiplier={1.3} style={[styles.hint, { color: colors.warnDark }]}>{t('x_bail_search_showing_cached_results_check')}</Text>}
       </View>
 
-
-          {_fetchError && (
-            <View testID="bail-search-error" style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
-              <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 13 }}>
-                {_fetchError}
+      {loading ? (
+        <View style={{ padding: 12 }}>{[0, 1, 2].map(i => <SkeletonCard key={i} />)}</View>
+      ) : error ? (
+        <View style={styles.empty} testID="bail-search-error">
+          <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText, { color: colors.textMuted }]}>{error}</Text>
+          <TouchableOpacity accessibilityRole="button" style={[styles.emptyBtn, { backgroundColor: colors.navy }]} onPress={() => search(place)}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '700' }}>{t('try_again')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlashList testID="bail-agent-list"
+          data={items}
+          keyExtractor={item => String(item.id)}
+          keyboardShouldPersistTaps="handled"
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          onRefresh={() => search(place, true)}
+          refreshing={refreshing}
+          contentContainerStyle={{ padding: 12, paddingBottom: 24 }}
+          ListEmptyComponent={
+            <View testID="bail-search-empty" style={styles.empty}>
+              <AppIcon name="search-outline" size={24} color={colors.textBrand} />
+              <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText, { color: colors.textMuted }]}>
+                {open24 || paymentPlans ? t('bs_empty_filtered') : place?.kind === 'query' ? t('lw_empty_query', { q: place.q }) : t('bail_no_results')}
               </Text>
             </View>
-          )}
-      <FlashList testID="bail-agent-list"
-          focusable
-          keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
-          keyboardShouldPersistTaps="handled"
-          onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
-          refreshing={refreshing}
-          data={(() => {
-                let result = [...items];
-                if (filterVerified)  result = (result ?? []).filter((b: BailAgent) => b.jtb_verified);
-                if (filterAvailNow)  result = (result ?? []).filter((b: BailAgent) => b.available_24h || b.hours?.toLowerCase?.().includes('24'));
-                if (filterPaymentPlan) result = (result ?? []).filter((b: BailAgent) => b.payment_plans || b.notes?.toLowerCase?.().includes('payment') || b.notes?.toLowerCase?.().includes('plan'));
-                if (sortBy === 'rating') result.sort((a: BailAgent, b: BailAgent) => (b.rating||0)-(a.rating||0));
-                if (sortBy === 'rate')   result.sort((a: BailAgent, b: BailAgent) => (a.rate||0)-(b.rate||0));
-                if (sortBy === 'distance') result.sort((a: BailAgent, b: BailAgent) => (a.distanceKm||999)-(b.distanceKm||999));
-                return result;
-              })()
           }
-          contentContainerStyle={{ padding: 12, paddingBottom: 40}}
-          ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              {t('x_bail_search_no_bail_agents_found')}
-            </Text>
-          }
-          renderItem={({ item }) => (
-          <View style={styles.card}>
-          <View style={styles.cardTop}>
-          <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <Text maxFontSizeMultiplier={1.4} numberOfLines={1} ellipsizeMode="tail" style={styles.cardName}>{item?.name}</Text>
-          {item.jtb_verified && (
-          <View style={styles.verifiedBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadgeText}>{t('x_bail_search_verified')}</Text>
-          </View>
-          )}
-          </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.cardAddress}>{item?.address}</Text>
-          {item.hours && (
-          <View style={styles.hoursBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.hoursText}>
-          🕐 {item.hours === '24/7' ? t('x_bail_search_open_24_7') : item.hours}
-          </Text>
-          </View>
-          )}
-          {item.license_number && (
-          <View style={styles.licensePill}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.licensePillText}>
-          {t('x_bail_search_lic', { value: item.license_state ? `${item.license_state} ` : '', license_number: item.license_number })}
-          </Text>
-          </View>
-          )}
-          {item.distanceKm != null && (
-          <View style={styles.distBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.distText}>📍 {formatDistance(item.distanceKm)}</Text>
-          </View>
-          )}
-          </View>
-          <View style={styles.ratingBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.ratingNum}>{item?.rating?.toFixed(1) ?? '--'}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.ratingStar}>★</Text>
-          </View>
-          </View>
-
-          {/* ALWAYS-VISIBLE call button -- primary action */}
-          {item?.phone ? (
-          <TouchableOpacity accessibilityRole="button" testID="bail-agent-card"
-          accessibilityLabel={t('x_bail_search_call_bail_agent')}
-          style={styles.callBtnBig}
-          onPress={() => callPhone(item?.phone)}
-          activeOpacity={0.85}
-          accessibilityHint={t('x_bail_search_opens_phone_dialer')}
-          >
-          <Text testID="bail-agent-phone" maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>{t('x_bail_search_call_now', { phone: item?.phone })}</Text>
-          </TouchableOpacity>
-          ) : (
-          <View style={styles.noPhoneBox}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.noPhoneText}>{t('bail_no_phone')}</Text>
-          </View>
-          )}
-
-          {/* Secondary: directions */}
-          {item.lat && item.lng && (
-          <TouchableOpacity
-          accessibilityRole="button"
-          style={styles.dirBtn}
-          accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(item.lat, item.lng, item?.name, () => showToast(t('x_bail_search_maps_unavailable_this_device'), 'error'))}
-          >
-          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>{t('help_now_directions')}</Text>
-          </TouchableOpacity>
-          )}
-          {item.hours && <Text maxFontSizeMultiplier={1.4} style={styles.hoursText}>🕐 {item.hours}</Text>}
-          </View>
-            
-          )}
+          ListFooterComponent={items.length > 0 ? (loadingMore ? <ActivityIndicator color={colors.navy} style={{ padding: 16 }} />
+            : !hasMore && !fromCache ? <Text testID="bail-end" maxFontSizeMultiplier={1.3} style={[styles.end, { color: colors.textMuted }]}>{t('bs_count', { count: items.length })} · {t('lw_end')}</Text> : null) : null}
+          renderItem={({ item }) => <AgentCard item={item} />}
         />
-
-      {/* City search box when GPS denied */}
-      {locationDenied && (
-        <View style={styles.cityFallback}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.cityFallbackTitle}>{t('bail_city_picker_title')}</Text>
-          <TextInput testID="bail-search-city-input"
-            style={styles.citySearchInput}
-            placeholder={t('bail_city_placeholder')}
-            placeholderTextColor={colors.textMuted}
-            value={cityQuery}
-            onChangeText={setCityQuery}
-            onSubmitEditing={() => {
-              const q = cityQuery.trim();
-              if (q) { setLocationDenied(false); setCityQuery(''); search(q); }
-            }}
-            autoFocus
-            returnKeyType="search"
-          blurOnSubmit
-        />
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('x_bail_search_use_my_location')}
-            onPress={() => { search(); }}
-            style={{ flexDirection:'row', alignItems:'center', gap:6,
-              paddingVertical:8, paddingHorizontal:12,
-              backgroundColor:colors.infoBg, borderRadius:20, marginTop:6 }}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14 }}>📍</Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.textBrand, fontWeight:'600' }}>{t('x_bail_search_use_my_location')}</Text>
-          </TouchableOpacity>
-          <View style={styles.cityList}>
-            {filteredCities.map(city => (
-              <TouchableOpacity
-      accessibilityLabel={t('search')} accessibilityRole="button"
-                key={city}
-                style={styles.cityRow}
-                onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
-                activeOpacity={0.75}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={styles.cityRowIcon}>📍</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>{city}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
       )}
-
-      {searched && items.length === 0 && !loading && !locationDenied && (
-        <View testID="bail-search-empty" style={styles.emptyState}>
-          <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('bail_no_agents')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>{t('x_bail_search_try_nearby_city')}</Text>
-          <View style={styles.nearbyCities}>
-            {['Memphis, TN','Nashville, TN','Atlanta, GA','Houston, TX','Detroit, MI'].map(city => (
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={t('x_bail_search_try_wider_search')}
-                key={city}
-                style={styles.nearbyCityBtn}
-                onPress={() => search(city)}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={styles.nearbyCityText}>{city}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity
-          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel={t('x_bail_search_pick_different_city')} onPress={() => setLocationDenied(true)}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>{t('x_bail_search_pick_different_city')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-      {/* Legal accuracy disclaimer — required on all bail search results */}
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8, paddingTop: 6, backgroundColor: colors.bg }}>
-        <Text style={{ fontSize: 11, color: colors.textSecond, lineHeight: 16, textAlign: 'center' }}>
-          {t('x_bail_search_bail_amounts_typical_ranges')}
-        </Text>
+      <View style={[styles.footerNote, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, color: colors.textSecond, lineHeight: 16, textAlign: 'center' }}>{t('bc_fee_note')}</Text>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
-type ThemeColors = Record<string, string>;
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  header: { padding: 16, paddingTop: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heading: { fontSize: 22, lineHeight: 28, fontFamily: 'Inter_900Black', fontWeight: '900', flexShrink: 1 },
+  countPill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
+  countPillText: { fontSize: 12, fontWeight: '800' },
+  sub: { fontSize: 12, marginTop: 3 },
+  searchRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  searchInput: { flex: 1, minWidth: 0, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, lineHeight: 20 },
+  searchBtn: { borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center', minHeight: 44 },
+  searchBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  chip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, minHeight: 44, justifyContent: 'center', maxWidth: '100%' },
+  chipText: { fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  hint: { fontSize: 12, lineHeight: 17, marginTop: 6 },
+  card: { borderRadius: 14, padding: 14, marginBottom: 10 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  cardName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  cardSub: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  ratingBlock: { flexDirection: 'row', alignItems: 'center', gap: 1 },
+  ratingNum: { fontSize: 15, fontWeight: '800' },
+  reviewCount: { fontSize: 11, marginLeft: 2 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  badge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeText: { fontSize: 11, lineHeight: 16, fontWeight: '700' },
+  empty: { alignItems: 'center', padding: 28, gap: 12 },
+  emptyText: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  emptyBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20, minHeight: 44 },
+  end: { textAlign: 'center', fontSize: 12, padding: 16 },
+  footerNote: { paddingHorizontal: 16, paddingVertical: 6, borderTopWidth: 1 },
+});
 
-type BailAgent = {
-  id: number;
-  name: string;
-  city: string;
-  state: string;
-  phone?: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
-  distanceKm?: number;
-  rating?: number;
-  reviews?: number;
-  rate?: number;
-  payment_plans?: boolean;
-  available_24h?: boolean;
-  hours?: string;
-  license_number?: string;
-  jtb_verified?: boolean | number;
-  bar_verified?: boolean | number;
-  notes?: string;
-  website?: string;
-};
-
-const makeStyles = (colors: any) => StyleSheet.create({
-
-
-  screen: { flex: 1, backgroundColor: COLORS.bg },
-  header: { backgroundColor: colors.emergencyBg, padding: 20, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  countPill: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  countPillText: { color: colors.textPrimary, fontSize: 12, fontWeight: '800' },
-  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textPrimary },
-  sub: { color: colors.emergency, fontSize: 12, marginTop: 3 },
-  searchBtn: { flexDirection: 'row', backgroundColor: colors.emergencyDark, margin: 12, borderRadius: 14, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
-  searchBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  statusText: { textAlign: 'center', color: colors.textMuted, fontSize: 12, lineHeight: 20, paddingHorizontal: 16, marginBottom: 8 },
-  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6 },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-  cardName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency, marginBottom: 4 },
-  cardAddress: { fontSize: 12, color: colors.textMuted, marginBottom: 6 },
-  distBadge: { backgroundColor: COLORS.infoBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: COLORS.steelMid },
-  distText: { fontSize: 11, color: COLORS.info, fontWeight: '700' },
-  ratingBlock: { flexDirection: 'row', alignItems: 'center' },
-  ratingNum: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
-  ratingStar: { fontSize: 14, lineHeight: 21, color: colors.info, marginLeft: 1 },
-  actionRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  actionBtn: { flex: 1, paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
-  callBtn: { backgroundColor: colors.emergency },
-  actionBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  phoneText: { fontSize: 12, color: colors.steel, textAlign: 'center' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyText: { color: colors.textMuted, fontSize: 14, lineHeight: 21, marginBottom: 16 },
-  retryBtn: { backgroundColor: COLORS.steelMid, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20 },
-  callBtnBig: {
-    backgroundColor: colors.legal,
-    borderRadius: 12, paddingVertical: 18,
-    alignItems: 'center', marginBottom: 8,
-    shadowColor: colors.legal, shadowOpacity: 0.3,
-    shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4},
-  callBtnBigText: { color: colors.bgCard, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 15, lineHeight: 22, letterSpacing: 0.3 },
-  noPhoneBox: { backgroundColor: colors.bg, borderRadius: 8, padding: 12, marginBottom: 8, alignItems: 'center' },
-  noPhoneText: { color: colors.textMuted, fontSize: 12 },
-  dirBtn: { backgroundColor: COLORS.steelDark, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginBottom: 6 },
-  dirBtnText: { color: COLORS.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  cityFallback: { padding: 16, backgroundColor: colors.bgCard, marginBottom: 2 },
-  cityFallbackTitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency, marginBottom: 10 },
-  citySearchInput: {
-    borderWidth: 1.5, borderColor: colors.emergency, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 15, lineHeight: 22, color: colors.inputText, backgroundColor: colors.inputBg, marginBottom: 8},
-  cityList: { gap: 2 },
-  cityRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 12, paddingHorizontal: 8,
-    borderRadius: 8, backgroundColor: colors.emergencyBg, marginBottom: 4,
-    borderWidth: 1, borderColor: 'rgba(191,54,12,0.13)'},
-  cityRowIcon: { fontSize: 14 },
-  cityRowText: { fontSize: 14, lineHeight: 21, color: colors.emergency, fontFamily: 'Inter_700Bold', fontWeight: '700', flex: 1 },
-  retryBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  verifiedBadge: {
-    backgroundColor: COLORS.navy, borderRadius: 20,
-    paddingHorizontal: 7, paddingVertical: 2},
-  verifiedBadgeText: { color: COLORS.steel, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  emptyState:    { alignItems: 'center', padding: 24 },
-  emptyIcon:     { fontSize: 36, marginBottom: 8 },
-  emptyTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
-  emptyHint:     { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 12 },
-  nearbyCities:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  nearbyCityBtn: { backgroundColor: COLORS.bgSubtle, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bgSubtle },
-  nearbyCityText:{ fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  pickCityBtn:   { backgroundColor: COLORS.navy, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
-  pickCityBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  hoursBadge: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 3, alignSelf: 'flex-start' },
-  hoursText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  licensePill: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6, alignSelf: 'flex-start' },
-  licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' }});
 export default React.memo(BailSearchScreen);

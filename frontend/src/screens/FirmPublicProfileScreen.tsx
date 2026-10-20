@@ -1,5 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useToast } from '../components/ToastProvider';
 /**
  * FirmPublicProfileScreen.tsx — Public-facing firm profile for clients
  * Navigated to from FirmDiscoveryScreen when user taps a firm card.
@@ -13,12 +12,11 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
-  Linking,
   StyleSheet,
-  LayoutAnimation,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
+import { ContactActions } from '../components/ContactActions';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
@@ -34,7 +32,6 @@ interface FirmProfile {
 
 function FirmPublicProfileScreen() {
   useLang();
-  const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();
   const { colors } = useTheme();
@@ -56,17 +53,14 @@ function FirmPublicProfileScreen() {
       const r = await api.get(`/firms/${firmId}/public-profile`);
       setFirm(r.data);
       setError('');
-    } catch {
-      setError(t('x_firm_public_profile_could_not_load_firm'));
+    } catch (e) {
+      setError(apiErrorMessage(e, t('x_firm_public_profile_could_not_load_firm')));
     } finally {
       setLoading(false);
     }
   }, [firmId]);
 
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    loadFirm();
-  }, [loadFirm]);
+  useEffect(() => { loadFirm(); }, [loadFirm]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -74,30 +68,15 @@ function FirmPublicProfileScreen() {
     setRefreshing(false);
   }, [loadFirm]);
 
-  const callFirm = () => {
-    if (!firm?.phone) { showToast(t('bail_call_no_phone')); return; }
-    Linking.openURL(`tel:${firm.phone}`).catch(() => showToast(t('x_firm_public_profile_could_not_open_phone')));
-  };
-
-  const openWebsite = () => {
-    if (!firm?.website) { showToast(t('x_firm_public_profile_no_website_listed')); return; }
-    const url = firm.website.startsWith('http') ? firm.website : `https://${firm.website}`;
-    Linking.openURL(url).catch(() => showToast(t('x_firm_public_profile_could_not_open_website')));
-  };
-
-  const contactFirm = () => {
-    navigation.navigate('LawyersTab');  // Opens the Lawyers tab to find attorneys
-  };
-
   if (loading) return (
-    <View style={[s.center, { backgroundColor: colors.primary }]}>
+    <View style={[s.center, { backgroundColor: colors.bg }]}>
       <ActivityIndicator color={colors.blue} />
     </View>
   );
 
   if (error || !firm) return (
-    <View style={[s.center, { backgroundColor: colors.primary }]}>
-      <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 16, textAlign: 'center', padding: 24 }}>
+    <View style={[s.center, { backgroundColor: colors.bg }]}>
+      <Text testID="firm-profile-error" maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 16, textAlign: 'center', padding: 24 }}>
         {error || t('x_firm_public_profile_firm_not_found')}
       </Text>
       <TouchableOpacity
@@ -114,7 +93,7 @@ function FirmPublicProfileScreen() {
   );
 
   return (
-    <ScrollView style={{ backgroundColor: colors.primary }}
+    <ScrollView style={{ backgroundColor: colors.bg }}
                 contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textPrimary} />}>
 
@@ -178,42 +157,7 @@ function FirmPublicProfileScreen() {
         </View>
       )}
 
-      {/* Referral code */}
-
-      {/* Contact actions */}
-      <View style={s.actions}>
-        {firm.phone && (
-          <TouchableOpacity
-            style={[s.btn, { backgroundColor: colors.legalDark, flex: 1 }]}
-            onPress={callFirm}
-            accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-            accessibilityLabel={t('hn_call_a11y', { name: firm.name })}
-          >
-            <Text style={s.btnText}>{t('lawyers_call')}</Text>
-          </TouchableOpacity>
-        )}
-        {firm.website && (
-          <TouchableOpacity
-            style={[s.btn, { backgroundColor: colors.blue, flex: 1 }]}
-            onPress={openWebsite}
-            accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-            accessibilityLabel={t('x_firm_public_profile_visit_website', { name: firm.name })}
-          >
-            <Text style={s.btnText}>{t('lawyers_website')}</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[s.btn, { backgroundColor: COLORS.navy, flex: 1 }]}
-          onPress={contactFirm}
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          accessibilityLabel={t('x_firm_public_profile_find_attorneys_at', { name: firm.name })}
-        >
-          <Text style={s.btnText}>{t('x_firm_public_profile_find_attorneys')}</Text>
-        </TouchableOpacity>
-      </View>
+      {(!!firm.phone || !!firm.website) && <ContactActions listing={{ name: firm.name, phone: firm.phone, website: firm.website }} />}
     </ScrollView>
   );
 }
@@ -233,7 +177,6 @@ const s = StyleSheet.create({
                  alignItems: 'center', justifyContent: 'center' },
   avatarText:  { fontSize: 15, fontWeight: '700', color: COLORS.blue },
   attName:     { fontSize: 14, fontWeight: '600' },
-  actions:     { flexDirection: 'row', gap: 10, marginTop: 8 },
   btn:         { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10,
                  alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   btnText:     { color: COLORS.white, fontWeight: '700', fontSize: 14 },

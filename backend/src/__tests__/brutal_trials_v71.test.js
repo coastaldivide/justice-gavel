@@ -190,12 +190,12 @@ describe('SCH. search.js — Global In-App FTS5 Search', () => {
 
 // ── REV. reviews.js — Provider Ratings ────────────────────────────────────
 describe('REV. reviews.js — Provider Review and Rating System', () => {
-  test('REV-01: GET / lists reviews filtered by provider/type', async () => {
+  test('REV-01: GET / lists published reviews for one listing; writes need auth', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/reviews.js', 'utf8');
-    expect(src).toContain('Provider reviews and ratings');
     expect(src).toContain("router.get('/'");
     expect(src).toContain('authRequired');
+    expect(src).toContain("status = 'published'");
   });
   test('REV-02: GET /summary returns aggregated rating for a provider', async () => {
     const fs = await import('fs');

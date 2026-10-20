@@ -1,5 +1,5 @@
 import { anthropicFetch } from '../services/aiClient.js';
-import { safeJson, err400, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
+import { safeJson, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * /api/match — Two-stage Claude-powered lawyer matching
@@ -7,20 +7,23 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
  *
  * GET /api/match/lawyers
  *   Query params:
- *     city        {string}  required
- *     caseType    {string}  e.g. "DUI", "Drug Offenses", "Assault"
+ *     lat, lng    {number}  the person's location (nearest first), or
+ *     city        {string}  a place typed by the person (same search as the lawyer list)
+ *     caseType    {string}  e.g. "DUI", "Family Law" — filters always narrow
  *     language    {string}  e.g. "Spanish"
- *     lat, lng    {number}  for distance sorting
  *     proBonoOnly {boolean}
- *     situation   {string}  free-text user situation (used for AI narrative)
+ *     situation   {string}  free-text situation (used only for the AI narrative)
  *
- *   Returns: [{ rank, name, phone, website, address, distanceKm?,
- *               specialties, languages, rating, reviews,
- *               pro_bono, sliding_scale, free_consultation,
- *               years_experience, matchScore, matchReport }]
+ *   Returns { jobId, status: 'pending' } — poll GET /api/jobs/:jobId; the job
+ *   result is [{ ...listing (same fields as /providers/lawyers), rank,
+ *   matchScore, matchReport }] (report in the request's language).
+ *   No listing matches → { status: 'done', matches: [], message }.
  */
 
 import { Router }      from 'express';
+import { searchDirectory, formatLawyer as formatListing } from '../services/providerDirectory.js';
+import { resolveLang, msg } from '../i18n/index.js';
+import { generateSlots, lawyerTimeZone, PENDING_HOLD_MINUTES } from '../services/consultationSlots.js';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
@@ -29,9 +32,10 @@ import logger from '../utils/logger.js';
 
 
 // ── Shared column list for providers DB — keeps projections consistent ──────
-const LAWYERS_COLS = 'id, name, phone, website, address, lat, lng, city, state, rating, reviews,'
-  + ' verified, bar_verified, jtb_verified, pro_bono, sliding_scale, free_consultation,'
-  + ' years_experience, specialties, languages, bio, source_id, active';
+const LAWYERS_COLS = `l.id, l.name, l.firm, l.phone, l.website, l.address, l.lat, l.lng, l.city, l.state, l.rating,
+  l.reviews, l.verified, l.bar_verified, l.jtb_verified, l.pro_bono, l.sliding_scale, l.free_consultation,
+  l.years_experience, l.specialties, l.languages, l.bio, l.source_id, l.availability, l.hours, l.source,
+  (l.user_id IS NOT NULL OR EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id)) AS on_app`;
 
 
 const router = Router();
@@ -41,178 +45,40 @@ async function openProvidersDb() {
   return await getDb();
 }
 
-// ── geo distance (haversine) ──────────────────────────────────────────────────
+// ── stage 1: directory search + numeric scoring ──────────────────────────────
+// Candidates come from the same directory search as the lawyer list (nearest
+// first from the person's location, or the city they typed), with the same
+// strict filters. The score uses quality and accessibility signals only —
+// never payment / subscription / badge flags (owner rule).
 
-function haversineKm(aLat, aLng, bLat, bLng) {
-  const R = 6371;
-  const toRad = d => d * Math.PI / 180;
-  const dLat = toRad(bLat - aLat);
-  const dLng = toRad(bLng - aLng);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * R;
+function scoreLawyer(l, { language, userState }) {
+  let score = 0;
+  score += (Number(l.rating) || 0) * 20;                       // 0–100: rating anchor
+  score += Math.min(Number(l.reviews) || 0, 100) * 0.3;        // 0–30:  credibility volume
+  score += Math.min(Number(l.years_experience) || 0, 20) * 0.5;
+  score += Number(l.free_consultation) === 1 ? 15 : 0;
+  score += Number(l.pro_bono) === 1 ? 18 : 0;
+  score += Number(l.sliding_scale) === 1 ? 10 : 0;
+  score += Number(l.bar_verified) === 1 ? 20 : 0;
+  if (l.availability === 'limited') score -= 12;
+  if (l.availability === 'unavailable') score -= 50;
+  if (language && safeParseJson(l.languages, []).some(x => String(x).toLowerCase().includes(language.toLowerCase()))) score += 25;
+  if (userState && String(l.state || '').toUpperCase() === userState.toUpperCase()) score += 15;
+  score += (l._caseRank === 2 ? 12 : 0);                        // listing names the case type
+  if (Number.isFinite(l._dist)) score -= Math.min(l._dist, 100) * 0.4; // closer = better
+  return Math.max(0, Math.round(score));
 }
 
-// ── stage 1: SQL hard filter + numeric scoring ────────────────────────────────
-
 async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, proBonoOnly, user_state = null }) {
-  // Guard: coerce all string params to safe strings to prevent crashes
-
-  // Pull a broad candidate pool for the city
-  const rows = await db.all(
-    `SELECT ${LAWYERS_COLS}, (SELECT COUNT(*) > 0 FROM attorney_profiles ap WHERE ap.lawyer_id = lawyers.id) AS is_jtb_registered FROM lawyers WHERE LOWER(city) = LOWER(?) ORDER BY jtb_verified DESC NULLS LAST, bar_verified DESC NULLS LAST, rating DESC NULLS LAST, reviews DESC NULLS LAST LIMIT 100`,
-    [city]
-  );
-
-  // Cache once — these are request-level constants, not per-lawyer values
-  const languageLow   = language ? language.toLowerCase() : '';
-  const userStateUp   = user_state ? user_state.toUpperCase() : '';
-
-  return rows
-    .filter(l => {
-      if (proBonoOnly && !l.pro_bono) return false;
-
-      // Language filter (if requested)
-      if (languageLow && languageLow !== 'english') {
-        const langs = safeParseJson(l.languages, []);
-        const hasLang = langs.some(lg => lg.toLowerCase().includes(languageLow));
-        if (!hasLang) return false;
-      }
-
-      // Case type soft filter — allow through if no specialties data yet
-      if (caseType) {
-        const specs = safeParseJson(l.specialties, []);
-        if (specs.length > 0) {
-          const caseTypeLow = caseType.toLowerCase();
-          const match = specs.some(s => {
-            const sLow = s.toLowerCase();
-            return sLow.includes(caseTypeLow) || caseTypeLow.includes(sLow.split(' ')[0]);
-          });
-          if (!match) return false;
-        }
-      }
-
-      return true;
-    })
-    .map(l => {
-      // Numeric match score
-      let score = 0;
-
-      // ── Quality signals ──────────────────────────────────────────────────
-      score += (l.rating || 0) * 20;                          // 0–100: rating anchor
-      score += Math.min(l.reviews || 0, 100) * 0.3;          // 0–30:  credibility volume
-      score += Math.min(l.years_experience || 0, 20) * 0.5;  // 0–10:  experience
-
-      // ── Accessibility signals (high weight — affects ability to help) ────
-      score += (l.free_consultation ? 15 : 0);   // free consult removes a barrier
-      score += (l.pro_bono         ? 18 : 0);    // pro bono = highest accessibility
-      score += (l.sliding_scale    ? 10 : 0);    // sliding scale = next best
-
-      // ── Trust / verification signals ─────────────────────────────────────
-      score += (l.bar_verified     ? 20 : 0);    // bar verified = confirmed active
-      score += (l.jtb_verified     ? 12 : 0);    // JTB verified = reviewed by us
-      score += (l.golden_gavel     ?  8 : 0);    // golden gavel = top tier
-      score += Math.min(l.gavel_level || 0, 5) * 4; // 0–20: gavel tier progression
-
-      // ── Availability signals ─────────────────────────────────────────────
-      if (l.availability === 'accepting')  score += 20;  // actively taking clients
-      if (l.availability === 'limited')    score += 8;   // limited but possible
-      if (l.availability === 'unavailable') score -= 30; // not taking clients
-
-      // ── Language match (high value for non-English speakers) ────────────
-      if (languageLow && l.languages) {
-        const langs = safeParseJson(l.languages, []);
-        if (langs.some(lang => lang.toLowerCase().includes(languageLow))) {
-          score += 25;  // language match is a strong filter for many users
-        }
-      }
-
-      // ── State match (in-state attorney knows local courts + judges) ──────
-      if (userStateUp && l.state && l.state.toUpperCase() === userStateUp) {
-        score += 15;
-      }
-
-      // ── Response rate ─────────────────────────────────────────────────────
-      // avg_response_hrs: lower is better. < 2h = excellent, > 24h = poor
-      if (l.avg_response_hrs != null) {
-        if (l.avg_response_hrs <= 2)  score += 15;
-        else if (l.avg_response_hrs <= 6)  score += 10;
-        else if (l.avg_response_hrs <= 24) score +=  5;
-        else score -= 5;  // slow responders rank lower
-      }
-
-      // Distance boost (closer = better)
-      let distanceKm = null;
-      if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(l.lat) && Number.isFinite(l.lng)) {
-        distanceKm = haversineKm(lat, lng, l.lat, l.lng);
-        score -= Math.min(distanceKm, 50) * 0.2; // mild distance penalty
-      }
-
-      // ── FIX 9: Geographic density bonus ────────────────────────────────────
-      // Attorneys in cities where JTB has more registered attorneys score higher.
-      // This incentivizes building density in specific markets before expanding.
-      if (l.is_jtb_registered) {
-        score += 8; // Base bonus for being on the platform
-      }
-      // City density: if this city has 3+ JTB attorneys, +5 bonus for all of them
-      // (computed once per request, passed in as cityDensityMap from the route)
-
-      // ── Case outcome bonus ────────────────────────────────────────────────
-      if (l.platform_rating && l.platform_rating > 4.0) {
-        score += Math.round((l.platform_rating - 4.0) * 10); // max +10 at 5.0
-      }
-
-      // ── 2A: Inactive-attorney suppression ──────────────────────────────────
-      // An attorney who is "not taking clients" ranked first is a false positive.
-      // The -30 existing penalty is correct; surface it clearly.
-      // Additional: if verified=0 and no reviews, apply a floor penalty.
-      // Avoids showing unverified, unreviewed attorneys at the top.
-      const isUnverifiedNoReviews = !l.verified && !l.bar_verified && !(l.reviews > 0);
-      if (isUnverifiedNoReviews) {
-        score = Math.min(score, 40); // Cap score at 40 — shows, but never first
-      }
-
-      // ── 2B: Specialty precision ────────────────────────────────────────────
-      // Match on charge type vs attorney specialties if available.
-      // Reduces false positives where a family law attorney surfaces for a DUI.
-      if (caseType && l.specialties) {
-        let specJson;
-        try { specJson = JSON.parse(l.specialties); } catch { specJson = []; }
-        const specs = (Array.isArray(specJson) ? specJson : [l.specialties])
-          .map(s => s.toLowerCase());
-        const ct = caseType.toLowerCase();
-
-        const SPECIALTY_MAP = {
-          dui:        ['dui','dwi','traffic','criminal defense','criminal'],
-          drug:       ['drug','narcotics','criminal defense','criminal'],
-          assault:    ['assault','battery','criminal defense','criminal','violence'],
-          theft:      ['theft','robbery','burglary','criminal defense','criminal'],
-          homicide:   ['homicide','murder','criminal defense','criminal'],
-          domestic:   ['domestic','family','criminal defense','criminal'],
-          federal:    ['federal','criminal defense','criminal'],
-        };
-        const matchKeys = SPECIALTY_MAP[ct] || ['criminal defense', 'criminal'];
-        const hasSpec = specs.some(s => matchKeys.some(k => s.includes(k)));
-        const hasMismatch = specs.length > 0 && !hasSpec &&
-          specs.every(s => !s.includes('criminal'));
-
-        if (hasSpec)      score += 12; // Specialty match — significant boost
-        if (hasMismatch)  score -= 20; // Clear specialty mismatch — penalty
-      }
-
-      // ── 2C: Geographic precision tightening ───────────────────────────────
-      // Mild distance penalty already exists (distanceKm * 0.2).
-      // Add a hard floor: if distance > 100km AND no JTB registration,
-      // cap to avoid remote attorneys appearing above nearby ones.
-      if (distanceKm && distanceKm > 100 && !l.is_jtb_registered) {
-        score = Math.min(score, 55);
-      }
-
-      return { ...l, matchScore: Math.max(0, Math.round(score)), distanceKm };
-    })
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 6); // top 6 candidates go to stage 2
+  const rows = await db.all(`SELECT ${LAWYERS_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1`);
+  const found = searchDirectory(rows, {
+    lat, lng, q: Number.isFinite(lat) && Number.isFinite(lng) ? '' : city,
+    minResults: 6, filters: { caseType, language, proBonoOnly },
+  });
+  return found.rows.slice(0, 30)
+    .map(l => ({ ...l, matchScore: scoreLawyer(l, { language, userState: user_state }), distanceKm: Number.isFinite(l._dist) ? l._dist : null }))
+    .sort((a, b) => b.matchScore - a.matchScore || (a.distanceKm ?? 1e9) - (b.distanceKm ?? 1e9))
+    .slice(0, 6);
 }
 
 // ── stage 2: Claude writes a personalised match report ───────────────────────
@@ -224,12 +90,14 @@ Rules:
 - Lead with the most compelling reason they match this person's situation.
 - Use plain language. Warm but professional.
 - Do NOT invent information. Only use facts provided in the attorney profile.
-- Format your response as a JSON array of objects with keys: source_id (string), report (string).
+- Format your response as a JSON array of objects with keys: source_id (string, copied from the profile), report (string).
 - Return ONLY the JSON array. No preamble, no markdown fences.`;
 
-async function generateMatchReports(candidates, userSituation, caseType, language) {
+const LANGUAGE_NAMES = { en: 'English', es: 'Spanish (neutral Latin American, formal "usted")', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
+
+async function generateMatchReports(candidates, userSituation, caseType, language, lang) {
   const profiles = candidates.map(c => ({
-    source_id: c.source_id,
+    source_id: String(c.id),
     name: c.name,
     specialties: safeParseJson(c.specialties, []),
     languages: safeParseJson(c.languages, ['English']),
@@ -248,7 +116,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
     language ? `Preferred language: ${language}` : null
   ].filter(Boolean).join('\n');
 
-  const prompt = `User context:\n${userContext || 'Not specified'}\n\nAttorney profiles:\n${JSON.stringify(profiles, null, 2)}\n\nWrite match reports for each attorney.`;
+  const prompt = `User context:\n${userContext || 'Not specified'}\n\nAttorney profiles:\n${JSON.stringify(profiles, null, 2)}\n\nWrite match reports for each attorney, in ${LANGUAGE_NAMES[lang] || 'English'}.`;
 
   const response = await anthropicFetch({
     method: 'POST',
@@ -286,6 +154,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
 // ── route ─────────────────────────────────────────────────────────────────────
 
 router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
+  const lang = resolveLang(req);
   try {
     const city      = sanitizeStr(req.query.city  || '', 100).trim();
     const caseType  = sanitizeStr(req.query.caseType || '', 80).trim();
@@ -294,119 +163,81 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     const proBonoOnly = req.query.proBonoOnly === 'true';
-    const limit = Math.min(safeInt(req.query.limit || '3'), 5);
+    const limit = Math.min(Math.max(safeInt(req.query.limit || '3'), 1), 5);
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
 
-    // Require either city or valid GPS coords
-    if (!city && !(Number.isFinite(lat) && Number.isFinite(lng))) {
-      return err400(res, 'city or lat/lng required.');
+    if (!city && !hasCoords) {
+      return res.status(400).json({ error: msg(lang, 'match.err.need_place'), code: 'bad_location' });
     }
 
     const db = await openProvidersDb();
-    try {
-      // Stage 1: filter + numeric score
-      const user_state = req.user?.user_state ?? null;
-      const candidates = await fetchAndFilterLawyers(db, {
-        city, caseType, language,
-        lat: Number.isFinite(lat) ? lat : null,
-        lng: Number.isFinite(lng) ? lng : null,
-        proBonoOnly, user_state,
-      });
-
-      if (candidates.length === 0) {
-        // Fallback: no matches — return top-rated nationally
-        const fallback = await db.all(
-          city
-            ? `SELECT ${LAWYERS_COLS} FROM lawyers WHERE LOWER(city) = LOWER(?) ORDER BY rating DESC NULLS LAST LIMIT 3`
-            : `SELECT ${LAWYERS_COLS} FROM lawyers ORDER BY rating DESC NULLS LAST LIMIT 3`,
-          city ? [city] : []
-        );
-        return res.json(fallback.map((l, i) => formatLawyer(l, i + 1, null, null)));
-      }
-
-      const apiKeyMissing = !(process.env.ANTHROPIC_API_KEY ?? '');
-      const cands = candidates.slice(0, limit);
-
-      // Async: enqueue AI report generation — return jobId immediately
-      const jobId = await enqueue('match', async () => {
-        const rmap = {};
-        if (!apiKeyMissing) {
-          try {
-            const rpts = await generateMatchReports(cands, situation, caseType, language);
-            for (const r of rpts) {
-              if (r.source_id && r.report) rmap[r.source_id] = r.report;
-            }
-          } catch (err) {
-            logger.error('[match] AI report failed, using numeric fallback:', err.message);
-          }
-        }
-        return cands.map((l, i) => {
-          const report = rmap[l.source_id] ?? buildFallbackReport(l, caseType, language);
-          return formatLawyer(l, i + 1, report, l.distanceKm);
-        });
-      });
-
-      res.json({
-        jobId,
-        status:           'pending',
-        async:            true,
-        not_legal_advice: true,
-        disclaimer:       'Attorney matching is based on location and available data. Verify credentials independently before retaining counsel.',
-        message:          `Matching in progress. Poll /api/jobs/${jobId} for results.`,
-      });
-    } finally {
-      // Always close the providers DB connection — SQLite file handle
+    const user_state = req.user?.user_state ?? null;
+    const candidates = await fetchAndFilterLawyers(db, {
+      city, caseType, language,
+      lat: hasCoords ? lat : null,
+      lng: hasCoords ? lng : null,
+      proBonoOnly, user_state,
+    });
+    if (candidates.length === 0) {
+      return res.json({ status: 'done', matches: [], message: msg(lang, 'match.none') });
     }
+
+    const apiKeyMissing = !(process.env.ANTHROPIC_API_KEY ?? '');
+    const cands = candidates.slice(0, limit);
+
+    // AI report generation runs as a job (poll GET /api/jobs/:id); it belongs to this user.
+    const jobId = await enqueue('match', async () => {
+      const rmap = {};
+      if (!apiKeyMissing) {
+        try {
+          const rpts = await generateMatchReports(cands, situation, caseType, language, lang);
+          for (const r of Array.isArray(rpts) ? rpts : []) {
+            if (r?.source_id && r?.report) rmap[r.source_id] = String(r.report);
+          }
+        } catch (err) {
+          logger.error('[match] AI report failed, using numeric fallback:', err.message);
+        }
+      }
+      return cands.map((l, i) => formatMatch(l, i + 1, rmap[String(l.id)] ?? buildFallbackReport(l, lang)));
+    }, req.user.id);
+
+    res.json({
+      jobId,
+      status:           'pending',
+      async:            true,
+      not_legal_advice: true,
+      disclaimer:       msg(lang, 'match.disclaimer'),
+    });
   } catch (err) {
     logger.error('[match/lawyers]', err);
-    res.status(500).json({ error: 'Match service error. Please try again.' });
+    res.status(500).json({ error: msg(lang, 'match.err.failed'), code: 'server_error' });
   }
 });
 
 // ── formatters ────────────────────────────────────────────────────────────────
 
-function formatLawyer(l, rank, matchReport, distanceKm) {
+function formatMatch(l, rank, matchReport) {
   return {
+    ...formatListing(l, l.distanceKm),
     rank,
-    name: l.name,
-    phone: l.phone,
-    website: l.website,
-    address: l.address,
-    distanceKm: distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
-    rating: l.rating,
-    reviews: l.reviews,
-    specialties: safeParseJson(l.specialties, []),
-    languages: safeParseJson(l.languages, ['English']),
-    pro_bono: !!l.pro_bono,
-    sliding_scale: !!l.sliding_scale,
-    free_consultation: !!l.free_consultation,
-    years_experience: l.years_experience ?? null,
     matchScore: l.matchScore ?? null,
     matchReport: matchReport ?? null,
-    golden_gavel: !!l.golden_gavel,
-    gavel_level:  l.gavel_level ?? (l.golden_gavel ? 3 : 0),
   };
 }
 
-function buildFallbackReport(l) {
+/** A short, factual report from the listing itself (no AI), in the person's language. */
+function buildFallbackReport(l, lang) {
   const specs = safeParseJson(l.specialties, []);
   const langs = safeParseJson(l.languages, ['English']);
   const parts = [];
-
-  if (specs.length > 0) {
-    parts.push(`${l.name} specializes in ${specs.slice(0, 3).join(', ')}.`);
-  }
-  if (langs.length > 1) {
-    const langList = langs.length > 2
-      ? `${langs.slice(0, -1).join(', ')}, and ${langs[langs.length - 1]}`
-      : langs.join(' and ');
-    parts.push(`Offers services in ${langList}.`);
-  }
-  if (l.free_consultation) parts.push('Free initial consultation available.');
-  if (l.sliding_scale) parts.push('Sliding-scale fees for qualifying clients.');
-  if (l.pro_bono) parts.push('Takes pro bono cases.');
-  if (l.years_experience) parts.push(`${l.years_experience} years of criminal defense experience.`);
-
-  return parts.join(' ') || 'Highly rated criminal defense attorney in your area.';
+  if (specs.length > 0) parts.push(msg(lang, 'match.fb.specialties', { name: l.name, list: specs.slice(0, 3).join(', ') }));
+  if (langs.length > 1) parts.push(msg(lang, 'match.fb.languages', { list: langs.join(', ') }));
+  if (Number(l.free_consultation) === 1) parts.push(msg(lang, 'match.fb.free_consult'));
+  if (Number(l.sliding_scale) === 1) parts.push(msg(lang, 'match.fb.sliding'));
+  if (Number(l.pro_bono) === 1) parts.push(msg(lang, 'match.fb.pro_bono'));
+  if (Number(l.rating) > 0 && Number(l.reviews) > 0) parts.push(msg(lang, 'match.fb.rating', { rating: Number(l.rating).toFixed(1), count: Number(l.reviews) }));
+  if (Number.isFinite(l.distanceKm)) parts.push(msg(lang, 'match.fb.distance', { mi: (l.distanceKm * 0.621371).toFixed(1) }));
+  return parts.join(' ') || msg(lang, 'match.fb.generic');
 }
 
 function safeParseJson(val, fallback) {
@@ -425,7 +256,8 @@ function safeParseJson(val, fallback) {
 // Returns platform rating, outcome record, available slots (next 3 days).
 router.get('/profile/:lawyerId', async (req, res) => {
   try {
-    const lawyerId = req.params.lawyerId;
+    const lawyerId = safeInt(req.params.lawyerId);
+    if (!lawyerId || lawyerId <= 0) return res.json({ is_jtb_registered: false });
 
     // Check if this attorney is JTB-registered
     const appDb = await (await import('../db/index.js')).getDb();
@@ -446,41 +278,21 @@ router.get('/profile/:lawyerId', async (req, res) => {
       return res.json({ is_jtb_registered: false });
     }
 
-    // Get next 3 available slots
-    const { getDb: _getDb } = await import('../db/index.js');
+    // Next 3 bookable slots — the same slots the booking screen offers (lawyer's zone).
+    const lawyer = await appDb.get('SELECT state FROM lawyers WHERE id = ?', [lawyerId]).catch(() => null);
     const booked = await appDb.all(
       `SELECT date_slot, time_slot FROM consultation_bookings
-        WHERE lawyer_id = ? AND status NOT IN ('cancelled')
-          AND date_slot >= CURRENT_DATE LIMIT 500`,
+        WHERE lawyer_id = ? AND date_slot >= CURRENT_DATE - 1
+          AND (status = 'confirmed' OR (status = 'pending_payment' AND created_at > NOW() - INTERVAL '${PENDING_HOLD_MINUTES} minutes'))
+        LIMIT 2000`,
       [lawyerId]
     ).catch(() => []);
-
-    const bookedSet = new Set(booked.map(b => `${b.date_slot}|${b.time_slot}`));
-    let schedule = null;
-    try { if (profile.availability_schedule) schedule = JSON.parse(profile.availability_schedule); } catch { /* malformed schedule → default slots */ }
-
-    // Generate next few slots (first 3 available)
-    const SLOT_TIMES = { morning:['9:00 AM','10:00 AM'], afternoon:['1:00 PM','2:00 PM','3:00 PM'], evening:['5:00 PM'] };
-    const DAY_MAP   = { 0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat' };
-    const defaultSched = { mon:['morning','afternoon'],tue:['morning','afternoon'],wed:['morning','afternoon'],thu:['morning','afternoon'],fri:['morning','afternoon'] };
-    const sched = schedule || defaultSched;
-    const nextSlots = [];
-    for (let d = 1; d <= 14 && nextSlots.length < 3; d++) {
-      const dt = new Date(); dt.setDate(dt.getDate() + d);
-      const dayKey = DAY_MAP[dt.getDay()];
-      const daySlots = sched[dayKey] || [];
-      const iso = dt.toISOString().slice(0,10);
-      for (const slotName of daySlots) {
-        for (const time of (SLOT_TIMES[slotName] || [])) {
-          if (!bookedSet.has(`${iso}|${time}`)) {
-            nextSlots.push({ date: iso, time,
-              label: dt.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) });
-            if (nextSlots.length >= 3) break;
-          }
-        }
-        if (nextSlots.length >= 3) break;
-      }
-    }
+    const iso = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10));
+    const slots = generateSlots({
+      timeZone: lawyerTimeZone(lawyer?.state), schedule: profile.availability_schedule,
+      booked: new Set(booked.map(x => `${iso(x.date_slot)}|${x.time_slot}`)),
+    });
+    const nextSlots = slots.days.flatMap(d => d.times.filter(t => t.available).map(t => ({ date: d.date, time: t.time, starts_at: t.starts_at }))).slice(0, 3);
 
     res.json({
       is_jtb_registered:     true,
@@ -488,13 +300,14 @@ router.get('/profile/:lawyerId', async (req, res) => {
       platform_review_count: profile.platform_review_count,
       outcome_score:         profile.outcome_score,
       outcome_count:         profile.outcome_count,
-      outcome_label:         profile.outcome_count > 0
-        ? `${Math.round(((profile.outcome_score || 3) - 3) / 2 * 100)}% positive outcomes`
+      outcome_positive_pct:  profile.outcome_count > 0
+        ? Math.max(0, Math.min(100, Math.round(((profile.outcome_score || 3) - 3) / 2 * 100)))
         : null,
       avg_response_hrs:      profile.avg_response_hrs,
       whatsapp_number:       profile.whatsapp_number || null,
       bar_verified:          profile.bar_verification_status === 'approved',
       next_slots:            nextSlots,
+      time_zone:             slots.time_zone,
     });
   } catch {
     res.json({ is_jtb_registered: false });

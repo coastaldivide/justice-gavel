@@ -17,6 +17,7 @@ import { logIgnored } from '../utils/ignored.js';
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr,
          validateEmail, escapeLike }         from '../utils/routeHelpers.js';
+import { resolveLang, msg } from '../i18n/index.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
@@ -482,11 +483,13 @@ router.get('/trial-status', authRequired, async (req, res) => {
 
 // ── GET /firms/directory — public list of firms accepting new clients ──────
 router.get('/directory', directoryLimiter, async (req, res) => {
-  const { practice_area, page = '1' } = req.query;
-    const state = req.query.state
-      ? req.query.state.replace(/[^A-Z]/gi,'').toUpperCase().slice(0,2) // 2-char alpha only
-      : null;
-  const offset = (parseInt(page, 10) - 1) * 20;
+  const lang = resolveLang(req);
+  const practice_area = typeof req.query.practice_area === 'string' ? req.query.practice_area : '';
+  const pageNum = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const state = typeof req.query.state === 'string'
+    ? req.query.state.replace(/[^A-Z]/gi,'').toUpperCase().slice(0,2) || null // 2-char alpha only
+    : null;
+  const offset = (pageNum - 1) * 20;
   try {
     const db = await getDb();
     const params = [];
@@ -501,27 +504,29 @@ router.get('/directory', directoryLimiter, async (req, res) => {
     params.push(offset);
     const firms = await db.all(sql, params);
     // Get total count for pagination
-    const countRow = await db.get(
-      `SELECT COUNT(*) as n FROM firms WHERE public_listing = true AND accepting_clients = true` +
-      (state ? ' AND state = ?' : ''),
-      state ? [state] : []
-    ).catch(() => ({ n: 0 }));
+    const countParams = [];
+    let countSql = 'SELECT COUNT(*) as n FROM firms WHERE public_listing = true AND accepting_clients = true';
+    if (state)         { countSql += ' AND state = ?'; countParams.push(state); }
+    if (practice_area) { countSql += ' AND practice_areas ILIKE ?'; countParams.push('%' + escapeLike(String(practice_area).slice(0, 100)) + '%'); }
+    const countRow = await db.get(countSql, countParams).catch(() => ({ n: 0 }));
     return res.json({
-      firms,
-      page:        parseInt(page, 10),
+      firms: firms.map(f => ({ ...f, attorney_count: Number(f.attorney_count) || 0 })),
+      page:        pageNum,
       count:       firms.length,
       total_count: parseInt(countRow?.n ?? 0, 10),
       total_pages: Math.ceil((countRow?.n ?? 0) / 20),
     });
-  } catch {
-    return res.status(500).json({ error: 'Could not load firm directory' });
+  } catch (e) {
+    logger.error('[firms/directory]', e?.message);
+    return res.status(500).json({ error: msg(lang, 'firms.err.directory'), code: 'server_error' });
   }
 });
 
 // ── GET /firms/:id/public-profile — public firm card for clients ───────────
 router.get('/:id/public-profile', apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   const id = parseInt(req.params.id, 10);
-  if (!id) return res.status(400).json({ error: 'Invalid firm ID' });
+  if (!id || id <= 0) return res.status(400).json({ error: msg(lang, 'firms.err.bad_id'), code: 'bad_id' });
   try {
     const db = await getDb();
     const firm = await db.get(
@@ -530,15 +535,16 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
        FROM firms WHERE id = ? AND public_listing = true`,
       [id]
     ).catch(() => null);
-    if (!firm) return res.status(404).json({ error: 'Firm not found or not public' });
+    if (!firm) return res.status(404).json({ error: msg(lang, 'firms.err.not_found'), code: 'not_found' });
     const members = await db.all(
       `SELECT u.id, u.display_name, fm.firm_role FROM firm_members fm
        JOIN users u ON u.id = fm.user_id WHERE fm.firm_id = ? AND fm.active = 1 LIMIT 10`,
       [id]
     ).catch(() => []);
     return res.json({ ...firm, attorneys: members });
-  } catch {
-    return res.status(500).json({ error: 'Could not load firm profile' });
+  } catch (e) {
+    logger.error('[firms/public-profile]', e?.message);
+    return res.status(500).json({ error: msg(lang, 'firms.err.profile'), code: 'server_error' });
   }
 });
 
@@ -583,8 +589,9 @@ Justice Gavel: https://justicegavel.com`,
 
 // ── GET /firms/referral/:code — look up firm by referral code ─────────────
 router.get('/referral/:code', apiLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   const code = req.params.code?.toUpperCase().trim();
-  if (!code || code.length < 4) return res.status(400).json({ error: 'Invalid code' });
+  if (!code || code.length < 4) return res.status(400).json({ error: msg(lang, 'firms.err.bad_code'), code: 'bad_code' });
   try {
     const db = await getDb();
     const firm = await db.get(
@@ -592,10 +599,11 @@ router.get('/referral/:code', apiLimiter, async (req, res) => {
        FROM firms WHERE UPPER(invite_code) = ? AND public_listing = true`,
       [code]
     ).catch(() => null);
-    if (!firm) return res.status(404).json({ error: 'Firm not found. Check your code and try again.' });
+    if (!firm) return res.status(404).json({ error: msg(lang, 'firms.err.code_not_found'), code: 'not_found' });
     return res.json({ found: true, firm });
-  } catch {
-    return res.status(500).json({ error: 'Could not look up referral code' });
+  } catch (e) {
+    logger.error('[firms/referral]', e?.message);
+    return res.status(500).json({ error: msg(lang, 'firms.err.code_lookup'), code: 'server_error' });
   }
 });
 

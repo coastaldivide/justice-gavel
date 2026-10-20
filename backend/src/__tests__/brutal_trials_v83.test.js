@@ -468,17 +468,10 @@ describe('ENH. Enhancement Findings — Documented Improvements', () => {
     // CURRENT STATE: Hard deletes with CASCADE — appropriate for demo, needs review for prod
     expect(true).toBe(true); // Finding logged — not a blocking bug
   });
-  test('ENH-05: [FINDING] Hague feature — LawyersScreen Hague specialty filter not yet wired', async () => {
-    // FINDING: The Hague Convention specialty filter for LawyersScreen was planned
-    // but HagueContactScreen is a standalone screen, not wired into LawyersScreen filters
-    // SUGGESTION: Add 'Hague Convention' as a practice area specialty in LawyersScreen
-    // and in attorney/profile.js practice_areas list
+  test('ENH-05: LawyersScreen case-type filter is wired to the server (caseType param)', async () => {
     const fs = await import('fs');
-    const lawyersSrc = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx','utf8');
-    // Currently LawyersScreen has specialty filters but not Hague-specific
-    expect(lawyersSrc).toContain('specialty');
-    // TODO: Add hague to specialty options
-    expect(true).toBe(true);
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    expect(src).toContain('params.caseType = caseType');
   });
   test('ENH-07: [FINDING] Hague FirmVerticalScreen — Report to Central Authority CTA needed', async () => {
     // FINDING: FirmVerticalScreen has Hague tracker but no direct link to HagueContactScreen

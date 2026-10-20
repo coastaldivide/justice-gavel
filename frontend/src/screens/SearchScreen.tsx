@@ -17,6 +17,7 @@ import {
   cacheSearch, getCachedSearch,
   saveRecentSearch, getRecentSearches, clearRecentSearches } from '../services/offlineCache';
 import { t, perLang, useLang } from '../i18n';
+import * as secureStorage from '../utils/secureStorage';
 
 interface SearchResult {
   id: number;
@@ -89,13 +90,17 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [searched, setSearched] = useState(false);
   const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  React.useEffect(() => { secureStorage.getToken().then(tk => setSignedOut(!tk)).catch(() => setSignedOut(true)); }, []);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
       setResults([]); setSearched(false); return;
     }
+    if (!(await secureStorage.getToken().catch(() => null))) { setSignedOut(true); return; }
     setLoading(true);
+    setSearchError('');
     try {
       const res = await api.get('/search', { params: { q: q.trim(), limit: 8, user_state: userStateRef.current || undefined } });
       if (!mountedRef.current) return;
@@ -141,6 +146,21 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
 
   const s = styles();
+
+  if (signedOut) return (
+    <View style={[s.screen, s.empty, { backgroundColor: colors.bg }]} testID="search-signed-out">
+      <AppIcon name="search-outline" size={28} color={colors.textBrand} />
+      <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>{t('srch_sign_in_title')}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[s.emptySub, { color: colors.textMuted }]}>{t('srch_sign_in_sub')}</Text>
+      <TouchableOpacity accessibilityRole="button" onPress={() => navigation?.navigate('MoreTab', { screen: 'Login' })}
+        style={{ marginTop: 16, backgroundColor: colors.navy, borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 24 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnNavy, fontWeight: '700' }}>{t('saved_sign_in_button')}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" onPress={() => navigation?.navigate('LawyersTab')} style={{ marginTop: 12, padding: 8 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontWeight: '700' }}>{t('saved_find_lawyers')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -232,28 +252,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                   ))}
                 </View>
               )}
-              {/* Suggested searches */}
-              <View style={{ marginBottom: 16 }}>
-                <Text maxFontSizeMultiplier={1.4}
-                  style={[s.sectionLabel, { color: colors.textMuted, marginBottom: 10 }]}>
-                  {t('x_search_common_searches')}
-                </Text>
-                <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
-                  {[t('x_search_dui_attorney'),'bail bondsman','expungement','drug charge','know my rights',
-                    'public defender','court date','probation violation','assault charge'].map(q => (
-                    <TouchableOpacity
-          accessibilityRole="button" key={q}
-                      style={{ backgroundColor: colors.bgCard, borderRadius: 20,
-                        paddingHorizontal:14, paddingVertical:8,
-                        borderWidth:1, borderColor: colors.border }}
-                      accessibilityLabel={q} onPress={() => { setQuery(q); doSearch(q);}}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    >
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color: colors.textSecond }}>{q}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
               <View style={s.empty}>
                 <AppIcon name="search-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4}

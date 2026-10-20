@@ -20,10 +20,12 @@ import { getDb }       from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 import { decrypt } from '../services/encryption.js';
+import { resolveLang, msg, formatDay } from '../i18n/index.js';
 
 const router = Router();
 
 router.get('/', authRequired, async (req, res) => {
+  const lang = resolveLang(req);
   try {
     const raw = String(req.query.q || '').trim();
     const user_state = String(req.query.user_state || req.user?.user_state || '').toUpperCase();
@@ -96,38 +98,37 @@ router.get('/', authRequired, async (req, res) => {
     ]);
 
     // ── Shape results ────────────────────────────────────────────────────────
+    const STATUSES = new Set(['open', 'active', 'pending', 'closed', 'dismissed', 'archived', 'resolved']);
+    const status = (v) => (STATUSES.has(String(v).toLowerCase()) ? msg(lang, `search.status.${String(v).toLowerCase()}`) : v);
+    const day = (d) => (d ? formatDay(d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10), lang) : null);
     const shapedCases = cases.map(r => ({
       id: r.id, type: 'case',
       title: r.title,
-      subtitle: [r.status, r.next_court_date].filter(Boolean).join(' · ') || 'Case',
+      subtitle: [r.status ? status(r.status) : null, day(r.next_court_date)].filter(Boolean).join(' · ') || msg(lang, 'search.case'),
       screen: 'Cases',
       params: { caseId: r.id },
     }));
 
     const shapedMessages = messages.map(r => ({
       id: r.id, type: 'message',
-      title: r.case_title || 'Message',
+      title: r.case_title || msg(lang, 'search.message'),
       subtitle: String(r.content || '').slice(0, 80),
       screen: 'Messages',
-      params: { caseId: r.case_id },
+      params: { caseId: r.case_id, caseTitle: r.case_title || '' },
     }));
 
     const shapedLawyers = lawyers.map(r => ({
       id: r.id, type: 'lawyer',
       title: r.name,
-      subtitle: [
-        r.address,
-        r.availability === 'accepting' ? 'Accepting clients' : null,
-        r.bar_verified ? 'Bar verified' : null,
-      ].filter(Boolean).join(' · ') || 'Lawyer',
-      screen: 'SavedLawyers',
-      params: {},
+      subtitle: [r.address, r.availability === 'accepting' ? msg(lang, 'search.accepting') : null].filter(Boolean).join(' · ') || msg(lang, 'search.lawyer'),
+      screen: 'LawyerProfile',
+      params: { lawyerId: r.id },
     }));
 
     const shapedLessons = lessons.map(r => ({
       id: r.id, type: 'lesson',
       title: r.title,
-      subtitle: [r.category, r.difficulty].filter(Boolean).join(' · ') || 'Lesson',
+      subtitle: [r.category, ['beginner', 'intermediate', 'advanced'].includes(r.difficulty) ? msg(lang, `search.level.${r.difficulty}`) : r.difficulty].filter(Boolean).join(' · ') || msg(lang, 'search.lesson'),
       screen: 'Education',
       params: {},
     }));
@@ -143,9 +144,7 @@ router.get('/', authRequired, async (req, res) => {
 
   } catch (e) {
     logger.error({ msg: '[search] error', error: e?.message });
-    const statusCode = e?.status || e?.statusCode || 500;
-        const clientMsg = statusCode < 500 ? (e?.message || 'Request failed') : 'An error occurred. Please try again.';
-        return res.status(statusCode).json({ error: clientMsg, code: e?.code || 'internal_error' });
+    return res.status(500).json({ error: msg(lang, 'search.err.failed'), code: 'server_error' });
   }
 });
 

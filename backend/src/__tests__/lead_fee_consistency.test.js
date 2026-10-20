@@ -52,6 +52,20 @@ describe('lead fee source of truth', () => {
     const m = ts.match(/export const BONDSMAN_LEAD_FEE_CENTS\s*=\s*(\d+)/);
     expect(m && Number(m[1])).toBe(BONDSMAN_LEAD_FEE_CENTS);
   });
+
+  it('attorney lead fees: $200 PI / medical / civil rights, $100 employment, $75 ICE — app table = backend', async () => {
+    const { attorneyLeadFeeCents } = await import('../routes/billing/attorneyLeadFee.js');
+    const expected = { personal_injury: 20000, medical: 20000, civil_rights: 20000, employment: 10000, ice_detention: 7500 };
+    for (const [type, cents] of Object.entries(expected)) {
+      expect(attorneyLeadFeeCents(type)).toBe(cents);
+      expect(attorneyLeadFeeCents(type, 'catastrophic')).toBe(cents);   // never severity-scaled
+    }
+    const ts = read('frontend/src/constants/leadFee.ts');
+    const block = ts.slice(ts.indexOf('ATTORNEY_LEAD_FEE_CENTS'));
+    for (const [type, cents] of Object.entries(expected)) {
+      expect(block).toMatch(new RegExp(`${type}:\\s*${String(cents).replace(/(\d)(?=(\d{3})+$)/g, '$1_?')}`));
+    }
+  });
 });
 
 describe('every fee quote uses it', () => {

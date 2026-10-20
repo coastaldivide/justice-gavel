@@ -1831,6 +1831,85 @@
         "x-staff-only": true
       }
     },
+    "/api/admin/reviews": {
+      "get": {
+        "operationId": "get_api_admin_reviews",
+        "summary": "GET /api/admin/reviews",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "x-staff-only": true
+      }
+    },
+    "/api/admin/reviews/{id}": {
+      "post": {
+        "operationId": "post_api_admin_reviews_id",
+        "summary": "POST /api/admin/reviews/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "x-staff-only": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/admin/stats": {
       "get": {
         "operationId": "get_api_admin_stats",
@@ -4325,34 +4404,6 @@
         }
       }
     },
-    "/api/bail/calculate": {
-      "post": {
-        "operationId": "post_api_bail_calculate",
-        "summary": "POST /api/bail/calculate",
-        "tags": [
-          "bail"
-        ],
-        "security": [],
-        "x-auth": "public",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
     "/api/bail/estimate-total": {
       "get": {
         "operationId": "get_api_bail_estimate-total",
@@ -5445,6 +5496,31 @@
         ],
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/pi-lead/fees": {
+      "get": {
+        "operationId": "get_api_billing_pi-lead_fees",
+        "summary": "GET /api/billing/pi-lead/fees",
+        "tags": [
+          "billing"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },
@@ -8347,6 +8423,31 @@
         }
       }
     },
+    "/api/consultations/pricing": {
+      "get": {
+        "operationId": "get_api_consultations_pricing",
+        "summary": "GET /api/consultations/pricing",
+        "tags": [
+          "consultations"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/consultations/slots/{lawyerId}": {
       "get": {
         "operationId": "get_api_consultations_slots_lawyerId",
@@ -8386,6 +8487,51 @@
       "post": {
         "operationId": "post_api_consultations_id_cancel",
         "summary": "POST /api/consultations/{id}/cancel",
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/consultations/{id}/confirm": {
+      "post": {
+        "operationId": "post_api_consultations_id_confirm",
+        "summary": "POST /api/consultations/{id}/confirm",
         "tags": [
           "consultations"
         ],
@@ -18905,6 +19051,41 @@
         }
       }
     },
+    "/api/providers/bail/{id}": {
+      "get": {
+        "operationId": "get_api_providers_bail_id",
+        "summary": "GET /api/providers/bail/{id}",
+        "tags": [
+          "providers"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
     "/api/providers/coverage": {
       "get": {
         "operationId": "get_api_providers_coverage",
@@ -18990,31 +19171,6 @@
         ]
       }
     },
-    "/api/providers/list": {
-      "get": {
-        "operationId": "get_api_providers_list",
-        "summary": "GET /api/providers/list",
-        "tags": [
-          "providers"
-        ],
-        "security": [],
-        "x-auth": "public",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
     "/api/providers/nearest-city": {
       "get": {
         "operationId": "get_api_providers_nearest-city",
@@ -19037,84 +19193,6 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
-      }
-    },
-    "/api/providers/{id}/reviews": {
-      "get": {
-        "operationId": "get_api_providers_id_reviews",
-        "summary": "GET /api/providers/{id}/reviews",
-        "tags": [
-          "providers"
-        ],
-        "security": [],
-        "x-auth": "public",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      },
-      "post": {
-        "operationId": "post_api_providers_id_reviews",
-        "summary": "POST /api/providers/{id}/reviews",
-        "tags": [
-          "providers"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
         }
       }
     },
@@ -20212,6 +20290,51 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
+        }
+      }
+    },
+    "/api/reviews/{id}/report": {
+      "post": {
+        "operationId": "post_api_reviews_id_report",
+        "summary": "POST /api/reviews/{id}/report",
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
         }
       }
     },

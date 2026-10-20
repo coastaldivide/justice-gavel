@@ -147,26 +147,23 @@ describe('EMG. EmergencyScreen — Countdown + SOS Handlers', () => {
 
 // ── LPR. LawyerProfileScreen Handlers ─────────────────────────────────────
 describe('LPR. LawyerProfileScreen — Call + Share + Directions', () => {
-  test('LPR-01: handleCall opens tel: Linking URL (hapticCall before dial)', async () => {
+  test('LPR-01: profile calls through ContactActions (tel:+E.164, haptic before dial)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleCall');
+    const src = fs.readFileSync(__REPO + '/frontend/src/components/ContactActions.tsx', 'utf8');
+    expect(src).toContain('hapticCall');
     expect(src).toContain('Linking.openURL');
-    expect(src).toContain('tel:');
-    expect(src).toContain('lawyer?.phone');
+    expect(src).toContain('telUrl');
   });
-  test('LPR-02: handleShare shares lawyer name+address via Share.share', async () => {
+  test('LPR-02: share sends the lawyer name, place and formatted phone', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleShare');
-    expect(src).toContain('Share');
-    expect(src).toContain('lawyer');
+    expect(src).toContain('RNShare.share');
+    expect(src).toContain('formatPhone(lawyer.phone)');
   });
-  test('LPR-03: handleDirections encodes address and opens maps URL', async () => {
+  test('LPR-03: directions URL encodes the destination', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleDirections');
-    expect(src).toContain('encodeURIComponent');
+    const src = fs.readFileSync(__REPO + '/frontend/src/utils/contact.ts', 'utf8');
+    expect(src).toContain('encodeURIComponent(dest)');
     expect(src).toContain('maps');
   });
 });
@@ -256,26 +253,23 @@ describe('HNS. HelpNowScreen — Multi-Source Lawyer/Bondsman Fetching', () => {
 
 // ── LAW. LawyersScreen Internal Filtering ─────────────────────────────────
 describe('LAW. LawyersScreen — Filter + Sort + Cache Architecture', () => {
-  test('LAW-01: fetchLawyers(isRefresh) uses stale-while-revalidate with getCachedLawyers', async () => {
+  test('LAW-01: search(place, isRefresh) — no saved-lawyer cache read as search results', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('fetchLawyers');
-    expect(src).toContain('isRefresh');
-    expect(src).toContain('getCachedLawyers');
+    expect(src).toContain('const search = useCallback(async (p: Place | null, isRefresh = false)');
+    expect(src).not.toContain('getCachedLawyers');
   });
-  test('LAW-02: applyFilters hides filter modal and re-fetches with new criteria', async () => {
+  test('LAW-02: applying filters closes the modal; the filters effect re-searches', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('applyFilters');
     expect(src).toContain('setShowFilters(false)');
-    expect(src).toContain('fetchLawyers');
+    expect(src).toContain('filtersRef');
   });
-  test('LAW-03: sortedLawyers is useMemo computed — avoids sort on every render', async () => {
+  test('LAW-03: the list keeps the server order (distance) — no client re-sort', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('sortedLawyers');
-    expect(src).toContain('useMemo');
-    expect(src).toContain('lawyers.length');
+    expect(src).toContain('data={lawyers}');
+    expect(src).not.toContain('sortedLawyers');
   });
 });
 
@@ -314,11 +308,11 @@ describe('S12. UX — Final Internal Logic Patterns', () => {
     expect(hn).toContain('AsyncStorage');
     expect(hn).toContain('isOfflineError');
   });
-  test('S12-03: LawyersScreen useMemo sortedLawyers prevents re-sort on every keypress', async () => {
+  test('S12-03: LawyersScreen placeLabel is memoised; no re-sort', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('useMemo');
-    expect(src).toContain('sortedLawyers');
+    expect(src).not.toContain('sortedLawyers');
   });
   test('S12-04: EmergencyScreen countdown uses setInterval + timerRef for cleanup', async () => {
     const fs = await import('fs');

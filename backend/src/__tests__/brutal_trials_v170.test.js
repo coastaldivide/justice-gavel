@@ -85,11 +85,11 @@ describe('S2. Emergency → Find Lawyer → Book Flow', () => {
     expect(hn).toContain('988');
   });
   test('S2-04: LawyerProfile has Call + Book + Message + error handling', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx','utf8');
-    expect(src).toContain('Linking');
-    expect(src).toContain('Book');
-    expect(src).toContain('Message');
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    expect(src).toContain('ContactActions');
+    expect(src).toContain('Booking');
+    expect(src).toContain('/messages/bulk');
     expect(src).toContain('catch');
   });
   test('S2-05: BookingScreen loads availability + confirms appointment', async () => {
@@ -245,11 +245,11 @@ describe('S6. Know Your Rights & Legal Reference', () => {
 
 // ══ SESSION 7: BAIL FLOW ══════════════════════════════════════════════════
 describe('S7. Bail Search & Calculator', () => {
-  test('S7-01: BailSearch loads bondsmen with phone + keyExtractor', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx','utf8');
+  test('S7-01: BailSearch loads bondsmen with contact actions + keyExtractor', async () => {
+    const fs = await import('fs');
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx', 'utf8');
     expect(src).toContain('/providers/bail');
-    expect(src).toContain('tel:');
+    expect(src).toContain('ContactActions');
     expect(src).toContain('keyExtractor');
   });
   test('S7-02: BailCalc has state selector + bail amount + lawyer link', async () => {

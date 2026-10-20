@@ -18,7 +18,9 @@ import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { PI_LEAD_FEE_DISPLAY } from '../constants/leadFee';
+import { attorneyLeadFeeDisplay } from '../constants/leadFee';
+import { Picker } from '@react-native-picker/picker';
+import { getUserState, localizedStateList } from '../utils/userState';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
@@ -68,26 +70,41 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const [severity, setSeverity] = useState('');
   const [description, setDesc]  = useState('');
   const [loading, setLoading]   = useState(false);
+  const [stateCode, setStateCode] = useState('');
+  const [city, setCity]         = useState('');
+  const [fees, setFees]         = useState<Record<string, string> | null>(null);
+
+  React.useEffect(() => {
+    getUserState().then(st => { if (st?.code && mountedRef.current) setStateCode(c => c || st.code); }).catch(() => {});
+    api.get('/billing/pi-lead/fees').then(r => {
+      const map: Record<string, string> = {};
+      for (const f of (r.data?.fees || []) as { lead_type: string; fee_display: string }[]) map[f.lead_type] = f.fee_display;
+      if (mountedRef.current) setFees(map);
+    }).catch(() => {});
+  }, []);
 
   const selectedType     = CASE_TYPES().find(tItem => tItem.key === caseType);
   const selectedSeverity = SEVERITIES().find(s => s.key === severity);
 
   const submit = () => requireAuth(async () => {
-    hapticImpact();
+    hapticImpact().catch(() => undefined);   // haptics are optional
     if (!description.trim() || description.trim().length < 20) {
       showToast(t('x_pilead_please_describe_what_happened'));
       return;
     }
+    if (!stateCode) { showToast(t('pl_state_required'), 'warning'); return; }
     if (mountedRef.current) setLoading(true);
     try {
       await api.post('/billing/pi-lead/submit', {
         case_type:   caseType,
         severity,
         description: description.trim(),
+        state:       stateCode,
+        city:        city.trim() || undefined,
       });
       if (mountedRef.current) setStep('submitted');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, t('home_sos_failed')));
+      showToast(apiErrorMessage(e, t('pl_submit_failed')), 'error');
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -197,7 +214,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               </TouchableOpacity>
             ))}
             <Text maxFontSizeMultiplier={1.4} style={[styles.feeNote, { color: colors.textMuted }]}>
-              {t('x_pilead_attorneys_pay_flat_connection', { PI_LEAD_FEE_DISPLAY })}
+              {t('x_pilead_attorneys_pay_flat_connection', { PI_LEAD_FEE_DISPLAY: attorneyLeadFeeDisplay(caseType, fees) })}
             </Text>
           </>
         )}
@@ -246,6 +263,19 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               {description.length < 20 ? t('x_pilead_more_characters_needed', { value: 20 - description.length }) : t('x_pilead_characters', { length: description.length })}
             </Text>
 
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textSecond }]}>{t('pl_state_label')}</Text>
+            <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.bgCard }]}>
+              <Picker testID="pilead-state" selectedValue={stateCode} onValueChange={v => setStateCode(String(v))}
+                style={{ height: 48, color: colors.textPrimary, backgroundColor: colors.bgCard, borderWidth: 0, paddingHorizontal: 8 }}>
+                <Picker.Item label={t('pl_state_pick')} value="" />
+                {localizedStateList().map(st => <Picker.Item key={st.code} label={st.name} value={st.code} />)}
+              </Picker>
+            </View>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textSecond }]}>{t('pl_city_label')}</Text>
+            <TextInput testID="pilead-city" value={city} onChangeText={setCity} maxLength={100} accessibilityLabel={t('pl_city_label')}
+              placeholder={t('pl_city_placeholder')} placeholderTextColor={colors.placeholder}
+              style={[styles.cityInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]} />
+
             {/* Privacy note */}
             <View style={[styles.privacyNote, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle,
               borderColor: colors.blue + '44' }]}>
@@ -256,9 +286,9 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.submitBtn, { backgroundColor: COLORS.navy },
-                (loading || description.trim().length < 20) && styles.submitBtnDisabled]}
+                (loading || description.trim().length < 20 || !stateCode) && styles.submitBtnDisabled]}
               onPress={submit}
-              disabled={loading || description.trim().length < 20}
+              disabled={loading || description.trim().length < 20 || !stateCode}
               accessibilityLabel={t('x_pilead_submit_case_attorneys')}
           accessibilityHint={t('cp_double_tap')}
             >
@@ -323,6 +353,9 @@ const makeStyles = () => StyleSheet.create({
     minHeight: 160, marginBottom: 6,
   },
   charCount:   { fontSize: 11, textAlign: 'right', marginBottom: 14 },
+  fieldLabel:  { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 6 },
+  pickerWrap:  { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden', marginBottom: 12 },
+  cityInput:   { borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, lineHeight: 20, marginBottom: 14 },
   privacyNote: { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 16 },
   privacyText: { fontSize: 12, lineHeight: 17 },
   submitBtn:         { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },

@@ -1,453 +1,224 @@
-import { useToast } from '../components/ToastProvider';
-import type { NavigationProp } from '@react-navigation/native';
-import { AppIcon } from '../components/AppIcon';
-import { useAuthGate } from '../components/AuthGate';
-import { t, useLang, perLang } from '../i18n';
-import type { ScreenProps } from '../types/navigation';
-import { useLatestRef } from '../hooks/useLatestRef';
 /**
- * LawyersScreen -- GPS-first lawyer finder
+ * LawyersScreen — the lawyer directory (real listings; read only).
  *
- * UX fixes:
- *  - Filters COLLAPSED by default -- results visible immediately
- *  - "Filters" pill button to expand/collapse
- *  - GPS fires automatically on mount, no button press needed
- *  - Active filter count shown on pill when filters applied
- *  - Sign-in nudge for unauthenticated users (non-blocking)
+ *  - Nearest first from the phone's location; without location permission the
+ *    list shows the person's state (or the whole directory) and asks for a
+ *    city, state, ZIP or name — typing one searches the same way.
+ *  - Infinite scroll to the end of the result (GET /providers/lawyers pages;
+ *    X-Total-Count says how many there are).
+ *  - Filters (case type, language, pro bono) always narrow; an empty result says so.
+ *  - Every card: call / text / directions / website (well-formed links, phone
+ *    formatted), profile, save (synced with the saved list). Booking and in-app
+ *    messages only for lawyers who are on Justice Gavel (`on_app`) — anyone
+ *    else would never see them.
  */
-
-import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import {Animated, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
-import { unwrapList, api, apiErrorMessage } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useToast } from '../components/ToastProvider';
+import { AppIcon } from '../components/AppIcon';
+import { ContactActions } from '../components/ContactActions';
+import { t, useLang, perLang } from '../i18n';
+import type { ScreenProps } from '../types/navigation';
+import { api, apiErrorMessage, unwrapList } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
-import { cacheSearch, getCachedLawyers } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { getUserState } from '../utils/userState';
+import { getUserState, stateName } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
-import {} from '@react-navigation/native';
 
-const CITIES = [
-  '', 'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN',
-  'Atlanta, GA', 'Houston, TX', 'Dallas, TX', 'Austin, TX',
-  'Charlotte, NC', 'Phoenix, AZ', 'Denver, CO', 'Seattle, WA',
-  'Detroit, MI', 'Baltimore, MD', 'Kansas City, MO', 'Milwaukee, WI',
-  'Albuquerque, NM', 'Louisville, KY', 'Indianapolis, IN',
-];
-const CITIES_FILTERED = CITIES.filter(Boolean);
+/** Page size for /providers/lawyers; a full page means more may follow. */
+const PAGE_SIZE = 20;
+const PENDING_SAVE_KEY = 'pending_save_lawyer';
 
 // Language values as lawyer profiles store them (English); the picker shows langLabel().
-const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo']; // i18n-exempt: stored values
+const LANGUAGES = ['Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo']; // i18n-exempt: stored values
 const langLabel = (l: string): string => t(`lang_name_${l.toLowerCase()}`);
-const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
-/** Page size for /providers/lawyers (the backend default); a full page means more may follow. */
-const PAGE_SIZE = 20;
-
-/** Justice Gavel's own client-review summary for one lawyer (GET /reviews/summary). */
-type ReviewSummary = { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] };
-
-// ── Badges ────────────────────────────────────────────────────────────────────
-function DistanceBadge({ distanceKm }: { distanceKm: number | null }) {
-  useLang();
-  if (distanceKm == null) return null;
-  const label = formatDistance(distanceKm);
-  const color = distanceKm < 50 ? COLORS.legal : distanceKm < 200 ? COLORS.warn : COLORS.textMuted;
-
-
-  return (
-    <View testID="lawyers-screen" style={[styles.badge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color }]}>📍 {label}</Text>
-    </View>
-  );
+export interface DirectoryLawyer {
+  id: number; name: string; firm?: string | null; phone?: string | null; address?: string | null;
+  city?: string | null; state?: string | null; lat?: number | null; lng?: number | null; website?: string | null;
+  rating?: number | null; reviews?: number | null; distanceKm?: number | null;
+  free_consultation?: boolean; pro_bono?: boolean; sliding_scale?: boolean;
+  bar_verified?: boolean; jtb_verified?: boolean; on_app?: boolean;
+  open_now?: boolean | null; open_24_7?: boolean; availability?: string;
 }
 
+/** Justice Gavel's own client-review summary for one lawyer (GET /reviews/summary). */
+type ReviewSummary = { avg_rating: number | null; count: number };
+
+const QUICK_NEEDS = perLang(() => [
+  { key: 'DUI',           label: t('whn_charge_dui'),                          icon: '🚗', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+  { key: 'Drug Offenses', label: t('x_practice_area_selector_drug_charges'),  icon: '💊', color: COLORS.blue,          bg: COLORS.bgSubtle },
+  { key: 'Assault',       label: t('x_lawyers_fight_assault'),                 icon: '⚠️', color: COLORS.warnDark,      bg: COLORS.warnBg },
+  { key: 'Family Law',    label: t('x_lawyers_family_divorce'),                icon: '👨‍👩‍👧', color: COLORS.blue,          bg: COLORS.bgSubtle },
+  { key: 'Immigration',   label: t('chat_cat_immigration'),                    icon: '✈️', color: COLORS.blue,          bg: COLORS.bgSubtle },
+  { key: 'Appeals',       label: t('x_lawyers_appeal_post_conviction'),        icon: '📜', color: COLORS.navy,          bg: COLORS.bgSubtle },
+  { key: '',              label: t('x_lawyers_something_else'),                icon: '⚖️', color: COLORS.navy,          bg: COLORS.bgSubtle },
+]);
+/** Case types the search filters on (the quick-need keys with a value). */
+const CASE_TYPE_OPTIONS = perLang(() => QUICK_NEEDS().filter(n => !!n.key));
+const caseTypeLabel = (key: string) => CASE_TYPE_OPTIONS().find(o => o.key === key)?.label || key;
+
 // ── Lawyer card ───────────────────────────────────────────────────────────────
-const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected = false, onToggleSelect, reviewSummary, onBadgeInfo }: {
-  item: Record<string,any>;
+const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, onToggleSave, saving, isSelected, onToggleSelect, onMessage, reviewSummary, onBadgeInfo }: {
+  item: DirectoryLawyer;
   navigation: NavigationProp<any>;
-  /** Selected for "Contact multiple attorneys" (max 3). */
-  isSelected?: boolean;
-  onToggleSelect?: (id: number) => void;
+  savedId: number | null;
+  onToggleSave: (l: DirectoryLawyer) => void;
+  saving: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: number) => void;
+  onMessage: (l: DirectoryLawyer) => void;
   reviewSummary?: ReviewSummary;
-  /** Opens the screen's verified-badge explainer. */
-  onBadgeInfo?: (type: 'bar' | 'jtb' | 'golden') => void;
+  onBadgeInfo: (type: 'bar' | 'jtb') => void;
 }) {
   useLang();
-  const { showToast } = useToast();
-  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const [caseLoading, setCaseLoading] = useState(false);
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
-
-  // Navigate to encrypted in-app messaging -- create case if needed
-  const openSecureMessage = React.useCallback(() => {
-    requireAuth(async () => {
-      setCaseLoading(true);
-      try {
-        // Find an existing open case or create a quick one for this lawyer
-        var res = await api.get('/cases');
-        const openCase = res.data?.find?.((c: any) =>
-          ['Open','Active'].includes(String(c.status))
-        );
-        let caseId: number;
-        let caseTitle: string;
-        if (openCase) {
-          caseId    = openCase.id;
-          caseTitle = openCase.title;
-        } else {
-          // Create a lightweight case so the message thread has a home
-          const created = await api.post('/cases', {
-            title:  t('x_lawyers_message', { name: item?.name }),
-            status: 'Open',
-            notes:  '' });
-          caseId    = created.data.id;
-          caseTitle = created.data.title;
-        }
-        navigation.navigate('MoreTab', {
-          screen: 'Messages',
-          params: { caseId, caseTitle } });
-      } catch {
-        showToast(t('home_sos_failed'));
-      } finally {
-        if (mountedRef.current) setCaseLoading(false);
-      }
-    });
-  }, [item?.name, navigation, requireAuth, showToast]);
-
-  const [expanded, setExpanded] = useState(false);
-  const [saved,   setSaved]   = useState(false);
-  const [savedId, setSavedId] = useState<number | null>(null);
-  const [saving,  setSaving]  = useState(false);
-
-  // Complete any pending save from before login
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    AsyncStorage.getItem('pending_save_lawyer').then(async pending => {
-      if (!pending) return;
-      const token = await secureStorage.getToken();
-      if (!token) return;
-      try {
-        const data = JSON.parse(pending);
-        await api.post('/saved/lawyers', data);
-        await AsyncStorage.removeItem('pending_save_lawyer');
-        if (mountedRef.current) setSaved(true);
-      } catch (e: any) { __DEV__ && console.warn(e?.message); }
-    }).catch(() => {});
-    });
-    return () => _task.cancel();
-  }, []);
-
-  const savingRef = React.useRef(false);
-  const toggleSave = async () => {
-    // Ref guard: a second tap before the re-render must not post twice.
-    if (savingRef.current) return;
-    savingRef.current = true;
-    setSaving(true);
-    try {
-      const token = await secureStorage.getToken();
-      if (!token) {
-        // Preserve save intent -- complete after login
-        await AsyncStorage.setItem('pending_save_lawyer', JSON.stringify({
-          provider_id: item.id, name: item?.name, phone: item?.phone,
-          address: item?.address, specialties: item.specialties || [], rating: item?.rating })).catch(() => {}); // non-fatal(() => {}); // non-fatal
-        navigation.navigate('MoreTab', { screen: 'Login' });
-        return;
-      }
-      if (saved) {
-        // Call DELETE to actually remove from saved list
-        if (savedId) {
-          await api.delete(`/saved/lawyers/${savedId}`).catch((e) => { __DEV__ && console.warn(e?.message); });
-        }
-        setSaved(false);
-        setSavedId(null);
-      } else {
-        const saveRes = await api.post('/saved/lawyers', {
-          provider_id: item.id,
-          name: item?.name,
-          phone: item?.phone,
-          address: item?.address,
-          specialties: item.specialties || [],
-          rating: item?.rating });
-        setSaved(true);
-        setSavedId(saveRes?.data?.id ?? null);
-      }
-    } catch (e) {
-      // Keep the real state — never show "Saved" for a save that failed.
-      if (__DEV__) console.warn('[LawyersScreen] save failed:', e);
-      showToast(apiErrorMessage(e, t('x_lawyers_could_not_update_saved')), 'error');
-    }
-    finally { savingRef.current = false; setSaving(false); }
-  };
+  const openProfile = () => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { lawyerId: item.id } });
   return (
-    <View style={styles.card}>
-      <AuthGateModal />
-      {/* Header -- name, address, rating, availability */}
+    <View style={[styles.card, { backgroundColor: colors.bgCard }]} testID="lawyer-card">
       <View style={styles.cardHeader}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection:'row', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-            <Text testID="lawyer-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
-            {item.availability === 'accepting' && (
-              <View style={{ backgroundColor:COLORS.legalBg, borderRadius:10, paddingHorizontal:7, paddingVertical:2 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight:'700', color:COLORS.legalDark }}>{t('x_lawyers_accepting')}</Text>
-
-                {item.avg_response_hrs != null && item.avg_response_hrs <= 2 && (
-                  <View style={{ backgroundColor:COLORS.legalBg, borderRadius:10,
-                    paddingHorizontal:7, paddingVertical:3, marginRight:6 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
-                      color:COLORS.legalDark, fontWeight:'700' }}>
-                      {t('x_lawyers_lt_2h_reply')}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-            {item.availability === 'limited' && (
-              <View style={{ backgroundColor:COLORS.warnBg, borderRadius:10, paddingHorizontal:7, paddingVertical:2 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight:'700', color:COLORS.warnDark }}>{t('x_lawyers_limited')}</Text>
-              </View>
-            )}
-            {item.availability === 'unavailable' && (
-              <View style={{ backgroundColor:COLORS.bgSubtle, borderRadius:10, paddingHorizontal:7, paddingVertical:2 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight:'600', color:COLORS.textMuted }}>{t('x_lawyers_not_accepting')}</Text>
-              </View>
-            )}
-          </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.cardAddress} numberOfLines={1}>{item?.address}</Text>
-        </View>
-        {item?.rating != null && (
-          <View style={styles.ratingBlock}>
-            <Text testID="lawyer-rating" maxFontSizeMultiplier={1.4} style={styles.ratingNum}>{item?.rating.toFixed(1)}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.ratingStar}>★</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.reviewCount}>({item.reviews ?? 0})</Text>
+        <TouchableOpacity accessibilityRole="link" style={{ flex: 1, minWidth: 44, minHeight: 44 }} onPress={openProfile}
+          accessibilityLabel={t('x_lawyers_view_full_profile', { name: item.name })}>
+          <Text testID="lawyer-name" numberOfLines={2} maxFontSizeMultiplier={1.4} style={[styles.cardName, { color: colors.textBrand }]}>{item.name}</Text>
+          {!!item.address && <Text maxFontSizeMultiplier={1.4} style={[styles.cardAddress, { color: colors.textMuted }]} numberOfLines={2}>{item.address}</Text>}
+        </TouchableOpacity>
+        {item.rating != null && (
+          <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
+            <Text testID="lawyer-rating" maxFontSizeMultiplier={1.4} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.ratingStar, { color: colors.goldText }]}>★</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
           </View>
         )}
       </View>
 
-      {/* Badges */}
       <View style={styles.metaRow}>
-        <DistanceBadge distanceKm={item.distanceKm} />
-        {item.free_consultation && <View style={[styles.badge, styles.greenBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legal }]}>{t('x_lawyers_free_consult')}</Text></View>}
-        {item.pro_bono         && <View style={[styles.badge, styles.purpleBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.blue }]}>{t('x_lawyers_pro_bono')}</Text></View>}
-        {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>{t('x_lawyers_sliding_scale')}</Text></View>}
-        {item.jtb_verified && (
-          <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} testID="lawyer-card"
-            style={{ flexDirection:'row', alignItems:'center', gap:4 }}
-            onPress={() => onBadgeInfo
-              ? onBadgeInfo('jtb')
-              : showToast(t('x_lawyers_justice_gavel_verified_bar'), 'info')}
-            accessibilityLabel={t('x_lawyers_what_does_justice_gavel')}
-          >
-          <View style={[styles.badge, {
-              backgroundColor: COLORS.navy, borderColor: COLORS.gold,
-              borderWidth: 1.5, paddingHorizontal: 8, paddingVertical: 4 }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, {
-              color: COLORS.gold, fontFamily: 'Inter_700Bold', fontSize: 12 }]}>
-              {t('x_lawyers_jtb_verified')}
-            </Text>
+        {item.distanceKm != null && (
+          <View style={[styles.badge, { borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>📍 {formatDistance(item.distanceKm)}</Text>
           </View>
+        )}
+        {item.open_24_7 ? (
+          <View style={[styles.badge, { borderColor: colors.legal, backgroundColor: colors.legalBg }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>{t('lw_open_24_7')}</Text>
+          </View>
+        ) : item.open_now != null && (
+          <View style={[styles.badge, { borderColor: item.open_now ? colors.legal : colors.border, backgroundColor: item.open_now ? colors.legalBg : colors.bgSubtle }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: item.open_now ? colors.legalDark : colors.textMuted }]}>{item.open_now ? t('lw_open_now') : t('lw_closed_now')}</Text>
+          </View>
+        )}
+        {item.free_consultation && <View style={[styles.badge, { borderColor: colors.legal, backgroundColor: colors.legalBg }]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>{t('x_lawyers_free_consult')}</Text></View>}
+        {item.pro_bono && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_lawyers_pro_bono')}</Text></View>}
+        {item.sliding_scale && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_lawyers_sliding_scale')}</Text></View>}
+        {item.jtb_verified && (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_lawyers_what_does_justice_gavel')} onPress={() => onBadgeInfo('jtb')}
+            style={[styles.badge, { borderColor: COLORS.gold, backgroundColor: COLORS.navy }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.gold }]}>{t('x_lawyers_jtb_verified')}</Text>
           </TouchableOpacity>
         )}
         {!item.jtb_verified && item.bar_verified && (
-          <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              accessibilityLabel={t('x_lawyers_view_full_profile', { name: item.name })}
-              style={styles.verifiedBadge}
-              onPress={() => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { id: item.id, lawyerId: item.id } })}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
-                color:COLORS.navy, fontWeight:'600' }}>
-                {t('x_lawyers_view_full_profile_2')}
-              </Text>
-              {item.data_verified === 0 && (
-                <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 10,
-                  color: COLORS.info, fontStyle: 'italic' }}>
-                  {t('x_lawyers_unverified_listing')}
-                </Text>
-              )}
-            </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={[styles.secondaryBtn, styles.bookBtn]}
-          onPress={() => navigation.navigate('MoreTab', {
-            screen: 'Booking',
-            params: {
-              lawyerName:  item?.name,
-              lawyerPhone: item?.phone ?? '',
-              lawyerId:    item.id } })}
-          activeOpacity={0.85}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.bookBtnText]}>{t('x_lawyers_book_consult')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={[styles.secondaryBtn, styles.secureBtn]}
-          onPress={openSecureMessage}
-          disabled={caseLoading}
-          activeOpacity={0.85}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.secureBtnText]}>
-            {caseLoading ? '…' : t('x_lawyers_message_2')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.secondaryBtnText}>{expanded ? t('lawyers_less') : t('lawyers_more')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          accessibilityLabel={saved ? t('x_lawyers_unsave', { name: item?.name }) : t('x_lawyers_save_saved_list', { name: item?.name })}
-          style={[styles.secondaryBtn, { minWidth: 44 }]}
-          onPress={toggleSave}
-          disabled={saving}
-          activeOpacity={0.75}
-          testID="lawyer-card-save"
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: saved ? COLORS.gold : undefined }]}>
-            {saving ? '…' : saved ? '★' : '☆'}
-          </Text>
-        </TouchableOpacity>
-        {onToggleSelect && (
-          <TouchableOpacity
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: isSelected }}
-            accessibilityLabel={isSelected
-              ? t('x_lawyers_remove_from_attorneys_contact', { name: item?.name })
-              : t('x_lawyers_select_contact_several_attorneys', { name: item?.name })}
-            style={[styles.secondaryBtn, isSelected && { borderColor: COLORS.navy }]}
-            onPress={() => onToggleSelect(item.id)}
-            activeOpacity={0.75}
-            testID="lawyer-card-select"
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, isSelected && { color: COLORS.navy }]}>
-              {isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}
-            </Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_expungement_bar_verified')} onPress={() => onBadgeInfo('bar')}
+            style={[styles.badge, { borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_expungement_bar_verified')}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Expandable: bio, experience */}
-      {expanded && (
-        <View style={styles.expandedSection}>
-          {!!item.years_experience && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.exp}>
-              {t(item.years_experience === 1 ? 'x_lawyers_year_experience_one' : 'x_lawyers_year_experience_other', { years_experience: item.years_experience })}
-            </Text>
-          )}
-          {item.hourly_rate != null && item.hourly_rate > 0 && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.exp, { color: COLORS.legal }]}>
-              {t('x_lawyers_hr', { hourly_rate: item.hourly_rate })}
-            </Text>
-          )}
-          {item.hourly_rate === 0 && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.exp, { color: COLORS.legalDark }]}>
-              {t('x_lawyers_pro_bono_free')}
-            </Text>
-          )}
-          {!!item?.bio && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.bio}>{item?.bio}</Text>
-          )}
-          {!!reviewSummary && reviewSummary.count > 0 && (
-            <View testID="lawyer-review-summary">
-              <Text maxFontSizeMultiplier={1.4} style={styles.exp}>
-                {t(reviewSummary.count === 1 ? 'x_lawyers_from_justice_gavel_client_one' : 'x_lawyers_from_justice_gavel_client_other', { value: Number(reviewSummary.avg_rating).toFixed(1), count: reviewSummary.count })}
-              </Text>
-              {(reviewSummary.top_reviews || []).filter(r => !!r?.comment).slice(0, 2).map((r, i) => (
-                <Text key={i} maxFontSizeMultiplier={1.4} style={styles.bio} numberOfLines={3}>
-                  “{r.comment}”
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
+      {!!reviewSummary && reviewSummary.count > 0 && reviewSummary.avg_rating != null && (
+        <Text testID="lawyer-review-summary" maxFontSizeMultiplier={1.4} style={[styles.reviewSummary, { color: colors.textSecond }]}>
+          {t(reviewSummary.count === 1 ? 'x_lawyers_from_justice_gavel_client_one' : 'x_lawyers_from_justice_gavel_client_other', { value: Number(reviewSummary.avg_rating).toFixed(1), count: reviewSummary.count })}
+        </Text>
       )}
+
+      <ContactActions listing={item} />
+
+      <View style={styles.secondaryRow}>
+        <TouchableOpacity accessibilityRole="button" testID="lawyer-card-profile" style={[styles.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.bg }]} onPress={openProfile}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.textBrand }]} numberOfLines={1}>{t('lw_profile')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" testID="lawyer-card-save"
+          accessibilityLabel={savedId ? t('x_lawyers_unsave', { name: item.name }) : t('x_lawyers_save_saved_list', { name: item.name })}
+          accessibilityState={{ selected: !!savedId, busy: saving }}
+          style={[styles.secondaryBtn, { borderColor: savedId ? COLORS.gold : colors.border, backgroundColor: colors.bg }]}
+          onPress={() => onToggleSave(item)} disabled={saving}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: savedId ? colors.goldText : colors.textSecond }]} numberOfLines={1}>
+            {saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}
+          </Text>
+        </TouchableOpacity>
+        {item.on_app && (
+          <TouchableOpacity accessibilityRole="button" testID="lawyer-card-book" style={[styles.secondaryBtn, { borderColor: colors.navy, backgroundColor: colors.bg }]}
+            onPress={() => navigation.navigate('MoreTab', { screen: 'Booking', params: { lawyerId: item.id, lawyerName: item.name } })}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.textBrand }]} numberOfLines={1}>{t('x_lawyers_book_consult')}</Text>
+          </TouchableOpacity>
+        )}
+        {item.on_app && (
+          <TouchableOpacity accessibilityRole="button" testID="lawyer-card-message" style={[styles.secondaryBtn, { borderColor: colors.legal, backgroundColor: colors.bg }]} onPress={() => onMessage(item)}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.legal }]} numberOfLines={1}>{t('x_lawyers_message_2')}</Text>
+          </TouchableOpacity>
+        )}
+        {item.on_app && (
+          <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }} testID="lawyer-card-select"
+            accessibilityLabel={isSelected ? t('x_lawyers_remove_from_attorneys_contact', { name: item.name }) : t('x_lawyers_select_contact_several_attorneys', { name: item.name })}
+            style={[styles.secondaryBtn, { borderColor: isSelected ? colors.navy : colors.border, backgroundColor: colors.bg }]} onPress={() => onToggleSelect(item.id)}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.textSecond }]} numberOfLines={1}>{isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 });
 
 // ── Filter modal ──────────────────────────────────────────────────────────────
-function FilterModal({
-  visible, onClose,
-  caseType, setCaseType,
-  language, setLanguage,
-  manualCity, setManualCity,
-  proBonoOnly, setProBonoOnly,
-  onApply }: any) {
+function FilterModal({ visible, onClose, caseType, language, proBonoOnly, onApply }: {
+  visible: boolean; onClose: () => void; caseType: string; language: string; proBonoOnly: boolean;
+  onApply: (f: { caseType: string; language: string; proBonoOnly: boolean }) => void;
+}) {
   useLang();
+  const { colors } = useTheme();
+  const [ct, setCt] = useState(caseType);
+  const [lg, setLg] = useState(language);
+  const [pb, setPb] = useState(proBonoOnly);
+  useEffect(() => { if (visible) { setCt(caseType); setLg(language); setPb(proBonoOnly); } }, [visible, caseType, language, proBonoOnly]);
   return (
-    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
-        onRequestClose={() => {}}>
-      <View style={styles.modalContainer}>
+    <Modal accessibilityViewIsModal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.modalContainer, { backgroundColor: colors.bg }]} testID="lawyers-filter-modal">
         <View style={styles.modalHeader}>
           <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{t('x_lawyers_filter_lawyers')}</Text>
-          <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} onPress={onClose} style={styles.modalCloseBtn}
-            accessibilityLabel={t('x_lawyers_language')}
-          >
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('lw_close')} onPress={onClose} style={styles.modalCloseBtn}>
             <Text maxFontSizeMultiplier={1.4} style={styles.modalCloseText}>✕</Text>
           </TouchableOpacity>
         </View>
-
-        <ScrollView keyboardShouldPersistTaps='handled' style={styles.modalBody}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>{t('x_lawyers_case_type')}</Text>
-          <View style={styles.pickerWrap}>
-            <Picker selectedValue={caseType} onValueChange={v => setCaseType(String(v))} style={styles.picker}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.modalBody}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.filterLabel, { color: colors.textSecond }]}>{t('x_lawyers_case_type')}</Text>
+          <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.bgCard }]}>
+            <Picker testID="filter-case-type" selectedValue={ct} onValueChange={v => setCt(String(v))} style={[styles.picker, { color: colors.textPrimary, backgroundColor: colors.bgCard }]}>
               <Picker.Item label={t('x_lawyers_any_case_type')} value="" />
               {CASE_TYPE_OPTIONS().map(o => <Picker.Item key={o.key} label={o.label} value={o.key} />)}
             </Picker>
           </View>
-
-          <Text maxFontSizeMultiplier={1.4} style={[styles.filterLabel, { marginTop: 16 }]}>{t('x_lawyers_language')}</Text>
-          <View style={styles.pickerWrap}>
-            <Picker selectedValue={language} onValueChange={v => setLanguage(String(v))} style={styles.picker}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.filterLabel, { color: colors.textSecond, marginTop: 16 }]}>{t('x_lawyers_language')}</Text>
+          <View style={[styles.pickerWrap, { borderColor: colors.border, backgroundColor: colors.bgCard }]}>
+            <Picker testID="filter-language" selectedValue={lg} onValueChange={v => setLg(String(v))} style={[styles.picker, { color: colors.textPrimary, backgroundColor: colors.bgCard }]}>
               <Picker.Item label={t('x_lawyers_any_language')} value="" />
-              {LANGUAGES_FILTERED.map(l => <Picker.Item key={l} label={langLabel(l)} value={l} />)}
+              {LANGUAGES.map(l => <Picker.Item key={l} label={langLabel(l)} value={l} />)}
             </Picker>
           </View>
-
-          <Text maxFontSizeMultiplier={1.4} style={[styles.filterLabel, { marginTop: 16 }]}>{t('x_lawyers_override_city')}</Text>
-          <View style={styles.pickerWrap}>
-            <Picker selectedValue={manualCity} onValueChange={v => setManualCity(String(v))} style={styles.picker}>
-              <Picker.Item label={t('x_lawyers_use_my_gps_location')} value="" />
-              {CITIES_FILTERED.map(c => <Picker.Item key={c} label={c} value={c} />)}
-            </Picker>
-          </View>
-
-          <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={styles.toggleRow} onPress={() => setProBonoOnly((v: boolean) => !v)}
-            accessibilityLabel={t('x_lawyers_pro_bono_free_representation')}
-          >
-            <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
-            <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>{t('x_lawyers_pro_bono_free_representation')}</Text>
+          <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: pb }} style={styles.toggleRow} onPress={() => setPb(v => !v)}
+            accessibilityLabel={t('x_lawyers_pro_bono_free_representation')} testID="filter-pro-bono">
+            <View style={[styles.toggle, { backgroundColor: pb ? colors.navy : colors.border }]}><View style={[styles.knob, pb && styles.knobOn]} /></View>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('x_lawyers_pro_bono_free_representation')}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            accessibilityRole="button"
- style={styles.applyBtn} onPress={onApply}
-            accessibilityLabel={t('x_lawyers_apply_filters')}
-          accessibilityHint={t('x_lawyers_filters_list_by_selected')}
-          >
+          <TouchableOpacity accessibilityRole="button" testID="filter-apply" style={styles.applyBtn} onPress={() => onApply({ caseType: ct, language: lg, proBonoOnly: pb })}
+            accessibilityHint={t('x_lawyers_filters_list_by_selected')}>
             <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>{t('x_lawyers_apply_filters')}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={styles.clearBtn}
-            accessibilityLabel={t('x_lawyers_clear_all_filters')}
-            onPress={() => { setCaseType(''); setLanguage(''); setManualCity(''); setProBonoOnly(false); }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('x_lawyers_clear_all_filters')}</Text>
+          <TouchableOpacity accessibilityRole="button" style={styles.clearBtn} testID="filter-clear"
+            onPress={() => onApply({ caseType: '', language: '', proBonoOnly: false })}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.clearBtnText, { color: colors.textMuted }]}>{t('x_lawyers_clear_all_filters')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -455,286 +226,238 @@ function FilterModal({
   );
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
-
-const QUICK_NEEDS = perLang(() => [
-    { key: 'DUI',            label: t('whn_charge_dui'),   icon: '🚗', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-    { key: 'Drug Offenses',  label: t('x_practice_area_selector_drug_charges'),           icon: '💊', color: COLORS.blue, bg: COLORS.bgSubtle },
-    { key: 'Assault',        label: t('x_lawyers_fight_assault'),        icon: '⚠️', color: COLORS.warnDark, bg: COLORS.warnBg },
-    { key: 'Family Law',     label: t('x_lawyers_family_divorce'),       icon: '👨‍👩‍👧', color: COLORS.blue, bg: COLORS.bgSubtle },
-    { key: 'Immigration',    label: t('chat_cat_immigration'),             icon: '✈️', color: COLORS.blue, bg: COLORS.bgSubtle },
-    { key: '',               label: t('x_lawyers_something_else'),         icon: '⚖️', color: COLORS.navy, bg: COLORS.bgSubtle },
-    { key: 'Appeals',        label: t('x_lawyers_appeal_post_conviction') },
-  ]);
-/** Case types the lawyer search filters on (the quick-need keys, minus "Something Else"). */
-const CASE_TYPE_OPTIONS = perLang(() => QUICK_NEEDS().filter(n => !!n.key));
-
-
-
-// ── Skeleton placeholder card ─────────────────────────────────────────────
-function SkeletonCard({ colors }: { colors: Record<string, any> }) {
-  useLang();
-  const shimmer = React.useRef(new Animated.Value(0)).current;
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
-      ])
-    ).start();
-    return () => shimmer.stopAnimation();
+// ── Skeleton placeholder card ─────────────────────────────────────────────────
+function SkeletonCard() {
+  const { colors } = useTheme();
+  const shimmer = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    // isInteraction:false — an endless loop must not hold InteractionManager
+    // (it would block every runAfterInteractions task on web).
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: Platform.OS !== 'web', isInteraction: false }),
+      Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: Platform.OS !== 'web', isInteraction: false }),
+    ]));
+    loop.start();
+    return () => loop.stop();
   }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
-  const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
-    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || colors.bg,
-      borderRadius: 14, padding: 16, marginBottom: 10,
-      borderWidth: 1, borderColor: colors?.border || COLORS.border }}>
-      {/* Avatar + name row */}
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bg }} />
-        <View style={{ flex: 1, gap: 6 }}>
-          <View style={{ height: 14, width: '65%', borderRadius: 6, backgroundColor: bg }} />
-          <View style={{ height: 11, width: '45%', borderRadius: 6, backgroundColor: bg }} />
-        </View>
-      </View>
-      {/* Detail rows */}
-      <View style={{ height: 11, width: '80%', borderRadius: 6, backgroundColor: bg, marginBottom: 8 }} />
-      <View style={{ height: 11, width: '55%', borderRadius: 6, backgroundColor: bg }} />
+    <Animated.View style={[styles.card, { opacity, backgroundColor: colors.bgCard }]}>
+      <View style={{ height: 14, width: '65%', borderRadius: 6, backgroundColor: colors.bgSubtle, marginBottom: 8 }} />
+      <View style={{ height: 11, width: '80%', borderRadius: 6, backgroundColor: colors.bgSubtle, marginBottom: 14 }} />
+      <View style={{ height: 44, borderRadius: 10, backgroundColor: colors.bgSubtle }} />
     </Animated.View>
   );
 }
 
+type Place = { kind: 'gps'; lat: number; lng: number; label: string } | { kind: 'query'; q: string } | { kind: 'state'; state: string } | { kind: 'all' };
+
 function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
-  // Pagination: fetchLawyers loads page 1, loadMore appends the next page.
-  const [page, setPage] = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(false);
-  const lastParamsRef = React.useRef<Record<string, unknown> | null>(null);
-  const loadingMoreRef = React.useRef(false);
-
-
-  const userStateRef = React.useRef<string>('');
-  React.useEffect(() => {
-    getUserState().then(s => { if (s?.code) userStateRef.current = s.code; }).catch(()=>{});
-  }, []);
-
-  const searchDebounce = React.useRef<ReturnType<typeof setTimeout>|null>(null);
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const [lawyers, setLawyers]       = useState<any[]>([]);
-
-  const [loading, setLoading]       = useState(true);
+  const [lawyers, setLawyers] = useState<DirectoryLawyer[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusMsg, setStatusMsg]   = useState('Locating you…');
-  const [locationLabel, setLocationLabel] = useState('');
-  const [showFilters, setShowFilters]   = useState(false);
-  const [showNeedModal, setShowNeedModal] = useState(false);
-
-  // 6 primary need categories shown in first-load modal
-    // Filters
-  const [manualCity, setManualCity]   = useState('');
-  const [caseType, setCaseType]       = useState('');
-  const [language, setLanguage]       = useState('');
+  const [error, setError] = useState('');
+  const [place, setPlace] = useState<Place | null>(null);
+  const [locationOff, setLocationOff] = useState(false);
+  const [queryText, setQueryText] = useState('');
+  const [caseType, setCaseType] = useState('');
+  const [language, setLanguage] = useState('');
   const [proBonoOnly, setProBonoOnly] = useState(false);
-  const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showNeedModal, setShowNeedModal] = useState(false);
+  const [reviewSummaries, setReviewSummaries] = useState<Record<number, ReviewSummary>>({});
+  const [savedMap, setSavedMap] = useState<Record<number, number>>({});
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState('');
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const [badgeInfo, setBadgeInfo] = useState<'bar' | 'jtb' | null>(null);
+  const reqSeq = useRef(0);
 
-  // Count active filters for pill badge
-  const activeFilters = [caseType, language, manualCity, proBonoOnly].filter(Boolean).length;
+  const activeFilters = [caseType, language, proBonoOnly].filter(Boolean).length;
 
-  // ── Subscription tier check for soft upsell ────────────────────────────────
-  const [isPro, setIsPro] = useState(false);
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    AsyncStorage.getItem('user_subscription')
-      .then(tier => setIsPro(!!tier && tier !== 'free'))
-      .catch(() => {});
+  const paramsFor = useCallback((p: Place, extra: Record<string, unknown> = {}) => {
+    const params: Record<string, unknown> = { limit: PAGE_SIZE, ...extra };
+    if (caseType) params.caseType = caseType;
+    if (language) params.language = language;
+    if (proBonoOnly) params.proBonoOnly = true;
+    if (p.kind === 'gps') { params.lat = p.lat; params.lng = p.lng; }
+    if (p.kind === 'query') params.q = p.q;
+    if (p.kind === 'state') params.state = p.state;
+    return params;
+  }, [caseType, language, proBonoOnly]);
+
+  /** Where to search when the person has not typed anything: GPS, else their state, else everything. */
+  const resolveDefaultPlace = useCallback(async (): Promise<Place> => {
+    const loc = await getLocationWithCity({ reason: t('lw_location_reason') });
+    if (loc.permissionGranted && loc.source === 'gps') {
+      setLocationOff(false);
+      return { kind: 'gps', lat: loc.lat, lng: loc.lng, label: loc.city ? t('x_lawyers_near', { city: loc.city }) : t('x_lawyers_location') };
+    }
+    setLocationOff(true);
+    const st = await getUserState().catch(() => null);
+    return st?.code ? { kind: 'state', state: st.code } : { kind: 'all' };
   }, []);
 
-
-  // Memoize sorted + filtered lawyers -- avoids recomputing on every render
-  const sortedLawyers = useMemo(() => {
-    if (!lawyers.length) return lawyers;
-    return [...lawyers].sort((a, b) => {
-      // JTB verified first
-      if ((b.jtb_verified ? 1:0) !== (a.jtb_verified ? 1:0))
-        return (b.jtb_verified ? 1:0) - (a.jtb_verified ? 1:0);
-      // Then by rating descending
-      return (b.rating ?? 0) - (a.rating ?? 0);
-    });
-  }, [lawyers]);
-
-const fetchLawyers = useCallback(async (isRefresh = false) => {
-    setStatusMsg('');
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setStatusMsg(t('bail_searching'));
-    setHasMore(false);
-
-    try {
-      // ── Stale-while-revalidate: show cached data immediately ─────────────
-      if (!isRefresh) {
-        const cached = await getCachedLawyers();
-        if ((cached as any).isCache && (cached as any).data?.length > 0) {
-          setLawyers((cached as any).data);
-        // Write-through cache for offline access
-        cacheSearch('lawyers_list', { cases:[], messages:[], lawyers: [], lessons:[] }).catch(() => {});
-          setLoading(false);
-          if (!(cached as any).stale) return; // fresh cache -- skip network call
-          // Stale: continue fetch in background without showing spinner
-        }
-      }
-
-      const params: Record<string, unknown> = { limit: PAGE_SIZE, caseType, language, proBonoOnly, user_state: userStateRef.current || undefined };
-
-      if (manualCity) {
-        params.city = manualCity;
-        setLocationLabel(manualCity);
-      } else if (coords) {
-        params.lat = coords.lat;
-        params.lng = coords.lng;
-      } else {
-        setStatusMsg(t('qc_loc_getting'));
-        const loc = await getLocationWithCity();
-        setCoords({ lat: loc.lat, lng: loc.lng });
-        params.lat = loc.lat;
-        params.lng = loc.lng;
-        if (loc.city) {
-          setLocationLabel(loc.source === 'gps'
-            ? t('x_lawyers_near', { city: loc.city })
-            : loc.city);
-        } else {
-          setLocationLabel(loc.permissionGranted ? t('x_lawyers_location') : t('x_lawyers_default_location'));
-        }
-      }
-
-      setStatusMsg(t('x_lawyers_finding_lawyers_near'));
-      var res = await api.get('/providers/lawyers', { params });
-      const found = unwrapList<Record<string, unknown>>(res.data, 'lawyers');
-      setLawyers(found as any[]);
-      lastParamsRef.current = params;
-      setPage(1);
-      setHasMore(found.length >= PAGE_SIZE);
-    // Fetch review summaries for first 10 lawyers (non-blocking)
-    try {
-      const lawyerIds = found.slice(0, 10).map(l => Number(l.id)).filter(Number.isFinite);
-      const reviews = await Promise.allSettled(
-        (lawyerIds ?? []).map((id: number) =>
-          api.get('/reviews/summary', { params: { entity_type:'lawyer', entity_id:id } })
-            .then(r => [id, r.data] as [number, any])
-        )
-      );
-      const summaryMap: Record<number, any> = {};
-      reviews.forEach(r => {
-        if (r.status === 'fulfilled' && r.value) summaryMap[r.value[0]] = r.value[1];
+  const loadReviewSummaries = useCallback((rows: DirectoryLawyer[]) => {
+    Promise.allSettled(rows.slice(0, 10).map(l =>
+      api.get('/reviews/summary', { params: { entity_type: 'lawyer', entity_id: l.id } }).then(r => [l.id, r.data] as [number, ReviewSummary])))
+      .then(results => {
+        if (!mountedRef.current) return;
+        const map: Record<number, ReviewSummary> = {};
+        for (const r of results) if (r.status === 'fulfilled') map[r.value[0]] = r.value[1];
+        setReviewSummaries(prev => ({ ...prev, ...map }));
       });
-      if (mountedRef.current) setReviewSummaries(summaryMap);
-    } catch {}
-    // (remove the extra ); we added above -- the original setLawyers call needs its own);
-      setStatusMsg(found.length === 0 ? t('x_lawyers_no_lawyers_found_try') : '');
-    } catch {
-      setStatusMsg(t('x_lawyers_could_not_load_lawyers'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [manualCity, caseType, language, proBonoOnly, coords]);
-  // Effects below fire on their own triggers (mount / filter change), not every
-  // time fetchLawyers is re-created (e.g. when coords arrive), so they call it via a ref.
-  const fetchLawyersRef = useLatestRef(fetchLawyers);
+  }, []);
 
-  // Next page for infinite scroll (same query as the last full fetch).
-  const loadMore = useCallback(async () => {
-    if (!hasMore || loadingMoreRef.current || !lastParamsRef.current) return;
-    loadingMoreRef.current = true;
-    const next = page + 1;
+  const search = useCallback(async (p: Place | null, isRefresh = false) => {
+    const seq = ++reqSeq.current;
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setError('');
     try {
-      const res = await api.get('/providers/lawyers', { params: { ...lastParamsRef.current, page: next } });
-      const rows: any[] = Array.isArray(res.data) ? res.data : [];
-      if (!mountedRef.current) return;
+      const where = p || await resolveDefaultPlace();
+      if (seq !== reqSeq.current) return;
+      setPlace(where);
+      const res = await api.get('/providers/lawyers', { params: paramsFor(where) });
+      if (seq !== reqSeq.current || !mountedRef.current) return;
+      const rows = unwrapList<DirectoryLawyer>(res.data, 'lawyers');
+      const tot = Number(res.headers?.['x-total-count']);
+      setLawyers(rows);
+      setTotal(Number.isFinite(tot) ? tot : rows.length);
+      setPage(1);
+      setHasMore(Number.isFinite(tot) ? rows.length < tot : rows.length >= PAGE_SIZE);
+      loadReviewSummaries(rows);
+    } catch (e) {
+      if (seq === reqSeq.current && mountedRef.current) setError(apiErrorMessage(e, t('x_lawyers_could_not_load_lawyers')));
+    } finally {
+      if (seq === reqSeq.current && mountedRef.current) { setLoading(false); setRefreshing(false); }
+    }
+  }, [paramsFor, resolveDefaultPlace, loadReviewSummaries]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMoreRef.current || !place || loading) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const seq = reqSeq.current;
+    try {
+      const res = await api.get('/providers/lawyers', { params: paramsFor(place, { page: page + 1 }) });
+      if (seq !== reqSeq.current || !mountedRef.current) return;
+      const rows = unwrapList<DirectoryLawyer>(res.data, 'lawyers');
       setLawyers(prev => {
         const seen = new Set(prev.map(l => l.id));
-        return [...prev, ...rows.filter(l => !seen.has(l.id))];
+        const next = [...prev, ...rows.filter(l => !seen.has(l.id))];
+        setHasMore(total != null ? next.length < total && rows.length > 0 : rows.length >= PAGE_SIZE);
+        return next;
       });
-      setPage(next);
-      setHasMore(rows.length >= PAGE_SIZE);
-    } catch {
-      // Keep the current list; pull-to-refresh retries from page 1.
-      if (mountedRef.current) setHasMore(false);
+      setPage(n => n + 1);
+    } catch (e) {
+      if (mountedRef.current) showToast(apiErrorMessage(e, t('x_lawyers_could_not_load_lawyers')), 'error');
     } finally {
       loadingMoreRef.current = false;
+      if (mountedRef.current) setLoadingMore(false);
     }
-  }, [hasMore, page]);
+  }, [hasMore, place, loading, paramsFor, page, total, showToast]);
 
-  // Show "what do you need?" modal on very first visit, then auto-fetch
+  // First visit: ask what kind of help; afterwards search right away.
+  const startedRef = useRef(false);
   useEffect(() => {
-    AsyncStorage.getItem('lawyers_need_shown').then(shown => {
-      if (!shown) {
-        setShowNeedModal(true);
-      } else {
-        fetchLawyersRef.current();
+    if (startedRef.current) return;
+    startedRef.current = true;
+    AsyncStorage.getItem('lawyers_need_shown')
+      .then(shown => { if (shown) search(null); else { setShowNeedModal(true); setLoading(false); } })
+      .catch(() => search(null));
+  }, [search]);
+
+  // Filters changed → same place, new filters.
+  const filtersRef = useRef({ caseType, language, proBonoOnly });
+  useEffect(() => {
+    const prev = filtersRef.current;
+    if (prev.caseType === caseType && prev.language === language && prev.proBonoOnly === proBonoOnly) return;
+    filtersRef.current = { caseType, language, proBonoOnly };
+    search(place);
+  }, [caseType, language, proBonoOnly, place, search]);
+
+  // Saved lawyers: which cards show as saved; finish a save started before signing in.
+  const loadSaved = useCallback(async () => {
+    const token = await secureStorage.getToken().catch(() => null);
+    if (!token) { setSavedMap({}); return; }
+    try {
+      const pending = await AsyncStorage.getItem(PENDING_SAVE_KEY).catch(() => null);
+      if (pending) {
+        await AsyncStorage.removeItem(PENDING_SAVE_KEY).catch(() => {});
+        const id = Number(JSON.parse(pending)?.provider_id);
+        if (Number.isFinite(id) && id > 0) {
+          await api.post('/saved/lawyers', { provider_id: id });
+          showToast(t('lw_saved_toast'), 'success');
+        }
       }
-    }).catch(() => fetchLawyersRef.current());
-  }, [fetchLawyersRef]);
+      const res = await api.get('/saved/lawyers');
+      const map: Record<number, number> = {};
+      for (const s of unwrapList<{ id: number; provider_id: number | null }>(res.data, 'lawyers')) if (s.provider_id) map[s.provider_id] = s.id;
+      if (mountedRef.current) setSavedMap(map);
+    } catch { /* saved state is a convenience; the list still works */ }
+  }, [showToast]);
+  useFocusEffect(useCallback(() => { loadSaved(); }, [loadSaved]));
 
-  // Re-fetch when filters change (skipping the initial values: the mount effect fetches)
-  const filtersInitialisedRef = useRef(false);
-  const [availableNow, setAvailableNow] = React.useState(false);
-  const [selected, setSelected]       = React.useState<number[]>([]);
-  const [showBulk, setShowBulk]       = React.useState(false);
-  const [bulkMsg, setBulkMsg]         = React.useState('');
-  const [bulkSending, setBulkSending] = React.useState(false);
-  const [bulkResult, setBulkResult]   = React.useState<string | null>(null);
-  const [reviewSummaries, setReviewSummaries] = React.useState<Record<number, ReviewSummary>>({});
-  const [showBadgeInfo, setShowBadgeInfo] = React.useState(false);
-  const [badgeInfoType, setBadgeInfoType] = React.useState<'bar'|'jtb'|'golden'>('bar');
-  const showBadgeExplainer = React.useCallback((type: 'bar'|'jtb'|'golden') => {
-    setBadgeInfoType(type);
-    setShowBadgeInfo(true);
+  const toggleSave = useCallback(async (l: DirectoryLawyer) => {
+    const token = await secureStorage.getToken().catch(() => null);
+    if (!token) {
+      await AsyncStorage.setItem(PENDING_SAVE_KEY, JSON.stringify({ provider_id: l.id })).catch(() => {});
+      showToast(t('lw_sign_in_to_save'), 'info');
+      navigation.navigate('MoreTab', { screen: 'Login' });
+      return;
+    }
+    setSavingId(l.id);
+    try {
+      const sid = savedMap[l.id];
+      if (sid) {
+        await api.delete(`/saved/lawyers/${sid}`).catch((e) => { if (e?.response?.status !== 404) throw e; });
+        setSavedMap(m => { const n = { ...m }; delete n[l.id]; return n; });
+        showToast(t('lw_unsaved_toast'), 'info');
+      } else {
+        const r = await api.post('/saved/lawyers', { provider_id: l.id });
+        if (r.data?.id) setSavedMap(m => ({ ...m, [l.id]: Number(r.data.id) }));
+        showToast(t('lw_saved_toast'), 'success');
+      }
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_lawyers_could_not_update_saved')), 'error');
+    } finally {
+      if (mountedRef.current) setSavingId(null);
+    }
+  }, [savedMap, navigation, showToast]);
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelected(prev => (prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev));
   }, []);
+  const messageOne = useCallback((l: DirectoryLawyer) => { setSelected([l.id]); setBulkResult(null); setShowBulk(true); }, []);
 
-  useEffect(() => {
-    if (!filtersInitialisedRef.current) { filtersInitialisedRef.current = true; return; }
-    fetchLawyersRef.current();
-  }, [manualCity, caseType, language, proBonoOnly, fetchLawyersRef]);
-
-  const applyFilters = () => {
-    setShowFilters(false);
-    fetchLawyers();
-  };
-
-  // Parallel attorney outreach
-  const toggleSelect = React.useCallback((id: number) => {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id)
-        : prev.length < 3 ? [...prev, id] : prev  // max 3
-    );
-  }, []);
-
-  const sendBulk = React.useCallback(async () => {
+  const sendBulk = useCallback(async () => {
     if (!bulkMsg.trim() || selected.length === 0) return;
     setBulkSending(true);
     try {
-      const res = await api.post('/messages/bulk', {
-        lawyer_ids: selected,
-        message:    bulkMsg.trim() });
+      const res = await api.post('/messages/bulk', { lawyer_ids: selected, message: bulkMsg.trim() });
       const sent = Number(res.data?.sent) || 0;
-      const skipped: { name?: string; phone?: string | null; reason?: string }[] =
-        Array.isArray(res.data?.skipped) ? res.data.skipped : [];
+      const skipped: { name?: string; phone?: string | null; reason?: string }[] = Array.isArray(res.data?.skipped) ? res.data.skipped : [];
       const noAccount = skipped.filter(s => s.reason === 'no_account');
-      let text = sent > 0
-        ? t(sent === 1 ? 'x_lawyers_sent_attorney_one' : 'x_lawyers_sent_attorney_other', { sent })
-        : t('x_lawyers_no_app_messages_were');
+      let text = sent > 0 ? t(sent === 1 ? 'x_lawyers_sent_attorney_one' : 'x_lawyers_sent_attorney_other', { sent }) : t('x_lawyers_no_app_messages_were');
       if (noAccount.length) {
         text += '\n' + t(noAccount.length === 1 ? 'x_lawyers_not_app_messaging_one' : 'x_lawyers_not_app_messaging_other', { count: noAccount.length, list: noAccount.map(s => (s.phone ? `${s.name} (${s.phone})` : s.name)).join(', ') });
       }
       setBulkResult(text);
       if (sent > 0) { setSelected([]); setBulkMsg(''); }
-      if (sent > 0 && skipped.length === 0) {
-        setTimeout(() => { setShowBulk(false); setBulkResult(null); }, 2500);
-      }
     } catch (e) {
       setBulkResult('❌ ' + apiErrorMessage(e, t('x_lawyers_send_failed_check_connection')));
     } finally {
@@ -742,183 +465,144 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     }
   }, [bulkMsg, selected]);
 
+  const submitQuery = () => {
+    const q = queryText.trim();
+    if (!q) { search(null); return; }
+    search({ kind: 'query', q });
+  };
+  const useMyLocation = () => { setQueryText(''); search(null); };
+
+  const placeLabel = useMemo(() => {
+    if (!place) return '';
+    if (place.kind === 'gps') return place.label;
+    if (place.kind === 'query') return t('lw_results_for', { q: place.q });
+    if (place.kind === 'state') return t('lw_in_state', { state: stateName(place.state) });
+    return t('lw_all_listings');
+  }, [place]);
+
+  const pickNeed = async (key: string) => {
+    await AsyncStorage.setItem('lawyers_need_shown', 'true').catch(() => {});
+    setShowNeedModal(false);
+    if (key === 'Immigration') { navigation.navigate('MoreTab', { screen: 'IceDetention' }); search(null); return; }
+    // A new case type re-runs the search through the filters effect; otherwise search now.
+    if (key !== caseType) setCaseType(key); else search(null);
+  };
+
+  const emptyText = activeFilters > 0
+    ? t('lw_empty_filtered', { filters: [caseType && caseTypeLabel(caseType), language && langLabel(language), proBonoOnly && t('x_lawyers_pro_bono')].filter(Boolean).join(' · ') })
+    : place?.kind === 'query' ? t('lw_empty_query', { q: place.q }) : t('x_lawyers_no_lawyers_found_area');
+
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Compact header bar -- always visible */}
-      <View style={styles.headerBar}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.headingRow}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('lawyers_heading')}</Text>
-            {lawyers.length > 0 && !loading && (
-              <View style={styles.resultBadge}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.resultBadgeText}>{t('x_lawyers_found', { length: lawyers.length })}</Text>
-              </View>
-            )}
+    <View style={[styles.screen, { backgroundColor: colors.bg }]} testID="lawyers-screen">
+      <View style={[styles.headerBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.navy }]}>
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={styles.headingRow}>
+              <Text maxFontSizeMultiplier={1.3} style={[styles.heading, { color: colors.textBrand }]} numberOfLines={1}>{t('lawyers_heading')}</Text>
+              {total != null && !loading && (
+                <View style={[styles.resultBadge, { backgroundColor: colors.legal }]} testID="lawyers-total">
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.resultBadgeText, { color: colors.textOnAccent }]}>{t('x_lawyers_found', { length: total })}</Text>
+                </View>
+              )}
+            </View>
+            {!!placeLabel && <Text testID="lawyers-place" maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.locationLabel, { color: colors.info }]}>📍 {placeLabel}</Text>}
           </View>
-          {!!locationLabel && (
-            <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
-              >
-              <Text maxFontSizeMultiplier={1.4} style={styles.locationLabel}>📍 {locationLabel}  <Text maxFontSizeMultiplier={1.4} style={styles.refreshGps}>{t('x_lawyers_refresh')}</Text></Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('saved_title')} style={styles.savedHeaderBtn}
+            testID="lawyer-save-button" onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.savedHeaderBtnText}>{t('x_lawyers_saved')}</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* ⭐ Saved lawyers shortcut */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          accessibilityLabel={t('x_lawyers_go_more')}
-          style={[styles.savedHeaderBtn]}
-          testID="lawyer-save-button" onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.savedHeaderBtnText}>{t('x_lawyers_saved')}</Text>
-        </TouchableOpacity>
-
-        {/* Filters pill */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={[styles.filterPill, activeFilters > 0 && styles.filterPillActive]}
-          onPress={() => setShowFilters(true)}
-          activeOpacity={0.8}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.filterPillText, activeFilters > 0 && styles.filterPillTextActive]}>
-            {t('x_lawyers_filters', { value: activeFilters > 0 ? ` (${activeFilters})` : '' })}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.searchRow}>
+          <TextInput testID="lawyers-search-input"
+            style={[styles.searchInput, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.inputText }]}
+            placeholder={t('lw_search_placeholder')} placeholderTextColor={colors.placeholder}
+            value={queryText} onChangeText={setQueryText} onSubmitEditing={submitQuery}
+            returnKeyType="search" autoCorrect={false} maxLength={100} accessibilityLabel={t('lw_search_placeholder')} />
+          <TouchableOpacity accessibilityRole="button" testID="lawyers-search-submit" style={[styles.searchBtn, { backgroundColor: colors.navy }]} onPress={submitQuery}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.searchBtnText, { color: colors.textOnNavy }]}>{t('search')}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.chipRow}>
+          <TouchableOpacity accessibilityRole="button" testID="lawyers-use-location" style={[styles.chip, { borderColor: colors.border }]} onPress={useMyLocation}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, { color: colors.textSecond }]} numberOfLines={1}>{t('lw_use_location')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="lawyers-filters" style={[styles.chip, { borderColor: activeFilters ? colors.navy : colors.border }]} onPress={() => setShowFilters(true)}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, { color: activeFilters ? colors.textBrand : colors.textSecond }]} numberOfLines={1}>
+              {t('x_lawyers_filters', { value: activeFilters > 0 ? ` (${activeFilters})` : '' })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {locationOff && !queryText && place?.kind !== 'query' && (
+          <Text testID="lawyers-location-off" maxFontSizeMultiplier={1.3} style={[styles.hint, { color: colors.textMuted }]}>{t('lw_location_off')}</Text>
+        )}
       </View>
 
-      {/* Results -- skeleton while loading */}
       {loading ? (
-        <View style={{ paddingHorizontal: 16 }}>
-          {[0, 1, 2, 3].map(i => <SkeletonCard key={i} colors={colors} />)}
+        <View style={{ padding: 12 }}>{[0, 1, 2].map(i => <SkeletonCard key={i} />)}</View>
+      ) : error ? (
+        <View style={styles.emptyBlock} testID="lawyers-error">
+          <Text maxFontSizeMultiplier={1.4} style={[styles.emptyText, { color: colors.textMuted }]}>{error}</Text>
+          <TouchableOpacity accessibilityRole="button" style={[styles.emptyBtn, { backgroundColor: colors.navy }]} onPress={() => search(place)}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBtnText, { color: colors.textOnNavy }]}>{t('try_again')}</Text>
+          </TouchableOpacity>
         </View>
       ) : (
-        <>
-          {/* Soft upsell for free users — shown above results */}
-          {!isPro && lawyers.length > 0 && (
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                backgroundColor: colors.bgCard, borderRadius: 12,
-                paddingHorizontal: 14, paddingVertical: 10,
-                marginBottom: 10, borderWidth: 1,
-                borderColor: colors.navy + '40',
-              }}
-              accessibilityLabel={t('x_lawyers_upgrade_legal_pro_verified')}>
-              <Text maxFontSizeMultiplier={1.2}
-                style={{ fontSize: 12, color: colors.textBrand, flex: 1 }}>
-                {t('x_lawyers_pro_verified_credentials_response')}
-              </Text>
-              <Text style={{ fontSize: 11, color: colors.textBrand, fontWeight: '600' }}>
-                {t('x_lawyers_upgrade')}
-              </Text>
-            </TouchableOpacity>
-          )}
-                <FlashList testID="lawyer-list"
-          data={sortedLawyers}
+        <FlashList testID="lawyer-list"
+          data={lawyers}
           keyExtractor={i => String(i.id)}
           onEndReached={loadMore}
-          extraData={{ selected, reviewSummaries }}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={0.5}
+          extraData={{ selected, reviewSummaries, savedMap, savingId }}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchLawyers(true)} tintColor={COLORS.navy} />}
-          ListHeaderComponent={
-            <>
-              {statusMsg ? <Text testID="lawyers-offline-message" maxFontSizeMultiplier={1.4} style={styles.statusMsg}>{statusMsg}</Text> : null}
-              {caseType && ['DUI','Drug Offenses','Assault'].includes(caseType) && !loading && lawyers.length > 0 && (
-                <TouchableOpacity
-                  accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                  style={styles.walkthroughBanner}
-                  onPress={() => navigation.navigate('MoreTab', {
-                    screen: 'WhatHappensNext', params: { chargeType: caseType }
-                  })}
-                  activeOpacity={0.85}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.walkthroughBannerText}>
-                    {t('x_lawyers_know_what_expect_with', { caseType })}
-                  </Text>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => search(place, true)} tintColor={colors.navy} />}
+          ListHeaderComponent={caseType && ['DUI', 'Drug Offenses', 'Assault'].includes(caseType) && lawyers.length > 0 ? (
+            <TouchableOpacity accessibilityRole="button" style={[styles.walkthroughBanner, { backgroundColor: colors.bgSubtle }]}
+              onPress={() => navigation.navigate('MoreTab', { screen: 'WhatHappensNext', params: { chargeType: caseType } })}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.walkthroughBannerText, { color: colors.textBrand }]}>{t('x_lawyers_know_what_expect_with', { caseType: caseTypeLabel(caseType) })}</Text>
+            </TouchableOpacity>
+          ) : null}
+          ListFooterComponent={lawyers.length > 0 ? (
+            loadingMore ? <ActivityIndicator color={colors.navy} style={{ padding: 16 }} />
+              : !hasMore ? <Text testID="lawyers-end" maxFontSizeMultiplier={1.4} style={[styles.resultCount, { color: colors.textMuted }]}>{t(lawyers.length === 1 ? 'x_lawyers_lawyer_found_one' : 'x_lawyers_lawyer_found_other', { length: lawyers.length })} · {t('lw_end')}</Text>
+                : null
+          ) : null}
+          ListEmptyComponent={
+            <View style={styles.emptyBlock} testID="lawyers-empty">
+              <AppIcon name="scale-outline" size={24} color={colors.textBrand} />
+              <Text maxFontSizeMultiplier={1.4} style={[styles.emptyText, { color: colors.textMuted }]}>{emptyText}</Text>
+              {activeFilters > 0 ? (
+                <TouchableOpacity accessibilityRole="button" testID="lawyers-clear-filters" style={[styles.emptyBtn, { backgroundColor: colors.navy }]}
+                  onPress={() => { setCaseType(''); setLanguage(''); setProBonoOnly(false); }}>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBtnText, { color: colors.textOnNavy }]}>{t('x_lawyers_clear_all_filters')}</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity accessibilityRole="button" style={[styles.emptyBtn, { backgroundColor: colors.navy }]} onPress={useMyLocation}>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBtnText, { color: colors.textOnNavy }]}>{t('lw_use_location')}</Text>
                 </TouchableOpacity>
               )}
-            </>
-          }
-          ListFooterComponent={lawyers.length > 0
-            ? <Text maxFontSizeMultiplier={1.4} style={styles.resultCount}>{t(lawyers.length === 1 ? 'x_lawyers_lawyer_found_one' : 'x_lawyers_lawyer_found_other', { length: lawyers.length })}</Text>
-            : null
-          }
-
-          ListEmptyComponent={
-            !statusMsg ? (
-              <View style={styles.emptyBlock}>
-                <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{t('x_lawyers_no_lawyers_found_area')}</Text>
-                <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={styles.emptyBtn} accessibilityLabel={t('x_lawyers_adjust_filters')} onPress={() => setShowFilters(true)}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>{t('x_lawyers_adjust_filters')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null
+            </View>
           }
           renderItem={({ item }) => (
-            <LawyerCard
-              item={item}
-              navigation={navigation}
-              isSelected={selected.includes(item.id)}
-              onToggleSelect={toggleSelect}
-              reviewSummary={reviewSummaries[item.id]}
-              onBadgeInfo={showBadgeExplainer}
-            />
+            <LawyerCard item={item} navigation={navigation}
+              savedId={savedMap[item.id] ?? null} onToggleSave={toggleSave} saving={savingId === item.id}
+              isSelected={selected.includes(item.id)} onToggleSelect={toggleSelect} onMessage={messageOne}
+              reviewSummary={reviewSummaries[item.id]} onBadgeInfo={setBadgeInfo} />
           )}
         />
-        </>
-      )
-    }
+      )}
 
-      {/* First-load "What do you need?" modal */}
-      <Modal accessibilityViewIsModal={true} visible={showNeedModal} transparent animationType="fade"
-        onRequestClose={() => {}}>
+      {/* First visit: "What do you need help with?" */}
+      <Modal accessibilityViewIsModal visible={showNeedModal} transparent animationType="fade" onRequestClose={() => pickNeed('')}>
         <View style={styles.needOverlay}>
-          <View style={styles.needSheet}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.needTitle}>{t('lawyers_need_title')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.needSub}>{t('lawyers_need_sub')}</Text>
+          <View style={[styles.needSheet, { backgroundColor: colors.bgCard }]} testID="lawyers-need-modal">
+            <Text maxFontSizeMultiplier={1.3} style={[styles.needTitle, { color: colors.textBrand }]}>{t('lawyers_need_title')}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.needSub, { color: colors.textSecond }]}>{t('lawyers_need_sub')}</Text>
             <View style={styles.needGrid}>
               {QUICK_NEEDS().map(n => (
-                <TouchableOpacity
-                  accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                  key={n.key}
-                  style={[styles.needBtn, { backgroundColor: n.bg, borderColor: n.color + '55' }]}
-                  onPress={async () => { try {
-                    await AsyncStorage.setItem('lawyers_need_shown', 'true').catch(() => {});
-                    setShowNeedModal(false);
-                    // Route specialty needs to dedicated screens first
-                    if (n.key === 'Real Estate') {
-                      navigation.navigate('MoreTab', { screen: 'TenantRights' }); return;
-                    }
-                    if (n.key === 'Personal Injury' || n.key === 'Civil Rights') {
-                      navigation.navigate('MoreTab', { screen: 'PILead', params: { caseType: n.key } }); return;
-                    }
-                    if (n.key === 'Immigration') {
-                      navigation.navigate('MoreTab', { screen: 'IceDetention' }); return;
-                    }
-                    setCaseType(n.key);
-                    fetchLawyers();
-                    // Offer walkthrough for criminal charge types -- user taps to open
-                    // (removed automatic navigation -- it was blocking search results)
-                  } catch { /* AsyncStorage failure -- non-critical */ }
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.needBtnIcon}>{n.icon}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.needBtnLabel, { color: n.color }]}>{n.label}</Text>
+                <TouchableOpacity accessibilityRole="button" key={n.key || 'other'} testID={`need-${n.key || 'other'}`}
+                  style={[styles.needBtn, { backgroundColor: n.bg, borderColor: n.color + '55' }]} onPress={() => pickNeed(n.key)}>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.needBtnIcon}>{n.icon}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.needBtnLabel, { color: n.color }]}>{n.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -926,158 +610,56 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         </View>
       </Modal>
 
-      {/* Filter modal */}
-      <FilterModal
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-        caseType={caseType} setCaseType={setCaseType}
-        language={language} setLanguage={setLanguage}
-        manualCity={manualCity} setManualCity={setManualCity}
-        proBonoOnly={proBonoOnly} setProBonoOnly={setProBonoOnly}
-        availableNow={availableNow} setAvailableNow={setAvailableNow}
-        onApply={applyFilters}
-      />
+      <FilterModal visible={showFilters} onClose={() => setShowFilters(false)} caseType={caseType} language={language} proBonoOnly={proBonoOnly}
+        onApply={(f) => { setShowFilters(false); setCaseType(f.caseType); setLanguage(f.language); setProBonoOnly(f.proBonoOnly); }} />
 
-      {/* Verified badge explainer modal */}
-      <Modal accessibilityViewIsModal={true} visible={showBadgeInfo} transparent animationType="fade"
-        onRequestClose={() => setShowBadgeInfo(false)}>
-        <TouchableOpacity accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')} style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
-          justifyContent:'center', padding:24 }}
-          onPress={() => setShowBadgeInfo(false)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} activeOpacity={1}>
-          <View style={{ backgroundColor:colors.bgCard, borderRadius:16, padding:20,
-            borderWidth:1, borderColor:colors.border }}>
-            {badgeInfoType === 'bar' && (<>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, lineHeight:27,
-                fontWeight:'700', color:colors.textPrimary, marginBottom:10 }}>
-                {t('x_expungement_bar_verified')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                color:colors.textPrimary, marginBottom:12 }}>
-                {t('x_lawyers_this_attorney_s_bar')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
-                color:colors.textMuted, marginBottom:12 }}>
-                {t('x_lawyers_re_verified_quarterly_can')}
-              </Text>
-            </>)}
-            {badgeInfoType === 'jtb' && (<>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, lineHeight:27,
-                fontWeight:'700', color:colors.textPrimary, marginBottom:10 }}>
-                {t('x_lawyers_justice_gavel_verified')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                color:colors.textPrimary, marginBottom:12 }}>
-                {t('x_lawyers_this_attorney_has_been')}
-              </Text>
-            </>)}
-            {badgeInfoType === 'golden' && (<>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, lineHeight:27,
-                fontWeight:'700', color:colors.textPrimary, marginBottom:10 }}>
-                {t('x_nav_golden_gavel')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                color:colors.textPrimary, marginBottom:12 }}>
-                {t('x_lawyers_golden_gavel_attorneys_top')}
-              </Text>
-            </>)}
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              accessibilityLabel={t('x_lawyers_got_it')}
-              style={{ backgroundColor:colors.navy, borderRadius:10,
-                paddingVertical:12, alignItems:'center' }}
-              onPress={() => setShowBadgeInfo(false)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700',
-                fontSize:14, lineHeight:21 }}>{t('x_lawyers_got_it')}</Text>
+      {/* Verified badge explainer */}
+      <Modal accessibilityViewIsModal visible={!!badgeInfo} transparent animationType="fade" onRequestClose={() => setBadgeInfo(null)}>
+        <View style={styles.badgeOverlay}>
+          <View style={[styles.badgeSheet, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetTitle, { color: colors.textPrimary }]}>
+              {badgeInfo === 'jtb' ? t('x_lawyers_justice_gavel_verified') : t('x_expungement_bar_verified')}
+            </Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetBody, { color: colors.textPrimary }]}>
+              {badgeInfo === 'jtb' ? t('x_lawyers_this_attorney_has_been') : t('x_lawyers_this_attorney_s_bar')}
+            </Text>
+            {badgeInfo === 'bar' && <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetBody, { color: colors.textMuted }]}>{t('x_lawyers_re_verified_quarterly_can')}</Text>}
+            <TouchableOpacity accessibilityRole="button" style={[styles.applyBtn, { marginTop: 8 }]} onPress={() => setBadgeInfo(null)}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>{t('x_lawyers_got_it')}</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
-      {/* Contact multiple attorneys FAB */}
-      {selected.length > 0 && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          style={{ position:'absolute', bottom:24, left:16, right:16,
-            backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
-            flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
-          accessibilityLabel={"\u2696\ufe0f"} onPress={() => setShowBulk(true)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700',
-            fontSize:15, lineHeight:22 }}>
+      {/* Contact several attorneys (on the app) */}
+      {selected.length > 0 && !showBulk && (
+        <TouchableOpacity accessibilityRole="button" testID="lawyers-contact-selected" style={[styles.fab, { backgroundColor: colors.navy }]} onPress={() => { setBulkResult(null); setShowBulk(true); }}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.fabText, { color: colors.textOnNavy }]}>
             {t(selected.length === 1 ? 'x_lawyers_contact_attorney_one' : 'x_lawyers_contact_attorney_other', { length: selected.length })}
           </Text>
         </TouchableOpacity>
       )}
-
-      {/* Bulk message modal */}
-      <Modal accessibilityViewIsModal={true} visible={showBulk} transparent animationType="slide"
-        onRequestClose={() => setShowBulk(false)}>
-        <View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
-          justifyContent:'flex-end' }}>
-          <View style={{ backgroundColor:colors.bgCard, borderTopLeftRadius:20,
-            borderTopRightRadius:20, padding:20 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, lineHeight:27,
-              fontWeight:'700', color:colors.textPrimary, marginBottom:4 }}>
-              {t(selected.length === 1 ? 'x_lawyers_contact_attorney_one' : 'x_lawyers_contact_attorney_other', { length: selected.length })}
+      <Modal accessibilityViewIsModal visible={showBulk} transparent animationType="slide" onRequestClose={() => setShowBulk(false)}>
+        <View style={styles.bulkOverlay}>
+          <View style={[styles.bulkSheet, { backgroundColor: colors.bgCard }]} testID="lawyers-bulk-sheet">
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetTitle, { color: colors.textPrimary }]}>
+              {t(selected.length === 1 ? 'x_lawyers_contact_attorney_one' : 'x_lawyers_contact_attorney_other', { length: Math.max(selected.length, 1) })}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
-              color:colors.textMuted, marginBottom:12 }}>
-              {t('x_lawyers_message_will_be_sent')}
-            </Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetBody, { color: colors.textMuted }]}>{t('x_lawyers_message_will_be_sent')}</Text>
             <TextInput
-              style={{ borderWidth:1, borderColor:colors.inputBorder, borderRadius:10,
-                padding:12, fontSize:14, lineHeight:21, color:colors.inputText,
-                backgroundColor:colors.inputBg, minHeight:100, textAlignVertical:'top',
-                marginBottom:12 }}
-              placeholder={t('x_lawyers_briefly_describe_situation_what')}
-              placeholderTextColor={colors.placeholder}
-              value={bulkMsg}
-              onChangeText={setBulkMsg}
-              multiline
-              maxLength={500}
-              accessibilityLabel={t('x_lawyers_message_send_selected_attorneys')}
-          returnKeyType="search" blurOnSubmit={true}
-            />
-            {bulkResult && (
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                textAlign:'center', marginBottom:10,
-                color: bulkResult.startsWith('❌') ? colors.emergencyDark : colors.legalDark }}>
-                {bulkResult}
-              </Text>
+              style={[styles.bulkInput, { borderColor: colors.inputBorder, color: colors.inputText, backgroundColor: colors.inputBg }]}
+              placeholder={t('x_lawyers_briefly_describe_situation_what')} placeholderTextColor={colors.placeholder}
+              value={bulkMsg} onChangeText={setBulkMsg} multiline maxLength={500} accessibilityLabel={t('x_lawyers_message_send_selected_attorneys')} />
+            {!!bulkResult && (
+              <Text testID="lawyers-bulk-result" maxFontSizeMultiplier={1.4} style={[styles.bulkResult, { color: bulkResult.startsWith('❌') ? colors.emergencyDark : colors.legalDark }]}>{bulkResult}</Text>
             )}
-            <View style={{ flexDirection:'row', gap:12 }}>
-              <TouchableOpacity
-                accessibilityRole="button"
-
-                accessibilityLabel={t('case_cancel')}
-          accessibilityHint={t('x_arrest_monitor_cancels_returns_previous_screen')}
-                style={{ flex:1, borderWidth:1, borderColor:colors.border,
-                  borderRadius:10, paddingVertical:14, alignItems:'center' }}
-                onPress={() => setShowBulk(false)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textMuted,
-                  fontWeight:'700', fontSize:14, lineHeight:21 }}>{t('case_cancel')}</Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity accessibilityRole="button" style={[styles.bulkCancel, { borderColor: colors.border }]} onPress={() => setShowBulk(false)}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontWeight: '700' }}>{bulkResult ? t('booking_done') : t('case_cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-                style={{ flex:2, backgroundColor:bulkSending ? colors.bgSubtle : colors.navy,
-                  borderRadius:10, paddingVertical:14, alignItems:'center' }}
-                onPress={sendBulk} disabled={bulkSending || !bulkMsg.trim()}
-              
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{
-                  color: bulkSending || !bulkMsg.trim() ? colors.textMuted : colors.bgCard,
-                  fontWeight:'700', fontSize:14, lineHeight:21 }}>
+              <TouchableOpacity accessibilityRole="button" style={[styles.bulkSend, { backgroundColor: bulkSending || !bulkMsg.trim() || !selected.length ? colors.bgSubtle : colors.navy }]}
+                onPress={sendBulk} disabled={bulkSending || !bulkMsg.trim() || !selected.length}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: bulkSending || !bulkMsg.trim() || !selected.length ? colors.textMuted : colors.textOnNavy, fontWeight: '700' }}>
                   {bulkSending ? t('booking_sending') : t('x_lawyers_send_all')}
                 </Text>
               </TouchableOpacity>
@@ -1085,190 +667,90 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           </View>
         </View>
       </Modal>
-</View>
+    </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
-  // Badge styles -- static, extracted from inline for perf
-  badgeGreen:   { backgroundColor:colors.legal, borderRadius:10,
-                  paddingHorizontal:7, paddingVertical:3 },
-  badgeAmber:   { backgroundColor:COLORS.steelMid, borderRadius:10,
-                  paddingHorizontal:7, paddingVertical:3 },
-  badgeFastReply:{ backgroundColor:colors.legal, borderRadius:10,
-                   paddingHorizontal:7, paddingVertical:3, marginRight:6 },
-  badgeTextGreen: { fontSize:11, lineHeight:16, color:colors.legal, fontWeight:'700' },
-  badgeTextAmber: { fontSize:11, lineHeight:16, color:COLORS.steelMid, fontWeight:'700' },
-
+const styles = StyleSheet.create({
   screen: { flex: 1 },
-
-  headerBar: {
-    backgroundColor: COLORS.bgCard,
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10,
-    flexDirection: 'row', alignItems: 'center',
-    borderBottomWidth: 2, borderBottomColor: COLORS.navy,
-    ...SHADOW.sm },
-  heading:       { fontSize: 22, ...FONTS.black, color: COLORS.navy },
-  locationLabel: { fontSize: 12, color: COLORS.info, marginTop: 2 },
-  refreshGps:    { color: COLORS.info, fontSize: 11 },
-
-  headingRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  resultBadge:  { backgroundColor: colors.legal, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
-  resultBadgeText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  filterPill: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1.5, borderColor: COLORS.border,
-    backgroundColor: COLORS.bg, marginLeft: 10 },
-  filterPillActive: { borderColor: COLORS.navy, backgroundColor: COLORS.navy + '12' },
-  filterPillText:   { fontSize: 12, lineHeight: 20, ...FONTS.semi, color: COLORS.textSecond },
-  filterPillTextActive: { color: COLORS.navy },
-
-  centerBlock:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  loadingText:  { marginTop: 14, color: COLORS.textMuted, fontSize: 14, lineHeight: 21, ...FONTS.medium },
-  statusMsg:    { padding: 16, color: colors.textMuted, textAlign: 'center', fontSize: 14,
-    lineHeight: 21 },
-  listContent:  { padding: 12, paddingBottom: 40 },
-  resultCount:  { textAlign: 'center', color: colors.textMuted, fontSize: 12, padding: 16 },
-
-  emptyBlock:  { alignItems: 'center', padding: 40 },
-  emptyIcon:   { fontSize: 40, marginBottom: 12 },
-  emptyText:   { fontSize: 15, lineHeight: 22, color: colors.textMuted, marginBottom: 16, textAlign: 'center' },
-  emptyBtn:    { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 10, paddingHorizontal: 20 },
-  emptyBtnText:{ color: COLORS.bgCard, ...FONTS.bold },
-
-  // Card
-  card: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg,
-    padding: 16, marginBottom: 10,
-    ...SHADOW.sm },
-  cardHeader:   { flexDirection: 'row', alignItems: 'flex-start' },
-  cardName:     { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, flex: 1 },
-  cardAddress:  { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  ratingBlock:  { flexDirection: 'row', alignItems: 'center', marginLeft: 8 },
-  ratingNum:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textOnGold },
-  ratingStar:   { fontSize: 14, lineHeight: 21, color: colors.textOnGold, marginLeft: 1 },
-  reviewCount:  { fontSize: 11, color: COLORS.textSecond, marginLeft: 2 },
-  metaRow:      { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 4 },
-  badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
-  badgeText:    { fontSize: 11, ...FONTS.semi },
-  greenBadge:   { backgroundColor: COLORS.legalBg, borderColor: colors.legal },
-  purpleBadge:  { backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
-  tealBadge:    { backgroundColor: colors.legalBg, borderColor: colors.legal },
-  verifiedBadge:{ backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
-  goldenGavelBadge: { backgroundColor: COLORS.steelMid, borderColor: COLORS.steelMid },
-  tagRow:       { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 4 },
-  tag:          { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-  tagText:      { fontSize: 11, ...FONTS.medium },
-  expandedSection:{ marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
-  exp:          { fontSize: 12, color: COLORS.textSecond, marginBottom: 4, fontStyle: 'italic' },
-  bio:          { fontSize: 12, color: COLORS.textSecond, lineHeight: 19, marginBottom: 10 },
-  actionRow:    { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  actionBtn:    { flex: 1, paddingVertical: 16, borderRadius: RADIUS.md, alignItems: 'center' },
-  callBtn:      { backgroundColor: COLORS.legal },
-  dirBtn:       { backgroundColor: COLORS.warn },
-  webBtn:       { backgroundColor: COLORS.steel },
-  actionBtnText:{ color: COLORS.bgCard, ...FONTS.heavy, fontSize: 12 },
-  phoneText:    { fontSize: 12, lineHeight: 20, color: COLORS.textSecond, textAlign: 'center', marginTop: 2 },
-  callBtnBig: {
-    backgroundColor: COLORS.legal,
-    borderRadius: 12, paddingVertical: 16,
-    alignItems: 'center', marginTop: 10, marginBottom: 6,
-    shadowColor: COLORS.legal, shadowOpacity: 0.25,
-    shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
-  callBtnBigText: { color: COLORS.bgCard, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 14, lineHeight: 21, letterSpacing: 0.3 },
-  noPhoneBox: { backgroundColor: COLORS.bg, borderRadius: 8, padding: 10, marginTop: 10, marginBottom: 4, alignItems: 'center' },
-  noPhoneText: { color: colors.steel, fontSize: 12 },
-  secondaryRow: { flexDirection: 'row', gap: 8, marginTop: 2, marginBottom: 2, flexWrap: 'wrap' },
-  secondaryBtn: {
-    flex: 1, minWidth: 80,
-    paddingVertical: 8, paddingHorizontal: 10,
-    borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
-    alignItems: 'center', backgroundColor: COLORS.bg },
-  secondaryBtnText: { fontSize: 12, color: COLORS.textSecond, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  secondaryBtnSaved: { borderColor: COLORS.warn, backgroundColor: COLORS.warn + '12' },
-  bookBtn:     { borderColor: COLORS.navy, backgroundColor: COLORS.navy + '12' },
-  bookBtnText: { color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  secondaryBtnTextSaved: { color: COLORS.warn },
-  expandHint:   { fontSize: 12, color: COLORS.textSecond, textAlign: 'right', marginTop: 8 },
-  smsBtn: {
-    backgroundColor: colors.blue,
-    borderRadius: 12, paddingVertical: 12,
-    alignItems: 'center', marginBottom: 6 },
-  smsBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 14, lineHeight: 21, letterSpacing: 0.3 },
-  leaveMessageBtn: {
-    borderRadius: 12, paddingVertical: 11,
-    alignItems: 'center', marginBottom: 6,
-    borderWidth: 1.5, borderColor: COLORS.navy + '55',
-    backgroundColor: COLORS.navy + '08' },
-  leaveMessageBtnText: { color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
-  msgSheet: {
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 36,
-    shadowColor: COLORS.bg, shadowOpacity: 0.15, shadowRadius: 12 },
-  msgSheetTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 4 },
-  msgSheetSub:   { fontSize: 12, lineHeight: 18, marginBottom: 16 },
-  msgInput: {
-    borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 16,
-    paddingVertical: 11, fontSize: 15, lineHeight: 22, marginBottom: 10 },
-  msgInputTall: { height: 90, paddingTop: 11 },
-  msgSendBtn: {
-    backgroundColor: COLORS.navy, borderRadius: 12,
-    paddingVertical: 16, alignItems: 'center' },
-  msgSendBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
-    lineHeight: 22 },
-  secureBtn:     { borderColor: colors.legal, backgroundColor: colors.legal + '12' },
-  secureBtnText: { color: colors.legal, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-
-  // Filter modal
-  needOverlay: {
-    flex: 1, backgroundColor: 'rgba(2,14,28,0.82)',
-    justifyContent: 'center', alignItems: 'center', padding: 20 },
-  needSheet: {
-    backgroundColor: colors.bgCard, borderRadius: 24,
-    padding: 24, width: '100%', maxWidth: 400 },
-  needTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, textAlign: 'center', marginBottom: 4 },
-  needSub:   { fontSize: 14, lineHeight: 21, color: colors.info, textAlign: 'center', marginBottom: 20 },
-  needGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  needBtn: {
-    width: '47%', paddingVertical: 16, paddingHorizontal: 12,
-    borderRadius: 14, alignItems: 'center', borderWidth: 1.5 },
-  needBtnIcon:  { fontSize: 28, marginBottom: 6 },
-  modalContainer: { flex: 1, backgroundColor: COLORS.bg },
-  modalHeader: {
-    backgroundColor: COLORS.navy, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle:     { fontSize: 20, ...FONTS.black, color: COLORS.bgCard },
-  modalCloseBtn:  { padding: 6 },
-  modalCloseText: { fontSize: 20, color: COLORS.bgCard, ...FONTS.semi },
-  modalBody:      { padding: 20 },
-  filterLabel:    { fontSize: 12, ...FONTS.bold, color: COLORS.textSecond, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  pickerWrap:     { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, overflow: 'hidden', backgroundColor: COLORS.bgCard },
-  picker:         { height: 48 },
-  toggleRow:      { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingVertical: 4 },
-  toggle:         { width: 40, height: 22, borderRadius: 12, backgroundColor: COLORS.border, marginRight: 12 },
-  toggleOn:       { backgroundColor: COLORS.navy },
-  toggleLabel:    { fontSize: 14, lineHeight: 21, color: COLORS.textPrimary, flex: 1 },
-  applyBtn: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.lg,
-    paddingVertical: 15, alignItems: 'center', marginTop: 24, ...SHADOW.sm },
-  applyBtnText:   { color: COLORS.bgCard, ...FONTS.black, fontSize: 15,
-    lineHeight: 22 },
-  clearBtn:       { alignItems: 'center', paddingVertical: 16 },
-  clearBtnText:   { fontSize: 14, lineHeight: 21, color: COLORS.textMuted, ...FONTS.semi },
-  walkthroughBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.bgSubtle, borderRadius: RADIUS.md, padding: 12, marginHorizontal: 12, marginTop: 8 },
-  walkthroughBannerText: { fontSize: 12, color: colors.blue, flex: 1, lineHeight: 18 },
-  savedHeaderBtn:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
-    paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.warn + '60',
-    backgroundColor: COLORS.warn + '10' },
+  headerBar: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 2, ...SHADOW.sm },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  heading: { fontSize: 22, ...FONTS.black, flexShrink: 1 },
+  resultBadge: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  resultBadgeText: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  locationLabel: { fontSize: 12, marginTop: 2 },
+  savedHeaderBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.warn + '60', backgroundColor: COLORS.warn + '10' },
   savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warnDark },
-  conflictNote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 2, marginBottom: 10, fontStyle: 'italic' },
-  needBtnLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textPrimary, textAlign: 'center' },
-  conflictNoteBox: { borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 10 } });
+  searchRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  searchInput: { flex: 1, minWidth: 0, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, lineHeight: 20 },
+  searchBtn: { borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center', minHeight: 44 },
+  searchBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  chipRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  chip: { flexShrink: 1, borderWidth: 1.5, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 7, minHeight: 44, justifyContent: 'center' },
+  chipText: { fontSize: 12, lineHeight: 18, ...FONTS.semi },
+  hint: { fontSize: 12, lineHeight: 17, marginTop: 6 },
+  listContent: { padding: 12, paddingBottom: 96 },
+  resultCount: { textAlign: 'center', fontSize: 12, padding: 16 },
+  emptyBlock: { alignItems: 'center', padding: 32, gap: 12 },
+  emptyText: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  emptyBtn: { borderRadius: RADIUS.md, paddingVertical: 12, paddingHorizontal: 20, minHeight: 44 },
+  emptyBtnText: { ...FONTS.bold },
+  card: { borderRadius: RADIUS.lg, padding: 14, marginBottom: 10, ...SHADOW.sm },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  cardName: { fontSize: 16, lineHeight: 22, ...FONTS.heavy },
+  cardAddress: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+  ratingBlock: { flexDirection: 'row', alignItems: 'center' },
+  ratingNum: { fontSize: 15, lineHeight: 22, ...FONTS.heavy },
+  ratingStar: { fontSize: 14, marginLeft: 1 },
+  reviewCount: { fontSize: 11, marginLeft: 2 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
+  badgeText: { fontSize: 11, lineHeight: 16, ...FONTS.semi },
+  reviewSummary: { fontSize: 12, lineHeight: 18, marginTop: 6, fontStyle: 'italic' },
+  secondaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  secondaryBtn: { flexGrow: 1, flexBasis: '30%', minHeight: 44, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  walkthroughBanner: { borderRadius: RADIUS.md, padding: 12, marginBottom: 8 },
+  walkthroughBannerText: { fontSize: 12, lineHeight: 18 },
+  modalContainer: { flex: 1 },
+  modalHeader: { backgroundColor: COLORS.navy, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontSize: 20, ...FONTS.black, color: COLORS.white, flexShrink: 1 },
+  modalCloseBtn: { padding: 10 },
+  modalCloseText: { fontSize: 20, color: COLORS.white, ...FONTS.semi },
+  modalBody: { padding: 20, paddingBottom: 40 },
+  filterLabel: { fontSize: 12, ...FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  pickerWrap: { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden' },
+  picker: { height: 48, borderWidth: 0, paddingHorizontal: 8 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingVertical: 6, gap: 12 },
+  toggle: { width: 44, height: 24, borderRadius: 12, padding: 2 },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.white },
+  knobOn: { transform: [{ translateX: 20 }] },
+  toggleLabel: { fontSize: 14, lineHeight: 21, flex: 1 },
+  applyBtn: { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
+  applyBtnText: { color: COLORS.white, ...FONTS.black, fontSize: 15, lineHeight: 22 },
+  clearBtn: { alignItems: 'center', paddingVertical: 16 },
+  clearBtnText: { fontSize: 14, lineHeight: 21, ...FONTS.semi },
+  needOverlay: { flex: 1, backgroundColor: 'rgba(2,14,28,0.82)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  needSheet: { borderRadius: 24, padding: 20, width: '100%', maxWidth: 420 },
+  needTitle: { fontSize: 20, lineHeight: 26, fontFamily: 'Inter_900Black', fontWeight: '900', textAlign: 'center', marginBottom: 4 },
+  needSub: { fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 16 },
+  needGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  needBtn: { width: '47%', paddingVertical: 14, paddingHorizontal: 8, borderRadius: 14, alignItems: 'center', borderWidth: 1.5 },
+  needBtnIcon: { fontSize: 26, marginBottom: 6 },
+  needBtnLabel: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center' },
+  badgeOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
+  badgeSheet: { borderRadius: 16, padding: 20, borderWidth: 1 },
+  badgeSheetTitle: { fontSize: 18, lineHeight: 26, fontWeight: '700', marginBottom: 8 },
+  badgeSheetBody: { fontSize: 14, lineHeight: 21, marginBottom: 10 },
+  fab: { position: 'absolute', bottom: 24, left: 16, right: 16, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  fabText: { fontWeight: '700', fontSize: 15, lineHeight: 22 },
+  bulkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  bulkSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
+  bulkInput: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 14, lineHeight: 21, minHeight: 100, textAlignVertical: 'top', marginBottom: 12 },
+  bulkResult: { fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 10 },
+  bulkCancel: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  bulkSend: { flex: 2, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+});
 
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(LawyersScreen);

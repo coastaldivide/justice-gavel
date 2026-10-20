@@ -693,18 +693,20 @@ describe('9. Screen Contracts — Alert.alert Confirm Dialogs', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('10. LawyersScreen — Complex State Model', () => {
 
-  test('10-01: LawyersScreen CITIES array starts with Nashville (home base)', async () => {
-    const fs  = await import('fs');
+  test('10-01: LawyersScreen searches any city / state / ZIP / name (no fixed 19-city list)', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('Nashville, TN');
-    expect(src).toContain('CITIES');
+    expect(src).toContain('lw_search_placeholder');
+    expect(src).toContain("kind: 'query'");
+    expect(src).not.toContain('const CITIES');
   });
 
-  test('10-02: LawyersScreen has expanded and saved per-item state', async () => {
-    const fs  = await import('fs');
+  test('10-02: LawyersScreen keeps saved state per listing, synced with /saved/lawyers', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('expanded');
-    expect(src).toContain('saved');
+    expect(src).toContain('savedMap');
+    expect(src).toContain("'/saved/lawyers'");
+    expect(src).toContain('useFocusEffect');
   });
 
 

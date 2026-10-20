@@ -199,19 +199,19 @@ export async function sendBookingConfirmation({ to, clientName, attorneyName,
           <tr><td style="padding:8px 0;color:#6B7280">Platform fee</td>
               <td style="padding:8px 0;font-weight:600">$${e(feeDollars)} (charged)</td></tr>
         </table>
-        <a href="${safeUrl(meetingLink)}"
+        ${meetingLink ? `<a href="${safeUrl(meetingLink)}"
            style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
                   border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
           Join Video Call
-        </a>
+        </a>` : ''}
         <p style="color:#6B7280;font-size:13px;margin-top:24px">
-          Need to cancel? <a href="${safeUrl(cancellationUrl)}">Cancel here</a>
-          (free cancellation until 2 hours before the appointment).<br>
+          ${cancellationUrl ? `Need to cancel? <a href="${safeUrl(cancellationUrl)}">Cancel here</a>` : 'Need to cancel? Open the booking in the Justice Gavel app'}
+          (full refund until 2 hours before the appointment).<br>
           <strong>⚖️ Legal Notice:</strong> This is a general consultation.
           It does not create an attorney-client relationship.
         </p>
       </div>`,
-    text: `Consultation confirmed with ${attorneyName} on ${dateLabel} at ${timeSlot}. Meeting link: ${meetingLink}`,
+    text: `Consultation confirmed with ${attorneyName} on ${dateLabel} at ${timeSlot}.${meetingLink ? ` Meeting link: ${meetingLink}` : ''}`,
   });
 }
 
@@ -242,15 +242,15 @@ export async function sendAttorneyBookingAlert({ to, attorneyName, clientName,
           ${caseTitle ? `<tr><td style="padding:8px 0;color:#6B7280">Case</td>
               <td style="padding:8px 0">${e(caseTitle)}</td></tr>` : ''}
         </table>
-        <a href="${safeUrl(meetingLink)}"
+        ${meetingLink ? `<a href="${safeUrl(meetingLink)}"
            style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
                   border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
           Join Video Call
-        </a>
+        </a>` : ''}
         <p style="color:#6B7280;font-size:12px;margin-top:16px">
           Manage this consultation in your Justice Gavel Attorney Inbox.
         </p>
       </div>`,
-    text: `New consultation: ${clientName} on ${dateLabel} at ${timeSlot}. Meeting link: ${meetingLink}`,
+    text: `New consultation: ${clientName} on ${dateLabel} at ${timeSlot}.${meetingLink ? ` Meeting link: ${meetingLink}` : ''}`,
   });
 }

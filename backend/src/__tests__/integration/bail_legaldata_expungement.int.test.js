@@ -15,37 +15,12 @@ describeIntegration('bail calculator, legaldata, expungement (real Postgres)', (
   });
 
   // ── bail ────────────────────────────────────────────────────────────────────
-  it('POST /bail/calculate returns the criminal-bail shape BailCalculatorScreen renders', async () => {
+  it('POST /bail/calculate is gone (it multiplied invented amounts by invented percentages)', async () => {
     const res = await ctx.request().post('/api/bail/calculate').send({
-      state: 'TN', charge_type: 'felony', severity: 'medium',
-      prior_record: 'minor', flight_risk: 'low', employed: true,
+      state: 'TN', charge_type: 'felony', severity: 'medium', prior_record: 'minor', flight_risk: 'low', employed: true,
     });
-    expect(res.status).toBe(200);
-    expect(res.body.type).toBe('criminal_bail');
-    expect(res.body.recommended).toBeGreaterThan(0);
-    expect(res.body.recommended % 500).toBe(0);
-    expect(res.body.bail_range_min).toBeLessThanOrEqual(res.body.recommended);
-    expect(res.body.bail_range_max).toBeGreaterThanOrEqual(res.body.recommended);
-    // no invented bail-agent fee: no sourced premium data
-    expect(res.body).not.toHaveProperty('bondsman_cost');
-    expect(res.body).not.toHaveProperty('bondsman_rate_pct');
-    expect(res.body.fee_note).toMatch(/set their own fees/);
-    expect(Array.isArray(res.body.conditions)).toBe(true);
-    expect(res.body.disclaimer).toMatch(/estimate/i);
-  });
-
-  it('POST /bail/calculate handles the ICE-hold branch and rejects missing fields', async () => {
-    const ice = await ctx.request().post('/api/bail/calculate').send({
-      state: 'TX', charge_type: 'felony', ice_hold: true, flight_risk: 'medium',
-    });
-    expect(ice.status).toBe(200);
-    expect(ice.body.type).toBe('immigration_bond');
-    expect(ice.body.bond_min).toBe(1500);
-    expect(ice.body).not.toHaveProperty('bondsman_min');
-    expect(ice.body.fee_note).toMatch(/set their own fees/);
-
-    expect((await ctx.request().post('/api/bail/calculate').send({ state: 'TN' })).status).toBe(400);
-    expect((await ctx.request().post('/api/bail/calculate').send({})).status).toBe(400);
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(res.body)).not.toMatch(/recommended/);
   });
 
   it('GET /bail?state=TN returns schedule rows from the DB', async () => {

@@ -4,6 +4,7 @@
  *   • every money-moving POST under /api/billing returns 503 payments_unavailable
  *   • read-only billing GETs keep working on the free tier
  *   • consultation booking returns the same 503; slots/prefill/callback work
+ *     (booking and call-backs only for a lawyer who is on the app)
  * No mock payment ever activates anything — asserted against the DB.
  */
 import { describeIntegration, initSuite } from './_harness.js';
@@ -80,10 +81,28 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     expect((await ctx.request().get('/api/billing/leads')).status).toBe(401);
   });
 
-  it('consultation booking returns 503 payments_unavailable and books NOTHING', async () => {
-    const anyLawyer = await ctx.db.get('SELECT id FROM lawyers ORDER BY id LIMIT 1');
+  // A directory lawyer linked to an attorney account (as an approved listing
+  // claim does) can be booked; any other listing cannot (nobody would see it).
+  let linked; let unlinked;
+  const linkLawyer = async () => {
+    if (linked) return;
+    const atty = await ctx.register({ displayName: 'Linked Attorney', accountType: 'attorney' });
+    const row = await ctx.db.get(`SELECT l.id, l.state FROM lawyers l WHERE l.user_id IS NULL AND l.state = 'TX'
+      AND NOT EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id) ORDER BY l.id LIMIT 1`);
+    await ctx.db.run('INSERT INTO attorney_profiles (user_id, lawyer_id) VALUES (?, ?)', [atty.user.id, row.id]);
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM attorney_profiles WHERE lawyer_id = ?', [row.id]); });
+    linked = row;
+    unlinked = await ctx.db.get(`SELECT l.id FROM lawyers l WHERE l.user_id IS NULL
+      AND NOT EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id) AND l.id <> ? ORDER BY l.id LIMIT 1`, [row.id]);
+  };
+
+  it('consultation booking returns 503 payments_unavailable and books NOTHING (lawyer on the app, real slot)', async () => {
+    await linkLawyer();
+    const slots = await ctx.request().get(`/api/consultations/slots/${linked.id}`).set(user.headers);
+    const day = slots.body.slots.find(d => d.times.some(t => t.available));
+    const slot = day.times.find(t => t.available);
     const res = await ctx.request().post('/api/consultations/book').set(user.headers).send({
-      lawyer_id: anyLawyer.id, lawyer_name: 'Test Attorney', date_slot: '2027-03-02', time_slot: '9:00 AM', duration_min: 30,
+      lawyer_id: linked.id, date_slot: day.date, time_slot: slot.time, duration_min: 30,
     });
     expect(res.status).toBe(503);
     expect(res.body.error).toBe('payments_unavailable');
@@ -91,16 +110,33 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     expect(Number(rows.n)).toBe(0);
   });
 
-  it('slots + prefill + my-bookings list keep working without payments', async () => {
-    const lawyer = await ctx.db.get('SELECT id FROM lawyers ORDER BY id LIMIT 1');
-    const slots = await ctx.request().get(`/api/consultations/slots/${lawyer.id}`).set(user.headers);
+  it('a listing that is not on the app cannot be booked (409 not_on_app, nothing stored)', async () => {
+    await linkLawyer();
+    const slots = await ctx.request().get(`/api/consultations/slots/${unlinked.id}`).set(user.headers);
     expect(slots.status).toBe(200);
-    expect(Array.isArray(slots.body.slots)).toBe(true);
+    expect(slots.body).toMatchObject({ bookable: false, reason: 'not_on_app', slots: [] });
+    const res = await ctx.request().post('/api/consultations/book').set(user.headers).send({
+      lawyer_id: unlinked.id, date_slot: '2027-03-02', time_slot: '9:00 AM', duration_min: 30,
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('not_on_app');
+  });
+
+  it('slots (lawyer zone + exact instants) + prices + prefill + my-bookings list work without payments', async () => {
+    await linkLawyer();
+    const slots = await ctx.request().get(`/api/consultations/slots/${linked.id}`).set(user.headers);
+    expect(slots.status).toBe(200);
+    expect(slots.body).toMatchObject({ bookable: true, time_zone: 'America/Chicago', refund_cutoff_hours: 2 });
+    expect(slots.body.prices.map(p => p.fee_display)).toEqual(['$10.00', '$15.00', '$25.00']);
     expect(slots.body.slots.length).toBeGreaterThan(0);
     expect(slots.body.slots[0]).toEqual(expect.objectContaining({
       date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), times: expect.any(Array),
     }));
-    expect(slots.body.slots[0].times[0]).toEqual(expect.objectContaining({ time: expect.any(String), available: expect.any(Boolean) }));
+    const first = slots.body.slots[0].times[0];
+    expect(first).toEqual(expect.objectContaining({ time: '9:00 AM', available: expect.any(Boolean), starts_at: expect.any(String) }));
+    // 9:00 AM on a Texas lawyer's clock, whatever the server's own zone
+    const wall = new Date(first.starts_at).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' });
+    expect(wall).toBe('9:00 AM');
 
     const prefill = await ctx.request().get('/api/consultations/prefill').set(user.headers);
     expect(prefill.status).toBe(200);
@@ -111,14 +147,21 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     expect(mine.body.consultations).toEqual([]);
   });
 
-  it('callback-request stores a row (no payment involved) and validates the phone', async () => {
-    const res = await ctx.request().post('/api/consultations/callback-request').set(user.headers)
-      .send({ phone: '+16155550123', notes: 'Please call about bail', duration_min: 30 });
-    expect(res.status).toBe(200);
+  it('callback-request: only for a lawyer on the app; stores the row and validates the contact', async () => {
+    await linkLawyer();
+    // its own user: bookings and call-backs share a 5-per-hour limit per person
+    const caller = await ctx.register({ displayName: 'Caller' });
+    const no = await ctx.request().post('/api/consultations/callback-request').set(caller.headers)
+      .send({ lawyer_id: unlinked.id, phone: '+16155550123', notes: 'Please call about bail' });
+    expect(no.status).toBe(409);
+    const res = await ctx.request().post('/api/consultations/callback-request').set(caller.headers)
+      .send({ lawyer_id: linked.id, phone: '+16155550123', notes: 'Please call about bail', duration_min: 30 });
+    expect(res.status).toBe(201);
     expect(res.body.ok).toBe(true);
-    const row = await ctx.db.get('SELECT phone, notes FROM callback_requests WHERE user_id = ?', [user.user.id]);
+    const row = await ctx.db.get('SELECT phone, notes FROM callback_requests WHERE user_id = ?', [caller.user.id]);
     expect(row).toMatchObject({ phone: '+16155550123', notes: 'Please call about bail' });
-    expect((await ctx.request().post('/api/consultations/callback-request').set(user.headers).send({})).status).toBe(400);
+    expect((await ctx.request().post('/api/consultations/callback-request').set(caller.headers).send({ lawyer_id: linked.id, phone: '12' })).status).toBe(400);
+    expect((await ctx.request().post('/api/consultations/callback-request').set(caller.headers).send({})).status).toBe(400);
   });
 
   it('booking validation precedes payment: missing slot fields are 400s, guests 401', async () => {

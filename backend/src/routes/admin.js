@@ -525,6 +525,56 @@ router.post('/listing-reports/:id', async (req, res) => {
   }
 });
 
+// ── Review moderation ────────────────────────────────────────────────────────
+// GET  /api/admin/reviews?status=pending|reported|hidden|all&limit=
+//      pending  = held (contact details / links in the comment, or reported by
+//                 several people); reported = published with open reports
+// POST /api/admin/reviews/:id  { action: 'publish'|'hide', note? } — closes its reports
+router.get('/reviews', async (req, res) => {
+  try {
+    const db = await openDb();
+    const status = ['pending', 'reported', 'hidden', 'all'].includes(req.query.status) ? req.query.status : 'pending';
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 100, 1), 500);
+    const where = status === 'all' ? 'TRUE'
+      : status === 'reported' ? "r.status = 'published' AND EXISTS (SELECT 1 FROM review_reports rr WHERE rr.review_id = r.id AND rr.status = 'open')"
+        : 'r.status = ?';
+    const rows = await db.all(
+      `SELECT r.id, r.entity_type, r.entity_id, r.rating, r.comment, r.status, r.verified, r.created_at,
+              r.moderated_at, r.moderation_note,
+              COALESCE(l.name, b.name) AS listing_name,
+              (SELECT COUNT(*) FROM review_reports rr WHERE rr.review_id = r.id AND rr.status = 'open') AS open_reports,
+              (SELECT string_agg(DISTINCT rr.reason, ',') FROM review_reports rr WHERE rr.review_id = r.id AND rr.status = 'open') AS report_reasons
+         FROM reviews r
+         LEFT JOIN lawyers l     ON r.entity_type = 'lawyer'     AND l.id = r.entity_id
+         LEFT JOIN bail_agents b ON r.entity_type = 'bail_agent' AND b.id = r.entity_id
+        WHERE ${where}
+        ORDER BY r.created_at DESC LIMIT ?`,
+      ['pending', 'hidden'].includes(status) ? [status, limit] : [limit]);
+    res.json({ reviews: rows.map(r => ({ ...r, open_reports: Number(r.open_reports) })), count: rows.length });
+  } catch (e) {
+    logger.error({ msg: '[admin/reviews]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+router.post('/reviews/:id', async (req, res) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10);
+    const action = req.body?.action;
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'Bad review id.' });
+    if (!['publish', 'hide'].includes(action)) return res.status(400).json({ error: "action must be 'publish' or 'hide'." });
+    const note = req.body?.note == null ? null : String(req.body.note).slice(0, 500);
+    const db = await openDb();
+    const row = await db.get(
+      `UPDATE reviews SET status = ?, moderated_at = NOW(), moderated_by = ?, moderation_note = ?
+        WHERE id = ? RETURNING id, status`, [action === 'publish' ? 'published' : 'hidden', req.user.id, note, id]);
+    if (!row) return res.status(404).json({ error: 'No review with that id.' });
+    await db.run(`UPDATE review_reports SET status = 'closed' WHERE review_id = ? AND status = 'open'`, [id]);
+    res.json({ ok: true, id: Number(row.id), status: row.status });
+  } catch (e) {
+    logger.error({ msg: '[admin/reviews/:id]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
 // ── Listing claims ("Claim your listing") ────────────────────────────────────
 // GET  /api/admin/listing-claims?status=pending|approved|rejected|all
 // POST /api/admin/listing-claims/:id  { decision: 'approve'|'reject', note? }

@@ -29,15 +29,11 @@ const mkMatter = (v, o={}) => ({
 
 // ── DISC20. 2 Discrepancy Fixes ───────────────────────────────────────────
 describe('DISC20. Discrepancy Fixes — accessibility count + LawyersScreen Hague', () => {
-  test('DISC20-02: LawyersScreen specialty routes Real Estate → TenantRights [existing pattern]', async () => {
+  test('DISC20-02: LawyersScreen need routing: immigration → IceDetention, others filter the list', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx','utf8');
-    // Current specialty routing documented
-    expect(src).toContain('Real Estate');
-    expect(src).toContain('TenantRights');
-    expect(src).toContain('specialty');
-    // ENHANCEMENT: Add { key:'Hague', screen:'HagueContact' } to specialty routing
-    // using the same navigate('MoreTab', { screen: 'HagueContact' }) pattern
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    expect(src).toContain('IceDetention');
+    expect(src).toContain('setCaseType');
   });
 });
 

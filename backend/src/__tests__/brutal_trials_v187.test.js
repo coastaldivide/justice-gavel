@@ -56,11 +56,11 @@ describe('CONTRACT. FE→BE API Contract Verification', () => {
 
 // ── RUNTIME FLOW VERIFICATION ─────────────────────────────────────────────
 describe('FLOW. 5 Runtime Flow Traces', () => {
-  test('FLOW-01: Consultation booking validates date + checks conflicts', async () => {
+  test('FLOW-01: Consultation booking checks the slot is offered and not taken', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/consultations.js','utf8');
-    expect(src).toMatch(/date|time/i);
-    expect(src).toMatch(/conflict|overlap|existing/i);
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/consultations.js', 'utf8');
+    expect(src).toContain('findSlot');
+    expect(src).toContain('slot_taken');
     expect(src).toContain('authRequired');
   });
   test('FLOW-02: Motion generation uses AI queue via generateMotion() helper', async () => {

@@ -23,9 +23,8 @@ export async function fetchCourtDateIcs(id: number): Promise<{ text: string; fil
   return { text, filename: icsFilename(text) };
 }
 
-/** Download / share the file. Resolves to how it was delivered. */
-export async function exportCourtDateIcs(id: number): Promise<'download' | 'share'> {
-  const { text, filename } = await fetchCourtDateIcs(id);
+/** Download (web) or share (native) a calendar file. Resolves to how it was delivered. */
+export async function saveIcs(text: string, filename: string): Promise<'download' | 'share'> {
   if (Platform.OS === 'web') {
     const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -44,4 +43,24 @@ export async function exportCourtDateIcs(id: number): Promise<'download' | 'shar
   if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
   await Sharing.shareAsync(file.uri, { mimeType: 'text/calendar', UTI: 'public.calendar-event', dialogTitle: t('x_ics_export_add_calendar') });
   return 'share';
+}
+
+/** Download / share a court date's file. Resolves to how it was delivered. */
+export async function exportCourtDateIcs(id: number): Promise<'download' | 'share'> {
+  const { text, filename } = await fetchCourtDateIcs(id);
+  return saveIcs(text, filename);
+}
+
+const icsEscape = (s: string) => s.replace(/\\/g, '\\\\').replace(/[,;]/g, m => `\\${m}`).replace(/\r?\n/g, '\\n');
+const icsUtc = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+/** A one-event calendar file for an exact start (UTC) and length. */
+export function buildEventIcs({ uid, start, minutes, title, description }: { uid: string; start: Date; minutes: number; title: string; description?: string }): string {
+  const end = new Date(start.getTime() + minutes * 60_000);
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Justice Gavel//Consultation//EN', 'CALSCALE:GREGORIAN', // i18n-exempt: iCalendar protocol fields
+    'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${icsUtc(new Date())}`, `DTSTART:${icsUtc(start)}`, `DTEND:${icsUtc(end)}`,
+    `SUMMARY:${icsEscape(title)}`, ...(description ? [`DESCRIPTION:${icsEscape(description)}`] : []),
+    'END:VEVENT', 'END:VCALENDAR', '',
+  ].join('\r\n');
 }

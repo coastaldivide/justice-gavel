@@ -205,11 +205,12 @@ describe('3. DeadlineCalculatorScreen — Criminal Defense Deadlines', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('4. SavedLawyersScreen — Starred Attorney List', () => {
 
-  test('4-01: fetches /saved/lawyers and /reviews', async () => {
-    const fs  = await import('fs');
+  test('4-01: fetches /saved/lawyers; reviews live on the profile (no second review form)', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain("'/saved/lawyers'");
-    expect(src).toContain("'/reviews'");
+    expect(src).toContain('LawyerProfile');
+    expect(src).not.toContain("'/reviews'");
   });
 
   test('4-02: has call, SMS, message, remove actions per lawyer', async () => {

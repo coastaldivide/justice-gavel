@@ -62,12 +62,7 @@ describeIntegration('review follow-ups: legal content + privacy (real Postgres)'
   it('F2 + F3: no bail-agent premium or timing claim in any response', async () => {
     const calc = await ctx.request().post('/api/bail/calculate')
       .send({ state: 'TN', charge_type: 'felony', severity: 'medium', prior_record: 'none', flight_risk: 'low', employed: true });
-    expect(calc.status).toBe(200);
-    expect(calc.body).not.toHaveProperty('bondsman_cost');
-    expect(calc.body).not.toHaveProperty('bondsman_rate_pct');
-    expect(calc.body.fee_note).toMatch(/set their own fees/);
-    const ice = await ctx.request().post('/api/bail/calculate').send({ state: 'TX', charge_type: 'felony', ice_hold: true, flight_risk: 'low' });
-    expect(ice.body).not.toHaveProperty('bondsman_min');
+    expect(calc.status).toBe(404); // removed: unsourced multipliers
     const imm = await ctx.request().get('/api/bail/immigration');
     expect(imm.body).not.toHaveProperty('premium_rate');
     const est = await ctx.request().get('/api/bail/estimate-total?bail_amount=10000');
@@ -75,7 +70,7 @@ describeIntegration('review follow-ups: legal content + privacy (real Postgres)'
     const quoted = await ctx.request().get('/api/bail/estimate-total?bail_amount=10000&rate=0.08');
     expect(quoted.body.premium).toBe(800);
     expect(quoted.body).not.toHaveProperty('estimated_fees');
-    for (const body of [calc.body, ice.body, imm.body, est.body]) expect(JSON.stringify(body)).not.toMatch(/1[05]\s?%/);
+    for (const body of [imm.body, est.body]) expect(JSON.stringify(body)).not.toMatch(/1[05]\s?%/);
     const lesson = await ctx.db.get('SELECT content FROM lessons WHERE id = 9');
     if (lesson) expect(lesson.content).not.toMatch(/10\s?%/);
     const nearby = await ctx.request().get('/api/help/nearby?state=TN&limit=3');

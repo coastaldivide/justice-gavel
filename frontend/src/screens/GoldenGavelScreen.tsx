@@ -3,6 +3,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
+import { getToken } from '../utils/secureStorage';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { t, useLang, perLang } from '../i18n';
@@ -104,7 +105,7 @@ function JourneyBar({ level }: { level: GavelLevel }) {
             { backgroundColor: level >= s ? GAVEL_COLOR[s].bg : COLORS.bg,
               borderColor:      level >= s ? GAVEL_COLOR[s].border : COLORS.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.journeyEmoji}>{level >= s ? GAVEL_EMOJI[s] : '○'}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.journeyLabel, { color: level >= s ? GAVEL_COLOR[s].text : COLORS.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.journeyLabel, { color: level >= s ? GAVEL_COLOR[s].text : COLORS.textMuted }]}>
               {GAVEL_LABEL()[s]}
             </Text>
           </View>
@@ -148,9 +149,9 @@ function CriteriaSection({ title, progress, criteria, earned }:
         <CritRow
           label={t('x_golden_gavel_active_months', { months_active: progress.months_active, value: ((criteria as GavelCriteria).months_active ?? 0) })}
           met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
-        {((criteria as GavelCriteria).lessons_started ?? 0) && !((criteria as GavelCriteria).lessons_completed ?? 0) &&
+        {!!(criteria as GavelCriteria).lessons_started && !(criteria as GavelCriteria).lessons_completed &&
           <CritRow label={t('x_golden_gavel_started_at_least_one')} met={!!progress.lessons_started} />}
-        {((criteria as GavelCriteria).lessons_completed ?? 0) &&
+        {!!(criteria as GavelCriteria).lessons_completed &&
           <CritRow label={t('x_golden_gavel_all_lessons_completed')} met={!!progress.lessons_completed} />}
         <CritRow label={t("golden_gavel.zero_flags")} met={progress.compliance_flags === 0} />
       </>}
@@ -194,15 +195,18 @@ function GoldenGavelScreen(): React.JSX.Element {
     setFetchError(null);
     try {
       let failed = 0;
+      // Guests: only the public hall — status / eligibility are per account (no 401 calls).
+      const signedIn = !!(await getToken().catch(() => null));
+      const none = Promise.resolve({ data: null });
       const [s, e, h] = await Promise.all([
-        api.get('/golden-gavel/status').catch(() => { failed++; return { data: null }; }),
-        api.get('/golden-gavel/eligibility').catch(() => { failed++; return { data: null }; }),
+        signedIn ? api.get('/golden-gavel/status').catch(() => { failed++; return { data: null }; }) : none,
+        signedIn ? api.get('/golden-gavel/eligibility').catch(() => { failed++; return { data: null }; }) : none,
         api.get('/golden-gavel/hall').catch(() => { failed++; return { data: [] }; }),
       ]);
       if (s.data) setStatus(s.data);
       if (e.data) setElig(e.data);
       if (Array.isArray(h.data)) setHall(h.data);
-      if (failed === 3) setFetchError(t('x_golden_gavel_unable_load_please_check'));
+      if (failed === (signedIn ? 3 : 1)) setFetchError(t('x_golden_gavel_unable_load_please_check'));
     } catch (e: any) {
       setFetchError(t('x_golden_gavel_unable_load_please_check')); __DEV__ && console.warn(e?.message); }
     refresh ? setRefreshing(false) : setLoading(false);
@@ -259,7 +263,7 @@ function GoldenGavelScreen(): React.JSX.Element {
         <JourneyBar level={level} />
         {level < 3 && elig?.next_level_label && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.textMuted }]}>
-            {t('x_golden_gavel_next_gavel', { next_level_label: elig.next_level_label, value: elig.missing_for_next.length > 0 ? ` · ${elig.missing_for_next[0]}` : ' ' + t('x_golden_gavel_almost_there') })}
+            {t('x_golden_gavel_next_gavel', { next_level_label: GAVEL_LABEL()[Math.min(3, level + 1) as GavelLevel], value: elig.missing_for_next.length > 0 ? ` · ${elig.missing_for_next[0]}` : ' ' + t('x_golden_gavel_almost_there') })}
           </Text>
         )}
         {level === 3 && (
@@ -351,7 +355,7 @@ function GoldenGavelScreen(): React.JSX.Element {
                     {entry.display_name}{entry.featured ? '  ★' : ''}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.hallMeta, { color: colors.textMuted }]}>
-                    {t('x_golden_gavel_gavel_2', { value: entry.level_label || GAVEL_LABEL()[entry.gavel_level as GavelLevel], value2: entry.tier === 'attorney' ? ' ' + t('x_golden_gavel_attorney') : entry.tier === 'bondsman' ? ' ' + t('x_golden_gavel_bondsman') : ' ' + t('x_golden_gavel_member'), value3: entry.state ? ` · ${entry.state}` : '' })}
+                    {t('x_golden_gavel_gavel_2', { value: GAVEL_LABEL()[entry.gavel_level as GavelLevel] || entry.level_label, value2: entry.tier === 'attorney' ? ' ' + t('x_golden_gavel_attorney') : entry.tier === 'bondsman' ? ' ' + t('x_golden_gavel_bondsman') : ' ' + t('x_golden_gavel_member'), value3: entry.state ? ` · ${entry.state}` : '' })}
                   </Text>
                 </View>
                 <View style={styles.helpedBadge}>

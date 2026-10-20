@@ -227,12 +227,12 @@ describe('S6. CaseScreen — 1340-Line Internal Architecture', () => {
 
 // ── S12. UX — Performance + Security ──────────────────────────────────────
 describe('S12. UX — Performance + Security Patterns', () => {
-  test('S12-01: LawyersScreen stale-while-revalidate shows cached immediately', async () => {
+  test('S12-01: LawyersScreen shows a real error with Try again (no fake cache of saved lawyers)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx', 'utf8');
-    expect(src).toContain('Stale-while-revalidate: show cached data immediately');
-    // Stale-while-revalidate uses getCachedLawyers from offlineCache
-    expect(src).toContain('getCachedLawyers');
+    expect(src).toContain('lawyers-error');
+    expect(src).toContain('try_again');
+    expect(src).not.toContain('getCachedLawyers');
   });
   test('S12-03: FlatList keyExtractor = universal across all 17 list screens', async () => {
     const fs   = await import('fs');

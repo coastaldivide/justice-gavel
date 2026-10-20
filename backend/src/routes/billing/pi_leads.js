@@ -4,9 +4,13 @@
  */
 import { logIgnored } from '../../utils/ignored.js';
 import { billingLimiter } from './_shared.js';
-import { err400, err404, safeInt } from '../../utils/routeHelpers.js';
+import { err404, safeInt } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
-import { attorneyLeadFeeCents } from './attorneyLeadFee.js';
+import { attorneyLeadFeeCents, normalizeLeadType } from './attorneyLeadFee.js';
+import { formatLeadFee } from './leadFee.js';
+import { resolveLang, msg } from '../../i18n/index.js';
+import { normalizeState } from '../../services/rightsContent.js';
+import { sanitizeStr } from '../../utils/sanitize.js';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
@@ -29,39 +33,46 @@ function requireLeadAttorney(req, res, next) {
 // Flat fee per lead type — see billing/attorneyLeadFee.js (no severity tiering).
 const piLeadFee = (caseType, severity) => attorneyLeadFeeCents(caseType, severity);
 
+// Lead types a person can submit from the app (PILeadScreen) and their flat fee.
+const LEAD_TYPES = new Set(['personal_injury', 'civil_rights', 'employment', 'medical', 'ice_detention']);
+const SEVERITIES = new Set(['minor', 'moderate', 'serious', 'catastrophic']);
+
+// ── GET /pi-lead/fees — the flat fee an attorney pays per lead type (shown in the app) ──
+router.get('/pi-lead/fees', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({ fees: [...LEAD_TYPES].map(t => ({ lead_type: t, fee_cents: piLeadFee(t), fee_display: formatLeadFee(piLeadFee(t)) })), model: 'flat' });
+});
+
 // ── Submit a PI/Civil Rights lead (from user who tapped "I Was Injured" or civil rights) ──
+// The person's name / phone / e-mail are NOT stored on the lead: an attorney sees
+// type, severity, city and state only, and gets the description and the person's
+// account contact details only after a completed charge (POST /pi-lead/accept/:id).
 router.post('/pi-lead/submit', billingLimiter, authRequired, async (req, res) => {
+  const lang = resolveLang(req);
   try {
+    const b = req.body && typeof req.body === 'object' ? req.body : {};
+    const caseType = normalizeLeadType(b.case_type);
+    const description = typeof b.description === 'string' ? sanitizeStr(b.description, 5000).trim() : '';
+    const severity = SEVERITIES.has(String(b.severity)) ? String(b.severity) : 'moderate';
+    const state = normalizeState(b.state);
+    const city = typeof b.city === 'string' ? sanitizeStr(b.city, 100).trim() || null : null;
+    const incidentDate = typeof b.incident_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.incident_date) ? b.incident_date : null;
+    if (!LEAD_TYPES.has(caseType)) return res.status(400).json({ error: msg(lang, 'pilead.err.bad_type'), code: 'bad_type' });
+    if (description.length < 20) return res.status(400).json({ error: msg(lang, 'pilead.err.short'), code: 'description_too_short' });
+    if (!state) return res.status(400).json({ error: msg(lang, 'pilead.err.state'), code: 'state_required' });
+
     const db = await getDb();
-    const {
-      case_type,      // 'Personal Injury' | 'Civil Rights' | 'Employment'
-      incident_date,
-      description,
-      severity,       // 'minor' | 'moderate' | 'serious' | 'catastrophic'
-      city,
-      state,
-      lat,
-      lng,
-    } = req.body;
-
-    if (!case_type || !description) {
-      return err400(res, 'case_type and description are required');
-    }
-
-    // pi_leads table managed by db/index.js
-
-    const fee = piLeadFee(case_type, severity);
+    const fee = piLeadFee(caseType);
     const r = await db.run(
-      `INSERT INTO pi_leads (user_id, case_type, incident_date, description, severity, city, state, lat, lng, lead_fee_cents)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [req.user.id, case_type, incident_date || null, description, severity || 'moderate',
-       city || null, state || null, lat || null, lng || null, fee]
+      `INSERT INTO pi_leads (user_id, case_type, incident_date, description, severity, city, state, lead_fee_cents)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [req.user.id, caseType, incidentDate, description, severity, city, state, fee]
     );
     const lead = await db.get('SELECT id, case_type, incident_date, severity, city, state, lead_fee_cents, status, created_at FROM pi_leads WHERE id=? LIMIT 1', [r.lastID]);
-    res.status(201).json({ ok: true, lead_id: r.lastID, lead });
+    res.status(201).json({ ok: true, lead_id: r.lastID, lead: { ...lead, lead_fee_display: formatLeadFee(fee) }, message: msg(lang, 'pilead.submitted') });
   } catch (e) {
     logger.error('[pi-lead/submit]', e.message);
-    res.status(500).json({ error: 'Could not submit lead' });
+    res.status(500).json({ error: msg(lang, 'pilead.err.failed'), code: 'server_error' });
   }
 });
 

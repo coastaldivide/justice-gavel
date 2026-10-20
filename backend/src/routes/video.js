@@ -21,9 +21,11 @@ import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
 import { sanitizeStr }  from '../utils/sanitize.js';
+import { safeInt }      from '../utils/routeHelpers.js';
 import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 import { auditLog }     from '../utils/auditLog.js';
 import logger           from '../utils/logger.js';
+import { resolveLang, msg } from '../i18n/index.js';
 
 const router   = Router();
 const DAILY_KEY = process.env.DAILY_API_KEY || null;  // null → 503 handled in POST /session
@@ -48,6 +50,7 @@ async function dailyRequest(method, path, body = null) {
 
 // ── POST /video/session — create a video consultation room ─────────────────
 router.post('/session', authRequired, async (req, res) => {
+  const lang = resolveLang(req);
   try {
   const { matter_id, attorney_id, scheduled_for, topic } = req.body;
 
@@ -57,12 +60,20 @@ router.post('/session', authRequired, async (req, res) => {
               .catch(() => null);
   if (!process.env.DAILY_API_KEY) {
     logger.warn('DAILY_API_KEY not set — video sessions disabled');
-    return res.status(503).json({ error: 'Video consultations temporarily unavailable.' });
+    return res.status(503).json({ error: msg(lang, 'video.err.unavailable'), code: 'video_unavailable' });
+  }
+
+  // A matter can only be linked by someone on it (never another person's matter).
+  const matterId = safeInt(matter_id) || null;
+  if (matterId) {
+    const m = await db.get('SELECT id FROM matters WHERE id = ? AND (user_id = ? OR created_by = ?)', [matterId, req.user.id, req.user.id]).catch(() => null);
+    if (!m) return res.status(404).json({ error: msg(lang, 'video.err.matter_not_found'), code: 'not_found' });
   }
 
   if (!canAccessFeature(sub?.tier, 'video_consultation')) {
     return res.status(403).json({
-      error:    'Video consultations require a Legal Pro or Esquire subscription.',
+      error:    msg(lang, 'video.err.upgrade'),
+      code:     'upgrade_required',
       upgrade:  true,
       tier_needed: 'legal_pro',
     });
@@ -105,7 +116,7 @@ router.post('/session', authRequired, async (req, res) => {
          (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
           topic, scheduled_for, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, to_timestamp(?), NOW())`,
-      [req.user.id, matter_id || null, attorney_id || null,
+      [req.user.id, matterId, safeInt(attorney_id) || null,
        room.name, room.url, safeTopic,
        scheduled_for || null, expiresAt]
     ).catch(e => logger.warn('[video] session log failed:', e?.message));
@@ -139,17 +150,30 @@ router.post('/session', authRequired, async (req, res) => {
     logger.warn('[video/session]', e?.message);
     // Graceful degradation: if Daily.co is down, suggest phone call
     return res.status(503).json({
-      error: 'Video service temporarily unavailable. Please call your attorney directly.',
+      error: msg(lang, 'video.err.down'),
+      code: 'video_unavailable',
       fallback: 'phone',
     });
   }
-  } catch (e) { logger.warn('[video/session POST]', e?.message); }
+  } catch (e) {
+    logger.warn('[video/session POST]', e?.message);
+    if (!res.headersSent) res.status(500).json({ error: msg(lang, 'video.err.down'), code: 'server_error' });
+  }
 });
 
 // ── GET /video/session/:name — session status ─────────────────────────────
+/** The caller's own session row (room names are not secrets: never act on another person's room). */
+async function ownSession(req) {
+  const name = String(req.params.name || '');
+  if (!/^jg-\d+-\d+$/.test(name)) return null;
+  const db = await getDb();
+  return db.get('SELECT daily_room_name FROM video_sessions WHERE daily_room_name = ? AND user_id = ?', [name, req.user.id]).catch(() => null);
+}
+
 router.get('/session/:name', authRequired, async (req, res) => {
   try {
-    const room = await dailyRequest('GET', `/rooms/${req.params.name}`);
+    if (!(await ownSession(req))) return res.status(404).json({ error: msg(resolveLang(req), 'video.err.not_found'), code: 'not_found' });
+    const room = await dailyRequest('GET', `/rooms/${encodeURIComponent(req.params.name)}`);
     return res.json({ active: true, room });
   } catch {
     return res.json({ active: false });
@@ -159,7 +183,9 @@ router.get('/session/:name', authRequired, async (req, res) => {
 // ── DELETE /video/session/:name — end session early ──────────────────────
 router.delete('/session/:name', authRequired, async (req, res) => {
   try {
-    await dailyRequest('DELETE', `/rooms/${req.params.name}`);
+    if (!(await ownSession(req))) return res.status(404).json({ error: msg(resolveLang(req), 'video.err.not_found'), code: 'not_found' });
+    await dailyRequest('DELETE', `/rooms/${encodeURIComponent(req.params.name)}`);
+    await (await getDb()).run('UPDATE video_sessions SET ended_at = NOW() WHERE daily_room_name = ? AND user_id = ?', [req.params.name, req.user.id]).catch(() => {});
     await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_ENDED',
       entityType: 'video', entityId: req.params.name, req });
     return res.json({ ended: true });
@@ -174,7 +200,7 @@ router.get('/sessions/me', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const sessions = await db.all(
-      `SELECT vs.room_name, vs.room_url, vs.matter_id, vs.created_at, vs.ended_at,
+      `SELECT vs.daily_room_name AS room_name, vs.topic, vs.matter_id, vs.created_at, vs.ended_at, vs.expires_at,
               m.title as matter_title
        FROM video_sessions vs
        LEFT JOIN matters m ON m.id = vs.matter_id

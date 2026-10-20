@@ -1,548 +1,379 @@
-import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
-import type { ScreenProps } from '../types/navigation';
 /**
- * BookingScreen -- Lawyer video consultation booking
- * 3-step booking flow: duration → date/time → confirm
+ * BookingScreen — book a consultation with a lawyer who is on Justice Gavel.
+ * duration → date/time → confirm & pay → confirmed.
+ *
+ * Prices, slots and the refund window come from the server
+ * (GET /consultations/slots/:lawyerId): what is shown is what is charged.
+ * Slots are offered on the lawyer's clock; each carries its exact instant
+ * (`starts_at`), and the app shows it in the phone's own time zone (with the
+ * zone named, plus the lawyer's time when the zones differ).
+ *
+ * Payment: POST /consultations/book → payment sheet → POST /:id/confirm. Without
+ * Stripe keys the server answers 503 and the app says payments are not
+ * available yet. Lawyers who are not on the app cannot be booked: the screen
+ * says so and offers their phone number.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Linking, LayoutAnimation } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
-import { t, perLang, useLang, locale }   from '../i18n';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../components/ToastProvider';
+import { AppIcon } from '../components/AppIcon';
+import { ContactActions } from '../components/ContactActions';
+import { useAuthGate } from '../components/AuthGate';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { t, useLang, locale } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
-import { useAuthGate } from '../components/AuthGate';
 import { usePaymentSheet } from '../payments';
-import { toLocalISODate } from '../utils/dateUtils';
+import { buildEventIcs, saveIcs } from '../utils/icsExport';
+import { getToken } from '../utils/secureStorage';
+import type { ScreenProps } from '../types/navigation';
 
-
-const DURATIONS = perLang(() => [
-  { min: 15, label: t('x_booking_15_min'),  sub: t('x_booking_quick_intro'),      fee: '$9.99',  cents: 999,  emoji: '⚡' },
-  { min: 30, label: t('x_booking_30_min'),  sub: t('x_booking_standard_consult'), fee: '$14.99', cents: 1499, emoji: '⚖️', popular: true },
-  { min: 60, label: t('x_booking_60_min'),  sub: t('x_booking_deep_dive'),        fee: '$24.99', cents: 2499, emoji: '🔍' },
-]);
-
-// Slot values sent to the server (en-US clock); shown through slotLabel() in the app's language.
-const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM', // i18n-exempt: slot values
-               '1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM']; // i18n-exempt: slot values
-function slotLabel(slot: string): string {
-  const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(slot);
-  if (!m) return slot;
-  const d = new Date(2000, 0, 1, (Number(m[1]) % 12) + (m[3] === 'PM' ? 12 : 0), Number(m[2]));
-  return d.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
-}
-
+type Price = { duration_min: number; fee_cents: number; fee_display: string };
+type SlotTime = { time: string; starts_at: string; available: boolean };
+type SlotDay = { date: string; times: SlotTime[] };
+type SlotsResponse = {
+  lawyer_id: number; lawyer_name: string; lawyer_phone: string | null; bookable: boolean; message?: string;
+  time_zone: string; slots: SlotDay[]; prices: Price[]; refund_cutoff_hours: number;
+};
+type Booking = { id: number; starts_at: string; time_zone: string; duration_min: number; fee_display?: string | null; lawyer_name: string };
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
-function buildDays(): { date: string; label: string; times: { time: string; available: boolean }[] }[] {
-  const days: { date: string; label: string; times: { time: string; available: boolean }[] }[] = [];
-  const d = new Date();
-  for (let i = 1; i <= 14; i++) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() === 0) continue; // skip Sundays
-    days.push({
-      date:  toLocalISODate(d),
-      label: d.toLocaleDateString(locale(), { weekday: 'short', month: 'short', day: 'numeric' }),
-      times: TIMES.map((tItem, ti) => {
-        // Deterministic availability based on date + time index
-        // Avoids slots changing every render -- consistent UX
-        const seed = d.getDate() + d.getMonth() * 31 + ti * 7;
-        return { time: tItem, available: (seed % 10) > 2 };
-      }),
-    });
-    if (days.length >= 7) break;
-  }
-  return days;
-}
+const DURATION_TEXT: Record<number, [string, string, string]> = {
+  15: ['x_booking_15_min', 'x_booking_quick_intro', '⚡'],
+  30: ['x_booking_30_min', 'x_booking_standard_consult', '⚖️'],
+  60: ['x_booking_60_min', 'x_booking_deep_dive', '🔍'],
+};
+
+/** The phone's own zone (e.g. America/Chicago). */
+const deviceZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
+const timeIn = (iso: string, timeZone?: string) => new Date(iso).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', ...(timeZone ? { timeZone } : {}) });
+const dayIn = (iso: string, timeZone?: string) => new Date(iso).toLocaleDateString(locale(), { weekday: 'short', month: 'short', day: 'numeric', ...(timeZone ? { timeZone } : {}) });
+const longDayIn = (iso: string, timeZone?: string) => new Date(iso).toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric', ...(timeZone ? { timeZone } : {}) });
+/** "Central Daylight Time" / "hora de verano central" — the phone's zone, named in the app's language. */
+const zoneName = () => {
+  try { return new Intl.DateTimeFormat(locale(), { timeZoneName: 'long' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || deviceZone(); }
+  catch { return deviceZone(); }
+};
+/** Same wall clock in both zones at this instant? */
+const sameClock = (iso: string, a: string, b: string) => timeIn(iso, a).replace(/\s?\S+$/, '') === timeIn(iso, b).replace(/\s?\S+$/, '') && dayIn(iso, a) === dayIn(iso, b);
 
 function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   useLang();
-  const { showToast } = useToast();
-  const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
-  const [prefillLoaded, setPrefillLoaded] = React.useState(false);
-  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
-
-  React.useEffect(() => {
-    // Pre-populate notes from the defendant's active case — reduces typing friction
-    if (!prefillLoaded) {
-      api.get('/consultations/prefill').then(r => {
-        if (r.data?.suggested_notes) setNotes(r.data.suggested_notes);
-        setPrefillLoaded(true);
-      }).catch(() => setPrefillLoaded(true));
-    }
-  }, [prefillLoaded]);
-
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
-
   const { colors, isDark } = useTheme();
-  const styles = makeStyles();
+  const { showToast } = useToast();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-
+  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+  const params = (route?.params ?? {}) as { lawyerId?: number | string; lawyerName?: string };
+  const lawyerId = Number(params.lawyerId);
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const [step, setStep]           = useState<Step>('duration');
-  const [duration, setDuration]   = useState(DURATIONS()[1]);
-  const [days, setDays]            = useState(buildDays);
-
-  // Refresh slots from server when lawyerId is known (and on pull-to-refresh)
+  const [info, setInfo] = useState<SlotsResponse | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const loadSlots = useCallback(async () => {
-    if (!lawyerId) return;
+  const [step, setStep] = useState<Step>('duration');
+  const [duration, setDuration] = useState(30);
+  const [selDate, setSelDate] = useState('');
+  const [selSlot, setSelSlot] = useState<SlotTime | null>(null);
+  const [notes, setNotes] = useState('');
+  const [booking, setBooking] = useState(false);
+  const [confirmed, setConfirmed] = useState<Booking | null>(null);
+  const [callbackContact, setCallbackContact] = useState('');
+  const [sendingCallback, setSendingCallback] = useState(false);
+  const zone = deviceZone();
+
+  const load = useCallback(async () => {
+    if (!Number.isFinite(lawyerId) || lawyerId <= 0) { setLoadError(t('bk_no_lawyer')); setLoading(false); return; }
     try {
-      const r = await api.get(`/consultations/slots/${lawyerId}`);
-      const serverSlots = r.data?.slots;
-      if (serverSlots?.length && mountedRef.current) setDays(serverSlots);
-    } catch (e: any) {
-      if (__DEV__) console.warn(e?.message); // keep the generated fallback on failure
+      const r = await api.get<SlotsResponse>(`/consultations/slots/${lawyerId}`);
+      if (!mountedRef.current) return;
+      setInfo(r.data);
+      setLoadError('');
+      setSelDate(d => d || r.data.slots.find(x => x.times.some(tm => tm.available))?.date || r.data.slots[0]?.date || '');
+    } catch (e) {
+      if (mountedRef.current) setLoadError(apiErrorMessage(e, t('x_booking_could_not_complete_booking')));
+    } finally {
+      if (mountedRef.current) { setLoading(false); setRefreshing(false); }
     }
   }, [lawyerId]);
-  useEffect(() => { loadSlots(); }, [loadSlots]);
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadSlots();
-    if (mountedRef.current) setRefreshing(false);
-  }, [loadSlots]);
-  const [selDay, setSelDay]       = useState(days[0]);
-  const [selTime, setSelTime]     = useState('');
-  const [notes, setNotes]         = useState('');
-  const [booking, setBooking]     = useState(false);
-  const [confirmed, setConfirmed] = useState<any>(null);
-  const [callbackPhone, setCallbackPhone] = useState('');
-  const [sendingCallback, setSendingCallback] = useState(false);
+  useEffect(() => { load(); }, [load]);
 
-  // Auth check at mount
   useEffect(() => {
-    requireAuth(() => {});
-  }, [requireAuth]);
+    // Guests have no case to prefill from (and would only get a 401).
+    getToken().then(tok => (tok ? api.get('/consultations/prefill') : null))
+      .then(r => { if (r && mountedRef.current && r.data?.suggested_notes) setNotes(n => n || String(r.data.suggested_notes)); }).catch(() => {});
+  }, []);
 
-  const availTimes = selDay?.times.filter(tItem => tItem.available) ?? [];
-  const noSlots    = availTimes.length === 0;
+  const price = useMemo(() => info?.prices.find(p => p.duration_min === duration) || null, [info, duration]);
+  const day = info?.slots.find(d => d.date === selDate) || null;
+  const availTimes = day?.times.filter(tm => tm.available) ?? [];
+  const lawyerName = info?.lawyer_name || params.lawyerName || t('x_booking_lawyer');
 
   const confirmBooking = () => requireAuth(async () => {
-    if (!selTime) { showToast(t('x_booking_select_time_slot_continue'), 'warning'); return; }
+    if (!selSlot || !day || !price) { showToast(t('x_booking_select_time_slot_continue'), 'warning'); return; }
     setBooking(true);
     try {
-      // Step 1 — Create booking + PaymentIntent server-side
       const res = await api.post('/consultations/book', {
-        lawyer_id:    lawyerId ?? null,
-        // The server requires the attorney's name for the booking record,
-        // confirmation email and attorney alert.
-        lawyer_name:  lawyerName,
-        duration_min: duration.min,
-        fee_cents:    duration.cents,
-        date_slot:    selDay?.date,
-        time_slot:    selTime,
-        notes:        notes.trim(),
+        lawyer_id: lawyerId, duration_min: duration, date_slot: day.date, time_slot: selSlot.time, notes: notes.trim(),
       });
-
-      const { client_secret, booking, mock } = res.data || {};
-
-      if (mock || !client_secret) {
-        // Demo mode — no real Stripe charge, go straight to confirmed
-        setConfirmed(res.data || null);
-        setStep('confirmed');
-        track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: true }).catch(()=>{});
-        setBooking(false);
-        return;
-      }
-
-      // Step 2 — Initialize Stripe PaymentSheet with the client_secret
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: client_secret,
-        merchantDisplayName: 'Justice Gavel',
-        allowsDelayedPaymentMethods: false,
-        defaultBillingDetails: {
-          name: undefined,
-        },
-        appearance: {
-          colors: {
-            primary: colors.navy,
-            background: colors.white,
-            componentBackground: colors.bg,
-            componentBorder: colors.border,
-            componentDivider: colors.border,
-            primaryText: colors.textPrimary,
-            secondaryText: colors.textMuted,
-            componentText: colors.textPrimary,
-            placeholderText: colors.textFaint,
-          },
-        },
-      });
-
-      if (initError) {
-        showToast(initError.message || t('x_booking_payment_setup_failed_please'), 'error');
-        setBooking(false);
-        return;
-      }
-
-      // Step 3 — Present the PaymentSheet (user enters card details)
+      const { client_secret, booking: b } = res.data || {};
+      if (!client_secret || !b?.id) throw new Error(t('x_booking_payment_setup_failed_please'));
+      const { error: initError } = await initPaymentSheet({ paymentIntentClientSecret: client_secret, merchantDisplayName: 'Justice Gavel', allowsDelayedPaymentMethods: false });
+      if (initError) { showToast(initError.message || t('x_booking_payment_setup_failed_please'), 'error'); return; }
       const { error: presentError } = await presentPaymentSheet();
-
       if (presentError) {
-        if (presentError.code !== 'Canceled') {
-          showToast(presentError.message || t('x_booking_payment_failed_please_try'), 'error');
-        }
-        setBooking(false);
+        if (presentError.code !== 'Canceled') showToast(presentError.message || t('x_booking_payment_failed_please_try'), 'error');
         return;
       }
-
-      // Step 4 — Payment confirmed by Stripe — show success
-      setConfirmed({ ...res.data, booking });
+      const conf = await api.post(`/consultations/${b.id}/confirm`, {});
+      setConfirmed(conf.data?.booking || b);
       setStep('confirmed');
-      track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: false }).catch(()=>{});
-    } catch (e: any) {
-      showToast(apiErrorMessage(e, t('x_booking_could_not_complete_booking')), 'info');
+      track('consultation_booked', { lawyerId, slot: selSlot.starts_at }).catch(() => {});
+    } catch (e) {
+      showToast(isPaymentsUnavailable(e) ? t('bk_payments_unavailable') : apiErrorMessage(e, t('x_booking_could_not_complete_booking')), isPaymentsUnavailable(e) ? 'info' : 'error');
+      if ((e as { response?: { data?: { code?: string } } })?.response?.data?.code === 'slot_taken') { setSelSlot(null); setStep('datetime'); load(); }
     } finally {
-      setBooking(false);
+      if (mountedRef.current) setBooking(false);
     }
   });
 
-  const sendCallback = async () => {
-    if (!callbackPhone.trim()) { showToast(t('x_booking_enter_phone_number_so'), 'warning'); return; }
+  const sendCallback = () => requireAuth(async () => {
+    if (!callbackContact.trim()) { showToast(t('x_booking_enter_phone_number_so'), 'warning'); return; }
     setSendingCallback(true);
     try {
-      await api.post('/consultations/callback-request', {
-        lawyer_id: lawyerId ?? null,
-        phone: callbackPhone.trim(),
-        notes: notes.trim(),
-        duration_min: duration.min,
-      }).catch((e) => { __DEV__ && console.warn(e?.message); }); // graceful
+      await api.post('/consultations/callback-request', { lawyer_id: lawyerId, phone: callbackContact.trim(), notes: notes.trim(), duration_min: duration });
       setStep('callback_sent');
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_booking_could_not_complete_booking')), 'error');
     } finally {
-      setSendingCallback(false);
+      if (mountedRef.current) setSendingCallback(false);
     }
+  });
+
+  const addToCalendar = async () => {
+    if (!confirmed) return;
+    try {
+      const text = buildEventIcs({ uid: `consult-${confirmed.id}@justicegavel.app`, start: new Date(confirmed.starts_at), minutes: confirmed.duration_min, title: t('bk_calendar_title', { name: lawyerName }) });
+      const how = await saveIcs(text, `consultation-${confirmed.id}.ics`);
+      if (how === 'download') showToast(t('bk_calendar_downloaded'), 'success');
+    } catch { showToast(t('action_failed'), 'error'); }
   };
 
-  // ── Memoised handlers — prevents child re-render on every keystroke/state update ──
-  var handleBack = useCallback(() => {
-    if (navigation.canGoBack()) navigation.goBack();
-    else (navigation as any).navigate('HomeTab');
-  }, [navigation]);
+  const goBack = () => { if (navigation.canGoBack()) navigation.goBack(); else navigation.navigate('HomeTab'); };
+  const s = makeStyles();
 
-  const handleConfirmStep = useCallback(() => {
-    if (selTime) setStep('confirm');
-  }, [selTime]);
-
-  const handleDatetimeStep = useCallback(() => setStep('datetime'), []);
-
-  // ── Confirmed ────────────────────────────────────────────────────────────
-  if (step === 'confirmed') return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.confirmedWrap}>
-        <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_confirmed_title')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
-          {t('x_booking_at_will_confirm_shortly', { label: selDay.label, selTime: slotLabel(selTime), label2: duration.label, value: lawyerName || t('x_booking_lawyer') })}
-        </Text>
-        <View style={[styles.receiptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('booking_duration')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.label}</Text></Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('booking_platform_fee')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{confirmed?.fee_charged || duration.fee}</Text></Text>
-          {!!confirmed?.booking?.id && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{t('x_booking_booking')}{' '}<Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{String(confirmed.booking.id)}</Text></Text>
-          )}
-          {!!confirmed?.message && (
-            <Text testID="booking-confirmation-message" maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{confirmed.message}</Text>
-          )}
-        </View>
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
-          onPress={() => {
-            Linking.openURL('calshow://').catch(() =>
-              Linking.openURL('content://com.android.calendar/time/').catch(() => showToast(t('action_failed'), 'error')));
-          }}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_add_calendar')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={handleBack}
-           accessibilityLabel={t('x_booking_back_home')}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_back_home')}</Text>
-        </TouchableOpacity>
-      </View>
+  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.navy} size="large" /></View>;
+  if (loadError || !info) return (
+    <View style={[s.center, { backgroundColor: colors.bg, padding: 32 }]} testID="booking-error">
+      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', fontSize: 15 }}>{loadError || t('x_booking_could_not_complete_booking')}</Text>
+      <TouchableOpacity accessibilityRole="button" style={[s.nextBtn, { paddingHorizontal: 24 }]} onPress={() => { setLoading(true); load(); }}>
+        <Text maxFontSizeMultiplier={1.4} style={s.nextBtnText}>{t('try_again')}</Text>
+      </TouchableOpacity>
     </View>
   );
 
-  // ── Callback sent ─────────────────────────────────────────────────────────
+  if (!info.bookable) return (
+    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={s.scroll} testID="booking-not-on-app">
+      <Text maxFontSizeMultiplier={1.4} style={[s.stepTitle, { color: colors.textPrimary }]}>{lawyerName}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textSecond }]}>{info.message || t('consult_not_on_app')}</Text>
+      <ContactActions listing={{ name: info.lawyer_name, phone: info.lawyer_phone }} />
+    </ScrollView>
+  );
 
+  if (step === 'confirmed' && confirmed) return (
+    <View style={[s.center, { backgroundColor: colors.bg, padding: 28 }]} testID="booking-confirmed">
+      <AppIcon name="checkmark-circle" size={44} color={colors.legal} />
+      <Text maxFontSizeMultiplier={1.4} style={[s.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_confirmed_title')}</Text>
+      <Text testID="booking-confirmed-when" maxFontSizeMultiplier={1.4} style={[s.confirmedSub, { color: colors.textSecond }]}>
+        {longDayIn(confirmed.starts_at)} · {timeIn(confirmed.starts_at)}
+      </Text>
+      <View style={[s.receiptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[s.receiptRow, { color: colors.textSecond }]}>{t('booking_duration')} <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{t(DURATION_TEXT[confirmed.duration_min]?.[0] || 'x_booking_30_min')}</Text></Text>
+        <Text maxFontSizeMultiplier={1.4} style={[s.receiptRow, { color: colors.textSecond }]}>{t('booking_platform_fee')} <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{confirmed.fee_display || price?.fee_display}</Text></Text>
+        <Text maxFontSizeMultiplier={1.4} style={[s.receiptRow, { color: colors.textSecond }]}>{t('x_booking_booking')}<Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{confirmed.id}</Text></Text>
+      </View>
+      <TouchableOpacity accessibilityRole="button" style={[s.doneBtn, { backgroundColor: colors.legalDark, marginBottom: 10 }]} onPress={addToCalendar}>
+        <Text maxFontSizeMultiplier={1.4} style={s.doneBtnText}>{t('x_booking_add_calendar')}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" style={[s.doneBtn, { backgroundColor: COLORS.navy }]} onPress={goBack}>
+        <Text maxFontSizeMultiplier={1.4} style={s.doneBtnText}>{t('booking_done')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   if (step === 'callback_sent') return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.confirmedWrap}>
-        <AppIcon name="call-outline" size={20} color={colors.legal} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_callback_sent_title')}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
-          {t('x_booking_will_call_at_schedule', { value: lawyerName || t('x_booking_attorney'), callbackPhone })}
-        </Text>
-        <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={handleBack}
-           accessibilityLabel={t('x_booking_back_home')}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_booking_back_home')}</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={[s.center, { backgroundColor: colors.bg, padding: 28 }]} testID="booking-callback-sent">
+      <AppIcon name="call-outline" size={40} color={colors.legal} />
+      <Text maxFontSizeMultiplier={1.4} style={[s.confirmedTitle, { color: colors.textPrimary }]}>{t('booking_callback_sent_title')}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[s.confirmedSub, { color: colors.textSecond }]}>{t('x_booking_will_call_at_schedule', { value: lawyerName, callbackPhone: callbackContact })}</Text>
+      <TouchableOpacity accessibilityRole="button" style={[s.doneBtn, { backgroundColor: COLORS.navy }]} onPress={goBack}>
+        <Text maxFontSizeMultiplier={1.4} style={s.doneBtnText}>{t('booking_done')}</Text>
+      </TouchableOpacity>
     </View>
   );
 
+  const zoneNote = selSlot && !sameClock(selSlot.starts_at, zone, info.time_zone)
+    ? t('bk_lawyer_time', { time: timeIn(selSlot.starts_at, info.time_zone) }) : '';
+
   return (
-    <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}>
-        <ScrollView testID="booking-screen" style={[styles.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.navy} />}>
-      <AuthGateModal />
-
-      {/* Progress dots */}
-      <View style={styles.progress}>
-        {(['duration','datetime','confirm'] as Step[]).map((s, i) => (
-          <View key={s} style={[styles.dot,
-            { backgroundColor: ['duration','datetime','confirm'].indexOf(step) >= i
-                ? COLORS.navy : colors.border }]} />
-        ))}
-      </View>
-
-      {/* ── Step 1: Duration ──────────────────────────────────────────────── */}
-      {step === 'duration' && (
-        <>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_how_long_do_need')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSub, { color: colors.textMuted }]}>
-            {t('x_booking_consulting_with_platform_fee', { value: lawyerName || t('x_booking_lawyer_2') })}
-          </Text>
-          {DURATIONS().map(d => (
-            <TouchableOpacity
-          accessibilityRole="button" key={d.min}
-              style={[styles.durationCard, { backgroundColor: colors.bgCard, borderColor: colors.border },
-                duration.min === d.min && { borderColor: COLORS.navy, borderWidth: 2 }]}
-              onPress={() => setDuration(d)}
-              accessibilityLabel={t('x_booking_platform_fee', { label: d.label, fee: d.fee })}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.durEmoji}>{d.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.durLabel, { color: colors.textPrimary }]}>{d.label}</Text>
-                  {d.popular && (
-                    <View style={styles.popularBadge}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.popularText}>{t('x_booking_most_popular')}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.durSub, { color: colors.textMuted }]}>{d.sub}</Text>
-              </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.durFee, { color: colors.textBrand }]}>{d.fee}</Text>
-            </TouchableOpacity>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView testID="booking-screen" style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.navy} />}>
+        <AuthGateModal />
+        <View style={s.progress}>
+          {(['duration', 'datetime', 'confirm'] as Step[]).map((st, i) => (
+            <View key={st} style={[s.dot, { backgroundColor: ['duration', 'datetime', 'confirm'].indexOf(step) >= i ? colors.navy : colors.border }]} />
           ))}
-          <TouchableOpacity
-            accessibilityRole="button" style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
-            onPress={handleDatetimeStep} accessibilityLabel={t('whn_next')}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('whn_next')}</Text>
-          </TouchableOpacity>
-        </>
-      )}
+        </View>
 
-      {/* ── Step 2: Date + Time on ONE screen ────────────────────────────── */}
-      {step === 'datetime' && (
-        <>
-          <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('duration')} style={styles.back}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
-          </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_pick_date_time')}</Text>
+        {step === 'duration' && (
+          <>
+            <Text maxFontSizeMultiplier={1.4} style={[s.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_how_long_do_need')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textMuted }]}>{t('x_booking_consulting_with_platform_fee', { value: lawyerName })}</Text>
+            {info.prices.map(p => {
+              const [labelKey, subKey, emoji] = DURATION_TEXT[p.duration_min] || ['x_booking_30_min', 'x_booking_standard_consult', '⚖️'];
+              const on = duration === p.duration_min;
+              return (
+                <TouchableOpacity accessibilityRole="radio" accessibilityState={{ selected: on }} key={p.duration_min} testID={`booking-duration-${p.duration_min}`}
+                  style={[s.durationCard, { backgroundColor: colors.bgCard, borderColor: on ? colors.navy : colors.border, borderWidth: on ? 2 : 1 }]}
+                  onPress={() => setDuration(p.duration_min)} accessibilityLabel={t('x_booking_platform_fee', { label: t(labelKey), fee: p.fee_display })}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.durEmoji}>{emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.durLabel, { color: colors.textPrimary }]}>{t(labelKey)}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.durSub, { color: colors.textMuted }]}>{t(subKey)}</Text>
+                  </View>
+                  <Text testID={`booking-fee-${p.duration_min}`} maxFontSizeMultiplier={1.4} style={[s.durFee, { color: colors.textBrand }]}>{p.fee_display}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity accessibilityRole="button" style={s.nextBtn} onPress={() => setStep('datetime')} testID="booking-next">
+              <Text maxFontSizeMultiplier={1.4} style={s.nextBtnText}>{t('whn_next')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
-          {/* Day picker */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
-            style={styles.dayScroll} contentContainerStyle={{ gap: 8, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
-            {days.map(day => (
-              <TouchableOpacity accessibilityRole="button" key={day.date}
-                style={[styles.dayChip, { borderColor: colors.border, backgroundColor: colors.bgCard },
-                  selDay?.date === day.date && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
-                onPress={() => { setSelDay(day); setSelTime(''); }}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.dayChipText,
-                  { color: selDay?.date === day.date ? COLORS.navy : colors.textSecond }]}>
-                  {day.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Time slots or no-slots CTA */}
-          {noSlots ? (
-            <View style={[styles.noSlotsCard, { backgroundColor: isDark ? colors.bgCard : colors.bg, borderColor: colors.border }]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.noSlotsEmoji}>📅</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.noSlotsTitle, { color: colors.textPrimary }]}>{t('x_booking_no_open_slots_this')}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.noSlotsSub, { color: colors.textMuted }]}>
-                {t('x_booking_request_callback_will_call', { value: lawyerName || t('x_booking_attorney_2') })}
-              </Text>
-              <TextInput
-                style={[styles.callbackInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-                {...{placeholder: t("booking_phone_placeholder")}}
-                placeholderTextColor={COLORS.textSecond}
-                keyboardType="phone-pad"
-                value={callbackPhone}
-                onChangeText={setCallbackPhone}
-                accessibilityLabel={t('x_booking_phone_number_callback')}
-          returnKeyType="next"
-          blurOnSubmit
-        />
-              <TouchableOpacity
-                accessibilityRole="button" activeOpacity={0.6}
-                style={[styles.callbackBtn, { backgroundColor: COLORS.legal }]}
-                onPress={sendCallback} disabled={sendingCallback}>
-                {sendingCallback
-                  ? <ActivityIndicator color={colors.bgCard} />
-                  : <Text maxFontSizeMultiplier={1.4} style={styles.callbackBtnText}>{t('x_booking_request_callback')}</Text>}
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>{t('x_booking_available_times')}</Text>
-              <View testID="booking-datetime-step" style={styles.timesGrid}>
-                {availTimes.map(tItem => (
-                  <TouchableOpacity
-                    accessibilityRole="button" key={tItem.time}
-                    style={[styles.timeChip, { borderColor: colors.border, backgroundColor: colors.bgCard },
-                      selTime === tItem.time && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
-                    onPress={() => setSelTime(tItem.time)}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.timeChipText,
-                      { color: selTime === tItem.time ? COLORS.navy : colors.textSecond }]}>
-                      {slotLabel(tItem.time)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+        {step === 'datetime' && (
+          <>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setStep('duration')} style={s.back}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
+            </TouchableOpacity>
+            <Text maxFontSizeMultiplier={1.4} style={[s.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_pick_date_time')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textMuted }]}>{t('bk_times_in_zone', { zone: zoneName() })}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ gap: 8 }}>
+              {info.slots.map(d => (
+                <TouchableOpacity accessibilityRole="button" key={d.date} testID={`booking-day-${d.date}`} accessibilityState={{ selected: selDate === d.date }}
+                  style={[s.dayChip, { borderColor: selDate === d.date ? colors.navy : colors.border, backgroundColor: selDate === d.date ? (isDark ? colors.bgElevated : colors.bgSubtle) : colors.bgCard }]}
+                  onPress={() => { setSelDate(d.date); setSelSlot(null); }}>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.dayChipText, { color: selDate === d.date ? colors.textBrand : colors.textSecond }]}>{d.times[0] ? dayIn(d.times[0].starts_at) : d.date}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {availTimes.length === 0 ? (
+              <View style={[s.noSlotsCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]} testID="booking-no-slots">
+                <Text maxFontSizeMultiplier={1.4} style={[s.noSlotsTitle, { color: colors.textPrimary }]}>{t('x_booking_no_open_slots_this')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.noSlotsSub, { color: colors.textMuted }]}>{t('x_booking_request_callback_will_call', { value: lawyerName })}</Text>
+                <TextInput style={[s.callbackInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
+                  placeholder={t('bk_contact_placeholder')} placeholderTextColor={colors.placeholder} keyboardType="email-address" autoCapitalize="none"
+                  value={callbackContact} onChangeText={setCallbackContact} accessibilityLabel={t('x_booking_phone_number_callback')} maxLength={120} />
+                <Text maxFontSizeMultiplier={1.4} style={[s.noSlotsSub, { color: colors.textMuted }]}>{t('bk_callback_privacy', { name: lawyerName })}</Text>
+                <TouchableOpacity accessibilityRole="button" style={[s.callbackBtn, { backgroundColor: colors.legalDark }]} onPress={sendCallback} disabled={sendingCallback}>
+                  {sendingCallback ? <ActivityIndicator color={COLORS.white} /> : <Text maxFontSizeMultiplier={1.4} style={s.callbackBtnText}>{t('x_booking_request_callback')}</Text>}
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={[styles.nextBtn, { backgroundColor: COLORS.navy }, !selTime && styles.nextBtnDisabled]}
-                testID="booking-confirm-button" onPress={handleConfirmStep}
-                disabled={!selTime} accessibilityLabel={t('whn_next')}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('whn_next')}</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </>
-      )}
+            ) : (
+              <>
+                <Text maxFontSizeMultiplier={1.4} style={[s.timesLabel, { color: colors.textMuted }]}>{t('x_booking_available_times')}</Text>
+                <View testID="booking-datetime-step" style={s.timesGrid}>
+                  {availTimes.map(tm => (
+                    <TouchableOpacity accessibilityRole="radio" key={tm.starts_at} testID="booking-time" accessibilityState={{ selected: selSlot?.starts_at === tm.starts_at }}
+                      style={[s.timeChip, { borderColor: selSlot?.starts_at === tm.starts_at ? colors.navy : colors.border, backgroundColor: selSlot?.starts_at === tm.starts_at ? (isDark ? colors.bgElevated : colors.bgSubtle) : colors.bgCard }]}
+                      onPress={() => setSelSlot(tm)}>
+                      <Text maxFontSizeMultiplier={1.4} style={[s.timeChipText, { color: selSlot?.starts_at === tm.starts_at ? colors.textBrand : colors.textSecond }]}>{timeIn(tm.starts_at)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {!!zoneNote && <Text testID="booking-zone-note" maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textMuted }]}>{zoneNote}</Text>}
+                <TouchableOpacity accessibilityRole="button" style={[s.nextBtn, !selSlot && { opacity: 0.45 }]} testID="booking-confirm-button" onPress={() => selSlot && setStep('confirm')} disabled={!selSlot}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.nextBtnText}>{t('whn_next')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </>
+        )}
 
-      {/* ── Step 3: Notes + Confirm ───────────────────────────────────────── */}
-      {step === 'confirm' && (
-        <>
-          <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel={t('ja_back')} onPress={() => setStep('datetime')} style={styles.back}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
-          </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_confirm_booking')}</Text>
-
-          <View style={[styles.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLine, { color: colors.textPrimary }]}>
-              {lawyerName || t('x_booking_lawyer')}
-            </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLine, { color: colors.textSecond }]}>
-              {selDay.label} · {slotLabel(selTime)} · {duration.label}
-            </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.summaryFee, { color: colors.textBrand }]}>
-              {t('x_booking_platform_fee_2', { fee: duration.fee })}
-            </Text>
-          </View>
-
-          <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>
-            {t('x_booking_add_notes_attorney_optional')}
-          </Text>
-          <TextInput
-            style={[styles.notesInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-            multiline numberOfLines={4} maxLength={2000}
-            placeholder={t('x_booking_e_g_i_have')}
-            placeholderTextColor={COLORS.textSecond}
-            value={notes}
-            onChangeText={setNotes}
-            textAlignVertical="top"
-            accessibilityLabel={t('x_booking_notes_attorney')}
-          />
-
-          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-            style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel={t('x_booking_confirm_pay_duration_fee', { fee: duration.fee })}
-          accessibilityHint={t('cp_double_tap')}>
-            {booking
-              ? <ActivityIndicator color={colors.bgCard} />
-              : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>{t('x_booking_confirm_pay', { fee: duration.fee })}</Text>}
-          </TouchableOpacity>
-
-          <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textMuted }]}>
-            {t('x_booking_platform_fee_only_attorney')}
-          </Text>
-        </>
-      )}
-      <View style={{ height: 40 }} />
-    </ScrollView>
-      </KeyboardAvoidingView>
+        {step === 'confirm' && selSlot && (
+          <>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setStep('datetime')} style={s.back}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.backText, { color: colors.textMuted }]}>{t('ja_back')}</Text>
+            </TouchableOpacity>
+            <Text maxFontSizeMultiplier={1.4} style={[s.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_confirm_booking')}</Text>
+            <View style={[s.summaryCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]} testID="booking-summary">
+              <Text maxFontSizeMultiplier={1.4} style={[s.summaryLine, { color: colors.textPrimary }]}>{lawyerName}</Text>
+              <Text testID="booking-summary-when" maxFontSizeMultiplier={1.4} style={[s.summaryLine, { color: colors.textSecond }]}>
+                {longDayIn(selSlot.starts_at)} · {timeIn(selSlot.starts_at)} · {t(DURATION_TEXT[duration]?.[0] || 'x_booking_30_min')}
+              </Text>
+              {!!zoneNote && <Text maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textMuted, marginBottom: 0 }]}>{zoneNote}</Text>}
+              <Text testID="booking-summary-fee" maxFontSizeMultiplier={1.4} style={[s.summaryFee, { color: colors.textBrand }]}>{t('x_booking_platform_fee_2', { fee: price?.fee_display || '' })}</Text>
+            </View>
+            <Text maxFontSizeMultiplier={1.4} style={[s.timesLabel, { color: colors.textMuted }]}>{t('x_booking_add_notes_attorney_optional')}</Text>
+            <TextInput style={[s.notesInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.inputText }]}
+              multiline numberOfLines={4} maxLength={2000} placeholder={t('x_booking_e_g_i_have')} placeholderTextColor={colors.placeholder}
+              value={notes} onChangeText={setNotes} textAlignVertical="top" accessibilityLabel={t('x_booking_notes_attorney')} />
+            <TouchableOpacity accessibilityRole="button" style={[s.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
+              testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel={t('x_booking_confirm_pay_duration_fee', { fee: price?.fee_display || '' })}>
+              {booking ? <ActivityIndicator color={COLORS.white} /> : <Text maxFontSizeMultiplier={1.4} style={s.confirmBtnText}>{t('x_booking_confirm_pay', { fee: price?.fee_display || '' })}</Text>}
+            </TouchableOpacity>
+            <Text testID="booking-refund-terms" maxFontSizeMultiplier={1.4} style={[s.disclaimer, { color: colors.textMuted }]}>{t('bk_fee_terms', { hours: info.refund_cutoff_hours })}</Text>
+          </>
+        )}
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const makeStyles = () => StyleSheet.create({
-  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: 16 },
-
   progress: { flexDirection: 'row', gap: 8, marginBottom: 20, justifyContent: 'center' },
   dot: { width: 24, height: 4, borderRadius: 2 },
-
-  back:     { marginBottom: 8 },
+  back: { marginBottom: 8, paddingVertical: 6, alignSelf: 'flex-start' },
   backText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  stepTitle:{ fontSize: 22, ...FONTS.black, marginBottom: 6 },
-  stepSub:  { fontSize: 12, lineHeight: 19, marginBottom: 20 },
-
-  // Duration
-  durationCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 10, ...SHADOW.sm },
-  durEmoji: { fontSize: 28 },
+  stepTitle: { fontSize: 22, lineHeight: 28, ...FONTS.black, marginBottom: 6 },
+  stepSub: { fontSize: 12, lineHeight: 18, marginBottom: 16 },
+  durationCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, ...SHADOW.sm },
+  durEmoji: { fontSize: 26 },
   durLabel: { fontSize: 16, lineHeight: 24, ...FONTS.heavy },
-  durSub:   { fontSize: 12, marginTop: 2 },
-  durFee:   { fontSize: 18, ...FONTS.black },
-  popularBadge: { backgroundColor: COLORS.legalBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
-  popularText:  { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.legal },
-
-  // Day/time
-  dayScroll: { marginBottom: 16 },
-  dayChip:   { paddingHorizontal: 16, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1.5 },
-  dayChipText:{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  durSub: { fontSize: 12, marginTop: 2 },
+  durFee: { fontSize: 18, ...FONTS.black },
+  dayChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1.5, minHeight: 44 },
+  dayChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   timesLabel: { fontSize: 11, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
-  timesGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  timeChip:   { paddingHorizontal: 16, paddingVertical: 10, borderRadius: RADIUS.md, borderWidth: 1.5 },
-  timeChipText:{ fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-
-  // No slots
-  noSlotsCard:  { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, alignItems: 'center', marginBottom: 16, ...SHADOW.sm },
-  noSlotsEmoji: { fontSize: 36, marginBottom: 8 },
+  timesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  timeChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.md, borderWidth: 1.5, minHeight: 44 },
+  timeChipText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  noSlotsCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, alignItems: 'center', marginBottom: 16 },
   noSlotsTitle: { fontSize: 16, lineHeight: 24, ...FONTS.black, marginBottom: 6 },
-  noSlotsSub:   { fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 14 },
-  callbackInput:{ width: '100%', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 11, fontSize: 15, lineHeight: 22, marginBottom: 10 },
-  callbackBtn:  { width: '100%', borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center' },
-  callbackBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
-
-  // Confirm
-  summaryCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 16, ...SHADOW.sm },
+  noSlotsSub: { fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 12 },
+  callbackInput: { width: '100%', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, lineHeight: 22, marginBottom: 10 },
+  callbackBtn: { width: '100%', borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center' },
+  callbackBtnText: { color: COLORS.white, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  summaryCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 16 },
   summaryLine: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, marginBottom: 3 },
-  summaryFee:  { fontSize: 18, ...FONTS.black, marginTop: 6 },
-  notesInput:  { borderWidth: 1.5, borderRadius: RADIUS.lg, padding: 16, fontSize: 14, minHeight: 100, marginBottom: 14, lineHeight: 21 },
-  confirmBtn:         { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md, marginBottom: 10 },
-  confirmBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
-  disclaimer:         { fontSize: 11, textAlign: 'center', lineHeight: 17 },
-
-  nextBtn:         { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 6, ...SHADOW.sm },
-  nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText:     { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
-
-  // Confirmed / callback
-  confirmedWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  confirmedEmoji: { fontSize: 54, marginBottom: 14 },
-  confirmedTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
-  confirmedSub:   { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 20 },
-  receiptCard:    { width: '100%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 20 },
-  receiptRow:     { fontSize: 14, lineHeight: 21, marginBottom: 6 },
-  doneBtn:        { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center', ...SHADOW.sm },
-  doneBtnText:    { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  summaryFee: { fontSize: 18, ...FONTS.black, marginTop: 6 },
+  notesInput: { borderWidth: 1.5, borderRadius: RADIUS.lg, padding: 14, fontSize: 14, minHeight: 100, marginBottom: 14, lineHeight: 21 },
+  confirmBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 10, minHeight: 52 },
+  confirmBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  disclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 17 },
+  nextBtn: { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 6, minHeight: 50 },
+  nextBtnText: { color: COLORS.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  confirmedTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginTop: 12, marginBottom: 8 },
+  confirmedSub: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 20 },
+  receiptCard: { width: '100%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 20 },
+  receiptRow: { fontSize: 14, lineHeight: 21, marginBottom: 6 },
+  doneBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center', minWidth: 220 },
+  doneBtnText: { color: COLORS.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
 });
 
-// Module-level fallback for helper components
 export default React.memo(BookingScreen);

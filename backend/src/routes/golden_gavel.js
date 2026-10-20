@@ -3,6 +3,7 @@
 
 import { truncateStr, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
+import { resolveLang, msg } from '../i18n/index.js';
 import { Router } from 'express';
 import { getDb }   from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
@@ -95,7 +96,7 @@ function monthsSince(isoDate) {
 }
 
 // ── Core evaluation — returns highest level earned ────────────────────────────
-export async function evaluateGavelLevel(userId) {
+export async function evaluateGavelLevel(userId, lang = 'en') {
   const db = await getDb();
 
   const user = await db.get('SELECT id, display_name, email, gavel_points, gavel_level, golden_gavel, hall_opt_in FROM users WHERE id = ? LIMIT 100', [userId]);
@@ -202,33 +203,33 @@ export async function evaluateGavelLevel(userId) {
   if (nextLevelKey) {
     const cn = CRITERIA[userType][nextLevelKey];
     if (monthsActive < cn.months_active)
-      missingNext.push(`${cn.months_active - Math.floor(monthsActive)} more months active`);
+      missingNext.push(msg(lang, 'gavel.missing.months', { n: cn.months_active - Math.floor(monthsActive) }));
     if (progress.compliance_flags > 0)
-      missingNext.push(`${progress.compliance_flags} compliance flag(s) to resolve`);
+      missingNext.push(msg(lang, 'gavel.missing.flags', { n: progress.compliance_flags }));
 
     if (isAttorney) {
       if ((progress.consultations_booked || 0) < cn.consultations_booked)
-        missingNext.push(`${cn.consultations_booked - progress.consultations_booked} more consultations`);
+        missingNext.push(msg(lang, 'gavel.missing.consultations', { n: cn.consultations_booked - (progress.consultations_booked || 0) }));
       if ((progress.avg_rating || 0) < cn.avg_rating)
-        missingNext.push(`Rating ${progress.avg_rating} below ${cn.avg_rating} minimum`);
+        missingNext.push(msg(lang, 'gavel.missing.rating', { rating: progress.avg_rating || 0, min: cn.avg_rating }));
       if ((progress.review_count || 0) < cn.min_reviews)
-        missingNext.push(`${cn.min_reviews - progress.review_count} more reviews needed`);
+        missingNext.push(msg(lang, 'gavel.missing.reviews', { n: cn.min_reviews - (progress.review_count || 0) }));
       if (!progress.bar_verified)
-        missingNext.push('Bar license verification required');
+        missingNext.push(msg(lang, 'gavel.missing.bar'));
     }
 
     if (!isAttorney && !isBondsman) {
       if (nextLevelKey === 'bronze' && !progress.lessons_started)
-        missingNext.push('Start at least one lesson in the Legal Education track');
+        missingNext.push(msg(lang, 'gavel.missing.start_lesson'));
       if (nextLevelKey !== 'bronze' && !progress.lessons_completed)
-        missingNext.push('Complete all lessons in the Legal Education track');
+        missingNext.push(msg(lang, 'gavel.missing.all_lessons'));
     }
 
     if (isBondsman) {
       if ((progress.leads_accepted || 0) < cn.leads_accepted)
-        missingNext.push(`${cn.leads_accepted - progress.leads_accepted} more accepted leads`);
+        missingNext.push(msg(lang, 'gavel.missing.leads', { n: cn.leads_accepted - (progress.leads_accepted || 0) }));
       if (!progress.license_verified)
-        missingNext.push('License verification required');
+        missingNext.push(msg(lang, 'gavel.missing.license'));
     }
   }
 
@@ -335,7 +336,7 @@ router.get('/status', authRequired, gavelLimiter, async (req, res) => {
 // GET /api/golden-gavel/eligibility
 router.get('/eligibility', authRequired, gavelLimiter, async (req, res) => {
   try {
-    const result = await evaluateGavelLevel(req.user.id);
+    const result = await evaluateGavelLevel(req.user.id, resolveLang(req));
     res.json(result);
   } catch (e) {
     logger.error({ msg: '[golden_gavel]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }

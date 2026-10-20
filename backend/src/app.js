@@ -192,7 +192,7 @@ const corsMiddleware = cors({
   origin: true,          // reflect — disallowed origins were rejected above
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  exposedHeaders: ['X-Request-ID', 'Idempotent-Replayed'],
+  exposedHeaders: ['X-Request-ID', 'Idempotent-Replayed', 'X-Total-Count', 'X-Search-Matched'],
   maxAge: 86400,
 });
 app.use(corsMiddleware);

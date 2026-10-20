@@ -92,6 +92,8 @@ export const linking: LinkingOptions<any> = {
               QuickConnect:       'quick-connect',
               FirmDiscovery:      'firms',
               FirmPublicProfile:  'firms/:firmId',
+              PILead:             'case-review',
+              VideoConsultation:  'video-consult',
 
               // Monitoring
               ArrestMonitor:      'arrest-monitor',

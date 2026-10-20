@@ -158,19 +158,17 @@ describe('S6C. InterrogationRecorderScreen — Speaker Label/Color Helpers', () 
 
 // ── S6D. LawyerProfileScreen Navigation Handlers ──────────────────────────
 describe('S6D. LawyerProfileScreen — handleBook + handleMessage', () => {
-  test('S6D-01: handleBook navigates to MoreTab booking flow', async () => {
+  test('S6D-01: Book opens the MoreTab booking flow (lawyers on the app only)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleBook');
-    expect(src).toContain("navigate('MoreTab'");
-    expect(src).toContain('screen');
+    expect(src).toContain("navigate('MoreTab', { screen: 'Booking'");
+    expect(src).toContain('lawyer.on_app');
   });
-  test('S6D-02: handleMessage navigates to MoreTab messages/chat', async () => {
+  test('S6D-02: Message sends an in-app message to a lawyer on the app', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleMessage');
-    expect(src).toContain("navigate('MoreTab'");
-    expect(src).toContain('lawyer');
+    expect(src).toContain('/messages/bulk');
+    expect(src).toContain('lawyer_ids: [lawyer.id]');
   });
 });
 
@@ -269,19 +267,17 @@ describe('S6J. FirmVerticalScreen — createTRO + loadTrackers + loadDeadlines',
 
 // ── S6K. BookingScreen Step Handlers ──────────────────────────────────────
 describe('S6K. BookingScreen — handleBack + Step Navigation Handlers', () => {
-  test('S6K-01: handleBack uses navigation.canGoBack/goBack for step navigation', async () => {
+  test('S6K-01: goBack uses navigation.canGoBack/goBack', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('handleBack');
-    expect(src).toContain('navigation');
+    expect(src).toContain('navigation.canGoBack()');
+    expect(src).toContain('navigation.goBack()');
   });
-  test('S6K-02: handleDatetimeStep and handleConfirmStep are useCallback step setters', async () => {
+  test('S6K-02: step changes duration → datetime → confirm', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('handleDatetimeStep');
     expect(src).toContain("setStep('datetime')");
-    expect(src).toContain('handleConfirmStep');
-    expect(src).toContain("setStep('conf");
+    expect(src).toContain("setStep('confirm')");
   });
 });
 

@@ -53,11 +53,9 @@ LOGIN=$(curl -sf -X POST "$API/api/auth/login" \
   -d '{"identifier":"test@test.com","password":"wrongpass"}' 2>/dev/null || echo "")
 check "POST /auth/login responds" "$LOGIN" "error"
 
-# Bail calculator (no auth required)
-BAIL=$(curl -sf -X POST "$API/api/bail/calculate" \
-  -H "Content-Type: application/json" \
-  -d '{"state":"TN","charge_type":"dui","severity":"medium"}' 2>/dev/null || echo "")
-check "POST /bail/calculate works" "$BAIL" "recommended\|disclaimer\|bail"
+# Bail ranges (no auth required)
+BAIL=$(curl -sf "$API/api/help/bail-schedule?state=TN" 2>/dev/null || echo "")
+check "GET /help/bail-schedule works" "$BAIL" "bail_min"
 
 # API docs
 DOCS=$(curl -sf "$API/api/docs" 2>/dev/null || echo "")

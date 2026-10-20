@@ -49,8 +49,8 @@ describeIntegration('saved lawyers + reviews (real Postgres)', () => {
     const mine = await ctx.request().get('/api/saved/lawyers').set(user.headers);
     const savedId = mine.body[0].id;
 
-    // another user "deleting" my saved row must not remove it
-    expect((await ctx.request().delete(`/api/saved/lawyers/${savedId}`).set(other.headers)).status).toBe(200);
+    // another user "deleting" my saved row must not remove it (and is told it is not theirs)
+    expect((await ctx.request().delete(`/api/saved/lawyers/${savedId}`).set(other.headers)).status).toBe(404);
     expect(Number((await ctx.db.get('SELECT COUNT(*) AS n FROM saved_lawyers WHERE id = ?', [savedId])).n)).toBe(1);
 
     expect((await ctx.request().delete('/api/saved/lawyers/abc').set(user.headers)).status).toBe(400);
@@ -66,7 +66,7 @@ describeIntegration('saved lawyers + reviews (real Postgres)', () => {
   it('review round trip: POST writes to reviews only; GET + summary aggregate it', async () => {
     const post = await ctx.request().post('/api/reviews').set(user.headers)
       .send({ entity_type: 'lawyer', entity_id: lawyerId, rating: 5, comment: `${ctx.tag} very helpful` });
-    expect(post.status).toBe(200);
+    expect(post.status).toBe(201);
     expect(post.body).toMatchObject({ entity_type: 'lawyer', rating: 5 });
 
     const dup = await ctx.request().post('/api/reviews').set(user.headers)

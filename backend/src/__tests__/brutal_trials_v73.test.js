@@ -95,12 +95,11 @@ describe('DISC8. Discrepancy Fixes — 6 threshold items', () => {
     expect(src).toContain("router.post('/stream'");
     expect(src).toContain('BUSINESS_CONSTANTS');
   });
-  test('DISC8-02: reviews.js GET /summary aggregated rating [≥5]', async () => {
+  test('DISC8-02: reviews.js GET /summary aggregates published reviews only', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/reviews.js', 'utf8');
     expect(src).toContain("router.get('/summary'");
-    expect(src).toContain('rating');
-    expect(src).toContain('Provider reviews and ratings');
+    expect(src).toContain("status = 'published'");
   });
   test('DISC8-03: saved.js PATCH /lawyers/:id updates note [≥5]', async () => {
     const fs = await import('fs');

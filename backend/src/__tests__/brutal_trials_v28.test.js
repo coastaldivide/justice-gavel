@@ -136,14 +136,12 @@ describe('8. consultations.js — Video Consultation Booking', () => {
     const h = src.match(/router\.(get|post|delete)\s*\(/g) || [];
     expect(h.length).toBeGreaterThanOrEqual(5);
   });
-  test('8-02: tiered platform fees: $10/$15/$25 by duration', async () => {
+  test('8-02: tiered platform fees: $10/$15/$25 by duration (one table)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/consultations.js', 'utf8');
-    expect(src).toContain('$10');
-    expect(src).toContain('$15');
-    expect(src).toContain('$25');
-    expect(src).toContain('30 min');
-    expect(src).toContain('60 min');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/consultationSlots.js', 'utf8');
+    expect(src).toContain('15: 1000');
+    expect(src).toContain('30: 1500');
+    expect(src).toContain('60: 2500');
   });
   test('8-03: has book, list, slots, cancel endpoints', async () => {
     const fs = await import('fs');

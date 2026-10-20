@@ -489,12 +489,13 @@ async function main() {
     return `attachment ${r.json.id} (${r.json.attachment.size_bytes} B, round trip ok)`;
   });
 
-  await check('bail calculator', async () => {
-    const r = await call('POST', '/api/bail/calculate', {
-      body: { state: 'TN', charge_type: 'felony', severity: 'medium', prior_record: 'none', flight_risk: 'low', employed: true },
-    });
-    assert(r.status === 200 && typeof r.json?.recommended === 'number', `expected recommendation, got ${brief(r)}`);
-    return `$${r.json.recommended}`;
+  await check('bail ranges (recorded, with source; no invented calculator)', async () => {
+    const r = await call('GET', '/api/help/bail-schedule?state=TN');
+    assert(r.status === 200 && Array.isArray(r.json?.data) && r.json.data.length > 0 && r.json.data.every(x => 'source' in x), `bail-schedule: ${brief(r)}`);
+    assert(r.json.meta?.fee_estimate_available === false, 'bail-schedule must not estimate a fee');
+    const gone = await call('POST', '/api/bail/calculate', { body: { state: 'TN', charge_type: 'felony' } });
+    assert(gone.status === 404, `removed calculator should be 404, got ${brief(gone)}`);
+    return `${r.json.data.length} TN/national ranges`;
   });
 
   await check('courthouse + legal reference data', async () => {

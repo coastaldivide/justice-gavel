@@ -151,7 +151,8 @@ describe('THEN. Promise.allSettled — Dual Pattern Documentation', () => {
         const src = fs.readFileSync(path.join(dir, f), 'utf8');
         return src.includes('Promise.allSettled') && src.includes('.catch(() => {})');
       });
-    expect(patternBScreens.length).toBeGreaterThanOrEqual(5);
+    // 4: LawyersScreen's review summaries now use Pattern A only (allSettled + status check)
+    expect(patternBScreens.length).toBeGreaterThanOrEqual(4);
   });
 });
 

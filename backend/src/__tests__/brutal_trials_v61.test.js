@@ -248,12 +248,11 @@ describe('LPS. LawyerProfileScreen — submitReview + handleSave', () => {
     expect(src).toContain('userRating');
     expect(src).toContain('setSubmitting');
   });
-  test('LPS-02: handleSave toggles saved lawyer via POST /saved/lawyers', async () => {
+  test('LPS-02: profile Save toggles (POST / DELETE /saved/lawyers)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('handleSave');
-    expect(src).toContain('/saved/lawyers');
-    expect(src).toContain('lawyer');
+    expect(src).toContain("api.post('/saved/lawyers'");
+    expect(src).toContain('api.delete(`/saved/lawyers/${savedId}`)');
   });
 });
 

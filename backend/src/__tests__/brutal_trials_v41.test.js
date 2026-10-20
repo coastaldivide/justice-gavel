@@ -112,12 +112,12 @@ describe('S1b. docket.js — FRCP Deadline Rules + /upcoming', () => {
 });
 
 describe('S1c. consultations.js + auth.js + admin.js', () => {
-  test('S1c-01: consultations GET /slots/:lawyerId — generated availability slots', async () => {
+  test('S1c-01: consultations GET /slots/:lawyerId — slots in the lawyer zone', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/consultations.js', 'utf8');
     expect(src).toContain('/slots/:lawyerId');
-    expect(src).toContain('available time slots');
-    expect(src).toContain('generated');
+    expect(src).toContain('lawyerTimeZone');
+    expect(src).toContain('generateSlots');
   });
   test('S1c-02: auth POST /accept-tos — clickwrap, both checkboxes, immutable audit log', async () => {
     const fs = await import('fs');

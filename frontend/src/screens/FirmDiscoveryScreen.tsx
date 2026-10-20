@@ -13,7 +13,7 @@ import {
   ActivityIndicator, StyleSheet, RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
@@ -40,6 +40,7 @@ function FirmDiscoveryScreen() {
   const [areaFilter, setAreaFilter]   = useState('');
   const [code, setCode]               = useState('');
   const [codeLoading, setCodeLoading] = useState(false);
+  const [error, setError]             = useState('');
 
   const load = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -49,8 +50,10 @@ function FirmDiscoveryScreen() {
       if (areaFilter.trim())  params.practice_area = areaFilter.trim();
       const res = await api.get('/firms/directory', { params });
       setFirms(res.data?.firms ?? []);
-    } catch {
+      setError('');
+    } catch (e) {
       setFirms([]);
+      setError(apiErrorMessage(e, t('x_firm_discovery_no_firms_found')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,8 +71,8 @@ function FirmDiscoveryScreen() {
       const res = await api.get(`/firms/referral/${c}`);
       const firm = res.data?.firm;
       if (firm) navigation.navigate('FirmPublicProfile', { firmId: firm.id, firmName: firm.name });
-    } catch {
-      showToast(t('x_firm_discovery_no_firm_found_with'));
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('x_firm_discovery_no_firm_found_with')), 'error');
     } finally {
       setCodeLoading(false);
     }
@@ -112,11 +115,14 @@ function FirmDiscoveryScreen() {
   );
 
   return (
-    <View style={[s.container, { backgroundColor: colors.primary }]}>
+    <View style={[s.container, { backgroundColor: colors.bg }]} testID="firm-discovery-screen">
       {/* Referral code entry */}
       <View style={[s.codeBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <TextInput
           style={[s.codeInput, { color: colors.textPrimary }]}
+          accessibilityLabel={t('x_firm_discovery_have_referral_code')}
+          onSubmitEditing={redeemCode}
+          returnKeyType="search"
           value={code}
           onChangeText={setCode}
           placeholder={t('x_firm_discovery_have_referral_code')}
@@ -139,7 +145,8 @@ function FirmDiscoveryScreen() {
       {/* Filters */}
       <View style={s.filters}>
         <TextInput
-          style={[s.filterInput, { color: colors.textPrimary, borderColor: colors.border }]}
+          style={[s.filterInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bgCard }]}
+          accessibilityLabel={t('x_firm_discovery_state_e_g_tn')}
           value={stateFilter}
           onChangeText={setStateFilter}
           onEndEditing={() => load()}
@@ -149,7 +156,7 @@ function FirmDiscoveryScreen() {
           autoCapitalize="characters"
         />
         <TextInput
-          style={[s.filterInput, { flex: 2, color: colors.textPrimary, borderColor: colors.border }]}
+          style={[s.filterInput, { flex: 2, color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bgCard }]}
           value={areaFilter}
           onChangeText={setAreaFilter}
           onEndEditing={() => load()}
@@ -171,10 +178,12 @@ function FirmDiscoveryScreen() {
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={[s.emptyIcon]}>🏛️</Text>
-              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textOnAccent }]}>{t('x_firm_discovery_no_firms_found')}</Text>
-              <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textOnAccent }]}>
-                {t('x_firm_discovery_try_different_state_practice')}
-              </Text>
+              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textPrimary }]}>{error || t('x_firm_discovery_no_firms_found')}</Text>
+              {!error && (
+                <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textMuted }]}>
+                  {t('x_firm_discovery_try_different_state_practice')}
+                </Text>
+              )}
             </View>
           }
         />
@@ -186,11 +195,11 @@ function FirmDiscoveryScreen() {
 const s = StyleSheet.create({
   container:   { flex: 1 },
   codeBar:     { flexDirection: 'row', margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
-  codeInput:   { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
+  codeInput:   { flex: 1, minWidth: 0, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   codeBtn:     { backgroundColor: COLORS.navy, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
-  codeBtnText: { color: COLORS.bg, fontWeight: '700', fontSize: 13 },
+  codeBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
   filters:     { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 4 },
-  filterInput: { flex: 1, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
+  filterInput: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   firmName:    { flex: 1, fontSize: 16, fontWeight: '700' },

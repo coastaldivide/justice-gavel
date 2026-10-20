@@ -196,11 +196,11 @@ describe('S6. Screens — Pressable + Switch + Deep Behavioral Patterns', () => 
     expect(src).toContain('arrest');
     expect(src).toContain('judgment');
   });
-  test('S6-10: LawyerProfileScreen — Linking.openURL for phone + /reviews + /saved/lawyers', async () => {
+  test('S6-10: LawyerProfileScreen — contact links + /reviews + /saved/lawyers', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
-    expect(src).toContain('Linking');
-    expect(src).toContain('/reviews');
+    expect(src).toContain('ContactActions');
+    expect(src).toContain("'/reviews'");
     expect(src).toContain('/saved/lawyers');
   });
 });

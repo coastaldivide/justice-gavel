@@ -57,18 +57,6 @@ export const schemas = {
   },
 
   bail: {
-    calculate: z.object({
-      state:        z.string().trim().min(2).max(20),
-      charge_type:  z.string().trim().max(50),
-      severity:     z.enum(['low','medium','high','extreme']).optional(),
-      prior_record: z.enum(['none','minor','significant','extensive']).optional(),
-      flight_risk:  z.enum(['low','medium','high']).optional(),
-      employed:     z.boolean().optional(),
-      ice_hold:     z.boolean().optional(),
-      violent:      z.boolean().optional(),
-      bailAmount:   bailAmount.optional(),
-      county:       z.string().max(100).optional(),
-    }),
     bondsman_payment: z.object({
       arrest_id:  z.number().int().positive(),
       amount:     bailAmount,
@@ -133,21 +121,16 @@ export const schemas = {
   },
 
   consultations: {
-    // Matches what BookingScreen actually sends:
-    //   { lawyer_id: number|null, lawyer_name, lawyer_phone?, duration_min: 15|30|60,
-    //     date_slot: 'YYYY-MM-DD', time_slot: '9:00 AM' (the format /slots returns), notes? }
-    // The old schema ('HH:MM' 24h time_slot, string-enum duration, required
-    // numeric lawyer_id, no lawyer_name) rejected every real app booking.
+    // What BookingScreen sends: the directory lawyer, a duration and one of the
+    // slots GET /consultations/slots/:lawyerId offered ('YYYY-MM-DD' + '9:00 AM'
+    // on the lawyer's clock). The name comes from the listing, not the request.
     book: z.object({
-      lawyer_id:    z.preprocess(
-        v => (v === null || v === undefined || v === '' ? null : Number(v)),
-        z.number().int().positive().nullable()
-      ).optional(),
-      lawyer_name:  nonEmptyStr(200),
+      lawyer_id:    z.coerce.number().int().positive(),
+      lawyer_name:  z.string().trim().max(200).optional(),
       lawyer_phone: z.string().trim().max(40).optional(),
       date_slot:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      time_slot:    z.string().trim().regex(/^(?:[01]?\d|2[0-3]):[0-5]\d(?:\s?[AaPp][Mm])?$/,
-        'time_slot must be H:MM AM/PM or HH:MM'),
+      time_slot:    z.string().trim().regex(/^(?:1[0-2]|0?[1-9]):[0-5]\d\s?[AaPp][Mm]$/,
+        'time_slot must be H:MM AM/PM'),
       duration_min: z.coerce.number()
         .refine(v => [15, 30, 60].includes(v), 'duration_min must be 15, 30 or 60')
         .default(30),

@@ -229,14 +229,14 @@ async function runConsultationReminderSweep(db) {
   try {
     const upcoming = await db.all(
       `SELECT cb.id, cb.user_id, cb.lawyer_id, cb.lawyer_name,
-              cb.date_slot, cb.time_slot, cb.duration_min, cb.meeting_link,
+              cb.date_slot, cb.time_slot, cb.starts_at, cb.time_zone, cb.duration_min, cb.meeting_link,
               cb.notes, cb.stripe_pi_id,
               u.display_name AS client_name,
               u.email AS client_email
          FROM consultation_bookings cb
          JOIN users u ON u.id = cb.user_id
         WHERE cb.status = 'confirmed'
-          AND (cb.date_slot || ' ' || cb.time_slot)::timestamp BETWEEN
+          AND COALESCE(cb.starts_at, ((cb.date_slot || ' ' || cb.time_slot)::timestamp AT TIME ZONE COALESCE(cb.time_zone, 'America/Chicago'))) BETWEEN
               (NOW() + INTERVAL '20 hours') AND (NOW() + INTERVAL '28 hours')
           AND cb.reminder_sent IS NULL
         ORDER BY cb.date_slot ASC, cb.time_slot ASC
@@ -252,9 +252,13 @@ async function runConsultationReminderSweep(db) {
 
     for (const row of upcoming) {
       try {
-        const timeLabel = row.time_slot;
-        const dateLabel = new Date(row.date_slot + 'T12:00:00').toLocaleDateString('en-US', {
-          weekday: 'long', month: 'short', day: 'numeric' });
+        // In the lawyer's zone, with the zone named ("9:00 AM CDT").
+        const tz = row.time_zone || 'America/Chicago';
+        const at = row.starts_at ? new Date(row.starts_at) : null;
+        const timeLabel = at ? at.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : row.time_slot;
+        const dateLabel = at
+          ? at.toLocaleDateString('en-US', { timeZone: tz, weekday: 'long', month: 'short', day: 'numeric' })
+          : new Date(String(row.date_slot).slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
         // ── Push to defendant ─────────────────────────────────────────────────
         const defTokens = await db.all(

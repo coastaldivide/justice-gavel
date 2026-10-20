@@ -105,12 +105,16 @@ describe('LawyerProfileScreen', () => {
     let release: (v: unknown) => void = () => {};
     on('post', '/saved/lawyers', () => new Promise(r => { release = r; }));
     wrap(<LawyerProfileScreen navigation={makeNavigation()} route={route} />);
-    const btn = await screen.findByLabelText('⭐ Save');
+    on('get', '/saved/lawyers', []);
+    const btn = await screen.findByTestId('lp-save');
     fireEvent.press(btn);
     fireEvent.press(btn);
     fireEvent.press(btn);
+    await waitFor(() => expect(calls.some(c => c.method === 'post' && c.url === '/saved/lawyers')).toBe(true));
     await act(async () => { release({ data: { saved: true, id: 1 } }); });
     expect(calls.filter(c => c.method === 'post' && c.url === '/saved/lawyers')).toHaveLength(1);
+    expect(calls.find(c => c.method === 'post' && c.url === '/saved/lawyers')?.data).toEqual({ provider_id: 5 });
+    expect(await screen.findByLabelText('Unsave Ada Counsel')).toBeTruthy();
   });
 });
 

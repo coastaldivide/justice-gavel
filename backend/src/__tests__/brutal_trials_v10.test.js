@@ -500,17 +500,19 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('7. BookingScreen — Seed Availability & Form Model', () => {
 
-  test('7-01: BookingScreen uses seed-based slot availability (deterministic)', async () => {
-    const fs  = await import('fs');
+  test('7-01: BookingScreen never invents availability (slots come from the server)', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('seed');
-    expect(src).toContain("seed % 10");
+    expect(src).toContain('/consultations/slots/');
+    expect(src).not.toContain('seed % 10');
   });
 
-  test('7-02: seed formula — avoids slots changing on every render', async () => {
-    const fs  = await import('fs');
+  test('7-02: slot times are shown from their exact instant (starts_at)', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('d.getDate() + d.getMonth() * 31 + ti * 7');
+    expect(src).toContain('starts_at');
+    expect(src).toContain('timeZoneName');
+    expect(src).not.toContain('d.getDate() + d.getMonth() * 31 + ti * 7');
   });
 
   test('7-03: seed model produces ~70% slot availability', () => {
@@ -534,12 +536,12 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
   });
 
   test('7-05: BookingScreen has 3-step flow (duration → datetime → confirm)', async () => {
-    const fs  = await import('fs');
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    const DURATIONS = src.includes('DURATIONS');
-    expect(DURATIONS).toBe(true);
-    // Step model
-    expect(src).toContain('step');
+    expect(src).toContain("'duration'");
+    expect(src).toContain("'datetime'");
+    expect(src).toContain("'confirm'");
+    expect(src).toContain('prices');
   });
 
   test('7-06: BookingScreen uses KeyboardAvoidingView (form safety)', async () => {
@@ -548,12 +550,15 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
     expect(src).toContain('KeyboardAvoidingView');
   });
 
-  test('7-07: duration options include 15, 30, 60 minute slots', async () => {
-    const fs  = await import('fs');
+  test('7-07: duration labels for 15, 30, 60 minutes; the prices come from the server', async () => {
+    const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('min: 15');
-    expect(src).toContain('min: 30');
-    expect(src).toContain('min: 60');
+    expect(src).toContain('15:');
+    expect(src).toContain('30:');
+    expect(src).toContain('60:');
+    expect(src).toContain('fee_display');
+    expect(src).not.toContain("'$14.99'");
+    expect(src).not.toContain("'$9.99'");
   });
 });
 

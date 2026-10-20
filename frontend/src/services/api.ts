@@ -267,10 +267,13 @@ export function deduplicatedGet(url: string, config?: Parameters<typeof instance
 }
 
 // ── Core request with retry ────────────────────────────────────────────────────
+/** Body + response headers (e.g. X-Total-Count on paged directory searches). */
+export type ApiResponse<T> = { data: T; headers?: Record<string, unknown> };
+
 async function request<T = any>(
   config: AxiosRequestConfig,
   signal?: AbortSignal,
-): Promise<{ data: T }> {
+): Promise<ApiResponse<T>> {
   const method = (config.method || 'GET').toUpperCase();
   // Create endpoints the server de-duplicates (constants/idempotency.ts): send
   // an Idempotency-Key and retry a dropped / timed-out request with the SAME
