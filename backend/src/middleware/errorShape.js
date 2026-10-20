@@ -50,17 +50,20 @@ function inputErrorStatus(sqlstate) {
   return null;
 }
 
-// English catalog sentence → key, for routes that answer with English text.
-let ENGLISH_TO_KEY = null;
-function englishKey(text) {
-  if (!ENGLISH_TO_KEY) {
-    ENGLISH_TO_KEY = new Map();
-    for (const [k, v] of Object.entries(CATALOGS.en)) if (typeof v === 'string' && !/\{\w+\}/.test(v)) ENGLISH_TO_KEY.set(v.trim(), k);
+// Catalog sentence (any language) → key: a route that answers with the text in
+// `error`, or in English, is re-rendered in the request language.
+let TEXT_TO_KEY = null;
+function catalogKey(text) {
+  if (!TEXT_TO_KEY) {
+    TEXT_TO_KEY = new Map();
+    for (const cat of [CATALOGS.vi, CATALOGS.pt, CATALOGS.es, CATALOGS.en]) {   // English last: it wins on a tie
+      for (const [k, v] of Object.entries(cat)) if (typeof v === 'string' && !/\{\w+\}/.test(v)) TEXT_TO_KEY.set(v.trim(), k);
+    }
   }
-  return ENGLISH_TO_KEY.get(String(text).trim()) || null;
+  return TEXT_TO_KEY.get(String(text).trim()) || null;
 }
 const isSentence = (s) => typeof s === 'string' && s.trim() !== '' && !IS_CODE.test(s.trim());
-const DEBUG_FIELDS = ['stack', 'sql', 'detail', 'details', 'hint', 'trace', 'exception', 'err', 'cause', 'query'];
+const DEBUG_FIELDS = ['stack', 'sql', 'detail', 'hint', 'trace', 'exception', 'err', 'cause'];
 
 export function shapeErrorBody(body, status, lang, { prod = process.env.NODE_ENV === 'production' } = {}) {
   const src = body && typeof body === 'object' && !Array.isArray(body) ? { ...body } : { error: typeof body === 'string' ? body : undefined };
@@ -74,8 +77,8 @@ export function shapeErrorBody(body, status, lang, { prod = process.env.NODE_ENV
     if (!routeCode || /error|exception/i.test(String(src.error))) code = 'server_error';
     return { ...src, error: code, code, message: msg(lang, 'http.500'), status };
   }
-  // A message in English that the catalog knows → the request language.
-  const known = (message && englishKey(message)) || (!message && englishFromError && englishKey(englishFromError));
+  // A catalog sentence (in whatever language the route wrote it) → the request language.
+  const known = (message && catalogKey(message)) || (!message && englishFromError && catalogKey(englishFromError));
   if (known) message = msg(lang, known);
   else if (!message && englishFromError && lang === 'en') message = englishFromError;
   if (!message) message = msg(lang, CODE_KEYS[code] || STATUS_KEYS[status] || (status >= 500 ? 'http.500' : 'http.400'));

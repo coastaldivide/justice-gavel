@@ -357,6 +357,8 @@ export const ALL_ENV_VARS = {
   ATTACHMENTS_DIR:          process.env.ATTACHMENTS_DIR            || '',    // default <app>/data/attachments
   ATTACHMENTS_BUCKET:       process.env.ATTACHMENTS_BUCKET         || 'case-documents',
   DAILY_API_KEY:            process.env.DAILY_API_KEY              || '',    // Daily.co video rooms (503 without)
+  DAILY_API_BASE:           process.env.DAILY_API_BASE             || '',    // Daily REST base (default https://api.daily.co/v1; tests / staging)
+  METRICS_TOKEN:            process.env.METRICS_TOKEN              || '',    // bearer token for /metrics in production (ADMIN_KEY when unset)
 
   // ── Scheduler / Cron ─────────────────────────────────────────────────────
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',

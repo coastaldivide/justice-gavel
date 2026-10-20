@@ -212,7 +212,7 @@ describe('M11d. Remaining 13 Files → ≥15 Hits', () => {
     const ti=fs.readFileSync(__REPO + '/backend/src/routes/time.js','utf8');
     const bl=fs.readFileSync(__REPO + '/backend/src/routes/billing/connections.js','utf8');
     expect(pu).toContain("router.post('/d7-reengage'");
-    expect(pu).toContain("router.post('/receipts'");
+    expect(pu).not.toContain("router.post('/receipts'");   // section H: server-side receipt checks
     expect(pv).toContain("router.get('/coverage'");
     expect(pv).toContain("router.get('/nearest-city'");
     expect(gg).toContain("router.post('/evaluate/:id'");

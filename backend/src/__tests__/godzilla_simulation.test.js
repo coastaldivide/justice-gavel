@@ -5,7 +5,6 @@
  * Build to break. Japan must survive.
  */
 
-import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 
 let _s = 0xDEADBEEF;
 const rng = () => { _s = (_s * 1664525 + 1013904223) & 0xFFFFFFFF; return (_s >>> 0) / 0xFFFFFFFF; };
@@ -668,16 +667,6 @@ function runSession(city,userIdx,path){
         if(p<=0)fails.push('ice_premium_zero');
         break;
       }
-      case 'bail_then_attorney':{
-        const can=canAccessFeature(tier,'attorney_matching');
-        if(typeof can!=='boolean')fails.push('attorney_gate_type');
-        if(tier==='free'&&can===true)fails.push('free_has_attorney_match');
-        break;
-      }
-      case 'bail_subscription_gate':{
-        if(!canAccessFeature(tier,'bail_calculator'))fails.push('bail_calc_blocked:'+tier);
-        break;
-      }
       case 'arrest_monitor_new':{
         const code=makeCode();
         if(code.length!==6)fails.push('code_length:'+code.length);
@@ -686,11 +675,6 @@ function runSession(city,userIdx,path){
       case 'arrest_search_name':{
         const name=city.name+' '+userIdx;
         if(!name||name.length<2)fails.push('search_name_too_short');
-        break;
-      }
-      case 'arrest_warrant_check':{
-        const can=canAccessFeature(tier,'expungement_checker');
-        if(typeof can!=='boolean')fails.push('warrant_gate_type');
         break;
       }
       case 'expungement_misdemeanor':{
@@ -784,45 +768,9 @@ function runSession(city,userIdx,path){
         }
         break;
       }
-      case 'ai_chat_free_gate':{
-        const can=canAccessFeature('free','ai_legal_chat');
-        if(typeof can!=='boolean')fails.push('ai_chat_gate_type');
-        break;
-      }
-      case 'ai_chat_legal_pro':{
-        const can=canAccessFeature('legal_pro','unlimited_ai');
-        if(typeof can!=='boolean')fails.push('ai_pro_gate_type');
-        break;
-      }
-      case 'subscription_free_safety':{
-        const safety=['bail_calculator','know_your_rights','crisis_resources','emergency_contacts','immigration_rights'];
-        for(const f of safety){
-          if(!canAccessFeature('free',f))fails.push('free_missing:'+f);
-        }
-        break;
-      }
-      case 'subscription_free_blocks_firm':{
-        if(canAccessFeature('free','firm_management')===true)fails.push('free_has_firm_management');
-        break;
-      }
-      case 'subscription_esquire_superset':{
-        const FEATS=['bail_calculator','know_your_rights','ai_legal_chat'];
-        const TIERS2=['free','legal_radar','advisor','legal_pro'];
-        for(const f of FEATS){
-          for(const t of TIERS2){
-            if(canAccessFeature(t,f)&&!canAccessFeature('esquire',f))fails.push('esquire_missing:'+f);
-          }
-        }
-        break;
-      }
       case 'video_fee_15min':{ break; }
       case 'video_fee_30min':{ break; }
       case 'video_fee_60min':{ break; }
-      case 'video_no_stripe_fallback':{
-        const can=canAccessFeature(tier,'video_consultation');
-        if(typeof can!=='boolean')fails.push('video_gate_type');
-        break;
-      }
       case 'pi_lead_minor_50':{ break; }
       case 'pi_lead_catastrophic_500':{ break; }
       case 'pi_lead_civil_rights':{ break; }
@@ -893,30 +841,11 @@ function runSession(city,userIdx,path){
       case 'gavel_streak_reward':{
         break;
       }
-      case 'crisis_free_always':{
-        if(!canAccessFeature('free','crisis_resources'))fails.push('crisis_blocked_free');
-        break;
-      }
-      case 'emergency_free_always':{
-        if(!canAccessFeature('free','emergency_contacts'))fails.push('emergency_blocked_free');
-        break;
-      }
-      case 'immigration_free_always':{
-        if(!canAccessFeature('free','immigration_rights'))fails.push('immigration_blocked_free');
-        break;
-      }
       case 'session_code_charset':{
         const code=makeCode();
         if(code.length!==6)fails.push('code_len:'+code.length);
         if(/[01OI]/.test(code))fails.push('ambiguous_char:'+code);
         if(!/^[A-HJ-NP-Z2-9]{6}$/.test(code))fails.push('invalid_charset:'+code);
-        break;
-      }
-      case 'onboarding_all_free_features':{
-        const req=['bail_calculator','know_your_rights','crisis_resources','emergency_contacts','immigration_rights','expungement_checker'];
-        for(const f of req){
-          if(!canAccessFeature('free',f))fails.push('onboard_missing:'+f);
-        }
         break;
       }
       default: break;

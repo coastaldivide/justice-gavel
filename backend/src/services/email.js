@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger.js';
 import { escapeHtml as e, safeUrl, headerSafe } from '../utils/html.js';
 import { msg } from '../i18n/index.js';
+import { REFUND_CUTOFF_HOURS } from './consultationSlots.js';
 
 // Every value interpolated into the HTML templates below goes through e()
 // (text / attribute) or safeUrl() (href) — names, case titles, notes and
@@ -153,7 +154,7 @@ const row = (label, value) => `<tr><td style="padding:8px 0;color:#6B7280;width:
 // ── Booking confirmation — to the client after the payment is verified ────────
 // `when` is the slot as the person reads it ("Monday, May 4 · 9:00 AM CDT"),
 // already in `lang` (routes/consultations.js slotLabel).
-export async function sendBookingConfirmation({ to, lang = 'en', clientName, attorneyName, when, durationMin, feeDisplay, refundHours }) {
+export async function sendBookingConfirmation({ to, lang = 'en', clientName, attorneyName, when, durationMin, feeDisplay, refundHours = REFUND_CUTOFF_HOURS }) {
   const m = (k, p) => msg(lang, k, p);
   return await send({
     to,

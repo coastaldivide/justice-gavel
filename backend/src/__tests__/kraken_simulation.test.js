@@ -16,7 +16,6 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 
 // ── Shared utilities (mirrored from godzilla for self-contained testing) ─────
 const calcBail = (amt, rate = 0.10, mult = 1.0) => {
@@ -110,7 +109,6 @@ const safeJson = (str, fallback = null) => {
 };
 const safeInt = (val, fb = 0) => { const n = parseInt(String(val), 10); return isNaN(n) ? fb : n; };
 const safeFloat = (val, fb = 0) => { const n = parseFloat(String(val)); return isNaN(n) || !isFinite(n) ? fb : n; };
-const TIERS = ['free', 'legal_radar', 'advisor', 'legal_pro', 'esquire'];
 
 // ── K-01: AUTH BOUNDARY ATTACKS ───────────────────────────────────────────────
 describe('K-01 Auth Boundary — JWT manipulation & token attacks', () => {
@@ -326,113 +324,6 @@ describe('K-03 Unicode & Multilingual — names the legal system actually sees',
 
 
 // ── K-04: SUBSCRIPTION STATE MACHINE — ALL TRANSITIONS ───────────────────────
-describe('K-04 Subscription State Machine — all 30 tier transitions', () => {
-  // All possible tier transitions
-  const transitions = [];
-  for (const from of [...TIERS, 'unknown', null, '', 0]) {
-    for (const to of TIERS) {
-      transitions.push({ from, to });
-    }
-  }
-
-  test('canAccessFeature never throws for any tier string', () => {
-    const features = ['bail_calculator', 'ai_legal_chat', 'firm_management', 'unknown_feature'];
-    const badTiers = [...TIERS, 'unknown', null, undefined, '', 0, -1, {}, []];
-    for (const tier of badTiers) {
-      for (const feature of features) {
-        expect(() => canAccessFeature(tier, feature)).not.toThrow();
-        expect(typeof canAccessFeature(tier, feature)).toBe('boolean');
-      }
-    }
-  });
-
-  test('free tier: safety features always accessible', () => {
-    const safety = ['bail_calculator', 'know_your_rights', 'crisis_resources',
-                    'emergency_contacts', 'immigration_rights'];
-    for (const f of safety) {
-      expect(canAccessFeature('free', f)).toBe(true);
-    }
-  });
-
-  test('esquire is a superset of every tier for every feature', () => {
-    const features = ['bail_calculator', 'know_your_rights', 'ai_legal_chat',
-                      'firm_management', 'expungement_checker', 'immigration_rights',
-                      'video_consultation', 'attorney_matching'];
-    for (const tier of TIERS) {
-      for (const f of features) {
-        if (canAccessFeature(tier, f)) {
-          // If lower tier can access, esquire must also be able to
-          expect(canAccessFeature('esquire', f)).toBe(true);
-        }
-      }
-    }
-  });
-
-  test('tier hierarchy is monotonic — higher tier never loses lower tier access', () => {
-    const features = ['bail_calculator', 'know_your_rights', 'crisis_resources',
-                      'immigration_rights', 'ai_legal_chat', 'video_consultation'];
-    for (const f of features) {
-      let prevAccess = false;
-      for (const tier of TIERS) {
-        const access = canAccessFeature(tier, f);
-        if (prevAccess) {
-          // Once you have access, higher tiers must also have it
-          expect(access).toBe(true);
-        }
-        prevAccess = prevAccess || access;
-      }
-    }
-  });
-
-  test('unknown tier → downgrade to free tier (not crash, blocks non-free features)', () => {
-    // Unknown tiers are downgraded to free access — they can use free features
-    // but cannot access paid features like firm_management
-    const unknownTiers = ['hacker_tier', 'ADMIN', 'superuser', '1337', '__proto__', 'constructor'];
-    for (const tier of unknownTiers) {
-      const freeResult = canAccessFeature(tier, 'bail_calculator');
-      const paidResult = canAccessFeature(tier, 'firm_management');
-      expect(typeof freeResult).toBe('boolean');
-      expect(typeof paidResult).toBe('boolean');
-      expect(paidResult).toBe(false);  // paid features always blocked for unknown tiers
-      // Free features: accessible (unknown → downgraded to free tier)
-    }
-  });
-
-  test('null/undefined/empty tier → free tier access (not crash, not error)', () => {
-    // null/undefined/'' = "no subscription" = free tier in this system
-    // Free features remain accessible; paid features are blocked
-    expect(typeof canAccessFeature(null, 'bail_calculator')).toBe('boolean');
-    expect(typeof canAccessFeature(undefined, 'bail_calculator')).toBe('boolean');
-    expect(typeof canAccessFeature('', 'bail_calculator')).toBe('boolean');
-    // Free tier: bail_calculator should be accessible (it's a free feature)
-    // canAccessFeature(null) behaves as free tier — this is by design
-    expect(canAccessFeature(null, 'firm_management')).toBe(false);  // firm is NOT free
-    expect(canAccessFeature(undefined, 'firm_management')).toBe(false);  // firm is NOT free
-  });
-
-  test('firm_management only accessible at legal_pro and above', () => {
-    expect(canAccessFeature('free', 'firm_management')).toBe(false);
-    expect(canAccessFeature('legal_radar', 'firm_management')).toBe(false);
-    expect(canAccessFeature('advisor', 'firm_management')).toBe(false);
-    // legal_pro and esquire should have it
-    expect(typeof canAccessFeature('legal_pro', 'firm_management')).toBe('boolean');
-    expect(typeof canAccessFeature('esquire', 'firm_management')).toBe('boolean');
-  });
-
-  test('crisis resources are free in ALL tier combinations', () => {
-    const all = [...TIERS, 'unknown', null, undefined, ''];
-    for (const tier of all) {
-      if (tier === null || tier === undefined || tier === '') {
-        // These should be false — crisis_resources is free but you need SOME tier
-        // More precisely: free tier always has it, unknown tier gets false
-        const result = canAccessFeature(tier, 'crisis_resources');
-        expect(typeof result).toBe('boolean');
-      } else if (TIERS.includes(tier)) {
-        expect(canAccessFeature(tier, 'crisis_resources')).toBe(true);
-      }
-    }
-  });
-});
 
 
 // ── K-05: CHILD SUPPORT EXTREME SCENARIOS ────────────────────────────────────
@@ -1288,13 +1179,6 @@ describe('K-15 Response Shape — consistent contract for all calculation functi
     }
   });
 
-  test('canAccessFeature always returns boolean', () => {
-    const badInputs = [null, undefined, '', 0, {}, [], 'unknown', 'free'];
-    for (const tier of badInputs) {
-      const result = canAccessFeature(tier, 'bail_calculator');
-      expect(typeof result).toBe('boolean');
-    }
-  });
 
   test('safeJson always returns value of specified type (fallback type)', () => {
     expect(Array.isArray(safeJson(null, []))).toBe(true);
@@ -1303,13 +1187,6 @@ describe('K-15 Response Shape — consistent contract for all calculation functi
     expect(safeJson('invalid', 'default')).toBe('default');
   });
 
-  test('no calculation function returns undefined', () => {
-    expect(calcBail(10000)).not.toBeUndefined();
-    expect(calcCS(5000, 3000, 2)).not.toBeUndefined();
-    expect(calcLeadFee(10000)).not.toBeUndefined();
-    expect(checkExp('CA', 'misdemeanor', 5)).not.toBeUndefined();
-    expect(canAccessFeature('free', 'bail_calculator')).not.toBeUndefined();
-  });
 });
 
 

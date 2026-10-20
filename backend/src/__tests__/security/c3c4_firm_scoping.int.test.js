@@ -63,7 +63,8 @@ describeIntegration('C3/C4/H5/H6/M8 — firm and matter scoping', () => {
 
   it('C3 ATTACK: owning a CASE with the same numeric id grants nothing on the matter', async () => {
     // the old check treated "you own cases.id = :id" as lead access to matters.id = :id
-    await ctx.db.run(`SELECT setval(pg_get_serial_sequence('cases','id'), GREATEST((SELECT MAX(id) FROM cases), ?))`, [matter.id - 1]).catch(() => {});
+    // Forward only: other suites share this database, and moving the sequence back re-issues case ids they still hold.
+    await ctx.db.run(`SELECT setval(pg_get_serial_sequence('cases','id'), GREATEST((SELECT last_value FROM cases_id_seq), (SELECT MAX(id) FROM cases), ?))`, [matter.id - 1]).catch(() => {});
     const r = await ctx.request().get(`/api/matters/${matter.id}`).set(stranger.headers);
     expect(r.status).toBe(404);
   });

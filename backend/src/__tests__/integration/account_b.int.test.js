@@ -74,7 +74,7 @@ describeIntegration('section B: sign-up, sign-in & account (real Postgres)', () 
     const u = await ctx.register();
     const wrong = await req().delete('/api/auth/account').set({ ...u.headers, 'Accept-Language': 'vi' }).send({ password: 'nope' });
     expect(wrong.status).toBe(403);
-    expect(wrong.body).toEqual({ error: 'Mật khẩu không đúng.', code: 'incorrect_password' });
+    expect(wrong.body).toEqual({ error: 'Mật khẩu không đúng.', code: 'incorrect_password', message: 'Mật khẩu không đúng.' });
     expect((await req().get('/api/auth/me').set(u.headers)).status).toBe(200);
     const ok = await req().delete('/api/auth/account').set(u.headers).send({ password: 'CorrectHorse9!' });
     expect(ok.status).toBe(200);
@@ -92,7 +92,7 @@ describeIntegration('section B: sign-up, sign-in & account (real Postgres)', () 
     expect(off.body.error).toMatch(/support@justicegavel\.app/);
     const phone = await req().post('/api/auth/forgot-password?lang=pt').send({ email: '6155550100' });
     expect(phone.status).toBe(400);
-    expect(phone.body).toEqual({ error: 'Digite um e-mail válido.', code: 'email_invalid' });
+    expect(phone.body).toEqual({ error: 'Digite um e-mail válido.', code: 'email_invalid', message: 'Digite um e-mail válido.' });
 
   });
 

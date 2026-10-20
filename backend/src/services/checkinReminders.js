@@ -137,7 +137,8 @@ export async function planCheckinReminder(db, enrollmentId, now = new Date()) {
   const data = { type: 'checkin_reminder', screen: 'CheckIn', enrollment_id: Number(e.id), enrollmentId: Number(e.id), day, time_zone: st.tz, lang };
   await db.run(
     `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type, status, priority, dedupe_key)
-     VALUES (?, NULL, ?, ?, ?, ?, 'checkin_reminder', 'pending', 'high', ?)`,
+     VALUES (?, NULL, ?, ?, ?, ?, 'checkin_reminder', 'pending', 'high', ?)
+     ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL AND status IN ('pending', 'sending') DO NOTHING`,  // already planned / being sent
     [e.user_id, msg(lang, 'checkin.push.reminder_title'), msg(lang, e.check_in_freq === 'weekly' ? 'checkin.push.reminder_body_weekly' : 'checkin.push.reminder_body'),
       JSON.stringify(data), at.toISOString(), `checkin:${e.id}:${day}:${at.toISOString().slice(11, 16)}`]);
   return { enrollment_id: Number(e.id), day, deliver_at: at.toISOString(), time_zone: st.tz };

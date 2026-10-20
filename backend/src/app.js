@@ -4,7 +4,6 @@ import barVerifyRouter from './routes/admin/barVerification.js';
 import impactRouter from './routes/impact.js';
 import legalAidRouter from './routes/legalAid.js';
 import bondsmanCRMRouter from './routes/bondsmanCRM.js';
-import pretrialRouter from './routes/pretrial.js';
 import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
@@ -85,7 +84,7 @@ import webpushRouter      from './routes/webpush.js';
 import outboundWHRouter   from './routes/webhooks/outbound.js';
 import analyticsRouter     from './routes/analytics.js';
 import searchRouter                 from './routes/search.js';
-import { randomUUID } from 'crypto';
+import { randomUUID, timingSafeEqual } from 'crypto';
 import forumRouter from './routes/forum.js';
 import caseCounselRouter from './routes/caseCounsel.js';
 import { stripeConfigured, APP_ENV } from './config.js';
@@ -94,6 +93,7 @@ import { getDb } from './db/index.js';
 import { createDbHealthCheck } from './utils/healthCheck.js';
 import { idempotency } from './middleware/idempotency.js';
 import { errorShape } from './middleware/errorShape.js';
+import { msg, resolveLang } from './i18n/index.js';
 
 
 // NOTE: Sentry is initialised once in ./instrument.js (imported first by
@@ -157,12 +157,12 @@ app.use(errorShape());
 // CORS_ORIGIN / EXTRA_ORIGINS / FRONTEND_URL. Requests without an Origin header
 // (native mobile apps, curl, server-to-server) are always allowed. Electron
 // (file://, app://, "null") is allowed. Disallowed origins get 403 JSON.
+// Local dev origins (Expo web, the web export) are never allowed in production;
+// a production deploy that needs another origin lists it in CORS_ORIGIN.
 const DEFAULT_ORIGINS = [
   'https://justicegavel.app',
   'https://www.justicegavel.app',
-  'http://localhost:8081',
-  'http://localhost:19006',
-  'http://localhost:3000',
+  ...(IS_PROD ? [] : ['http://localhost:8081', 'http://localhost:19006', 'http://localhost:3000']),
 ];
 const splitList = (v) => String(v || '').split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean);
 const ALLOWED_ORIGINS = new Set([
@@ -351,7 +351,20 @@ async function reminderMetrics() {
 // ── /metrics — machine-readable operational metrics ────────────────────────────
 // Used by: Uptime Robot, Datadog, Prometheus scrapers (the Render health check uses /health)
 // Returns JSON by default; ?format=prometheus for Prometheus text format
+// In production /metrics needs `Authorization: Bearer <METRICS_TOKEN>` (or the
+// X-Admin-Key): process ids, memory, job and reminder counters are not public.
+function metricsAllowed(req) {
+  if (!IS_PROD) return true;
+  const want = process.env.METRICS_TOKEN || process.env.ADMIN_KEY;
+  if (!want) return false;
+  const auth = String(req.headers.authorization || '');
+  const got = auth.startsWith('Bearer ') ? auth.slice(7).trim() : String(req.headers['x-admin-key'] || '');
+  const a = Buffer.from(got); const b = Buffer.from(want);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 app.get('/metrics', async (req, res) => {
+  if (!metricsAllowed(req)) return res.status(401).json({ error: 'unauthorized', code: 'unauthorized', message: msg(resolveLang(req), 'http.401') });
   try {
     const memUsage = process.memoryUsage();
     const { getQueueStats } = await import('./services/aiQueue.js').catch(() => ({ getQueueStats: () => ({}) }));
@@ -518,7 +531,6 @@ app.use('/api/jobs',           jobsRouter);           // async AI job polling   
 // ── Late-registered routes ────────────────────────────────────────────────────
 app.use('/api/cases', caseLifecycleRouter);
 app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
-app.use('/api/pretrial', pretrialRouter);
 app.use('/api/bondsman', bondsmanCRMRouter);
 app.use('/api/legal-aid', legalAidRouter);
 app.use('/api/impact', impactRouter);
@@ -550,9 +562,10 @@ app.use((err, req, res, _next) => {
   if (err.type === 'entity.parse.failed') { status = 400; code = 'invalid_json'; }
   if (err.type === 'entity.too.large') { status = 413; code = 'payload_too_large'; }
   if (err.type === 'encoding.unsupported' || err.type === 'charset.unsupported') { status = 415; code = 'unsupported_media_type'; }
-  // Library / internal error text is never shown in production; middleware/errorShape.js
-  // supplies the message in the request language from the code / status.
-  const message = IS_PROD ? undefined : err.message || 'Internal server error';
+  // Library / internal error text is never the message (that comes from
+  // middleware/errorShape.js, in the request language, from the code / status);
+  // outside production it is kept in `detail` for debugging.
+  const detail = IS_PROD ? undefined : err.message || 'Internal server error';
 
   if (status >= 500) {
     logger.error({
@@ -567,9 +580,8 @@ app.use((err, req, res, _next) => {
 
   if (!res.headersSent) {
     res.status(status).json({
-      error:   code || message,
-      ...(code ? { code } : {}),
-      ...(message ? { message } : {}),
+      ...(code ? { error: code, code } : {}),   // no code → errorShape derives it from the status
+      ...(detail ? { detail } : {}),
       status,
       path:    req.path,
       request_id: req.id,

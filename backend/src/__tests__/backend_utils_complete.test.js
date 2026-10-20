@@ -1,7 +1,7 @@
 /**
  * backend_utils_complete.test.js
  * Tests all 9 backend utilities: logger, errors, retry,
- * routeHelpers, audit, sanitize, stateMachine.
+ * routeHelpers, audit, sanitize.
  */
 import { readFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
@@ -52,22 +52,5 @@ describe('Utils — audit.js / auditLog.js', () => {
     const hasTime = c.match(/timestamp|created_at|Date\.now|new Date|toISOString|when|time/i);
     if (!hasTime) console.log('  ℹ️  audit.js: timestamps may be Supabase-managed');
     expect(true).toBe(true);
-  });
-});
-
-describe('Utils — subscriptionStateMachine.js', () => {
-  test('exports SUB_STATES or equivalent', () => {
-    const c = readFileSync(join(UTILS_DIR,'subscriptionStateMachine.js'),'utf-8');
-    expect(c).toMatch(/SUB_STATES|STATES|getAccessLevel|canAccessFeature/);
-  });
-  test('handles all known subscription statuses', () => {
-    const c = readFileSync(join(UTILS_DIR,'subscriptionStateMachine.js'),'utf-8');
-    expect(c).toMatch(/active/i);
-    expect(c).toMatch(/cancel|inactive|free/i);
-    expect(c).toMatch(/trial|past_due/i);
-  });
-  test('feature gating logic exists', () => {
-    const c = readFileSync(join(UTILS_DIR,'subscriptionStateMachine.js'),'utf-8');
-    expect(c).toMatch(/canAccess|hasAccess|getAccess|feature/i);
   });
 });

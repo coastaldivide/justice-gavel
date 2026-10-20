@@ -119,6 +119,8 @@ SENTRY_DSN=<https://...@sentry.io/...>   error tracking (SENTRY_ENVIRONMENT / SE
                                           justice-gavel@<version>+<RENDER_GIT_COMMIT>
 OPENAI_API_KEY=<sk-...>                  Whisper transcription (else transcription 503)
 DAILY_API_KEY=<...>                      Daily.co video consultation rooms (else video 503)
+DAILY_API_BASE=<url>                     Daily REST base URL (default https://api.daily.co/v1; tests / staging only)
+METRICS_TOKEN=<random>                   bearer token for GET /metrics in production (falls back to ADMIN_KEY)
 GOOGLE_PLACES_KEY=<AIza...>              data refresh: provider scrapers + nightly refresh (in-app
                                           search reads Postgres and never calls Google). Unset →
                                           those steps skip with a log line.

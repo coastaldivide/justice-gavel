@@ -90,7 +90,7 @@ jobs:
       - name: Generate production secrets
         run: |
           set -euo pipefail
-          for k in JWT_SECRET:48 JWT_REFRESH_SECRET:48 ENCRYPTION_KEY:32; do
+          for k in JWT_SECRET:48 JWT_REFRESH_SECRET:48 ENCRYPTION_KEY:32 ADMIN_KEY:24; do
             name=${k%%:*}; bytes=${k##*:}
             val=$(openssl rand -hex "$bytes")
             echo "::add-mask::$val"
@@ -127,6 +127,14 @@ jobs:
         env:
           DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node scripts/smoke-test.mjs "http://localhost:${API_PORT}" --anthropic-mock "${ANTHROPIC_MOCK_PORT}"
+
+      - name: Route sweep (every mounted route × 6 callers, valid + junk input)
+        # scripts/route-sweep.mjs: no 5xx / hang, 401 / 403 / 404 where they belong,
+        # no IDOR, { error, code, message } JSON in the request language, no stack
+        # traces, openapi.json in sync, lawyer / bail-agent rows unchanged.
+        env:
+          DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: node scripts/route-sweep.mjs "http://localhost:${API_PORT}" --db-url "$CI_DATABASE_URL" --admin-key "$ADMIN_KEY" --json "$RUNNER_TEMP/route-sweep.json"
 
       - name: Sample-arrest filter, flat lead fee, takedown review on real Postgres (jest)
         # Runs the real arrests / billing / alerts routers and outbound-bot / alert
@@ -198,6 +206,123 @@ jobs:
         # src/__tests__/env.js sets NODE_ENV=test and test secrets; DATABASE_URL is
         # deliberately not set so routes use the in-memory fallback.
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Web journeys: the production web export driven in headless Chromium against
+  # a production-mode API on a migrated Postgres, with the scriptable Anthropic
+  # mock (backend/scripts/anthropic-mock.mjs). frontend/scripts/run-all-journeys.sh
+  # runs web-journeys-*.cjs and web-journeys.cjs; any failure fails the job.
+  # ───────────────────────────────────────────────────────────────────────────
+  journeys:
+    name: Web journeys (production API + Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jg_journeys
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d jg_journeys"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI_DATABASE_URL: postgres://postgres:postgres@localhost:5432/jg_journeys
+      API_PORT: "4300"
+      MOCK_PORT: "4399"
+      WEB_PORT: "8300"
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          (cd backend && npm ci)
+          (cd frontend && npm ci)
+
+      - name: Apply database migrations (the Render pre-deploy runner)
+        env:
+          DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: sh backend/scripts/migrate.sh
+
+      - name: Generate production secrets
+        run: |
+          set -euo pipefail
+          for k in JWT_SECRET:48 JWT_REFRESH_SECRET:48 ENCRYPTION_KEY:32 ADMIN_KEY:24; do
+            name=${k%%:*}; bytes=${k##*:}
+            val=$(openssl rand -hex "$bytes")
+            echo "::add-mask::$val"
+            echo "$name=$val" >> "$GITHUB_ENV"
+          done
+
+      - name: Start the Anthropic mock and the API (NODE_ENV=production, no Stripe)
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          PORT: ${{ env.API_PORT }}
+          DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+          ANTHROPIC_API_KEY: dummy
+          ANTHROPIC_BASE_URL: http://127.0.0.1:${{ env.MOCK_PORT }}
+          CORS_ORIGIN: http://localhost:${{ env.WEB_PORT }}
+        run: |
+          set -euo pipefail
+          nohup node scripts/anthropic-mock.mjs "$MOCK_PORT" > "$RUNNER_TEMP/mock.log" 2>&1 &
+          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
+          for i in $(seq 1 60); do
+            curl -fsS "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && curl -fsS "http://127.0.0.1:${MOCK_PORT}/__requests" > /dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          echo "::error::API or Anthropic mock did not start"; cat "$RUNNER_TEMP/server.log"; exit 1
+
+      - name: Export the web app against this API
+        working-directory: frontend
+        env:
+          EXPO_PUBLIC_API_BASE: http://localhost:${{ env.API_PORT }}/api
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: |
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+
+      - name: Run every web journey
+        working-directory: frontend
+        run: bash scripts/run-all-journeys.sh dist "$RUNNER_TEMP/journeys" --api "http://localhost:${API_PORT}/api" --mock "http://127.0.0.1:${MOCK_PORT}" --db-url "$CI_DATABASE_URL" --port "$WEB_PORT"
+
+      - name: Upload journey screenshots and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-journeys
+          path: ${{ runner.temp }}/journeys
+          retention-days: 7
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/server.pid" ]; then kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true; fi
+          tail -n 200 "$RUNNER_TEMP/server.log" 2>/dev/null || true
 
   # ───────────────────────────────────────────────────────────────────────────
   # Frontend: clean install, types, lint, tests, navigation targets, exports.

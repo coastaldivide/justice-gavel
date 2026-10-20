@@ -289,11 +289,13 @@ describe('S12. UX — Logger + Geo + RBAC + Retention Architecture', () => {
     expect(src).toContain('applyLegalHold');
     expect(src).toContain('checkLegalHold');
   });
-  test('S12-05: pushDelivery loop runs every 60s (server.js drain cycle)', async () => {
+  test('S12-05: reminder delivery runs every 60s (one dispatcher per process, started by the scheduler)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/server.js', 'utf8');
-    expect(src).toContain('deliverScheduledPushes');
-    expect(src).toContain('60');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/reminderDispatcher.js', 'utf8');
+    expect(src).toContain('intervalMs = 60_000');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8')).toContain('startReminderDispatcher()');
+    // section H: server.js no longer runs a second delivery loop on the same table
+    expect(fs.readFileSync(__REPO + '/backend/src/server.js', 'utf8')).not.toContain('deliverScheduledPushes');
   });
 });
 

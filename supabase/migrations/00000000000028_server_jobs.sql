@@ -70,3 +70,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_scheduled_pushes_live_dedupe
 -- ── Cases an attorney closed were written as 'closed'; the app, the reminder
 -- planner and the dispatcher use 'Closed'. ─────────────────────────────────────
 UPDATE cases SET status = 'Closed' WHERE status = 'closed';
+
+-- ── Docket entries: due_time is a time of day ('HH:MM', what routes/docket.js
+-- writes and the scheduler reads); the column was TIMESTAMPTZ, so every entry
+-- with a due time failed to save. ──────────────────────────────────────────────
+DO $$ BEGIN
+  IF (SELECT data_type FROM information_schema.columns
+       WHERE table_schema = current_schema() AND table_name = 'docket_entries' AND column_name = 'due_time') = 'timestamp with time zone' THEN
+    ALTER TABLE docket_entries ALTER COLUMN due_time TYPE TEXT USING to_char(due_time AT TIME ZONE 'UTC', 'HH24:MI');
+  END IF;
+END $$;

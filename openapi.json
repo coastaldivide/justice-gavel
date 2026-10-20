@@ -18790,118 +18790,6 @@
         }
       }
     },
-    "/api/pretrial/compliance-report/{defendant_id}": {
-      "get": {
-        "operationId": "get_api_pretrial_compliance-report_defendant_id",
-        "summary": "GET /api/pretrial/compliance-report/{defendant_id}",
-        "tags": [
-          "pretrial"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "x-staff-only": true,
-        "parameters": [
-          {
-            "name": "defendant_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/pretrial/dashboard": {
-      "get": {
-        "operationId": "get_api_pretrial_dashboard",
-        "summary": "GET /api/pretrial/dashboard",
-        "tags": [
-          "pretrial"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "x-staff-only": true
-      }
-    },
-    "/api/pretrial/enroll": {
-      "post": {
-        "operationId": "post_api_pretrial_enroll",
-        "summary": "POST /api/pretrial/enroll",
-        "tags": [
-          "pretrial"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "x-staff-only": true,
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
     "/api/privilege/bases": {
       "get": {
         "operationId": "get_api_privilege_bases",
@@ -19681,41 +19569,6 @@
         }
       }
     },
-    "/api/push/receipts": {
-      "post": {
-        "operationId": "post_api_push_receipts",
-        "summary": "POST /api/push/receipts",
-        "tags": [
-          "push"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
     "/api/push/reminders": {
       "get": {
         "operationId": "get_api_push_reminders",
@@ -19827,41 +19680,6 @@
       "post": {
         "operationId": "post_api_push_retention_post-purchase",
         "summary": "POST /api/push/retention/post-purchase",
-        "tags": [
-          "push"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-auth": "bearer",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "$ref": "#/components/requestBodies/Json"
-        }
-      }
-    },
-    "/api/push/send": {
-      "post": {
-        "operationId": "post_api_push_send",
-        "summary": "POST /api/push/send",
         "tags": [
           "push"
         ],
@@ -22128,6 +21946,51 @@
             }
           }
         ]
+      }
+    },
+    "/api/video/session/{name}/join": {
+      "post": {
+        "operationId": "post_api_video_session_name_join",
+        "summary": "POST /api/video/session/{name}/join",
+        "tags": [
+          "video"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
       }
     },
     "/api/video/sessions/me": {

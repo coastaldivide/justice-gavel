@@ -168,13 +168,15 @@ async function until(fn, ms = 10000, what = 'condition') {
 /** Accept the Terms modal the way a person does (scroll the summary, tick both boxes). */
 async function acceptTerms(page) {
   await byTid(page, 'tos-accept-button').waitFor({ timeout: 15000 });
-  const sc = byTid(page, 'tos-scroll');
-  const bb = await sc.boundingBox();
-  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
-  for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, 500); await page.waitForTimeout(120); }
-  await page.waitForTimeout(400);
   await byTid(page, 'tos-check-terms').click({ position: { x: 8, y: 8 } });
   await byTid(page, 'tos-check-no-advice').click({ position: { x: 8, y: 8 } });
+  // Scroll the summary until it has reached its end (the button unlocks then);
+  // a fixed number of wheel turns was not enough on a busy machine.
+  const bb = await byTid(page, 'tos-scroll').boundingBox();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  for (let i = 0; i < 40 && !(await byTid(page, 'tos-accept-button').isEnabled()); i++) {
+    await page.mouse.wheel(0, 500); await page.waitForTimeout(150);
+  }
   await byTid(page, 'tos-accept-button').click({ timeout: 5000 });
   await until(async () => !(await byTid(page, 'tos-accept-button').isVisible().catch(() => false)), 10000, 'Terms modal to close');
 }

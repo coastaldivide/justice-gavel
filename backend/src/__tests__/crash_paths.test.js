@@ -145,47 +145,7 @@ describe('Lead fee — flat for all bail amounts', () => {
 });
 
 // ── Subscription gate — never crashes, always boolean ────────────────────
-import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 
-describe('Subscription gate — crash-proof', () => {
-  const TIERS = ['free','legal_radar','advisor','legal_pro','esquire'];
-  const FEATURES = [
-    'bail_calculator','know_your_rights','attorney_matching',
-    'ai_legal_chat','firm_management','video_consultation',
-    'expungement_checker','immigration_rights','crisis_resources',
-  ];
-
-  test('every tier × feature combination returns boolean (never throws)', () => {
-    for (const tier of TIERS) {
-      for (const feature of FEATURES) {
-        expect(() => canAccessFeature(tier, feature)).not.toThrow();
-        expect(typeof canAccessFeature(tier, feature)).toBe('boolean');
-      }
-    }
-  });
-
-  test('unknown tier → boolean (not crash)', () => {
-    expect(() => canAccessFeature('nonexistent_tier', 'bail_calculator')).not.toThrow();
-  });
-
-  test('unknown feature → boolean (not crash)', () => {
-    expect(() => canAccessFeature('free', 'nonexistent_feature')).not.toThrow();
-  });
-
-  test('null tier → boolean (not crash)', () => {
-    expect(() => canAccessFeature(null, 'bail_calculator')).not.toThrow();
-  });
-
-  test('empty string tier → boolean (not crash)', () => {
-    expect(() => canAccessFeature('', 'bail_calculator')).not.toThrow();
-  });
-
-  test('crisis resources always free — never blocked', () => {
-    for (const tier of TIERS) {
-      expect(canAccessFeature(tier, 'crisis_resources')).toBe(true);
-    }
-  });
-});
 
 // ── Expungement — all 50 states, never undefined ─────────────────────────
 const EXP = {

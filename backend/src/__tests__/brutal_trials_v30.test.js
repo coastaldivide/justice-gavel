@@ -204,7 +204,8 @@ describe('S2. Services — Low-Hit Function Documentation', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/pushDelivery.js', 'utf8');
     expect(src).toContain('checkPushReceipts');
-    expect(src).toContain('DeviceNotRegistered');
+    // section H: the receipt check lives in services/expoPush.js (pushDelivery re-exports it)
+    expect(fs.readFileSync(__REPO + '/backend/src/services/expoPush.js', 'utf8')).toContain('DeviceNotRegistered');
   });
 });
 

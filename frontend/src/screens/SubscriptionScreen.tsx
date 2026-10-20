@@ -61,6 +61,11 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   useEffect(() => () => { mounted.current = false; }, []);
 
   const [type, setType] = useState<ProviderType>('lawyer');
+  // The plan list on screen is always the selected tab's: a slower answer for
+  // the other tab (the attorney list is asked for before the stored account is
+  // read) must not overwrite it.
+  const shownType = useRef<ProviderType>('lawyer');
+  shownType.current = type;
   useEffect(() => { if (ready && isBailAgentUser(user)) setType('bail_agent'); }, [ready, user]);
   const [plans, setPlans] = useState<ProviderPlan[]>([]);
   const [current, setCurrent] = useState<{ tier: string; line: string; cancelling: boolean } | null>(null);
@@ -76,7 +81,7 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
           api.get('/billing/tiers', { params: { audience: 'attorney' } }),
           hasSession ? api.get('/billing/subscription', { params: { provider_type: 'lawyer' } }).catch(() => null) : Promise.resolve(null),
         ]);
-        if (!mounted.current) return;
+        if (!mounted.current || shownType.current !== pt) return;
         setPlans(attorneyPlansFrom(tiers.data));
         const sub = (mine?.data as { subscription?: SubscriptionView | null } | undefined)?.subscription;
         setCurrent(sub?.paid ? {
@@ -90,7 +95,7 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
           api.get('/billing/bondsman/tiers'),
           hasSession ? api.get('/billing/bondsman/subscription').catch(() => null) : Promise.resolve(null),
         ]);
-        if (!mounted.current) return;
+        if (!mounted.current || shownType.current !== pt) return;
         setPlans(bondsmanPlansFrom(tiers.data));
         const b = mine?.data as BondsmanSub | undefined;
         setCurrent(b?.active && b.tier ? {
@@ -100,9 +105,9 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
       }
       setNotice(n => (n?.tone === 'error' && n.text === t('x_consumer_subscription_could_not_load_plans') ? null : n));
     } catch (e) {
-      if (mounted.current) { setPlans([]); setNotice({ text: apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans')), tone: 'error' }); }
+      if (mounted.current && shownType.current === pt) { setPlans([]); setNotice({ text: apiErrorMessage(e, t('x_consumer_subscription_could_not_load_plans')), tone: 'error' }); }
     } finally {
-      if (mounted.current) { setLoading(false); setRefreshing(false); }
+      if (mounted.current && shownType.current === pt) { setLoading(false); setRefreshing(false); }
     }
   }, [hasSession]);
   useEffect(() => { setLoading(true); load(type); }, [type, load]);

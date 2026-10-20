@@ -31,6 +31,22 @@ import fs from 'fs';
 import request from 'supertest';
 
 export const PG_URL = process.env.TEST_DATABASE_URL || '';
+
+/**
+ * Directory rows a suite inserts for itself carry this marker in source_id.
+ * Checksums of the verified directory leave them out, so suites that insert
+ * (and remove) fixtures can run in parallel with suites that prove the real
+ * rows never change.
+ */
+export const FIXTURE_MARK = 'JGTEST';
+
+/** md5 + count of the verified lawyer / bail-agent rows (fixtures excluded). */
+export async function providerChecksum(db) {
+  const notFixture = `WHERE COALESCE(t.source_id, '') NOT ILIKE '%${FIXTURE_MARK}%'`;
+  const l = await db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM lawyers t ${notFixture}`);
+  const b = await db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM bail_agents t ${notFixture}`);
+  return `${l.n}:${l.h}/${b.n}:${b.h}`;
+}
 export const describeIntegration = PG_URL ? describe : describe.skip;
 
 /** Tables that may hold rows keyed by user_id for users a suite created. */

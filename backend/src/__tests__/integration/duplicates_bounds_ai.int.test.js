@@ -55,7 +55,16 @@ describeIntegration('duplicates, list bounds and AI budget (real Postgres)', () 
     const key = `${ctx.tag}-bad-1`;
     const bad = await ctx.request().post('/api/cases').set(u.headers).set('Idempotency-Key', key).send({ title: '' });
     expect(bad.status).toBe(400);
+    // The key is released when the response has finished (res 'finish'), i.e. a
+    // moment after the client has its answer: wait for that, then prove a retry runs.
+    const deadline = Date.now() + 5000;
+    while (await ctx.db.get('SELECT key FROM idempotency_keys WHERE key = ?', [key]) && Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 20));
+    }
     expect(await ctx.db.get('SELECT key FROM idempotency_keys WHERE key = ?', [key])).toBeUndefined();
+    const retry = await ctx.request().post('/api/cases').set(u.headers).set('Idempotency-Key', key).send({ title: `${ctx.tag} retried` });
+    expect(retry.status).toBe(201);
+    expect(retry.headers['idempotent-replayed']).toBeUndefined();
   });
 
   it('racing double taps on "save lawyer" leave one bookmark (unique index) and both succeed', async () => {

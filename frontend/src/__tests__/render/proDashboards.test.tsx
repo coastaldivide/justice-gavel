@@ -75,6 +75,23 @@ describe('plans come from the server', () => {
     expect(screen.queryByText(/top placement|verified badge/i)).toBeNull();
   });
 
+  it('provider screen for a bail agent: a slow attorney price list never replaces the agent\'s plans', async () => {
+    mockUser = { id: 6, role: 'user', accountType: 'bail_agent' };
+    let releaseAttorney: () => void = () => undefined;
+    on('get', '/billing/tiers', () => new Promise(r => { releaseAttorney = () => r({ data: TIERS }); }));
+    on('get', '/billing/subscription', { subscription: null });
+    on('get', '/billing/bondsman/tiers', { tiers: [
+      { key: 'starter', name: 'Bondsman Starter', display: '$49/mo', monthly_cents: 4900, annual_cents: 49000, annual_savings_cents: 9800, counties: 1, features: [{ key: 'lead_alerts', counties: 1 }] },
+    ] });
+    on('get', '/billing/bondsman/subscription', { subscription: null });
+    wrap(<SubscriptionScreen navigation={makeNavigation()} route={route} />);
+    expect(await screen.findByTestId('plan-price-starter')).toBeTruthy();
+    releaseAttorney();   // the attorney list (asked for first) arrives last
+    await new Promise(r => { setTimeout(r, 50); });
+    expect(screen.getByTestId('plan-price-starter')).toBeTruthy();
+    expect(screen.queryByTestId('plan-price-esquire')).toBeNull();
+  });
+
   it('consumer screen: server prices and features; with payments off, subscribing says so and nothing turns paid', async () => {
     mockUser = { id: 1, role: 'user', accountType: 'consumer' };
     on('get', '/billing/tiers', TIERS);

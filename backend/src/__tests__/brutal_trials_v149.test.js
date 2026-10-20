@@ -38,7 +38,8 @@ describe('PSH_B. push.js — 5 Routes → ≥15', () => {
     const fs=await import('fs');
     const s=fs.readFileSync(__REPO + '/backend/src/routes/push.js','utf8');
     expect(s).toContain("router.post('/d7-reengage'");
-    expect(s).toContain("router.post('/receipts'");
+    // Section H: receipts are checked on the server (services/expoPush.js), not by a client route
+    expect(s).not.toContain("router.post('/receipts'");
     expect(s).toContain("router.get('/preferences'");
     expect(s).toContain("router.post('/preferences'");
     // receipts: Expo push receipt check (delivery confirmation)

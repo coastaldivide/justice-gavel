@@ -9,31 +9,33 @@ import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
-import { Expo }   from 'expo-server-sdk';
+import { sendExpoPush, isExpoPushToken } from '../services/expoPush.js';
 import logger      from '../utils/logger.js';
-
-
-// Module-level Expo client
-const _expoClient = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
 
 const router = Router();
 const pushLimiter = makeUserLimiter({ windowMs: 60000, max: 20, message: 'Push notification limit reached. Try again later.' });
 
 
 // POST /token — register Expo push token (also handles refresh on foreground)
+// A device belongs to one account: registering it here takes it away from any
+// other account that had it (a shared phone where someone signed in without
+// the previous person signing out must not get that person's notifications).
 router.post('/token', authRequired, async (req, res) => {
   const { token, expoPushToken } = req.body || {};
   const pushToken = expoPushToken || token;
-  if (!pushToken) return err400(res, 'token required');
+  const lang = resolveLang(req);
+  if (!isExpoPushToken(pushToken)) return res.status(400).json({ error: 'invalid_push_token', message: msg(lang, 'push.err.invalid_token') });
   try {
     const db = await getDb();
+    await db.run('DELETE FROM push_tokens WHERE token = ? AND user_id <> ?', [pushToken, req.user.id]);
+    await db.run('UPDATE users SET push_token = NULL WHERE push_token = ? AND id <> ?', [pushToken, req.user.id]);
     await db.run(
       'INSERT INTO push_tokens (user_id, token) VALUES (?,?) ON CONFLICT (user_id) DO UPDATE SET token = EXCLUDED.token',
       [req.user.id, pushToken]
     );
     await db.run('UPDATE users SET push_token = ? WHERE id = ?', [pushToken, req.user.id]);
     res.json({ ok: true });
-  } catch (e) { logger.error('[push/token]', e.message); res.status(500).json({ error: 'Could not save push token. Please try again.' }); }
+  } catch (e) { logger.error('[push/token]', e.message); res.status(500).json({ error: 'server_error', message: msg(lang, 'http.500') }); }
 });
 
 // DELETE /api/push/token/:token — unregister a device token (logout / disable push)
@@ -50,18 +52,21 @@ router.delete('/token/:token', authRequired, async (req, res) => {
   }
 });
 
-router.post('/test', authRequired, pushLimiter, async (req,res)=>{
+// POST /test — Settings › "Send test notification" (phone only)
+router.post('/test', authRequired, pushLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   try {
-    let { message='Test from Justice Gavel' } = req.body || {};
-  if (message) message = truncateStr(String(message), 2000);
+    const raw = typeof req.body?.message === 'string' && req.body.message.trim() ? req.body.message : msg(lang, 'push.test.body');
     const db = await getDb();
     const row = await db.get('SELECT token FROM push_tokens WHERE user_id=? ORDER BY id DESC LIMIT 1', [req.user.id]);
-    if(!row) return err400(res, 'No push token stored. Open the app on a real device first.');
-    const chunk = [{ to: row.token, sound:'default',
-      badge: 1, title:'Justice Gavel', body: message, data:{type:'test'} }];
-    const ticket = await _expoClient.sendPushNotificationsAsync(chunk);
-    return res.json({ ok:true, ticket });
-  } catch (e) { logger.error('[push/test]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+    if (!row) return res.status(400).json({ error: 'no_push_token', message: msg(lang, 'push.err.no_device') });
+    const [ticket] = await sendExpoPush([{ to: row.token, sound: 'default', badge: 1, title: 'Justice Gavel',
+      body: truncateStr(raw, 2000), data: { type: 'test' } }]);
+    if (ticket?.status === 'ok') return res.json({ ok: true, ticket: { status: 'ok', id: ticket.id } });
+    if (ticket?.details?.error === 'DeviceNotRegistered') return res.status(400).json({ error: 'no_push_token', message: msg(lang, 'push.err.no_device') });
+    logger.warn('[push/test] not delivered:', ticket?.message);
+    return res.status(503).json({ error: 'push_unavailable', code: 'push_unavailable', message: msg(lang, 'push.err.unavailable') });
+  } catch (e) { logger.error('[push/test]', e.message); res.status(500).json({ error: 'server_error', message: msg(lang, 'http.500') }); }
 });
 // ── Legal tip of the day ───────────────────────────────────────────────────────
 // GET /api/push/tip — returns today's legal tip (changes daily)
@@ -356,66 +361,7 @@ router.post('/d7-reengage', authRequired, async (req, res) => {
   }
 });
 
-// ── Send push to specific user (attorney→client, system alerts) ───────────────
-router.post('/send', authRequired, pushLimiter, async (req, res) => {
-  try {
-    const { user_id, title, body, data = {} } = req.body || {};
-    if (!user_id || !title || !body) {
-      return err400(res, 'user_id, title, body required');
-    }
-    // Only allow attorneys and admins to push to other users
-    if (req.user.role !== 'attorney' && req.user.role !== 'admin' && req.user.id !== user_id) {
-      return res.status(403).json({ error: 'You do not have permission to do this.' });
-    }
-    const { sendPushToUser } = await import('../services/pushDelivery.js');
-    const result = await sendPushToUser(user_id, { title, body, data });
-    return res.json(result);
-  } catch (e) { logger.error('[push/send]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
-});
 
 
-// POST /push/receipts — verify Expo push receipts and clean invalid tokens
-// Called by a cron job or after a batch send. Expo returns receipt IDs;
-// we check them and remove tokens that have permanent errors.
-router.post('/receipts', authRequired, async (req, res) => {
-  try {
-    const { receiptIds } = req.body || {};
-    if (!Array.isArray(receiptIds) || receiptIds.length === 0) {
-      return res.status(400).json({ error: 'receiptIds array required' });
-    }
-    const db = await getDb();
-    const results = { ok: 0, invalid: 0, errors: [] };
-
-    // If Expo client is available, fetch receipts
-    if (_expoClient && typeof _expoClient.getPushNotificationReceiptsAsync === 'function') {
-      const chunks = _expoClient.chunkPushNotificationReceiptIds(receiptIds.slice(0, 1000));
-      for (const chunk of chunks) {
-        const receipts = await _expoClient.getPushNotificationReceiptsAsync(chunk);
-        for (const [id, receipt] of Object.entries(receipts)) {
-          if (receipt.status === 'ok') {
-            results.ok++;
-          } else if (receipt.status === 'error') {
-            results.errors.push({ id, message: receipt.message, details: receipt.details });
-            // DeviceNotRegistered = token is invalid, clean it from DB
-            if (receipt.details?.error === 'DeviceNotRegistered') {
-              results.invalid++;
-              // Remove the invalid token (Expo includes it in receipt details)
-              const badToken = receipt.details?.expoPushToken;
-              if (badToken) {
-                await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [badToken]).catch(logIgnored('routes/push'));
-                await db.run('DELETE FROM push_tokens WHERE token = ?', [badToken]).catch(logIgnored('routes/push'));
-              }
-            }
-          }
-        }
-      }
-    }
-
-    res.json({ ok: true, results });
-  } catch (e) {
-    logger.error('[push/receipts]', e?.message);
-    res.status(500).json({ error: 'Server error.' });
-  }
-});
 
 export default router;

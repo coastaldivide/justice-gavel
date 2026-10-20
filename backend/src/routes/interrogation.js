@@ -396,7 +396,7 @@ function formatTime(seconds) {
 function requireWhisper(req, res, next) {
   if (!process.env.OPENAI_API_KEY) {
     res.setHeader('Connection', 'close');
-    return res.status(503).json({ error: 'transcription_unavailable', message: 'Recording transcription is not available right now.' });
+    return res.status(503).json({ error: 'transcription_unavailable', message: msg(resolveLang(req), 'reclaw.err.transcription_unavailable') });
   }
   next();
 }

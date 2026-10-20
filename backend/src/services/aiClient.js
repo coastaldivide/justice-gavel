@@ -42,6 +42,9 @@ export function aiErrorCode(err) {
   if (['ai_unavailable', 'ai_busy', 'ai_timeout', 'ai_failed'].includes(err.code)) return err.code;
   if (err instanceof AiBudgetExceededError || err.code === 'budget_exceeded') return 'ai_unavailable';
   if (err.code === 'ETIMEDOUT' || err.name === 'TimeoutError' || /timed out/i.test(String(err.message))) return 'ai_timeout';
+  // The AI service could not be reached at all (SDK "Connection error.", refused / DNS / reset): temporary.
+  if (err.name === 'APIConnectionError' || ['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN'].includes(err.code)
+    || /connection error|fetch failed|socket hang up|ECONNREFUSED|ENOTFOUND/i.test(String(err.message))) return 'ai_busy';
   const status = Number(err.status ?? err.statusCode ?? (/\b([45]\d\d)\b/.exec(String(err.message || '')) || [])[1]);
   if (status === 503 || status === 401 || status === 403) return 'ai_unavailable';
   if (status === 429 || status === 529 || (status >= 500 && status < 600)) return 'ai_busy';

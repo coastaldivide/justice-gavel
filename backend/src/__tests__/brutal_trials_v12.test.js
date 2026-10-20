@@ -552,12 +552,11 @@ describe('7. pushDelivery.js — Push Notification Delivery', () => {
     expect(src).toContain('export async function sendPushToUser');
   });
 
-  test('7-02: lazy Expo singleton prevents import-time crash', async () => {
+  test('7-02: no SDK at import time: push goes through the fetch-based services/expoPush.js', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/pushDelivery.js', 'utf8');
-    expect(src).toContain('_expoInstance');
-    expect(src).toContain('await import(');
-    expect(src).toContain('expo-server-sdk');
+    expect(src).toContain("from './expoPush.js'");
+    expect(src).not.toContain('expo-server-sdk');
   });
 
   test('7-03: sendPushToUser looks up user tokens from DB', async () => {

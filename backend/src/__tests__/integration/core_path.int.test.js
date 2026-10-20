@@ -14,7 +14,7 @@
  *      sides), strangers locked out
  */
 import http from 'http';
-import { describeIntegration, initSuite } from './_harness.js';
+import { describeIntegration, initSuite, providerChecksum } from './_harness.js';
 
 const expo = { server: null, received: [], ticket: 'ok' };
 const twilio = { server: null, received: [] };
@@ -57,11 +57,7 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
   let alice, bob, carol, dave, dispatch, md5Before;
   const reportIds = [];
 
-  const providerMd5 = async () => {
-    const l = await ctx.db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM lawyers t`);
-    const b = await ctx.db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM bail_agents t`);
-    return `${l.n}:${l.h}/${b.n}:${b.h}`;
-  };
+  const providerMd5 = () => providerChecksum(ctx.db);   // fixtures of parallel suites excluded
   async function deliverNow(id) {
     await ctx.db.run(`UPDATE scheduled_pushes SET deliver_at = NOW() - INTERVAL '1 minute' WHERE id = ?`, [id]);
     await dispatch({ now: new Date() });

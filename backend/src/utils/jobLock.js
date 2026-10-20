@@ -74,21 +74,15 @@ export async function runOnce(job, runKey, fn, { db: dbArg } = {}) {
 }
 
 /**
- * For a node-cron handler: true when this instance must run this fire. node-cron
- * passes { date } = the scheduled time, identical on every instance, so it is
- * the run key. A call without a context (an admin trigger, a test) always runs.
+ * For a node-cron handler: run `fn` on one instance per fire. node-cron passes
+ * { date } = the scheduled time, identical on every instance, so it is the run
+ * key (the outcome is recorded in job_runs). A call without a context (an admin
+ * trigger, a test) always runs.
  */
-export async function claimScheduledRun(job, ctx, { db } = {}) {
+export async function runScheduled(job, ctx, fn, opts = {}) {
   const at = ctx?.date instanceof Date ? ctx.date : null;
-  if (!at) return true;
-  try {
-    const won = await claimRun(job, at.toISOString().slice(0, 16), { db });
-    if (!won) logger.info({ job, at: at.toISOString() }, '[jobLock] another instance has this run — skipped');
-    return won;
-  } catch (e) {
-    logger.error({ job, err: e.message }, '[jobLock] claim failed — job not run');
-    return false;
-  }
+  if (!at) return { ran: true, result: await fn() };
+  return runOnce(job, at.toISOString().slice(0, 16), fn, opts);
 }
 
 /** Remove run records older than `days` (called by the daily maintenance job). */

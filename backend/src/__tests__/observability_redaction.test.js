@@ -38,15 +38,29 @@ describe('redact()', () => {
 
   test('structured fields: secret and PII keys replaced, counters kept, nested + arrays + cycles', () => {
     const a = { userId: 7, password: 'p', refreshToken: 'r', 'x-api-key': 'k', email: 'a@b.co', input_tokens: 12,
-      nested: { phone: '6155550100', note: 'call me at 615-555-0100', list: [{ token: 't' }] } };
+      nested: { phone: '6155550100', remark: 'call me at 615-555-0100', list: [{ token: 't' }] } };
     a.self = a;
     const r = redact(a);
     expect(r).toMatchObject({ userId: 7, password: '[REDACTED]', refreshToken: '[REDACTED]', 'x-api-key': '[REDACTED]', email: '[REDACTED]', input_tokens: 12 });
     expect(r.nested.phone).toBe('[REDACTED]');
-    expect(r.nested.note).toBe('call me at [phone]');
+    expect(r.nested.remark).toBe('call me at [phone]');
     expect(r.nested.list[0].token).toBe('[REDACTED]');
     expect(r.self).toBe('[Circular]');
     expect(stripQuery('/api/arrests/search?name=Jo%20Doe')).toBe('/api/arrests/search');
+  });
+
+  test('a person\'s own words about their case are never logged (notes, charges, narratives)', () => {
+    const r = redact({ caseId: 3, notes: 'I was at the bar until 2', charge: 'DUI', case_notes: 'x', narrative: 'y', description: 'z', transcript: 't' });
+    expect(r).toEqual({ caseId: 3, notes: '[REDACTED]', charge: '[REDACTED]', case_notes: '[REDACTED]', narrative: '[REDACTED]', description: '[REDACTED]', transcript: '[REDACTED]' });
+  });
+
+  test('a value Postgres quotes in its error text is scrubbed; long strings are cut', () => {
+    expect(redactString('invalid input syntax for type bigint: "my private note"')).toBe('invalid input syntax for type bigint: "[REDACTED]"');
+    expect(redactString('value "99999999999999999999" is out of range for type bigint')).toBe('value "[REDACTED]" is out of range for type bigint');
+    expect(redactString('duplicate key value violates unique constraint "u" Key (email)=(a@b.co) already exists.')).toContain('Key (email)=([REDACTED])');
+    const long = redactString('x'.repeat(20_000));
+    expect(long.length).toBeLessThan(2100);
+    expect(long).toMatch(/…\[\+18000 chars\]$/);
   });
 
   test('ids, dates, uuids and money are not mistaken for phone numbers', () => {

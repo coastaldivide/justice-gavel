@@ -44,6 +44,7 @@
 import { logIgnored } from '../utils/ignored.js';
 import { escapeHtml } from '../utils/html.js';
 import cron from 'node-cron';
+import { runScheduled } from '../utils/jobLock.js';
 import { getDb }        from '../db/index.js';
 import { sendEmail }    from './email.js';
 // Health alerts via Slack webhook (ALERT_WEBHOOK_URL) and Resend email
@@ -1346,7 +1347,8 @@ export function startHealthScanScheduler() {
     return;
   }
 
-  healthScanTask = cron.schedule(cronExpr, async () => {
+  // One instance per fire (job_runs claim): the scan alerts the admin by e-mail / SMS.
+  healthScanTask = cron.schedule(cronExpr, (ctx) => runScheduled('health-scan', ctx, async () => {
     try {
       await runHealthScan();
     } catch (e) {
@@ -1369,7 +1371,7 @@ export function startHealthScanScheduler() {
         }).catch(logIgnored('services/healthScan'));
       }
     }
-  }, { timezone: tz });
+  }), { timezone: tz });
 
   logger.info(`[scan] Health scan scheduled: ${cronExpr} (${tz}) — every ${SCAN_INTERVAL_HOURS} hours (6 AM and 6 PM Central)`);
   logger.info(`[scan] Channels: Email ALWAYS + Push ALWAYS + SMS for CRITICAL/HIGH`);

@@ -21,7 +21,8 @@ import { safeJson, err403, err404, safeInt, sanitizeStr } from '../../utils/rout
  */
 
 import { Router }     from 'express';
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
+import { msg, resolveLang } from '../../i18n/index.js';
 import { getDb }      from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
 import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
@@ -441,9 +442,9 @@ router.get('/ical/:firmId', async (req, res) => {
     const secret = process.env.JWT_SECRET;
     const expected = createHmac('sha256', secret).update(String(firmId)).digest('hex').slice(0, 32);
 
-    if (token !== expected && process.env.NODE_ENV === 'production') {
-      return res.status(403).send('Invalid token');
-    }
+    // Constant-time comparison; required in every environment (no dev bypass).
+    const ok = token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+    if (!ok) return res.status(403).json({ error: 'invalid_token', message: msg(resolveLang(req), 'http.403') });
 
     const entries = await db.all(
       "SELECT id, matter_id, firm_id, description, filing_type, due_date FROM docket_entries WHERE firm_id=? AND status='pending' ORDER BY due_date ASC LIMIT 200",

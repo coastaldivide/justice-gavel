@@ -15,6 +15,7 @@ import { ScreenProps } from '../types/navigation';
 import { t, useLang } from '../i18n';
 
 type Props = ScreenProps<'VideoConsultation'>;
+interface VideoParams { matterId?: number | string; attorneyId?: number | string; topic?: string; room?: string }
 
 function VideoConsultationScreen({ route, navigation }: Props) {
   useLang();
@@ -23,7 +24,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
   }, []);
   const { showToast } = useToast();
   // `room`: opened from an invite push — join the room someone else started.
-  const { matterId, attorneyId, topic, room } = route.params ?? {};
+  const { matterId, attorneyId, topic, room } = (route.params ?? {}) as VideoParams;
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 

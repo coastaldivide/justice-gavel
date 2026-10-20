@@ -37,7 +37,8 @@ const OTHER = ['es', 'pt', 'vi'];
 const PH = /\{\w+\}/g;
 const ph = (s) => (String(s).match(PH) || []).sort();
 // Pure punctuation around a placeholder (" — {place}") is the same in every language.
-const SAME_OK = new Set(['reminder.where']);
+// Only placeholders and punctuation — the same in every language.
+const SAME_OK = new Set(['reminder.where', 'push.consult_reminder.body', 'push.consult_reminder.atty_body']);
 
 describe('server catalogs', () => {
   const en = CATALOGS.en;

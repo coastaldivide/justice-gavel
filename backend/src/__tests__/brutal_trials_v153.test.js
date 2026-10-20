@@ -182,7 +182,9 @@ describe('PSH_20. push(6) + bondsman(6) + hague(5) + recap(5) + other large grou
     const fs=await import('fs');
     const pu=fs.readFileSync(__REPO + '/backend/src/routes/push.js','utf8');
     expect(pu).toContain("router.post('/d7-reengage'");
-    expect(pu).toContain("router.post('/receipts'");
+    // Section H: the client-driven /receipts route is gone — receipts are checked
+    // on the server (services/expoPush.js checkPushReceipts, every 30 minutes).
+    expect(pu).not.toContain("router.post('/receipts'");
     expect(pu).toContain("router.get('/preferences'");
     expect(pu).toContain("router.post('/preferences'");
     expect(pu).toContain("router.post('/retention/post-purchase'");

@@ -5,7 +5,7 @@
  * and the access-control matrix. Creates its own tagged lawyer rows and
  * deletes them afterwards; the verified directory rows are never touched.
  */
-import { describeIntegration, initSuite } from './_harness.js';
+import { describeIntegration, initSuite, FIXTURE_MARK } from './_harness.js';
 
 // 1×1 transparent PNG (real bytes — the server sniffs the magic number)
 const PNG = Buffer.from(
@@ -79,13 +79,13 @@ describeIntegration('messages routes (real Postgres)', () => {
   it('bulk: delivers to the attorney with an account, reports the rest with contact details', async () => {
     // one tagged directory row linked to strangerAtty's account, one with no account
     const linked = await ctx.db.get(
-      `INSERT INTO lawyers (name, city, state, phone, active, user_id)
-       VALUES (?, 'Nashville', 'TN', '615-555-0100', 1, ?) RETURNING id`,
-      [`${ctx.tag} Linked Lawyer`, strangerAtty.user.id]);
+      `INSERT INTO lawyers (name, city, state, phone, active, user_id, source_id)
+       VALUES (?, 'Nashville', 'TN', '615-555-0100', 1, ?, ?) RETURNING id`,
+      [`${ctx.tag} Linked Lawyer`, strangerAtty.user.id, `${FIXTURE_MARK}_${ctx.tag}_linked`]);
     const unlinked = await ctx.db.get(
-      `INSERT INTO lawyers (name, city, state, phone, website, active)
-       VALUES (?, 'Nashville', 'TN', '615-555-0101', 'https://example.test', 1) RETURNING id`,
-      [`${ctx.tag} Unlinked Lawyer`]);
+      `INSERT INTO lawyers (name, city, state, phone, website, active, source_id)
+       VALUES (?, 'Nashville', 'TN', '615-555-0101', 'https://example.test', 1, ?) RETURNING id`,
+      [`${ctx.tag} Unlinked Lawyer`, `${FIXTURE_MARK}_${ctx.tag}_unlinked`]);
 
     const res = await ctx.request().post('/api/messages/bulk').set(client.headers)
       .send({ lawyer_ids: [Number(linked.id), Number(unlinked.id)], message: 'I need representation for a DUI in Davidson County.' });

@@ -85,14 +85,6 @@ async function buildApp(db) {
     } catch { res.status(500).json({ error: 'Server error.' }); }
   });
 
-  // /receipts route
-  router.post('/receipts', auth, async (req, res) => {
-    const { receiptIds } = req.body || {};
-    if (!Array.isArray(receiptIds) || receiptIds.length === 0) {
-      return res.status(400).json({ error: 'receiptIds array required' });
-    }
-    res.json({ ok: true, results: { ok: receiptIds.length, invalid: 0, errors: [] } });
-  });
   app.use('/push', router);
   return app;
 }
@@ -165,36 +157,5 @@ describe('POST /push/retention/post-purchase', () => {
     const r = await request(app).get('/push/reminders').set('Authorization',`Bearer ${tok()}`);
     expect(r.status).toBe(200);
     expect(r.body.some(j => j.type === 'd7_retention')).toBe(true);
-  });
-});
-
-describe('POST /push/receipts', () => {
-  let app, db;
-  beforeAll(async () => { db=await makeTestDb(); await buildSchema(db); app=await buildApp(db); });
-
-  test('401 without token', async () => {
-    const r = await request(app).post('/push/receipts').send({receiptIds:['abc']});
-    expect(r.status).toBe(401);
-  });
-
-  test('400 without receiptIds array', async () => {
-    const r = await request(app).post('/push/receipts')
-      .set('Authorization',`Bearer ${tok()}`).send({});
-    expect(r.status).toBe(400);
-    expect(r.body.error).toBeTruthy();
-  });
-
-  test('400 with empty receiptIds', async () => {
-    const r = await request(app).post('/push/receipts')
-      .set('Authorization',`Bearer ${tok()}`).send({receiptIds:[]});
-    expect(r.status).toBe(400);
-  });
-
-  test('200 with valid receiptIds array (mock mode)', async () => {
-    const r = await request(app).post('/push/receipts')
-      .set('Authorization',`Bearer ${tok()}`).send({receiptIds:['receipt_abc123','receipt_xyz456']});
-    expect(r.status).toBe(200);
-    expect(r.body.ok).toBe(true);
-    expect(r.body.results).toBeDefined();
   });
 });

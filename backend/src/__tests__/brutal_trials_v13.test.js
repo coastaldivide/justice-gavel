@@ -244,8 +244,9 @@ describe('3. webpush.js — VAPID Web Push', () => {
   test('3-03: webpush /subscribe validates endpoint is required', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/webpush.js', 'utf8');
-    expect(src).toContain('subscription.endpoint required');
-    expect(src).toContain("err400");
+    expect(src).toContain("'endpoint_required'");
+    // section H: the endpoint is a URL the server POSTs to — https on a public host only
+    expect(src).toContain('publicUrlError(subscription.endpoint');
   });
 
   test('3-04: webpush /key returns public key for frontend subscription', async () => {
@@ -257,11 +258,12 @@ describe('3. webpush.js — VAPID Web Push', () => {
     expect(hasKey).toBe(true);
   });
 
-  test('3-05: webpush /send is admin-only (requireFirmRole)', async () => {
+  test('3-05: webpush /send: platform staff, or a firm admin to a member of the same firm only', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/webpush.js', 'utf8');
     expect(src).toContain("'/send'");
-    expect(src).toContain('requireFirmRole');
+    expect(src).toContain('isStaff(db, req.user)');
+    expect(src).toContain("COALESCE(fm.firm_role, fm.role) = 'firm_admin'");
   });
 
   test('3-06: webpush has rate limiter (makeUserLimiter)', async () => {

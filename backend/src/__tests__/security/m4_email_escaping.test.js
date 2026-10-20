@@ -49,20 +49,21 @@ describe('M4 — transactional email templates escape user values', () => {
   it('attorney booking alert: client name, email, phone, case title are escaped', async () => {
     await email.sendAttorneyBookingAlert({
       to: 'atty@example.test', attorneyName: 'Atty', clientName: EVIL_NAME,
-      clientEmail: 'x@example.test"><b>', clientPhone: '<b>615</b>', caseTitle: EVIL_TITLE,
-      dateLabel: 'Mon', timeSlot: '9:00 AM', durationMin: 30, meetingLink: EVIL_LINK,
+      clientEmail: 'x@example.test"><b>', clientPhone: '<b>615</b>', when: EVIL_TITLE, durationMin: 30,
     });
     expect(sent.length).toBeGreaterThan(0);
     assertInert(lastHtml());
     expect(sent[sent.length - 1].body.subject).not.toMatch(/[\r\n]/);
   });
 
-  it('client booking confirmation: attorney name and meeting link are safe', async () => {
+  it('client booking confirmation: names and the time label are escaped', async () => {
     await email.sendBookingConfirmation({
       to: 'client@example.test', clientName: EVIL_NAME, attorneyName: EVIL_NAME,
-      dateLabel: 'Mon', timeSlot: '9:00 AM', durationMin: 30, feeDollars: '0', meetingLink: EVIL_LINK,
+      when: EVIL_TITLE, durationMin: 30, feeDisplay: '$15.00',
     });
     assertInert(lastHtml());
+    // no meeting link is ever put in a booking e-mail (the video room is made when someone joins)
+    expect(lastHtml()).not.toContain(EVIL_LINK);
   });
 
   it('welcome email: display name is escaped; subject has no header injection', async () => {
@@ -77,12 +78,13 @@ describe('M4 — transactional email templates escape user values', () => {
   it('LEGIT: ordinary names and links still render', async () => {
     await email.sendBookingConfirmation({
       to: 'client@example.test', clientName: "Ana O'Neil", attorneyName: 'J. Smith',
-      dateLabel: 'Mon, Oct 12', timeSlot: '9:00 AM', durationMin: 30, feeDollars: '0',
-      meetingLink: 'https://meet.justicegavel.app/consult/ABC123',
+      when: 'Monday, October 12 · 9:00 AM CDT', durationMin: 30, feeDisplay: '$15.00',
     });
     const html = lastHtml();
     expect(html).toContain('Ana O&#39;Neil');
     expect(html).toContain('J. Smith');
-    expect(html).toContain('href="https://meet.justicegavel.app/consult/ABC123"');
+    expect(html).toContain('Monday, October 12 · 9:00 AM CDT');
+    expect(html).toContain('until 2 hours before the start');
+    expect(html).not.toMatch(/\{\w+\}/);   // no unfilled placeholder
   });
 });

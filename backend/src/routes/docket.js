@@ -32,11 +32,12 @@
  *     - Habeas corpus (AEDPA): 365 days from final conviction
  */
 
+import { msg, resolveLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
-import { loadFirmContext } from '../middleware/rbac.js';
+import { loadFirmContext, requireMatterAccess } from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
@@ -45,6 +46,7 @@ import { err400, err404, safeInt,
 import logger              from '../utils/logger.js';
 
 const router        = Router();
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;   // due_time: a time of day
 const docketLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Docket limit reached.' });
 
 // ── Shared column list — avoids SELECT * /* intentional */ and keeps projections consistent ────
@@ -296,6 +298,7 @@ router.post('/entries', authRequired, docketLimiter, async (req, res) => {
     } = req.body || {};
 
     if (!isText(title))  return err400(res, 'title is required.');
+    if (due_time != null && due_time !== '' && !TIME_RE.test(String(due_time))) return err400(res, 'due_time must be HH:MM (24-hour).');
     if (!due_date)       return err400(res, 'due_date (YYYY-MM-DD) is required.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(due_date)) return err400(res, 'due_date must be YYYY-MM-DD format.');
     if (!VALID_ENTRY_TYPES.includes(entry_type))
@@ -317,7 +320,7 @@ router.post('/entries', authRequired, docketLimiter, async (req, res) => {
         truncateStr(sanitizeStr(title, 300), 300),
         description ? truncateStr(sanitizeStr(description, 2000), 2000) : null,
         sanitizeStr(due_date, 20),
-        due_time ? sanitizeStr(due_time, 10) : null,
+        due_time || null,
         court ? truncateStr(sanitizeStr(court, 200), 200) : null,
         rule_citation ? sanitizeStr(rule_citation, 100) : null,
         'pending',
@@ -451,7 +454,8 @@ router.put('/entries/:id', authRequired, async (req, res) => {
       if (key === 'description')  val = val ? truncateStr(sanitizeStr(String(val), 2000), 2000) : null;
       if (key === 'court')        val = val ? truncateStr(sanitizeStr(String(val), 200), 200) : null;
       if (key === 'rule_citation') val = val ? sanitizeStr(String(val), 100) : null;
-      if (key === 'due_time')     val = val ? sanitizeStr(String(val), 10) : null;
+      if (key === 'due_time' && val && !TIME_RE.test(String(val))) return err400(res, 'due_time must be HH:MM (24-hour).');
+      if (key === 'due_time')     val = val ? String(val) : null;
       if (key === 'due_date' && !/^\d{4}-\d{2}-\d{2}$/.test(String(val)))
         return err400(res, 'due_date must be YYYY-MM-DD format.');
       if (key === 'priority' && !VALID_ENTRY_PRIO.includes(val))
@@ -534,7 +538,7 @@ router.delete('/entries/:id', authRequired, async (req, res) => {
 });
 
 // ── GET /api/docket/matter/:matterId — all deadlines for a matter
-router.get('/matter/:matterId', authRequired, async (req, res) => {
+router.get('/matter/:matterId', authRequired, requireMatterAccess('matterId'), async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
@@ -693,7 +697,7 @@ const UPLOAD_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'ima
 router.post('/upload', authRequired, async (req, res) => {
   try {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-      return res.status(503).json({ error: 'storage_unavailable', message: 'Document storage is not configured.' });
+      return res.status(503).json({ error: 'storage_unavailable', message: msg(resolveLang(req), 'upload.err.storage') });
     }
     const ctx = await loadFirmContext(req).catch(() => null);
     // File arrives as base64 in JSON body (React Native / web) — bounded by the 1 MB JSON body limit
@@ -702,9 +706,13 @@ router.post('/upload', authRequired, async (req, res) => {
     if (!UPLOAD_TYPES.has(String(content_type || ''))) return res.status(415).json({ error: 'unsupported_type' });
     const bytes  = Buffer.from(data_base64, 'base64');
     if (!bytes.length) return err400(res, 'The file is empty');
+    // The object path is built only from validated numbers (never the raw body
+    // text: "5/../../7" would pass a numeric-prefix check and climb out of the folder).
+    let matterId = null;
     if (matter_id != null && matter_id !== '') {
+      matterId = /^\d{1,15}$/.test(String(matter_id)) ? Number(matter_id) : 0;
       // only into a matter of the caller's firm, or a consumer matter the caller created
-      const m = await (await getDb()).get('SELECT id, firm_id, created_by FROM matters WHERE id = ?', [safeInt(matter_id)]);
+      const m = matterId ? await (await getDb()).get('SELECT id, firm_id, created_by FROM matters WHERE id = ?', [matterId]) : null;
       const mine = m && (m.firm_id ? Number(m.firm_id) === Number(ctx?.firm_id) : Number(m.created_by) === Number(req.user.id));
       if (!mine) return err404(res, 'Matter not found');
     }
@@ -717,7 +725,7 @@ router.post('/upload', authRequired, async (req, res) => {
 
     // Path: firm_id/matter_id/timestamp-filename
     const safe  = filename.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
-    const path  = `${ctx?.firm_id || req.user.id}/${matter_id || 'personal'}/${Date.now()}-${safe}`;
+    const path  = `${Number(ctx?.firm_id) || Number(req.user.id)}/${matterId || 'personal'}/${Date.now()}-${safe}`;
 
     const { error: uploadErr } = await supabase.storage
       .from('case-documents')
@@ -734,7 +742,7 @@ router.post('/upload', authRequired, async (req, res) => {
       `INSERT INTO docket_entries
          (user_id, matter_id, filename, content_type, storage_path, file_size_bytes, notes, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [req.user.id, matter_id || null, safe, content_type || null, path, bytes.length, notes || null]
+      [req.user.id, matterId, safe, content_type || null, path, bytes.length, typeof notes === 'string' ? notes.slice(0, 2000) : null]
     );
 
     return res.json({ id: result.lastID, filename: safe, storage_path: path, size: bytes.length });

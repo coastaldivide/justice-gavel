@@ -109,7 +109,7 @@ describe('PDL. pushDelivery.js — 3 Push Delivery Functions', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/pushDelivery.js','utf8');
     expect(src).toContain('sendPushToUser');
-    expect(src.length).toBeGreaterThan(5000);
+    expect(src).toContain('sendExpoPush');   // section H: one Expo client (services/expoPush.js) for every push
     // Looks up user's Expo push tokens → sends to all devices
   });
   test('PDL-02: deliverScheduledPushes — batch delivery from push queue', async () => {

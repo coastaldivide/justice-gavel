@@ -198,11 +198,17 @@ function plannedSteps(date, tz, now, lang = 'en') {
   return planned;
 }
 
+// A re-plan cancels the hearing's *pending* rows first. A row the dispatcher is
+// sending right now (status 'sending') keeps its key in the live-dedupe index;
+// that step is already going out, so it is skipped instead of failing the whole
+// re-plan (a time-zone / language change during a send answered 409) or
+// sending it twice.
 async function insertReminder(db, { userId, type, title, body, data, at, caseId, courtDateId, dedupe }) {
   await db.run(
     `INSERT INTO scheduled_pushes
        (user_id, push_token, title, body, data, deliver_at, notification_type, case_id, court_date_id, status, priority, dedupe_key)
-     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, 'pending', 'high', ?)`,
+     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, 'pending', 'high', ?)
+     ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL AND status IN ('pending', 'sending') DO NOTHING`,
     [userId, title, body, JSON.stringify(data), at.toISOString(), type, caseId, courtDateId ?? null, dedupe]
   );
 }

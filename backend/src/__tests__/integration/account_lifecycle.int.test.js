@@ -17,7 +17,7 @@
  * survived the "permanent" delete, and deleting a firm owner deleted the whole
  * firm for every other member.
  */
-import { describeIntegration, initSuite } from './_harness.js';
+import { describeIntegration, initSuite, providerChecksum } from './_harness.js';
 import { USER_REFS, CASE_CHILDREN } from '../../services/accountDeletion.js';
 
 const USER_COL_SQL = `
@@ -35,9 +35,6 @@ const USER_COL_SQL = `
     JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = ANY (k.conkey)
    WHERE k.contype = 'f' AND k.confrelid = 'public.users'::regclass`;
 
-const PROVIDER_MD5 = `
-  SELECT (SELECT md5(string_agg(t::text, '|' ORDER BY id)) FROM lawyers t) AS l,
-         (SELECT md5(string_agg(t::text, '|' ORDER BY id)) FROM bail_agents t) AS b`;
 
 describeIntegration('account export + deletion (real Postgres)', () => {
   const ctx = initSuite();
@@ -60,7 +57,7 @@ describeIntegration('account export + deletion (real Postgres)', () => {
   });
 
   it('deleting an account leaves no orphans, keeps others\' data, hands over the firm, and never touches providers', async () => {
-    const before = await ctx.db.get(PROVIDER_MD5);
+    const before = await providerChecksum(ctx.db);
     const victim = await ctx.register({ displayName: 'Leaving User' });
     const colleague = await ctx.register({ displayName: 'Firm Colleague' });
     const uid = victim.user.id;
@@ -136,7 +133,7 @@ describeIntegration('account export + deletion (real Postgres)', () => {
     // 5. the old session is dead
     expect((await ctx.request().get('/api/auth/me').set(victim.headers)).status).toBe(401);
     // 6. provider directory untouched
-    expect(await ctx.db.get(PROVIDER_MD5)).toEqual(before);
+    expect(await providerChecksum(ctx.db)).toEqual(before);
 
     ctx.addCleanup(async (db) => {
       await db.run('DELETE FROM firm_members WHERE firm_id = ?', [firmId]).catch(() => {});

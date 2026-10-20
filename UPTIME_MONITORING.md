@@ -32,4 +32,4 @@ comes from backend/package.json.)
 2. `features.payments: false` → `STRIPE_SECRET_KEY` not set — **expected**
    until payments launch, not an incident
 3. `features.ai: false` → `ANTHROPIC_API_KEY` not set in the Render env
-4. Deeper metrics (memory, AI queue, pg pool): https://api.justicegavel.app/metrics
+4. Deeper metrics (memory, AI queue, pg pool): https://api.justicegavel.app/metrics — send `Authorization: Bearer <METRICS_TOKEN>` (falls back to the ADMIN_KEY when METRICS_TOKEN is not set)

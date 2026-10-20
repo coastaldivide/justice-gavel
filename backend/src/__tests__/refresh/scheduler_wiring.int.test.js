@@ -41,7 +41,7 @@ jest.unstable_mockModule('../../services/retention.js', () => ({
   checkAccountInactivity: jest.fn(async () => ({ alerted: 0 })),
 }));
 jest.unstable_mockModule('../../services/healthScan.js', () => ({ ...stub(['runHealthScan']), startHealthScanScheduler: jest.fn(), stopHealthScanScheduler: jest.fn(), default: {} }));
-jest.unstable_mockModule('../../services/reminderDispatcher.js', () => ({ startReminderDispatcher: jest.fn(), stopReminderDispatcher: jest.fn() }));
+jest.unstable_mockModule('../../services/reminderDispatcher.js', () => ({ startReminderDispatcher: jest.fn(), stopReminderDispatcher: jest.fn(), remindersEnabled: () => false }));
 
 describePg('scheduler (LIVE_REFRESH=true) → Postgres data refresh', () => {
   const tag = `JGTEST_sched_${Date.now().toString(36)}`;

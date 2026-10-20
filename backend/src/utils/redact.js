@@ -22,6 +22,8 @@ export const REDACTED = '[REDACTED]';
 const SECRET_KEY = /(token|secret|password|passwd|passphrase|api[_-]?key|authorization|cookie|signature|ssn|social[_-]?security(_number)?|cvv|cvc|otp|jwt|private[_-]?key|card[_-]?number|admin[_-]?key|credentials?)$/i;
 // Keys whose value is personal data — replaced outright.
 const PII_KEY = /^(email|e_mail|to|from|recipient|recipients|phone|phone_number|mobile|sms_to|contact_phone|contact_email|defendant_phone|defendant_email|signer_email|customer_email|address|street|street_address|dob|date_of_birth|birth_date|ip|ip_address|lat|lng|latitude|longitude|location_lat|location_lng)$/i;
+// Keys whose value is a person's own words about their case — replaced outright.
+const PRIVATE_TEXT_KEY = /^(notes?|case_notes|private_notes|outcome_notes|narrative|transcript|transcription|description|message_body|ai_intake_context|charges?)$/i;
 
 const PATTERNS = [
   // Bearer / Basic credentials
@@ -41,6 +43,10 @@ const PATTERNS = [
   [/ExponentPushToken\[[^\]]+\]/g, 'ExponentPushToken[' + REDACTED + ']'],
   // key=value / "key": "value" pairs for secret-looking keys inside text
   [/\b(password|passwd|secret|token|api[_-]?key|refresh[_-]?token|access[_-]?token)(["']?\s*[:=]\s*["']?)[^\s"'&,;}]+/gi, '$1$2' + REDACTED],
+  // Postgres quotes the value it rejected (it can be anything the person typed)
+  [/(invalid input syntax for type [\w ]+|invalid input value for enum \w+|is out of range for type \w+|value too long for type [\w ()]+)(: )?"[^"]*"/gi, '$1$2"' + REDACTED + '"'],
+  [/\bvalue "[^"]*" is out of range/gi, 'value "' + REDACTED + '" is out of range'],
+  [/\bKey \(([^)]+)\)=\([^)]*\)/g, 'Key ($1)=(' + REDACTED + ')'],
   // e-mail addresses → "***@domain"
   [/[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '***@$1'],
   // phone numbers written with separators or a leading +: +1 (615) 555-0100, 615-555-0100, +16155550100
@@ -79,7 +85,7 @@ export function redact(value, depth = 0, seen = new WeakSet()) {
   if (Buffer.isBuffer(value)) return `[Buffer ${value.length} bytes]`;
   const out = {};
   for (const [k, v] of Object.entries(value)) {
-    if (SECRET_KEY.test(k) || PII_KEY.test(k)) out[k] = v == null || v === '' ? v : REDACTED;
+    if (SECRET_KEY.test(k) || PII_KEY.test(k) || PRIVATE_TEXT_KEY.test(k)) out[k] = v == null || v === '' ? v : REDACTED;
     else out[k] = redact(v, depth + 1, seen);
   }
   return out;

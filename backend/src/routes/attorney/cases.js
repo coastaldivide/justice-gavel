@@ -20,6 +20,7 @@ import { Router }                             from 'express';
 import { authRequired }                       from '../../middleware/auth.js';
 import logger                                 from '../../utils/logger.js';
 import { requireDefender, requireAttorney } from './_helpers.js';
+import { cancelCourtReminders } from '../../services/courtReminders.js';
 
 const router        = Router();
 const casesListLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many requests.' });
@@ -287,12 +288,21 @@ router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, r
     if (!assignment) return res.status(403).json({ error: 'Not assigned to this case' });
 
     // Update case with outcome
+    // 'Closed' is the status the app, the reminder planner and the dispatcher
+    // use; the client's pending court reminders stop with it.
+    const before = await db.get('SELECT user_id, status FROM cases WHERE id = ?', [caseId]);
     await db.run(
-      `UPDATE cases SET status = 'closed', outcome = ?, outcome_notes = ?,
-                        outcome_recorded_by = ?, outcome_recorded_at = NOW()
+      `UPDATE cases SET status = 'Closed', outcome = ?, outcome_notes = ?,
+                        outcome_recorded_by = ?, outcome_recorded_at = NOW(), closed_at = COALESCE(closed_at, NOW())
         WHERE id = ?`,
       [outcome, sanitizeStr(notes, 500), req.user.id, caseId]
     );
+    if (before && before.status !== 'Closed') {
+      await db.run('INSERT INTO case_status_history (case_id, user_id, old_status, new_status) VALUES (?,?,?,?)',
+        [caseId, req.user.id, before.status, 'Closed']).catch(e => logger.warn('[attorney/outcome] status history', e?.message));
+      await cancelCourtReminders(db, Number(before.user_id), Number(caseId), 'case_closed')
+        .catch(e => logger.warn('[attorney/outcome] reminders not cancelled', e?.message));
+    }
 
     // Update attorney's platform_rating based on outcomes
     // Positive outcomes improve rating; negative outcomes don't penalize heavily

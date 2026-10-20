@@ -29,7 +29,8 @@ services:
     healthCheckPath: /health       # 200 only after a real SELECT 1; 503 otherwise
     autoDeployTrigger: checksPass  # deploy main only after GitHub CI passes
     preDeployCommand: sh /app/scripts/migrate.sh
-    numInstances: 1                # stateless (attachments in Supabase Storage): can scale up
+    numInstances: 1                # stateless (attachments in Supabase Storage, AI job status and
+                                   # scheduled-job claims in Postgres): can scale up
     maxShutdownDelaySeconds: 30    # server drains, then force-exits at 25 s (src/server.js)
     buildFilter:
       paths:
@@ -73,6 +74,8 @@ services:
         sync: false
       - key: ADMIN_KEY             # X-Admin-Key for /api/admin/* and /api/bot/*
         sync: false
+      - key: METRICS_TOKEN         # Bearer token for GET /metrics (uptime / Prometheus scrapers)
+        generateValue: true
       # ── Feature keys (prompted once; each enables one feature) ──
       - key: ANTHROPIC_API_KEY
         sync: false
@@ -151,6 +154,8 @@ services:
       - key: ENCRYPTION_KEY
         generateValue: true
       - key: ADMIN_KEY
+        generateValue: true
+      - key: METRICS_TOKEN
         generateValue: true
       - key: ANTHROPIC_API_KEY
         sync: false

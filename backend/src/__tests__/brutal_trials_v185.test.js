@@ -25,8 +25,10 @@ describe('SERVER. Production Server Configuration', () => {
     expect(srv).toContain("process.on('SIGINT'");
     expect(srv).toContain('timers.forEach(t => { clearInterval(t); clearTimeout(t); })');  // push loop, refresh, bar re-verify
     expect(srv).toContain('25_000');                 // force exit if shutdown hangs
-    expect(srv).toContain('deliverScheduledPushes');
-    expect(srv).toContain('runBarReVerification');
+    // section H: reminder delivery is the scheduler's dispatcher (no second loop here);
+    // the quarterly bar check runs once per quarter across instances (job_runs claim)
+    expect(srv).not.toContain('deliverScheduledPushes');
+    expect(srv).toContain("runOnce('bar-reverify', quarterKey(), runBarReVerification)");
     expect(srv).toContain("process.send('ready')");
   });
   test('SERVER-02: server.js handles uncaught exceptions and rejections', async () => {
@@ -37,14 +39,14 @@ describe('SERVER. Production Server Configuration', () => {
     // PM2 ready signal
     expect(src).toContain("process.send('ready')");
   });
-  test('SERVER-03: server.js keeps push drain on startup + quarterly bar verify', async () => {
+  test('SERVER-03: reminders drain shortly after boot (dispatcher) + quarterly bar verify', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/server.js','utf8');
-    expect(src).toContain('Startup drain');
+    expect(fs.readFileSync(__REPO + '/backend/src/services/reminderDispatcher.js','utf8')).toContain('setTimeout(tick, 5_000)');
     expect(src).toContain('runBarReVerification');
     expect(src).toContain('bar_verified');
-    // Quarterly (90 days)
-    expect(src).toContain('BAR_REVERIFY_INTERVAL_MS');
+    // Quarterly: one run per calendar quarter across instances (utils/jobLock.js quarterKey)
+    expect(src).toContain('quarterKey()');
   });
   test('SERVER-04: server.js keepAliveTimeout > nginx/Caddy idle timeout', async () => {
     const fs = await import('fs');

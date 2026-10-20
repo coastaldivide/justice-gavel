@@ -508,7 +508,11 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     await req('post', '/api/conflicts/index', attorney).send({ parties: [{ name: "O'Brien, José", role: 'client' }, { name: 'Acme Corp.', role: 'adverse' }] });
     const check = await req('post', '/api/conflicts/check', attorney).send({ parties: [{ name: 'jose obrien' }, { name: 'ACME CORPORATION' }, { name: 'Jo' }] });
     expect(check.body.conflicts.map(c => [c.name, c.matches[0].match])).toEqual([['jose obrien', 'exact'], ['ACME CORPORATION', 'exact']]);
-    expect((await req('post', '/api/conflicts/check', attorney).send({ parties: ['x'], firm_id: 1 })).status).toBe(403);
+    // another firm's id (one this attorney is not a member of — not a fixed number:
+    // on a fresh database firm 1 is this attorney's own trial firm)
+    const otherFirm = await ctx.db.get(`INSERT INTO firms (name, owner_id) VALUES (?, ?) RETURNING id`, [`${ctx.tag} Other`, consumer.user.id]);
+    expect((await req('post', '/api/conflicts/check', attorney).send({ parties: ['x'], firm_id: otherFirm.id })).status).toBe(403);
+    await ctx.db.run('DELETE FROM firms WHERE id = ?', [otherFirm.id]);
     // the second attorney is invited, sees the invite and joins; the other firm's index stays private
     expect((await req('post', '/api/firm-acquisition/invite', attorney).send({ email: attorney2.email, role: 'associate' })).status).toBe(201);
     const inv = await req('get', '/api/firm-acquisition/invites', attorney2);

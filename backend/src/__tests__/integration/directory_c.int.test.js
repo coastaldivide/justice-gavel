@@ -24,7 +24,7 @@
  *   C11 listing rows unchanged
  */
 import { jest } from '@jest/globals';
-import { describeIntegration, initSuite } from './_harness.js';
+import { describeIntegration, initSuite, providerChecksum } from './_harness.js';
 
 // A Stripe stand-in: PaymentIntents the test can mark as paid, refunds recorded.
 const fake = { pis: new Map(), refunds: [], seq: 0 };
@@ -50,11 +50,7 @@ describeIntegration('section C — directory, reviews, booking, match (real Post
   const ctx = initSuite();
   let alice, bob, carol, dave, admin, attyTx, attyNy, txLawyer, nyLawyer, md5Before;
 
-  const providerMd5 = async () => {
-    const l = await ctx.db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM lawyers t`);
-    const b = await ctx.db.get(`SELECT md5(string_agg(t::text, '|' ORDER BY id)) AS h, COUNT(*) AS n FROM bail_agents t`);
-    return `${l.n}:${l.h}/${b.n}:${b.h}`;
-  };
+  const providerMd5 = () => providerChecksum(ctx.db);   // fixtures of parallel suites excluded
   const get = (path, user) => (user ? ctx.request().get(path).set(user.headers) : ctx.request().get(path));
   const allPages = async (base) => {
     const first = await get(`${base}&limit=50&page=1`);

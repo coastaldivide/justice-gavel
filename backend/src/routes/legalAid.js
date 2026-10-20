@@ -12,9 +12,12 @@ import { requireAi } from '../utils/ai.js';
 
 import { Router } from 'express';
 import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { asyncRoute, safeInt } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 import { enqueueAIJob } from '../services/aiQueue.js';
+import { aiErrorCode } from '../services/aiClient.js';
+import { msg, resolveLang } from '../i18n/index.js';
+import logger from '../utils/logger.js';
 import { requireDefender } from './attorney/_helpers.js';
 
 const router = Router();
@@ -26,11 +29,23 @@ router.use(authRequired, async (req, res, next) => {
   try { if (await requireDefender(req, res)) next(); } catch (e) { next(e); }
 });
 
+/** Run an inline AI job; an AI failure is answered with its code in the caller's language (never a bare 500). */
+async function aiOrRefuse(req, res, type, payload) {
+  try {
+    return await enqueueAIJob(type, payload, req.user.id);
+  } catch (e) {
+    logger.warn({ type, err: e.message }, '[legal-aid] AI job failed');
+    const code = aiErrorCode(e);
+    res.status(code === 'ai_failed' ? 500 : 503).json({ error: code, code, message: msg(resolveLang(req), `ai.job.${code}`) });
+    return null;
+  }
+}
+
 /** GET /api/legal-aid/clients — public defender's client queue */
 router.get('/clients', authRequired, asyncRoute(async (req, res) => {
   const { status = 'active', page = 1 } = req.query;
   const limit  = 20;
-  const offset = (page - 1) * limit;
+  const offset = (Math.max(1, safeInt(page, 1)) - 1) * limit;
 
   const clients = await req.db.all(`
     SELECT
@@ -38,7 +53,7 @@ router.get('/clients', authRequired, asyncRoute(async (req, res) => {
       cs.case_type, cs.charge, cs.state, cs.status AS case_status, cs.next_court_date,
       -- Expungement eligibility preview
       cs.closed_at,
-      CASE WHEN cs.status = 'closed' THEN true ELSE false END AS expungement_candidate
+      CASE WHEN cs.status IN ('Closed', 'Dismissed') THEN true ELSE false END AS expungement_candidate
     FROM cases cs
     JOIN users u ON u.id = cs.user_id
     JOIN client_assignments c ON c.case_id = cs.id AND c.attorney_id = ?   -- only this attorney's clients
@@ -47,7 +62,7 @@ router.get('/clients', authRequired, asyncRoute(async (req, res) => {
     LIMIT ? OFFSET ?
   `, [req.user.id, status, limit, offset]);
 
-  return res.json({ data: clients, meta: { page: parseInt(page), limit } });
+  return res.json({ data: clients, meta: { page: Math.max(1, safeInt(page, 1)), limit } });
 }));
 
 /** POST /api/legal-aid/expungement-petition — AI-assisted petition drafting */
@@ -69,7 +84,7 @@ router.post('/expungement-petition', sharedAiLimiter, authRequired, requireAi, a
   if (!client) return res.status(404).json({ error: 'Client not found' });
 
   // Queue AI petition drafting
-  const job = await enqueueAIJob('motion', {
+  const job = await aiOrRefuse(req, res, 'motion', {
     prompt: `Draft an expungement petition for the following case:
 Client: ${client.full_name}
 State: ${state}
@@ -85,7 +100,8 @@ verification, and signature block. Format for court filing.`,
 Generate formal, court-ready legal documents following state-specific requirements.
 Always include the required verification language and proper legal formatting.`,
     maxTokens: 3000,
-  }, req.user.id);
+  });
+  if (!job) return;
 
   return res.status(202).json({
     data: { ...job, client_id, case_id },
@@ -100,7 +116,7 @@ router.post('/intake', authRequired, asyncRoute(async (req, res) => {
     return res.status(400).json({ error: 'interview_notes is required' });
   }
 
-  const job = await enqueueAIJob('research', {
+  const job = await aiOrRefuse(req, res, 'research', {
     prompt: `Based on these intake interview notes, generate a structured case summary:
 ${interview_notes}
 
@@ -112,7 +128,8 @@ Provide:
 5. Witnesses to contact`,
     systemPrompt: 'You are an experienced public defender providing case analysis.',
     maxTokens: 2000,
-  }, req.user.id);
+  });
+  if (!job) return;
 
   return res.status(202).json({ data: job });
 }));

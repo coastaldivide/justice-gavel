@@ -28,7 +28,7 @@ import { Router }          from 'express';
 import PDFDocument         from 'pdfkit';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
-import { requireFirmRole, loadFirmContext } from '../middleware/rbac.js';
+import { requireFirmRole, loadFirmContext, requireMatterAccess } from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
@@ -293,7 +293,7 @@ function timeScope(ctx, req, alias = '') {
   return ctx?.firm_id ? { sql: `${a}firm_id=?`, val: ctx.firm_id } : { sql: `${a}user_id=?`, val: req.user.id };
 }
 
-router.get('/matter/:matterId', authRequired, async (req, res) => {
+router.get('/matter/:matterId', authRequired, requireMatterAccess('matterId'), async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
@@ -749,7 +749,7 @@ function generateInvoicePDF(invoice, entries, firm) {
 
 
 // ── GET /api/time/matter/:matterId/billing-summary — unified matter economics ──
-router.get('/matter/:matterId/billing-summary', authRequired, async (req, res) => {
+router.get('/matter/:matterId/billing-summary', authRequired, requireMatterAccess('matterId'), async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);

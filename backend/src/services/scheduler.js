@@ -1,7 +1,7 @@
 import { logIgnored } from '../utils/ignored.js';
 import { scheduleGuarded } from '../utils/cronGuard.js';
 import { getDb } from '../db/index.js';
-import { claimScheduledRun, purgeJobRuns } from '../utils/jobLock.js';
+import { runScheduled, purgeJobRuns } from '../utils/jobLock.js';
 
 /**
  * scheduler.js — Justice Gavel Full Automated Pipeline
@@ -70,7 +70,7 @@ export { runRefresh, runScheduledDataRefresh };
 // Runs on the nightly pipeline. Checks for:
 //   1. Entries due in N days (reminder_days field) — sends push notifications
 //   2. Entries past due with status='pending' — fires docket.deadline_overdue webhook
-async function runDocketReminderSweep() {
+export async function runDocketReminderSweep() {
   try {
     const { dispatchWebhookEvent } = await import('../routes/webhooks/outbound.js');
     const db    = await getDb();
@@ -251,8 +251,11 @@ export async function runConsultationReminderSweep(db, now = new Date()) {
   return { sent };
 }
 
-async function runNightlyJob(ctx) {
-  if (!(await claimScheduledRun('nightly', ctx))) return;
+function runNightlyJob(ctx) {
+  return runScheduled('nightly', ctx, nightlyPipeline);
+}
+
+async function nightlyPipeline() {
   const nowDate = new Date();
   const now     = nowDate.toISOString();
   logger.info(`\n[scheduler] ════════════════════════════════════`);
@@ -357,17 +360,14 @@ export function startScheduler() {
   try { startReminderDispatcher(); } catch (e) { logger.error('[scheduler] reminder dispatcher failed to start:', e.message); }
   const tz = process.env.REFRESH_TZ || 'America/Chicago';
   if (remindersEnabled()) {
-    consultReminderTask = scheduleGuarded('7 * * * *', 'consultation-reminders', async (ctx) => {
-      if (await claimScheduledRun('consultation-reminders', ctx)) await runConsultationReminderSweep(await getDb());
-    });
-    receiptsTask = scheduleGuarded('*/30 * * * *', 'push-receipts', async (ctx) => {
-      if (await claimScheduledRun('push-receipts', ctx)) await checkPushReceipts();
-    });
+    consultReminderTask = scheduleGuarded('7 * * * *', 'consultation-reminders',
+      (ctx) => runScheduled('consultation-reminders', ctx, async () => runConsultationReminderSweep(await getDb())));
+    receiptsTask = scheduleGuarded('*/30 * * * *', 'push-receipts',
+      (ctx) => runScheduled('push-receipts', ctx, () => checkPushReceipts()));
   }
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
-  tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup', async (ctx) => {
-    if (await claimScheduledRun('refresh-token-cleanup', ctx)) await cleanupExpiredTokens();
-  }, { timezone: tz });
+  tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
+    (ctx) => runScheduled('refresh-token-cleanup', ctx, cleanupExpiredTokens), { timezone: tz });
 
   if (!CONFIG.LIVE_REFRESH) {
     logger.info('[scheduler] LIVE_REFRESH=false — data-refresh / outbound jobs disabled (reminders, receipts and clean-up still run).');
@@ -387,15 +387,10 @@ export function startScheduler() {
   logger.info(`[scheduler] Nightly pipeline: ${cronExpr} (${tz})`);
 
   // Payment link expiry — every 2 hours
-  linkExpiryTask = scheduleGuarded('0 */2 * * *', 'payment-link-expiry', async (ctx) => {
-    if (!(await claimScheduledRun('payment-link-expiry', ctx))) return;
-    try {
-      const r = await expireOldPaymentLinks();
-      if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
-    } catch (e) {
-      logger.error('[scheduler] Link expiry error:', e.message);
-    }
-  }, { timezone: tz });
+  linkExpiryTask = scheduleGuarded('0 */2 * * *', 'payment-link-expiry', (ctx) => runScheduled('payment-link-expiry', ctx, async () => {
+    const r = await expireOldPaymentLinks();
+    if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
+  }), { timezone: tz });
   logger.info('[scheduler] Link expiry: every 2 hours');
 
   // Health scan — every 12 hours (6 AM and 6 PM Central)

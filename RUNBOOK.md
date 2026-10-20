@@ -12,7 +12,7 @@
 | Production API | https://api.justicegavel.app | Render → `justice-gavel-api` |
 | Staging API | `https://justice-gavel-api-staging.onrender.com` (Render shows the exact URL) | Render → `justice-gavel-api-staging` |
 | Health check | https://api.justicegavel.app/health | 200 = DB round-trip OK, 503 = degraded |
-| Metrics | https://api.justicegavel.app/metrics | JSON (or `?format=prometheus`) — memory, AI queue, pg pool |
+| Metrics | https://api.justicegavel.app/metrics | JSON (or `?format=prometheus`) — memory, AI queue, pg pool. Needs `Authorization: Bearer <METRICS_TOKEN>` (or `X-Admin-Key`) in production |
 | Sentry errors | https://sentry.io | Sentry dashboard |
 | Database | Supabase (one project per environment) | Supabase dashboard |
 | Uptime | BetterUptime (see UPTIME_MONITORING.md) | BetterUptime dashboard |

@@ -220,14 +220,15 @@ if (firmId) {
 }
 const matterId = await seed('matter', ownerA, 'POST', '/api/matters', { title: `Sweep matter ${TAG}`, client_name: 'Pat Client', notes: 'privileged' });
 if (matterId) {
-  await seed('timeEntry', ownerA, 'POST', '/api/time/entries', { matter_id: matterId, hours: 1.5, description: 'Sweep research', rate: 200, entry_date: '2031-01-02' }, j => j?.id ?? j?.entry?.id);
+  await seed('timeEntry', ownerA, 'POST', '/api/time/entries', { matter_id: matterId, hours: 1.5, narrative: 'Sweep research', rate: 200, entry_date: '2031-01-02' }, j => j?.id ?? j?.entry?.id);
   await seed('privilegeEntry', ownerA, 'POST', '/api/privilege/entries', { matter_id: matterId, doc_type: 'memo', privilege_basis: 'attorney_client', description: 'Sweep memo', doc_date: '2031-01-02' }, j => j?.id ?? j?.entry?.id);
   await seed('matterEvent', ownerA, 'POST', `/api/matters/${matterId}/events`, { title: 'Sweep hearing', event_date: '2031-01-02', event_type: 'hearing' }, j => j?.id ?? j?.event?.id);
 }
 await seed('researchSession', ownerA, 'POST', '/api/research/ask', { query: 'What is the standard for a Terry stop on the street?' }, j => j?.sessionId ?? j?.session_id);
 await seed('webhookSub', ownerA, 'POST', '/api/webhooks/outbound/subscriptions', { name: 'Sweep hook', url: 'https://example.com/hook', events: ['matter.created'] }, j => j?.id ?? j?.subscription?.id);
 await seed('enrollment', ownerB, 'POST', '/api/checkins/enroll', { defendant_name: 'Sweep Defendant', defendant_phone: '+16155550122', frequency: 'weekly' }, j => j?.id ?? j?.enrollment?.id ?? j?.enrollment_id);
-for (const n of seedNotes) console.log(`  seed: ${n}`);
+// Every resource must exist, or its IDOR checks silently test nothing.
+for (const n of seedNotes) finding('seed', n.split(':')[0], n);
 console.log(`Seeded: ${Object.entries(R).map(([k, v]) => `${k}=${v.id}`).join(' ')}`);
 
 // Which owned resource a path parameter names: [path regex, { param: resource }].
@@ -260,6 +261,16 @@ const OWNED = [
 const USER_PARAMS = new Set(['userId', 'uid', 'attorneyId', 'memberId']);
 // Firm-scoped resources a firm member may legitimately reach (not an IDOR for `member`).
 const FIRM_SHARED = new Set(['firm', 'matter', 'matterEvent', 'timeEntry', 'privilegeEntry', 'webhookSub']);
+
+// A 200 with somebody else's id that reveals and changes nothing (checked by hand; keep the reason):
+const IDOR_OK = new Map([
+  ['GET /api/chat/history/:sessionId', 'rows are filtered by the caller (user_id): another person\'s session id gives []'],
+  ['DELETE /api/chat/history/:sessionId', 'deletes only the caller\'s own rows (WHERE user_id = caller)'],
+  ['POST /api/messages/direct/:userId/read', 'marks read only messages sent TO the caller by that user (marked: 0 otherwise)'],
+  ['POST /api/attorney/inbox/direct/:userId/read', 'marks read only messages sent TO the caller by that user (marked: 0 otherwise)'],
+]);
+// Callers that are machines (Stripe): no request language to follow.
+const MACHINE_ROUTES = /^(\/api)?\/webhooks\/stripe$|^\/api\/billing\/webhook$/;
 
 // Real directory rows: read-only. Non-GET admin calls on them get an id that does not exist.
 const PROVIDER_WRITE = /^\/api\/admin\/(lawyers|bail|proposals|listing-claims|listing-reports)\b/;
@@ -312,7 +323,7 @@ function junkBodies(fields) {
 // ── 6. Checks on one response ─────────────────────────────────────────────────
 const OK_503 = new Set(['payments_unavailable', 'ai_unavailable', 'storage_unavailable', 'email_unavailable', 'video_unavailable',
   'sms_unavailable', 'auth_unavailable', 'feature_unavailable', 'service_unavailable', 'search_unavailable', 'integration_unavailable',
-  'sso_unavailable', 'transcription_unavailable', 'unavailable', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable']);
+  'sso_unavailable', 'transcription_unavailable', 'unavailable', 'upload_busy', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable']);
 const LEAK = [/\n\s+at [\w$.<>]+ \(/, /node_modules\//, /\/src\/[\w/]+\.js:\d+/, /syntax error at or near/i, /column "[^"]+" (of relation|does not exist)/i,
   /relation "[^"]+" does not exist/i, /duplicate key value violates/i, /invalid input syntax for type/i, /violates (check|foreign key|not-null) constraint/i,
   /\bSequelize|\bSQLITE_|ECONNREFUSED/];
@@ -368,7 +379,7 @@ async function sweepRoute(route) {
       if (c.who === 'guest' && route.auth && r.status !== 401) finding('auth', where, `guest got ${r.status} on a signed-in route`);
       if (ok && c.who !== 'admin' && isStaffPath(route) && c.who !== 'guest') finding('staff', where, `${c.who} got ${r.status} on a staff route`);
       if (ok && c.who === 'guest' && isStaffPath(route)) finding('staff', where, `guest got ${r.status} on a staff route`);
-      if (ok && used.length && c.who !== 'admin') {
+      if (ok && used.length && c.who !== 'admin' && !IDOR_OK.has(where)) {
         for (const u of used) {
           if (u.owner === c.p) continue;
           if (c.who === 'member' && (FIRM_SHARED.has(u.resource) || u.resource === 'user')) continue;
@@ -380,7 +391,7 @@ async function sweepRoute(route) {
         if (me.status === 401) { finding('session', where, `${c.who}'s session ended after this call`); await relogin(c.p); }
       }
       // language: an error a person can see must follow ?lang= and Accept-Language
-      if (r.status >= 400 && r.json?.message && !killer) {
+      if (r.status >= 400 && r.json?.message && !killer && !MACHINE_ROUTES.test(route.path)) {
         langSamples.push({ route, c, url, en: r.json.message, status: r.status });
       }
     }
@@ -411,6 +422,18 @@ async function sweepRoute(route) {
       }
     }
   }
+}
+
+// Owners can read their own resources (proves each id fill is right, so a
+// stranger's 4xx on the same URL really is the access check).
+// (Not checked: a public page, and two lookups that are empty until the owner saves something.)
+const OWNER_READ_SKIP = new Set(['/api/firms/:id/public-profile', '/api/hague-contacts/intake/:caseId', '/api/sso/test/:firmId']);
+for (const route of mounted.filter(r => r.method === 'GET' && !OWNER_READ_SKIP.has(r.path) && OWNED.some(([re]) => re.test(r.path)))) {
+  const { url, used } = resolveParams(route, 'owner');
+  const owners = [...new Set(used.map(u => u.owner))];
+  if (owners.length !== 1 || used.some(u => !R[u.resource] && u.resource !== 'user')) continue;
+  const r = await call('GET', url, { token: owners[0].token });
+  if (r.status >= 300) finding('owner_read', `GET ${route.path}`, `${owners[0].name} got ${r.status} on their own resource: ${r.text.slice(0, 120)}`);
 }
 
 const t0 = Date.now();

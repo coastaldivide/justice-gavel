@@ -62,8 +62,9 @@ describe('1. push.js — 10 Push Notification Handlers', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/token'");
-    expect(src).toContain('expo-server-sdk');
-    expect(src).toContain('_expoClient');
+    // section H: every push goes through services/expoPush.js; tokens are validated
+    expect(src).toContain('isExpoPushToken(pushToken)');
+    expect(src).not.toContain('expo-server-sdk');
   });
   test('1-03: /d7-reengage sends 7-day re-engagement push', async () => {
     const fs = await import('fs');
@@ -85,13 +86,14 @@ describe('1. push.js — 10 Push Notification Handlers', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/preferences'");
   });
-  test('1-07: /test + /tip + /send + /receipts complete the 10', async () => {
+  test('1-07: /test + /tip; /send and /receipts are gone (section H)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/test'");
     expect(src).toContain("'/tip'");
-    expect(src).toContain("'/send'");
-    expect(src).toContain("'/receipts'");
+    // /send let any attorney account push any text to any user; receipts are checked on the server
+    expect(src).not.toContain("router.post('/send'");
+    expect(src).not.toContain("'/receipts'");
   });
   test('1-08: push limiter is 20/minute per user', async () => {
     const fs = await import('fs');

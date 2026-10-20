@@ -4,6 +4,12 @@ export default {
   transform: {},
   testMatch: ['**/__tests__/**/*.test.js'],
   setupFiles: ['./src/__tests__/env.js'],
+  // Under --experimental-vm-modules a worker keeps every suite's module graph,
+  // so a long-lived worker grows to ~2.5 GB by the end of the 383 suites; two of
+  // them pushed a 7 GB machine (and GitHub's 7 GB runners) into SIGTERMing the
+  // workers ("terminated by another process"). Recycle a worker between suites
+  // once it passes this size.
+  workerIdleMemoryLimit: '800MB',
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/services/encryption.js',

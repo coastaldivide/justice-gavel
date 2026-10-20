@@ -22,6 +22,7 @@ import express, { Router } from 'express';
 import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../../config.js';
 import { resolveLang, msg } from '../../i18n/index.js';
 import { stripeWebhookHandler } from '../../services/stripeWebhook.js';
+import { authRequired } from '../../middleware/auth.js';
 
 import subscriptionsRouter from './subscriptions.js';
 import bondsmanRouter      from './bondsman.js';
@@ -36,11 +37,15 @@ const router = Router();
 // subscription returns 503 payments_unavailable (no mock activations).
 // Read-only GETs keep working (users are on the free tier) and so do the few
 // POSTs that never touch Stripe.
-const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/, /^\/webhook\/?$/];
+// Every write here is for a signed-in person, so the sign-in check comes first:
+// a guest gets 401 (sign in), never "payments are not available".
+const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/];
 router.use((req, res, next) => {
-  if (stripeConfigured() || req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
-  if (NO_STRIPE_NEEDED.some(re => re.test(req.path))) return next();
-  return res.status(503).json({ ...PAYMENTS_UNAVAILABLE, message: msg(resolveLang(req), 'billing.err.payments_unavailable') });
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS' || /^\/webhook\/?$/.test(req.path)) return next();
+  return authRequired(req, res, () => {
+    if (stripeConfigured() || NO_STRIPE_NEEDED.some(re => re.test(req.path))) return next();
+    return res.status(503).json({ ...PAYMENTS_UNAVAILABLE, message: msg(resolveLang(req), 'billing.err.payments_unavailable') });
+  });
 });
 
 // ── Standard billing routes (JSON body) ───────────────────────────────────────

@@ -379,7 +379,10 @@ export function getPoolStats() {
 }
 
 export async function closeDb() {
-  if (_db?._shutdown) { try { await _db._shutdown(); } catch { /* ignore */ } }
+  if (_db?._shutdown) {
+    try { await _db._shutdown(); if (process.env.NODE_ENV !== 'test') logger.info('[db] connection pool closed'); }
+    catch (e) { logger.warn({ err: e.message }, '[db] pool close failed'); }
+  }
   _db = null; _initPromise = null;
 }
 

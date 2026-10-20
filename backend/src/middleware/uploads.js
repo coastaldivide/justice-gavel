@@ -17,6 +17,7 @@
  *      memory, large media (audio) is STREAMED TO A TEMP FILE on disk;
  *   5. releases the reservation and deletes temp files when the response ends.
  */
+import { msg, resolveLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
 import multer from 'multer';
 import os     from 'os';
@@ -86,19 +87,19 @@ export function uploadGuard({
 
   return function uploadGuardMiddleware(req, res, next) {
     if (!req.is('multipart/form-data')) {
-      if (requireMultipart) return res.status(400).json({ error: 'multipart_required', message: 'Send the file as multipart/form-data.' });
+      if (requireMultipart) return res.status(400).json({ error: 'multipart_required', message: msg(resolveLang(req), 'upload.err.multipart') });
       return next();
     }
     // 1. Authentication must already have happened.
     if (!req.user?.id) {
       res.setHeader('Connection', 'close');
-      return res.status(401).json({ error: 'Authentication required.', code: 'missing_token' });
+      return res.status(401).json({ error: 'missing_token', code: 'missing_token', message: msg(resolveLang(req), 'http.401') });
     }
     // 2. Declared size.
     const declared = Number(req.headers['content-length']);
     if (Number.isFinite(declared) && declared > maxRequest) {
       res.setHeader('Connection', 'close');
-      return res.status(413).json({ error: 'file_too_large', message: `Uploads here can be at most ${Math.floor(maxBytes / MB)} MB.` });
+      return res.status(413).json({ error: 'file_too_large', message: msg(resolveLang(req), 'upload.err.too_large', { mb: Math.floor(maxBytes / MB) }) });
     }
     // 3. Admission.
     const uid = String(req.user.id);
@@ -106,7 +107,7 @@ export function uploadGuard({
     if (mine >= UPLOAD_LIMITS.perUserConcurrent) {
       res.setHeader('Retry-After', '10');
       res.setHeader('Connection', 'close');
-      return res.status(429).json({ error: 'too_many_uploads', message: 'Wait for your other uploads to finish.' });
+      return res.status(429).json({ error: 'too_many_uploads', message: msg(resolveLang(req), 'upload.err.too_many') });
     }
     const reserve = toDisk ? 0 : Math.min(Number.isFinite(declared) && declared > 0 ? declared : maxRequest, maxRequest);
     if (toDisk ? state.diskInFlight >= UPLOAD_LIMITS.diskConcurrent
@@ -114,7 +115,7 @@ export function uploadGuard({
       res.setHeader('Retry-After', '15');
       res.setHeader('Connection', 'close');
       logger.warn({ path: req.path, memoryInFlight: state.memoryInFlight, diskInFlight: state.diskInFlight }, '[uploads] busy — upload refused');
-      return res.status(503).json({ error: 'upload_busy', message: 'The server is busy processing uploads. Please try again shortly.' });
+      return res.status(503).json({ error: 'upload_busy', message: msg(resolveLang(req), 'upload.err.busy') });
     }
     state.perUser.set(uid, mine + 1);
     if (toDisk) state.diskInFlight += 1; else state.memoryInFlight += reserve;
@@ -140,10 +141,10 @@ export function uploadGuard({
       if (!err) return next();
       if (onError) return onError(err, req, res);
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ error: 'file_too_large', message: `Uploads here can be at most ${Math.floor(maxBytes / MB)} MB.` });
+        return res.status(413).json({ error: 'file_too_large', message: msg(resolveLang(req), 'upload.err.too_large', { mb: Math.floor(maxBytes / MB) }) });
       }
-      if (err instanceof multer.MulterError) return res.status(400).json({ error: 'invalid_upload', message: err.message });
-      return res.status(415).json({ error: 'unsupported_file', message: err.message || 'Unsupported file.' });
+      if (err instanceof multer.MulterError) return res.status(400).json({ error: 'invalid_upload', message: msg(resolveLang(req), 'upload.err.invalid') });
+      return res.status(415).json({ error: 'unsupported_file', message: msg(resolveLang(req), 'upload.err.unsupported') });
     });
   };
 }

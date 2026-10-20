@@ -114,8 +114,10 @@ describe('TRACE. Complete System Flow Traces', () => {
     expect(srv).toContain("process.on('SIGINT'");
     expect(srv).toContain('timers.forEach(t => { clearInterval(t); clearTimeout(t); })');  // push loop, refresh, bar re-verify
     expect(srv).toContain('25_000');                 // force exit if shutdown hangs
-    expect(srv).toContain('deliverScheduledPushes');
-    expect(srv).toContain('runBarReVerification');
+    // section H: reminder delivery is the scheduler's dispatcher (no second loop here);
+    // the quarterly bar check runs once per quarter across instances (job_runs claim)
+    expect(srv).not.toContain('deliverScheduledPushes');
+    expect(srv).toContain("runOnce('bar-reverify', quarterKey(), runBarReVerification)");
     expect(srv).toContain("process.send('ready')");
   });
   test('TRACE-03: migration sequence complete — init→users expanded→lawyers added', async () => {
