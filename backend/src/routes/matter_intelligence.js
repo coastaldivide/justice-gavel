@@ -1339,34 +1339,23 @@ export {
   evidenceBucket,
 };
 
-// GET /api/matter-intelligence/:id/analytics
+// GET /api/matter-intelligence/:id/analytics — counts recorded for the matter
+// (timeline events, docket entries) and its most recent docket entries. Same
+// access rule as every other matter-intelligence read (getMatter: the caller's
+// firm, or the creator of a consumer matter); nothing is estimated here.
 router.get('/:id/analytics', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const matterId = parseInt(req.params.id, 10);
-    if (!matterId || isNaN(matterId)) return res.status(400).json({ error: 'Invalid matter ID' });
-    // Pull together case analytics from related tables
-    const events = await db.get(
-      'SELECT COUNT(*) as n FROM case_events WHERE matter_id = ?', [matterId]
-    ).catch(() => ({ n: 0 }));
-    const docs = await db.get(
-      'SELECT COUNT(*) as n FROM discovery_analyses WHERE user_id = ?', [req.user.id]
-    ).catch(() => ({ n: 0 }));
-    const timeline = await db.all(
-      'SELECT entry_date, filing_type FROM docket_entries WHERE matter_id = ? ORDER BY entry_date DESC LIMIT 10',
-      [matterId]
-    ).catch(() => []);
-    res.json({
-      matter_id: matterId,
-      event_count: events?.n || 0,
-      document_count: docs?.n || 0,
-      recent_timeline: timeline,
-      analytics: {
-        risk_score: 'medium',
-        next_deadline: null,
-        days_active: 0,
-      }
-    });
-  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+    const ctx = await getFirmCtx(db, req.user.id);
+    const m = await getMatter(db, req.params.id, ctx?.firm_id, req.user.id);
+    if (!m) return err404(res, 'Matter not found.');
+    const events = await db.get('SELECT COUNT(*) AS n FROM case_events WHERE matter_id = ?', [m.id]);
+    const docket = await db.get('SELECT COUNT(*) AS n FROM docket_entries WHERE matter_id = ?', [m.id]).catch(() => ({ n: 0 }));
+    const recent = await db.all(
+      'SELECT entry_date, filing_type FROM docket_entries WHERE matter_id = ? ORDER BY entry_date DESC LIMIT 10', [m.id]).catch(() => []);
+    res.json({ matter_id: Number(m.id), event_count: Number(events?.n || 0), docket_count: Number(docket?.n || 0), recent_docket: recent });
+  } catch (e) {
+    logger.error('[mi/analytics]', e.message);
+    res.status(500).json({ error: 'Could not load matter analytics.' });
+  }
 });
-

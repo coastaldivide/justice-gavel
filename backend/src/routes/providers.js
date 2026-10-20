@@ -30,13 +30,13 @@ const router = Router();
 const searchLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Provider search limit reached.' });
 
 // Listings that are linked to a Justice Gavel account can receive in-app messages.
-const LAWYER_COLS = `l.id, l.name, l.firm, l.phone, l.address, l.city, l.state, l.lat, l.lng, l.website,
+export const LAWYER_COLS = `l.id, l.name, l.firm, l.phone, l.address, l.city, l.state, l.lat, l.lng, l.website,
   l.rating, l.reviews, l.review_count, l.specialties, l.languages, l.bio, l.years_experience, l.hourly_rate,
   l.bar_number, l.bar_state, l.verified, l.bar_verified, l.bar_verified_since, l.jtb_verified,
   l.jtb_verified_since, l.golden_gavel, l.gavel_level, l.data_verified, l.pro_bono, l.sliding_scale,
   l.free_consultation, l.avg_response_hrs, l.accepting_leads, l.availability, l.source, l.hours,
   (l.user_id IS NOT NULL OR EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id)) AS on_app`;
-const BAIL_COLS = `id, name, company, phone, address, city, state, lat, lng, website, rating, reviews,
+export const BAIL_COLS = `id, name, company, phone, address, city, state, lat, lng, website, rating, reviews,
   license_number, license_type, verified, doi_verified, payment_plans, available_24_7, languages, hours`;
 
 const finite = (v) => { const n = Number.parseFloat(v); return Number.isFinite(n) ? n : null; };

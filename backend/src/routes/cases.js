@@ -26,7 +26,7 @@ import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
  * GET    /api/cases/family                    — cases I follow (court dates only, no notes)
  */
 
-import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
+import { truncateStr, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter }                 from '../middleware/sharedAiLimiter.js';
 import { Router }                          from 'express';
 import { getDb }                           from '../db/index.js';
@@ -42,10 +42,11 @@ import {
 import {
   createInvite, listFollowers, revokeFollower, listFollowing, FollowError, notifyFollowersCourtDateChanged,
 } from '../services/followers.js';
-import { resolveLang, msg } from '../i18n/index.js';
+import { resolveLang, msg, userLang } from '../i18n/index.js';
 
 const router       = Router();
-const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many case operations. Slow down.' });
+const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: (req) => msg(resolveLang(req), 'case.err.too_many') });
+const fail = (req, res, status, key, params) => res.status(status).json({ error: msg(resolveLang(req), key, params) });
 
 // Tightly-scoped column lists — never SELECT * /* intentional */ ──────────────────────────────── /* intentional separator comment */
 const CASE_COLS = `id, user_id, title, status, next_court_date, notes,
@@ -76,6 +77,10 @@ export function safeCourtDate(v) {
   if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== d) return null;
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
+
+/** The caller's own, not-deleted case (id only), or undefined. */
+const ownedCase = (db, caseId, userId) =>
+  db.get('SELECT id FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL', [caseId, userId]);
 
 // ── GET / — list own cases (paginated) ───────────────────────────────────────
 router.get('/', authRequired, async (req, res) => {
@@ -122,7 +127,7 @@ router.get('/', authRequired, async (req, res) => {
     });
   } catch (e) {
     logger.error('[cases/list]', e.message);
-    res.status(500).json({ error: 'Could not load cases.' });
+    fail(req, res, 500, 'case.err.load_list');
   }
 });
 
@@ -138,11 +143,11 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
     } = req.body || {};
     const next_court_date = safeCourtDate(req.body?.next_court_date ?? req.body?.court_date);
     if ((req.body?.next_court_date || req.body?.court_date) && !next_court_date) {
-      return err400(res, 'next_court_date must be YYYY-MM-DD');
+      return fail(req, res, 400, 'case.err.bad_date');
     }
 
     const safeTitle = truncateStr(sanitizeStr(String(title || ''), 300), 300);
-    if (!safeTitle.trim()) return err400(res, 'title is required.');
+    if (!safeTitle.trim()) return fail(req, res, 400, 'case.err.title_required');
 
     const safeStatus = VALID_STATUSES.has(canonStatus(status)) ? canonStatus(status) : 'Open';
     const safeNotes  = notes ? truncateStr(sanitizeStr(String(notes), 10_000), 10_000) : '';
@@ -152,9 +157,9 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
     const recent = await db.get(
       `SELECT id FROM cases WHERE user_id = ? AND title = ?
        AND created_at > (NOW() - INTERVAL '10 seconds') LIMIT 1`,
-      [req.user.id, (req.body.title || '').trim()]
+      [req.user.id, safeTitle.trim()]
     ).catch(() => null);
-    if (recent) return res.status(409).json({ error: 'Duplicate case — please wait before submitting again', existingId: recent.id });
+    if (recent) return res.status(409).json({ error: msg(resolveLang(req), 'case.err.duplicate'), code: 'duplicate', existingId: recent.id });
 
     const r = await db.run(
       `INSERT INTO cases (user_id, title, status, next_court_date, notes, state, charge, updated_at)
@@ -202,7 +207,7 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
     res.status(201).json(reminders ? { ...body, reminders } : body);
   } catch (e) {
     logger.error('[cases/create]', e.message);
-    res.status(500).json({ error: 'Could not create case.' });
+    fail(req, res, 500, 'case.err.create');
   }
 });
 
@@ -213,10 +218,10 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
     const caseId   = safeInt(req.params.id);
     const existing = await db.get(
       `SELECT ${CASE_COLS}, share_expires_at, expungement_notified FROM cases
-       WHERE id=? AND user_id=?`,
+       WHERE id=? AND user_id=? AND deleted_at IS NULL`,
       [caseId, req.user.id]
     );
-    if (!existing) return err404(res, 'Case not found.');
+    if (!existing) return fail(req, res, 404, 'case.err.not_found');
 
     const {
       title, status, next_court_date, notes, state,
@@ -226,16 +231,16 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
 
     if (title !== undefined) {
       const t = truncateStr(sanitizeStr(String(title || ''), 300), 300);
-      if (!t.trim()) return err400(res, 'title cannot be empty.');
+      if (!t.trim()) return fail(req, res, 400, 'case.err.title_required');
       updates.push('title=?'); vals.push(t.trim());
     }
     if (status !== undefined && status !== null) {
-      if (!VALID_STATUSES.has(canonStatus(status))) return err400(res, `Invalid status. Valid: ${[...VALID_STATUSES].join(', ')}`);
+      if (!VALID_STATUSES.has(canonStatus(status))) return fail(req, res, 400, 'case.err.bad_status');
       updates.push('status=?'); vals.push(canonStatus(status));
     }
     if (next_court_date !== undefined) {
       const d = safeCourtDate(next_court_date);
-      if (next_court_date && !d) return err400(res, 'next_court_date must be YYYY-MM-DD');
+      if (next_court_date && !d) return fail(req, res, 400, 'case.err.bad_date');
       updates.push('next_court_date=?');
       vals.push(d);
     }
@@ -248,7 +253,7 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
       vals.push(state ? sanitizeStr(String(state), 3).toUpperCase() : null);
     }
 
-    if (!updates.length) return err400(res, 'Nothing to update.');
+    if (!updates.length) return fail(req, res, 400, 'case.err.nothing');
 
     updates.push("updated_at=NOW()");
     vals.push(caseId, req.user.id);
@@ -309,7 +314,7 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
     res.json(updated);
   } catch (e) {
     logger.error('[cases/update]', e.message);
-    res.status(500).json({ error: 'Could not update case.' });
+    fail(req, res, 500, 'case.err.update');
   }
 });
 
@@ -318,15 +323,15 @@ router.delete('/:id', authRequired, async (req, res) => {
   try {
     const db     = await getDb();
     const caseId = safeInt(req.params.id);
-    const cas    = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas    = await db.get('SELECT id FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL', [caseId, req.user.id]);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
 
     // Legal hold check — users cannot delete cases that are frozen.
     // A family member or attorney may have placed a hold on this case.
     const hold = await checkLegalHold('case', caseId);
     if (hold) {
       return res.status(423).json({
-        error: 'This case is under a legal hold and cannot be deleted.',
+        error: msg(resolveLang(req), 'case.err.legal_hold'), code: 'legal_hold',
         hold_id:    hold.id,
         applied_at: hold.applied_at,
         reason:     hold.reason,
@@ -336,10 +341,14 @@ router.delete('/:id', authRequired, async (req, res) => {
     await db.run("UPDATE cases SET deleted_at=NOW() WHERE id=? AND user_id=?", [caseId, req.user.id]);
     await cancelCourtReminders(db, req.user.id, caseId, 'case_deleted')
       .catch(e => logger.warn('[cases/delete] cancel reminders:', e.message));
+    // A deleted case is shared with nobody: end its share link and its family follows.
+    await db.run('UPDATE cases SET share_token=NULL, share_expires_at=NULL WHERE id=?', [caseId]);
+    await db.run(`UPDATE case_family_access SET status='revoked', revoked_at=NOW(), invite_code_hash=NULL, updated_at=NOW() WHERE case_id=? AND status IN ('pending','active')`, [caseId]);
+    await audit(AUDIT_ACTIONS.CASE_DELETED, { req, entityType: 'case', entityId: String(caseId) });
     res.json({ ok: true });
   } catch (e) {
     logger.error('[cases/delete]', e.message);
-    res.status(500).json({ error: 'Could not delete case.' });
+    fail(req, res, 500, 'case.err.delete');
   }
 });
 
@@ -348,16 +357,17 @@ router.get('/:id/status-history', authRequired, async (req, res) => {
   try {
     const db     = await getDb();
     const caseId = safeInt(req.params.id);
-    const cas    = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas    = await ownedCase(db, caseId, req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
     const history = await db.all(
       `SELECT old_status, new_status, note, changed_at
        FROM case_status_history WHERE case_id=? ORDER BY changed_at DESC LIMIT 50`,
       [caseId]
     );
     res.json({ history });
-  } catch {
-    res.status(500).json({ error: 'Could not load status history.' });
+  } catch (e) {
+    logger.error('[cases/status-history]', e.message);
+    fail(req, res, 500, 'case.err.history');
   }
 });
 
@@ -373,8 +383,8 @@ router.get('/:id/events', authRequired, async (req, res) => {
   try {
     const db     = await getDb();
     const caseId = safeInt(req.params.id);
-    const cas    = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas    = await ownedCase(db, caseId, req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
     const events = await db.all(
       `SELECT id, event_type, title, description, event_date, amount_cents, location, created_at
        FROM case_events WHERE case_id=?
@@ -383,8 +393,9 @@ router.get('/:id/events', authRequired, async (req, res) => {
     );
     res.setHeader('Cache-Control', 'no-store');
     res.json({ events });
-  } catch {
-    res.status(500).json({ error: 'Could not load case timeline.' });
+  } catch (e) {
+    logger.error('[cases/events]', e.message);
+    fail(req, res, 500, 'case.err.timeline');
   }
 });
 
@@ -392,8 +403,8 @@ router.post('/:id/events', authRequired, casesLimiter, async (req, res) => {
   try {
     const db     = await getDb();
     const caseId = safeInt(req.params.id);
-    const cas    = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas    = await ownedCase(db, caseId, req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
 
     const {
       event_type   = 'note',
@@ -404,14 +415,15 @@ router.post('/:id/events', authRequired, casesLimiter, async (req, res) => {
       location     = null,
     } = req.body || {};
 
-    if (!title || !String(title).trim()) return err400(res, 'Event title is required.');
+    if (!title || !String(title).trim()) return fail(req, res, 400, 'case.err.event_title');
+    const safeDate = event_date ? safeCourtDate(event_date) : null;
+    if (event_date && !safeDate) return fail(req, res, 400, 'case.err.bad_date');
 
     const safeType  = VALID_EVENT_TYPES.has(event_type) ? event_type : 'note';
     const safeTitle = truncateStr(sanitizeStr(String(title), 200), 200);
     const safeDesc  = description ? truncateStr(sanitizeStr(String(description), 1000), 1000) : null;
     const safeLoc   = location    ? truncateStr(sanitizeStr(String(location),    200 ), 200 ) : null;
-    const safeAmt   = amount_cents != null ? safeInt(amount_cents, 0) : null;
-    const safeDate  = event_date ? sanitizeStr(String(event_date), 20) : null;
+    const safeAmt   = amount_cents != null && amount_cents !== '' ? safeInt(amount_cents, 0) : null;
 
     const result = await db.run(
       `INSERT INTO case_events
@@ -425,11 +437,11 @@ router.post('/:id/events', authRequired, casesLimiter, async (req, res) => {
        FROM case_events WHERE id=?`,
       [result.lastID]
     );
-    await audit(AUDIT_ACTIONS.CASE_CREATED, { req, entityType: 'case', entityId: String(caseId || '') });
+    await audit(AUDIT_ACTIONS.CASE_UPDATED, { req, entityType: 'case', entityId: String(caseId || '') });
     res.status(201).json({ event: created });
   } catch (e) {
     logger.error('[cases/events/create]', e.message);
-    res.status(500).json({ error: 'Could not add event.' });
+    fail(req, res, 500, 'case.err.event_add');
   }
 });
 
@@ -438,12 +450,14 @@ router.delete('/:id/events/:eventId', authRequired, async (req, res) => {
     const db      = await getDb();
     const caseId  = safeInt(req.params.id);
     const eventId = safeInt(req.params.eventId);
-    const cas     = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
-    await db.run('DELETE FROM case_events WHERE id=? AND case_id=? AND user_id=?', [eventId, caseId, req.user.id]);
+    const cas     = await ownedCase(db, caseId, req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
+    const r = await db.run('DELETE FROM case_events WHERE id=? AND case_id=? AND user_id=?', [eventId, caseId, req.user.id]);
+    if (!r.changes) return fail(req, res, 404, 'case.err.event_not_found');
     res.json({ ok: true });
-  } catch {
-    res.status(500).json({ error: 'Could not delete event.' });
+  } catch (e) {
+    logger.error('[cases/events/delete]', e.message);
+    fail(req, res, 500, 'case.err.event_delete');
   }
 });
 
@@ -452,8 +466,8 @@ router.delete('/:id/events/:eventId', authRequired, async (req, res) => {
 router.post('/:id/share', authRequired, casesLimiter, async (req, res) => {
   try {
     const db  = await getDb();
-    const cas = await db.get(`SELECT ${CASE_SAFE_COLS} FROM cases WHERE id=? AND user_id=?`, [safeInt(req.params.id), req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas = await ownedCase(db, safeInt(req.params.id), req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
 
     // Cryptographically random token — NOT Math.random()
     const token   = randomBytes(32).toString('hex');
@@ -462,9 +476,11 @@ router.post('/:id/share', authRequired, casesLimiter, async (req, res) => {
       'UPDATE cases SET share_token=?, share_expires_at=? WHERE id=?',
       [token, expires, safeInt(req.params.id)]
     );
-    res.json({ token, expires_at: expires, share_url: `justicegavel.app/case/${token}` });
-  } catch {
-    res.status(500).json({ error: 'Could not generate share link.' });
+    await audit(AUDIT_ACTIONS.CASE_SHARED, { req, entityType: 'case', entityId: String(cas.id) });
+    res.json({ token, expires_at: expires });
+  } catch (e) {
+    logger.error('[cases/share]', e.message);
+    fail(req, res, 500, 'case.err.share');
   }
 });
 
@@ -475,26 +491,29 @@ router.get('/shared/:token', async (req, res) => {
     const token = sanitizeStr(req.params.token, 80);
     const row   = await db.get(
       `SELECT id, title, status, next_court_date, created_at, state
-       FROM cases WHERE share_token=? AND share_expires_at > NOW()`,
+       FROM cases WHERE share_token=? AND share_expires_at > NOW() AND deleted_at IS NULL`,
       [token]
     );
-    if (!row) return err404(res, 'Share link expired or invalid.');
+    if (!row) return fail(req, res, 404, 'case.err.share_invalid');
     res.json(row);
-  } catch {
-    res.status(500).json({ error: 'Could not load shared case.' });
+  } catch (e) {
+    logger.error('[cases/shared]', e.message);
+    fail(req, res, 500, 'case.err.share_load');
   }
 });
 
 router.delete('/:id/share', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    await db.run(
-      'UPDATE cases SET share_token=NULL, share_expires_at=NULL WHERE id=? AND user_id=?',
+    const r = await db.run(
+      'UPDATE cases SET share_token=NULL, share_expires_at=NULL WHERE id=? AND user_id=? AND deleted_at IS NULL',
       [safeInt(req.params.id), req.user.id]
     );
+    if (!r.changes) return fail(req, res, 404, 'case.err.not_found');
     res.json({ ok: true });
-  } catch {
-    res.status(500).json({ error: 'Could not revoke share link.' });
+  } catch (e) {
+    logger.error('[cases/share/revoke]', e.message);
+    fail(req, res, 500, 'case.err.share_revoke');
   }
 });
 
@@ -561,8 +580,9 @@ router.get('/family', authRequired, async (req, res) => {
 
 async function triggerExpungementPush(db, userId, caseRow) {
   const user      = await db.get('SELECT push_token FROM users WHERE id=?', [userId]).catch(() => null);
-  const title     = caseRow.status === 'Dismissed' ? '📋 Your charge was dismissed' : '📋 Your case is closed';
-  const body      = 'You may be eligible to expunge this from your record — seal it permanently. Tap to check eligibility.';
+  const lang      = await userLang(db, userId);
+  const title     = msg(lang, caseRow.status === 'Dismissed' ? 'case.push.dismissed_title' : 'case.push.closed_title');
+  const body      = msg(lang, 'case.push.expunge_body');
   const deliverAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
   await db.run(
     `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type, case_id)
@@ -615,12 +635,12 @@ router.get('/:id/reminders', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const caseId = safeInt(req.params.id);
-    const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL', [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
+    const cas = await ownedCase(db, caseId, req.user.id);
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
     res.json({ reminders: await listPendingCourtReminders(db, req.user.id, caseId) });
   } catch (e) {
     logger.error('[cases/reminders]', e.message);
-    res.status(500).json({ error: 'Could not load reminders.' });
+    fail(req, res, 500, 'case.err.reminders_load');
   }
 });
 
@@ -631,9 +651,9 @@ router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
     const cas = await db.get(
       'SELECT id, title, status, next_court_date, state FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL',
       [caseId, req.user.id]);
-    if (!cas) return err404(res, 'Case not found.');
-    if (!cas.next_court_date) return err400(res, 'This case has no court date. Add one to get reminders.');
-    if (CLOSED_CASE_STATUSES.has(cas.status)) return err400(res, 'This case is closed.');
+    if (!cas) return fail(req, res, 404, 'case.err.not_found');
+    if (!cas.next_court_date) return fail(req, res, 400, 'case.err.no_court_date');
+    if (CLOSED_CASE_STATUSES.has(cas.status)) return fail(req, res, 400, 'case.err.closed');
     if (await rememberRequestPrefs(db, req.user.id, req)) await rescheduleUserCourtReminders(db, req.user.id);
     // a case whose date predates court_dates gets its hearing row now
     const nextDate = String(cas.next_court_date).slice(0, 10);
@@ -641,11 +661,11 @@ router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
     const reminders = await replanCase(db, req, caseId);
     const { resolveReminderTimeZone } = await import('../services/courtReminders.js');
     const r = { reminders: reminders || [], time_zone: (await resolveReminderTimeZone(db, req.user.id, cas.state)).tz };
-    if (!r.reminders.length) return err400(res, 'This court date has already passed.');
+    if (!r.reminders.length) return fail(req, res, 400, 'case.err.date_passed');
     res.json({ case_id: caseId, time_zone: r.time_zone, reminders: r.reminders });
   } catch (e) {
     logger.error('[cases/reminders/plan]', e.message);
-    res.status(500).json({ error: 'Could not set reminders.' });
+    fail(req, res, 500, 'case.err.reminders_set');
   }
 });
 
@@ -675,7 +695,7 @@ router.get('/family/contacts', authRequired, async (req, res) => {
     })));
   } catch (e) {
     logger.error('[GET /family/contacts]', e.message);
-    res.status(500).json({ error: 'Could not load family contacts' });
+    fail(req, res, 500, 'case.err.family_contacts');
   }
 });
 

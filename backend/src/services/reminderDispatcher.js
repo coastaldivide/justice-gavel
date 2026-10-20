@@ -15,6 +15,11 @@
  *                   Push → email → SMS (each skipped when not configured).
  *   follower_court_reminder  the same check plus: the family follow is still
  *                   active (consented, not revoked) with reminders on.
+ *   checkin_reminder  a post-release check-in is due (services/checkinReminders.js):
+ *                   re-checked against the enrollment (still active, still this
+ *                   defendant, not checked in yet for the period); respects
+ *                   users.notif_checkin_reminders. Push only. The next one is
+ *                   planned after every outcome.
  *   reminder        a reminder the user set (deadlines, follow-ups). Push → email.
  *   expungement     push only; respects users.notif_expungement.
  *   engagement      marketing-style nudges; push only and ONLY when the user
@@ -44,6 +49,7 @@ import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtR
 import { sendSms, smsLive } from './sms.js';
 import { guardJob } from '../utils/cronGuard.js';
 import { msg, formatDay, normalizeLang } from '../i18n/index.js';
+import { checkinReminderStale, planCheckinReminder, backfillCheckinReminders } from './checkinReminders.js';
 
 const BATCH = 50;
 const STALE_CLAIM_MINUTES = 10;
@@ -103,6 +109,7 @@ function preferenceBlocks(type, user) {
   const on = v => v === null || v === undefined || Number(v) === 1;
   if (COURT_TYPES.has(type)) return !on(user.notif_court_reminders);
   if (type === 'expungement')    return !on(user.notif_expungement);
+  if (type === 'checkin_reminder') return !on(user.notif_checkin_reminders);
   if (type === 'engagement')     return Number(user.notif_marketing) !== 1;
   return false;
 }
@@ -144,13 +151,17 @@ async function deliverOne(db, row, now) {
 
   const user = await db.get(
     `SELECT id, email, phone, sms_reminders, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing,
-            preferred_language
+            notif_checkin_reminders, preferred_language
        FROM users WHERE id = ?`, [row.user_id]);
   if (!user || DISABLED_ACCOUNT.has(String(user.account_status || '').toLowerCase())) {
     return finish(db, row.id, { status: 'cancelled', error: 'user_unavailable' }).then(() => 'cancelled');
   }
   if (COURT_TYPES.has(type)) {
     const stale = await courtReminderStale(db, row, data);
+    if (stale) return finish(db, row.id, { status: 'cancelled', error: stale }).then(() => 'cancelled');
+  }
+  if (type === 'checkin_reminder') {
+    const stale = await checkinReminderStale(db, row, data, now);
     if (stale) return finish(db, row.id, { status: 'cancelled', error: stale }).then(() => 'cancelled');
   }
   if (preferenceBlocks(type, user)) {
@@ -251,6 +262,12 @@ export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit 
     try {
       const outcome = await deliverOne(db, row, now);
       counts[outcome] = (counts[outcome] || 0) + 1;
+      if (row.notification_type === 'checkin_reminder' && outcome !== 'retry') {
+        const enrollmentId = Number(parseData(row.data).enrollment_id);
+        // the next check-in's reminder (never another one for the period just handled)
+        if (enrollmentId) await planCheckinReminder(db, enrollmentId, new Date(Math.max(now.getTime(), new Date(row.deliver_at).getTime()) + 60_000))
+          .catch(e => logger.warn({ enrollmentId, err: e.message }, '[reminders] next check-in reminder not planned'));
+      }
     } catch (e) {
       counts.failed++;
       logger.error({ id: row.id, err: e.message }, '[reminders] delivery error');
@@ -299,6 +316,8 @@ export function startReminderDispatcher({ intervalMs = 60_000 } = {}) {
   const backfill = async () => {
     try { await backfillCourtReminders(await getDb()); }
     catch (e) { logger.warn('[reminders] backfill failed:', e.message); }
+    try { await backfillCheckinReminders(await getDb()); }
+    catch (e) { logger.warn('[reminders] check-in backfill failed:', e.message); }
   };
   setTimeout(backfill, 15_000).unref?.();
   _backfillTimer = setInterval(backfill, 6 * 3_600_000);

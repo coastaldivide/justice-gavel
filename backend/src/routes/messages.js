@@ -1,7 +1,8 @@
 /**
  * routes/messages.js — attorney-client messaging
  *
- *   GET    /messages/unread[/count]   unread badge count
+ *   GET    /messages/unread[/count]   unread badge count (my cases + cases I am counsel on)
+ *   GET    /messages/threads          one row per case thread I can open: unread count, last message, counsel
  *   GET    /messages/direct           direct messages to/from me (incl. bulk outreach)
  *   POST   /messages/bulk             message up to BULK_MAX attorneys from the directory
  *   POST   /messages/attachment       upload a document (multipart), optionally into a case thread
@@ -27,12 +28,12 @@ import { uploadGuard }  from '../middleware/uploads.js';
 import rateLimit        from 'express-rate-limit';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
-import { err400, err403, err404 } from '../utils/routeHelpers.js';
 import { sanitizeStr, truncateStr } from '../utils/sanitize.js';
 import { auditLog }     from '../utils/auditLog.js';
 import logger           from '../utils/logger.js';
 import { sendPushToUser } from '../services/pushDelivery.js';
 import { encrypt, decrypt, encryptBuffer, decryptBuffer } from '../services/encryption.js';
+import { resolveLang, msg, userLang } from '../i18n/index.js';
 import { getAttachmentStorage, newStorageKey } from '../services/attachmentStorage.js';
 
 const router = Router();
@@ -42,7 +43,9 @@ export const BULK_MAX_CHARS      = 5_000;
 export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;  // "JPEG, PNG, or PDF — max 10 MB"
 
 const userKey = (req) => `user:${req.user?.id ?? req.ip}`;
-const limitHandler = (req, res) => res.status(429).json({ error: 'Too many requests. Please try again later.' });
+const say = (req, key, params) => msg(resolveLang(req), key, params);
+const fail = (req, res, status, key, extra = {}) => res.status(status).json({ error: say(req, key), ...extra });
+const limitHandler = (req, res) => fail(req, res, 429, 'msgs.err.too_many');
 const bulkLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, max: 10, keyGenerator: userKey, handler: limitHandler,
   standardHeaders: true, legacyHeaders: false, validate: false,
@@ -63,9 +66,9 @@ const preview = (s) => (s.length > 80 ? s.slice(0, 80) + '…' : s);
 /** Case access check shared by every case-scoped endpoint. */
 export async function getCaseAccess(db, user, caseId) {
   if (!isId(caseId)) return { error: 404 };
-  const cas = await db.get('SELECT id, user_id, title FROM cases WHERE id = ?', [Number(caseId)]);
+  const cas = await db.get('SELECT id, user_id, title FROM cases WHERE id = ? AND deleted_at IS NULL', [Number(caseId)]);
   if (!cas) return { error: 404 };
-  if (cas.user_id === user.id) return { cas, senderType: 'user' };
+  if (Number(cas.user_id) === Number(user.id)) return { cas, senderType: 'user' };
   if (isAttorneyRole(user)) {
     const a = await db.get(
       `SELECT id FROM case_assignments WHERE case_id = ? AND defender_id = ? AND status = 'active'`,
@@ -77,8 +80,8 @@ export async function getCaseAccess(db, user, caseId) {
   return { error: 404 };   // do not reveal other users' case ids
 }
 
-const accessError = (res, error) =>
-  error === 403 ? err403(res, 'Not assigned to this case') : err404(res, 'Case not found');
+const accessError = (req, res, error) =>
+  error === 403 ? fail(req, res, 403, 'msgs.err.not_assigned') : fail(req, res, 404, 'msgs.err.case_not_found');
 
 function decryptMessage(row) {
   if (!row) return row;
@@ -89,33 +92,28 @@ function decryptMessage(row) {
 }
 
 async function notifyCaseMessage(db, { cas, senderType, senderId, text }) {
+  // Each recipient gets the push in their own language; the body is only a short preview.
   try {
+    const data = { type: 'message', screen: 'Messages', caseId: Number(cas.id), case_id: Number(cas.id) };
     if (senderType === 'attorney') {
-      if (cas.user_id && cas.user_id !== senderId) {
+      if (cas.user_id && Number(cas.user_id) !== Number(senderId)) {
+        const lang = await userLang(db, cas.user_id);
         await sendPushToUser(cas.user_id, {
-          title: '⚖️ Your attorney sent a message',
-          body: preview(text),
-          data: { screen: 'Messages', caseId: cas.id },
-          channelId: 'case_updates',
+          title: msg(lang, 'msgs.push.from_attorney'), body: preview(text), data, channelId: 'case_updates',
         });
       }
-    } else {
-      const rows = await db.all(
-        `SELECT ca.defender_id, u.display_name AS client_name
-           FROM case_assignments ca
-           LEFT JOIN users u ON u.id = ?
-          WHERE ca.case_id = ? AND ca.status = 'active'`,
-        [senderId, cas.id]
-      );
-      for (const r of rows) {
-        if (!r.defender_id || r.defender_id === senderId) continue;
-        await sendPushToUser(r.defender_id, {
-          title: `💬 ${r.client_name || 'Client'} sent a message`,
-          body: preview(text),
-          data: { screen: 'Messages', caseId: cas.id, case_title: cas.title },
-          channelId: 'attorney_messages',
-        });
-      }
+      return;
+    }
+    const client = await db.get('SELECT display_name FROM users WHERE id = ?', [senderId]).catch(() => null);
+    const rows = await db.all(
+      `SELECT defender_id FROM case_assignments WHERE case_id = ? AND status = 'active'`, [cas.id]);
+    for (const r of rows) {
+      if (!r.defender_id || Number(r.defender_id) === Number(senderId)) continue;
+      const lang = await userLang(db, r.defender_id);
+      await sendPushToUser(r.defender_id, {
+        title: msg(lang, 'msgs.push.from_client', { name: client?.display_name || msg(lang, 'msgs.push.client') }),
+        body: preview(text), data: { ...data, case_title: cas.title }, channelId: 'attorney_messages',
+      });
     }
   } catch (e) {
     logger.warn('[messages/push]', e?.message);   // non-fatal
@@ -123,23 +121,53 @@ async function notifyCaseMessage(db, { cas, senderType, senderId, text }) {
 }
 
 // ── GET /messages/unread — badge count ────────────────────────────────────
-// (/unread/count is what HomeScreen calls)
+// (/unread/count is what HomeScreen calls) — messages from someone else, not
+// yet read, in my own cases and in cases I am active counsel on.
+const THREAD_SCOPE = `(c.user_id = ? OR EXISTS (SELECT 1 FROM case_assignments ca
+                       WHERE ca.case_id = c.id AND ca.defender_id = ? AND ca.status = 'active'))`;
 router.get(['/unread', '/unread/count'], authRequired, async (req, res) => {
   try {
     const db  = await getDb();
     const row = await db.get(
       `SELECT COUNT(*) AS count
          FROM case_messages m
-         JOIN cases c ON m.case_id = c.id
-        WHERE c.user_id = ?
+         JOIN cases c ON m.case_id = c.id AND c.deleted_at IS NULL
+        WHERE ${THREAD_SCOPE}
           AND m.sender_id != ?
           AND m.read_at IS NULL
           AND m.deleted_at IS NULL`,
-      [req.user.id, req.user.id]
-    ).catch(() => ({ count: 0 }));
-    return res.json({ count: row?.count || 0 });
-  } catch {
-    return res.json({ count: 0 });
+      [req.user.id, req.user.id, req.user.id]
+    );
+    return res.json({ count: Number(row?.count || 0) });
+  } catch (e) {
+    logger.warn('[messages/unread]', e?.message);
+    return fail(req, res, 500, 'msgs.err.load');
+  }
+});
+
+// ── GET /messages/threads — the case threads I can open ───────────────────
+router.get('/threads', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const rows = await db.all(
+      `SELECT c.id, c.title, c.status, (c.user_id = ?) AS mine,
+              (SELECT COUNT(*) FROM case_messages m WHERE m.case_id = c.id AND m.deleted_at IS NULL
+                  AND m.sender_id != ? AND m.read_at IS NULL) AS unread,
+              (SELECT MAX(m.sent_at) FROM case_messages m WHERE m.case_id = c.id AND m.deleted_at IS NULL) AS last_message_at,
+              (SELECT COUNT(*) FROM case_assignments ca WHERE ca.case_id = c.id AND ca.status = 'active') AS counsel_count
+         FROM cases c
+        WHERE c.deleted_at IS NULL AND ${THREAD_SCOPE}
+        ORDER BY last_message_at DESC NULLS LAST, c.id DESC
+        LIMIT 200`,
+      [req.user.id, req.user.id, req.user.id, req.user.id]);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ threads: rows.map(r => ({
+      case_id: Number(r.id), title: r.title, status: r.status, role: r.mine === true || Number(r.mine) === 1 ? 'client' : 'attorney',
+      unread: Number(r.unread || 0), last_message_at: r.last_message_at, counsel_count: Number(r.counsel_count || 0),
+    })) });
+  } catch (e) {
+    logger.warn('[messages/threads]', e?.message);
+    return fail(req, res, 500, 'msgs.err.load');
   }
 });
 
@@ -175,7 +203,7 @@ router.get('/direct', authRequired, async (req, res) => {
     });
   } catch (e) {
     logger.warn('[messages/direct]', e?.message);
-    return res.status(500).json({ error: 'Could not load messages.' });
+    return fail(req, res, 500, 'msgs.err.load');
   }
 });
 
@@ -189,12 +217,11 @@ router.post('/bulk', authRequired, bulkLimiter, async (req, res) => {
   const rawIds  = req.body?.lawyer_ids;
   const rawText = req.body?.message ?? req.body?.body;
 
-  if (!Array.isArray(rawIds) || rawIds.length === 0) return err400(res, 'lawyer_ids must be a non-empty array');
-  if (!rawIds.every(isId)) return err400(res, 'lawyer_ids must be numeric ids');
+  if (!Array.isArray(rawIds) || rawIds.length === 0 || !rawIds.every(isId)) return fail(req, res, 400, 'msgs.err.pick_attorneys');
   const ids = [...new Set(rawIds.map(Number))];
-  if (ids.length > BULK_MAX) return err400(res, `You can message at most ${BULK_MAX} attorneys at once`);
-  if (typeof rawText !== 'string' || !rawText.trim()) return err400(res, 'message is required');
-  if (rawText.length > BULK_MAX_CHARS) return err400(res, `message must be ${BULK_MAX_CHARS} characters or fewer`);
+  if (ids.length > BULK_MAX) return res.status(400).json({ error: say(req, 'msgs.err.bulk_max', { n: BULK_MAX }) });
+  if (typeof rawText !== 'string' || !rawText.trim()) return fail(req, res, 400, 'msgs.err.body_required');
+  if (rawText.length > BULK_MAX_CHARS) return res.status(400).json({ error: say(req, 'msgs.err.too_long', { n: BULK_MAX_CHARS }) });
   const text = truncateStr(sanitizeStr(rawText.trim(), BULK_MAX_CHARS), BULK_MAX_CHARS);
 
   const caseIdRaw = req.body?.case_id ?? req.body?.caseId ?? null;
@@ -205,7 +232,7 @@ router.post('/bulk', authRequired, bulkLimiter, async (req, res) => {
     let caseId = null;
     if (caseIdRaw !== null && caseIdRaw !== undefined && caseIdRaw !== '') {
       const acc = await getCaseAccess(db, req.user, caseIdRaw);
-      if (acc.error || acc.senderType !== 'user') return err404(res, 'Case not found');
+      if (acc.error || acc.senderType !== 'user') return fail(req, res, 404, 'msgs.err.case_not_found');
       caseId = acc.cas.id;
     }
 
@@ -248,12 +275,12 @@ router.post('/bulk', authRequired, bulkLimiter, async (req, res) => {
         }
       });
       for (const t of targets) {
-        sendPushToUser(t.accountId, {
-          title: '📨 New message from a potential client',
+        userLang(db, t.accountId).then(lang => sendPushToUser(t.accountId, {
+          title: msg(lang, 'msgs.push.potential_client'),
           body: preview(text),
-          data: { screen: 'Messages', direct: true, from: req.user.id },
+          data: { type: 'direct_message', screen: 'AttorneyInbox', from: req.user.id },
           channelId: 'attorney_messages',
-        }).catch(logIgnored('routes/messages'));
+        })).catch(logIgnored('routes/messages'));
       }
     }
 
@@ -263,17 +290,15 @@ router.post('/bulk', authRequired, bulkLimiter, async (req, res) => {
     });
 
     const noAccount = skipped.filter(s => s.reason === 'no_account').length;
-    let summary;
-    if (recipients.length && !skipped.length) summary = `Sent to ${recipients.length} attorney${recipients.length === 1 ? '' : 's'}.`;
-    else if (recipients.length) summary = `Sent to ${recipients.length} attorney${recipients.length === 1 ? '' : 's'}; ${skipped.length} could not be messaged in the app.`;
-    else summary = noAccount
-      ? 'None of the selected attorneys use in-app messaging yet. Please contact them by phone or through their website.'
-      : 'No messages were sent.';
+    const n = recipients.length;
+    const summary = n && !skipped.length ? say(req, n === 1 ? 'msgs.bulk.sent_one' : 'msgs.bulk.sent_n', { n })
+      : n ? say(req, n === 1 ? 'msgs.bulk.sent_some_one' : 'msgs.bulk.sent_some_n', { n, skipped: skipped.length })
+        : say(req, noAccount ? 'msgs.bulk.none_on_app' : 'msgs.bulk.none_sent');
 
     return res.json({ sent: recipients.length, requested: ids.length, recipients, skipped, message: summary });
   } catch (e) {
     logger.warn('[messages/bulk]', e?.message);
-    return res.status(500).json({ error: 'Could not send messages. Please try again.' });
+    return fail(req, res, 500, 'msgs.err.send');
   }
 });
 
@@ -308,11 +333,10 @@ const parseMultipart = uploadGuard({
   maxBytes: ATTACHMENT_MAX_BYTES, any: true, requireMultipart: true, maxFields: 10, maxFieldBytes: 10_000,
   onError: (err, req, res) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'file_too_large', message: `Attachments can be at most ${ATTACHMENT_MAX_BYTES / 1024 / 1024} MB.` });
+      return res.status(413).json({ error: 'file_too_large', message: say(req, 'msgs.err.too_large', { mb: ATTACHMENT_MAX_BYTES / 1024 / 1024 }) });
     }
-    if (err instanceof multer.MulterError) return err400(res, `Invalid upload: ${err.message}`);
-    logger.warn('[messages/attachment] multipart error:', err?.message);
-    return err400(res, 'Invalid upload');
+    if (!(err instanceof multer.MulterError)) logger.warn('[messages/attachment] multipart error:', err?.message);
+    return res.status(400).json({ error: 'invalid_upload', message: say(req, 'msgs.err.bad_upload') });
   },
 });
 
@@ -320,28 +344,25 @@ async function requireStorage(req, res, next) {
   try {
     const storage = await getAttachmentStorage();
     if (!storage) {
-      return res.status(503).json({
-        error: 'storage_unavailable',
-        message: 'Document attachments are not available right now. Please try again later.',
-      });
+      return res.status(503).json({ error: 'storage_unavailable', message: say(req, 'msgs.err.storage') });
     }
     req.attachmentStorage = storage;
     next();
   } catch (e) {
     logger.warn('[messages/attachment] storage init failed:', e?.message);
-    return res.status(503).json({ error: 'storage_unavailable', message: 'Document attachments are not available right now.' });
+    return res.status(503).json({ error: 'storage_unavailable', message: say(req, 'msgs.err.storage') });
   }
 }
 
 router.post('/attachment', authRequired, attachmentLimiter, requireStorage, parseMultipart, async (req, res) => {
   const files = Array.isArray(req.files) ? req.files : [];
   const file  = files.find(f => ['file', 'document', 'attachment'].includes(f.fieldname));
-  if (!file) return err400(res, 'A file is required (field "file")');
-  if (!file.size) return err400(res, 'The file is empty');
+  if (!file) return res.status(400).json({ error: 'file_required', message: say(req, 'msgs.err.file_required') });
+  if (!file.size) return res.status(400).json({ error: 'file_empty', message: say(req, 'msgs.err.file_empty') });
 
   const mime = sniffMime(file.buffer);
   if (!mime) {
-    return res.status(415).json({ error: 'unsupported_type', message: 'Only JPEG, PNG, WebP, HEIC images and PDF documents can be attached.' });
+    return res.status(415).json({ error: 'unsupported_type', message: say(req, 'msgs.err.bad_type') });
   }
   const name = safeFileName(file.originalname, mime);
   const caseIdRaw = req.body?.case_id ?? req.body?.caseId;
@@ -353,7 +374,7 @@ router.post('/attachment', authRequired, attachmentLimiter, requireStorage, pars
     let access = null;
     if (caseIdRaw !== undefined && caseIdRaw !== '') {
       access = await getCaseAccess(db, req.user, caseIdRaw);
-      if (access.error) return accessError(res, access.error);
+      if (access.error) return accessError(req, res, access.error);
     }
 
     const sha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
@@ -403,24 +424,31 @@ router.post('/attachment', authRequired, attachmentLimiter, requireStorage, pars
   } catch (e) {
     logger.warn('[messages/attachment]', e?.message);
     if (key) storage.remove(key).catch(logIgnored('routes/messages'));
-    return res.status(500).json({ error: 'Could not store the attachment. Please try again.' });
+    return res.status(500).json({ error: 'store_failed', message: say(req, 'msgs.err.store') });
   }
 });
 
 router.get('/attachment/:id', authRequired, async (req, res) => {
-  if (!isId(req.params.id)) return err404(res, 'Attachment not found');
+  if (!isId(req.params.id)) return fail(req, res, 404, 'msgs.err.attachment_not_found');
   try {
     const db = await getDb();
     const a = await db.get('SELECT * FROM message_attachments WHERE id = ?', [Number(req.params.id)]);
-    if (!a) return err404(res, 'Attachment not found');
-    if (a.uploader_id !== req.user.id) {
-      if (!a.case_id) return err404(res, 'Attachment not found');
+    if (!a) return fail(req, res, 404, 'msgs.err.attachment_not_found');
+    // A case document is readable by whoever can open the case thread (the owner and
+    // active counsel) — and only while the case exists; a loose upload only by its uploader.
+    if (a.case_id) {
       const acc = await getCaseAccess(db, req.user, a.case_id);
-      if (acc.error) return err404(res, 'Attachment not found');
+      if (acc.error) return fail(req, res, 404, 'msgs.err.attachment_not_found');
+    } else if (Number(a.uploader_id) !== Number(req.user.id)) {
+      return fail(req, res, 404, 'msgs.err.attachment_not_found');
+    }
+    if (a.message_id) {
+      const m = await db.get('SELECT deleted_at FROM case_messages WHERE id = ?', [a.message_id]);
+      if (!m || m.deleted_at) return fail(req, res, 404, 'msgs.err.attachment_not_found');
     }
     const storage = await getAttachmentStorage();
     if (!storage || storage.kind !== a.storage) {
-      return res.status(503).json({ error: 'storage_unavailable', message: 'This attachment is not available right now.' });
+      return res.status(503).json({ error: 'storage_unavailable', message: say(req, 'msgs.err.storage') });
     }
     const stored = await storage.get(a.storage_key);
     const bytes  = a.encrypted ? decryptBuffer(stored) : stored;
@@ -435,7 +463,7 @@ router.get('/attachment/:id', authRequired, async (req, res) => {
     return res.end(bytes);
   } catch (e) {
     logger.warn('[messages/attachment/get]', e?.message);
-    return res.status(500).json({ error: 'Could not load the attachment.' });
+    return fail(req, res, 500, 'msgs.err.attachment_load');
   }
 });
 
@@ -449,7 +477,7 @@ router.get('/:caseId', authRequired, async (req, res, next) => {
     const safeLimit = Math.min(parseInt(limit, 10) || 50, 100);
 
     const acc = await getCaseAccess(db, req.user, caseId);
-    if (acc.error) return accessError(res, acc.error);
+    if (acc.error) return accessError(req, res, acc.error);
     const cid = acc.cas.id;
 
     const beforeTs = before && !Number.isNaN(Date.parse(String(before))) ? String(before) : null;
@@ -465,14 +493,14 @@ router.get('/:caseId', authRequired, async (req, res, next) => {
         WHERE m.case_id = ?
           AND m.deleted_at IS NULL
           ${beforeTs ? 'AND m.sent_at < ?' : ''}
-        ORDER BY m.sent_at DESC
+        ORDER BY m.sent_at DESC, m.id DESC
         LIMIT ?`,
       beforeTs ? [cid, beforeTs, safeLimit] : [cid, safeLimit]
     );
 
     await db.run(
       `UPDATE case_messages SET read_at = NOW()
-        WHERE case_id = ? AND sender_id != ? AND read_at IS NULL`,
+        WHERE case_id = ? AND sender_id != ? AND read_at IS NULL AND deleted_at IS NULL`,
       [cid, req.user.id]
     ).catch(logIgnored('routes/messages'));
 
@@ -487,7 +515,7 @@ router.get('/:caseId', authRequired, async (req, res, next) => {
     return res.json({ messages });
   } catch (e) {
     logger.warn('[messages/list]', e?.message);
-    return err400(res, 'Failed to load messages');
+    return fail(req, res, 500, 'msgs.err.load');
   }
 });
 
@@ -497,7 +525,7 @@ router.post('/:caseId', authRequired, async (req, res, next) => {
   if (!/^\d+$/.test(String(caseId))) return next('route');
   const body = req.body?.body;
 
-  if (typeof body !== 'string' || !body.trim()) return err400(res, 'Message body required');
+  if (typeof body !== 'string' || !body.trim()) return fail(req, res, 400, 'msgs.err.body_required');
   // message_type: 'chat' (quick message) | 'note' (full legal correspondence)
   const msgType  = req.body.message_type === 'note' ? 'note' : 'chat';
   const maxLen   = msgType === 'note' ? 50_000 : 10_000;
@@ -506,7 +534,7 @@ router.post('/:caseId', authRequired, async (req, res, next) => {
   try {
     const db  = await getDb();
     const acc = await getCaseAccess(db, req.user, caseId);
-    if (acc.error) return accessError(res, acc.error);
+    if (acc.error) return accessError(req, res, acc.error);
 
     const result = await db.run(
       `INSERT INTO case_messages
@@ -532,31 +560,33 @@ router.post('/:caseId', authRequired, async (req, res, next) => {
     return res.json({ message: decryptMessage(msg) });
   } catch (e) {
     logger.warn('[messages/send]', e?.message);
-    return err400(res, 'Failed to send message');
+    return fail(req, res, 500, 'msgs.err.send');
   }
 });
 
 // ── DELETE /messages/:id — soft delete ────────────────────────────────────
 router.delete('/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  if (!isId(id)) return err404(res, 'Message not found');
+  if (!isId(id)) return fail(req, res, 404, 'msgs.err.not_found');
   try {
     const db = await getDb();
-    const msg = await db.get(
-      `SELECT m.id, m.sender_id, c.user_id FROM case_messages m
-         JOIN cases c ON m.case_id = c.id
-        WHERE m.id = ?`,
+    const row = await db.get(
+      `SELECT m.id, m.sender_id, m.case_id FROM case_messages m
+         JOIN cases c ON m.case_id = c.id AND c.deleted_at IS NULL
+        WHERE m.id = ? AND m.deleted_at IS NULL`,
       [Number(id)]
     );
-    if (!msg) return err404(res, 'Message not found');
-    if (msg.sender_id !== req.user.id && msg.user_id !== req.user.id)
-      return err403(res, 'Cannot delete this message');
+    if (!row) return fail(req, res, 404, 'msgs.err.not_found');
+    const acc = await getCaseAccess(db, req.user, row.case_id);
+    if (acc.error) return fail(req, res, 404, 'msgs.err.not_found');
+    // Only the sender can take back a message (the other side keeps what they received).
+    if (Number(row.sender_id) !== Number(req.user.id)) return fail(req, res, 403, 'msgs.err.cannot_delete');
 
-    await db.run(`UPDATE case_messages SET deleted_at = NOW() WHERE id = ?`, [msg.id]);
+    await db.run(`UPDATE case_messages SET deleted_at = NOW() WHERE id = ?`, [row.id]);
     return res.json({ deleted: true });
   } catch (e) {
     logger.warn('[messages/delete]', e?.message);
-    return err400(res, 'Failed to delete');
+    return fail(req, res, 500, 'msgs.err.delete');
   }
 });
 

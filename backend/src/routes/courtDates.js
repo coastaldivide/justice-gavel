@@ -36,7 +36,7 @@ import { buildCourtDateIcs } from '../services/ics.js';
 import { courtDayGuidance } from '../services/courtDayGuidance.js';
 import { normalizeState } from '../services/rightsContent.js';
 import { smsLive, toE164 } from '../services/sms.js';
-import { todayInZone } from '../utils/timezone.js';
+import { todayInZone, stateTimeZone } from '../utils/timezone.js';
 import { notifyFollowersCourtDateChanged } from '../services/followers.js';
 import { isExpoPushToken } from '../services/expoPush.js';
 import { logIgnored } from '../utils/ignored.js';
@@ -394,7 +394,9 @@ router.get('/:id/ics', authRequired, async (req, res) => {
     const row = await loadOwned(db, req.user.id, id);
     if (!row) return res.status(404).json({ error: msg(lang, 'cd.err.not_found') });
     const cd = serializeCourtDate(row, null, lang);
-    const { tz } = await userToday(db, req.user.id, row.case_state);
+    const { tz: userTz } = await userToday(db, req.user.id, row.case_state);
+    // The hearing's time is the court's wall clock: the courthouse's (or the case state's) zone.
+    const tz = stateTimeZone(cd.courthouse?.state) || stateTimeZone(cd.case_state) || userTz;
     const place = cd.courthouse ? [cd.courthouse.name, cd.courthouse.address].filter(Boolean).join(', ') : null;
     const loc = [place, cd.location].filter(Boolean).join(' — ') || null;
     const desc = [
@@ -406,6 +408,8 @@ router.get('/:id/ics', authRequired, async (req, res) => {
     const ics = buildCourtDateIcs({
       uid: `court-date-${cd.id}@justicegavel.app`, courtDate: cd.court_date, courtTime: cd.court_time, tz,
       summary: msg(lang, 'cd.ics.summary', { case: cd.case_title }), location: loc, description: desc,
+      alarmDayBefore: msg(lang, 'cd.ics.alarm_day_before', { case: cd.case_title }),
+      alarmTwoHours: msg(lang, 'cd.ics.alarm_two_hours', { case: cd.case_title }),
     });
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="court-date-${cd.court_date}.ics"`);

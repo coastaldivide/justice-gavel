@@ -5,12 +5,15 @@
  *  - No time stored  → an all-day event on the court day
  *                      (DTSTART;VALUE=DATE / DTEND = next day). The day never
  *                      shifts, whatever zone the phone is in.
- *  - Time stored     → a timed event in the user's own zone:
+ *  - Time stored     → a timed event in the COURT's zone (the hearing's wall-clock
+ *                      time is the court's; the caller passes the zone of the
+ *                      courthouse / case state, else the user's):
  *                      DTSTART;TZID=<zone>:YYYYMMDDTHHMMSS (+1 h), with a
  *                      VTIMEZONE block generated from the zone's real UTC
  *                      offsets (DST transitions of the event's year and the
  *                      year before), as RFC 5545 §3.6.5 requires for TZID.
- *  - Alarms the day before (and 2 h before a timed event).
+ *  - Alarms the day before (and 2 h before a timed event); their text is the
+ *    caller's (the person's language).
  * Text is escaped (\\ ; , newline) and lines are folded at 75 octets.
  */
 import { zonedParts, isValidTimeZone, parseDateOnly, addDays } from '../utils/timezone.js';
@@ -94,7 +97,8 @@ const utcStamp = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d
  * Build the .ics text. `courtDate` 'YYYY-MM-DD' (required), `courtTime`
  * 'HH:MM' or null, `tz` IANA zone (used only for a timed event).
  */
-export function buildCourtDateIcs({ uid, courtDate, courtTime = null, tz = 'America/Chicago', summary, location = null, description = null, url = null, now = new Date() }) {
+export function buildCourtDateIcs({ uid, courtDate, courtTime = null, tz = 'America/Chicago', summary, location = null, description = null, url = null,
+  alarmDayBefore = null, alarmTwoHours = null, now = new Date() }) {
   const p = parseDateOnly(courtDate);
   if (!p) throw new Error('courtDate must be YYYY-MM-DD');
   const ymd = `${p.y}${pad(p.m)}${pad(p.d)}`;
@@ -114,8 +118,8 @@ export function buildCourtDateIcs({ uid, courtDate, courtTime = null, tz = 'Amer
   if (location) lines.push(`LOCATION:${escapeIcsText(location)}`);
   if (description) lines.push(`DESCRIPTION:${escapeIcsText(description)}`);
   if (url) lines.push(`URL:${url}`);
-  lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeIcsText(summary || 'Court date')} tomorrow`, 'TRIGGER:-P1D', 'END:VALARM');
-  if (timed) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeIcsText(summary || 'Court date')} in 2 hours`, 'TRIGGER:-PT2H', 'END:VALARM');
+  lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeIcsText(alarmDayBefore || `${summary || 'Court date'} tomorrow`)}`, 'TRIGGER:-P1D', 'END:VALARM');
+  if (timed) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeIcsText(alarmTwoHours || `${summary || 'Court date'} in 2 hours`)}`, 'TRIGGER:-PT2H', 'END:VALARM');
   lines.push('END:VEVENT', 'END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';
 }

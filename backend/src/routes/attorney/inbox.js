@@ -236,10 +236,12 @@ router.post('/inbox/accept/:assignmentId', authRequired, acceptLimiter, async (r
 
     // Notify the client their attorney accepted
     const { sendPushToUser } = await import('../../services/pushDelivery.js');
+    const { msg, userLang } = await import('../../i18n/index.js');
+    const lang = await userLang(db, assignment.client_id);
     await sendPushToUser(assignment.client_id, {
-      title: '✅ Attorney Accepted Your Case',
-      body: `${req.user.display_name || 'Your attorney'} accepted your case: ${assignment.title}`,
-      data: { screen: 'Messages', caseId: assignment.case_id },
+      title: msg(lang, 'msgs.push.attorney_accepted_title'),
+      body: msg(lang, 'msgs.push.attorney_accepted_body', { name: req.user.display_name || msg(lang, 'msgs.push.your_attorney'), title: assignment.title }),
+      data: { type: 'message', screen: 'Messages', caseId: Number(assignment.case_id), case_id: Number(assignment.case_id) },
       channelId: 'case_updates',
     }).catch(logIgnored('routes/attorney/inbox'));
 

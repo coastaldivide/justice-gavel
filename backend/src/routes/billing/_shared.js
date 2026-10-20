@@ -189,6 +189,20 @@ export async function getOrCreateStripeCustomer(user) {
   }
 }
 
+let lateStripe = null;
+/**
+ * The Stripe client: the one made at boot, or — when the key was set after the
+ * process started (a test, a hot config reload) — one made on first use.
+ * Null without a key (the billing gate answers 503 before any route needs it).
+ */
+export function stripeClient() {
+  if (stripe) return stripe;
+  const key = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
+  if (!key) return null;
+  if (!lateStripe) lateStripe = new Stripe(key, { timeout: 20_000, maxNetworkRetries: 2 });
+  return lateStripe;
+}
+
 export { stripe, LIVE, TIERS, billingLimiter };
 
 // Flat bondsman lead fee — defined once in ./leadFee.js, re-exported for billing routers.
