@@ -3021,7 +3021,7 @@
   "x_lawyer_profile_could_not_save_attorney": "Không thể lưu luật sư. Vui lòng thử lại.",
   "x_lawyer_profile_could_not_load_this": "Không thể tải thông tin luật sư này. Hãy kiểm tra kết nối và thử lại.",
   "x_lawyer_profile_attorney_profile_not_available": "Hồ sơ luật sư hiện không có.",
-  "x_lawyer_profile_jtb_verified": "Đã xác minh bởi JTB",
+  "x_lawyer_profile_jtb_verified": "Đã được Justice Gavel xác minh",
   "x_lawyer_profile_profile_information_pending_verifica": "Thông tin hồ sơ đang chờ xác minh",
   "x_lawyer_profile_this_attorney_has_not": "Luật sư này chưa xác nhận hồ sơ của mình. Thông tin liên hệ được lấy từ hồ sơ công khai của đoàn luật sư. Hãy kiểm tra chứng chỉ trước khi thuê.",
   "x_lawyer_profile_yrs_exp": "Năm kinh nghiệm",
@@ -3051,7 +3051,7 @@
   "x_lawyers_pro_bono": "Miễn phí (pro bono)",
   "x_lawyers_sliding_scale": "Phí theo thu nhập",
   "x_lawyers_what_does_justice_gavel": "\"Đã xác minh bởi Justice Gavel\" nghĩa là gì?",
-  "x_lawyers_jtb_verified": "✓ Đã xác minh bởi JTB",
+  "x_lawyers_jtb_verified": "Đã được Justice Gavel xác minh",
   "x_lawyers_view_full_profile": "Xem hồ sơ đầy đủ của {name}",
   "x_lawyers_book_consult": "Đặt lịch tư vấn",
   "x_lawyers_message_2": "Nhắn tin",
@@ -5056,5 +5056,6 @@
   "cd_clear_courthouse_a11y": "Bỏ chọn",
   "adm_rating_of_5": "{n}/5 sao",
   "gg_featured": "Nổi bật",
-  "sos_btn_hint": "Chạm, rồi xác nhận để gửi cảnh báo. Không có gì được gửi cho đến khi bạn xác nhận."
+  "sos_btn_hint": "Chạm, rồi xác nhận để gửi cảnh báo. Không có gì được gửi cho đến khi bạn xác nhận.",
+  "x_lawyer_card_verified": "Đã xác minh"
 }

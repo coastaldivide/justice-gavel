@@ -3021,7 +3021,7 @@
   "x_lawyer_profile_could_not_save_attorney": "No se pudo guardar al abogado. Inténtelo de nuevo.",
   "x_lawyer_profile_could_not_load_this": "No se pudo cargar a este abogado. Revise su conexión e inténtelo de nuevo.",
   "x_lawyer_profile_attorney_profile_not_available": "El perfil del abogado no está disponible.",
-  "x_lawyer_profile_jtb_verified": "Verificado por JTB",
+  "x_lawyer_profile_jtb_verified": "Verificado por Justice Gavel",
   "x_lawyer_profile_profile_information_pending_verifica": "Información del perfil pendiente de verificación",
   "x_lawyer_profile_this_attorney_has_not": "Este abogado todavía no ha reclamado su perfil. Los datos de contacto provienen de registros públicos del colegio de abogados. Verifique sus credenciales antes de contratarlo.",
   "x_lawyer_profile_yrs_exp": "Años de exp.",
@@ -3051,7 +3051,7 @@
   "x_lawyers_pro_bono": "Pro bono",
   "x_lawyers_sliding_scale": "Tarifa escalonada",
   "x_lawyers_what_does_justice_gavel": "¿Qué significa Verificado por Justice Gavel?",
-  "x_lawyers_jtb_verified": "✓ Verificado por JTB",
+  "x_lawyers_jtb_verified": "Verificado por Justice Gavel",
   "x_lawyers_view_full_profile": "Ver el perfil completo de {name}",
   "x_lawyers_book_consult": "Reservar consulta",
   "x_lawyers_message_2": "Mensaje",
@@ -5056,5 +5056,6 @@
   "cd_clear_courthouse_a11y": "Quitar",
   "adm_rating_of_5": "{n} de 5 estrellas",
   "gg_featured": "Destacado",
-  "sos_btn_hint": "Toque y luego confirme para enviar su alerta. No se envía nada hasta que confirme."
+  "sos_btn_hint": "Toque y luego confirme para enviar su alerta. No se envía nada hasta que confirme.",
+  "x_lawyer_card_verified": "Verificado"
 }

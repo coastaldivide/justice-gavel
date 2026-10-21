@@ -25,6 +25,7 @@ import { FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '
 import { hapticSelection } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
 import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
+import JTBLogo from '../components/JTBLogo';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
@@ -157,8 +158,8 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
       <View style={styles.centered}>
 
         {/* Logo mark */}
-        <View style={styles.logoWrap}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.logoText}>JTB</Text>
+        <View style={styles.logoMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <JTBLogo size={88} />
         </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.title}>Justice Gavel</Text>
@@ -228,13 +229,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 28,
   },
 
-  logoWrap: {
-    width: 64, height: 64, borderRadius: 14,
-    backgroundColor: colors.steel,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 12, ...SHADOW.md,
-  },
-  logoText:  { fontSize: 22, ...FONTS.black, color: colors.navy },
+  logoMark: { marginBottom: 12 },
   title:     { fontSize: 28, ...FONTS.black, color: colors.white, marginBottom: 4 },
   subtitle:  { fontSize: 12, lineHeight: 20, color: colors.steel, marginBottom: 36 },
 
@@ -248,14 +243,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   gateHint:  { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 20, textAlign: 'center' },
 
   yearInput: {
-    width: 160, height: 64,
+    width: '100%', maxWidth: 240, height: 64,
     borderWidth: 2, borderColor: colors.border,
     borderRadius: RADIUS.lg,
     textAlign: 'center',
     fontSize: 32, ...FONTS.black, color: colors.textBrand,
     backgroundColor: colors.bg,  // light bg fallback (AgeGateScreen is light-only)
     marginBottom: 8,
-    letterSpacing: 6,
+    letterSpacing: 3,
   },
   yearInputError: { borderColor: colors.emergency },
   errorText:      { fontSize: 12, color: colors.emergency, marginBottom: 10, textAlign: 'center' },
