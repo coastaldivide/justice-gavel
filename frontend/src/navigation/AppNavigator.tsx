@@ -12,6 +12,7 @@ import { t, useLang, locale, perLang } from '../i18n';
 import { COLORS } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
+import { AppIcon, ICONS, type IconName } from '../components/AppIcon';
 
 // ── Screen imports — all 70 screens (65 + 5 BarPrep) ──────────────────────────
 // ── Bar Exam Prep screens ────────────────────────────────────────────────────
@@ -163,9 +164,9 @@ const HDR = perLang(() => ({
   headerBackTitle: t('back'),
 }));
 
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  useLang();
-  return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.45 }}>{emoji}</Text>;
+/** Tab bar icon: the tab's Ionicon in the tab colour (the label below names it). */
+function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+  return <AppIcon name={name} size={focused ? 23 : 22} color={color} />;
 }
 
 // ── More stack — all secondary screens ────────────────────────────────────────
@@ -206,11 +207,11 @@ function MoreNavigator() {
       <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: t('x_nav_quick_connect') }} />
       <MoreStack.Screen name="ConsumerSubscription"  component={ConsumerSubscriptionScreen}  options={{ title: t('x_nav_choose_plan') }} />
       <MoreStack.Screen name="ArrestMonitor"         component={ArrestMonitorScreen}         options={{ title: t('x_nav_arrest_monitor') }} />
-      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: `🚨 ${t('nav_title_help_now')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: t('nav_title_help_now') }} />
       <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: t('x_nav_book_consultation') }} />
-      <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: `📋 ${t('rc_page_title')}` }} />
-      <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: `📅 ${t('ja_my_court_dates')}` }} />
-      <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: `📅 ${t('nav_title_court_date')}` }} />
+      <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: t('rc_page_title') }} />
+      <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: t('ja_my_court_dates') }} />
+      <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: t('nav_title_court_date') }} />
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: t('x_nav_daily_check'), headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: t('x_nav_check_manager') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
@@ -244,8 +245,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="DrugPenalties"         component={LegalPenaltiesScreen}         options={{ title: t('x_nav_drug_charge_penalties') }} />
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: t('x_nav_specialty_courts') }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: t('x_nav_court_locator') }} />
-      <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: `💰 ${t('bail_calculator')}` }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: `🚨 ${t('nav_title_just_arrested')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: t('bail_calculator') }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: t('x_nav_court_forms') }} />
       <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: t('x_nav_document_scanner') }} />
@@ -309,11 +310,11 @@ function MainTabs() {
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
-      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
-      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
-      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
-      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: t('tab_bail_help'),tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
+      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.message} color={color} focused={focused} /> }} />
+      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
+      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: t('tab_bail_help'),tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.bail} color={color} focused={focused} /> }} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
     </Tab.Navigator>
     </ErrorBoundary>
   );

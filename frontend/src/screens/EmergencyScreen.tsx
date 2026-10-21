@@ -22,14 +22,15 @@ import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { useConfirm } from '../hooks/useConfirm';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 
 type Phase = 'ready' | 'countdown' | 'sending' | 'done' | 'error';
 
-const RIGHTS_CARDS = perLang(() => [
-  { icon: '🤐', title: t('x_emergency_stay_silent'), body: t('x_emergency_say_i_am_invoking') },
-  { icon: '⚖️', title: t('x_emergency_ask_lawyer'), body: t('x_emergency_say_i_want_lawyer') },
-  { icon: '🚗', title: t('x_emergency_refuse_searches'), body: t('x_emergency_say_i_do_not') },
-  { icon: '📞', title: t('x_emergency_phone_call'), body: t('x_emergency_have_right_call_call') },
+const RIGHTS_CARDS = perLang((): { icon: IconName; title: string; body: string }[] => [
+  { icon: ICONS.silent, title: t('x_emergency_stay_silent'), body: t('x_emergency_say_i_am_invoking') },
+  { icon: ICONS.lawyer, title: t('x_emergency_ask_lawyer'), body: t('x_emergency_say_i_want_lawyer') },
+  { icon: ICONS.car, title: t('x_emergency_refuse_searches'), body: t('x_emergency_say_i_do_not') },
+  { icon: ICONS.phone, title: t('x_emergency_phone_call'), body: t('x_emergency_have_right_call_call') },
 ]);
 
 function EmergencyScreen({ navigation }: ScreenProps) {
@@ -122,17 +123,17 @@ function EmergencyScreen({ navigation }: ScreenProps) {
       <View style={styles.emergencyStrip}>
         <TouchableOpacity
           accessibilityRole="button"
-          style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
+          style={[styles.stripBtn, { backgroundColor: colors.emergencyBg, borderColor: colors.emergency }]}
           accessibilityLabel={t('x_emergency_call_911')} onPress={() => call('911')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>{t('x_emergency_call_911_2')}</Text>
+          <IconLabel center icon={ICONS.phoneFilled} color={colors.emergency} textStyle={styles.stripBtnText}>{t('x_emergency_call_911_2')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          style={[styles.stripBtn, { backgroundColor: colors.blue }]}
+          style={[styles.stripBtn, { backgroundColor: colors.infoBg, borderColor: colors.info }]}
           accessibilityLabel={t('x_emergency_crisis_988')} onPress={() => call('988')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>{t('x_emergency_crisis_988')}</Text>
+          <IconLabel center icon={ICONS.crisis} color={colors.info} textStyle={styles.stripBtnText}>{t('x_emergency_crisis_988')}</IconLabel>
         </TouchableOpacity>
       </View>
 
@@ -160,7 +161,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
               accessibilityLabel={t('x_emergency_send_emergency_alert_contacts')}
               accessibilityHint={t('x_emergency_starts_5_second_countdown')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.sosBtnText}>{t('x_emergency_send_emergency_alert')}</Text>
+              <IconLabel center icon={ICONS.emergency} color={COLORS.emergencyDark} textStyle={styles.sosBtnText}>{t('x_emergency_send_emergency_alert')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -169,7 +170,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
               activeOpacity={0.85}
               accessibilityLabel={t('x_emergency_share_location_with_bail')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>{t('x_emergency_share_location_find_help')}</Text>
+              <IconLabel center icon={ICONS.share} color={COLORS.white} textStyle={styles.shareBtnText}>{t('x_emergency_share_location_find_help')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -242,13 +243,13 @@ function EmergencyScreen({ navigation }: ScreenProps) {
       </Text>
       <View style={styles.quickGrid}>
         {[
-          { icon: '⚖️', label: t('x_emergency_find_lawyer'),    onPress: () => navigation.navigate('LawyersTab') },
-          { icon: '🔓', label: t('x_emergency_bail_agent'),      onPress: () => navigation.navigate('BailTab') },
-          { icon: '💬', label: t('x_emergency_ai_help'),         onPress: () => navigation.navigate('ChatTab') },
-          { icon: '🏛️', label: t('x_emergency_court_locator'),  onPress: () => navigation.navigate('MoreTab', { screen: 'CourtLocator' }) },
-          { icon: '📋', label: t('x_emergency_just_arrested'), onPress: () => navigation.navigate('MoreTab', { screen: 'JustArrested' }) },
-          { icon: '🧠', label: t('x_emergency_crisis_help'),    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
-        ].map(item => (
+          { icon: ICONS.lawyer, label: t('x_emergency_find_lawyer'),    onPress: () => navigation.navigate('LawyersTab') },
+          { icon: ICONS.bail, label: t('x_emergency_bail_agent'),      onPress: () => navigation.navigate('BailTab') },
+          { icon: ICONS.message, label: t('x_emergency_ai_help'),         onPress: () => navigation.navigate('ChatTab') },
+          { icon: ICONS.courthouse, label: t('x_emergency_court_locator'),  onPress: () => navigation.navigate('MoreTab', { screen: 'CourtLocator' }) },
+          { icon: ICONS.clipboard, label: t('x_emergency_just_arrested'), onPress: () => navigation.navigate('MoreTab', { screen: 'JustArrested' }) },
+          { icon: ICONS.crisis, label: t('x_emergency_crisis_help'),    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
+        ].map((item: { icon: IconName; label: string; onPress: () => void }) => (
           <TouchableOpacity accessibilityRole="button"
             key={item.label}
             style={[styles.quickBtn, { backgroundColor: colors.bgCard }]}
@@ -256,7 +257,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
             activeOpacity={0.75}
             accessibilityLabel={item.label.replace('\n', ' ')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickIcon}>{item.icon}</Text>
+            <AppIcon name={item.icon} size={24} color={colors.textBrand} style={styles.quickIcon} />
             <Text maxFontSizeMultiplier={1.2} style={[styles.quickLabel, { color: colors.textPrimary }]}>
               {item.label}
             </Text>
@@ -270,7 +271,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
       </Text>
       {RIGHTS_CARDS().map(c => (
         <View key={c.title} style={[styles.rightsCard, { backgroundColor: colors.bgCard }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.rightsIcon}>{c.icon}</Text>
+          <AppIcon name={c.icon} size={22} color={colors.textBrand} style={styles.rightsIcon} />
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.rightsTitle, { color: colors.textPrimary }]}>
               {c.title}
@@ -293,10 +294,10 @@ const makeStyles = () => StyleSheet.create({
     flexDirection: 'row', gap: 8, padding: 12, paddingTop: 16,
   },
   stripBtn: {
-    flex: 1, borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+    flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 8, minHeight: 52, justifyContent: 'center',
   },
   stripBtnText: {
-    color: COLORS.bgCard, fontSize: 16, fontWeight: '900', letterSpacing: 0.5,
+    fontSize: 15, fontWeight: '800', letterSpacing: 0.3,
   },
 
   sosPanel: {
@@ -350,7 +351,7 @@ const makeStyles = () => StyleSheet.create({
     width: '30.5%', borderRadius: 14, padding: 14, alignItems: 'center',
     elevation: 1, minHeight: 80, justifyContent: 'center',
   },
-  quickIcon: { fontSize: 24, marginBottom: 6 },
+  quickIcon: { marginBottom: 6 },
   quickLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 15 },
 
   rightsCard: {
@@ -358,7 +359,7 @@ const makeStyles = () => StyleSheet.create({
     marginHorizontal: 12, marginBottom: 10, borderRadius: 14,
     elevation: 1,
   },
-  rightsIcon: { fontSize: 22, marginTop: 2 },
+  rightsIcon: { marginTop: 2 },
   rightsTitle: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
   rightsBody: { fontSize: 12, lineHeight: 18 },
 });

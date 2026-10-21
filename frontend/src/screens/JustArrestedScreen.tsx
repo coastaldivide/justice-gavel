@@ -26,6 +26,7 @@ import { hapticImpact, RNShare, COPIED_ACTION } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { IllustrationRights } from '../components/Illustrations';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import {
   getCoreProgress, saveCoreProgress, setPendingRoute, fetchRightsCard, getCachedRightsCard, prefetchRights, reviewedLabel,
   type CoreStep, type RightsCardData,
@@ -185,17 +186,22 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.3} style={styles.stepTitle}>1. {t('ja_s1')}</Text>
             <TouchableOpacity accessibilityRole="button" testID="core-state-button" style={styles.stateBtn}
               accessibilityLabel={t('ja_state_a11y', { state: stateName || t('ja_choose_state') })} onPress={() => setPicker(true)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.stateBtnText}>📍 {t('ja_state')}: {stateName || t('ja_choose_state')}  ▾</Text>
+              <View style={styles.stateBtnRow}>
+                <IconLabel icon={ICONS.location} color={colors.textPrimary} textStyle={styles.stateBtnText} maxFontSizeMultiplier={1.3} style={{ flex: 1 }}>
+                  {t('ja_state')}: {stateName || t('ja_choose_state')}
+                </IconLabel>
+                <AppIcon name={ICONS.chevronDown} size={18} color={colors.textSecond} />
+              </View>
             </TouchableOpacity>
 
             <View style={styles.sayBox} testID="core-script">
-              <Text maxFontSizeMultiplier={1.2} style={styles.sayLabel}>🗣 {t('ja_say')}</Text>
+              <IconLabel icon={ICONS.speak} color={colors.textSecond} textStyle={styles.sayLabel} maxFontSizeMultiplier={1.2} style={styles.boxLabelRow}>{t('ja_say')}</IconLabel>
               {sayLines.map((l, i) => (
                 <Text key={SAY_KEYS[i]} maxFontSizeMultiplier={1.6} style={styles.sayLine}>“{l}”</Text>
               ))}
             </View>
             <View style={styles.dontBox}>
-              <Text maxFontSizeMultiplier={1.2} style={styles.dontLabel}>✋ {t('ja_dont')}</Text>
+              <IconLabel icon={ICONS.rights} color={colors.textSecond} textStyle={styles.dontLabel} maxFontSizeMultiplier={1.2} style={styles.boxLabelRow}>{t('ja_dont')}</IconLabel>
               {dontLines.map((l, i) => (
                 <Text key={DONT_KEYS[i]} maxFontSizeMultiplier={1.6} style={styles.dontLine}>• {l}</Text>
               ))}
@@ -204,12 +210,14 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
               {t('rc_source')}: {scriptSource}{scriptReviewed ? ` · ${t('rc_last_reviewed')}: ${reviewedLabel(scriptReviewed)}` : ''} · {t('rc_lawyer_pending')}
             </Text>
             {!!card?.state_notice && stateCode && (card.language || 'en') === lang && (
-              <Text maxFontSizeMultiplier={1.4} style={styles.notice} testID="core-state-notice">ℹ️ {card.state_notice}</Text>
+              <View style={styles.notice}>
+                <IconLabel icon={ICONS.alertNormal} color={colors.textPrimary} textStyle={styles.noticeText} testID="core-state-notice">{card.state_notice}</IconLabel>
+              </View>
             )}
 
             <TouchableOpacity accessibilityRole="button" testID="core-open-rights-card" style={styles.secondaryBtn}
               onPress={() => { finishStep('rights'); openScreen('RightsCard'); }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>📋 {t('ja_full_card')}</Text>
+              <IconLabel center icon={ICONS.clipboard} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_full_card')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="core-next-1" style={styles.primaryBtn}
               onPress={() => finishStep('rights', 2)}>
@@ -224,11 +232,11 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.body}>{t('ja_step2_body')}</Text>
             <TouchableOpacity accessibilityRole="button" testID="core-find-help" style={styles.primaryBtn}
               onPress={() => { finishStep('help'); openScreen('HelpNow'); }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>⚖️ {t('ja_find_help')}</Text>
+              <IconLabel center icon={ICONS.lawyer} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_find_help')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="core-share-family" style={styles.secondaryBtn}
               onPress={() => openScreen('EmergencyShare')}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>👨‍👩‍👧 {t('ja_share_family')}</Text>
+              <IconLabel center icon={ICONS.family} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_share_family')}</IconLabel>
             </TouchableOpacity>
             <View style={styles.navRow}>
               <TouchableOpacity accessibilityRole="button" style={styles.navBtn} onPress={() => goStep(1)}>
@@ -249,11 +257,11 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             {signedIn ? (
               <TouchableOpacity accessibilityRole="button" testID="core-add-court-date" style={styles.primaryBtn}
                 onPress={() => { finishStep('court'); openScreen('CourtDates', { add: true }); }}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>📅 {t('ja_add_court')}</Text>
+                <IconLabel center icon={ICONS.calendar} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_add_court')}</IconLabel>
               </TouchableOpacity>
             ) : (
               <View style={styles.signInBox} testID="core-court-sign-in">
-                <Text maxFontSizeMultiplier={1.4} style={styles.signInText}>🔐 {t('ja_court_signin')}</Text>
+                <IconLabel icon={ICONS.lock} color={colors.textPrimary} textStyle={styles.signInText}>{t('ja_court_signin')}</IconLabel>
                 <TouchableOpacity accessibilityRole="button" testID="core-sign-up" style={styles.primaryBtn} onPress={() => openScreen('Register')}>
                   <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ja_create')}</Text>
                 </TouchableOpacity>
@@ -264,12 +272,12 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             )}
             {signedIn && (
               <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => openScreen('CourtDates')}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🗓 {t('ja_my_court_dates')}</Text>
+                <IconLabel center icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_my_court_dates')}</IconLabel>
               </TouchableOpacity>
             )}
             <TouchableOpacity accessibilityRole="button" testID="core-missed" style={styles.secondaryBtn}
               onPress={() => openScreen('CourtDates', { guidance: 'missed' })}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>❓ {t('ja_missed')}</Text>
+              <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>
             </TouchableOpacity>
             <View style={styles.navRow}>
               <TouchableOpacity accessibilityRole="button" style={styles.navBtn} onPress={() => goStep(2)}>
@@ -282,18 +290,18 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         {/* Always there: emergency numbers and the family alert */}
         <View style={styles.emergencyRow}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_911_a11y')} style={styles.btn911} onPress={() => call('911')}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>📞 {t('cp_call_911')}</Text>
+            <IconLabel center icon={ICONS.phoneFilled} color={colors.emergency} textStyle={styles.emergencyText} maxFontSizeMultiplier={1.2}>{t('cp_call_911')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_988_a11y')} style={styles.btn988} onPress={() => call('988')}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>💙 {t('cp_crisis_988')}</Text>
+            <IconLabel center icon={ICONS.crisis} color={colors.info} textStyle={styles.emergencyText} maxFontSizeMultiplier={1.2}>{t('cp_crisis_988')}</IconLabel>
           </TouchableOpacity>
         </View>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('ja_alert_family_a11y')} style={styles.familyBtn} onPress={alertFamily}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.familyBtnText}>💬 {t('ja_alert_family')}</Text>
+          <IconLabel center icon={ICONS.message} color={colors.white} textStyle={styles.familyBtnText} maxFontSizeMultiplier={1.3}>{t('ja_alert_family')}</IconLabel>
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
-          ⚖️ {t('ja_disclaimer')}
-        </Text>
+        <IconLabel icon={ICONS.alertNormal} color={colors.textMuted} textStyle={styles.disclaimer} size={14} style={styles.disclaimerRow}>
+          {t('ja_disclaimer')}
+        </IconLabel>
       </ScrollView>
 
       <Modal visible={picker} transparent animationType="slide" onRequestClose={() => setPicker(false)} accessibilityViewIsModal>
@@ -332,15 +340,18 @@ const makeStyles = (c: any) => StyleSheet.create({
   stepTitle: { color: c.textPrimary, fontSize: 24, fontWeight: '900', marginBottom: 8 },
   body: { color: c.textSecond, fontSize: 17, lineHeight: 25, marginBottom: 12 },
   stateBtn: { backgroundColor: c.bgCard, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 12, minHeight: 44, marginBottom: 12 },
+  stateBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stateBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
+  boxLabelRow: { marginBottom: 8 },
   sayBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginBottom: 12 },
-  sayLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+  sayLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   sayLine: { color: c.textPrimary, fontSize: 24, lineHeight: 32, fontWeight: '800', marginBottom: 8 },
   dontBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.emergencyDark, marginBottom: 8 },
-  dontLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+  dontLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   dontLine: { color: c.textPrimary, fontSize: 19, lineHeight: 27, fontWeight: '700', marginBottom: 4 },
   sourceLine: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 8 },
-  notice: { color: c.textPrimary, backgroundColor: c.infoBg, borderRadius: 10, padding: 10, fontSize: 14, marginBottom: 8 },
+  notice: { backgroundColor: c.infoBg, borderRadius: 10, padding: 10, marginBottom: 8 },
+  noticeText: { color: c.textPrimary, fontSize: 14, lineHeight: 20 },
   primaryBtn: { backgroundColor: c.navy, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center', minHeight: 52, marginTop: 8 },
   primaryBtnText: { color: c.white, fontSize: 18, fontWeight: '900', textAlign: 'center' },
   secondaryBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center', minHeight: 48, marginTop: 8 },
@@ -353,12 +364,13 @@ const makeStyles = (c: any) => StyleSheet.create({
   signInBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: c.border },
   signInText: { color: c.textPrimary, fontSize: 17, lineHeight: 24, fontWeight: '600' },
   emergencyRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  btn911: { flex: 1, backgroundColor: c.emergencyDark, borderRadius: 14, paddingVertical: 16, alignItems: 'center', minHeight: 52 },
-  btn988: { flex: 1, backgroundColor: c.blue, borderRadius: 14, paddingVertical: 16, alignItems: 'center', minHeight: 52 },
-  emergencyText: { color: c.white, fontWeight: '900', fontSize: 16 },
+  btn911: { flex: 1, backgroundColor: c.emergencyBg, borderColor: c.emergency, borderWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8, justifyContent: 'center', minHeight: 52 },
+  btn988: { flex: 1, backgroundColor: c.infoBg, borderColor: c.info, borderWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8, justifyContent: 'center', minHeight: 52 },
+  emergencyText: { fontWeight: '800', fontSize: 15 },
   familyBtn: { backgroundColor: c.legalDark, borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
   familyBtnText: { color: c.white, fontWeight: '800', fontSize: 15 },
-  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 12, fontStyle: 'italic' },
+  disclaimerRow: { marginTop: 12, alignItems: 'flex-start' },
+  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, fontStyle: 'italic' },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
   sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 8 },

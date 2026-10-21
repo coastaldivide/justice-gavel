@@ -1,5 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, ICONS, type IconName } from '../components/AppIcon';
 /**
  * CrisisResourcesScreen -- Mental health & crisis resources
  *
@@ -50,10 +50,10 @@ const CRISIS_LINES = perLang((): CrisisLine[] => [
 ]);
 
 // ── Self-help grounding tips ──────────────────────────────────────────────────
-const GROUNDING = perLang(() => [
-  { icon: '🫁', title: t('crisis_breathe_title'), body: t('crisis_breathe_body') },
-  { icon: '👁️', title: t('crisis_ground_title'), body: t('crisis_ground_body') },
-  { icon: '📍', title: t('crisis_safe_title'), body: t('crisis_safe_body') },
+const GROUNDING = perLang((): { icon: IconName; title: string; body: string }[] => [
+  { icon: ICONS.breathe, title: t('crisis_breathe_title'), body: t('crisis_breathe_body') },
+  { icon: ICONS.ground, title: t('crisis_ground_title'), body: t('crisis_ground_body') },
+  { icon: ICONS.location, title: t('crisis_safe_title'), body: t('crisis_safe_body') },
 ]);
 
 // Plain helper (no hooks): call (or text) a crisis line; report failure via
@@ -151,7 +151,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={styles.groundingLabel}>{t('crisis_grounding_label')}</Text>
         {GROUNDING().map((g, i) => (
           <View key={`GROUNDIN-${i}`} style={styles.groundingRow}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.groundingIcon}>{g.icon}</Text>
+            <AppIcon name={g.icon} size={24} color={colors.textBrand} style={styles.groundingIcon} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.groundingTitle, { color: colors.textPrimary }]}>{g.title}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.groundingBody,  { color: colors.textSecond }]}>{g.body}</Text>
@@ -234,7 +234,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
           accessibilityLabel={t('x_crisis_resources_get_immediate_help')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>🔓</Text>
+          <AppIcon name={ICONS.location} size={20} color={COLORS.white} />
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>{t('help_now')}</Text>
         </TouchableOpacity>
       </View>
@@ -298,7 +298,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.border,
   },
-  groundingIcon:  { fontSize: 20, marginTop: 1 },
+  groundingIcon:  { marginTop: 1 },
   groundingTitle: { fontSize: 14,
     lineHeight: 21, ...FONTS.heavy, marginBottom: 2 },
   groundingBody:  { fontSize: 12, lineHeight: 18 },
@@ -335,7 +335,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1, borderRadius: RADIUS.lg, paddingVertical: 16,
     alignItems: 'center', gap: 8, ...SHADOW.sm,
   },
-  legalBtnIcon: { fontSize: 20 },
   legalBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, ...FONTS.black },
 
   footer: {

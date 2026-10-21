@@ -241,7 +241,10 @@ describe('HelpNowScreen — lawyers and bail agents together', () => {
     expect(screen.getByTestId('help-247-badge')).toBeTruthy();
     expect(screen.getByTestId('help-public-defender')).toBeTruthy();
     expect(screen.getByTestId('help-inmate-lookup')).toBeTruthy();
-    expect(screen.getByText(/Never by payment/)).toBeTruthy();
+    // Results first: the ranking explanation is folded under "How results are sorted"
+    expect(screen.queryByText(/Never by payment/)).toBeNull();
+    fireEvent.press(screen.getByTestId('help-sort-toggle'));
+    expect(screen.getByTestId('help-ranking-note').props.children.join('')).toMatch(/Never by payment.*Call to confirm/);
     expect(calls.find(c => c.url === '/help/nearby')).toBeTruthy();
   });
 
@@ -448,7 +451,7 @@ describe('CourtDateDetailScreen', () => {
     on('get', '/cases/3/followers', []);
     on('get', '/court-dates/preferences', { sms_reminders: false, has_phone: false, sms_available: false });
     wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
-    expect(await screen.findByText('🏛️ Davidson County Courthouse')).toBeTruthy();
+    expect(await screen.findByText('Davidson County Courthouse')).toBeTruthy();
     expect(screen.getAllByTestId('court-reminder-row')).toHaveLength(4);
     expect(screen.getByText(/7 days before/)).toBeTruthy();
     expect(screen.getByText(/Morning of/)).toBeTruthy();
@@ -505,7 +508,7 @@ describe('CourtDateDetailScreen', () => {
     on('get', '/court-dates/7', () => netErr());
     wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
     expect(await screen.findByTestId('court-date-offline')).toBeTruthy();
-    expect(screen.getByText('🏛️ Davidson County Courthouse')).toBeTruthy();
+    expect(screen.getByText('Davidson County Courthouse')).toBeTruthy();
   });
 
   it('someone else\'s / unknown id → "could not be found"', async () => {
@@ -530,10 +533,10 @@ describe('EmergencyShareScreen — arrest details for the family', () => {
     fireEvent.press(screen.getByTestId('emergency-share-go'));
     const preview = await screen.findByTestId('emergency-share-preview');
     const text = String(preview.props.children);
-    expect(text).toContain('👤 Arrested: Jordan Lee');
-    expect(text).toContain('🏢 Held at: Davidson County Jail');
-    expect(text).toContain('🔢 Booking number: B-2026-4411');
-    expect(text).toContain('📄 Charges: DUI');
+    expect(text).toContain('Arrested: Jordan Lee');
+    expect(text).toContain('Held at: Davidson County Jail');
+    expect(text).toContain('Booking number: B-2026-4411');
+    expect(text).toContain('Charges: DUI');
     expect(text).toContain('(615) 555-0199');
   });
 });

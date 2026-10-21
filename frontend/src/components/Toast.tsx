@@ -9,6 +9,7 @@ import React, {
   useRef, useEffect,
 } from 'react';
 import { TOAST_TINTS, COLORS as THEME_COLORS } from '../constants/theme';
+import { AppIcon, ICONS as APP_ICONS, type IconName } from './AppIcon';
 import {
   View, Text, Animated, StyleSheet, Platform,
   AccessibilityInfo,
@@ -37,11 +38,11 @@ export function useToast() {
 
 const VARIANT_COLORS: Record<ToastVariant, { bg: string; text: string; border: string }> = TOAST_TINTS;
 
-const ICONS: Record<ToastVariant, string> = {
-  success: '✓',
-  error:   '✕',
-  info:    'ℹ',
-  warning: '⚠',
+const ICONS: Record<ToastVariant, IconName> = {
+  success: APP_ICONS.checkmark,
+  error:   APP_ICONS.close,
+  info:    APP_ICONS.alertNormal,
+  warning: APP_ICONS.alertHigh,
 };
 
 function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number) => void }) {
@@ -75,7 +76,7 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number
       accessibilityLabel={toast.message}
     >
       <View style={[s.icon, { backgroundColor: variantColors.text }]}>
-        <Text style={s.iconText}>{ICONS[toast.variant]}</Text>
+        <AppIcon name={ICONS[toast.variant]} size={16} color={THEME_COLORS.white} />
       </View>
       <Text
         maxFontSizeMultiplier={1.2}
@@ -151,6 +152,5 @@ const s = StyleSheet.create({
     marginLeft:     10,
     flexShrink:     0,
   },
-  iconText:  { color: THEME_COLORS.white, fontSize: 14, fontWeight: '700' },
   message:   { flex: 1, fontSize: 14, fontWeight: '500', lineHeight: 20 },
 });

@@ -1,7 +1,7 @@
 import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * EmergencyShareScreen -- One-tap emergency share
  *
@@ -250,7 +250,7 @@ function EmergencyShareScreen({ navigation }: ScreenProps) {
     return (
       <View style={{ flex:1, backgroundColor:colors.bgSubtle, alignItems:'center', justifyContent:'center' }}
         testID="emergency-share-screen">
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>
+        <AppIcon name={ICONS.calm} size={28} color={colors.textMuted} />
       </View>
     );
   }
@@ -325,13 +325,15 @@ if (phase === 'ready') return (
 
       <View style={styles.whatIncluded}>
         <Text maxFontSizeMultiplier={1.4} style={styles.whatTitle}>{t('x_emergency_share_what_s_included')}</Text>
-        {[
-          t('x_emergency_share_live_gps_location_google'),
-          t('x_emergency_share_nearest_bail_bondsman_phone'),
-          t('x_emergency_share_nearest_criminal_defense_lawyer'),
-          t('x_emergency_share_name_so_contacts_know'),
-          t('x_emergency_share_arrest_details_typed_above'),
-        ].map(item => <Text maxFontSizeMultiplier={1.4} key={item} style={styles.whatItem}>{item}</Text>)}
+        {([
+          [ICONS.location, t('x_emergency_share_live_gps_location_google')],
+          [ICONS.bail, t('x_emergency_share_nearest_bail_bondsman_phone')],
+          [ICONS.lawyer, t('x_emergency_share_nearest_criminal_defense_lawyer')],
+          [ICONS.user, t('x_emergency_share_name_so_contacts_know')],
+          [ICONS.courthouse, t('x_emergency_share_arrest_details_typed_above')],
+        ] as [IconName, string][]).map(([icon, item]) => (
+          <IconLabel key={item} icon={icon} size={16} color={colors.textSecond} textStyle={styles.whatItem} style={styles.whatRow}>{item}</IconLabel>
+        ))}
       </View>
 
       <TouchableOpacity accessibilityRole="button"
@@ -341,7 +343,7 @@ if (phase === 'ready') return (
         testID="emergency-share-go"
         activeOpacity={0.85}
        accessibilityLabel={t('x_emergency_share_get_info_preview_message')}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</Text>
+        <IconLabel center icon={ICONS.emergency} color={COLORS.bgCard} textStyle={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</IconLabel>
       </TouchableOpacity>
 
       {canEditContacts && (
@@ -386,7 +388,7 @@ if (phase === 'ready') return (
           onPress={() => Linking.openURL(smsUrl('741741', 'HOME')).catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>💬</Text>
+            <AppIcon name={ICONS.message} size={20} color={colors.legal} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>Crisis Text Line</Text>
@@ -401,7 +403,7 @@ if (phase === 'ready') return (
           onPress={() => Linking.openURL('tel:18009506264').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.warnBg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🧠</Text>
+            <AppIcon name={ICONS.mentalHealth} size={20} color={colors.warnDark} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_nami_helpline')}</Text>
@@ -416,7 +418,7 @@ if (phase === 'ready') return (
           onPress={() => Linking.openURL('tel:18007994889').catch(() => showToast(t('action_failed'), 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🏥</Text>
+            <AppIcon name={ICONS.medical} size={20} color={colors.textBrand} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_samhsa_national_helpline')}</Text>
@@ -439,7 +441,7 @@ if (phase === 'ready') return (
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_national_domestic_violence_hotline')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisDetail}>{t('x_emergency_share_1_800_799_7233')}</Text>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>↗</Text>
+          <AppIcon name={ICONS.external} size={18} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -526,7 +528,7 @@ if (phase === 'ready') return (
       {/* Provider cards */}
       {bondsman && (
         <View style={styles.providerCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.providerLabel}>{t('x_emergency_share_bail_bondsman')}</Text>
+          <IconLabel icon={ICONS.bail} size={13} color={COLORS.bail} textStyle={styles.providerLabel}>{t('x_emergency_share_bail_bondsman')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{bondsman.name}</Text>
           {bondsman.phone && (
             <TouchableOpacity
@@ -541,7 +543,7 @@ if (phase === 'ready') return (
       )}
       {lawyer && (
         <View style={[styles.providerCard, { borderLeftColor: COLORS.legal }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.providerLabel, { color: COLORS.legal }]}>{t('x_emergency_share_lawyer')}</Text>
+          <IconLabel icon={ICONS.lawyer} size={13} color={COLORS.legal} textStyle={[styles.providerLabel, { color: COLORS.legal }]}>{t('x_emergency_share_lawyer')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{lawyer.name}</Text>
           {lawyer.phone && (
             <TouchableOpacity
@@ -561,7 +563,7 @@ if (phase === 'ready') return (
         onPress={sendShare}
         testID="emergency-share-send"
        accessibilityLabel={t('x_emergency_share_send_now')}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>{t('x_emergency_share_send_now')}</Text>
+        <IconLabel center icon={ICONS.send} color={COLORS.bgCard} textStyle={styles.sendBtnText}>{t('x_emergency_share_send_now')}</IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>{t('x_emergency_share_opens_messages_app')}</Text>
       </TouchableOpacity>
 
@@ -606,6 +608,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   whatIncluded:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm },
   whatTitle:     { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 8 },
   whatItem:      { fontSize: 12, color: COLORS.textSecond, lineHeight: 22 },
+  whatRow:       { marginBottom: 2 },
 
   goBtn:         { backgroundColor: COLORS.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
   goBtnDisabled: { backgroundColor: COLORS.textMuted },
@@ -687,7 +690,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0 },
-  crisisIconText: { fontSize: 18 },
   crisisInfo:     { flex: 1 },
   crisisName:     { fontSize: 12, ...FONTS.semiBold, color: COLORS.textPrimary },
   crisisDetail:   { fontSize: 11, ...FONTS.regular, color: COLORS.textMuted, marginTop: 1 },

@@ -13,6 +13,7 @@ import { t, useLang } from '../i18n';
 import { useTheme } from '../constants/theme';
 import { hapticCall } from '../services/haptics';
 import { formatPhone, telUrl, smsUrl, directionsUrl, websiteUrl } from '../utils/contact';
+import { IconLabel, ICONS } from './AppIcon';
 
 export interface ContactListing {
   name?: string | null;
@@ -43,9 +44,9 @@ export function ContactActions({ listing, testID, primaryColor }: { listing: Con
           accessibilityLabel={t('ca_call_a11y', { name: listing.name || '', phone: shown })}
           style={[styles.call, { backgroundColor: primaryColor || colors.legalDark }]}
           onPress={() => { hapticCall(); open(tel, 'cp_dial_manually', { num: shown }); }}>
-          <Text maxFontSizeMultiplier={1.3} style={[styles.callText, { color: colors.white }]} numberOfLines={1}>
+          <IconLabel center icon={ICONS.phoneFilled} color={colors.white} textStyle={styles.callText} maxFontSizeMultiplier={1.3} numberOfLines={1}>
             {t('ca_call', { phone: shown })}
-          </Text>
+          </IconLabel>
         </TouchableOpacity>
       ) : (
         <Text testID="contact-no-phone" maxFontSizeMultiplier={1.3} style={[styles.noPhone, { color: colors.textMuted, backgroundColor: colors.bgSubtle }]}>
@@ -57,21 +58,21 @@ export function ContactActions({ listing, testID, primaryColor }: { listing: Con
           <TouchableOpacity accessibilityRole="button" testID="contact-text" accessibilityLabel={t('ca_text_a11y', { name: listing.name || '' })}
             style={[styles.small, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
             onPress={() => open(sms, 'hn_text_unavailable')}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.smallText, { color: colors.textPrimary }]} numberOfLines={1}>{t('x_match_text')}</Text>
+            <IconLabel center icon={ICONS.message} size={15} color={colors.textPrimary} textStyle={styles.smallText} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('x_match_text')}</IconLabel>
           </TouchableOpacity>
         )}
         {dir && (
           <TouchableOpacity accessibilityRole="button" testID="contact-directions" accessibilityLabel={t('ca_directions_a11y', { name: listing.name || '' })}
             style={[styles.small, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
             onPress={() => open(dir, 'hn_maps_unavailable')}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.smallText, { color: colors.textPrimary }]} numberOfLines={1}>{t('ca_directions')}</Text>
+            <IconLabel center icon={ICONS.directions} size={15} color={colors.textPrimary} textStyle={styles.smallText} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('ca_directions')}</IconLabel>
           </TouchableOpacity>
         )}
         {web && (
           <TouchableOpacity accessibilityRole="link" testID="contact-website" accessibilityLabel={t('ca_website_a11y', { name: listing.name || '' })}
             style={[styles.small, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
             onPress={() => open(web, 'action_failed')}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.smallText, { color: colors.textPrimary }]} numberOfLines={1}>{t('ca_website')}</Text>
+            <IconLabel center icon={ICONS.globe} size={15} color={colors.textPrimary} textStyle={styles.smallText} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('ca_website')}</IconLabel>
           </TouchableOpacity>
         )}
       </View>

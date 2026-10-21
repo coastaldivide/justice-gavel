@@ -113,7 +113,7 @@ describe('BookingScreen', () => {
     on('get', '/consultations/prefill', { suggested_notes: null });
     wrap(<BookingScreen navigation={makeNavigation()} route={route} />);
     expect(await screen.findByTestId('booking-not-on-app')).toBeTruthy();
-    expect(screen.getByText('📞 Call (615) 555-0001')).toBeTruthy();
+    expect(screen.getByText('Call (615) 555-0001')).toBeTruthy();
     expect(screen.queryByTestId('booking-next')).toBeNull();
   });
 });

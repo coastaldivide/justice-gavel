@@ -20,6 +20,7 @@ import { TOAST_ACCENTS, COLORS as THEME_COLORS } from '../constants/theme';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS as APP_ICONS, type IconName } from './AppIcon';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -48,11 +49,11 @@ const COLORS: Record<ToastType, string> = {
   info:    TOAST_ACCENTS.info,
 };
 
-const ICONS: Record<ToastType, string> = {
-  success: '✓',
-  error:   '✕',
-  warning: '⚠',
-  info:    'ℹ',
+const ICONS: Record<ToastType, IconName> = {
+  success: APP_ICONS.checkmark,
+  error:   APP_ICONS.close,
+  warning: APP_ICONS.alertHigh,
+  info:    APP_ICONS.alertNormal,
 };
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
@@ -70,11 +71,11 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   return (
     <Animated.View style={[styles.toast, { opacity }]}>
       <View style={[styles.indicator, { backgroundColor: COLORS[toast.type] }]}>
-        <Text style={styles.icon}>{ICONS[toast.type]}</Text>
+        <AppIcon name={ICONS[toast.type]} size={16} color={THEME_COLORS.white} />
       </View>
       <Text style={styles.message} numberOfLines={3}>{toast.message}</Text>
       <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_toast_provider_dismiss_notification')} onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Text style={styles.close}>✕</Text>
+        <AppIcon name={APP_ICONS.close} size={16} color={styles.close.color} style={styles.close} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -139,11 +140,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     marginRight:    12,
   },
-  icon: {
-    color:      THEME_COLORS.white,
-    fontSize:   14,
-    fontWeight: '700',
-  },
   message: {
     flex:       1,
     color:      THEME_COLORS.white,
@@ -152,7 +148,6 @@ const styles = StyleSheet.create({
   },
   close: {
     color:      'rgba(255,255,255,0.5)',
-    fontSize:   12,
     marginLeft: 8,
   },
 });

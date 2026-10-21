@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import { COLORS } from '../constants/theme';
+import { AppIcon, ICONS } from './AppIcon';
 /**
  * ErrorBoundary — catches unhandled render errors in the React tree.
  *
@@ -45,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
       const chunk = isChunkLoadError(this.state.error);
       return (
         <View style={styles.container} testID="error-boundary">
-          <Text style={styles.icon}>{chunk ? '📡' : '⚠️'}</Text>
+          <AppIcon name={chunk ? ICONS.offline : ICONS.alertHigh} size={48} color={COLORS.steel} style={styles.icon} />
           <Text style={styles.title}>{chunk ? t('no_internet') : t('error_generic')}</Text>
           <Text style={styles.sub}>
             {chunk ? t('eb_needs_connection') : t('x_error_boundary_unexpected_error_occurred')}
@@ -62,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 const styles = StyleSheet.create({
   container: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor:COLORS.navy, padding:24 },
-  icon:      { fontSize:48, marginBottom:16 },
+  icon:      { marginBottom:16 },
   title:     { color:COLORS.white, fontSize:20, fontWeight:'900', marginBottom:8, textAlign:'center' },
   sub:       { color:COLORS.steel, fontSize:13, textAlign:'center', marginBottom:24, lineHeight:19 },
   btn:       { backgroundColor:COLORS.blue, borderRadius:12, paddingVertical:13, paddingHorizontal:32 },

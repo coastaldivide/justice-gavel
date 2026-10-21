@@ -219,6 +219,7 @@ async function coreJourney(browser, base) {
     const cards = await byTid(page, 'help-bail-card').count() + await byTid(page, 'help-lawyer-card').count();
     const badges = await byTid(page, 'help-247-badge').count();
     if (!cards || badges !== cards) throw new Error(`24/7 filter: ${cards} cards but ${badges} 24/7 badges`);
+    await byTid(page, 'help-sort-toggle').click();   // UI pass 1: the ranking note sits behind "How results are sorted"
     const note = await byTid(page, 'help-ranking-note').innerText();
     if (!/Never by payment/.test(note)) throw new Error('ranking note missing');
     await page.screenshot({ path: path.join(OUT, 'CORE-3-help-24-7.png') });
@@ -471,6 +472,7 @@ async function langJourney(browser, base, lang, locale) {
     await noEnglish('hub step 2');
     await byTid(page, 'core-find-help').click({ timeout: 10000 });
     await byTid(page, 'help-lawyer-card').first().waitFor({ timeout: 20000 });
+    await byTid(page, 'help-sort-toggle').click();   // UI pass 1: the ranking note sits behind "How results are sorted"
     const note = await byTid(page, 'help-ranking-note').innerText();
     const srv = await apiCall('GET', `/help/nearby?state=TN&lang=${lang}`);
     if (!note.includes(srv.body.meta.ranking)) throw new Error(`ranking note not the server's ${lang} text: "${note}"`);

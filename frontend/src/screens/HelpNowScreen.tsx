@@ -28,6 +28,7 @@ import { getUserState, stateName } from '../utils/userState';
 import { isOfflineError, saveCoreProgress } from '../services/corePath';
 import { getToken } from '../utils/secureStorage';
 import { t, useLang, getLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 export interface Provider {
   id: number; kind: 'lawyer' | 'bail_agent'; name: string; organization: string | null; phone: string | null;
@@ -96,6 +97,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [claim, setClaim] = useState<Provider | null>(null);
   const [license, setLicense] = useState('');
   const [claimPhone, setClaimPhone] = useState('');
+  const [sortOpen, setSortOpen] = useState(false);
 
   const search = useCallback(async (w: Where, f: Filters) => {
     setPhase('loading'); setErrorMsg('');
@@ -227,12 +229,13 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const Card = ({ p }: { p: Provider }) => (
     <View style={styles.card} testID={p.kind === 'lawyer' ? 'help-lawyer-card' : 'help-bail-card'}>
       <View style={styles.cardTop}>
-        <Text maxFontSizeMultiplier={1.2} style={[styles.kind, p.kind === 'lawyer' ? styles.kindLawyer : styles.kindBail]}>
-          {p.kind === 'lawyer' ? `⚖️ ${t('hn_kind_lawyer')}` : `🔓 ${t('hn_kind_bail')}`}
-        </Text>
+        <IconLabel icon={p.kind === 'lawyer' ? ICONS.lawyer : ICONS.bail} size={14} maxFontSizeMultiplier={1.2}
+          color={p.kind === 'lawyer' ? colors.textBrand : colors.textPrimary} textStyle={styles.kind}>
+          {p.kind === 'lawyer' ? t('hn_kind_lawyer') : t('hn_kind_bail')}
+        </IconLabel>
         {!!p.distance_km && <Text maxFontSizeMultiplier={1.3} style={styles.distance}>{fmtMiles(p.distance_km)}</Text>}
       </View>
-      <Text maxFontSizeMultiplier={1.4} style={styles.name}>{p.name}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.name} testID="help-card-name">{p.name}</Text>
       {!!p.organization && p.organization !== p.name && <Text maxFontSizeMultiplier={1.4} style={styles.org}>{p.organization}</Text>}
       {!!p.address && <Text maxFontSizeMultiplier={1.4} style={styles.address} numberOfLines={2}>{p.address}</Text>}
       <View style={styles.badges}>
@@ -247,20 +250,20 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       <View style={styles.actions}>
         <TouchableOpacity accessibilityRole="button" testID="help-call" disabled={!p.phone} accessibilityLabel={p.phone ? t('hn_call_a11y', { name: p.name }) : t('hn_no_phone')}
           style={[styles.actionBtn, styles.actionCall, !p.phone && styles.actionDisabled]} onPress={() => call(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 {t('hn_call')}</Text>
+          <IconLabel center icon={ICONS.phoneFilled} color={colors.white} textStyle={styles.actionCallText} maxFontSizeMultiplier={1.3}>{t('hn_call')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" testID="help-text" disabled={!p.phone} accessibilityLabel={t('hn_text_a11y', { name: p.name })}
           style={[styles.actionBtn, !p.phone && styles.actionDisabled]} onPress={() => text(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 {t('hn_text')}</Text>
+          <IconLabel center icon={ICONS.message} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_text')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" testID="help-directions" accessibilityLabel={t('hn_directions_a11y', { name: p.name })}
           style={styles.actionBtn} onPress={() => directions(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🧭 {t('hn_directions')}</Text>
+          <IconLabel center icon={ICONS.directions} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_directions')}</IconLabel>
         </TouchableOpacity>
       </View>
       <TouchableOpacity accessibilityRole="button" testID="help-report" accessibilityLabel={t('hn_report_a11y', { name: p.name })}
         style={styles.reportLink} onPress={() => { setReport(p); setReason(''); setDetails(''); }}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>⚑ {t('hn_report_link')}</Text>
+        <IconLabel icon={ICONS.flag} size={14} color={colors.textSecond} textStyle={styles.reportText} maxFontSizeMultiplier={1.3}>{t('hn_report_link')}</IconLabel>
       </TouchableOpacity>
       <TouchableOpacity accessibilityRole="button" testID="help-claim" accessibilityLabel={t('hn_claim_a11y', { name: p.name })}
         style={styles.reportLink} onPress={() => openClaim(p)}>
@@ -278,7 +281,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         <View style={styles.whereRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-use-location" style={styles.locBtn} onPress={useMyLocation}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.locBtnText}>📍 {t('hn_use_location')}</Text>
+            <IconLabel center icon={ICONS.location} color={colors.white} textStyle={styles.locBtnText} maxFontSizeMultiplier={1.3}>{t('hn_use_location')}</IconLabel>
           </TouchableOpacity>
         </View>
         <View style={styles.whereRow}>
@@ -324,17 +327,27 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           </View>
         )}
         {!!offlineAt && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="help-offline">📴 {t('hn_offline_saved')}</Text>
+          <View style={styles.offline}>
+            <IconLabel icon={ICONS.offline} color={colors.warnDark} textStyle={styles.offlineText} testID="help-offline">{t('hn_offline_saved')}</IconLabel>
+          </View>
         )}
 
         {phase === 'ok' && result && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.meta} testID="help-ranking-note">
-              {st ? `${stateName(st)} · ` : ''}{result.meta.ranking} {result.meta.hours_note}
-            </Text>
             {!!result.meta.charge_note && <Text maxFontSizeMultiplier={1.4} style={styles.meta}>{result.meta.charge_note}</Text>}
 
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>⚖️ {t('hn_lawyers_count', { n: result.lawyers.length })}</Text>
+            <View style={styles.groupRow}>
+              <IconLabel icon={ICONS.lawyer} color={colors.textPrimary} textStyle={styles.groupText} style={{ flex: 1 }}>{t('hn_lawyers_count', { n: result.lawyers.length })}</IconLabel>
+              <TouchableOpacity accessibilityRole="button" testID="help-sort-toggle" accessibilityState={{ expanded: sortOpen }}
+                style={styles.sortLink} onPress={() => setSortOpen(o => !o)}>
+                <IconLabel icon={sortOpen ? ICONS.chevronUp : ICONS.chevronDown} size={15} color={colors.textBrand} textStyle={styles.sortLinkText} maxFontSizeMultiplier={1.3}>{t('hn_how_sorted')}</IconLabel>
+              </TouchableOpacity>
+            </View>
+            {sortOpen && (
+              <Text maxFontSizeMultiplier={1.4} style={styles.sortNote} testID="help-ranking-note">
+                {st ? `${stateName(st)} · ` : ''}{result.meta.ranking} {result.meta.hours_note}
+              </Text>
+            )}
             {result.lawyers.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-lawyers">{t('hn_empty_lawyers')}</Text>}
             {result.lawyers.map(p => <Card key={`l${p.id}`} p={p} />)}
 
@@ -347,19 +360,19 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <View style={styles.actions}>
                   {!!result.public_defender.phone && (
                     <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.actionCall]} onPress={() => Linking.openURL(`tel:${String(result.public_defender?.phone).replace(/[^\d+]/g, '')}`).catch(() => {})}>
-                      <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 {t('hn_call')}</Text>
+                      <IconLabel center icon={ICONS.phoneFilled} color={colors.white} textStyle={styles.actionCallText} maxFontSizeMultiplier={1.3}>{t('hn_call')}</IconLabel>
                     </TouchableOpacity>
                   )}
                   {!!result.public_defender.url && (
                     <TouchableOpacity accessibilityRole="link" style={styles.actionBtn} onPress={() => Linking.openURL(String(result.public_defender?.url)).catch(() => {})}>
-                      <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🌐 {t('hn_website')}</Text>
+                      <IconLabel center icon={ICONS.globe} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_website')}</IconLabel>
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
             )}
 
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>🔓 {t('hn_bail_count', { n: result.bail_agents.length })}</Text>
+            <IconLabel icon={ICONS.bail} color={colors.textPrimary} textStyle={styles.groupText} style={styles.group}>{t('hn_bail_count', { n: result.bail_agents.length })}</IconLabel>
             {result.bail_agents.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-bail">{t('hn_empty_bail')}</Text>}
             {result.bail_agents.map(p => <Card key={`b${p.id}`} p={p} />)}
 
@@ -369,36 +382,36 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
                 {result.inmate_lookup.map(r => (
                   <TouchableOpacity key={r.id} accessibilityRole="link" style={styles.lookupRow} disabled={!r.url}
                     onPress={() => r.url && Linking.openURL(r.url).catch(() => {})}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.lookupText}>🔎 {r.name.replace(/^Inmate Lookup:\s*/i, '') /* recorded English label; the localized section title says it */}{r.phone ? ` · ${r.phone}` : ''}</Text>
+                    <IconLabel icon={ICONS.search} color={colors.textPrimary} textStyle={styles.lookupText}>{r.name.replace(/^Inmate Lookup:\s*/i, '') /* recorded English label; the localized section title says it */}{r.phone ? ` · ${r.phone}` : ''}</IconLabel>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
             <TouchableOpacity accessibilityRole="button" testID="help-bail-calculator" style={styles.calcBtn}
               onPress={() => (navigation as any).navigate('BailCalculator', st ? { state: st, chargeType: filters.charge || undefined } : undefined)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.calcBtnText}>💰 {st ? t('hn_bail_amounts_in', { state: stateName(st) }) : t('hn_bail_amounts')}</Text>
+              <IconLabel center icon={ICONS.calculator} color={colors.textPrimary} textStyle={styles.calcBtnText} maxFontSizeMultiplier={1.3}>{st ? t('hn_bail_amounts_in', { state: stateName(st) }) : t('hn_bail_amounts')}</IconLabel>
             </TouchableOpacity>
           </>
         )}
-        <Text maxFontSizeMultiplier={1.4} style={styles.group}>{t('hn_more_help')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.group, styles.groupText]}>{t('hn_more_help')}</Text>
         <View style={styles.moreRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-more-lawyers" style={styles.moreBtn} onPress={() => (navigation as any).navigate('LawyersTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>⚖️ {t('hn_all_lawyers')}</Text>
+            <IconLabel center icon={ICONS.lawyer} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_all_lawyers')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="help-more-bail" style={styles.moreBtn} onPress={() => (navigation as any).navigate('BailTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🔓 {t('hn_all_bail')}</Text>
+            <IconLabel center icon={ICONS.bail} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_all_bail')}</IconLabel>
           </TouchableOpacity>
         </View>
         <View style={styles.moreRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-more-courts" style={styles.moreBtn} onPress={() => (navigation as any).navigate('CourtLocator', st ? { state: st } : undefined)}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🏛️ {t('hn_find_courthouse')}</Text>
+            <IconLabel center icon={ICONS.courthouse} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_find_courthouse')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="help-more-chat" style={styles.moreBtn} onPress={() => (navigation as any).navigate('ChatTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 {t('hn_ask_question')}</Text>
+            <IconLabel center icon={ICONS.message} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_ask_question')}</IconLabel>
           </TouchableOpacity>
         </View>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_988_a11y')} style={styles.moreBtnWide} onPress={() => Linking.openURL('tel:988').catch(() => showToast(t('cp_dial_manually', { num: '988' }), 'warning'))}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💙 {t('hn_crisis_988')}</Text>
+          <IconLabel center icon={ICONS.crisis} color={colors.textPrimary} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('hn_crisis_988')}</IconLabel>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>{t('hn_disclaimer')}</Text>
       </ScrollView>
@@ -468,9 +481,15 @@ const makeStyles = (c: any) => StyleSheet.create({
   hint: { color: c.textSecond, fontSize: 15, lineHeight: 21, marginVertical: 10 },
   errorBox: { backgroundColor: c.bgCard, borderRadius: 12, padding: 14, marginVertical: 10, borderWidth: 1, borderColor: c.border },
   errorText: { color: c.textPrimary, fontSize: 15, lineHeight: 21 },
-  offline: { color: c.warnDark, backgroundColor: c.warnBg, borderRadius: 10, padding: 10, fontSize: 13, marginVertical: 8 },
+  offline: { backgroundColor: c.warnBg, borderRadius: 10, padding: 10, marginVertical: 8 },
+  offlineText: { color: c.warnDark, fontSize: 13, lineHeight: 18 },
   meta: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 6 },
-  group: { color: c.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 16, marginBottom: 8 },
+  group: { marginTop: 16, marginBottom: 8 },
+  groupText: { color: c.textPrimary, fontSize: 18, fontWeight: '900' },
+  groupRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 12, marginBottom: 6 },
+  sortLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  sortLinkText: { color: c.textBrand, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  sortNote: { color: c.textSecond, fontSize: 13, lineHeight: 19, backgroundColor: c.bgSubtle, borderRadius: 10, padding: 10, marginBottom: 8 },
   card: { backgroundColor: c.bgCard, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   kind: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8 },

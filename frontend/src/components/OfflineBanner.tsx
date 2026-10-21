@@ -7,6 +7,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS } from './AppIcon';
 
 interface Props { visible: boolean; onPress: () => void }
 
@@ -22,7 +23,7 @@ function OfflineBanner({ visible, onPress }: Props): React.JSX.Element | null {
       accessibilityRole="button"
       accessibilityLabel={t('home_offline_a11y')}
     >
-      <Text style={styles.icon}>📡</Text>
+      <AppIcon name={ICONS.offline} size={18} color={colors.warnDark} />
       <View style={styles.body}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.title, { color: colors.warnDark }]}>{t('no_internet')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.sub, { color: colors.textSecond }]}>{t('home_offline_sub')}</Text>
@@ -34,7 +35,6 @@ function OfflineBanner({ visible, onPress }: Props): React.JSX.Element | null {
 
 const styles = StyleSheet.create({
   banner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8, borderBottomWidth: 1 },
-  icon: { fontSize: 14 },
   body: { flex: 1, minWidth: 0 },
   title: { fontSize: 13, fontWeight: '700' },
   sub: { fontSize: 11, lineHeight: 16 },

@@ -26,6 +26,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { getToken } from '../utils/secureStorage';
 import { SignInNeeded } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface Reminder { id: number; deliver_at: string; days_before: number | null; title: string }
 interface Detail extends CourtDate { reminders: Reminder[]; time_zone: string; guidance?: Guidance }
@@ -200,8 +201,12 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   const ch = d.courthouse;
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="court-date-detail-screen">
-      {phase === 'offline' && <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="court-date-offline">📴 {t('cdd_offline')}</Text>}
-      <Text maxFontSizeMultiplier={1.4} style={styles.title} testID="court-date-when">📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}</Text>
+      {phase === 'offline' && (
+        <View style={styles.offline}>
+          <IconLabel icon={ICONS.offline} color={colors.warnDark} textStyle={styles.offlineText} testID="court-date-offline">{t('cdd_offline')}</IconLabel>
+        </View>
+      )}
+      <IconLabel icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.title} testID="court-date-when">{formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}</IconLabel>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{d.case_title}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
         {[d.hearing_type ? hearingLabel(d.hearing_type) : null, d.location, d.status !== 'scheduled' ? t('cdd_status', { status: statusLabel(d.status) }) : null].filter(Boolean).join(' · ')}
@@ -209,20 +214,20 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       {ch ? (
         <View style={styles.box} testID="court-date-courthouse">
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>🏛️ {ch.name}</Text>
+          <IconLabel icon={ICONS.courthouse} color={colors.textPrimary} textStyle={styles.boxTitle}>{ch.name}</IconLabel>
           {!!ch.address && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{ch.address}</Text>}
           {!!ch.hours && <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{t('cdd_hours', { hours: String(ch.hours) })}</Text>}
           <View style={styles.followRow}>
             {!!ch.phone && (
               <TouchableOpacity accessibilityRole="button" testID="court-date-call-clerk" style={[styles.goBtn, { flex: 1 }]}
                 onPress={() => Linking.openURL(`tel:${String(ch.phone).replace(/[^\d+]/g, '')}`).catch(() => showToast(t('cp_dial_manually', { num: String(ch.phone) }), 'warning'))}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>📞 {t('cdd_call_court')}</Text>
+                <IconLabel center icon={ICONS.phoneFilled} color={colors.white} textStyle={styles.goBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_call_court')}</IconLabel>
               </TouchableOpacity>
             )}
             {!!ch.directions_url && (
               <TouchableOpacity accessibilityRole="button" testID="court-date-directions" style={[styles.goBtn, { flex: 1 }]}
                 onPress={() => Linking.openURL(String(ch.directions_url)).catch(() => {})}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>🧭 {t('hn_directions')}</Text>
+                <IconLabel center icon={ICONS.directions} color={colors.white} textStyle={styles.goBtnText} maxFontSizeMultiplier={1.3}>{t('hn_directions')}</IconLabel>
               </TouchableOpacity>
             )}
           </View>
@@ -233,16 +238,16 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       {phase === 'ok' && (
         <TouchableOpacity accessibilityRole="button" testID="court-date-edit" style={styles.secondaryBtn} onPress={openEdit}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✏️ {t('cdd_change')}</Text>
+          <IconLabel center icon={ICONS.edit} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_change')}</IconLabel>
         </TouchableOpacity>
       )}
       <TouchableOpacity accessibilityRole="button" testID="court-date-ics" style={styles.primaryBtn} onPress={addToCalendar} disabled={phase === 'offline'}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>🗓 {t('cdd_add_calendar')}</Text>
+        <IconLabel center icon={ICONS.calendarAdd} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_add_calendar')}</IconLabel>
       </TouchableOpacity>
 
       {phase === 'ok' && (
         <View style={styles.box} testID="court-date-reminders">
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>🔔 {t('cdd_reminders')}</Text>
+          <IconLabel icon={ICONS.notification} color={colors.textPrimary} textStyle={styles.boxTitle}>{t('cdd_reminders')}</IconLabel>
           {d.reminders.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{d.status === 'scheduled' && !d.is_past ? t('cdd_no_reminders_left') : t('cdd_reminders_off')}</Text>}
           {d.reminders.map(r => (
             <Text key={r.id} maxFontSizeMultiplier={1.4} style={styles.boxText} testID="court-reminder-row">• {daysLabel(r.days_before)} — {whenLabel(r.deliver_at, d.time_zone)}</Text>
@@ -264,14 +269,14 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       <TouchableOpacity accessibilityRole="button" testID="court-date-bail" style={styles.secondaryBtn}
         onPress={() => (navigation as any).navigate('BailCalculator', { state: d.case_state || undefined, caseTitle: d.case_title })}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>💰 {t('cdd_bail_amounts')}</Text>
+        <IconLabel center icon={ICONS.calculator} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_bail_amounts')}</IconLabel>
       </TouchableOpacity>
 
       <GuidanceView g={guidance} which="checklist" styles={styles} />
 
       {phase === 'ok' && (
         <View style={styles.box} testID="court-date-family">
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>👨‍👩‍👧 {t('cdd_share_family')}</Text>
+          <IconLabel icon={ICONS.family} color={colors.textPrimary} textStyle={styles.boxTitle}>{t('cdd_share_family')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_share_body')}</Text>
           {followers.map(f => (
             <View key={f.id} style={styles.followRow} testID="court-date-follower">
@@ -290,7 +295,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       {missedOpen ? <GuidanceView g={guidance} which="missed" styles={styles} /> : (
         <TouchableOpacity accessibilityRole="button" testID="court-date-missed" style={styles.secondaryBtn} onPress={markMissed} disabled={phase === 'offline'}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>❓ {t('cdd_missed_btn')}</Text>
+          <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_missed_btn')}</IconLabel>
         </TouchableOpacity>
       )}
       {phase === 'ok' && d.status === 'scheduled' && d.is_past && (
@@ -311,7 +316,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
           <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_court_date')}</Text>
           <TextInput accessibilityLabel={t('cd_date_a11y')} testID="court-edit-date" style={styles.inputFull} value={edit.date} onChangeText={v => setEdit(e => ({ ...e, date: v }))}
             placeholder={t('cd_date_placeholder')} placeholderTextColor={colors.textMuted} maxLength={10} />
-          {validCourtDate(edit.date.trim()) && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>📅 {formatCourtDay(edit.date.trim())}</Text>}
+          {validCourtDate(edit.date.trim()) && <IconLabel icon={ICONS.calendar} color={colors.textMuted} textStyle={styles.muted}>{formatCourtDay(edit.date.trim())}</IconLabel>}
           <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_time_optional')}</Text>
           <TextInput accessibilityLabel={t('cd_time_a11y')} testID="court-edit-time" style={styles.inputFull} value={edit.time} onChangeText={v => setEdit(e => ({ ...e, time: v }))}
             placeholder={t('cd_time_placeholder')} placeholderTextColor={colors.textMuted} maxLength={5} />
@@ -347,10 +352,10 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
               <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cdd_their_email')}</Text>
               <TextInput accessibilityLabel={t('cdd_email_a11y')} testID="family-email" style={styles.inputFull} value={famEmail} onChangeText={setFamEmail} autoCapitalize="none" keyboardType="email-address" />
               <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: withReminders }} testID="family-reminders" style={styles.secondaryBtn} onPress={() => setWithReminders(v => !v)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{withReminders ? '☑' : '☐'} {t('cdd_send_reminders')}</Text>
+                <IconLabel center icon={withReminders ? ICONS.checkbox : ICONS.checkboxEmpty} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_send_reminders')}</IconLabel>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: consent }} testID="family-consent" style={[styles.box, consent && { borderColor: colors.legalDark }]} onPress={() => setConsent(v => !v)}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{consent ? '☑' : '☐'} {t('cdd_consent', { title: d.case_title })}</Text>
+                <IconLabel icon={consent ? ICONS.checkbox : ICONS.checkboxEmpty} color={colors.textPrimary} textStyle={styles.boxText}>{t('cdd_consent', { title: d.case_title })}</IconLabel>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" testID="family-create-invite" style={[styles.primaryBtn, !consent && { opacity: 0.5 }]} disabled={!consent} onPress={createInvite}>
                 <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('cdd_create_code')}</Text>
@@ -361,7 +366,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
               <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_give_code')}</Text>
               <Text maxFontSizeMultiplier={1.2} style={[styles.title, { letterSpacing: 3, marginTop: 10 }]} selectable testID="family-code-text">{invite.invite_code}</Text>
               <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={() => RNShare.share({ message: invite.share_message, title: t('cdd_share_title') }).catch(() => {})}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>📤 {t('cdd_send_code')}</Text>
+                <IconLabel center icon={ICONS.send} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_send_code')}</IconLabel>
               </TouchableOpacity>
             </View>
           )}

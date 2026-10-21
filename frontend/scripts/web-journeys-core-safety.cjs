@@ -189,16 +189,19 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
     return `${ids.length} tiles, each opens its screen; Cases → /cases; attorney tile hidden`;
   });
 
-  await journey('A1b Home header fits at 390 px (es / pt / vi): Help Now and Settings on screen', async () => {
+  // UI pass 1: the header no longer has its own "Help Now" button (the "Just
+  // arrested?" card and the Help Now tile reach it); Settings and the hero fit.
+  await journey('A1b Home header fits at 390 px (es / pt / vi): Settings and "Just arrested?" on screen', async () => {
     const out = [];
     for (const lang of ['es', 'pt', 'vi']) {
       const s = await open(browser, { lang });
       await go(s.page, '/');
-      const btn = await s.page.getByLabel(tx(lang, 'get_help_now')).first().boundingBox();
+      const btn = await byTid(s.page, 'home-just-arrested').first().boundingBox();
       const gear = await s.page.getByLabel(tx(lang, 'home_settings_a11y')).first().boundingBox();
-      if (!btn || btn.x + btn.width > 390 || !gear || gear.x + gear.width > 391) throw new Error(`${lang}: header buttons off screen ${JSON.stringify({ btn, gear })}`);
+      if (!btn || btn.x + btn.width > 390 || !gear || gear.x + gear.width > 391) throw new Error(`${lang}: header / hero off screen ${JSON.stringify({ btn, gear })}`);
+      if (await byTid(s.page, 'tile-Emergency').count() !== 1) throw new Error(`${lang}: the Help Now tile is missing`);
       await shot(s.page, `A1b-home-${lang}`);
-      out.push(`${lang} Help Now right edge ${Math.round(btn.x + btn.width)}px`);
+      out.push(`${lang} hero right edge ${Math.round(btn.x + btn.width)}px, gear ${Math.round(gear.x + gear.width)}px`);
       allErrors.push(...s.errors);
       await s.ctx.close();
     }

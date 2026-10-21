@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import EmergencyStrip from '../components/EmergencyStrip';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
 import { t, useLang, getLang } from '../i18n';
@@ -159,20 +160,31 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       <Text maxFontSizeMultiplier={1.4} style={styles.title} accessibilityRole="header">{t('rc_page_title')}</Text>
       <TouchableOpacity accessibilityRole="button" testID="rights-state-picker" style={styles.stateBtn}
         accessibilityLabel={t('ja_state_a11y', { state: stateName || t('ja_choose_state') })} onPress={() => setPicker(true)}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>📍 {stateName || t('ja_choose_state')}  ▾</Text>
+        <View style={styles.stateBtnRow}>
+          <IconLabel icon={ICONS.location} color={colors.textPrimary} textStyle={styles.stateBtnText} style={{ flex: 1 }}>{stateName || t('ja_choose_state')}</IconLabel>
+          <AppIcon name={ICONS.chevronDown} size={18} color={colors.textSecond} />
+        </View>
       </TouchableOpacity>
 
-      {source === 'device' && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="rights-offline">
-          📴 {t('rc_offline_copy')}{savedAt ? ` (${monthLabel(savedAt.slice(0, 10))})` : ''}
-        </Text>
-      )}
-      {!!notice && <Text maxFontSizeMultiplier={1.4} style={styles.notice} testID="rights-state-notice">ℹ️ {notice}</Text>}
-
+      {/* The words first: the script sits right under the state picker. */}
       <View style={styles.scriptBox} testID="rights-script">
-        <Text maxFontSizeMultiplier={1.2} style={styles.scriptLabel}>🗣 {t('ja_say')}</Text>
+        <IconLabel icon={ICONS.speak} color={colors.textSecond} textStyle={styles.scriptLabel} maxFontSizeMultiplier={1.2} style={styles.scriptLabelRow}>{t('ja_say')}</IconLabel>
         {SAY_KEYS.map(k => <Text key={k} maxFontSizeMultiplier={1.6} style={styles.scriptLine}>“{t(k)}”</Text>)}
       </View>
+
+      {/* Status notes as small footnotes below the words: still visible, never in front of them. */}
+      {!!notice && (
+        <View style={styles.footnote}>
+          <IconLabel icon={ICONS.alertNormal} color={colors.textSecond} textStyle={styles.footnoteText} size={15} style={styles.footnoteRow} testID="rights-state-notice">{notice}</IconLabel>
+        </View>
+      )}
+      {source === 'device' && (
+        <View style={[styles.footnote, { borderLeftColor: colors.warnDark }]}>
+          <IconLabel icon={ICONS.offline} color={colors.warnDark} textStyle={styles.footnoteText} size={15} style={styles.footnoteRow} testID="rights-offline">
+            {t('rc_offline_copy')}{savedAt ? ` (${monthLabel(savedAt.slice(0, 10))})` : ''}
+          </IconLabel>
+        </View>
+      )}
 
       {specific.length > 0 && (
         <View testID="rights-state-sections">
@@ -186,9 +198,9 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       {general.map(s => <Section key={s.key} s={s} testID="rights-section" />)}
 
       <TouchableOpacity accessibilityRole="button" testID="rights-share" style={styles.primaryBtn} onPress={share}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>📤 {t('rc_share_card')}</Text>
+        <IconLabel center icon={ICONS.share} color={colors.white} textStyle={styles.primaryBtnText}>{t('rc_share_card')}</IconLabel>
       </TouchableOpacity>
-      <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>⚖️ {t('rc_footer')}</Text>
+      <IconLabel icon={ICONS.alertNormal} color={colors.textMuted} textStyle={styles.disclaimer} size={14} style={styles.disclaimerRow}>{t('rc_footer')}</IconLabel>
 
       <Modal visible={picker} transparent animationType="slide" onRequestClose={() => setPicker(false)} accessibilityViewIsModal>
         <View style={styles.overlay}>
@@ -217,11 +229,14 @@ const makeStyles = (c: any) => StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 48 },
   title: { color: c.textPrimary, fontSize: 24, fontWeight: '900', marginTop: 8, marginBottom: 8 },
   stateBtn: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, minHeight: 44, marginBottom: 10 },
+  stateBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stateBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
-  offline: { color: c.warnDark, backgroundColor: c.warnBg, borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 8 },
-  notice: { color: c.textPrimary, backgroundColor: c.infoBg, borderRadius: 10, padding: 10, fontSize: 14, marginBottom: 8 },
-  scriptBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginVertical: 8 },
-  scriptLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 6 },
+  footnote: { borderLeftWidth: 3, borderLeftColor: c.info, paddingLeft: 10, paddingVertical: 2, marginBottom: 8 },
+  footnoteRow: { alignItems: 'flex-start' },
+  footnoteText: { color: c.textSecond, fontSize: 13, lineHeight: 19 },
+  scriptBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginTop: 2, marginBottom: 10 },
+  scriptLabelRow: { marginBottom: 6 },
+  scriptLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   scriptLine: { color: c.textPrimary, fontSize: 22, lineHeight: 30, fontWeight: '800', marginBottom: 6 },
   groupTitle: { color: c.textPrimary, fontSize: 18, fontWeight: '800', marginTop: 14, marginBottom: 6 },
   muted: { color: c.textMuted, fontSize: 13, marginBottom: 6 },
@@ -234,7 +249,8 @@ const makeStyles = (c: any) => StyleSheet.create({
   primaryBtnText: { color: c.white, fontSize: 17, fontWeight: '900' },
   secondaryBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 8 },
   secondaryBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
-  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 12, fontStyle: 'italic' },
+  disclaimerRow: { marginTop: 12, alignItems: 'flex-start' },
+  disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, fontStyle: 'italic' },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
   sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 8 },

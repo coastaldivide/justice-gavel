@@ -26,7 +26,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT"
 failed=0
 for script in web-journeys-core-safety web-journeys-account web-journeys-directory web-journeys-cases \
-              web-journeys-ai web-journeys-guides web-journeys-g web-journeys; do
+              web-journeys-ai web-journeys-guides web-journeys-g web-journeys-ui web-journeys; do
   curl -fsS -X POST "$MOCK/__reset" > /dev/null || { echo "Anthropic mock not reachable at $MOCK" >&2; exit 2; }
   echo "── $script"
   if DATABASE_URL="$DB_URL" node "$HERE/$script.cjs" "$DIST" "$OUT/$script" --api "$API" --port "$PORT" \

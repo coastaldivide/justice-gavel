@@ -227,13 +227,12 @@ describe('S7. Components — useEffect + useCallback Depth', () => {
     expect(src).toContain('useCallback');
     expect(src).toContain('requireAuth');
   });
-  test('S7-04: FloatingSOSButton useEffect starts the pulse+ring animation loop', async () => {
+  test('S7-04: FloatingSOSButton is calm: no endless pulse/ring loop (UI pass 1), still unmistakable', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    expect(src).toContain('useEffect');
-    expect(src).toContain('Animated.loop');
-    expect(src).toContain('pulse');
-    expect(src).toContain('ring');
+    expect(src).not.toContain('Animated.loop');
+    expect(src).toContain('COLORS.emergencyDark');
+    expect(src).toContain('>SOS<');
   });
 });
 

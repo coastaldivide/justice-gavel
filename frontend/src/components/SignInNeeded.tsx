@@ -12,6 +12,7 @@ import { getToken } from '../utils/secureStorage';
 import { useTheme } from '../constants/theme';
 import { useAuthGate } from './AuthGate';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS } from './AppIcon';
 
 export function SignInNeeded({ navigation, title, body, onSignedIn, testID = 'sign-in-needed' }: {
   navigation: Parameters<typeof useAuthGate>[0]; title?: string; body: string; onSignedIn: () => void; testID?: string;
@@ -21,7 +22,7 @@ export function SignInNeeded({ navigation, title, body, onSignedIn, testID = 'si
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   return (
     <View testID={testID} style={styles.box}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.icon}>🔒</Text>
+      <AppIcon name={ICONS.lock} size={36} color={colors.textBrand} />
       <Text maxFontSizeMultiplier={1.4} style={[styles.title, { color: colors.textPrimary }]} accessibilityRole="header">{title || t('sin_title')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.body, { color: colors.textSecond }]}>{body}</Text>
       <TouchableOpacity accessibilityRole="button" testID={`${testID}-button`} style={[styles.btn, { backgroundColor: colors.navy }]} onPress={() => requireAuth(onSignedIn)}>
@@ -44,7 +45,6 @@ export function useHasSession(): { hasSession: boolean | null; recheck: () => vo
 
 const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingHorizontal: 24, paddingVertical: 40, gap: 10, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  icon: { fontSize: 36 },
   title: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
   body: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
   btn: { borderRadius: 12, minHeight: 48, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', marginTop: 6 },

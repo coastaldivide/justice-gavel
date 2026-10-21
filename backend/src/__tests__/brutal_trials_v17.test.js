@@ -628,11 +628,12 @@ describe('14. EmergencyStrip — Emergency Quick-Call', () => {
     expect(src).toContain('manually');
   });
 
-  test('14-04: 911 is red (#B71C1C), 988 is blue (#1565C0)', async () => {
+  test('14-04: 911 is red, 988 is blue — calm tonal buttons with an outline (UI pass 1)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/EmergencyStrip.tsx', 'utf8');
-    expect(src).toContain('COLORS.emergencyDark'); // #B71C1C
-    expect(src).toContain('COLORS.blue');          // blue 988 button
+    expect(src).toContain('e911: { fg: colors.emergency, bg: colors.emergencyBg }');
+    expect(src).toContain('e988: { fg: colors.info, bg: colors.infoBg }');
+    expect(src).toContain('borderWidth: 1.5');
   });
 
   test('14-05: has compact prop for smaller form factor', async () => {

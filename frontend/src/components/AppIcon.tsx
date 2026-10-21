@@ -1,102 +1,234 @@
 /**
- * components/AppIcon.tsx — Unified icon component
+ * components/AppIcon.tsx — the app's one icon set (Ionicons via @expo/vector-icons).
  *
- * Wraps @expo/vector-icons Ionicons. Replaces emoji icons on all primary
- * navigation, headers, and action buttons. Fully theme-aware — inherits
- * color from theme tokens by default.
+ * No emoji in UI text: a screen shows a meaning with an icon from ICONS
+ * (semantic names, below) next to a plain translated label. The i18n strings
+ * carry words only (src/__tests__/noEmoji.test.js enforces this).
  *
- * Usage:
- *   <AppIcon name="shield-checkmark" size={24} color={COLORS.navy} />
- *   <AppIcon name="alert-circle" size={20} />   // defaults to textPrimary
+ *   <AppIcon name={ICONS.phone} size={18} color={colors.white} />
+ *   <IconLabel icon={ICONS.location} color={c.textPrimary} textStyle={styles.x}>{t('ja_state')}</IconLabel>
+ *
+ * Icons are decorative for screen readers (hidden) unless they are the only
+ * label of a control: pass `accessibilityLabel` and the icon is announced.
  */
 
 import React from 'react';
+import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
 
+export type IconName = keyof typeof Ionicons.glyphMap;
+
 interface AppIconProps {
-  name: keyof typeof Ionicons.glyphMap;
+  name: IconName;
   size?: number;
   color?: string;
-  style?: object;
+  style?: StyleProp<TextStyle>;
+  /** Only when the icon is the sole label of a control; otherwise it is hidden from screen readers. */
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
-export function AppIcon({ name, size = 22, color = COLORS.textPrimary, style }: AppIconProps) {
-  return <Ionicons name={name} size={size} color={color} style={style} />;
+export function AppIcon({ name, size = 22, color = COLORS.textPrimary, style, accessibilityLabel, testID }: AppIconProps) {
+  const a11y = accessibilityLabel
+    ? { accessibilityLabel, accessibilityRole: 'image' as const }
+    : { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const, 'aria-hidden': true };
+  return <Ionicons name={name} size={size} color={color} style={style} testID={testID} {...a11y} />;
 }
 
-// ── Semantic icon map — consistent icons across the app ──────────────────────
-// Use these constants instead of raw name strings for maintainability
+/**
+ * An icon followed by a label on one line (wraps under itself, not under the
+ * icon). The label is the accessible text; the icon is decorative.
+ */
+export function IconLabel({ icon, color, size, textStyle, style, children, numberOfLines, maxFontSizeMultiplier = 1.4, testID, center }: {
+  icon: IconName; color: string; size?: number; textStyle?: StyleProp<TextStyle>; style?: StyleProp<ViewStyle>;
+  children: React.ReactNode; numberOfLines?: number; maxFontSizeMultiplier?: number; testID?: string; center?: boolean;
+}) {
+  // Margins on the label style belong to the row (so a heading style with
+  // marginBottom keeps the icon level with its text).
+  const flat = { ...(StyleSheet.flatten(textStyle) || {}) } as TextStyle;
+  const margins: ViewStyle = {};
+  for (const k of ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical'] as const) {
+    if (flat[k] !== undefined) { (margins as Record<string, unknown>)[k] = flat[k]; delete flat[k]; }
+  }
+  const fontSize = flat.fontSize ?? 15;
+  return (
+    <View style={[iconLabelStyles.row, center && iconLabelStyles.center, margins, style]}>
+      <AppIcon name={icon} size={size ?? Math.round(fontSize * 1.15)} color={color} style={iconLabelStyles.icon} />
+      <Text testID={testID} maxFontSizeMultiplier={maxFontSizeMultiplier} numberOfLines={numberOfLines}
+        style={[{ color }, flat, iconLabelStyles.text, center && iconLabelStyles.textCenter]}>{children}</Text>
+    </View>
+  );
+}
+
+const iconLabelStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
+  center: { justifyContent: 'center' },
+  icon: { flexShrink: 0 },
+  text: { flexShrink: 1 },
+  textCenter: { textAlign: 'center' },
+});
+
+// ── Semantic icon map ────────────────────────────────────────────────────────
+// One name per meaning the app's former emoji carried (the emoji each replaced
+// is noted so pass 2 can map the rest of the screens the same way). Use these
+// constants, not raw Ionicons names, so a meaning looks the same everywhere.
 export const ICONS = {
-  // Navigation
-  home:           'home-outline'         as const,
-  cases:          'folder-open-outline'  as const,
-  lawyers:        'people-outline'       as const,
-  settings:       'settings-outline'     as const,
-  more:           'grid-outline'         as const,
-  back:           'chevron-back'         as const,
-  close:          'close'                as const,
-  menu:           'menu-outline'         as const,
+  // Navigation / chrome
+  home:           'home-outline',              // 🏠
+  cases:          'folder-open-outline',       // 📁 🗂
+  lawyers:        'people-outline',
+  settings:       'settings-outline',          // ⚙
+  more:           'grid-outline',
+  back:           'chevron-back',
+  close:          'close',                     // ✕ ❌
+  menu:           'menu-outline',
+  library:        'library-outline',           // 📚 (Resources tab)
+  external:       'open-outline',              // ↗
+  chevronRight:   'chevron-forward',           // ›
+  chevronDown:    'chevron-down',              // ▾ ▼
+  chevronUp:      'chevron-up',                // ▲
 
-  // Legal status
-  gavel:          'hammer-outline'       as const,
-  shield:         'shield-checkmark-outline' as const,
-  scale:          'scale-outline'        as const,
-  document:       'document-text-outline'as const,
-  briefcase:      'briefcase-outline'    as const,
+  // Legal
+  gavel:          'hammer-outline',
+  lawyer:         'briefcase-outline',         // ⚖ (lawyer, legal help; Ionicons' "scale" is a weighing scale, so not used)
+  shield:         'shield-checkmark-outline',  // 🛡 (insurance, protection)
+  document:       'document-text-outline',     // 📄 📃 📜 (charges, PDFs, forms)
+  clipboard:      'clipboard-outline',         // 📋 (rights card, checklists, plans)
+  briefcase:      'briefcase-outline',         // 💼 (white collar, employment)
+  courthouse:     'business-outline',          // 🏛 🏢 🏦 (court, jail, firm)
+  rights:         'hand-left-outline',         // ✋ ✊ (do not / civil rights)
+  speak:          'megaphone-outline',         // 🗣 📢 📣 (say these words, advocacy)
+  silent:         'volume-mute-outline',       // 🤐 🤫 (stay silent)
+  search:         'search-outline',            // 🔍 🔎
+  bail:           'lock-open-outline',         // 🔓 (bail / release)
+  lock:           'lock-closed-outline',       // 🔒 🔐 🔏 (sign in, private)
+  key:            'key-outline',               // 🔑 🗝
+  idCard:         'id-card-outline',           // 🪪 👤 (arrested person, identity)
+  booking:        'barcode-outline',           // 🔢 (booking number)
+  tag:            'pricetag-outline',          // 🏷
+  immigration:    'airplane-outline',          // ✈ 🛂 (ICE, travel)
+  globe:          'globe-outline',             // 🌐 🌎 (website, language, international)
+  juvenile:       'happy-outline',             // 🧒 👶 👦 👧 (children, juvenile)
+  family:         'people-circle-outline',     // 👨‍👩‍👧 👪 👥 (family)
+  housing:        'home-outline',              // 🏘 🏡 🏚 (housing, tenant)
+  car:            'car-outline',               // 🚗 🚦 (DUI, traffic, searches)
+  drug:           'medkit-outline',            // 💊 🩹 (drug charges, injury)
+  weapon:         'warning-outline',           // 🔫 (weapons charges — a neutral warning glyph)
+  heartBroken:    'heart-dislike-outline',     // 💔 (divorce)
+  calculator:     'calculator-outline',        // 🧮
+  diversion:      'git-branch-outline',        // 🔄 🔁 (diversion, alternative path)
+  mentalHealth:   'pulse-outline',             // 🧠 (mental health)
+  ai:             'sparkles-outline',          // 🤖 🧠 (AI features)
+  medical:        'medical-outline',           // 🏥 (hospital, emergency care)
+  breathe:        'leaf-outline',              // 🫁 🌱 (breathing, calm)
+  ground:         'eye-outline',               // 👁 (grounding exercise)
+  calm:           'partly-sunny-outline',      // 🌤 (reassurance)
+  peace:          'flower-outline',            // 🕊
 
   // Alerts & urgency
-  alertCritical:  'alert-circle'         as const,
-  alertHigh:      'warning-outline'      as const,
-  alertNormal:    'information-circle-outline' as const,
-  checkmark:      'checkmark-circle'     as const,
-  emergency:      'flash'                as const,
+  emergency:      'alert-circle',              // 🚨 🆘 (true emergency)
+  alertCritical:  'alert-circle',
+  alertHigh:      'warning-outline',           // ⚠ ⛔ 🚩 🛑 🚫
+  alertNormal:    'information-circle-outline',// ℹ
+  sos:            'radio-outline',             // SOS broadcast
+  flash:          'flash',                     // ⚡ (quick)
+  ban:            'ban-outline',               // 🚫 📵
+  offline:        'cloud-offline-outline',     // 📴 📡 📵 (offline / no signal)
+  signal:         'cellular-outline',          // 📶
+  help:           'help-circle-outline',       // ❓ ❔
+  idea:           'bulb-outline',              // 💡 (tip)
+  flag:           'flag-outline',              // ⚑ 🚩 (report a listing)
+  construction:   'construct-outline',         // 🚧
+
+  // Status
+  checkmark:      'checkmark-circle',          // ✅
+  checkOutline:   'checkmark-circle-outline',
+  checkbox:       'checkbox-outline',          // ☑
+  checkboxEmpty:  'square-outline',            // ☐ ⬜
+  radioOn:        'radio-button-on',           // ◉ ●
+  radioOff:       'radio-button-off',          // ○
+  dotRed:         'ellipse',                   // 🔴 🟡 🟢 (status dots; colour carries the state)
+  star:           'star-outline',              // ☆
+  starFilled:     'star',                      // ⭐ ★
+  trophy:         'trophy-outline',            // 🏆 🥇
+  medal:          'medal-outline',             // 🥈 🥉 🎖
+  diamond:        'diamond-outline',           // 💎
+  target:         'locate-outline',            // 🎯
+  rocket:         'rocket-outline',            // 🚀
+  fire:           'flame-outline',             // 🔥
+  progress:       'trending-up-outline',       // 📈
+  stats:          'stats-chart-outline',       // 📊
+  wave:           'hand-right-outline',        // 👋 (welcome back)
+  pin:            'pin-outline',               // 📌
+  handshake:      'people-outline',            // 🤝
+  puzzle:         'extension-puzzle-outline',  // 🧩
+  graduation:     'school-outline',            // 🎓
+  book:           'book-outline',              // 📖 📚 (lessons, bar prep)
 
   // Actions
-  add:            'add-circle-outline'   as const,
-  edit:           'pencil-outline'       as const,
-  delete:         'trash-outline'        as const,
-  share:          'share-outline'        as const,
-  download:       'download-outline'     as const,
-  search:         'search-outline'       as const,
-  filter:         'funnel-outline'       as const,
-  refresh:        'refresh-outline'      as const,
+  add:            'add-circle-outline',
+  edit:           'create-outline',            // ✏ ✍ 📝
+  delete:         'trash-outline',             // 🗑
+  share:          'share-outline',             // 📤
+  shareSocial:    'share-social-outline',      // 📱 (share to social)
+  download:       'download-outline',
+  save:           'save-outline',              // 💾
+  print:          'print-outline',             // 🖨
+  attach:         'attach-outline',            // 📎
+  filter:         'funnel-outline',
+  refresh:        'refresh-outline',           // ↺ ↻
+  undo:           'arrow-undo-outline',        // ↩
+  up:             'arrow-up-outline',          // ⬆
+  clean:          'sparkles-outline',          // 🧹 (clear record)
+  record:         'mic-outline',               // 🎙 🎤 (recorder, voice note)
+  stop:           'stop-circle-outline',       // ⏹
+  play:           'play-circle-outline',       // ▶
+  camera:         'camera-outline',            // 📷 📸
+  image:          'image-outline',             // 🖼
+  exit:           'exit-outline',              // 🚪
 
   // Communication
-  phone:          'call-outline'         as const,
-  message:        'chatbubble-outline'   as const,
-  chat:           'chatbubbles-outline'  as const,
-  notification:   'notifications-outline'as const,
-  mail:           'mail-outline'         as const,
+  phone:          'call-outline',              // 📞 ☎
+  phoneFilled:    'call',
+  mobile:         'phone-portrait-outline',    // 📱 📲
+  message:        'chatbubble-outline',        // 💬
+  chat:           'chatbubbles-outline',
+  notification:   'notifications-outline',     // 🔔
+  mail:           'mail-outline',              // ✉ 📧 📬 📭
+  send:           'send-outline',
+  inbox:          'file-tray-full-outline',
+  crisis:         'heart-outline',             // 💙 (crisis line 988)
+  heart:          'heart',
+  headset:        'headset-outline',           // live help
 
   // Finance
-  bail:           'cash-outline'         as const,
-  card:           'card-outline'         as const,
-  receipt:        'receipt-outline'      as const,
+  money:          'cash-outline',              // 💰
+  card:           'card-outline',              // 💳
+  receipt:        'receipt-outline',
+  wallet:         'wallet-outline',
 
-  // User / Account
-  user:           'person-outline'       as const,
-  attorney:       'person-circle-outline'as const,
-  firm:           'business-outline'     as const,
-  lock:           'lock-closed-outline'  as const,
+  // People / account
+  user:           'person-outline',            // 👤
+  attorney:       'person-circle-outline',     // 👔 (attorney)
+  firm:           'business-outline',          // 🏢
+  lawyerBadge:    'ribbon-outline',
 
-  // Rights / Legal content
-  rights:         'hand-right-outline'   as const,
-  ice:            'warning'              as const,
-  crisis:         'heart-outline'        as const,
-  family:         'people-circle-outline'as const,
+  // Places & time
+  location:       'location-outline',          // 📍
+  directions:     'navigate-outline',          // 🧭 🗺
+  map:            'map-outline',               // 🗺
+  calendar:       'calendar-outline',          // 📅 📆 🗓
+  calendarAdd:    'calendar-number-outline',
+  clock:          'time-outline',              // 🕐 🕑 ⏱
+  alarm:          'alarm-outline',             // ⏰
+  hourglass:      'hourglass-outline',         // ⏳
+  shirt:          'shirt-outline',             // 👔 (what to wear)
+  bag:            'bag-check-outline',         // ✅ (what to bring)
+  eye:            'eye-outline',
+  eyeOff:         'eye-off-outline',
+} as const satisfies Record<string, IconName>;
 
-  // UI controls
-  chevronRight:   'chevron-forward'      as const,
-  chevronDown:    'chevron-down'         as const,
-  chevronUp:      'chevron-up'           as const,
-  eye:            'eye-outline'          as const,
-  location:       'location-outline'     as const,
-  calendar:       'calendar-outline'     as const,
-  clock:          'time-outline'         as const,
-  star:           'star-outline'         as const,
-  starFilled:     'star'                 as const,
-} as const;
+export type IconKey = keyof typeof ICONS;
 
 export default AppIcon;
-

@@ -14,6 +14,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { t, tl, useLang, locale, type Lang } from '../i18n';
+import { IconLabel, ICONS } from './AppIcon';
 
 /** 'YYYY-MM-DD' or an ISO time → a long local date ('' when absent / invalid). */
 export function recordedDate(v?: string | null, lang?: Lang): string {
@@ -30,7 +31,7 @@ export function UnreviewedNotice({ text, lang, inset = true, testID = 'unreviewe
   const tx = (k: string) => (lang ? tl(lang, k) : t(k));
   return (
     <View testID={testID} style={[styles.notice, !inset && styles.flush, { backgroundColor: colors.warnBg, borderLeftColor: colors.warnDark }]} accessibilityRole="summary">
-      <Text maxFontSizeMultiplier={1.4} style={[styles.noticeText, { color: colors.textPrimary }]}>⚠️ {text || tx('src_guide_not_reviewed')}</Text>
+      <IconLabel icon={ICONS.alertHigh} color={colors.warnDark} textStyle={[styles.noticeText, { color: colors.textPrimary }]} style={styles.noticeRow}>{text || tx('src_guide_not_reviewed')}</IconLabel>
     </View>
   );
 }
@@ -53,6 +54,7 @@ export function SourceLine({ source, recorded, verified, lang, testID = 'source-
 const styles = StyleSheet.create({
   notice: { borderRadius: 10, borderLeftWidth: 4, padding: 12, marginHorizontal: 12, marginTop: 12, marginBottom: 4 },
   flush: { marginHorizontal: 0 },
+  noticeRow: { alignItems: 'flex-start' },
   noticeText: { fontSize: 13, lineHeight: 19 },
   source: { fontSize: 12, lineHeight: 17, marginTop: 6 },
 });

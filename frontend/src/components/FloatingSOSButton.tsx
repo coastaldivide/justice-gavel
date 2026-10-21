@@ -1,76 +1,61 @@
-import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator, View } from 'react-native';
-import { COLORS } from '../constants/theme';
+/**
+ * FloatingSOSButton — the SOS control, docked at the bottom of the screen.
+ *
+ * It sits in its own lane below the scrolling content (a dock in normal
+ * layout flow, not an overlay), so it can never cover text or a button at any
+ * width or scroll position. Screens may put other always-there actions in the
+ * lane beside it (`children`, e.g. Home's 911 / 988 row). Calm but
+ * unmistakable: a solid emergency-red control with a still halo — no endless
+ * pulse. Pressing it works as before (haptic + the screen's onPress, which
+ * asks before sending).
+ */
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { COLORS, useTheme } from '../constants/theme';
 import { hapticImpact } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
 
-function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?: boolean }) {
+/** Width of the content column the dock lines up with on wide screens. */
+export const SOS_DOCK_MAX_WIDTH = 760;
+
+function FloatingSOSButton({ onPress, sending, children }: { onPress: () => void; sending?: boolean; children?: React.ReactNode }) {
   useLang();
-  const pulse = useRef(new Animated.Value(1)).current;
-  const ring  = useRef(new Animated.Value(1)).current;
-
-  // isInteraction: false — an endless loop would otherwise hold an interaction
-  // handle forever and every InteractionManager.runAfterInteractions() task in
-  // the app (Home's data load among them) would never run.
-  useEffect(() => {
-    // Inner button pulse
-    const pAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 800, useNativeDriver: true, isInteraction: false }),
-        Animated.timing(pulse, { toValue: 1,    duration: 800, useNativeDriver: true, isInteraction: false }),
-      ])
-    );
-    // Outer ring expand + fade
-    const rAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(ring, { toValue: 1.5, duration: 1200, useNativeDriver: true, isInteraction: false }),
-        Animated.timing(ring, { toValue: 1,   duration: 0,    useNativeDriver: true, isInteraction: false }),
-      ])
-    );
-    pAnim.start();
-    rAnim.start();
-    return () => { pAnim.stop(); rAnim.stop(); };
-  }, [pulse, ring]);
-
+  const { colors } = useTheme();
   return (
-    <View style={styles.wrap}>
-      {/* Pulsing ring */}
-      <Animated.View style={[
-        styles.ring,
-        { transform: [{ scale: ring }], opacity: ring.interpolate({ inputRange: [1, 1.5], outputRange: [0.4, 0] }) }
-      ]} />
-      {/* Button */}
-      <Animated.View style={{ transform: [{ scale: pulse }] }}>
-        <TouchableOpacity style={styles.btn} onPress={() => { hapticImpact('Heavy').catch(() => {}); onPress(); }}
-      accessibilityLabel={t('x_floating_sosbutton_emergency_call_help')}
-      accessibilityRole="button"
-      accessibilityHint={t('x_floating_sosbutton_activates_emergency_mode')} activeOpacity={0.85} disabled={sending}>
-          {sending
-            ? <ActivityIndicator color={COLORS.white} size="small" />
-            : <>
-                <Text style={styles.label}>SOS</Text>
-                <Text style={styles.sub}>{t('x_floating_sosbutton_hold')}</Text>
-              </>
-          }
-        </TouchableOpacity>
-      </Animated.View>
+    <View testID="sos-dock" style={[styles.dock, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
+      <View style={styles.inner}>
+        <View style={styles.lead}>{children}</View>
+        <View style={[styles.halo, { backgroundColor: colors.emergencyBg, borderColor: colors.emergency }]}>
+          <TouchableOpacity testID="sos-button" style={styles.btn} onPress={() => { hapticImpact('Heavy').catch(() => {}); onPress(); }}
+            accessibilityLabel={t('x_floating_sosbutton_emergency_call_help')}
+            accessibilityRole="button"
+            accessibilityHint={t('x_floating_sosbutton_activates_emergency_mode')} activeOpacity={0.85} disabled={sending}>
+            {sending
+              ? <ActivityIndicator color={COLORS.white} size="small" />
+              : <>
+                  <Text maxFontSizeMultiplier={1.2} style={styles.label}>SOS</Text>
+                  <Text maxFontSizeMultiplier={1.2} style={styles.sub}>{t('x_floating_sosbutton_hold')}</Text>
+                </>
+            }
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap:  { position: 'absolute', right: 18, bottom: 82, zIndex: 999, alignItems: 'center', justifyContent: 'center' },
-  ring:  { position: 'absolute', width: 70, height: 70, borderRadius: 35, backgroundColor: COLORS.emergency },
+  dock:  { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 8 },
+  inner: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', maxWidth: SOS_DOCK_MAX_WIDTH, alignSelf: 'center' },
+  lead:  { flex: 1, minWidth: 0 },
+  halo:  { borderRadius: 34, padding: 3, borderWidth: 1 },
   btn:   {
-    backgroundColor: COLORS.emergency,
-    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: COLORS.emergencyDark,
+    width: 60, height: 60, borderRadius: 30,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: COLORS.emergency, shadowOpacity: 0.6,
-    shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 12,
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
   },
-  label: { color: COLORS.white, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 14, lineHeight: 21, letterSpacing: 1.5 },
-  sub:   { color: COLORS.textOnNavy, fontWeight: '700', fontSize: 11, letterSpacing: 2, marginTop: 1 },
+  label: { color: COLORS.white, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 16, lineHeight: 20, letterSpacing: 1.5 },
+  sub:   { color: COLORS.white, fontWeight: '700', fontSize: 11, lineHeight: 13, letterSpacing: 1.5 },
 });
 
 export default React.memo(FloatingSOSButton);

@@ -1,7 +1,7 @@
 import JTBLogo from '../components/JTBLogo';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, ICONS, type IconName } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -11,7 +11,7 @@ import { api } from '../services/api';
 import { consumerPlansFrom, featureLabel, type ConsumerPlan } from '../services/plans';
 import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { getLocation } from '../services/location';
-import FloatingSOSButton from '../components/FloatingSOSButton';
+import FloatingSOSButton, { SOS_DOCK_MAX_WIDTH } from '../components/FloatingSOSButton';
 import { t, initLang, useLang, perLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { getCoreProgress, consumePendingRoute, prefetchRights, type CourtDatesList } from '../services/corePath';
@@ -24,46 +24,45 @@ import * as secureStorage from '../utils/secureStorage';
 // `label` is the English reference; the tile shows t(`home_tile_${key}`) (es/pt/vi in i18n/*.json).
 // `roles`: shown only to those roles (the attorney dashboard sends everyone else straight back).
 const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
-interface Tile { key: string; icon: string; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[] }
+interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[] }
 const TILES = perLang((): Tile[] => [
-  { key: 'just_arrested', icon: '🚨', label: t('home_tile_just_arrested'), nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
-  { key: 'Emergency', label: t('home_tile_Emergency'), icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
+  { key: 'Emergency', label: t('home_tile_Emergency'), icon: ICONS.location, color: COLORS.navy, bg: COLORS.bgCard, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
   // Ordered by urgency. Most people arriving at this app need these in order.
-  { key: 'Bail',      label: t('home_tile_Bail'),    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
-  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: '⚖️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
-  { key: 'Rights',    label: t('home_tile_Rights'),     icon: '✊', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
-  { key: 'Chat',      label: t('home_tile_Chat'),     icon: '💬', color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
+  { key: 'Bail',      label: t('home_tile_Bail'),    icon: ICONS.bail, color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
+  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: ICONS.lawyer, color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
+  { key: 'Rights',    label: t('home_tile_Rights'),     icon: ICONS.rights, color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
+  { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
-  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: '📋', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
-  { key: 'Cases',     label: t('home_tile_Cases'),           icon: '📁', color: COLORS.steel, bg: COLORS.bgCard, nav: 'More:Cases',     primary: false },
-  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: '🗂️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
-  { key: 'court_locator',  icon: '🏛️', label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
-  { key: 'bail_calc',      icon: '💰', label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-  { key: 'dui_laws',       icon: '🚗', label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: COLORS.errorBg, color: COLORS.emergency, primary: false },
-  { key: 'specialty_courts',icon: '⚖️', label: t('home_tile_specialty_courts'),     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
-  { key: 'drug_penalties', icon: '💊', label: t('home_tile_drug_penalties'),  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: ICONS.clipboard, color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
+  { key: 'Cases',     label: t('home_tile_Cases'),           icon: ICONS.cases, color: COLORS.steel, bg: COLORS.bgCard, nav: 'More:Cases',     primary: false },
+  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: ICONS.clean, color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
+  { key: 'court_locator',  icon: ICONS.courthouse, label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
+  { key: 'bail_calc',      icon: ICONS.calculator, label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+  { key: 'dui_laws',       icon: ICONS.car, label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'specialty_courts',icon: ICONS.courthouse, label: t('home_tile_specialty_courts'),     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'drug_penalties', icon: ICONS.drug, label: t('home_tile_drug_penalties'),  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
   // ── Extended features — professional / specialty ──────────────────────────
-  { key: 'Advocacy',      icon: '📢', label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'ArrestMonitor', icon: '🔔', label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'AttyDash',      icon: '⚖️', label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false, roles: ATTORNEY_ROLES },
-  { key: 'CheckIn',       icon: '✅', label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Diversion',     icon: '🔄', label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyConn',    icon: '👨‍👩‍👧', label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyCourt',   icon: '🏛️', label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FirmAcq',       icon: '🏢', label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false, roles: ATTORNEY_ROLES },
-  { key: 'HousingRts',    icon: '🏠', label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Immigration',   icon: '🛂', label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Insurance',     icon: '🛡️', label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Interrogation', icon: '🎙️', label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'JuvenileJ',     icon: '🧒', label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'MentalHealth',  icon: '🧠', label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Resources',     icon: '📚', label: t('home_tile_Resources'),        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Search',        icon: '🔍', label: t('home_tile_Search'),      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Advocacy',      icon: ICONS.speak, label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'ArrestMonitor', icon: ICONS.notification, label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'AttyDash',      icon: ICONS.lawyer, label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false, roles: ATTORNEY_ROLES },
+  { key: 'CheckIn',       icon: ICONS.checkOutline, label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Diversion',     icon: ICONS.diversion, label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FamilyConn',    icon: ICONS.family, label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FamilyCourt',   icon: ICONS.courthouse, label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'FirmAcq',       icon: ICONS.firm, label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false, roles: ATTORNEY_ROLES },
+  { key: 'HousingRts',    icon: ICONS.housing, label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Immigration',   icon: ICONS.immigration, label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
+  { key: 'Insurance',     icon: ICONS.shield, label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Interrogation', icon: ICONS.record, label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'JuvenileJ',     icon: ICONS.juvenile, label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'MentalHealth',  icon: ICONS.mentalHealth, label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
+  { key: 'Resources',     icon: ICONS.library, label: t('home_tile_Resources'),        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Search',        icon: ICONS.search, label: t('home_tile_Search'),      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
 
   // ── Bar Exam Prep ─────────────────────────────────────────────────────────
-  { key: 'BarPrep',       icon: '📖', label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
+  { key: 'BarPrep',       icon: ICONS.book, label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
 ]);
 
 /** Local calendar day 'YYYY-MM-DD'. */
@@ -260,20 +259,10 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-            style={styles.helpNowBtn}
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'HelpNow' })}
-            accessibilityLabel={t('get_help_now')}
-            activeOpacity={0.85}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.helpNowBtnText}>{t('help_now')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
             accessibilityLabel={t('home_settings_a11y')} onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
-            <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
+            <AppIcon name={ICONS.settings} size={22} color={COLORS.steel} />
           </TouchableOpacity>
         </View>
       </View>
@@ -290,8 +279,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           />
         }
       >
-      <EmergencyStrip compact={false} />
-
         {/* ── "Just arrested?" core path — first thing on Home ───────────── */}
         <TouchableOpacity
           accessibilityRole="button"
@@ -301,7 +288,10 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'JustArrested' })}
           activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.3} style={styles.coreTitle}>🚨 {t('ja_title')}</Text>
+          <View style={styles.coreTitleRow}>
+            <AppIcon name={ICONS.emergency} size={26} color={colors.white} />
+            <Text maxFontSizeMultiplier={1.3} style={styles.coreTitle}>{t('ja_title')}</Text>
+          </View>
           {[t('ja_s1'), t('ja_s2'), t('ja_s3')].map((label, i) => (
             <Text key={label} maxFontSizeMultiplier={1.3} style={styles.coreStep}>{i + 1}) {label}</Text>
           ))}
@@ -341,31 +331,33 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-          style={styles.emergencyBanner}
+          testID="home-emergency-screen"
+          style={styles.rowCard}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Emergency' })}
           activeOpacity={0.85}
         >
-          <View style={styles.emergencyIconWrap}>
-            <AppIcon name="flash" size={20} color={COLORS.emergency} />
+          <View style={styles.rowIconWrap}>
+            <AppIcon name={ICONS.notification} size={20} color={colors.textBrand} />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emergencyArrow}>›</Text>
+          <AppIcon name={ICONS.chevronRight} size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
         {/* Quick Connect -- prominent package banner */}
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-          style={styles.quickConnectBanner}
+          testID="home-quick-connect"
+          style={styles.rowCard}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'QuickConnect' })}
           activeOpacity={0.85}
         >
           <View style={styles.quickConnectLeft}>
             <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('get_help_now')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('x_nav_quick_connect')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
           </View>
           <View style={styles.quickConnectRight}>
@@ -445,7 +437,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
               onPress={() => navigate(tile.nav)}
               activeOpacity={0.75}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.tileIcon}>{tile.icon}</Text>
+              <AppIcon name={tile.icon} size={24} color={tile.color} style={styles.tileIcon} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
               {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
                 <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
@@ -505,7 +497,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         </View>
       </ScrollView>
 
-      <FloatingSOSButton onPress={sendQuickSOS} sending={sosSending} />
+      <FloatingSOSButton onPress={sendQuickSOS} sending={sosSending}>
+        <EmergencyStrip inset compact={false} />
+      </FloatingSOSButton>
     </View>
 
   );
@@ -513,7 +507,8 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
 const makeStyles = (colors: any) => StyleSheet.create({
   coreCard: { backgroundColor: colors.emergencyDark, borderRadius: 16, padding: 16, marginBottom: 14, minHeight: 56 },
-  coreTitle: { color: colors.white, fontSize: 24, fontWeight: '900', marginBottom: 6 },
+  coreTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  coreTitle: { color: colors.white, fontSize: 24, fontWeight: '900', flexShrink: 1 },
   coreStep: { color: colors.white, fontSize: 16, fontWeight: '700', lineHeight: 23 },
   coreCta: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
   screen: { flex: 1, backgroundColor: colors.bg },
@@ -529,34 +524,26 @@ const makeStyles = (colors: any) => StyleSheet.create({
   brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 8 },
-  helpNowBtn: {
-    backgroundColor: COLORS.emergency,
-    paddingHorizontal: 10, paddingVertical: 10,
-    borderRadius: 8, borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)' },
-  helpNowBtnText: { color: colors.textOnNavy, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
-  settingsBtn: { padding: 6 },
+  settingsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   settingsIcon: { fontSize: 20 },
 
-  scroll: { padding: 16, paddingBottom: 110 },
+  // The SOS dock sits below the ScrollView (its own lane), so the content needs
+  // no extra room for it; the column is capped so desktop is not stretched.
+  scroll: { padding: 16, paddingBottom: 24, width: '100%', maxWidth: SOS_DOCK_MAX_WIDTH, alignSelf: 'center' },
 
-  emergencyBanner: {
-    backgroundColor: COLORS.emergency,
-    borderRadius: RADIUS.xl,
-    padding: 16,
+  rowCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border,
+    padding: 14, minHeight: 64,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginBottom: 20,
-    ...SHADOW.md,
-    shadowColor: COLORS.emergency },
-  emergencyIconWrap: {
-    width: 44, height: 44, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 12 },
+  rowIconWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.bgSubtle,
     alignItems: 'center', justifyContent: 'center' },
-  emergencyIcon: { fontSize: 22 },
-  emergencyTitle: { color: colors.textOnNavy, ...FONTS.heavy, fontSize: 15,
+  emergencyTitle: { color: colors.textPrimary, ...FONTS.heavy, fontSize: 15,
     lineHeight: 22 },
-  emergencySub:   { color: colors.textOnNavy, fontSize: 11, marginTop: 2 },
-  emergencyArrow: { color: colors.bg, fontSize: 28, ...FONTS.medium },
+  emergencySub:   { color: colors.textSecond, fontSize: 12, lineHeight: 17, marginTop: 2 },
 
   sectionLabel: {
     fontSize: 11, ...FONTS.black, color: colors.textSecond,
@@ -566,28 +553,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: '31%', aspectRatio: 1, borderRadius: RADIUS.lg,
     alignItems: 'center', justifyContent: 'center', padding: 8,
     ...SHADOW.sm },
-  tileIcon:  { fontSize: 22, marginBottom: 6 },
+  tileIcon:  { marginBottom: 6 },
   tileLabel: { fontSize: 11, ...FONTS.black, textAlign: 'center', lineHeight: 13 },
 
   countBadge: {
     marginTop: 3, paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 8, backgroundColor: COLORS.navy },
   countBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  quickConnectBanner: {
-    backgroundColor: COLORS.navy,
-    borderRadius: RADIUS.xl,
-    padding: 16, marginBottom: 16,
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: COLORS.steel + '50',
-    shadowColor: COLORS.navy, shadowOpacity: 0.28,
-    shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   quickConnectLeft:  { flex: 1 },
-  quickConnectTag:   { fontSize: 11, ...FONTS.black, color: COLORS.steel, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
-  quickConnectTitle: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
-  quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: COLORS.steel },
-  quickConnectRight: { alignItems: 'center', marginLeft: 16 },
-  quickConnectPrice: { fontSize: 36, ...FONTS.black, color: colors.textOnNavy, lineHeight: 40 },
-  quickConnectPriceSub: { fontSize: 11, color: COLORS.steel, ...FONTS.medium },
+  quickConnectTag:   { fontSize: 11, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
+  quickConnectTitle: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
+  quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: colors.textSecond },
+  quickConnectRight: { alignItems: 'center', marginLeft: 12 },
+  quickConnectPrice: { fontSize: 22, ...FONTS.black, color: colors.textPrimary, lineHeight: 26 },
+  quickConnectPriceSub: { fontSize: 11, color: colors.textSecond, ...FONTS.medium },
   footerCard: {
     backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, padding: 16,

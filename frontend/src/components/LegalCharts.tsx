@@ -106,7 +106,7 @@ export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownPr
       {/* Cash bail */}
       <View style={gc.bailRow}>
         <View style={gc.bailLabelRow}>
-          <AppIcon name={ICONS.bail} size={16} color={COLORS.navy} />
+          <AppIcon name={ICONS.money} size={16} color={COLORS.navy} />
           <Text style={gc.bailLabel}>{t('x_legal_charts_cash_bail_full_amount')}</Text>
         </View>
         <Text style={gc.bailAmount}>{fmt(cashFull)}</Text>

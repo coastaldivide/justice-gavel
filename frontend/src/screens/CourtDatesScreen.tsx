@@ -21,6 +21,7 @@ import { api, apiErrorMessage, unwrapList, deviceTimeZone } from '../services/ap
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { useTheme } from '../constants/theme';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { t, useLang, getLang, locale } from '../i18n';
 import { getToken } from '../utils/secureStorage';
 import { getUserState } from '../utils/userState';
@@ -79,6 +80,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed' | 'checklist' | 'both'; styles: any }) {
+  const { colors } = useTheme();
   useLang();
   return (
     <View>
@@ -96,14 +98,14 @@ export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed
       )}
       {(which === 'checklist' || which === 'both') && (
         <View style={styles.box} testID="court-checklist">
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>✅ {t('cd_what_to_bring')}</Text>
+          <IconLabel icon={ICONS.bag} color={colors.textPrimary} textStyle={styles.boxTitle}>{t('cd_what_to_bring')}</IconLabel>
           {g.checklist.bring.map((s, i) => (
             <View key={i} style={{ marginBottom: 6 }}>
               <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>• {s.text}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('rc_source')}: {s.source}</Text>
             </View>
           ))}
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>👔 {t('cd_what_to_wear')}</Text>
+          <IconLabel icon={ICONS.shirt} color={colors.textPrimary} textStyle={styles.boxTitle}>{t('cd_what_to_wear')}</IconLabel>
           {g.checklist.wear.map((s, i) => (
             <View key={i}>
               <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>• {s.text}</Text>
@@ -280,7 +282,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     <TouchableOpacity accessibilityRole="button" testID="court-date-row" style={[styles.row, d.archived && styles.rowPast]}
       accessibilityLabel={d.court_time ? t('cd_row_a11y_time', { title: d.case_title, day: formatCourtDay(d.court_date), time: formatCourtTime(d.court_time) }) : t('cd_row_a11y', { title: d.case_title, day: formatCourtDay(d.court_date) })}
       onPress={() => (navigation as any).navigate('CourtDateDetail', { id: d.id })}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.rowDate}>📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}</Text>
+      <IconLabel icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate}>{formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}</IconLabel>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{d.case_title}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
         {[d.hearing_type ? hearingLabel(d.hearing_type) : null, d.courthouse?.name, d.archived ? (d.status === 'scheduled' ? t('cd_past') : statusLabel(d.status)) : null].filter(Boolean).join(' · ')}
@@ -293,7 +295,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="court-dates-screen">
         <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('ja_s3')}</Text>
         <View style={styles.box} testID="court-dates-sign-in">
-          <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>🔐 {t('ja_court_signin')}</Text>
+          <IconLabel icon={ICONS.lock} color={colors.textPrimary} textStyle={styles.boxText} maxFontSizeMultiplier={1.5}>{t('ja_court_signin')}</IconLabel>
           <TouchableOpacity accessibilityRole="button" testID="court-dates-register" style={styles.primaryBtn} onPress={() => (navigation as any).navigate('Register')}>
             <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ja_create')}</Text>
           </TouchableOpacity>
@@ -304,7 +306,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
         <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} />
         {!showMissed && (
           <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setShowMissed(true)}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>❓ {t('ja_missed')}</Text>
+            <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -316,29 +318,31 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('ja_my_court_dates')}</Text>
         {phase === 'offline' && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="court-dates-offline">
-            📴 {savedAt ? t('cd_offline_saved_at', { when: new Date(savedAt).toLocaleString(locale()) }) : t('cd_offline_saved')}
-          </Text>
+          <View style={styles.offline}>
+            <IconLabel icon={ICONS.offline} color={colors.warnDark} textStyle={styles.offlineText} testID="court-dates-offline">
+              {savedAt ? t('cd_offline_saved_at', { when: new Date(savedAt).toLocaleString(locale()) }) : t('cd_offline_saved')}
+            </IconLabel>
+          </View>
         )}
         <TouchableOpacity accessibilityRole="button" testID="court-date-add" style={[styles.primaryBtn, phase === 'offline' && { opacity: 0.5 }]} onPress={openAdd} disabled={phase === 'offline'}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>＋ {t('cd_add')}</Text>
+          <IconLabel center icon={ICONS.add} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cd_add')}</IconLabel>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cd_remind_note')}</Text>
         {!!delivery && phase === 'ok' && (
           <View style={styles.box} testID="reminder-delivery-prompt">
-            <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>
-              ⚠️ {delivery.message || t('cd_delivery_problem')}
-            </Text>
+            <IconLabel icon={ICONS.alertHigh} color={colors.warnDark} textStyle={[styles.boxText, { color: colors.textPrimary }]}>
+              {delivery.message || t('cd_delivery_problem')}
+            </IconLabel>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-notifications" style={styles.secondaryBtn}
               onPress={async () => {
                 const answer = await requestNotificationsInContext().catch(() => 'declined');
                 if (answer === 'granted') { await dismissDeliveryPrompt(delivery); setDelivery(null); showToast(t('cd_notif_on'), 'success'); }
               }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🔔 {t('cd_turn_on_notif')}</Text>
+              <IconLabel center icon={ICONS.notification} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cd_turn_on_notif')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-email" style={styles.secondaryBtn}
               onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); (navigation as any).navigate('Settings'); }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✉️ {t('cd_add_email')}</Text>
+              <IconLabel center icon={ICONS.mail} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cd_add_email')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-dismiss" style={styles.secondaryBtn}
               onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); }}>
@@ -385,15 +389,15 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
 
         {(phase === 'ok' || phase === 'offline') && (
           <View testID="following-section">
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>👨‍👩‍👧 {t('cd_family_title')}</Text>
+            <IconLabel icon={ICONS.family} color={colors.textPrimary} textStyle={styles.group}>{t('cd_family_title')}</IconLabel>
             {following.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cd_family_empty')}</Text>}
             {following.map(f => (
               <View key={f.follow_id} style={styles.row} testID="following-case">
                 <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{f.owner_first_name ? `${f.owner_first_name}: ` : ''}{f.case_title}</Text>
                 {f.court_dates.filter(d => !d.is_past).map(d => (
-                  <Text key={d.id} maxFontSizeMultiplier={1.4} style={styles.rowDate} testID="following-court-date">
-                    📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
-                  </Text>
+                  <IconLabel key={d.id} icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate} testID="following-court-date">
+                    {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
+                  </IconLabel>
                 ))}
                 {f.court_dates.filter(d => !d.is_past).length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{t('cd_follow_no_dates')}</Text>}
                 {phase === 'ok' && (
@@ -418,7 +422,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
         <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} />
         {!showMissed && (
           <TouchableOpacity accessibilityRole="button" testID="court-dates-missed" style={styles.secondaryBtn} onPress={() => setShowMissed(true)}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>❓ {t('ja_missed')}</Text>
+            <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -464,7 +468,10 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_courthouse_optional')}</Text>
           {courthouse ? (
             <TouchableOpacity accessibilityRole="button" testID="court-form-courthouse-selected" style={styles.row} onPress={() => setCourthouse(null)}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>🏛️ {courthouse.name}  ✕</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <IconLabel icon={ICONS.courthouse} color={colors.textPrimary} textStyle={styles.rowTitle} style={{ flex: 1 }}>{courthouse.name}</IconLabel>
+                <AppIcon name={ICONS.close} size={18} color={colors.textSecond} accessibilityLabel={t('cd_clear_courthouse_a11y')} />
+              </View>
             </TouchableOpacity>
           ) : (
             <>
@@ -506,7 +513,8 @@ export const makeStyles = (c: any) => StyleSheet.create({
   group: { color: c.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 18, marginBottom: 8 },
   muted: { color: c.textSecond, fontSize: 14, lineHeight: 20, marginVertical: 6 },
   label: { color: c.textPrimary, fontSize: 15, fontWeight: '800', marginTop: 12, marginBottom: 6 },
-  offline: { color: c.warnDark, backgroundColor: c.warnBg, borderRadius: 10, padding: 10, fontSize: 13, marginBottom: 8 },
+  offline: { backgroundColor: c.warnBg, borderRadius: 10, padding: 10, marginBottom: 8 },
+  offlineText: { color: c.warnDark, fontSize: 13, lineHeight: 18 },
   row: { backgroundColor: c.bgCard, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: c.border, minHeight: 48 },
   rowPast: { opacity: 0.8 },
   rowDate: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },

@@ -235,9 +235,9 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
 
 
-  test('3-05: OfflineBanner shows 📡 and its text in the app language', async () => {
+  test('3-05: OfflineBanner shows the offline icon and its text in the app language', async () => {
     const src = feSource(__REPO + '/frontend/src/components/OfflineBanner.tsx');
-    expect(src).toContain('📡');
+    expect(src).toContain('ICONS.offline');            // UI pass 1: an Ionicon, not the 📡 emoji
     expect(src).toContain('No internet connection');   // en.json no_internet, resolved by feSource
   });
 
@@ -256,37 +256,38 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. FloatingSOSButton — pulse+ring animation, sending state
 // ═══════════════════════════════════════════════════════════════════════════
-describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
+describe('4. FloatingSOSButton — docked, calm SOS control (UI pass 1)', () => {
 
-  test('4-01: FloatingSOSButton has inner pulse animation', async () => {
+  // UI pass 1: the SOS control is docked in its own lane below the scrolling
+  // content (never an overlay), with a still halo instead of an endless
+  // pulse/ring loop — calmer, and it can never cover text or buttons
+  // (frontend/scripts/web-journeys-ui.cjs U1 measures this in Chromium).
+  test('4-01: FloatingSOSButton has no endless animation loop', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    expect(src).toContain('pulse');
-    expect(src).toContain('Animated.timing');
-    expect(src).toContain('Animated.loop');
-    expect(src).toContain('Animated.sequence');
+    expect(src).not.toContain('Animated.loop');
+    expect(src).not.toContain('Animated.timing');
   });
 
-  test('4-02: pulse animation breathes 1.0 → 1.08 → 1.0', async () => {
+  test('4-02: the SOS sits in a dock in layout flow, not an absolute overlay', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    expect(src).toContain('toValue: 1.08');
-    expect(src).toContain('duration: 800');
+    expect(src).toContain('testID="sos-dock"');
+    expect(src).not.toMatch(/position:\s*'absolute'/);
   });
 
-  test('4-03: ring animation expands and fades (1.0 → 1.5)', async () => {
+  test('4-03: still halo around the button (unmistakable without motion)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    expect(src).toContain('ring');
-    expect(src).toContain('toValue: 1.5');
-    expect(src).toContain('duration: 1200');
+    expect(src).toContain('halo');
+    expect(src).toContain('colors.emergencyBg');
   });
 
-  test('4-04: FloatingSOSButton uses useNativeDriver: true (GPU animation)', async () => {
+  test('4-04: the button is at least 44pt and lines up with the content column', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    const nativeDriverCount = (src.match(/useNativeDriver: true/g) || []).length;
-    expect(nativeDriverCount).toBeGreaterThanOrEqual(2); // pulse + ring
+    expect(src).toContain('width: 60, height: 60');
+    expect(src).toContain('SOS_DOCK_MAX_WIDTH');
   });
 
   test('4-05: sending state shows ActivityIndicator instead of SOS text', async () => {
@@ -313,12 +314,12 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
     expect(src).toContain('accessibilityRole="button"');
   });
 
-  test('4-08: animation cleanup on unmount (useEffect return)', async () => {
+  test('4-08: nothing keeps animating after unmount (no effect, no loop)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    // The effect returns a cleanup function that stops the animation
-    expect(src).toContain('pAnim.stop');
-    expect(src).toContain('rAnim.stop');
+    // No animation to clean up any more: nothing keeps running after unmount
+    expect(src).not.toContain('useEffect');
+    expect(src).not.toContain('.start()');
   });
 
   test('4-09: SOS button is a TouchableOpacity with accessibilityLabel', async () => {

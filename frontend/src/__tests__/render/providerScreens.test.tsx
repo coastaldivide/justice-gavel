@@ -119,7 +119,7 @@ describe('LawyersScreen', () => {
     on('get', '/providers/lawyers', [{ ...LAWYERS[0], phone: '+16155550001', lat: 36.1, lng: -86.7, website: 'example-law.com' }]);
     on('get', '/reviews/summary', { avg_rating: null, count: 0, top_reviews: [] });
     wrap(<LawyersScreen navigation={makeNavigation()} route={{ params: {} }} />);
-    expect(await screen.findByText('📞 Call (615) 555-0001')).toBeTruthy();
+    expect(await screen.findByText('Call (615) 555-0001')).toBeTruthy();
     fireEvent.press(screen.getByTestId('contact-call'));
     fireEvent.press(screen.getByTestId('contact-text'));
     fireEvent.press(screen.getByTestId('contact-directions'));
@@ -229,7 +229,7 @@ describe('BailSearchScreen', () => {
     on('get', '/providers/bail', [{ ...AGENTS[0], phone: '+16155550100' }]);
     wrap(<BailSearchScreen navigation={makeNavigation()} route={{ params: {} }} />);
     expect(await screen.findByText('Fast Bonds')).toBeTruthy();
-    fireEvent.press(screen.getByText('📞 Call (615) 555-0100'));
+    fireEvent.press(screen.getByText('Call (615) 555-0100'));
     expect(spy).toHaveBeenCalledWith('tel:+16155550100');
     expect(bailCall()[0][1].params).toMatchObject({ lat: 36.16, lng: -86.78 });
     expect(bailCall()[0][1].params.radiusKm).toBeUndefined();
