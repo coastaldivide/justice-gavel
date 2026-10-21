@@ -203,7 +203,7 @@ function signalTier(point) {
   if (point >= 0.70) return { tier: 'STRONG POSITION',  color: 'green',  icon: '●' };
   if (point >= 0.50) return { tier: 'BALANCED FIELD',   color: 'yellow', icon: '◐' };
   if (point >= 0.30) return { tier: 'BUILD STRENGTH',   color: 'orange', icon: '◉' };
-  return                    { tier: 'STRATEGY FOCUS',   color: 'blue',   icon: '⚑' };
+  return                    { tier: 'STRATEGY FOCUS',   color: 'blue',   icon: '○' };
 }
 
 // ─── MAIN ESTIMATOR ───────────────────────────────────────────────────────────
@@ -369,7 +369,7 @@ function buildInterpretation(entry, factors, range, applied) {
   text += ` Estimated range for this matter: ${rangeLabel}. This range reflects statistical variance — individual outcomes may fall outside it.`;
 
   if (entry.circuit_split) {
-    text += ` ⚑ Circuit split: jurisdiction strategy is critical here — different circuits apply different standards. Verifying current circuit-specific precedent is a high-priority attorney action.`;
+    text += ` Circuit split: jurisdiction strategy is critical here — different circuits apply different standards. Verifying current circuit-specific precedent is a high-priority attorney action.`;
   }
 
   return text;

@@ -38,7 +38,7 @@ import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { pollJob, JobError } from '../services/jobPoller';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang, perLang, locale }   from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticSelection, Clipboard } from '../utils/webCompat';
@@ -64,10 +64,11 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 // ── Markdown + Citation renderer ─────────────────────────────────────────────
 function MarkdownText({ text, style }: { text: string; style?: object }) {
   useLang();
+  const { colors } = useTheme();
   const { showToast } = useToast();
 
   const citationBlue = COLORS.blue;
-  const headingColor = COLORS.textPrimary;
+  const headingColor = colors.textPrimary;
 
   const openVerify = (citation: string) => {
     const q = encodeURIComponent(citation.trim());
@@ -127,7 +128,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
         );
       }
     } else if (/^---+$/.test(line.trim())) {
-      elements.push(<View key={key} style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 10 }} />);
+      elements.push(<View key={key} style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />);
     } else if (!line.trim()) {
       elements.push(<View key={key} style={{ height: 10 }} />);
     } else {
@@ -156,41 +157,41 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
 
   if (isUser) return (
     <Animated.View style={[styles.userBubble, { opacity: fadeAnim,
-      backgroundColor: COLORS.bgSubtle,
+      backgroundColor: colors.bgSubtle,
       borderColor: COLORS.navy + '33' }]}>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.userQuery, { color: COLORS.navy }]} selectable={true}>{msg.content}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.userQuery, { color: colors.textBrand }]} selectable={true}>{msg.content}</Text>
     </Animated.View>
   );
 
   return (
     <Animated.View style={[styles.assistantBubble, { opacity: fadeAnim,
-      backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
+      backgroundColor: colors.bgCard, borderColor: colors.border }]}>
       {/* Research result header */}
       <View style={styles.resultHeader}
         testID="legal-research-screen">
-        <View style={[styles.resultDot, { backgroundColor: COLORS.legal }]} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: COLORS.legal }]}>{t('x_legal_research_research_result')}</Text>
+        <View style={[styles.resultDot, { backgroundColor: colors.legal }]} />
+        <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: colors.legal }]}>{t('x_legal_research_research_result')}</Text>
       </View>
 
       {/* Knowledge cutoff banner -- every result, every time */}
-      <View style={[styles.cutoffBanner, { backgroundColor: COLORS.warnBg,
-        borderColor: COLORS.gold + '70' }]}>
-        <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.cutoffText, { color: COLORS.warnDark }]} maxFontSizeMultiplier={1.4}>{t('res_may_be_outdated')}</IconLabel>
+      <View style={[styles.cutoffBanner, { backgroundColor: colors.warnBg,
+        borderColor: colors.gold + '70' }]}>
+        <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.cutoffText, { color: colors.warnDark }]} maxFontSizeMultiplier={1.4}>{t('res_may_be_outdated')}</IconLabel>
       </View>
 
       <MarkdownText
         text={msg.content}
-        style={[styles.assistantText, { color: COLORS.textPrimary }]}
+        style={[styles.assistantText, { color: colors.textPrimary }]}
       />
       {/* Copy button */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
         <TouchableOpacity accessibilityRole="button"
           activeOpacity={0.6}
-          style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
+          style={[styles.copyBtn, { borderColor: colors.border, flex: 1 }]}
           onPress={() => { hapticSelection(); Clipboard.setString(msg.content); }}
           accessibilityLabel={t('x_legal_research_copy_research_result')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>{t('copy')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textMuted }]}>{t('copy')}</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button"
           style={[styles.copyBtn, { borderColor: COLORS.navy, flex: 1 }]}
@@ -215,7 +216,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
             } catch { showToast(t('x_legal_research_could_not_generate_pdf')); }
           }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>{t('x_legal_research_pdf_export')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textBrand }]}>{t('x_legal_research_pdf_export')}</Text>
         </TouchableOpacity>
       </View>
       {/* Discuss with AI -- continue into Defender Mode chat with research context */}
@@ -226,7 +227,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
           onPress={() => onDiscussWithAI(msg.content)}
           accessibilityLabel={t('x_legal_research_discuss_this_research_with')}
         >
-          <IconLabel icon={ICONS.lawyer} textStyle={[styles.copyBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('res_discuss_ai')}</IconLabel>
+          <IconLabel icon={ICONS.lawyer} textStyle={[styles.copyBtnText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4}>{t('res_discuss_ai')}</IconLabel>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -242,7 +243,7 @@ function PaywallView({ plans, onPlans }: { plans: Tier[]; onPlans: () => void })
     <ScrollView contentContainerStyle={styles.paywallScroll} testID="research-paywall">
       <UPLDisclaimer compact />
       <View style={[styles.paywallCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+        <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: colors.textPrimary }]}>{t('res_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: colors.textMuted }]}>{t('res_paywall_sub')}</Text>
 
@@ -527,7 +528,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   );
   if (hasAccess === null) return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <ActivityIndicator style={{ flex: 1 }} color={COLORS.navy} />
+      <ActivityIndicator style={{ flex: 1 }} color={themeColors().textBrand} />
     </View>
   );
 
@@ -544,11 +545,11 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={{ padding: 16, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
       {histLoading
-        ? <ActivityIndicator color={COLORS.navy} style={{ marginTop: 40 }} />
+        ? <ActivityIndicator color={themeColors().textBrand} style={{ marginTop: 40 }} />
         : history.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <IconLabel icon={ICONS.book} textStyle={{ fontSize: 40, marginBottom: 12 }} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.book} size={40} color={colors.textBrand} style={{ fontSize: 40, marginBottom: 12 }} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('res_history_empty')}</Text>
             <TouchableOpacity
   accessibilityRole="button"
@@ -562,9 +563,9 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
           <TouchableOpacity accessibilityRole="button"
             key={sess.id}
             style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-            accessibilityLabel={"\u2696\ufe0f"} onPress={() => loadSession(sess)}
+            accessibilityLabel={sess.title} onPress={() => loadSession(sess)}
           >
-            <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+            <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.histTitle, { color: colors.textPrimary }]}
                 numberOfLines={2}>{sess.title}</Text>
@@ -615,7 +616,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
                 backgroundColor: COLORS.navy + '14',
                 borderColor: COLORS.navy + '33'
               }]}>
-                <IconLabel icon={ICONS.cases} textStyle={[styles.contextPillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseContext}</IconLabel>
+                <IconLabel icon={ICONS.cases} textStyle={[styles.contextPillText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseContext}</IconLabel>
               </View>
             )}
 
@@ -674,7 +675,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
             backgroundColor: colors.bgCard,
             borderColor: colors.border
           }]}>
-            <ActivityIndicator size="small" color={COLORS.legal} />
+            <ActivityIndicator size="small" color={colors.legal} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.searchingText, { color: colors.textMuted }]}>
               {t('x_legal_research_searching_case_law_statutes')}
             </Text>
@@ -703,7 +704,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
           placeholder={phase === 'thread'
             ? t('res_placeholder_follow')
             : t('x_legal_research_e_g_tennessee_cases')}
-          placeholderTextColor={COLORS.textSecond}
+          placeholderTextColor={colors.textSecond}
           value={query}
           onChangeText={setQuery}
           multiline

@@ -21,24 +21,12 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
  */
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
-import { useTheme, COLORS, RADIUS } from '../constants/theme';
+import { useTheme, COLORS, RADIUS, themeColors, type ThemeColors } from '../constants/theme';
 import { hapticImpact, hapticSelection, RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { t, tl, useLang, type Lang } from '../i18n';
 import { formatPhone, telUrl } from '../utils/contact';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
-import { IconLabel, ICONS } from '../components/AppIcon';
-const C_059669 = ('\x23' + '059669') as string; // hex color
-const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
-const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
-const C_991B1B = ('\x23' + '991b1b') as string; // hex color
-const C_D97706 = ('\x23' + 'd97706') as string; // hex color
-const C_DC2626 = ('\x23' + 'dc2626') as string; // hex color
-const C_ECFDF5 = ('\x23' + 'ecfdf5') as string; // hex color
-const C_EFF6FF = ('\x23' + 'eff6ff') as string; // hex color
-const C_F5F3FF = ('\x23' + 'f5f3ff') as string; // hex color
-const C_F9FAFB = ('\x23' + 'f9fafb') as string; // hex color
-const C_FEF2F2 = ('\x23' + 'fef2f2') as string; // hex color
-const C_FFFBEB = ('\x23' + 'fffbeb') as string; // hex color
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Content ────────────────────────────────────────────────────────────────────
 
@@ -52,13 +40,17 @@ const URLS = ['https://www.raicestexas.org', 'https://www.nilc.org', 'https://ww
 const LOCATOR_URL = 'https://www.ice.gov/locator';
 const LOCATOR_SOURCE = 'ICE Online Detainee Locator System brochure (ice.gov)'; // i18n-exempt: the source's own title
 const LOCATOR_CHECKED = '2026-10-20';
-const RIGHTS = [
-  { icon: '🤐', color: C_DC2626, bg: C_FEF2F2, bold: true },
-  { icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF, bold: false },
-  { icon: '🚫', color: C_7C3AED, bg: C_F5F3FF, bold: false },
-  { icon: '🚪', color: C_D97706, bg: C_FFFBEB, bold: false },
-  { icon: '🌐', color: C_059669, bg: C_ECFDF5, bold: false },
-];
+// The five rights cards, coloured from the active theme (read during render).
+const RIGHTS = () => {
+  const c = themeColors();
+  return [
+    { icon: ICONS.silent, color: c.emergency, bg: c.emergencyBg, bold: true },
+    { icon: ICONS.lawyer, color: c.info, bg: c.infoBg, bold: false },
+    { icon: ICONS.ban, color: c.textBrand, bg: c.bgSubtle, bold: false },
+    { icon: ICONS.exit, color: c.warnDark, bg: c.warnBg, bold: false },
+    { icon: ICONS.globe, color: c.legal, bg: c.legalBg, bold: false },
+  ];
+};
 const ENDONYM: Record<Lang, string> = { en: 'English', es: 'Español', pt: 'Português', vi: 'Tiếng Việt' };
 
 function content(lang: Lang) {
@@ -67,7 +59,7 @@ function content(lang: Lang) {
     title: tx('iced_title'),
     subtitle: tx('iced_subtitle'),
     rightsLabel: tx('iced_rights_label'),
-    rights: RIGHTS.map((r, i) => ({ ...r, title: tx(`iced_r${i + 1}_title`), body: tx(`iced_r${i + 1}_body`) })),
+    rights: RIGHTS().map((r, i) => ({ ...r, title: tx(`iced_r${i + 1}_title`), body: tx(`iced_r${i + 1}_body`) })),
     stepsTitle: tx('iced_steps_title'),
     steps: [1, 2, 3, 4, 5, 6].map(n => tx(`iced_step_${n}`)),
     locateTitle: tx('iced_locate_title'),
@@ -91,47 +83,16 @@ function content(lang: Lang) {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 
-// ── Status colors (static — not theme-dependent) ──────────────────────────────
-const STATUS = {
-  danger:    C_DC2626,
-  dangerBg:  C_FEF2F2,
-  navy:      C_1D4ED8,
-  navyBg:    C_EFF6FF,
-  purple:    C_7C3AED,
-  purpleBg:  C_F5F3FF,
-  amber:     C_D97706,
-  amberBg:   C_FFFBEB,
-  success:   C_059669,
-  successBg: C_ECFDF5,
-  neutral:   C_F9FAFB,
-  errorDark: C_991B1B,
-} as const;
-
-const _HEX_ICEDETENTION = {
-  _c0: C_D97706,
-  _c1: C_991B1B,
-  _c2: C_DC2626,
-  _c3: C_FFFBEB,
-  _c4: C_059669,
-  _c5: C_F5F3FF,
-  _c6: C_FEF2F2,
-  _c7: C_EFF6FF,
-  _c8: C_1D4ED8,
-  _c9: C_7C3AED,
-  _c10: C_F9FAFB,
-  _c11: C_ECFDF5,
-} as const;
-
 function IceDetentionScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const appLang = useLang();
   // null = the app language; otherwise the language this page was switched to
   const [viewLang, setViewLang] = useState<Lang | null>(null);
   const lang: Lang = viewLang ?? appLang;
   const L = content(lang);
   const other: Lang = lang !== 'en' ? 'en' : (appLang !== 'en' ? appLang : 'es');
-  const langBtn = `${ENDONYM[other]} 🌐`;
+  const langBtn = ENDONYM[other];
   const s = makeStyles(colors);
 
   const toggleLang = useCallback(() => {
@@ -172,13 +133,13 @@ function IceDetentionScreen(): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')} style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel={langBtn}>
-          <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{langBtn}</Text>
+          <IconLabel icon={ICONS.globe} textStyle={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{langBtn}</IconLabel>
         </TouchableOpacity>
       </View>
 
       {/* Header */}
       <View style={s.header}>
-        <IconLabel icon={ICONS.alertHigh} textStyle={s.headerEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.alertHigh} size={44} color={colors.white} style={s.headerEmoji} />
         <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{L.title}</Text>
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>{L.subtitle}</Text>
       </View>
@@ -190,10 +151,10 @@ function IceDetentionScreen(): React.JSX.Element {
       {L.rights.map((r, i) => (
         <View key={`rights-${i}`} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
           <View style={s.rightTop}>
-            <Text style={s.rightIcon} maxFontSizeMultiplier={1.4}>{r.icon}</Text>
+            <AppIcon name={r.icon} size={22} color={r.color} style={s.rightIcon} />
             <Text style={[s.rightTitle, { color: r.color }]} maxFontSizeMultiplier={1.4}>{r.title}</Text>
           </View>
-          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: isDark ? STATUS.neutral : COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>
+          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>
             {r.body}
           </Text>
         </View>
@@ -216,7 +177,7 @@ function IceDetentionScreen(): React.JSX.Element {
 
       {/* Detainee locator */}
       <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.locateTitle}</Text>
-      <View style={[s.locatorCard, { backgroundColor: colors.bgCard, borderColor: COLORS.legal }]}>
+      <View style={[s.locatorCard, { backgroundColor: colors.bgCard, borderColor: colors.legal }]}>
         <Text style={[s.locatorDesc, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.locateDesc}</Text>
         <TouchableOpacity
           accessibilityRole="button"
@@ -235,17 +196,17 @@ function IceDetentionScreen(): React.JSX.Element {
       {L.resources.map((r, i) => (
         <View key={`resource-${i}`} style={[
           s.resourceCard,
-          { backgroundColor: r.highlight ? COLORS.legalBg : colors.bgCard, borderColor: r.highlight ? COLORS.legal : colors.border },
+          { backgroundColor: r.highlight ? colors.legalBg : colors.bgCard, borderColor: r.highlight ? colors.legal : colors.border },
         ]}>
-          <Text style={[s.resourceName, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>
-            {r.highlight ? '⭐ ' : ''}{r.name}
-          </Text>
+          {r.highlight
+            ? <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} textStyle={[s.resourceName, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{r.name}</IconLabel>
+            : <Text style={[s.resourceName, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{r.name}</Text>}
           <Text style={[s.resourceDesc, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{r.desc}</Text>
           <View style={s.resourceBtns}>
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-              style={[s.callBtn, { backgroundColor: r.highlight ? COLORS.legal : COLORS.navy }]}
+              style={[s.callBtn, { backgroundColor: r.highlight ? colors.legal : COLORS.navy }]}
               accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
@@ -285,17 +246,17 @@ function IceDetentionScreen(): React.JSX.Element {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:   { flex: 1 },
 
   langRow:    { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, paddingBottom: 0 },
   langBtn:    { backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   langBtnTxt: { color: colors.textOnNavy, fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
-  header:      { backgroundColor: STATUS.errorDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
+  header:      { backgroundColor: colors.emergencyDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
   headerEmoji: { fontSize: 44 },
   headerTitle: { fontSize: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.bg, textAlign: 'center' },
-  headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },
+  headerSub:   { fontSize: 13, color: colors.white, textAlign: 'center', lineHeight: 19 },
 
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 1.5,
     textTransform: 'uppercase', marginTop: 20, marginBottom: 8, paddingHorizontal: 16 },
@@ -316,8 +277,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   locatorCard: { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 2, padding: 16 },
   locatorDesc: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
-  locatorBtn:  { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
-  locatorBtnTxt: { color: colors.textOnNavy, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  locatorBtn:  { backgroundColor: colors.legal, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
+  locatorBtnTxt: { color: colors.textOnAccent, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   resourceCard:  { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
   resourceName:  { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 20, marginBottom: 3 },

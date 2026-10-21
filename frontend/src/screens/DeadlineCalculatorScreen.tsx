@@ -24,16 +24,16 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   2. MoreStack navigator
  */
 import React, { useState, useMemo } from 'react';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
 import { getUserState, stateName } from '../utils/userState';
 import { t, useLang, perLang, locale } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon, type IconName } from '../components/AppIcon';
 
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
   label:       string;
-  icon:        string;
+  icon:        IconName;
   description: string;
   compute:     (arrestDate: Date | null, judgmentDate: Date | null, state: string) => Date | null;
   note:        string;
@@ -102,7 +102,7 @@ const STATE_DMV_DUI_DAYS: Record<string, number> = {
 export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
   {
     label: t('whn_dui_3_title'),
-    icon:  '🏛️',
+    icon:  ICONS.courthouse,
     description: t('x_deadline_calculator_first_court_appearance_charges'),
     note: t('x_deadline_calculator_most_states_48_72'),
     hours: true,
@@ -116,7 +116,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_dmv_license_hearing_dui'),
-    icon:  '🚗',
+    icon:  ICONS.car,
     description: t('x_deadline_calculator_deadline_request_hearing_keep'),
     note: t('x_deadline_calculator_only_applies_dui_dwi'),
     basis: 'arrest',
@@ -130,7 +130,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('whn_dui_4_title'),
-    icon:  '🔓',
+    icon:  ICONS.bail,
     description: t('x_deadline_calculator_right_bail_determination'),
     note: t('x_deadline_calculator_most_states_require_bail'),
     hours: true,
@@ -143,7 +143,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_preliminary_hearing'),
-    icon:  '📋',
+    icon:  ICONS.clipboard,
     description: t('x_deadline_calculator_probable_cause_hearing_felony'),
     note: t('x_deadline_calculator_federal_within_14_days'),
     basis: 'arrest',
@@ -155,7 +155,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_speedy_trial_assert_right'),
-    icon:  '⏱️',
+    icon:  ICONS.clock,
     description: t('x_deadline_calculator_deadline_formally_assert_6th'),
     note: t('x_deadline_calculator_assert_writing_as_early'),
     basis: 'arrest',
@@ -168,7 +168,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_federal_speedy_trial_act'),
-    icon:  '⚖️',
+    icon:  ICONS.lawyer,
     description: t('x_deadline_calculator_federal_trial_must_begin'),
     note: t('x_deadline_calculator_18_u_s_c'),
     basis: 'arrest',
@@ -180,7 +180,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_notice_appeal_federal'),
-    icon:  '📣',
+    icon:  ICONS.speak,
     description: t('x_deadline_calculator_14_day_deadline_from'),
     note: t('x_deadline_calculator_fed_r_app_p'),
     basis: 'judgment',
@@ -192,7 +192,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_notice_appeal_state_30'),
-    icon:  '📣',
+    icon:  ICONS.speak,
     description: t('x_deadline_calculator_30_day_deadline_from'),
     note: t('x_deadline_calculator_verify_state_s_exact'),
     basis: 'judgment',
@@ -204,7 +204,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_aedpa_habeas_corpus'),
-    icon:  '⚖️',
+    icon:  ICONS.lawyer,
     description: t('x_deadline_calculator_1_year_limit_from'),
     note: t('x_deadline_calculator_28_u_s_c'),
     basis: 'judgment',
@@ -217,7 +217,7 @@ export const DEADLINE_RULES = perLang((): DeadlineRule[] => [
     } },
   {
     label: t('x_deadline_calculator_state_pcr_petition'),
-    icon:  '📜',
+    icon:  ICONS.document,
     description: t('x_deadline_calculator_post_conviction_relief_state'),
     note: t('x_deadline_calculator_varies_widely_by_state'),
     basis: 'judgment',
@@ -334,6 +334,8 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   today: Date; isDark: boolean; state?: string;
 }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -401,12 +403,12 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
 
   if (!deadline) {
   return (
-      <View style={[styles.row, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, opacity: 0.5 }]}
+      <View style={[styles.row, { backgroundColor: colors.bgCard, borderColor: colors.border, opacity: 0.5 }]}
         testID="deadline-calculator-screen">
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>{rule.icon}</Text>
+        <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: COLORS.textSecond }]}>{rule.label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.rowSub, { color: COLORS.textSecond }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: colors.textSecond }]}>{rule.label}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.rowSub, { color: colors.textSecond }]}>
             {rule.basis === 'judgment'
               ? t('x_deadline_calculator_enter_judgment_date_above')
               : t('x_deadline_calculator_enter_arrest_date_above')}
@@ -419,10 +421,10 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   }
   const status = deadlineColor(deadline, today);
   const COLOR_MAP = {
-    red:   { bg: isDark ? COLORS.emergencyBg : COLORS.emergencyBg, border: COLORS.emergencyDark, text: COLORS.emergencyDark },
-    amber: { bg: isDark ? COLORS.bailBg : COLORS.warnBg, border: COLORS.warnDark, text: COLORS.warnDark },
-    green: { bg: isDark ? COLORS.legalBg : COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
-    gray:  { bg: COLORS.bgCard,                  border: COLORS.border, text: COLORS.textSecond } };
+    red:   { bg: isDark ? colors.emergencyBg : colors.emergencyBg, border: colors.emergencyDark, text: colors.emergencyDark },
+    amber: { bg: isDark ? colors.bailBg : colors.warnBg, border: colors.warnDark, text: colors.warnDark },
+    green: { bg: isDark ? colors.legalBg : colors.legalBg, border: colors.legalDark, text: colors.legalDark },
+    gray:  { bg: colors.bgCard,                  border: colors.border, text: colors.textSecond } };
   const col = COLOR_MAP[status];
 
 
@@ -435,19 +437,19 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
       activeOpacity={0.85}
       accessibilityLabel={`${rule.label}: ${formatDate(deadline)}`}
     >
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>{rule.icon}</Text>
+      <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
       <View style={{ flex: 1, marginLeft: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: COLORS.textPrimary }]}>{rule.label}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: colors.textPrimary }]}>{rule.label}</Text>
           <View style={[styles.daysBadge, { backgroundColor: col.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.daysBadgeText}>{daysLabel(deadline, today)}</Text>
           </View>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={[styles.rowDate, { color: col.text }]}>{formatDate(deadline)}</Text>
-        {weekend && <IconLabel icon={ICONS.statusWarn} textStyle={[styles.rowDesc, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4} testID="deadline-weekend">{t('dl2_weekend')}</IconLabel>}
-        <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: COLORS.textSecond }]}>{rule.description}</Text>
+        {weekend && <IconLabel icon={ICONS.statusWarn} textStyle={[styles.rowDesc, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4} testID="deadline-weekend">{t('dl2_weekend')}</IconLabel>}
+        <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: colors.textSecond }]}>{rule.description}</Text>
         {expanded && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.rowNote, { color: COLORS.textMuted, borderTopColor: COLORS.border }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.rowNote, { color: colors.textMuted, borderTopColor: colors.border }]}>
             {rule.note}
           </Text>
         )}
@@ -464,7 +466,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
                 backgroundColor: COLORS.navy + '08', alignSelf: 'flex-start', opacity: remindLoading ? 0.6 : 1 }}
             >
               <IconLabel icon={ICONS.notification} textStyle={{ fontSize: 12, lineHeight: 18,
-                color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }} maxFontSizeMultiplier={1.4}>{remindLoading ? t('x_deadline_calculator_setting') : t('x_deadline_calculator_remind_me')}</IconLabel>
+                color: themeColors().textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }} maxFontSizeMultiplier={1.4}>{remindLoading ? t('x_deadline_calculator_setting') : t('x_deadline_calculator_remind_me')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -472,10 +474,10 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
               onPress={() => addToCalendar(rule.label, deadline)}
               style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-                borderWidth: 1, borderColor: COLORS.border,
-                backgroundColor: COLORS.bgCard, alignSelf: 'flex-start' }}
+                borderWidth: 1, borderColor: colors.border,
+                backgroundColor: colors.bgCard, alignSelf: 'flex-start' }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.info,
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: colors.info,
                 fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
                 {t('x_deadline_calculator_calendar')}
               </Text>
@@ -483,7 +485,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           </View>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1.4} style={[{ color: COLORS.textMuted, marginLeft: 6 }]}>{expanded ? '▲' : '▼'}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[{ color: colors.textMuted, marginLeft: 6 }]}>{expanded ? '▲' : '▼'}</Text>
     </TouchableOpacity>
   );
 }
@@ -510,7 +512,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   }, []);
 
   const { colors, isDark } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -673,7 +675,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   );
 }
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:       { flex: 1 },
   scroll:       { padding: 16, paddingBottom: 40 },
   header:       { marginBottom: 16 },
@@ -705,10 +707,7 @@ const makeStyles = () => StyleSheet.create({
   rowSub:       { fontSize: 11, marginTop: 2 },
 
   daysBadge:    { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
-  daysBadgeText:{ color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  daysBadgeText:{ color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer:   { fontSize: 11, lineHeight: 17, textAlign: 'center', fontStyle: 'italic' } });
-
-// Module-level fallback for helper components
-const styles = makeStyles();
 export default React.memo(DeadlineCalculatorScreen);

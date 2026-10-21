@@ -105,7 +105,7 @@ describeIntegration('review follow-ups: legal content + privacy (real Postgres)'
     const got = pushesTo();
     expect(got.map(m => m.data.change)).toEqual(['added', 'changed', 'cancelled']);
     for (const m of got) {
-      expect(m.title).toBe('📅 Court date update');
+      expect(m.title).toBe('Court date update');
       expect(m.body).toBe('A court date you follow was updated. Open Justice Gavel to see the details.');
       expect(JSON.stringify(m)).not.toMatch(/SECRET-|DUI/);
     }

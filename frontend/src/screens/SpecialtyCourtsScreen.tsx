@@ -19,7 +19,7 @@ import { StatePicker } from '../components/StatePicker';
 import { ContactActions } from '../components/ContactActions';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang, getLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, type IconName } from '../components/AppIcon';
 
 type CourtType = 'Veterans' | 'Drug Court' | 'Mental Health Court';
 interface SpecialtyCourt {
@@ -28,11 +28,11 @@ interface SpecialtyCourt {
   lat: number | null; lng: number | null; source_url: string | null; created_at: string | null; text_lang?: string;
 }
 
-const TYPES: { key: CourtType | 'ALL'; label: string; icon: string }[] = [
-  { key: 'ALL', label: 'x_specialty_courts_all_specialty_courts', icon: '⚖️' },
-  { key: 'Veterans', label: 'x_specialty_courts_veterans_courts', icon: '🎖️' },
-  { key: 'Drug Court', label: 'x_specialty_courts_drug_courts', icon: '💊' },
-  { key: 'Mental Health Court', label: 'x_specialty_courts_mental_health_courts', icon: '🧠' },
+const TYPES: { key: CourtType | 'ALL'; label: string; icon: IconName }[] = [
+  { key: 'ALL', label: 'x_specialty_courts_all_specialty_courts', icon: ICONS.lawyer },
+  { key: 'Veterans', label: 'x_specialty_courts_veterans_courts', icon: ICONS.medal },
+  { key: 'Drug Court', label: 'x_specialty_courts_drug_courts', icon: ICONS.drug },
+  { key: 'Mental Health Court', label: 'x_specialty_courts_mental_health_courts', icon: ICONS.mentalHealth },
 ];
 const typeLabel = (k: string) => t(TYPES.find(x => x.key === k)?.label || 'x_specialty_courts_all_specialty_courts');
 
@@ -83,7 +83,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
         {TYPES.map(x => (
           <TouchableOpacity key={x.key} accessibilityRole="radio" aria-checked={type === x.key} testID={`specialty-type-${x.key.replace(/ /g, '-')}`}
             onPress={() => setType(x.key)} style={[s.chip, type === x.key && s.chipOn]}>
-            <Text maxFontSizeMultiplier={1.3} style={[s.chipText, type === x.key && s.chipTextOn]}>{x.icon} {t(x.label)}</Text>
+            <IconLabel icon={x.icon} maxFontSizeMultiplier={1.3} textStyle={[s.chipText, type === x.key && s.chipTextOn]}>{t(x.label)}</IconLabel>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -98,7 +98,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }} testID="specialty-courts-screen">
       {loading ? (
-        <View style={s.pad}>{header}<ActivityIndicator style={{ marginTop: 30 }} color={colors.navy} /></View>
+        <View style={s.pad}>{header}<ActivityIndicator style={{ marginTop: 30 }} color={colors.textBrand} /></View>
       ) : error ? (
         <View style={s.pad} testID="specialty-error">
           {header}

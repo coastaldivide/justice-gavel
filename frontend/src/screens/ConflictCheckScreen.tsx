@@ -66,7 +66,7 @@ function ConflictCheckScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
 
   if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('x_conflict_check_conflict_interest_check')} body={t('cc_signin_body')} onSignedIn={recheck} /></View>;
-  if (hasSession === null || firm === undefined) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (hasSession === null || firm === undefined) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
 
   return (
     <ScrollView testID="conflict-check-screen" style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">

@@ -26,7 +26,7 @@ import { daysUntil, validCourtDate } from '../utils/dateUtils';
 import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { t, useLang, locale } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 export interface DefendantRow {
   id: number; defendant_name: string; defendant_phone: string | null; defendant_email: string | null; case_number: string | null;
@@ -211,7 +211,10 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
                     {[row.case_number ? t('x_check_in_manager_case', { case_number: row.case_number }) : null, t(row.check_in_freq === 'weekly' ? 'ckm_weekly' : 'ckm_daily')].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                <Text maxFontSizeMultiplier={1.3} style={[styles.pill, { color: toneColor[st.tone], borderColor: toneColor[st.tone] }]}>{t(st.key)}</Text>
+                <View style={styles.pillRow}>
+                  {st.tone !== 'muted' && <AppIcon name={st.tone === 'ok' ? ICONS.statusOk : st.tone === 'urgent' ? ICONS.statusWarn : ICONS.hourglass} size={16} color={toneColor[st.tone]} />}
+                  <Text maxFontSizeMultiplier={1.3} style={[styles.pill, { color: toneColor[st.tone], borderColor: toneColor[st.tone] }]}>{t(st.key)}</Text>
+                </View>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.small}>
                 {[t('ckm_total', { n: row.total_checkins }),
@@ -338,6 +341,7 @@ const makeStyles = (c: any) => StyleSheet.create({
   card: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 14, marginBottom: 10 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
   name: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
+  pillRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   pill: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12, fontWeight: '700', maxWidth: '50%' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   action: { flexGrow: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },

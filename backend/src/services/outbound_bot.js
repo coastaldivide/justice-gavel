@@ -129,10 +129,10 @@ export function buildBondsmanSms(arrest) {
   const charges = arrest.charges ? arrest.charges.substring(0, 60) : 'Not specified';
 
   return [
-    `🔓 Justice Gavel — New Lead`,
-    `📍 ${county} County, ${arrest.state || 'TN'}`,
-    `💰 Bail: ${bail}`,
-    `📋 Charges: ${charges}`,
+    `Justice Gavel — New Lead`,
+    `${county} County, ${arrest.state || 'TN'}`,
+    `Bail: ${bail}`,
+    `Charges: ${charges}`,
     ``,
     `Reply YES to get full contact info for ${fee}.`,
     `Reply NO to skip. Reply STOP to opt out.`,
@@ -160,7 +160,7 @@ function buildAttorneyEmail(attorney, arrests) {
     .join('\n');
 
   return {
-    subject: `⚖️ ${arrests.length} new arrest${arrests.length > 1 ? 's' : ''} in ${county} County — ${noAtty} unrepresented`,
+    subject: `${arrests.length} new arrest${arrests.length > 1 ? 's' : ''} in ${county} County — ${noAtty} unrepresented`,
     text: [
       `Hi ${attorney.name || 'Attorney'},`,
       ``,
@@ -449,7 +449,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
 
     // Text the payment link
     const smsBody = [
-      `✅ Justice Gavel — Lead reserved for 2 hours`,
+      `Justice Gavel — Lead reserved for 2 hours`,
       ``,
       `Pay ${formatLeadFee(feeCents)} to unlock:`,
       linkResult.url,
@@ -516,7 +516,7 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
 
     // Deliver full arrest record via SMS
     const deliveryBody = [
-      `✅ LEAD UNLOCKED — Justice Gavel`,
+      `LEAD UNLOCKED — Justice Gavel`,
       ``,
       `Name:    ${arrest.name}`,
       `County:  ${arrest.county}, ${arrest.state}`,

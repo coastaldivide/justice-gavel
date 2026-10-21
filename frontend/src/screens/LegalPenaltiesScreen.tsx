@@ -109,7 +109,7 @@ function LegalPenaltiesScreen({ route }: ScreenProps) {
           <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.noticeText} maxFontSizeMultiplier={1.4}>{meta.disclaimer || t('pen_not_reviewed')}</IconLabel>
         </View>
 
-        {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />
+        {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />
           : error ? (
             <View style={styles.empty} testID="penalties-error">
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{error}</Text>

@@ -218,7 +218,7 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
         </View>
       )}
 
-      {loading ? <ActivityIndicator style={{ marginVertical: 32 }} size="large" color={colors.navy} /> : plans.map(plan => {
+      {loading ? <ActivityIndicator style={{ marginVertical: 32 }} size="large" color={colors.textBrand} /> : plans.map(plan => {
         const mine = current?.tier === plan.key;
         return (
           <View key={plan.key} testID={`plan-${plan.key}`} style={[s.card, mine && { borderColor: colors.legal }]}>

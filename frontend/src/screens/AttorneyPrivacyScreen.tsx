@@ -69,8 +69,8 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
       </View>
 
       {/* Effective date */}
-      <View style={[s.effectiveBadge, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-        <Text style={[s.effectiveText, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
+      <View style={[s.effectiveBadge, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <Text style={[s.effectiveText, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>
           {t('x_attorney_privacy_effective_january_1_2026')}
         </Text>
         <TouchableOpacity
@@ -79,7 +79,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
           accessibilityLabel={t('x_attorney_privacy_full_privacy_policy')}
           onPress={() => navigation?.navigate('PrivacyPolicy')}
         >
-          <Text style={[s.fullPolicyLink, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_full_privacy_policy_2')}</Text>
+          <Text style={[s.fullPolicyLink, { color: colors.textBrand }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_full_privacy_policy_2')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -98,7 +98,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
         ) : SECTIONS().map((sec, idx) => (
         <View
           key={`SECTIONS-${idx}`}
-          style={[s.section, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+          style={[s.section, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
         >
           <TouchableOpacity
             accessibilityRole="button"
@@ -107,14 +107,14 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
             accessibilityLabel={sec.title} accessibilityState={{ expanded: expanded === idx }} onPress={() => setExpanded(expanded === idx ? null : idx)}
           >
             <AppIcon name={sec.icon} size={22} color={colors.textBrand} style={s.sectionIcon} />
-            <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>
+            <Text style={[s.sectionTitle, { color: colors.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>
               {sec.title}
             </Text>
             <AppIcon name={expanded === idx ? ICONS.chevronUp : ICONS.chevronDown} size={16} color={colors.textMuted} style={s.chevron} />
           </TouchableOpacity>
           {expanded === idx && (
-            <View style={[s.sectionBody, { borderTopColor: COLORS.border }]}>
-              <Text style={[s.bodyText, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
+            <View style={[s.sectionBody, { borderTopColor: colors.border }]}>
+              <Text style={[s.bodyText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>
                 {sec.body}
               </Text>
             </View>
@@ -123,9 +123,9 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
       ))}
 
       {/* Contact block */}
-      <View style={[s.contactBlock, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-        <Text style={[s.contactTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_need_baa_dpa')}</Text>
-        <Text style={[s.contactBody, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
+      <View style={[s.contactBlock, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <Text style={[s.contactTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_need_baa_dpa')}</Text>
+        <Text style={[s.contactBody, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>
           {t('x_attorney_privacy_contact_our_legal_team')}
         </Text>
         <TouchableOpacity
@@ -143,7 +143,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
           style={[s.contactBtn, s.contactBtnOutline, { borderColor: COLORS.navy }]}
           onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => showToast('privacy@justicegavel.app'))}
         >
-          <Text style={[s.contactBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_request_data_deletion')}</Text>
+          <Text style={[s.contactBtnText, { color: colors.textBrand }]} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_request_data_deletion')}</Text>
         </TouchableOpacity>
       </View>
 

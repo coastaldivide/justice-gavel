@@ -3,7 +3,7 @@
  * Extracted from LawyersScreen for reuse across BailSearchScreen and RecoveryAgentsScreen.
  */
 import React from 'react';
-import { COLORS } from '../constants/theme';
+import { themeColors } from '../constants/theme';
 import { Animated, View } from 'react-native';
 
 
@@ -19,11 +19,11 @@ function SkeletonCard({ colors }: { colors: any }) {
     return () => shimmer.stopAnimation();
   }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
-  const bg = colors?.bgSubtle || COLORS.bgSubtle;
+  const bg = colors?.bgSubtle || themeColors().bgSubtle;
   return (
-    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || COLORS.white,
+    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || themeColors().bgCard,
       borderRadius: 14, padding: 16, marginBottom: 10,
-      borderWidth: 1, borderColor: colors?.border || COLORS.border }}>
+      borderWidth: 1, borderColor: colors?.border || themeColors().border }}>
       {/* Avatar + name row */}
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
         <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bg }} />

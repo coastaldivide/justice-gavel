@@ -459,7 +459,7 @@ router.post('/attachment', authRequired, attachmentLimiter, requireStorage, pars
 
     const caption = typeof req.body?.message === 'string' && req.body.message.trim()
       ? truncateStr(sanitizeStr(req.body.message.trim(), 2000), 2000)
-      : `📎 ${name}`;
+      : name;
 
     const result = await db.transaction(async (tx) => {
       const a = await tx.run(

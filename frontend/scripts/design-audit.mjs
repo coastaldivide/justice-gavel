@@ -17,9 +17,19 @@
  *                   accessibilityRole nor accessibilityLabel and no plain-text child.
  *   4. TOUCH      — interactive elements statically sized under 44x44 pt
  *                   (after hitSlop), on any screen.
+ *   5. THEME      — dark-mode leaks: a static light-palette token (COLORS.x /
+ *                   LIGHT_COLORS.x) whose value differs in DARK_COLORS, used in
+ *                   a screen, component or navigator. Such a colour stays light
+ *                   in dark mode (white tiles, white tab bar). Use the theme's
+ *                   colors (useTheme, a makeStyles(colors) factory, themed() for
+ *                   module tables, themeColors() in render-time helpers).
+ *                   Tokens identical in both palettes (navy, white, …) are fine.
+ *                   A style factory called with the static palette
+ *                   (makeStyles(COLORS)) is a leak too.
  *
  * Exit code: 0, or 1 with --ci when any contrast failure, raw hex in
- * screens/components, missing a11y role/label, or small touch target remains.
+ * screens/components, missing a11y role/label, small touch target or dark-mode
+ * leak remains.
  */
 import fs from 'fs';
 import path from 'path';
@@ -118,6 +128,10 @@ for (const f of allFiles) {
     for (const m of code.matchAll(/["'`]#[0-9a-fA-F]{3,8}["'`]/g)) {
       findings.push({ kind: 'hex', file: rel(f), line: i + 1, value: m[0].slice(1, -1) });
     }
+    // a hex colour spelled to dodge the check above, e.g. ('\x23' + 'dc2626')
+    for (const m of code.matchAll(/["'`]\\x23["'`]\s*\+\s*["'`][0-9a-fA-F]{3,8}["'`]/g)) {
+      findings.push({ kind: 'hex', file: rel(f), line: i + 1, value: m[0] });
+    }
   });
 }
 
@@ -159,6 +173,11 @@ function analyzeFile(file, countA11y = true) {
       if (obj === 'COLORS' || obj === 'LIGHT_COLORS') return { t: 'light', k: key };
       if (obj === 'DARK_COLORS') return { t: 'dark', k: key };
       if (obj === 'FONT' || obj === 'TYPE' || obj === 'SPACE' || obj === 'RADIUS') return { t: 'uncertain' };
+    }
+    // themeColors().x — the active theme's palette, read during render
+    if (ts.isPropertyAccessExpression(e) && ts.isCallExpression(e.expression) &&
+        ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'themeColors') {
+      return { t: 'token', k: e.name.text };
     }
     if (ts.isParenthesizedExpression(e)) return descFromExpr(e.expression);
     if (ts.isAsExpression(e)) return descFromExpr(e.expression);
@@ -406,6 +425,24 @@ function analyzeFile(file, countA11y = true) {
   }
 
   walk(sf, rootBackdrop ? [rootBackdrop] : []);
+
+  // THEME: static light tokens that differ in dark mode
+  if (countA11y) {
+    (function leak(n) {
+      if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) &&
+          (n.expression.text === 'COLORS' || n.expression.text === 'LIGHT_COLORS')) {
+        const k = n.name.text;
+        if (LIGHT[k] !== undefined && LIGHT[k] !== DARK[k]) {
+          findings.push({ kind: 'theme', file: rel(file), line: pos(n), token: `${n.expression.text}.${k}`, light: LIGHT[k], dark: DARK[k] });
+        }
+      }
+      // a style factory fed the static light palette: makeStyles(COLORS) / styles(COLORS, FONT)
+      if (ts.isCallExpression(n) && n.arguments.some(a => ts.isIdentifier(a) && (a.text === 'COLORS' || a.text === 'LIGHT_COLORS'))) {
+        findings.push({ kind: 'theme', file: rel(file), line: pos(n), token: `${n.expression.getText()}(COLORS)`, light: 'light palette', dark: 'never used' });
+      }
+      ts.forEachChild(n, leak);
+    })(sf);
+  }
 }
 
 function rgbaToHex({ r, g, b }) {
@@ -454,6 +491,7 @@ console.log(`raw hex literals:            ${by('hex').length}  (screens ${hexInS
 console.log(`a11y: no role/label/text:    ${by('a11y').length}`);
 console.log(`a11y: no role (has text):    ${by('a11y-role').length}`);
 console.log(`touch targets < 44pt:        ${by('touch').length}`);
+console.log(`dark-mode leaks (static light token): ${by('theme').length}`);
 if (by('error').length) console.log(`parse errors:                ${by('error').length}`);
 
 if (VERBOSE) {
@@ -463,10 +501,11 @@ if (VERBOSE) {
   }
   for (const x of by('a11y')) console.log(`[a11y] ${x.file}:${x.line} <${x.tag}> ${x.detail}`);
   for (const x of by('touch')) console.log(`[touch] ${x.file}:${x.line} <${x.tag}> ${x.w ?? '?'}x${x.h ?? '?'} eff ${x.effW ?? '?'}x${x.effH ?? '?'}`);
+  for (const x of by('theme')) console.log(`[theme] ${x.file}:${x.line} ${x.token} (light ${x.light}, dark ${x.dark}) stays light in dark mode`);
 }
 
 if (args.includes('--ci')) {
-  const bad = contrastFindings.length + hexInScreens.length + hexInComponents.length + by('a11y').length + by('touch').length;
+  const bad = contrastFindings.length + hexInScreens.length + hexInComponents.length + by('a11y').length + by('touch').length + by('theme').length;
   if (bad > 0) {
     console.error(`design-audit --ci: ${bad} blocking findings`);
     process.exitCode = 1;
@@ -485,6 +524,7 @@ if (JSON_OUT) {
       a11y: by('a11y').length,
       a11yRole: by('a11y-role').length,
       touch: by('touch').length,
+      theme: by('theme').length,
     },
     findings: findings.filter(x => x.kind !== 'contrast').concat(contrastFindings),
   }, null, 2));

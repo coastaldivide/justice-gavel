@@ -33,7 +33,7 @@ import {
 import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
 import { t, perLang, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
 
@@ -50,27 +50,27 @@ export function contentFitsViewport(contentHeight: number, viewportHeight: numbe
 // This summary hits the legally critical points in plain language.
 const SUMMARY_POINTS = perLang(() => [
   {
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     title: t('x_terms_acceptance_modal_not_law_firm'),
     body: t('x_terms_acceptance_modal_justice_gavel_legal_information'),
   },
   {
-    icon: '🤖',
+    icon: ICONS.ai,
     title: t('x_terms_acceptance_modal_ai_may_be_wrong'),
     body: t('x_terms_acceptance_modal_our_ai_assistant_can'),
   },
   {
-    icon: '📅',
+    icon: ICONS.calendar,
     title: t('x_terms_acceptance_modal_deadlines_advisory'),
     body: t('x_terms_acceptance_modal_deadline_alerts_deadline_calculation'),
   },
   {
-    icon: '🔒',
+    icon: ICONS.lock,
     title: t('x_terms_acceptance_modal_data_secure'),
     body: t('x_terms_acceptance_modal_case_notes_aes_256'),
   },
   {
-    icon: '📱',
+    icon: ICONS.mobile,
     title: t('x_terms_acceptance_modal_recording_laws_vary'),
     body: t('x_terms_acceptance_modal_encounter_recorder_feature_legal'),
   },
@@ -181,7 +181,7 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           )}
 {SUMMARY_POINTS().map((pt, i) => (
             <View key={`point-${i}`} style={s.point}>
-              <Text maxFontSizeMultiplier={1.4} style={s.pointIcon}>{pt.icon}</Text>
+              <AppIcon name={pt.icon} size={22} color={colors.textBrand} style={s.pointIcon} />
               <View style={s.pointBody}>
                 <Text maxFontSizeMultiplier={1.4} style={s.pointTitle}>{pt.title}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.pointText}>{pt.body}</Text>

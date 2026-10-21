@@ -6,7 +6,7 @@
  * Legal requirement: ABA Model Rule 5.5 / state UPL statutes.
  */
 import React from 'react';
-import { TINTS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { View, Text, StyleSheet } from 'react-native';
 import { t, useLang } from '../i18n';
 import { AppIcon, IconLabel, ICONS } from './AppIcon';
@@ -18,6 +18,8 @@ interface Props {
 
 export default function UPLDisclaimer({ compact, attorney }: Props) {
   useLang();
+  const { colors } = useTheme();
+  const s = makeS(colors);
   if (compact) {
     return (
       <View style={s.compact}>
@@ -29,7 +31,7 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
   }
   return (
     <View style={s.banner} accessibilityRole="text" accessibilityLabel={t('upl_a11y')}>
-      <AppIcon name={ICONS.alertNormal} size={18} color={TINTS.amber.text} style={s.icon} />
+      <AppIcon name={ICONS.alertNormal} size={18} color={colors.goldText} style={s.icon} />
       <View style={s.textBlock}>
         <Text style={s.heading} maxFontSizeMultiplier={1.3}>
           {attorney ? t('upl_attorney_heading') : t('upl_heading')}
@@ -42,12 +44,12 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  banner:      { flexDirection: 'row', backgroundColor: TINTS.amber.bg, borderLeftWidth: 3, borderLeftColor: TINTS.amber.border, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
+const makeS = (colors: ThemeColors) => StyleSheet.create({
+  banner:      { flexDirection: 'row', backgroundColor: colors.warnBg, borderLeftWidth: 3, borderLeftColor: colors.gold, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
   icon:        { marginRight: 10, marginTop: 1 },
   textBlock:   { flex: 1 },
-  heading:     { fontSize: 12, fontWeight: '700', color: TINTS.amber.text, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
-  body:        { fontSize: 11, color: TINTS.amber.text, lineHeight: 16 },
-  compact:     { backgroundColor: TINTS.amber.bg, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: 1, borderTopColor: TINTS.amber.border },
-  compactText: { fontSize: 11, color: TINTS.amber.text, textAlign: 'center' },
+  heading:     { fontSize: 12, fontWeight: '700', color: colors.textPrimary, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
+  body:        { fontSize: 11, color: colors.textPrimary, lineHeight: 16 },
+  compact:     { backgroundColor: colors.warnBg, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.gold },
+  compactText: { fontSize: 11, color: colors.textPrimary, textAlign: 'center' },
 });

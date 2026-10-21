@@ -308,9 +308,10 @@ describe('4. FloatingSOSButton — docked, calm SOS control (UI pass 1)', () => 
   test('4-07: FloatingSOSButton uses Heavy impact for emergency action', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    // FloatingSOSButton uses COLORS.emergency for its visual style
-    // Haptic feedback is the responsibility of the onPress handler (caller decides weight)
-    expect(src).toContain('COLORS.emergency');
+    // FloatingSOSButton uses the theme's emergency red for its visual style
+    // (UI pass 2: makeStyles(colors) — colors.emergencyDark in both themes)
+    expect(src).toContain('colors.emergencyDark');
+    expect(src).toContain("hapticImpact('Heavy')");
     expect(src).toContain('accessibilityRole="button"');
   });
 

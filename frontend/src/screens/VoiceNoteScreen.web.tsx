@@ -15,14 +15,14 @@ import { appendCaseNote } from '../services/caseNotes';
 import { useToast } from '../components/ToastProvider';
 import { Clipboard } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 type Phase = 'idle' | 'recording' | 'processing' | 'text_input' | 'result';
 interface StructuredNote { date: string; summary: string; next_steps: string[]; flags: string[]; raw: string }
 
 function formatNote(n: StructuredNote | undefined): string {
   if (!n) return '';
-  let out = `📝 ${n.date}\n\n${n.summary}\n`;
+  let out = `${n.date}\n\n${n.summary}\n`;
   if (n.next_steps?.length) out += `\n${t('x_voice_note_next_steps')}\n${n.next_steps.map(x => `• ${x}`).join('\n')}\n`;
   if (n.flags?.length) out += `\n${t('x_voice_note_flagged_2')}\n${n.flags.map(x => `• ${x}`).join('\n')}\n`;
   return out.trim();
@@ -160,7 +160,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
             onPress={phase === 'recording' ? stopAndTranscribe : startRecording}
             style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: phase === 'recording' ? colors.emergency : colors.navy, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 32 }}>{phase === 'recording' ? '⏹' : '🎙️'}</Text>
+            <AppIcon name={phase === 'recording' ? ICONS.stop : ICONS.record} size={36} color={colors.white} />
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 13 }}>
             {phase === 'recording' ? t('x_voice_note_recording_tap_stop') : t('x_voice_note_tap_record_voice_note')}
@@ -175,7 +175,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
       {phase === 'processing' && (
         <View style={{ alignItems: 'center', gap: 10, paddingVertical: 24 }}>
-          <ActivityIndicator color={colors.navy} />
+          <ActivityIndicator color={colors.textBrand} />
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>{t('x_voice_note_structuring_note')}</Text>
         </View>
       )}

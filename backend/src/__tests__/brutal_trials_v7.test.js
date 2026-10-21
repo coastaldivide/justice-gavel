@@ -1160,17 +1160,12 @@ describe('15. PracticeAreaSelector — PRACTICE_AREAS', () => {
     expect(src).toContain('bg:');
   });
 
-  test('15-05: all practice area icons are emoji', async () => {
+  test('15-05: every practice area has an icon (UI pass 2: Ionicons from ICONS, not emoji)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/PracticeAreaSelector.tsx', 'utf8');
-    // Emoji pattern: unicode emoji in the icon field
-    const icons = src.match(/icon:\s*'([^']+)'/g) || [];
+    const icons = src.match(/icon:\s*ICONS\.\w+/g) || [];
     expect(icons.length).toBe(22);
-    // Each icon should be non-empty
-    for (const icon of icons) {
-      const val = icon.match(/'([^']+)'/)?.[1] || '';
-      expect(val.length).toBeGreaterThan(0);
-    }
+    expect(src).not.toMatch(/icon:\s*'/);
   });
 });
 

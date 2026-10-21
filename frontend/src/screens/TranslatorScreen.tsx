@@ -26,7 +26,7 @@ import { useToast } from '../components/ToastProvider';
  * Cost per session: ~$0.015 (50 messages × $0.0003)
  * Included in paid tier -- no per-session charge
  */
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Animated, KeyboardAvoidingView, Platform } from 'react-native';
@@ -34,14 +34,14 @@ import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
 import { t, useLang, perLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = perLang(() => [
-  { code: 'en', label: t('x_st_english'),    native: 'English',    flag: '🇺🇸' },
-  { code: 'es', label: t('hn_lang_spanish'),    native: 'Español',    flag: '🇲🇽' },
-  { code: 'pt', label: t('hn_lang_portuguese'), native: 'Português',  flag: '🇧🇷' },
-  { code: 'vi', label: t('hn_lang_vietnamese'), native: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'en', label: t('x_st_english'),    native: 'English' },
+  { code: 'es', label: t('hn_lang_spanish'),    native: 'Español' },
+  { code: 'pt', label: t('hn_lang_portuguese'), native: 'Português' },
+  { code: 'vi', label: t('hn_lang_vietnamese'), native: 'Tiếng Việt' },
 ]);
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -71,8 +71,9 @@ function TurnBubble({
   msg: TurnMessage; isA: boolean;
 }) {
   useLang();
+  const { colors } = useTheme();
   const { isDark } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(isA ? -12 : 12)).current;
@@ -88,7 +89,7 @@ function TurnBubble({
   const srcLang = getLang(msg.src_lang);
   const tgtLang = getLang(msg.tgt_lang);
   const aColor  = COLORS.navy;
-  const bColor  = COLORS.textSecond;
+  const bColor  = colors.textSecond;
 
   return (
     <Animated.View testID="translator-bubble" style={[
@@ -97,46 +98,46 @@ function TurnBubble({
       isA
         ? { borderLeftWidth: 3, borderLeftColor: aColor }
         : { borderRightWidth: 3, borderRightColor: bColor },
-      { backgroundColor: COLORS.bgCard, borderColor: COLORS.border },
+      { backgroundColor: colors.bgCard, borderColor: colors.border },
       msg._pending && { opacity: 0.6 },
     ]}>
       {/* Speaker label */}
       <View style={styles.bubbleSpeaker}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleSpeakerText, { color: isA ? aColor : bColor }]}>
-          {srcLang.flag} {srcLang.native}
+          {srcLang.native}
         </Text>
-        {msg._pending && <ActivityIndicator size="small" color={COLORS.textSecond} style={{ marginLeft: 6 }} />}
+        {msg._pending && <ActivityIndicator size="small" color={colors.textSecond} style={{ marginLeft: 6 }} />}
       </View>
 
       {/* Original */}
       <TouchableOpacity
           accessibilityRole="button" accessibilityHint={t('translator_tap_copy')} onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleOriginal, { color: COLORS.textPrimary }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleOriginal, { color: colors.textPrimary }]}>
           {msg.original}
         </Text>
       </TouchableOpacity>
 
       {/* Not translated (AI unavailable / busy): say so, never pass the original off as a translation */}
       {!msg._pending && msg.translated == null && (
-        <IconLabel icon={ICONS.statusWarn} textStyle={[styles.notTranslated, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4} testID="translator-not-translated">{t('translator_not_translated', { lang: tgtLang.native })}</IconLabel>
+        <IconLabel icon={ICONS.statusWarn} textStyle={[styles.notTranslated, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4} testID="translator-not-translated">{t('translator_not_translated', { lang: tgtLang.native })}</IconLabel>
       )}
 
       {/* Translation */}
       {!msg._pending && !!msg.translated && msg.translated !== msg.original && (
         <View style={[styles.translationBox, {
           backgroundColor: isA
-            ? (isDark ? COLORS.textPrimary : COLORS.bgSubtle)
-            : (isDark ? COLORS.bgCard : COLORS.bg),
+            ? (colors.bgSubtle)
+            : (isDark ? colors.bgCard : colors.bg),
           borderColor: isA ? COLORS.navy + '33' : bColor + '33',
         }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.translationLang, { color: isA ? aColor : bColor }]}>
-            {tgtLang.flag} {tgtLang.native}
+            {tgtLang.native}
           </Text>
           <TouchableOpacity
           accessibilityRole="button" accessibilityHint={t('translator_tap_copy')} onPress={() => { hapticSelection(); Clipboard.setString(msg.translated || ''); }}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.translationText, { color: COLORS.textPrimary }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.translationText, { color: colors.textPrimary }]}>
               {msg.translated}
             </Text>
           </TouchableOpacity>
@@ -154,6 +155,8 @@ function LangPicker({
   exclude?: string;
 }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.langPickerRow}
       testID="translator-screen">
@@ -162,15 +165,14 @@ function LangPicker({
           accessibilityRole="button"
           key={l.code}
           style={[styles.langChip, {
-            backgroundColor: value === l.code ? COLORS.navy : COLORS.bgCard,
-            borderColor:     value === l.code ? COLORS.navy : COLORS.border,
+            backgroundColor: value === l.code ? COLORS.navy : colors.bgCard,
+            borderColor:     value === l.code ? COLORS.navy : colors.border,
           }]}
           onPress={() => onChange(l.code)}
           accessibilityLabel={`${l.label} -- ${l.native}`}
           accessibilityState={{ selected: value === l.code }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.langChipFlag}>{l.flag}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.langChipLabel,
-            { color: value === l.code ? COLORS.bgCard : COLORS.textSecond }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={[styles.langChipLabel,
+            { color: value === l.code ? colors.bgCard : colors.textSecond }]}>
             {l.native}
           </Text>
         </TouchableOpacity>
@@ -189,6 +191,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
     return () => { mountedRef.current = false; };
   }, []);
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { initialSide } = (route?.params as import('../types/api').RouteParams) ?? {}; // 'b' for client join flow
 
@@ -369,7 +372,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
     >
       <AuthGateModal />
       <ScrollView contentContainerStyle={styles.setupScroll} keyboardShouldPersistTaps="handled">
-        <IconLabel icon={ICONS.key} textStyle={styles.joinEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.key} size={20} color={colors.textBrand} style={styles.joinEmoji} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.joinTitle, { color: colors.textPrimary }]}>
           {t('x_translator_join_translation_session_2')}
         </Text>
@@ -380,14 +383,14 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         <TextInput
           style={[styles.codeInput, {
             backgroundColor: colors.bgCard,
-            borderColor: joinError ? COLORS.emergency : colors.border,
+            borderColor: joinError ? colors.emergency : colors.border,
             color: colors.textPrimary,
           }]}
           testID="translator-code-input"
           value={joinCode}
           onChangeText={v => { setJoinCode(v.toUpperCase()); setJoinError(''); }}
           placeholder="K7M2PX"
-          placeholderTextColor={COLORS.textSecond}
+          placeholderTextColor={colors.textSecond}
           autoCapitalize="characters"
           maxLength={6}
           keyboardType="default"
@@ -430,7 +433,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       <AuthGateModal />
       <ScrollView contentContainerStyle={styles.setupScroll} keyboardShouldPersistTaps="handled">
 
-        <IconLabel icon={ICONS.speak} textStyle={styles.setupEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.speak} size={20} color={colors.textBrand} style={styles.setupEmoji} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupTitle, { color: colors.textPrimary }]}>
           {t('x_translator_attorney_client_interpreter')}
         </Text>
@@ -441,8 +444,8 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         {/* Mode selector */}
         <View style={[styles.modeRow, { borderColor: colors.border }]}>
           {[
-            { key: 'solo',  icon: '📱', label: t('translator_one_phone'), sub: t('x_translator_pass_phone_back_forth') },
-            { key: 'split', icon: '📲', label: t('translator_two_phones'), sub: t('x_translator_each_person_uses_their') },
+            { key: 'solo',  icon: ICONS.mobile, label: t('translator_one_phone'), sub: t('x_translator_pass_phone_back_forth') },
+            { key: 'split', icon: ICONS.mobile, label: t('translator_two_phones'), sub: t('x_translator_each_person_uses_their') },
           ].map(m => (
             <TouchableOpacity
               accessibilityRole="button"
@@ -456,14 +459,14 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
               disabled={creating}
               accessibilityLabel={m.label}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.modeIcon}>{m.icon}</Text>
+              <AppIcon name={m.icon} size={22} color={colors.textBrand} style={styles.modeIcon} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.modeLabel, { color: colors.textPrimary }]}>{m.label}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.modeSub, { color: colors.textMuted }]}>{m.sub}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {creating && <ActivityIndicator color={COLORS.navy} style={{ marginVertical: 12 }} />}
+        {creating && <ActivityIndicator color={themeColors().textBrand} style={{ marginVertical: 12 }} />}
         {/* Attorney language */}
         <Text maxFontSizeMultiplier={1.4} style={[styles.langLabel, { color: colors.textMuted }]}>
           {t('translator_attorney_lang')}
@@ -510,16 +513,16 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       {/* Session code bar */}
       {sessionCode && (
         <View style={[styles.codeBar, {
-          backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
+          backgroundColor: colors.bgSubtle,
           borderBottomColor: COLORS.navy + '33',
         }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarLabel, { color: colors.textMuted }]}>{t('translator_session_code')}</Text>
-          <Text maxFontSizeMultiplier={1.4} testID="translator-session-code" style={[styles.codeBarCode, { color: COLORS.navy }]}>{sessionCode}</Text>
+          <Text maxFontSizeMultiplier={1.4} testID="translator-session-code" style={[styles.codeBarCode, { color: themeColors().textBrand }]}>{sessionCode}</Text>
           {mode === 'split' && (
             <TouchableOpacity
               accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
              accessibilityLabel={t('x_translator_share')}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>{t('x_translator_share')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: themeColors().textBrand }]}>{t('x_translator_share')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -549,7 +552,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       >
         {messages.length === 0 && (
           <View style={styles.emptyThread}>
-            <IconLabel icon={ICONS.message} textStyle={styles.emptyThreadIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.message} size={20} color={colors.textBrand} style={styles.emptyThreadIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyThreadText, { color: colors.textMuted }]}>
               {onlySideB
                 ? t('x_translator_type_below_attorney_will', { native: langBObj.native, native2: langAObj.native })
@@ -574,12 +577,11 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         {/* Side A -- attorney (hidden if client-only mode) */}
         {!onlySideB && (
           <View style={[styles.inputHalf, styles.inputHalfA, {
-            backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
+            backgroundColor: colors.bgSubtle,
             borderTopColor: COLORS.navy + '44',
           }]}>
             <View style={styles.inputHalfLabel}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.inputSideFlag]}>{langAObj.flag}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.inputSideLabel, { color: COLORS.navy }]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[styles.inputSideLabel, { color: themeColors().textBrand }]}>
                 {langAObj.native}
               </Text>
             </View>
@@ -591,7 +593,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
                   color: colors.textPrimary,
                 }]}
                 placeholder={t('x_translator_type', { native: langAObj.native })}
-                placeholderTextColor={COLORS.textSecond}
+                placeholderTextColor={colors.textSecond}
                 testID="translator-input-a"
                 value={inputA}
                 onChangeText={setInputA}
@@ -624,8 +626,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           borderTopColor: 'rgba(84,110,122,0.27)',
         }]}>
           <View style={styles.inputHalfLabel}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.inputSideFlag}>{langBObj.flag}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.inputSideLabel, { color: colors.textSecond }]}>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.inputSideLabel, { color: colors.textSecond }]}>
               {langBObj.native}
             </Text>
           </View>
@@ -637,7 +638,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
                 color: colors.textPrimary,
               }]}
               placeholder={t('x_translator_type', { native: langBObj.native })}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               testID="translator-input-b"
               value={inputB}
               onChangeText={setInputB}
@@ -668,7 +669,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1 },
 
   // Setup
@@ -689,8 +690,6 @@ const makeStyles = () => StyleSheet.create({
   langPickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   langChip:      { flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.pill, borderWidth: 1.5 },
-  langChipFlag:  { fontSize: 16,
-    lineHeight: 24, },
   langChipLabel: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
@@ -712,7 +711,7 @@ const makeStyles = () => StyleSheet.create({
   joinError: { fontSize: 12, textAlign: 'center', marginBottom: 8 },
   joinBtn:   { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
     marginTop: 8, marginBottom: 14, ...SHADOW.sm },
-  joinBtnText:{ color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  joinBtnText:{ color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
   backLink:   { paddingVertical: 10, alignItems: 'center' },
   backLinkText:{ fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
@@ -722,11 +721,11 @@ const makeStyles = () => StyleSheet.create({
   codeBarLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase' },
   codeBarCode:  { fontSize: 18, ...FONTS.black, letterSpacing: 3, flex: 1 },
   shareCodeBtn: { paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-    borderWidth: 1.5, borderColor: COLORS.navy + '55' },
+    borderWidth: 1.5, borderColor: colors.navy + '55' },
   shareCodeText:{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   endBtn:       { paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: COLORS.emergency },
-  endBtnText:   { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+    backgroundColor: colors.emergency },
+  endBtnText:   { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   thread:        { flex: 1 },
   threadContent: { padding: 12, paddingBottom: 6 },
@@ -751,8 +750,6 @@ const makeStyles = () => StyleSheet.create({
   inputHalf:     { borderTopWidth: 0.5, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 },
   inputHalfA:    {},
   inputHalfLabel:{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
-  inputSideFlag: { fontSize: 16,
-    lineHeight: 24, },
   inputSideLabel:{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   inputRow:      { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   msgInput:      { flex: 1, borderWidth: 1.5, borderRadius: 20,
@@ -760,9 +757,6 @@ const makeStyles = () => StyleSheet.create({
     fontSize: 14, maxHeight: 90, lineHeight: 19 },
   sendBtn:       { width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center' },
-  sendBtnText:   { color: COLORS.bgCard, fontSize: 18, fontWeight: '300' },
+  sendBtnText:   { color: colors.bgCard, fontSize: 18, fontWeight: '300' },
 });
-
-// Module-level fallback for helper components
-const styles = makeStyles();
 export default React.memo(TranslatorScreen);

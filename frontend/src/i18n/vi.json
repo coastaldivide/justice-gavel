@@ -1208,7 +1208,7 @@
   "home_nudge_sub": "Lưu vụ việc, gửi cảnh báo SOS, nhận thông báo",
   "home_footer_innocent": "Vô tội cho đến khi được chứng minh là có tội.",
   "home_footer_title": "Kết nối pháp lý của bạn",
-  "home_footer_sub": "Hoạt động 24/7 · 97 thành phố trên toàn quốc",
+  "home_footer_sub": "Hoạt động 24/7 · Cả 50 tiểu bang + DC",
   "home_offline_body": "Không có kết nối internet. Tìm kiếm, tư vấn AI và các tính năng tài khoản cần có kết nối. Tài nguyên khẩn cấp và thẻ quyền đã lưu vẫn dùng được khi không có mạng.",
   "home_offline_ok": "Đã hiểu",
   "home_offline_a11y": "Không có kết nối internet — nhấn để xem những gì dùng được khi không có mạng",
@@ -1346,8 +1346,7 @@
   "x_feedback_button_cancel_feedback": "Hủy góp ý",
   "x_feedback_button_submit_feedback": "Gửi góp ý",
   "x_feedback_button_send_feedback": "Gửi góp ý",
-  "x_floating_sosbutton_emergency_call_help": "Khẩn cấp — gọi trợ giúp",
-  "x_floating_sosbutton_activates_emergency_mode": "Kích hoạt chế độ khẩn cấp",
+  "x_floating_sosbutton_emergency_call_help": "SOS: báo cho người liên hệ khẩn cấp",
   "x_gradient_header_go_back": "Quay lại",
   "x_lawyer_card_attorney": "Luật sư {name}{value}",
   "x_lawyer_card_away": ", cách {dist}",
@@ -3920,7 +3919,6 @@
   "x_permissions_turn_reminders": "Bật lời nhắc",
   "x_date_utils_days": "Còn {days} ngày",
   "x_ics_export_add_calendar": "Thêm vào lịch",
-  "x_floating_sosbutton_hold": "GIỮ",
   "x_legal_disclaimer_modal_text": "và",
   "x_advocacy_lawyers": "{n} luật sư",
   "x_arrest_monitor_monitors": "{length} / {MAX_WATCHES} mục theo dõi",
@@ -5055,5 +5053,8 @@
   "bd_profile_saved": "Đã lưu hồ sơ.",
   "x_video_consultation_join_video_call": "Tham gia cuộc gọi video",
   "hn_how_sorted": "Cách sắp xếp kết quả",
-  "cd_clear_courthouse_a11y": "Bỏ chọn"
+  "cd_clear_courthouse_a11y": "Bỏ chọn",
+  "adm_rating_of_5": "{n}/5 sao",
+  "gg_featured": "Nổi bật",
+  "sos_btn_hint": "Chạm, rồi xác nhận để gửi cảnh báo. Không có gì được gửi cho đến khi bạn xác nhận."
 }

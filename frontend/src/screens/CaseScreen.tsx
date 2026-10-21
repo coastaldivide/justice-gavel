@@ -27,7 +27,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
@@ -126,10 +126,10 @@ const CaseCard = React.memo(function CaseCard({ item, styles, colors, unread, on
   const days = date ? daysUntil(date) : null;
   const open = OPEN_STATUSES.includes(item.status);
   const closed = CLOSED_STATUSES.includes(item.status);
-  const Action = ({ id, icon, label, badge }: { id: string; icon: string; label: string; badge?: number }) => (
+  const Action = ({ id, icon, label, badge }: { id: string; icon: IconName; label: string; badge?: number }) => (
     <TouchableOpacity accessibilityRole="button" testID={`case-action-${id}`} style={styles.action} onPress={() => onAction(id, item)}
       accessibilityLabel={badge ? `${label} (${badge})` : label}>
-      <Text maxFontSizeMultiplier={1.3} style={styles.actionText} numberOfLines={2}>{icon} {label}{badge ? ` · ${badge}` : ''}</Text>
+      <IconLabel icon={icon} maxFontSizeMultiplier={1.3} textStyle={styles.actionText} numberOfLines={2}>{label}{badge ? ` · ${badge}` : ''}</IconLabel>
     </TouchableOpacity>
   );
   return (
@@ -165,16 +165,16 @@ const CaseCard = React.memo(function CaseCard({ item, styles, colors, unread, on
               accessibilityLabel={t('cs2_edit_a11y', { title: item.title })}>
               <IconLabel icon={ICONS.edit} textStyle={styles.actionPrimaryText} maxFontSizeMultiplier={1.3}>{t('x_cs_edit_case')}</IconLabel>
             </TouchableOpacity>
-            <Action id="court-dates" icon="📅" label={t('cs_court_dates')} />
-            <Action id="timeline" icon="🕑" label={t('cs2_act_timeline')} />
-            <Action id="messages" icon="💬" label={t('messages_title')} badge={unread} />
-            <Action id="documents" icon="📎" label={t('cs2_documents')} />
-            <Action id="invite" icon="👨‍👩‍👧" label={t('cs_invite_family')} />
-            {!!date && <Action id="share" icon="📤" label={t('cs2_share_date')} />}
-            <Action id="export" icon="🖨" label={t('cs2_act_export')} />
-            {open && <Action id="discovery" icon="🔍" label={t('cs2_act_discovery')} />}
-            {closed && <Action id="expungement" icon="🧹" label={t('cs2_act_expunge')} />}
-            {closed && <Action id="civil-rights" icon="⚖️" label={t('cs2_act_rights')} />}
+            <Action id="court-dates" icon={ICONS.calendar} label={t('cs_court_dates')} />
+            <Action id="timeline" icon={ICONS.clock} label={t('cs2_act_timeline')} />
+            <Action id="messages" icon={ICONS.message} label={t('messages_title')} badge={unread} />
+            <Action id="documents" icon={ICONS.attach} label={t('cs2_documents')} />
+            <Action id="invite" icon={ICONS.family} label={t('cs_invite_family')} />
+            {!!date && <Action id="share" icon={ICONS.share} label={t('cs2_share_date')} />}
+            <Action id="export" icon={ICONS.print} label={t('cs2_act_export')} />
+            {open && <Action id="discovery" icon={ICONS.search} label={t('cs2_act_discovery')} />}
+            {closed && <Action id="expungement" icon={ICONS.clean} label={t('cs2_act_expunge')} />}
+            {closed && <Action id="civil-rights" icon={ICONS.lawyer} label={t('cs2_act_rights')} />}
           </View>
         </>
       )}
@@ -482,7 +482,7 @@ function CaseScreen({ navigation }: any) {
     : signedOut ? <SignInNeeded navigation={navigation} testID="case-sign-in" title={t('sin_cases_title')} body={t('sin_cases_body')} onSignedIn={load} />
     : casesState === 'error' ? (
       <View testID="case-load-error" style={styles.empty}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📶</Text>
+        <AppIcon name={ICONS.offline} size={44} color={colors.textMuted} style={styles.emptyIcon} />
         <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('x_cs_could_not_load_cases')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_check_connection_cases_safe')}</Text>
         <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={() => { setCasesState('loading'); load(); }}>
@@ -509,7 +509,7 @@ function CaseScreen({ navigation }: any) {
         )}
         {listAll.length === 0 ? (
           <View testID="case-empty-state" style={styles.empty}>
-            <IconLabel icon={ICONS.cases} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.cases} size={20} color={colors.textBrand} style={styles.emptyIcon} />
             <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('case_empty_title')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_tap_new_case_start')}</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={openNew}>
@@ -581,25 +581,25 @@ function CaseScreen({ navigation }: any) {
   );
 
   const activeCase = cases.find(c => ['Open', 'Active'].includes(c.status));
-  const tools: { id: string; icon: string; title: string; sub: string; go: () => void }[] = [
-    { id: 'ai', icon: '⚖️', title: t('case_ai_title'), sub: t('case_ai_sub'), go: () => navigation.navigate('ChatTab', {
+  const tools: { id: string; icon: IconName; title: string; sub: string; go: () => void }[] = [
+    { id: 'ai', icon: ICONS.lawyer, title: t('case_ai_title'), sub: t('case_ai_sub'), go: () => navigation.navigate('ChatTab', {
       mode: 'defender', caseTitle: activeCase?.title,
       // i18n-exempt: context for the AI model (sent with the question, never shown)
       caseContext: activeCase ? [`Case: ${activeCase.title}`, `Status: ${activeCase.status}`, activeCase.next_court_date ? `Court date: ${String(activeCase.next_court_date).slice(0, 10)}` : null].filter(Boolean).join('\n') : null,
     }) },
-    { id: 'motions', icon: '📄', title: t('x_cs_motion_library'), sub: t('case_motion_sub'), go: () => navigation.navigate('MotionLibrary', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
-    { id: 'discovery', icon: '🔍', title: t('disc_title'), sub: t('case_discovery_sub'), go: () => navigation.navigate('Discovery', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
-    { id: 'research', icon: '📚', title: t('legal_research'), sub: t('case_research_sub'), go: () => navigation.navigate('LegalResearch', { caseContext: activeCase?.title }) },
-    { id: 'voice', icon: '🎙', title: t('x_cs_voice_notes'), sub: t('case_voice_sub'), go: () => navigation.navigate('VoiceNote', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
-    { id: 'interpreter', icon: '🗣', title: t('translator_title'), sub: t('case_interpreter_sub'), go: () => navigation.navigate('Translator') },
-    { id: 'deadlines', icon: '⏰', title: t('x_cs_deadline_calculator'), sub: t('x_cs_arraignment_appeal_aedpa_speedy'), go: () => navigation.navigate('DeadlineCalculator') },
+    { id: 'motions', icon: ICONS.document, title: t('x_cs_motion_library'), sub: t('case_motion_sub'), go: () => navigation.navigate('MotionLibrary', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
+    { id: 'discovery', icon: ICONS.search, title: t('disc_title'), sub: t('case_discovery_sub'), go: () => navigation.navigate('Discovery', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
+    { id: 'research', icon: ICONS.book, title: t('legal_research'), sub: t('case_research_sub'), go: () => navigation.navigate('LegalResearch', { caseContext: activeCase?.title }) },
+    { id: 'voice', icon: ICONS.record, title: t('x_cs_voice_notes'), sub: t('case_voice_sub'), go: () => navigation.navigate('VoiceNote', { caseId: activeCase?.id, caseTitle: activeCase?.title }) },
+    { id: 'interpreter', icon: ICONS.speak, title: t('translator_title'), sub: t('case_interpreter_sub'), go: () => navigation.navigate('Translator') },
+    { id: 'deadlines', icon: ICONS.alarm, title: t('x_cs_deadline_calculator'), sub: t('x_cs_arraignment_appeal_aedpa_speedy'), go: () => navigation.navigate('DeadlineCalculator') },
   ];
   const toolsBody = (
     <ScrollView testID="case-tools-tab" contentContainerStyle={styles.scroll}>
       <Text maxFontSizeMultiplier={1.4} style={styles.section}>{t('case_tools_section')}</Text>
       {tools.map(x => (
         <TouchableOpacity key={x.id} accessibilityRole="button" testID={`case-tool-${x.id}`} style={styles.row} onPress={x.go} accessibilityLabel={x.title}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.toolIcon}>{x.icon}</Text>
+          <AppIcon name={x.icon} size={22} color={colors.textBrand} style={styles.toolIcon} />
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{x.title}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{x.sub}</Text>
@@ -697,7 +697,7 @@ function CaseScreen({ navigation }: any) {
                   accessibilityLabel={t('x_cs_scan_document_auto_fill')}>
                   {scanning ? <ActivityIndicator color={colors.textOnNavy} /> : (
                     <>
-                      <IconLabel icon={ICONS.camera} textStyle={styles.scanIcon} maxFontSizeMultiplier={1.3}></IconLabel>
+                      <AppIcon name={ICONS.camera} size={20} color={colors.textBrand} style={styles.scanIcon} />
                       <View style={{ flex: 1 }}>
                         <Text maxFontSizeMultiplier={1.3} style={styles.scanTitle}>{t('x_cs_scan_document_2')}</Text>
                         <Text maxFontSizeMultiplier={1.3} style={styles.scanSub}>{t('x_cs_auto_fill_from_charging')}</Text>
@@ -801,7 +801,7 @@ function CaseScreen({ navigation }: any) {
                   placeholder={t('cs_email_placeholder')} placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
                 <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: inviteConsent }} testID="case-invite-consent" style={styles.checkRow}
                   onPress={() => setInviteConsent(v => !v)}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.checkText}>{inviteConsent ? '☑' : '☐'} {t('cs_invite_consent')}</Text>
+                  <IconLabel icon={inviteConsent ? ICONS.checkbox : ICONS.checkboxEmpty} iconColor={colors.textBrand} maxFontSizeMultiplier={1.4} textStyle={styles.checkText}>{t('cs_invite_consent')}</IconLabel>
                 </TouchableOpacity>
                 {!!inviteError && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4}>{inviteError}</IconLabel>}
                 <TouchableOpacity accessibilityRole="button" testID="case-invite-create" style={[styles.primaryBtn, (!inviteConsent || inviting) && { opacity: 0.5 }]}

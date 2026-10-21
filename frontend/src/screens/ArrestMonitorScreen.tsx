@@ -11,7 +11,7 @@ import type { ScreenProps } from '../types/navigation';
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 import { stateName } from '../utils/userState';
 import { getToken } from '../utils/secureStorage';
@@ -131,7 +131,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
       <View style={[styles.screen, { backgroundColor: colors.bg }]}
         testID="arrest-monitor-screen">
         <View style={styles.upsellCard}>
-          <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
+          <AppIcon name="notifications-outline" size={20} color={themeColors().textBrand} />
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>{t('x_arrest_monitor_arrest_monitoring')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellBody}>
             {t('x_arrest_monitor_get_push_alert_when')}
@@ -178,7 +178,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={COLORS.navy} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={themeColors().textBrand} /></View>
       ) : (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -243,7 +243,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
                 <TextInput
                   style={styles.formInput}
                   accessibilityLabel={t('x_arrest_monitor_full_name_monitor')} placeholder={t('x_arrest_monitor_full_name_e_g')}
-                  placeholderTextColor={COLORS.textSecond}
+                  placeholderTextColor={colors.textSecond}
                   value={name}
                   onChangeText={setName}
                   autoFocus
@@ -255,7 +255,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
                   <TextInput
                     style={[styles.formInput, { flex: 1 }]}
                     accessibilityLabel={t('x_arrest_monitor_county_optional')} placeholder={t('x_arrest_monitor_county_optional')}
-                    placeholderTextColor={COLORS.textSecond}
+                    placeholderTextColor={colors.textSecond}
                     value={county}
                     onChangeText={setCounty}
           returnKeyType="next"
@@ -265,7 +265,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
           accessibilityLabel={t('state')}
                     style={[styles.formInput, { width: 70 }]}
                     placeholder={t('state')}
-                    placeholderTextColor={COLORS.textSecond}
+                    placeholderTextColor={colors.textSecond}
                     value={state}
                     onChangeText={v => setState(v.toUpperCase().slice(0, 2))}
                     autoCapitalize="characters"
@@ -322,7 +322,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen:  { flex: 1, backgroundColor: COLORS.bg },
+  screen:  { flex: 1, backgroundColor: colors.bg },
   scroll:  { padding: 16 },
   center:  { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
@@ -336,7 +336,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   upsellCheck:       { color: colors.legal, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18 },
   upsellFeatureText: { fontSize: 14, lineHeight: 21, color: colors.textBrand, flex: 1 },
   upsellBtn:         { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, paddingHorizontal: 24, width: '100%', alignItems: 'center', ...SHADOW.md },
-  upsellBtnText:     { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.heavy },
+  upsellBtnText:     { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.heavy },
   upsellSkip:        { marginTop: 14 },
   upsellSkipText:    { color: colors.textMuted, fontSize: 12 },
 
@@ -348,35 +348,35 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusCount:  { fontSize: 12, color: colors.textMuted, ...FONTS.semi },
 
   // Empty
-  emptyCard:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xl, padding: 32, alignItems: 'center', marginBottom: 12, ...SHADOW.sm },
+  emptyCard:  { backgroundColor: colors.bgCard, borderRadius: RADIUS.xl, padding: 32, alignItems: 'center', marginBottom: 12, ...SHADOW.sm },
   emptyIcon:  { marginBottom: 10 },
-  emptyTitle: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
-  emptySub:   { fontSize: 12, color: COLORS.textMuted, textAlign: 'center', lineHeight: 18 },
+  emptyTitle: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: colors.textBrand, marginBottom: 6 },
+  emptySub:   { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18 },
 
   // Watch cards
-  watchCard:    { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...SHADOW.sm, borderLeftWidth: 3, borderLeftColor: COLORS.navy },
-  watchName:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 2 },
-  watchLocation:{ fontSize: 12, color: COLORS.textMuted },
-  watchStatus:  { fontSize: 11, color: COLORS.info, marginTop: 2 },
-  matchBadge:   { backgroundColor: COLORS.infoBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: COLORS.steelMid },
-  matchText:    { fontSize: 12, color: COLORS.info, ...FONTS.bold },
-  removeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  removeBtnText:{ fontSize: 12, lineHeight: 20, color: COLORS.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  watchCard:    { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...SHADOW.sm, borderLeftWidth: 3, borderLeftColor: COLORS.navy },
+  watchName:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
+  watchLocation:{ fontSize: 12, color: colors.textMuted },
+  watchStatus:  { fontSize: 11, color: colors.info, marginTop: 2 },
+  matchBadge:   { backgroundColor: colors.infoBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: colors.steelMid },
+  matchText:    { fontSize: 12, color: colors.info, ...FONTS.bold },
+  removeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  removeBtnText:{ fontSize: 12, lineHeight: 20, color: colors.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   // Add form
-  addForm:       { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xl, padding: 16, marginBottom: 12, ...SHADOW.sm },
-  addFormTitle:  { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 12 },
-  formInput:     { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15, lineHeight: 22, color: COLORS.textPrimary, backgroundColor: COLORS.bg, marginBottom: 8 },
+  addForm:       { backgroundColor: colors.bgCard, borderRadius: RADIUS.xl, padding: 16, marginBottom: 12, ...SHADOW.sm },
+  addFormTitle:  { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 12 },
+  formInput:     { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15, lineHeight: 22, color: colors.textPrimary, backgroundColor: colors.bg, marginBottom: 8 },
   addBtn:        { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
-  addBtnText:    { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 14,
+  addBtnText:    { color: colors.white, ...FONTS.heavy, fontSize: 14,
     lineHeight: 21},
-  cancelFormBtn: { paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border },
-  cancelFormText:{ color: COLORS.textMuted, fontSize: 12, lineHeight: 20, ...FONTS.semi },
-  addTrigger:    { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginBottom: 12, borderWidth: 1.5, borderColor: COLORS.navy, borderStyle: 'dashed' },
-  addTriggerText:{ color: COLORS.navy, fontSize: 14, lineHeight: 21, ...FONTS.heavy },
+  cancelFormBtn: { paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center', borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border },
+  cancelFormText:{ color: colors.textMuted, fontSize: 12, lineHeight: 20, ...FONTS.semi },
+  addTrigger:    { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginBottom: 12, borderWidth: 1.5, borderColor: COLORS.navy, borderStyle: 'dashed' },
+  addTriggerText:{ color: colors.textBrand, fontSize: 14, lineHeight: 21, ...FONTS.heavy },
 
   // Info
-  infoCard:  { backgroundColor: COLORS.bg, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: COLORS.border },
-  infoTitle: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
-  infoText:  { fontSize: 12, color: COLORS.textMuted, lineHeight: 17 }});
+  infoCard:  { backgroundColor: colors.bg, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: colors.border },
+  infoTitle: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: colors.textBrand, marginBottom: 6 },
+  infoText:  { fontSize: 12, color: colors.textMuted, lineHeight: 17 }});
 export default React.memo(ArrestMonitorScreen);

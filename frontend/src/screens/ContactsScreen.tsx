@@ -1,9 +1,9 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, ICONS } from '../components/AppIcon';
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { setContacts, getContacts, getUserName, setUserName } from '../services/storage';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
 interface Contact { value: string; label: string; }
@@ -74,7 +74,7 @@ function ContactsScreen(): React.JSX.Element {
         <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
       <View style={styles.infoCard}>
-        <IconLabel icon={ICONS.alertNormal} textStyle={styles.infoIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.alertNormal} size={20} color={colors.textBrand} style={styles.infoIcon} />
         <Text maxFontSizeMultiplier={1.4} style={styles.infoText}>
           {t('x_contacts_when_tap_sos_these')}
         </Text>
@@ -82,7 +82,7 @@ function ContactsScreen(): React.JSX.Element {
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>{t('x_contacts_name_shown_alerts')}</Text>
       <View style={[styles.inputWrap, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <AppIcon name="person-outline" size={20} color={COLORS.navy} />
+        <AppIcon name="person-outline" size={20} color={themeColors().textBrand} />
         <TextInput
           accessibilityLabel={t('x_contacts_e_g_jamie_smith')}
           style={[styles.input, { color: colors.textPrimary }]}
@@ -143,7 +143,7 @@ function ContactsScreen(): React.JSX.Element {
       {/* Empty state */}
       {contacts?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <IconLabel icon={ICONS.family} textStyle={{ fontSize: 40 }}></IconLabel>
+          <AppIcon name={ICONS.family} size={40} color={colors.textBrand} style={{ fontSize: 40 }} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>{t('x_contacts_no_contacts_saved')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>{t('x_contacts_add_attorneys_bondsmen_family')}</Text>
         </View>
@@ -156,21 +156,21 @@ function ContactsScreen(): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 40 },
-  infoCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 14, padding: 16, flexDirection: 'row', gap: 8, marginBottom: 20, borderWidth: 1, borderColor: COLORS.steel },
+  infoCard: { backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16, flexDirection: 'row', gap: 8, marginBottom: 20, borderWidth: 1, borderColor: COLORS.steel },
   infoIcon: { fontSize: 18, marginTop: 1 },
-  infoText: { flex: 1, fontSize: 12, color: COLORS.navy, lineHeight: 19 },
+  infoText: { flex: 1, fontSize: 12, color: colors.textBrand, lineHeight: 19 },
   sectionLabel: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: 8 },
   sectionHint: { fontSize: 12, marginBottom: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, marginBottom: 10 },
   inputIcon: { fontSize: 16, lineHeight: 24, marginRight: 8 },
   input: { flex: 1, paddingVertical: 13, fontSize: 15,
     lineHeight: 22, },
-  numBadge: { width: 22, height: 22, borderRadius: 12, backgroundColor: COLORS.navy, color: COLORS.bgCard, textAlign: 'center', lineHeight: 22, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 10 },
+  numBadge: { width: 22, height: 22, borderRadius: 12, backgroundColor: COLORS.navy, color: colors.white, textAlign: 'center', lineHeight: 22, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 10 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   typeHint: { fontSize: 11, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 70 },
   saveBtn: { backgroundColor: COLORS.navy, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 12, marginBottom: 20 },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  saveBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   tipsCard: { borderRadius: 14, padding: 16, borderWidth: 1 },
   tipsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 8 },
   tipItem: { fontSize: 12, lineHeight: 20 },

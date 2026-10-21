@@ -13,7 +13,7 @@ import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { getLocation } from '../services/location';
 import FloatingSOSButton, { SOS_DOCK_MAX_WIDTH } from '../components/FloatingSOSButton';
 import { t, initLang, useLang, perLang } from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { getCoreProgress, consumePendingRoute, prefetchRights, type CourtDatesList } from '../services/corePath';
 import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
@@ -25,45 +25,48 @@ import * as secureStorage from '../utils/secureStorage';
 // `roles`: shown only to those roles (the attorney dashboard sends everyone else straight back).
 const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
 interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[] }
-const TILES = perLang((): Tile[] => [
-  { key: 'Emergency', label: t('home_tile_Emergency'), icon: ICONS.location, color: COLORS.navy, bg: COLORS.bgCard, nav: 'More:HelpNow',   primary: false },
+const TILES = perLang((): Tile[] => {
+  const c = themeColors();
+  return [
+  { key: 'Emergency', label: t('home_tile_Emergency'), icon: ICONS.location, color: c.textBrand, bg: c.bgCard, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
   // Ordered by urgency. Most people arriving at this app need these in order.
-  { key: 'Bail',      label: t('home_tile_Bail'),    icon: ICONS.bail, color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
-  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: ICONS.lawyer, color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
-  { key: 'Rights',    label: t('home_tile_Rights'),     icon: ICONS.rights, color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
-  { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
+  { key: 'Bail',      label: t('home_tile_Bail'),    icon: ICONS.bail, color: c.bail,      bg: c.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
+  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: ICONS.lawyer, color: c.legal,     bg: c.legalBg, nav: 'LawyersTab',     primary: true },
+  { key: 'Rights',    label: t('home_tile_Rights'),     icon: ICONS.rights, color: c.textBrand,      bg: c.bgCard, nav: 'More:Education', primary: true },
+  { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: c.info, bg: c.bgCard, nav: 'ChatTab',        primary: true },
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
-  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: ICONS.clipboard, color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:WhatHappensNext', primary: false },
-  { key: 'Cases',     label: t('home_tile_Cases'),           icon: ICONS.cases, color: COLORS.steel, bg: COLORS.bgCard, nav: 'More:Cases',     primary: false },
-  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: ICONS.clean, color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
-  { key: 'court_locator',  icon: ICONS.courthouse, label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
-  { key: 'bail_calc',      icon: ICONS.calculator, label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-  { key: 'dui_laws',       icon: ICONS.car, label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: COLORS.bgCard, color: COLORS.navy, primary: false },
-  { key: 'specialty_courts',icon: ICONS.courthouse, label: t('home_tile_specialty_courts'),     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
-  { key: 'drug_penalties', icon: ICONS.drug, label: t('home_tile_drug_penalties'),  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
+  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: ICONS.clipboard, color: c.textBrand,      bg: c.bgCard, nav: 'More:WhatHappensNext', primary: false },
+  { key: 'Cases',     label: t('home_tile_Cases'),           icon: ICONS.cases, color: c.info, bg: c.bgCard, nav: 'More:Cases',     primary: false },
+  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: ICONS.clean, color: c.legal,     bg: c.legalBg, nav: 'More:Expungement', primary: false },
+  { key: 'court_locator',  icon: ICONS.courthouse, label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: c.bgCard, color: c.info, primary: false },
+  { key: 'bail_calc',      icon: ICONS.calculator, label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: c.legalBg, color: c.legal, primary: false },
+  { key: 'dui_laws',       icon: ICONS.car, label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: c.bgCard, color: c.textBrand, primary: false },
+  { key: 'specialty_courts',icon: ICONS.courthouse, label: t('home_tile_specialty_courts'),     nav: 'More:SpecialtyCourts', bg: c.bgCard, color: c.textBrand, primary: false },
+  { key: 'drug_penalties', icon: ICONS.drug, label: t('home_tile_drug_penalties'),  nav: 'More:DrugPenalties',   bg: c.bgCard, color: c.textBrand, primary: false },
   // ── Extended features — professional / specialty ──────────────────────────
-  { key: 'Advocacy',      icon: ICONS.speak, label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'ArrestMonitor', icon: ICONS.notification, label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'AttyDash',      icon: ICONS.lawyer, label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: COLORS.legalBg, color: COLORS.legal, primary: false, roles: ATTORNEY_ROLES },
-  { key: 'CheckIn',       icon: ICONS.checkOutline, label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Diversion',     icon: ICONS.diversion, label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyConn',    icon: ICONS.family, label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FamilyCourt',   icon: ICONS.courthouse, label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'FirmAcq',       icon: ICONS.firm, label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false, roles: ATTORNEY_ROLES },
-  { key: 'HousingRts',    icon: ICONS.housing, label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Immigration',   icon: ICONS.immigration, label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Insurance',     icon: ICONS.shield, label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Interrogation', icon: ICONS.record, label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'JuvenileJ',     icon: ICONS.juvenile, label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'MentalHealth',  icon: ICONS.mentalHealth, label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
-  { key: 'Resources',     icon: ICONS.library, label: t('home_tile_Resources'),        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
-  { key: 'Search',        icon: ICONS.search, label: t('home_tile_Search'),      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+  { key: 'Advocacy',      icon: ICONS.speak, label: t('home_tile_Advocacy'),     nav: 'More:Advocacy',              bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'ArrestMonitor', icon: ICONS.notification, label: t('home_tile_ArrestMonitor'),          nav: 'More:ArrestMonitor',         bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'AttyDash',      icon: ICONS.lawyer, label: t('home_tile_AttyDash'),     nav: 'More:AttorneyDashboard',     bg: c.legalBg, color: c.legal, primary: false, roles: ATTORNEY_ROLES },
+  { key: 'CheckIn',       icon: ICONS.checkOutline, label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'Diversion',     icon: ICONS.diversion, label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'FamilyConn',    icon: ICONS.family, label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'FamilyCourt',   icon: ICONS.courthouse, label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'FirmAcq',       icon: ICONS.firm, label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: c.bgCard, color: c.textBrand,   primary: false, roles: ATTORNEY_ROLES },
+  { key: 'HousingRts',    icon: ICONS.housing, label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'Immigration',   icon: ICONS.immigration, label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: c.bgCard, color: c.textBrand,  primary: false },
+  { key: 'Insurance',     icon: ICONS.shield, label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'Interrogation', icon: ICONS.record, label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'JuvenileJ',     icon: ICONS.juvenile, label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'MentalHealth',  icon: ICONS.mentalHealth, label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: c.bgCard, color: c.textBrand,  primary: false },
+  { key: 'Resources',     icon: ICONS.library, label: t('home_tile_Resources'),        nav: 'More:Resources',             bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'Search',        icon: ICONS.search, label: t('home_tile_Search'),      nav: 'More:Search',                bg: c.bgCard, color: c.textBrand,   primary: false },
 
   // ── Bar Exam Prep ─────────────────────────────────────────────────────────
-  { key: 'BarPrep',       icon: ICONS.book, label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-]);
+  { key: 'BarPrep',       icon: ICONS.book, label: t('home_tile_BarPrep'),           nav: 'More:BarPrepHome',           bg: c.legalBg, color: c.legal, primary: false },
+];
+});
 
 /** Local calendar day 'YYYY-MM-DD'. */
 function localDay(d: Date): string {
@@ -374,9 +377,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             style={[
               styles.courtCountdown,
               upcomingCase.daysLeft <= 3
-                ? { backgroundColor: COLORS.emergency, borderColor: COLORS.emergency }
+                ? { backgroundColor: colors.emergencyDark, borderColor: colors.emergencyDark }
                 : upcomingCase.daysLeft <= 7
-                ? { backgroundColor: COLORS.bail, borderColor: COLORS.bail }
+                ? { backgroundColor: colors.navyMid, borderColor: colors.gold }
                 : { backgroundColor: COLORS.navy, borderColor: COLORS.steel },
             ]}
             testID="home-court-countdown"
@@ -426,29 +429,33 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES().filter(tile => !tile.roles || tile.roles.includes(role)).map(tile => (
+          {TILES().filter(tile => !tile.roles || tile.roles.includes(role))
+            // the square primary tiles first, then the compact two-column rows
+            .sort((a, b) => Number(b.primary) - Number(a.primary)).map(tile => (
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
               accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
               key={tile.key}
               testID={`tile-${tile.key}`}
-              style={[styles.tile, { backgroundColor: tile.bg }, !tile.primary && styles.tileSm]}
+              style={[styles.tile, { backgroundColor: tile.bg }, tile.primary ? styles.tileLg : styles.tileSm]}
               onPress={() => navigate(tile.nav)}
               activeOpacity={0.75}
             >
-              <AppIcon name={tile.icon} size={24} color={tile.color} style={styles.tileIcon} />
-              <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
-              {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
-                </View>
-              )}
-              {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
-                </View>
-              )}
+              <AppIcon name={tile.icon} size={tile.primary ? 28 : 22} color={tile.color} />
+              <View style={styles.tileText}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, tile.primary ? styles.tileLabelLg : styles.tileLabelSm, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
+                {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
+                  </View>
+                )}
+                {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -475,7 +482,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Register' })}
             activeOpacity={0.85}
           >
-            <AppIcon name="person-outline" size={20} color={COLORS.navy} />
+            <AppIcon name={ICONS.user} size={20} color={colors.textBrand} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.nudgeTitle}>{t('ja_create')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.nudgeSub}>{t('home_nudge_sub')}</Text>
@@ -549,15 +556,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontSize: 11, ...FONTS.black, color: colors.textSecond,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  // Quick access: two columns of icon + label rows. The four primary tiles
+  // (bail, lawyer, rights, AI help) come first and are taller with a larger
+  // icon; the rest are compact rows — no big squares. All use the theme's
+  // card surface with a hairline border so they read in dark mode.
   tile: {
-    width: '31%', aspectRatio: 1, borderRadius: RADIUS.lg,
-    alignItems: 'center', justifyContent: 'center', padding: 8,
+    width: '48%', borderRadius: RADIUS.lg,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10,
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderWidth: 1, borderColor: colors.border,
     ...SHADOW.sm },
-  tileIcon:  { marginBottom: 6 },
-  tileLabel: { fontSize: 11, ...FONTS.black, textAlign: 'center', lineHeight: 13 },
+  tileLg: { minHeight: 76 },
+  tileText:  { flex: 1, minWidth: 0 },
+  tileLabel: { ...FONTS.black, textAlign: 'left' },
+  tileLabelLg: { fontSize: 15, lineHeight: 19 },
+  tileLabelSm: { fontSize: 13, lineHeight: 17 },
 
   countBadge: {
-    marginTop: 3, paddingHorizontal: 8, paddingVertical: 3,
+    alignSelf: 'flex-start', marginTop: 3, paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 8, backgroundColor: COLORS.navy },
   countBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   quickConnectLeft:  { flex: 1 },
@@ -575,7 +591,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   returningCard: {
     backgroundColor: COLORS.navy + '0D', borderRadius: 8, padding: 10,
     marginBottom: 8, borderLeftWidth: 3, borderLeftColor: COLORS.steel },
-  returningText: { fontSize: 12, color: COLORS.textSecond, lineHeight: 17 },
+  returningText: { fontSize: 12, color: colors.textSecond, lineHeight: 17 },
   tipCard: {
     backgroundColor: colors.bg,
     borderRadius: 12, padding: 16, marginBottom: 12,
@@ -591,7 +607,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.bg,
     borderRadius: 14, padding: 16, marginBottom: 12,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.5, borderColor: COLORS.navy + '22',
+    borderWidth: 1.5, borderColor: colors.border,
     shadowColor: COLORS.navy, shadowOpacity: 0.06,
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   nudgeIcon:  { fontSize: 22 },
@@ -614,10 +630,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 3 },
   tileUnreadBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  tileSm: {
-    width: '47%',
-    paddingVertical: 16,
-    minHeight: 72 },
+  tileSm: { minHeight: 56 },
 
 });
 export default React.memo(HomeScreen);

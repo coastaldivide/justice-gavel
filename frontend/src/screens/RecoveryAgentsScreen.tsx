@@ -1,4 +1,4 @@
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
@@ -21,7 +21,6 @@ import { FlashList } from '@shopify/flash-list';
 import { hapticImpact } from '../utils/webCompat';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
-import {useTheme} from '../constants/theme';
 import { t, useLang } from '../i18n';
 
 type Agent = {
@@ -62,6 +61,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
 
   const [agents, setAgents]       = useState<Agent[]>([]);
   const [stateLaw, setStateLaw]   = useState<StateLaw | null>(null);
@@ -242,7 +242,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         ) : null}
       </View>
     </View>
-  ), [colors, call, openWeb]);
+  ), [colors, styles, call, openWeb]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}
@@ -316,15 +316,15 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             : (isDark ? colors.surface : colors.errorBg),
           borderLeftColor: stateLaw.allowed ? colors.legalDark : colors.emergencyDark,
         }]}>
-          <Text maxFontSizeMultiplier={1.2} style={[styles.lawTitle, {
+          <IconLabel icon={stateLaw.allowed ? ICONS.statusOk : ICONS.statusError} maxFontSizeMultiplier={1.2} textStyle={[styles.lawTitle, {
             color: stateLaw.allowed ? colors.legalDark : colors.emergencyDark,
           }]}>
-            {stateLaw.allowed ? '✅' : '⛔'}  {selectedState} -- {
+            {selectedState} -- {
               stateLaw.allowed
                 ? stateLaw.license ? t('x_recovery_agents_license_required') : t('x_recovery_agents_no_license_requirement')
                 : t('x_recovery_agents_commercial_bail_restricted')
             }
-          </Text>
+          </IconLabel>
           {stateLaw.law ? (
             <Text maxFontSizeMultiplier={1.3} style={[styles.lawCode,
               { color: colors.textMuted }]}>
@@ -348,7 +348,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
       {/* Results */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.navy} />
+          <ActivityIndicator size="large" color={colors.textBrand} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.loadingText,
             { color: colors.textMuted }]}>
             {t('x_recovery_agents_searching', { selectedState })}
@@ -367,7 +367,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         </View>
       ) : searched && agents.length === 0 ? (
         <View style={styles.center}>
-          <AppIcon name="search-outline" size={20} color={colors.navy} />
+          <AppIcon name="search-outline" size={20} color={colors.textBrand} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText,
             { color: colors.textMuted }]}>
             {t('x_recovery_agents_no_licensed_recovery_agents', { selectedState })}
@@ -397,7 +397,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   searchBox:     { padding: 14, borderBottomWidth: 1 },
   searchLabel:   { fontSize: 12, fontWeight: '700', letterSpacing: 0.5,
                    marginBottom: 8, textTransform: 'uppercase' },
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   loadingText:   { marginTop: 12, fontSize: 14 },
   errorText:     { fontSize: 14, textAlign: 'center', marginBottom: 16 },
   retryBtn:      { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24 },
-  retryText:     { color: COLORS.bg, fontWeight: '700', fontSize: 14 },
+  retryText:     { color: colors.white, fontWeight: '700', fontSize: 14 },
   emptyIcon:     { fontSize: 48, marginBottom: 12 },
   emptyText:     { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   resultCount:   { fontSize: 12, marginBottom: 8 },
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
 
   actionRow:     { flexDirection: 'row', gap: 8 },
   callBtn:       { flex: 2, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  callBtnText:   { color: COLORS.bg, fontWeight: '800', fontSize: 14 },
+  callBtnText:   { color: colors.bg, fontWeight: '800', fontSize: 14 },
   webBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
                    borderWidth: 1 },
   webBtnText:    { fontWeight: '700', fontSize: 13 },

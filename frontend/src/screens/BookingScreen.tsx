@@ -16,7 +16,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 import { ContactActions } from '../components/ContactActions';
 import { useAuthGate } from '../components/AuthGate';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
@@ -38,10 +38,10 @@ type SlotsResponse = {
 type Booking = { id: number; starts_at: string; time_zone: string; duration_min: number; fee_display?: string | null; lawyer_name: string };
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
-const DURATION_TEXT: Record<number, [string, string, string]> = {
-  15: ['x_booking_15_min', 'x_booking_quick_intro', '⚡'],
-  30: ['x_booking_30_min', 'x_booking_standard_consult', '⚖️'],
-  60: ['x_booking_60_min', 'x_booking_deep_dive', '🔍'],
+const DURATION_TEXT: Record<number, [string, string, IconName]> = {
+  15: ['x_booking_15_min', 'x_booking_quick_intro', ICONS.flash],
+  30: ['x_booking_30_min', 'x_booking_standard_consult', ICONS.lawyer],
+  60: ['x_booking_60_min', 'x_booking_deep_dive', ICONS.search],
 };
 
 /** The phone's own zone (e.g. America/Chicago). */
@@ -163,7 +163,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const goBack = () => { if (navigation.canGoBack()) navigation.goBack(); else navigation.navigate('HomeTab'); };
   const s = makeStyles();
 
-  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.navy} size="large" /></View>;
+  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.textBrand} size="large" /></View>;
   if (loadError || !info) return (
     <View style={[s.center, { backgroundColor: colors.bg, padding: 32 }]} testID="booking-error">
       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', fontSize: 15 }}>{loadError || t('x_booking_could_not_complete_booking')}</Text>
@@ -219,7 +219,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <ScrollView testID="booking-screen" style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.navy} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.textBrand} />}>
         <AuthGateModal />
         <View style={s.progress}>
           {(['duration', 'datetime', 'confirm'] as Step[]).map((st, i) => (
@@ -232,13 +232,13 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={[s.stepTitle, { color: colors.textPrimary }]}>{t('x_booking_how_long_do_need')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.stepSub, { color: colors.textMuted }]}>{t('x_booking_consulting_with_platform_fee', { value: lawyerName })}</Text>
             {info.prices.map(p => {
-              const [labelKey, subKey, emoji] = DURATION_TEXT[p.duration_min] || ['x_booking_30_min', 'x_booking_standard_consult', '⚖️'];
+              const [labelKey, subKey, icon] = DURATION_TEXT[p.duration_min] || ['x_booking_30_min', 'x_booking_standard_consult', ICONS.lawyer];
               const on = duration === p.duration_min;
               return (
                 <TouchableOpacity accessibilityRole="radio" accessibilityState={{ selected: on }} key={p.duration_min} testID={`booking-duration-${p.duration_min}`}
                   style={[s.durationCard, { backgroundColor: colors.bgCard, borderColor: on ? colors.navy : colors.border, borderWidth: on ? 2 : 1 }]}
                   onPress={() => setDuration(p.duration_min)} accessibilityLabel={t('x_booking_platform_fee', { label: t(labelKey), fee: p.fee_display })}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.durEmoji}>{emoji}</Text>
+                  <AppIcon name={icon} size={26} color={colors.textBrand} style={s.durEmoji} />
                   <View style={{ flex: 1 }}>
                     <Text maxFontSizeMultiplier={1.4} style={[s.durLabel, { color: colors.textPrimary }]}>{t(labelKey)}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[s.durSub, { color: colors.textMuted }]}>{t(subKey)}</Text>
@@ -343,7 +343,7 @@ const makeStyles = () => StyleSheet.create({
   stepTitle: { fontSize: 22, lineHeight: 28, ...FONTS.black, marginBottom: 6 },
   stepSub: { fontSize: 12, lineHeight: 18, marginBottom: 16 },
   durationCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, ...SHADOW.sm },
-  durEmoji: { fontSize: 26 },
+  durEmoji: { marginRight: 2 },
   durLabel: { fontSize: 16, lineHeight: 24, ...FONTS.heavy },
   durSub: { fontSize: 12, marginTop: 2 },
   durFee: { fontSize: 18, ...FONTS.black },

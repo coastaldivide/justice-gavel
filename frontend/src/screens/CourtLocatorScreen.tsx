@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { unwrapList,api} from '../services/api';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { getUserState } from '../utils/userState';
 
@@ -126,7 +126,7 @@ function CourtLocatorScreen(): React.JSX.Element {
               backgroundColor: courtMode===mode ? colors.primary : card,
               borderWidth:1.5, borderColor: courtMode===mode ? colors.primary : (colors.border),
             }}>
-            <IconLabel icon={ICONS.courthouse} textStyle={{ color: courtMode===mode ? colors.bgCard : text,
+            <IconLabel icon={mode==='state' ? ICONS.courthouse : ICONS.lawyer} textStyle={{ color: courtMode===mode ? colors.bgCard : text,
               fontWeight:'700', fontSize:13 }} maxFontSizeMultiplier={1.4}>{mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}</IconLabel>
           </TouchableOpacity>
         ))}
@@ -191,7 +191,7 @@ function CourtLocatorScreen(): React.JSX.Element {
             >
               {/* Header */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                <AppIcon name="business-outline" size={20} color={COLORS.navy} />
+                <AppIcon name="business-outline" size={20} color={themeColors().textBrand} />
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14, lineHeight: 20 }}>
                     {item.name}
@@ -217,7 +217,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     accessibilityLabel={t('x_court_locator_tap_directions')}
                     onPress={() => openMaps(item.address)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <IconLabel icon={ICONS.location} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                    <AppIcon name={ICONS.location} size={16} color={colors.textBrand} style={{ fontSize: 16 }} />
                     <View style={{ flex: 1 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                         {item.address}
@@ -242,7 +242,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                   {/* Hours */}
                   {item.hours ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <IconLabel icon={ICONS.clock} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                      <AppIcon name={ICONS.clock} size={16} color={colors.textBrand} style={{ fontSize: 16 }} />
                       <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontSize: 13 }}>{item.hours}</Text>
                     </View>
                   ) : null}
@@ -264,7 +264,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       accessibilityLabel={t('x_court_locator_court_website')}
                       onPress={() => Linking.openURL(item.url ?? '').catch(() => showToast(t('action_failed'), 'error'))}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <IconLabel icon={ICONS.globe} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                      <AppIcon name={ICONS.globe} size={16} color={colors.textBrand} style={{ fontSize: 16 }} />
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>
                         {t('x_court_locator_court_website')}
                       </Text>

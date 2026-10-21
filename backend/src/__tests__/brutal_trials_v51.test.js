@@ -231,7 +231,7 @@ describe('S7. Components — useEffect + useCallback Depth', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).not.toContain('Animated.loop');
-    expect(src).toContain('COLORS.emergencyDark');
+    expect(src).toContain('colors.emergencyDark');   // UI pass 2: makeStyles(colors)
     expect(src).toContain('>SOS<');
   });
 });

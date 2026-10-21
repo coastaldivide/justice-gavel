@@ -1109,10 +1109,10 @@ router.get('/:matterId/outcome', authRequired, async (req, res) => {
     if (vs.earlySet)      outcome.outcome_indicators.push({ type:'early_settlement', label:'Early settlement opportunity', confidence:vs.settlementProbability||0.65, source:'VAR-D: strong + non-injunctive' });
     if (vs.likelySett)    outcome.outcome_indicators.push({ type:'settlement_likely', label:'Settlement pathway open', confidence:vs.settlementProbability||0.55, source:'VAR-D: favorable settlement factors' });
     // ── DV lethality ───────────────────────────────────────────────────────────
-    if (vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'🚨 EXTREME LETHALITY — Campbell score ≥ 8: client at acute risk of homicide. Implement safety plan immediately.', confidence:0.85, source:'lethality_score >= 8 + DV; Campbell Danger Assessment (validated)', advisory:false });
+    if (vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'EXTREME LETHALITY — Campbell score ≥ 8: client at acute risk of homicide. Implement safety plan immediately.', confidence:0.85, source:'lethality_score >= 8 + DV; Campbell Danger Assessment (validated)', advisory:false });
     if (vs.lethalityHigh && !vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'High lethality — Campbell score ≥ 4: DV victim in dangerous situation. Escalate safety planning.', confidence:0.78, source:'lethality_score 4-7 + DV matter', advisory:false });
     // ── Firearm surrender ──────────────────────────────────────────────────────
-    if (vs.firearmsurrenderRequired) outcome.outcome_indicators.push({ type:'firearm_surrender', label:'⚠ Firearm surrender required by TRO — 18 U.S.C. § 922(g)(8): federal crime to possess while subject to qualifying DV order', confidence:0.94, source:'DV + crisis/high; United States v. Rahimi (2024)', advisory:false });
+    if (vs.firearmsurrenderRequired) outcome.outcome_indicators.push({ type:'firearm_surrender', label:'Firearm surrender required by TRO — 18 U.S.C. § 922(g)(8): federal crime to possess while subject to qualifying DV order', confidence:0.94, source:'DV + crisis/high; United States v. Rahimi (2024)', advisory:false });
     // ── Hague Convention ───────────────────────────────────────────────────────
     if (vs.hagueProceeding) outcome.outcome_indicators.push({ type:'hague', label:'Hague Convention proceeding — 1-year deadline for return petition: after 1 year child may be deemed settled', confidence:0.87, source:'Hague keywords in matter title; Hague Convention on Civil Aspects of International Child Abduction', advisory:false });
     if (vs.assetFreeze)   outcome.outcome_indicators.push({ type:'asset_preservation', label:'Asset preservation motion recommended alongside TRO', confidence:0.88, source:'High-asset matter + DV flag', advisory:true });
@@ -1138,7 +1138,7 @@ router.get('/:matterId/outcome', authRequired, async (req, res) => {
     // This is the highest-urgency immigration scenario — surfaces only in outcome, not just escalation.
     if (vs.compound_bar_detention) outcome.outcome_indicators.push({
       type: 'asylum_barred',
-      label: '🚨 COMPOUND EMERGENCY: 1-year bar + detained — simultaneous stay + bar challenge required',
+      label: 'COMPOUND EMERGENCY: 1-year bar + detained — simultaneous stay + bar challenge required',
       confidence: 0.98,
       source: 'Bar exceeded (clock_days > 365) + detained + high/crisis vulnerability',
       advisory: false,
@@ -1150,7 +1150,7 @@ router.get('/:matterId/outcome', authRequired, async (req, res) => {
     // Federal sentencing outcome indicators
     // ── VOP compound emergency ──────────────────────────────────────────────────
     // ── Plea offer ─────────────────────────────────────────────────────────────
-    if (vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_expiry', label:'🚨 Plea offer expiring within 48 hours — decision required immediately', confidence:0.99, source:'plea_offer_pending=1 + expires_date within 2 days', advisory:false });
+    if (vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_expiry', label:'Plea offer expiring within 48 hours — decision required immediately', confidence:0.99, source:'plea_offer_pending=1 + expires_date within 2 days', advisory:false });
     if (vs.pleaOfferActive && !vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_active', label:'Active plea offer — review terms, advise client, document decision (and Padilla if non-citizen)', confidence:0.95, source:'plea_offer_pending=1', advisory:true });
     // ── Padilla ─────────────────────────────────────────────────────────────────
     if (vs.padillaWarningNeeded) outcome.outcome_indicators.push({ type:'padilla_required', label:'Padilla warning required — non-citizen client has pending plea: document immigration consequence advice NOW', confidence:0.98, source:'non_citizen=1 + plea_offer_pending=1; Padilla v. Kentucky (2010)', advisory:false });
@@ -1164,16 +1164,16 @@ router.get('/:matterId/outcome', authRequired, async (req, res) => {
     if (vs.certApproaching) outcome.outcome_indicators.push({ type:'cert_approaching', label:'Cert threshold approaching — preserve federal constitutional issues now', confidence:0.25, source:'Rev score 50-59 + capital', advisory:true });
     if (vs.certMonitor && !vs.certApproaching) outcome.outcome_indicators.push({ type:'cert_approaching', label:'Cert threshold watch — continue building record (rev score 40-49). Verify federal constitutional issue preserved in state record.', confidence:0.12, source:'Rev score 40-49 + capital case', advisory:true });
     // New extenuating circumstance outcome indicators
-    if (vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_expiry', label:'🚨 PLEA OFFER EXPIRING within 48 hours — decision required NOW', confidence:1.0, source:'plea_expires_date on matter' });
+    if (vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_expiry', label:'PLEA OFFER EXPIRING within 48 hours — decision required NOW', confidence:1.0, source:'plea_expires_date on matter' });
     if (vs.pleaOfferActive && !vs.pleaOfferExpiring) outcome.outcome_indicators.push({ type:'plea_active', label:'Active plea offer — evaluate charges, sentence, and immigration consequences before deciding', confidence:0.9, source:'plea_offer_pending', advisory:true });
     if (vs.padillaWarningNeeded) outcome.outcome_indicators.push({ type:'padilla_required', label:'Padilla warning required — document immigration consequences before any plea', confidence:1.0, source:'Padilla v. Kentucky (2010)', advisory:true });
     if (vs.vopCompound) outcome.outcome_indicators.push({ type:'vop_compound', label:'VOP compound emergency — client faces both criminal charge AND probation/parole revocation simultaneously', confidence:0.9, source:'supervised_release + new arrest' });
     if (vs.dualSovereigntyRisk) outcome.outcome_indicators.push({ type:'dual_sovereignty', label:'Federal parallel prosecution risk — state acquittal/conviction does not bar federal charges', confidence:0.7, source:'dual sovereignty doctrine', advisory:true });
-    if (vs.volDepartureImminent) outcome.outcome_indicators.push({ type:'vol_departure', label:'🚨 Voluntary departure deadline within 14 days — missing triggers automatic 10-year bar + bond forfeiture', confidence:1.0, source:'vol_departure_date on matter' });
+    if (vs.volDepartureImminent) outcome.outcome_indicators.push({ type:'vol_departure', label:'Voluntary departure deadline within 14 days — missing triggers automatic 10-year bar + bond forfeiture', confidence:1.0, source:'vol_departure_date on matter' });
     if (vs.volDepartureMissed) outcome.outcome_indicators.push({ type:'vol_departure_missed', label:'Voluntary departure deadline MISSED — 10-year re-entry bar now active — evaluate withholding/CAT', confidence:1.0, source:'vol_departure_date exceeded' });
     if (vs.withholdingCATEvaluate) outcome.outcome_indicators.push({ type:'withholding_cat', label:'Asylum bar exceeded + detained — evaluate withholding of removal (§ 1231(b)(3)) and CAT relief — no 1-year bar', confidence:0.8, source:'AILA practice guides', advisory:true });
     if (vs.materialSupportScreen) outcome.outcome_indicators.push({ type:'material_support', label:'Material support screening required — potential 8 U.S.C. § 1182(a)(3)(B) bar — evaluate duress exception at intake', confidence:0.6, source:'INA § 212(a)(3)(B)', advisory:true });
-    if (vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'🚨 EXTREME DANGER — lethality score 8+ — victim at very high risk of lethal violence', confidence:0.85, source:'Campbell Danger Assessment' });
+    if (vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'EXTREME DANGER — lethality score 8+ — victim at very high risk of lethal violence', confidence:0.85, source:'Campbell Danger Assessment' });
     if (vs.lethalityHigh && !vs.lethalityExtreme) outcome.outcome_indicators.push({ type:'dv_lethality', label:'HIGH DANGER — lethality score 4+ — safety planning required beyond TRO', confidence:0.75, source:'Campbell Danger Assessment', advisory:true });
     if (vs.firearmsurrenderRequired) outcome.outcome_indicators.push({ type:'firearm_surrender', label:'Firearm surrender required under DV TRO — 18 U.S.C. § 922(g)(8) — non-compliance is a federal crime (Rahimi 2024)', confidence:0.95, source:'United States v. Rahimi, 602 U.S. 680 (2024)', advisory:true });
     if (vs.bopExhaustionEligible) outcome.outcome_indicators.push({ type:'compassionate_release', label:'BOP 30-day exhaustion complete — § 3582(c)(1)(A) motion now eligible for filing in federal court', confidence:0.8, source:'18 U.S.C. § 3582(c)(1)(A)', advisory:true });

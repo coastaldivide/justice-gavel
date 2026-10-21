@@ -26,6 +26,7 @@ import { ContactActions } from '../components/ContactActions';
 import { StatePicker } from '../components/StatePicker';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang, getLang } from '../i18n';
+import { ICONS, AppIcon, type IconName, IconLabel } from '../components/AppIcon';
 
 type Status = 'Dismissed' | 'Convicted' | 'Open';
 type ChargeType = 'misdemeanor' | 'felony' | 'dui' | 'domestic' | 'sexual' | 'unknown';
@@ -54,14 +55,14 @@ const TYPES: { value: ChargeType; key: string }[] = [
   { value: 'sexual', key: 'exp_type_sexual' },
   { value: 'unknown', key: 'exp_type_unknown' },
 ];
-const VERDICT: Record<Result, { icon: string; key: string; tone: 'legal' | 'warn' | 'emergency' | 'muted' }> = {
-  eligible:     { icon: '✅', key: 'exp_r_eligible', tone: 'legal' },
-  conditional:  { icon: '⚠️', key: 'exp_r_conditional', tone: 'warn' },
-  not_eligible: { icon: '⛔', key: 'exp_r_not_eligible', tone: 'emergency' },
-  unsourced:    { icon: '❔', key: 'exp_r_unsourced', tone: 'muted' },
-  needs_review: { icon: '❔', key: 'exp_r_needs_review', tone: 'muted' },
-  unknown:      { icon: '❔', key: 'exp_r_unknown', tone: 'muted' },
-  case_open:    { icon: '⏳', key: 'exp_r_case_open', tone: 'muted' },
+const VERDICT: Record<Result, { icon: IconName; key: string; tone: 'legal' | 'warn' | 'emergency' | 'muted' }> = {
+  eligible:     { icon: ICONS.statusOk, key: 'exp_r_eligible', tone: 'legal' },
+  conditional:  { icon: ICONS.statusWarn, key: 'exp_r_conditional', tone: 'warn' },
+  not_eligible: { icon: ICONS.statusError, key: 'exp_r_not_eligible', tone: 'emergency' },
+  unsourced:    { icon: ICONS.statusUnknown, key: 'exp_r_unsourced', tone: 'muted' },
+  needs_review: { icon: ICONS.statusUnknown, key: 'exp_r_needs_review', tone: 'muted' },
+  unknown:      { icon: ICONS.statusUnknown, key: 'exp_r_unknown', tone: 'muted' },
+  case_open:    { icon: ICONS.hourglass, key: 'exp_r_case_open', tone: 'muted' },
 };
 const typeLabel = (c: string) => {
   const hit = TYPES.find(x => x.value === c);
@@ -161,7 +162,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
     return (
       <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} testID="expungement-result-screen">
         <View style={[styles.verdict, { backgroundColor: tone.bg, borderColor: tone.fg }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.verdictIcon}>{v.icon}</Text>
+          <AppIcon name={v.icon} size={22} color={colors.textBrand} style={styles.verdictIcon} />
           <Text testID="expungement-verdict" maxFontSizeMultiplier={1.4} style={[styles.verdictLabel, { color: tone.fg }]}>{t(v.key)}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.verdictMeta}>{stateName(result.state, result.stateName)} · {typeLabel(result.chargeType)}</Text>
           {e.waitYears != null && e.waitYears > 0 && (
@@ -188,23 +189,23 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         {sourced && e.result !== 'not_eligible' && (
           <View style={styles.card}>
             <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>{t('x_expungement_what_does_expungement_do')}</Text>
-            {['x_expungement_seals_arrest_from_most', 'x_expungement_employers_landlords_lenders_cannot', 'x_expungement_can_legally_say_i', 'x_expungement_court_record_still_exists']
-              .map(k => <Text maxFontSizeMultiplier={1.4} key={k} style={styles.body}>{t(k)}</Text>)}
+            {([['x_expungement_seals_arrest_from_most', ICONS.lock], ['x_expungement_employers_landlords_lenders_cannot', ICONS.briefcase], ['x_expungement_can_legally_say_i', ICONS.checkOutline], ['x_expungement_court_record_still_exists', ICONS.courthouse]] as const)
+              .map(([k, icon]) => <IconLabel key={k} icon={icon} maxFontSizeMultiplier={1.4} textStyle={styles.body}>{t(k)}</IconLabel>)}
           </View>
         )}
 
         {e.result === 'not_eligible' && (
           <View style={styles.card} testID="expungement-not-eligible">
             <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>{t('x_expungement_what_can_still_do')}</Text>
-            {['x_expungement_speak_defense_attorney_some', 'x_expungement_apply_certificate_relief_limits', 'x_expungement_apply_governor_s_pardon', 'x_expungement_check_back_when_waiting']
-              .map(k => <Text maxFontSizeMultiplier={1.4} key={k} style={styles.body}>{t(k)}</Text>)}
+            {([['x_expungement_speak_defense_attorney_some', ICONS.lawyer], ['x_expungement_apply_certificate_relief_limits', ICONS.clipboard], ['x_expungement_apply_governor_s_pardon', ICONS.courthouse], ['x_expungement_check_back_when_waiting', ICONS.hourglass]] as const)
+              .map(([k, icon]) => <IconLabel key={k} icon={icon} maxFontSizeMultiplier={1.4} textStyle={styles.body}>{t(k)}</IconLabel>)}
           </View>
         )}
 
         {showLawyers && (
           <View testID="expungement-attorneys">
             <Text maxFontSizeMultiplier={1.4} style={styles.section}>{t('x_expungement_expungement_attorneys', { value: stateName(result.state, result.stateName) })}</Text>
-            {attLoading && <ActivityIndicator color={colors.navy} style={{ marginVertical: 12 }} />}
+            {attLoading && <ActivityIndicator color={colors.textBrand} style={{ marginVertical: 12 }} />}
             {!attLoading && attorneys.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.bodyPad}>{t('exp_no_lawyers')}</Text>}
             {!attLoading && attorneys.map(a => (
               <View key={a.id} style={styles.card} testID="expungement-attorney">

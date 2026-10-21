@@ -190,7 +190,7 @@ describe('voice note is appended to the case notes', () => {
     await screen.findByTestId('voice-note-result');
     fireEvent.press(screen.getByTestId('voice-note-save'));
     await waitFor(() => expect(api.put).toHaveBeenCalled());
-    expect(String((calls.find(c => c.method === 'put')?.data as { notes: string }).notes)).toMatch(/^KEEP ME\n\n📝 2026-10-19\n\nCall the lawyer\./);
+    expect(String((calls.find(c => c.method === 'put')?.data as { notes: string }).notes)).toMatch(/^KEEP ME\n\n2026-10-19\n\nCall the lawyer\./);
     expect(await screen.findByText(t('vn_saved_to_case'))).toBeTruthy();
   });
 });

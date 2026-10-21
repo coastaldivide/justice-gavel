@@ -17,7 +17,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, RefreshControl, LayoutAnimation} from 'react-native';
-import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, FONT, TYPE, type ThemeColors, themed } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { t, useLang } from '../i18n';
@@ -34,13 +34,13 @@ const NEGATIVE_INDICATOR_TYPES = new Set([
 // likeleDisch: raw military discharge prediction — shown as label in escalation/outcome
 const ADVISORY_ALWAYS_ON = new Set(['batsonApplicable', 'likeleDisch']);
 
-const ESCALATION_COLORS: Record<string, string> = {
-  critical: COLORS.emergency, high: COLORS.warn, elevated: COLORS.blue, normal: COLORS.legal,
-};
+const ESCALATION_COLORS: Record<string, string> = themed(colors => ({
+  critical: colors.emergency, high: colors.warn, elevated: colors.blue, normal: colors.legal,
+}));
 
-const PRIORITY_COLORS: Record<string, string> = {
-  high: COLORS.emergency, normal: COLORS.blue, low: COLORS.textMuted,
-};
+const PRIORITY_COLORS: Record<string, string> = themed(colors => ({
+  high: colors.emergency, normal: colors.blue, low: colors.textMuted,
+}));
 
 interface MatterRow { id: number; title: string; client_name?: string | null; status?: string | null }
 
@@ -213,10 +213,10 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
 
             accessibilityState={{ selected: tab === tItem }}
             accessibilityLabel={t(`mi2_tab_${tItem}`)}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===tItem && s.tabLabelActive]}>
-              {tItem === 'outcome' ? '📊' : tItem === 'motions' ? '⚖️' : tItem === 'diversion' ? '🔄' : tItem === 'analytics' ? '🧠' : tItem === 'escalation' ? '🚨' : '📋'}
-              {' '}{t(`mi2_tab_${tItem}`)}
-            </Text>
+            <IconLabel icon={tItem === 'outcome' ? ICONS.stats : tItem === 'motions' ? ICONS.lawyer : tItem === 'diversion' ? ICONS.diversion : tItem === 'analytics' ? ICONS.ai : tItem === 'escalation' ? ICONS.emergency : ICONS.clipboard}
+              maxFontSizeMultiplier={1.4} textStyle={[s.tabLabel, tab===tItem && s.tabLabelActive]}>
+              {t(`mi2_tab_${tItem}`)}
+            </IconLabel>
           </TouchableOpacity>
         ))}
       </View>
@@ -388,7 +388,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_matter_intelligence_escalation_triggers')}</Text>
                 {escalation.triggers.map((tItem: string) => (
                   <View key={`trigger-${tItem}`} style={s.triggerRow}>
-                    <IconLabel icon={ICONS.flash} textStyle={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                    <AppIcon name={ICONS.flash} size={20} color={ESCALATION_COLORS[escalation.level]} style={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }} />
                     <Text maxFontSizeMultiplier={1.4} style={s.triggerText}>{tItem.replace(/_/g, ' ')}</Text>
                   </View>
                 ))}
@@ -430,7 +430,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
                   </View>
                 </View>
                 {(analytics.recent_docket || []).length === 0
-                  ? <EmptyState icon="📋" title={t('mi2_no_docket')} />
+                  ? <EmptyState icon={ICONS.clipboard} title={t('mi2_no_docket')} />
                   : (analytics.recent_docket || []).map((r: { entry_date: string; filing_type: string }, i: number) => (
                     <Text key={`d-${i}`} maxFontSizeMultiplier={1.4} style={s.factorItem}>• {String(r.entry_date).slice(0, 10)} — {r.filing_type}</Text>
                   ))}
@@ -444,9 +444,9 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
   );
 }
 
-const styles = (c: any) => StyleSheet.create({
-  root:             { flex: 1, backgroundColor: c.background },
-  center:           { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.background },
+const styles = (c: ThemeColors) => StyleSheet.create({
+  root:             { flex: 1, backgroundColor: c.bg },
+  center:           { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.bg },
   header:           { backgroundColor: c.card, borderBottomWidth: 0.5, borderBottomColor: c.borderSubtle, padding: 14 },
   headerTitle:      { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, marginBottom: 6 },
   headerMeta:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -475,7 +475,7 @@ const styles = (c: any) => StyleSheet.create({
   confPct:          { fontSize: TYPE.lg, fontFamily: FONT.bold },
   confLabel:        { fontSize: 10, color: c.textMuted },
   // Error banner
-  errorBanner:      { backgroundColor: COLORS.warn, borderRadius: 8, padding: 12, margin: 8 },
+  errorBanner:      { backgroundColor: c.warn, borderRadius: 8, padding: 12, margin: 8 },
   errorBannerText:  { color: c.bg, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   // Analytics tab
   analyticsDisclaimer: { backgroundColor: c.surface, borderRadius: 10, padding: 14, margin: 8, borderLeftWidth: 3, borderLeftColor: c.gold },
@@ -489,11 +489,11 @@ const styles = (c: any) => StyleSheet.create({
   analysisInterp:   { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 18, marginBottom: 4 },
   factorItem:       { fontSize: 11, color: c.textMuted, marginBottom: 2 },
   analysisSource:   { fontSize: 10, color: c.textMuted, fontStyle: 'italic', marginTop: 4 },
-  circuitSplitWarn: { fontSize: 11, color: COLORS.warn, marginTop: 4, fontFamily: FONT.bold },
+  circuitSplitWarn: { fontSize: 11, color: c.warn, marginTop: 4, fontFamily: FONT.bold },
   precedentCard:    { backgroundColor: c.surface, borderRadius: 8, padding: 12, margin: 8, borderLeftWidth: 2, borderLeftColor: c.textMuted },
   precedentTitle:   { fontSize: TYPE.xs, fontFamily: FONT.bold, color: c.text, marginBottom: 4 },
   precedentHolding: { fontSize: 11, color: c.textMuted, lineHeight: 16 },
-  warnItem:         { fontSize: TYPE.xs, color: COLORS.warn, marginBottom: 4, marginHorizontal: 8 },
+  warnItem:         { fontSize: TYPE.xs, color: c.warn, marginBottom: 4, marginHorizontal: 8 },
   // Signals
   signalRow:        { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
   signalDot:        { fontSize: 10, marginTop: 1 },  // color set inline

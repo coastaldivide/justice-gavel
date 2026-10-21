@@ -19,17 +19,20 @@ import { AppIcon } from '../components/AppIcon';
 import React from 'react';
 
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
-import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, themeColors } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
 import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
+import { ICONS } from '../components/AppIcon';
 
 
-const CONSEQUENCE_GROUPS = perLang(() => [
+const CONSEQUENCE_GROUPS = perLang(() => {
+  const c = themeColors();
+  return [
   {
     severity: t('x_immigration_consequences_deportable_almost_always_triggers'),
-    color:    COLORS.emergency,
-    bg:       COLORS.emergencyBg,
+    color:    c.emergency,
+    bg:       c.emergencyBg,
     offenses: [
       { offense: t('x_immigration_consequences_aggravated_felony_ina_101'), detail: t('x_immigration_consequences_broadest_most_severe_category') },
       { offense: t('x_immigration_consequences_drug_conviction_any_controlled'), detail: t('x_immigration_consequences_any_drug_conviction_including') },
@@ -40,8 +43,8 @@ const CONSEQUENCE_GROUPS = perLang(() => [
   },
   {
     severity: t('x_immigration_consequences_inadmissibility_bars_re_entry'),
-    color:    COLORS.warn,
-    bg:       COLORS.warnBg,
+    color:    c.warn,
+    bg:       c.warnBg,
     offenses: [
       { offense: t('x_immigration_consequences_single_crime_involving_moral'), detail: t('x_immigration_consequences_one_cimt_with_potential') },
       { offense: t('x_immigration_consequences_any_drug_offense_conviction'), detail: t('x_immigration_consequences_conviction_even_admission_drug') },
@@ -51,8 +54,8 @@ const CONSEQUENCE_GROUPS = perLang(() => [
   },
   {
     severity: t('x_immigration_consequences_less_severe_but_still'),
-    color:    COLORS.legal,
-    bg:       COLORS.legalBg,
+    color:    c.legal,
+    bg:       c.legalBg,
     offenses: [
       { offense: t('x_immigration_consequences_simple_assault_misdemeanor'), detail: t('x_immigration_consequences_may_may_not_be') },
       { offense: 'DUI / DWI', detail: t('x_immigration_consequences_not_automatically_cimt_however') },
@@ -60,47 +63,48 @@ const CONSEQUENCE_GROUPS = perLang(() => [
       { offense: t('x_immigration_consequences_disorderly_conduct'), detail: t('x_immigration_consequences_generally_not_cimt_however') },
     ],
   },
-]);
+];
+});
 
 const STATUS_SECTIONS = perLang(() => [
   {
-    icon: '🛡️',
+    icon: ICONS.shield,
     title: t('x_immigration_consequences_daca_recipients'),
     body: t('x_immigration_consequences_daca_does_not_provide'),
     critical: true,
   },
   {
-    icon: '🟢',
+    icon: ICONS.statusOk,
     title: t('x_immigration_consequences_green_card_holders_lprs'),
     body: t('x_immigration_consequences_lawful_permanent_residents_can'),
     critical: false,
   },
   {
-    icon: '📋',
+    icon: ICONS.clipboard,
     title: t('x_immigration_consequences_visa_holders_temporary_status'),
     body: t('x_immigration_consequences_any_criminal_conviction_can'),
     critical: false,
   },
   {
-    icon: '⭐',
+    icon: ICONS.starFilled,
     title: t('x_immigration_consequences_naturalization_applicants'),
     body: t('x_immigration_consequences_naturalize_applicant_must_demonstrat'),
     critical: false,
   },
   {
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     title: t('x_immigration_consequences_padilla_warnings_what_criminal'),
     body: t('x_immigration_consequences_under_padilla_v_kentucky'),
     critical: false,
   },
   {
-    icon: '🧩',
+    icon: ICONS.puzzle,
     title: t('x_immigration_consequences_vacating_convictions_immigration_pur'),
     body: t('x_immigration_consequences_if_were_convicted_without'),
     critical: false,
   },
   {
-    icon: '📞',
+    icon: ICONS.phone,
     title: t('resources'),
     body: t('x_immigration_consequences_national_immigration_project_nipnlg'),
     critical: false,
@@ -127,7 +131,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <AppIcon name="globe-outline" size={20} color={COLORS.navy} />
+        <AppIcon name="globe-outline" size={20} color={themeColors().textBrand} />
         <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>{t('x_immigration_consequences_immigration_charges')}</Text>
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>{t('x_immigration_consequences_consequences_convictions')}</Text>
       </View>
@@ -156,9 +160,9 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
 
       {tab === 'status' && STATUS_SECTIONS().map(sec => (
         <View key={sec.title} style={[styles.statusCard, { backgroundColor: colors.bgCard,
-          borderColor: sec.critical ? COLORS.emergency : colors.border }]}>
+          borderColor: sec.critical ? colors.emergency : colors.border }]}>
           <View style={styles.statusHeader}>
-            <Text style={styles.statusIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+            <AppIcon name={sec.icon} size={22} color={colors.textBrand} style={styles.statusIcon} />
             <Text style={[styles.statusTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text>
           </View>
           <Text style={[styles.statusBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>
@@ -182,7 +186,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll:        { padding: 16 },
   header:        { borderRadius: RADIUS.lg, padding: 20, marginTop: 12, alignItems: 'center' },
   headerIcon:    { fontSize: 36, marginBottom: 8 },
-  headerTitle:   { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
+  headerTitle:   { color: colors.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:     { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },
   alertBox:      { borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12, marginBottom: 14 },
   alertTitle:    { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
@@ -201,7 +205,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusTitle:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
   statusBody:    { fontSize: 12, lineHeight: 20 },
   cta:           { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 10 },
-  ctaText:       { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  ctaText:       { color: colors.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   disclaimer:    { borderTopWidth: 1, paddingTop: 12 },
   disclaimerText:{ fontSize: 11, lineHeight: 17, textAlign: 'center' },
   card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },

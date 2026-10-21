@@ -331,6 +331,41 @@ const ThemeContext = createContext<ThemeContextType>({
 
 const THEME_KEY = 'jg_theme_mode';
 
+// The palette of the theme currently rendering. ThemeProvider sets it on every
+// render, before its children render, so code that runs during render outside
+// a component's own useTheme() (helpers such as statusColor(), and the
+// per-language lists built with perLang, which are also cached per theme) reads
+// the active colours. Components still subscribe with useTheme() so they
+// re-render when the theme changes.
+let activeColors: ThemeColors = DARK_COLORS;
+/** The active theme's palette (call during render). */
+export function themeColors(): ThemeColors { return activeColors; }
+/**
+ * A module-level table of theme colours (e.g. status → colour) that follows
+ * the active theme: `const TONE = themed(c => ({ ok: c.legal, bad: c.emergency }))`.
+ * Each read resolves against the theme rendering now (built once per theme),
+ * so call sites use it like a plain object. Read it during render.
+ */
+export function themed<T extends object>(build: (c: ThemeColors) => T): T {
+  const cache = new Map<ThemeColors, T>();
+  const cur = (): T => {
+    let v = cache.get(activeColors);
+    if (!v) { v = build(activeColors); cache.set(activeColors, v); }
+    return v;
+  };
+  return new Proxy({} as T, {
+    get: (_t, k) => (cur() as Record<string | symbol, unknown>)[k],
+    has: (_t, k) => k in cur(),
+    ownKeys: () => Reflect.ownKeys(cur()),
+    getOwnPropertyDescriptor: (_t, k) => {
+      const d = Reflect.getOwnPropertyDescriptor(cur(), k);
+      return d && { ...d, configurable: true };
+    },
+  });
+}
+/** 'dark' | 'light' — part of the perLang cache key. */
+export function themeMode(): 'dark' | 'light' { return activeColors.isDark ? 'dark' : 'light'; }
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = React.useState(true);
   const [fontsLoaded, setFontsLoaded] = React.useState(false);
@@ -373,7 +408,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
+  const colors = (isDark ? DARK_COLORS : LIGHT_COLORS) as ThemeColors;
+  activeColors = colors;
 
   return React.createElement(
     ThemeContext.Provider,

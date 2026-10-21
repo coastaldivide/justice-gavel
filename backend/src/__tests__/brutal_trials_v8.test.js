@@ -441,9 +441,9 @@ describe('6. BiometricLockView — Lock Screen UI', () => {
     expect(src).toContain('React.memo');
   });
 
-  test('6-04: shows lock emoji 🔒 in UI', async () => {
+  test('6-04: shows a lock icon in UI (UI pass 2: ICONS.lock, not the 🔒 emoji)', async () => {
     const src = feSource(__REPO + '/frontend/src/components/BiometricLockView.tsx');
-    expect(src).toContain('🔒');
+    expect(src).toContain('ICONS.lock');
     expect(src).toContain('Locked');
   });
 

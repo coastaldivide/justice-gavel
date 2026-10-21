@@ -11,15 +11,15 @@ import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { t, useLang, perLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon, type IconName } from '../components/AppIcon';
 
-const OFFLINE_FEATURES = perLang((): { icon: string; label: string; hint: string; screen: string }[] => [
-  { icon: '📋', label: t('rc_page_title'), hint: t('x_offline_status_rights_during_stop_arrest'),     screen: 'RightsCard' },
-  { icon: '⏰', label: t('x_cs_deadline_calculator'),   hint: t('x_offline_status_arraignment_appeal_filing_deadlines'), screen: 'DeadlineCalculator' },
-  { icon: '🚨', label: t('x_offline_status_just_arrested_guide'),   hint: t('x_offline_status_step_by_step_what'),      screen: 'JustArrested' },
-  { icon: '📅', label: t('ja_my_court_dates'),     hint: t('os_court_dates_hint'),                                   screen: 'CourtDates' },
-  { icon: '👨‍👩‍👧', label: t('os_emergency_share'), hint: t('os_emergency_share_hint'),                            screen: 'EmergencyShare' },
-  { icon: '📁', label: t('case_tab_cases'),              hint: t('x_offline_status_saved_cases_sync_when'),     screen: 'Cases' },
+const OFFLINE_FEATURES = perLang((): { icon: IconName; label: string; hint: string; screen: string }[] => [
+  { icon: ICONS.clipboard, label: t('rc_page_title'), hint: t('x_offline_status_rights_during_stop_arrest'),     screen: 'RightsCard' },
+  { icon: ICONS.alarm, label: t('x_cs_deadline_calculator'),   hint: t('x_offline_status_arraignment_appeal_filing_deadlines'), screen: 'DeadlineCalculator' },
+  { icon: ICONS.emergency, label: t('x_offline_status_just_arrested_guide'),   hint: t('x_offline_status_step_by_step_what'),      screen: 'JustArrested' },
+  { icon: ICONS.calendar, label: t('ja_my_court_dates'),     hint: t('os_court_dates_hint'),                                   screen: 'CourtDates' },
+  { icon: ICONS.family, label: t('os_emergency_share'), hint: t('os_emergency_share_hint'),                            screen: 'EmergencyShare' },
+  { icon: ICONS.cases, label: t('case_tab_cases'),              hint: t('x_offline_status_saved_cases_sync_when'),     screen: 'Cases' },
 ]);
 
 const NEEDS_CONNECTION = perLang(() => [
@@ -49,7 +49,7 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
           style={[styles.row, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           onPress={() => navigation.navigate(f.screen as never)}
         >
-          <Text style={styles.icon}>{f.icon}</Text>
+          <AppIcon name={f.icon} size={22} color={colors.textBrand} style={styles.icon} />
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.label, { color: colors.textPrimary }]}>{f.label}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.hint, { color: colors.textMuted }]}>{f.hint}</Text>

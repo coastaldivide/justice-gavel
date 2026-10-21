@@ -19,11 +19,13 @@ import {
 } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, themeColors, useTheme, type ThemeColors } from '../constants/theme';
 import { getToken, setToken, setItem as setSecureItem } from '../utils/secureStorage';
 import { t } from '../i18n';
 
 export function useAuthGate(navigation: any, quickMode = false) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [visible, setVisible]     = useState(false);
   const [pendingFn, setPendingFn] = useState<(() => void) | null>(null);
 
@@ -104,7 +106,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
               <TextInput
                 style={styles.quickInput}
                 placeholder={t('x_auth_gate_phone_number')}
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={themeColors().textLight}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -113,7 +115,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
               <TextInput
                 style={styles.quickInput}
                 placeholder={t('x_auth_gate_4_digit_pin')}
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={themeColors().textLight}
                 value={pin}
                 onChangeText={tItem => setPin(tItem.replace(/\D/g,'').slice(0,4))}
                 keyboardType="number-pad"
@@ -175,47 +177,47 @@ export function useAuthGate(navigation: any, quickMode = false) {
   return { requireAuth, AuthGateModal };
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl,
     padding: 28, paddingBottom: 44,
     ...SHADOW.lg,
   },
   handle: {
     width: 40, height: 4, borderRadius: 2,
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
     alignSelf: 'center', marginBottom: 20,
   },
-  title: { fontSize: 22, ...FONTS.black, color: COLORS.navy, marginBottom: 8, textAlign: 'center' },
-  body:  { fontSize: 14, ...FONTS.medium, color: COLORS.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  title: { fontSize: 22, ...FONTS.black, color: colors.textBrand, marginBottom: 8, textAlign: 'center' },
+  body:  { fontSize: 14, ...FONTS.medium, color: colors.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   primaryBtn: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.lg,
+    backgroundColor: colors.navy, borderRadius: RADIUS.lg,
     paddingVertical: 15, alignItems: 'center', marginBottom: 10,
     ...SHADOW.sm,
   },
-  primaryBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  primaryBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
   secondaryBtn: {
-    borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: RADIUS.lg,
+    borderWidth: 1.5, borderColor: colors.navy, borderRadius: RADIUS.lg,
     paddingVertical: 13, alignItems: 'center', marginBottom: 10,
   },
-  secondaryBtnText: { color: COLORS.navy, fontSize: 14, lineHeight: 21, ...FONTS.bold },
+  secondaryBtnText: { color: colors.textBrand, fontSize: 14, lineHeight: 21, ...FONTS.bold },
   quickInput: {
-    backgroundColor: COLORS.bg,
-    borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: colors.bg,
+    borderWidth: 1.5, borderColor: colors.border,
     borderRadius: RADIUS.md, paddingHorizontal: 14,
-    paddingVertical: 13, fontSize: 16, lineHeight: 24, color: COLORS.textPrimary,
+    paddingVertical: 13, fontSize: 16, lineHeight: 24, color: colors.textPrimary,
     marginBottom: 10,
   },
-  quickError: { color: COLORS.emergency, fontSize: 13, lineHeight: 20, marginBottom: 8, textAlign: 'center' },
+  quickError: { color: colors.emergency, fontSize: 13, lineHeight: 20, marginBottom: 8, textAlign: 'center' },
   switchLink: { alignItems: 'center', paddingVertical: 8 },
-  switchLinkText: { fontSize: 13, lineHeight: 20, color: COLORS.steelDark, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  switchLinkText: { fontSize: 13, lineHeight: 20, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   cancelBtn: { alignItems: 'center', paddingVertical: 8 },
-  cancelText: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
+  cancelText: { fontSize: 14, lineHeight: 21, color: colors.textMuted },
 });
 
 // Memoize the modal component to prevent re-renders from hook callers

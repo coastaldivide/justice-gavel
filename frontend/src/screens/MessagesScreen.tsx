@@ -39,7 +39,7 @@ import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { useCaseMessages, CaseMessage } from '../hooks/useCaseMessages';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatTime(iso: string): string {
@@ -190,7 +190,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // ── Header title ───────────────────────────────────────────────────────────
   useEffect(() => {
     const title = activeCase?.title || (params.caseTitle as string | undefined);
-    if (title) navigation.setOptions({ title: `💬 ${title}` });
+    if (title) navigation.setOptions({ title });
   }, [activeCase?.title, params.caseTitle, navigation]);
 
   const loadCounsel = useCallback(async () => {
@@ -264,7 +264,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // ── Render: auth states ────────────────────────────────────────────────────
   if (isGuest === null) return (
     <View testID="messages-screen" style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
-      <ActivityIndicator color={colors.navy} />
+      <ActivityIndicator color={colors.textBrand} />
     </View>
   );
 
@@ -272,7 +272,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View testID="messages-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       <AuthGateModal />
       <View style={styles.emptyWrap}>
-        <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.message} size={20} color={colors.textBrand} style={styles.emptyIcon} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
           {t('x_messages_sign_send_messages')}
         </Text>
@@ -295,7 +295,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (!activeCase) {
     if (resolving) return (
       <View testID="messages-screen" style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator color={colors.navy} />
+        <ActivityIndicator color={colors.textBrand} />
       </View>
     );
     return (
@@ -307,7 +307,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         ) : null}
         {cases.length === 0 && !resolveError ? (
           <View style={styles.emptyWrap}>
-            <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.message} size={20} color={colors.textBrand} style={styles.emptyIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
               {t('msg_empty')}
             </Text>
@@ -363,7 +363,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (unavailable) return (
     <View testID="messages-screen" style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
       <View testID="messages-unavailable" style={styles.emptyWrap}>
-        <IconLabel icon={ICONS.lock} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.lock} size={20} color={colors.textBrand} style={styles.emptyIcon} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('case_unavailable_body')}</Text>
         <TouchableOpacity accessibilityRole="button" testID="messages-unavailable-back" style={[styles.primaryBtn, { backgroundColor: colors.navy }]} onPress={() => setActiveCase(null)}>
@@ -418,7 +418,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       {loading && messages.length === 0 ? (
         <View style={[styles.center, { flex: 1 }]}>
-          <ActivityIndicator color={colors.navy} />
+          <ActivityIndicator color={colors.textBrand} />
         </View>
       ) : (
         <FlatList
@@ -432,7 +432,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+              <AppIcon name={ICONS.message} size={20} color={colors.textBrand} style={styles.emptyIcon} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                 {t('msg_empty')}
               </Text>
@@ -502,7 +502,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('msg2_add_document')} testID="messages-add-document"
           style={[styles.sendBtn, { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border }]}
           onPress={() => navigation.navigate('DocumentScanner', { caseId: activeCase.id, caseTitle: activeCase.title })}>
-          <IconLabel icon={ICONS.attach} textStyle={{ fontSize: 18 }} maxFontSizeMultiplier={1.3}></IconLabel>
+          <AppIcon name={ICONS.attach} size={18} color={colors.textBrand} style={{ fontSize: 18 }} />
         </TouchableOpacity>
         <TextInput
           style={[styles.input, {
@@ -511,7 +511,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             color: colors.textPrimary,
           }]}
           placeholder={t('msg_placeholder')}
-          placeholderTextColor={COLORS.textSecond}
+          placeholderTextColor={colors.textSecond}
           value={body}
           onChangeText={setBody}
           multiline

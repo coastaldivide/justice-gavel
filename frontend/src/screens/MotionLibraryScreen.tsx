@@ -35,7 +35,7 @@ import { api }         from '../services/api';
 import { pollJob } from '../services/jobPoller';
 import { cacheMotions, markOnline } from '../services/offlineCache';
 import { getUserState } from '../utils/userState';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
@@ -43,38 +43,44 @@ import { t, useLang, perLang, locale } from '../i18n';
 
 // ── Motion type definitions (mirrors backend) ─────────────────────────────────
 // ── Trial-stage motions ───────────────────────────────────────────────────────
-const TRIAL_MOTIONS = perLang(() => [
-  { key: 'suppress',         label: t('x_motion_templates_motion_suppress'),        icon: '🛡️', color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
+const TRIAL_MOTIONS = perLang(() => {
+  const c = themeColors();
+  return [
+  { key: 'suppress',         label: t('x_motion_templates_motion_suppress'),        icon: ICONS.shield, color: c.emergencyDark, bg: c.emergencyBg,
     desc: t('x_motion_library_challenge_illegally_obtained_evidenc') },
-  { key: 'bail_reduction',   label: t('x_motion_templates_motion_bail_reduction'),  icon: '🔓', color: COLORS.blue, bg: COLORS.bgSubtle,
+  { key: 'bail_reduction',   label: t('x_motion_templates_motion_bail_reduction'),  icon: ICONS.bail, color: c.info, bg: c.bgSubtle,
     desc: t('x_motion_library_argue_lower_bail_release') },
-  { key: 'continuance',      label: t('x_motion_templates_motion_continuance'),     icon: '📅', color: COLORS.warnDark, bg: COLORS.warnBg,
+  { key: 'continuance',      label: t('x_motion_templates_motion_continuance'),     icon: ICONS.calendar, color: c.warnDark, bg: c.warnBg,
     desc: t('x_motion_library_request_additional_time_prepare') },
-  { key: 'dismiss',          label: t('x_motion_templates_motion_dismiss'),          icon: '⚖️', color: COLORS.blue, bg: COLORS.bgSubtle,
+  { key: 'dismiss',          label: t('x_motion_templates_motion_dismiss'),          icon: ICONS.lawyer, color: c.info, bg: c.bgSubtle,
     desc: t('x_motion_library_seek_dismissal_speedy_trial') },
-  { key: 'discovery',        label: t('x_motion_templates_motion_discovery'),       icon: '📋', color: COLORS.legalDark, bg: COLORS.legalBg,
+  { key: 'discovery',        label: t('x_motion_templates_motion_discovery'),       icon: ICONS.clipboard, color: c.legalDark, bg: c.legalBg,
     desc: t('x_motion_library_compel_prosecution_disclose_brady') },
-  { key: 'limine',           label: t('x_motion_templates_motion_limine'),           icon: '🚫', color: COLORS.textSecond, bg: COLORS.bgSubtle,
+  { key: 'limine',           label: t('x_motion_templates_motion_limine'),           icon: ICONS.ban, color: c.textSecond, bg: c.bgSubtle,
     desc: t('x_motion_library_exclude_prejudicial_evidence_before') },
-  { key: 'speedy_trial',     label: t('x_motion_library_motion_speedy_trial'),    icon: '⏱️', color: COLORS.blue, bg: COLORS.bgSubtle,
+  { key: 'speedy_trial',     label: t('x_motion_library_motion_speedy_trial'),    icon: ICONS.clock, color: c.info, bg: c.bgSubtle,
     desc: t('x_motion_library_assert_6th_amendment_right') },
-  { key: 'compel',           label: t('x_motion_library_motion_compel'),           icon: '📌', color: COLORS.legalDark, bg: COLORS.legalBg,
+  { key: 'compel',           label: t('x_motion_library_motion_compel'),           icon: ICONS.pin, color: c.legalDark, bg: c.legalBg,
     desc: t('x_motion_library_force_prosecution_comply_with') },
-]);
+];
+});
 
 // ── Appeal and post-conviction motions ─────────────────────────────────────────
-const APPEAL_MOTIONS = perLang(() => [
-  { key: 'notice_of_appeal', label: t('x_motion_library_notice_appeal'),           icon: '📣', color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
+const APPEAL_MOTIONS = perLang(() => {
+  const c = themeColors();
+  return [
+  { key: 'notice_of_appeal', label: t('x_motion_library_notice_appeal'),           icon: ICONS.speak, color: c.emergencyDark, bg: c.emergencyBg,
     desc: t('x_motion_library_preserve_appellate_rights_federal'),
     deadline: true },
-  { key: 'appeal_brief',     label: t('x_motion_library_appellate_brief'),            icon: '📜', color: COLORS.navy, bg: COLORS.bgSubtle,
+  { key: 'appeal_brief',     label: t('x_motion_library_appellate_brief'),            icon: ICONS.document, color: c.textBrand, bg: c.bgSubtle,
     desc: t('x_motion_library_full_substantive_brief_arguing') },
-  { key: 'sentence_reduction',label: t('x_motion_library_motion_reduce_sentence'), icon: '🕊️', color: COLORS.legalDark, bg: COLORS.legalBg,
+  { key: 'sentence_reduction',label: t('x_motion_library_motion_reduce_sentence'), icon: ICONS.peace, color: c.legalDark, bg: c.legalBg,
     desc: t('x_motion_library_post_conviction_sentence_modificatio') },
-  { key: 'habeas_corpus',    label: t('x_motion_library_petition_habeas_corpus'), icon: '⚖️', color: COLORS.blue, bg: COLORS.bgSubtle,
+  { key: 'habeas_corpus',    label: t('x_motion_library_petition_habeas_corpus'), icon: ICONS.lawyer, color: c.info, bg: c.bgSubtle,
     desc: t('x_motion_library_collateral_attack_unlawful_detention'),
     deadline: true },
-]);
+];
+});
 
 // Combined for backwards compatibility
 const MOTION_TYPES = perLang(() => [...TRIAL_MOTIONS(), ...APPEAL_MOTIONS()]);
@@ -232,18 +238,22 @@ const FIELD_DEFS = perLang((): Record<string, { key: string; label: string; plac
 type Phase = 'library' | 'form' | 'confirm' | 'generating' | 'result' | 'history';
 
 // ── Filing status config ──────────────────────────────────────────────────────
-const FILING_STATUS = perLang(() => ({
-  draft:   { label: t('x_motion_library_draft'),   color: COLORS.textMuted, bg: COLORS.bgSubtle, icon: '✏️' },
-  filed:   { label: t('x_motion_library_filed'),   color: COLORS.blue, bg: COLORS.bgSubtle, icon: '📬' },
-  granted: { label: t('x_firm_vertical_granted'), color: COLORS.legalDark, bg: COLORS.legalBg, icon: '✅' },
-  denied:  { label: t('x_motion_library_denied'),  color: COLORS.emergencyDark, bg: COLORS.emergencyBg, icon: '✕'  },
-  pending: { label: t('case_status_pending'), color: COLORS.warnDark, bg: COLORS.warnBg, icon: '⏳' } } as const));
+const FILING_STATUS = perLang(() => {
+  const c = themeColors();
+  return {
+  draft:   { label: t('x_motion_library_draft'),   color: c.textMuted, bg: c.bgSubtle, icon: ICONS.edit },
+  filed:   { label: t('x_motion_library_filed'),   color: c.info, bg: c.bgSubtle, icon: ICONS.mail },
+  granted: { label: t('x_firm_vertical_granted'), color: c.legalDark, bg: c.legalBg, icon: ICONS.statusOk },
+  denied:  { label: t('x_motion_library_denied'),  color: c.emergencyDark, bg: c.emergencyBg, icon: ICONS.statusError },
+  pending: { label: t('case_status_pending'), color: c.warnDark, bg: c.warnBg, icon: ICONS.hourglass } } as const;
+});
 type FilingStatus = keyof ReturnType<typeof FILING_STATUS>;
 
 // ── Motion type card ──────────────────────────────────────────────────────────
 function MotionCard({ m, onPress }: { m: ReturnType<typeof MOTION_TYPES>[0]; onPress: () => void }) {
   useLang();
-  const styles = makeStyles();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -263,9 +273,9 @@ function MotionCard({ m, onPress }: { m: ReturnType<typeof MOTION_TYPES>[0]; onP
         activeOpacity={1}
         accessibilityLabel={`${m.label} -- ${m.desc}`}
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.motionIcon}>{m.icon}</Text>
+        <AppIcon name={m.icon} size={22} color={colors.textBrand} style={styles.motionIcon} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.motionLabel, { color: m.color }]}>{m.label}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.motionDesc,  { color: COLORS.textMuted }]}>{m.desc}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.motionDesc,  { color: colors.textMuted }]}>{m.desc}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -274,6 +284,8 @@ function MotionCard({ m, onPress }: { m: ReturnType<typeof MOTION_TYPES>[0]; onP
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const m = MOTION_TYPES().find(tItem => tItem.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
@@ -298,21 +310,21 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   };
 
   return (
-    <View style={[styles.historyRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+    <View style={[styles.historyRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
       testID="motion-library-screen">
       {/* Open motion */}
       <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-        accessibilityLabel={m?.icon || '\ud83d\udcc4'} onPress={() => onOpen(item)}
+        accessibilityLabel={m?.label || item.motion_type} onPress={() => onOpen(item)}
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.historyIcon}>{m?.icon || '📄'}</Text>
+        <AppIcon name={m?.icon || ICONS.document} size={22} color={colors.textBrand} style={styles.historyIcon} />
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.historyLabel, { color: COLORS.textPrimary }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.historyLabel, { color: colors.textPrimary }]} numberOfLines={1}>
             {m?.label || item.motion_type}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.historyDate, { color: COLORS.textMuted }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.historyDate, { color: colors.textMuted }]}>
             {new Date(item.created_at ?? 0).toLocaleDateString(locale(), { month:'short', day:'numeric', year:'numeric' })}
             {item.filed_at && status === 'filed'
               ? ' ' + t('x_motion_library_filed_2', { value: new Date(item.filed_at).toLocaleDateString(locale(), { month:'short', day:'numeric' }) })
@@ -328,9 +340,8 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
         onPress={() => setShowPicker(p => !p)}
         disabled={updating}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.statusBadgeText, { color: cfg.color }]}>
-          {updating ? '…' : `${cfg.icon} ${cfg.label}`}
-        </Text>
+        {updating ? <Text maxFontSizeMultiplier={1.4} style={[styles.statusBadgeText, { color: cfg.color }]}>…</Text>
+          : <IconLabel icon={cfg.icon} maxFontSizeMultiplier={1.4} textStyle={[styles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</IconLabel>}
       </TouchableOpacity>
 
       {/* Delete */}
@@ -341,15 +352,15 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
         accessibilityLabel={t('x_motion_library_delete_motion')}
           accessibilityHint={t('x_discovery_permanently_removes_this_item')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
 
       {/* Status picker dropdown */}
       {showPicker && (
         <View style={[styles.statusPicker, {
-          backgroundColor: COLORS.bgCard,
-          borderColor: COLORS.border,
-          shadowColor: COLORS.bg,
+          backgroundColor: colors.bgCard,
+          borderColor: colors.border,
+          shadowColor: colors.bg,
           shadowOpacity: 0.15,
           shadowRadius: 8,
           elevation: 6 }]}>
@@ -362,8 +373,8 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
               onPress={() => changeStatus(key)}
               accessibilityLabel={t('x_motion_library_mark_as', { label: cfg.label })}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, lineHeight: 21, marginRight: 8 }}>{cfg.icon}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.statusPickerLabel, { color: key === status ? cfg.color : COLORS.textPrimary, fontWeight: key === status ? '700' : '400' }]}>
+              <AppIcon name={cfg.icon} size={14} color={cfg.color} style={{ marginRight: 8 }} />
+              <Text maxFontSizeMultiplier={1.4} style={[styles.statusPickerLabel, { color: key === status ? cfg.color : colors.textPrimary, fontWeight: key === status ? '700' : '400' }]}>
                 {cfg.label}
               </Text>
               {key === status && <Text maxFontSizeMultiplier={1.4} style={[{ marginLeft: 'auto', color: cfg.color }]}>✓</Text>}
@@ -503,6 +514,9 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   }, []);
 
   const { colors, isDark } = useTheme();
+  const egStyles = makeEgStyles(colors);
+
+  const styles = makeStyles(colors);
   const { caseId, caseTitle, prefill } = (route?.params as import('../types/api').RouteParams) ?? {};
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
@@ -724,7 +738,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
       {caseTitle && (
         <View style={[styles.casePill, { backgroundColor: COLORS.navy + '14', borderColor: COLORS.navy + '30' }]}>
-          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
+          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>{t('x_cs_motion_library')}</Text>
@@ -762,13 +776,13 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
         {/* ── Appeal & post-conviction ── */}
         <View style={[styles.sectionHeader, {
-          borderColor: COLORS.emergency + '40',
-          backgroundColor: COLORS.emergency + '08',
+          borderColor: colors.emergency + '40',
+          backgroundColor: colors.emergency + '08',
           marginTop: 12 }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderText, { color: COLORS.emergency }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderText, { color: colors.emergency }]}>
             {t('x_motion_library_appeal_amp_post_conviction')}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderSub, { color: COLORS.emergency }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderSub, { color: colors.emergency }]}>
             {t('x_motion_library_strict_deadlines_act_immediately')}
           </Text>
         </View>
@@ -786,7 +800,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     <View style={{ flex: 1 }}>
       {/* Deadline warning banner for time-critical appeal motions */}
       {(selected.key === 'notice_of_appeal' || selected.key === 'habeas_corpus') && (
-        <View style={[styles.deadlineBanner, { backgroundColor: COLORS.emergency }]}>
+        <View style={[styles.deadlineBanner, { backgroundColor: colors.emergency }]}>
           <IconLabel icon={ICONS.alarm} textStyle={styles.deadlineBannerText} maxFontSizeMultiplier={1.4}>{selected.key === 'notice_of_appeal'
               ? t('x_motion_library_deadline_critical_federal_14')
               : t('x_motion_library_aedpa_1_year_statute')}</IconLabel>
@@ -802,7 +816,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
         {/* Selected motion badge */}
         <View style={[styles.selectedBadge, { backgroundColor: selected.bg, borderColor: selected.color + '55' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.selectedIcon}>{selected.icon}</Text>
+          <AppIcon name={selected.icon} size={22} color={colors.textBrand} style={styles.selectedIcon} />
           <Text maxFontSizeMultiplier={1.4} style={[styles.selectedLabel, { color: selected.color }]}>{selected.label}</Text>
         </View>
 
@@ -828,7 +842,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                 { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }
               ]}
               placeholder={f.placeholder}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               value={fields[f.key] || ''}
               onChangeText={v => setFields(prev => ({ ...prev, [f.key]: v }))}
               multiline={f.multiline}
@@ -975,8 +989,8 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
         {/* Appellate draft scope notice */}
       {selected && ['appeal_brief'].includes(selected.key) && (
-        <View style={[styles.citationWarning, { backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle, borderColor: COLORS.navy + '60', marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}>
-          <IconLabel icon={ICONS.clipboard} textStyle={[styles.citationWarningTitle, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_this_structural_draft_attorney')}</IconLabel>
+        <View style={[styles.citationWarning, { backgroundColor: colors.bgSubtle, borderColor: COLORS.navy + '60', marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}>
+          <IconLabel icon={ICONS.clipboard} textStyle={[styles.citationWarningTitle, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_this_structural_draft_attorney')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={[styles.citationWarningBody, { color: isDark ? colors.steel : colors.blue }]}>
             {t('x_motion_library_complete_appellate_brief_requires')}
           </Text>
@@ -987,7 +1001,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         <View style={styles.resultActionBar}>
           <TouchableOpacity accessibilityRole="button"
 
-            style={[styles.resultAction, { backgroundColor: copied ? COLORS.legal : COLORS.navy }]}
+            style={[styles.resultAction, { backgroundColor: copied ? colors.legal : COLORS.navy }]}
             onPress={copyToClipboard}
             accessibilityLabel={t('x_motion_library_copy_motion_clipboard')}
           accessibilityHint={t('x_motion_library_copies_clipboard')}
@@ -1020,7 +1034,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-            style={[styles.resultAction, { backgroundColor: COLORS.legal }]}
+            style={[styles.resultAction, { backgroundColor: colors.legal }]}
             onPress={() => navigation.navigate('LegalResearch', {
               initialQuery: selected
                 ? `Precedent and case law supporting a ${selected.label} -- cite key cases`
@@ -1037,16 +1051,16 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           accessibilityHint={t('cp_double_tap')}
                 style={{ flexDirection:'row', alignItems:'center', gap:8, paddingVertical:12,
                   paddingHorizontal:16, borderRadius:10, borderWidth:1,
-                  borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
+                  borderColor:colors.border, backgroundColor:colors.bgSubtle,
                   marginBottom:8 }}
                 onPress={reviewDraft}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                 disabled={reviewing}
                 accessibilityLabel={t('x_motion_library_run_ai_review_this')}
               >
-                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+                <AppIcon name="search-outline" size={20} color={themeColors().textBrand} />
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                  fontWeight:'700', color:COLORS.textPrimary }}>
+                  fontWeight:'700', color:colors.textPrimary }}>
                   {reviewing ? t('x_motion_library_reviewing') : t('x_motion_library_ai_review_draft')}
                 </Text>
               </TouchableOpacity>
@@ -1055,33 +1069,33 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               {reviewResult && (
                 <View style={{ borderRadius:10, padding:14, marginBottom:8,
                   backgroundColor:
-                    reviewResult.score==='pass' ? COLORS.legalBg :
-                    reviewResult.score==='fail' ? COLORS.emergencyBg : COLORS.warnBg,
+                    reviewResult.score==='pass' ? colors.legalBg :
+                    reviewResult.score==='fail' ? colors.emergencyBg : colors.warnBg,
                   borderWidth:1,
                   borderColor:
-                    reviewResult.score==='pass' ? COLORS.legalDark :
-                    reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
-                  <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={{ fontSize:14, lineHeight:21,
+                    reviewResult.score==='pass' ? colors.legalDark :
+                    reviewResult.score==='fail' ? colors.emergencyDark : colors.warnDark }}>
+                  <IconLabel icon={reviewResult.score==='pass' ? ICONS.statusOk : reviewResult.score==='fail' ? ICONS.statusError : ICONS.statusWarn} textStyle={{ fontSize:14, lineHeight:21,
                     fontWeight:'700', marginBottom:6,
                     color:
-                      reviewResult.score==='pass' ? COLORS.legalDark :
-                      reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }} maxFontSizeMultiplier={1.4}>{reviewResult.score==='pass' ? t('x_motion_library_looks_good') :
+                      reviewResult.score==='pass' ? colors.legalDark :
+                      reviewResult.score==='fail' ? colors.emergencyDark : colors.warnDark }} maxFontSizeMultiplier={1.4}>{reviewResult.score==='pass' ? t('x_motion_library_looks_good') :
                      reviewResult.score==='fail' ? t('x_motion_library_issues_found') : t('x_motion_library_minor_issues')}</IconLabel>
                   {reviewResult.missing_fields?.length > 0 && (
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
-                      color:COLORS.emergencyDark, marginBottom:4 }}>
+                      color:colors.emergencyDark, marginBottom:4 }}>
                       {t('x_motion_library_missing', { value: reviewResult.missing_fields.join(', ') })}
                     </Text>
                   )}
                   {reviewResult.issues?.map((issue: string, i: number) => (
                     <Text key={`item-${i}`} maxFontSizeMultiplier={1.4} style={{ fontSize:12,
-                      lineHeight:18, color:COLORS.warnDark, marginBottom:2 }}>
+                      lineHeight:18, color:colors.warnDark, marginBottom:2 }}>
                       • {issue}
                     </Text>
                   ))}
                   {reviewResult.suggestions?.length > 0 && (
                     <IconLabel icon={ICONS.idea} textStyle={{ fontSize:12, lineHeight:18,
-                      color:COLORS.blue, marginTop:4 }} maxFontSizeMultiplier={1.4}>{reviewResult.suggestions[0]}</IconLabel>
+                      color:themeColors().info, marginTop:4 }} maxFontSizeMultiplier={1.4}>{reviewResult.suggestions[0]}</IconLabel>
                   )}
                 </View>
               )}
@@ -1096,7 +1110,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
         {/* Info chip */}
         <View style={[styles.editChip, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle, borderColor: colors.blue + '44' }]}>
-          <IconLabel icon={ICONS.edit} textStyle={[styles.editChipText, { color: colors.blue }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_review_edit_below_before')}</IconLabel>
+          <IconLabel icon={ICONS.edit} textStyle={[styles.editChipText, { color: colors.info }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_review_edit_below_before')}</IconLabel>
         </View>
 
         {/* Editable draft -- document typography */}
@@ -1146,23 +1160,23 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               key={key}
               style={[styles.histFilterChip, active && {
                 backgroundColor: cfg ? cfg.bg : COLORS.navy + '14',
-                borderColor: cfg ? cfg.color : COLORS.navy }]}
+                borderColor: cfg ? cfg.color : themeColors().textBrand }]}
               onPress={() => setHistFilter(key)}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.histFilterText, { color: active ? (cfg?.color || COLORS.navy) : colors.textMuted }]}>
-                {key === 'all' || !cfg ? t('x_practice_area_selector_all') : `${cfg.icon} ${cfg.label}`}
-              </Text>
+              {key === 'all' || !cfg
+                ? <Text maxFontSizeMultiplier={1.4} style={[styles.histFilterText, { color: active ? COLORS.navy : colors.textMuted }]}>{t('x_practice_area_selector_all')}</Text>
+                : <IconLabel icon={cfg.icon} maxFontSizeMultiplier={1.4} textStyle={[styles.histFilterText, { color: active ? cfg.color : colors.textMuted }]}>{cfg.label}</IconLabel>}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
       {histLoading
-        ? <ActivityIndicator color={COLORS.navy} style={{ marginTop: 40 }} />
+        ? <ActivityIndicator color={themeColors().textBrand} style={{ marginTop: 40 }} />
         : history.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <AppIcon name="document-outline" size={20} color={COLORS.navy} />
+            <AppIcon name="document-outline" size={20} color={themeColors().textBrand} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.generatingLabel, { color: colors.textPrimary }]}>{t('x_motion_library_no_motions_yet')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>
               {t('x_motion_library_generate_first_motion_from')}
@@ -1173,7 +1187,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               style={[styles.generateBtn, { backgroundColor: COLORS.navy, marginTop: 20, width: '100%' }]}
               accessibilityLabel={t('x_motion_library_back_library_2')} onPress={() => setPhase('library')}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>{t('x_motion_library_back_library_2')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.generateBtnText, { color: colors.white }]}>{t('x_motion_library_back_library_2')}</Text>
             </TouchableOpacity>
           </View>
         )
@@ -1211,7 +1225,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1 },
   centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -1256,7 +1270,7 @@ const makeStyles = () => StyleSheet.create({
 
   generateBtn:   { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 10, ...SHADOW.sm },
-  generateBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  generateBtnText: { color: colors.textOnAccent, fontSize: 15, lineHeight: 22, ...FONTS.black },
   backLink:      { paddingVertical: 10, alignItems: 'center' },
   backLinkText:  { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
@@ -1268,7 +1282,7 @@ const makeStyles = () => StyleSheet.create({
   resultScroll:    { padding: 16, paddingBottom: 40 },
   resultActionBar: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   resultAction:    { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
-  resultActionText:{ color: COLORS.textOnNavy, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  resultActionText:{ color: colors.textOnNavy, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   editChip:        { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 12 },
   editChipText:    { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_500Medium', fontWeight: '500' },
   draftInput:      { borderWidth: 1, borderRadius: RADIUS.lg, padding: 20,
@@ -1290,7 +1304,7 @@ const makeStyles = () => StyleSheet.create({
   sectionHeaderSub:  { fontSize: 11, fontWeight: '600', marginTop: 2 },
   deadlineBanner:    { marginHorizontal: 16, marginTop: 8, marginBottom: 4,
     borderRadius: RADIUS.md, padding: 12 },
-  deadlineBannerText:{ color: COLORS.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 17 },
+  deadlineBannerText:{ color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 17 },
   citationWarning:      { borderRadius: RADIUS.md, borderWidth: 2, padding: 16, marginBottom: 12 },
   citationWarningTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
   citationWarningBody:  { fontSize: 12, lineHeight: 18 },
@@ -1305,30 +1319,27 @@ const makeStyles = () => StyleSheet.create({
   statusPickerRow:   { flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 11 },
   statusPickerLabel: { fontSize: 12 } });
-
-// Module-level fallback for helper components
-const styles = makeStyles();
-const egStyles = StyleSheet.create({
+const makeEgStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', padding:20 },
-  card:       { backgroundColor:COLORS.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },
-  title:      { fontSize:18, fontWeight:'700', color:COLORS.navy, marginBottom:12, textAlign:'center' },
-  body:       { fontSize:13, color:COLORS.info, lineHeight:20, marginBottom:12 },
-  bold:       { fontWeight:'700', color:COLORS.textOnGold },
-  reviewBtn:  { backgroundColor:COLORS.bgSubtle, borderRadius:8, padding:12, alignItems:'center', marginBottom:16 },
-  reviewBtnText: { fontSize:13, fontWeight:'600', color:COLORS.blue },
+  card:       { backgroundColor:colors.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },
+  title:      { fontSize:18, fontWeight:'700', color:colors.textBrand, marginBottom:12, textAlign:'center' },
+  body:       { fontSize:13, color:colors.info, lineHeight:20, marginBottom:12 },
+  bold:       { fontWeight:'700', color:colors.textPrimary },
+  reviewBtn:  { backgroundColor:colors.bgSubtle, borderRadius:8, padding:12, alignItems:'center', marginBottom:16 },
+  reviewBtnText: { fontSize:13, fontWeight:'600', color:colors.info },
   checkRow:   { flexDirection:'row', alignItems:'flex-start', gap:10, marginBottom:16 },
   checkBox:   { marginTop:2, flexShrink:0 },
-  checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:COLORS.textMuted, alignItems:'center', justifyContent:'center' },
-  checkInnerChecked: { backgroundColor:COLORS.navy, borderColor:COLORS.navy },
-  checkMark:  { color:COLORS.textOnNavy, fontSize:13, fontWeight:'700' }, // design-audit-ignore: rendered only when checked (navy fill)
-  checkLabel: { flex:1, fontSize:12, color:COLORS.info, lineHeight:18 },
+  checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:colors.textMuted, alignItems:'center', justifyContent:'center' },
+  checkInnerChecked: { backgroundColor:colors.navy, borderColor:colors.navy },
+  checkMark:  { color:colors.textOnNavy, fontSize:13, fontWeight:'700' }, // design-audit-ignore: rendered only when checked (navy fill)
+  checkLabel: { flex:1, fontSize:12, color:colors.info, lineHeight:18 },
   btnRow:     { flexDirection:'row', gap:10 },
-  cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:COLORS.border, padding:12, alignItems:'center' },
+  cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:colors.border, padding:12, alignItems:'center' },
   cancelBtnText: { fontSize:14,
-    lineHeight: 21, color:COLORS.info, fontWeight:'500' },
-  exportBtn:  { flex:1, borderRadius:10, backgroundColor:COLORS.navy, padding:12, alignItems:'center' },
-  exportBtnDisabled: { backgroundColor:COLORS.border },
+    lineHeight: 21, color:colors.info, fontWeight:'500' },
+  exportBtn:  { flex:1, borderRadius:10, backgroundColor:colors.navy, padding:12, alignItems:'center' },
+  exportBtnDisabled: { backgroundColor:colors.border },
   exportBtnText: { fontSize:14,
-    lineHeight: 21, color:COLORS.textOnNavy, fontWeight:'700' },
-  exportBtnTextDisabled: { color:COLORS.textSecond } });
+    lineHeight: 21, color:colors.textOnNavy, fontWeight:'700' },
+  exportBtnTextDisabled: { color:colors.textSecond } });
 export default React.memo(MotionLibraryScreen);

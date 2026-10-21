@@ -161,7 +161,7 @@ export async function sendBookingConfirmation({ to, lang = 'en', clientName, att
     subject: m('email.booking.subject', { lawyer: attorneyName, when }),
     html: `
       <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#0A1628">${e(m('email.booking.title'))} ✅</h2>
+        <h2 style="color:#0A1628">${e(m('email.booking.title'))}</h2>
         <p>${e(greeting(lang, clientName))}</p>
         <p>${e(m('email.booking.body', { minutes: durationMin, lawyer: attorneyName }))}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
@@ -171,7 +171,7 @@ export async function sendBookingConfirmation({ to, lang = 'en', clientName, att
         </table>
         <p style="color:#6B7280;font-size:13px;margin-top:24px">
           ${e(m('email.booking.cancel', { hours: refundHours }))}<br>
-          <strong>⚖️</strong> ${e(m('email.booking.notice'))}
+          ${e(m('email.booking.notice'))}
         </p>
       </div>`,
     text: `${m('email.booking.title')}\n\n${m('email.booking.body', { minutes: durationMin, lawyer: attorneyName })}\n${m('email.label.when')}: ${when}\n\n${m('email.booking.cancel', { hours: refundHours })}\n${m('email.booking.notice')}`,
@@ -187,7 +187,7 @@ export async function sendAttorneyBookingAlert({ to, lang = 'en', attorneyName, 
     subject: m('email.atty.subject', { client, when }),
     html: `
       <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#0A1628">📋 ${e(m('email.atty.title'))}</h2>
+        <h2 style="color:#0A1628">${e(m('email.atty.title'))}</h2>
         <p>${e(greeting(lang, attorneyName))}</p>
         <p>${e(m('email.atty.body', { client, minutes: durationMin }))}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
@@ -210,10 +210,10 @@ export async function sendConsultationReminder({ to, lang = 'en', clientName, at
     subject: m('email.reminder.subject', { lawyer: attorneyName, when }),
     html: `
       <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="color:#0A1628">📅 ${e(m('email.reminder.title'))}</h2>
+        <h2 style="color:#0A1628">${e(m('email.reminder.title'))}</h2>
         <p>${e(greeting(lang, clientName))}</p>
         <p>${e(m('email.reminder.body', { minutes: durationMin, lawyer: attorneyName, when }))}</p>
-        <p style="color:#6B7280;font-size:12px">⚖️ ${e(m('email.booking.notice'))}</p>
+        <p style="color:#6B7280;font-size:12px">${e(m('email.booking.notice'))}</p>
       </div>`,
     text: `${m('email.reminder.body', { minutes: durationMin, lawyer: attorneyName, when })}\n\n${m('email.booking.notice')}`,
   });

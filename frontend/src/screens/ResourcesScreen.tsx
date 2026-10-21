@@ -6,45 +6,45 @@ import { View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, Activ
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
-import {  useTheme, COLORS }      from '../constants/theme';
+import { useTheme, COLORS, themed } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { helpLine, websiteUrl, websiteLabel, directionsUrl } from '../utils/contact';
 import { stateName } from '../utils/userState';
 
 
 const CATEGORIES = perLang(() => [
-  { key: 'ALL',                label: t('x_practice_area_selector_all'),              icon: '📚' },
-  { key: 'PUBLIC_DEFENDER',   label: t('x_resources_public_defender'),  icon: '⚖️'  },
-  { key: 'LEGAL_AID',         label: t('x_resources_free_legal_aid'),   icon: '🆘' },
-  { key: 'CRISIS_LINE',       label: t('x_resources_crisis_lines'),     icon: '📞' },
-  { key: 'DV_SHELTER',        label: t('x_resources_dv_help'),          icon: '🏠' },
-  { key: 'INMATE_LOOKUP',     label: t('x_resources_find_inmate'),      icon: '🔍' },
-  { key: 'TREATMENT',         label: t('x_resources_treatment'),        icon: '💊' },
-  { key: 'EXPUNGEMENT',       label: t('x_resources_clear_record'),     icon: '🗂️'  },
-  { key: 'IMMIGRATION_COURT', label: t('chat_cat_immigration'),      icon: '🌎' },
-  { key: 'COURT_PAYMENT',     label: t('x_resources_pay_fees'),         icon: '💳' },
-  { key: 'VICTIM_COMPENSATION',label: t('x_resources_victim_help'),     icon: '🛡️'  },
-  { key: 'LAW_CLINIC',        label: t('x_resources_free_clinics'),     icon: '🎓' },
-  { key: 'PROBATION',         label: t('x_resources_probation'),        icon: '📋' },
-  { key: 'ATTORNEY_COMPLAINT',label: t('x_resources_report_attorney'),  icon: '⚠️'  },
+  { key: 'ALL',                label: t('x_practice_area_selector_all'),              icon: ICONS.book },
+  { key: 'PUBLIC_DEFENDER',   label: t('x_resources_public_defender'),  icon: ICONS.lawyer  },
+  { key: 'LEGAL_AID',         label: t('x_resources_free_legal_aid'),   icon: ICONS.emergency },
+  { key: 'CRISIS_LINE',       label: t('x_resources_crisis_lines'),     icon: ICONS.phone },
+  { key: 'DV_SHELTER',        label: t('x_resources_dv_help'),          icon: ICONS.housing },
+  { key: 'INMATE_LOOKUP',     label: t('x_resources_find_inmate'),      icon: ICONS.search },
+  { key: 'TREATMENT',         label: t('x_resources_treatment'),        icon: ICONS.drug },
+  { key: 'EXPUNGEMENT',       label: t('x_resources_clear_record'),     icon: ICONS.cases  },
+  { key: 'IMMIGRATION_COURT', label: t('chat_cat_immigration'),      icon: ICONS.globe },
+  { key: 'COURT_PAYMENT',     label: t('x_resources_pay_fees'),         icon: ICONS.card },
+  { key: 'VICTIM_COMPENSATION',label: t('x_resources_victim_help'),     icon: ICONS.shield  },
+  { key: 'LAW_CLINIC',        label: t('x_resources_free_clinics'),     icon: ICONS.graduation },
+  { key: 'PROBATION',         label: t('x_resources_probation'),        icon: ICONS.clipboard },
+  { key: 'ATTORNEY_COMPLAINT',label: t('x_resources_report_attorney'),  icon: ICONS.statusWarn  },
 ]);
 
-const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  ALL:                { bg: COLORS.infoBg, border: COLORS.blue, text: COLORS.navy },
-  PUBLIC_DEFENDER:    { bg: COLORS.bgSubtle, border: COLORS.navy, text: COLORS.navy },
-  LEGAL_AID:          { bg: COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
-  CRISIS_LINE:        { bg: COLORS.emergencyBg, border: COLORS.emergencyDark, text: COLORS.emergencyDark },
-  DV_SHELTER:         { bg: COLORS.warnBg, border: COLORS.warnDark, text: COLORS.warnDark },
-  INMATE_LOOKUP:      { bg: COLORS.bgSubtle, border: COLORS.navy, text: COLORS.navy },
-  TREATMENT:          { bg: COLORS.bgSubtle, border: COLORS.navy, text: COLORS.navy },
-  EXPUNGEMENT:        { bg: COLORS.bgCard, border: COLORS.legalDark, text: COLORS.legalDark },
-  IMMIGRATION_COURT:  { bg: COLORS.infoBg, border: COLORS.blue, text: COLORS.blue },
-  COURT_PAYMENT:      { bg: COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
-  VICTIM_COMPENSATION:{ bg: COLORS.bgCard, border: COLORS.warnDark, text: COLORS.warnDark },
-  LAW_CLINIC:         { bg: COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
-  PROBATION:          { bg: COLORS.bgSubtle, border: COLORS.textSecond, text: COLORS.textSecond },
-  ATTORNEY_COMPLAINT: { bg: COLORS.emergencyBg, border: COLORS.emergencyDark, text: COLORS.emergencyDark },
-};
+const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> = themed(colors => ({
+  ALL:                { bg: colors.infoBg, border: colors.blue, text: colors.textBrand },
+  PUBLIC_DEFENDER:    { bg: colors.bgSubtle, border: colors.navy, text: colors.textBrand },
+  LEGAL_AID:          { bg: colors.legalBg, border: colors.legalDark, text: colors.legalDark },
+  CRISIS_LINE:        { bg: colors.emergencyBg, border: colors.emergencyDark, text: colors.emergencyDark },
+  DV_SHELTER:         { bg: colors.warnBg, border: colors.warnDark, text: colors.warnDark },
+  INMATE_LOOKUP:      { bg: colors.bgSubtle, border: colors.navy, text: colors.textBrand },
+  TREATMENT:          { bg: colors.bgSubtle, border: colors.navy, text: colors.textBrand },
+  EXPUNGEMENT:        { bg: colors.bgCard, border: colors.legalDark, text: colors.legalDark },
+  IMMIGRATION_COURT:  { bg: colors.infoBg, border: colors.blue, text: colors.info },
+  COURT_PAYMENT:      { bg: colors.legalBg, border: colors.legalDark, text: colors.legalDark },
+  VICTIM_COMPENSATION:{ bg: colors.bgCard, border: colors.warnDark, text: colors.warnDark },
+  LAW_CLINIC:         { bg: colors.legalBg, border: colors.legalDark, text: colors.legalDark },
+  PROBATION:          { bg: colors.bgSubtle, border: colors.textSecond, text: colors.textSecond },
+  ATTORNEY_COMPLAINT: { bg: colors.emergencyBg, border: colors.emergencyDark, text: colors.emergencyDark },
+}));
 
 
 
@@ -158,7 +158,7 @@ function ResourcesScreen(): React.JSX.Element {
                 borderRadius:20, paddingHorizontal:12, paddingVertical:7,
                 marginRight:8, flexDirection:'row', alignItems:'center', gap:5,
               }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13 }}>{cat.icon}</Text>
+              <AppIcon name={cat.icon} size={13} color={colors.textBrand} style={{ fontSize:13 }} />
               <Text maxFontSizeMultiplier={1.4} style={{
                 fontSize:12, fontWeight:'600',
                 color: active ? COLORS.white : cc.text,
@@ -182,7 +182,7 @@ function ResourcesScreen(): React.JSX.Element {
             accessibilityLabel={t('try_again')} onPress={() => load()}
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
           >
-            <Text style={{ color: ('\x23' + '1d4ed8') as string, fontSize: 14 }}>{t('try_again')}</Text>
+            <Text style={{ color: colors.info, fontSize: 14 }}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -221,9 +221,9 @@ function ResourcesScreen(): React.JSX.Element {
                     backgroundColor: cc.bg, borderRadius:8,
                     paddingHorizontal:8, paddingVertical:4, flexShrink:0,
                   }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'700', color:cc.text }}>
-                      {cat?.icon} {item.state ? stateName(item.state) : t('x_resources_national')}
-                    </Text>
+                    <IconLabel icon={cat?.icon ?? ICONS.library} maxFontSizeMultiplier={1.4} textStyle={{ fontSize:11, fontWeight:'700', color:cc.text }}>
+                      {item.state ? stateName(item.state) : t('x_resources_national')}
+                    </IconLabel>
                   </View>
                   <View style={{ flex:1 }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontWeight:'700', fontSize:14, lineHeight:20 }}>
@@ -266,7 +266,7 @@ function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="link" testID="resource-website"
                           onPress={() => Linking.openURL(site).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
-                          <IconLabel icon={ICONS.globe} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                          <AppIcon name={ICONS.globe} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textBrand, fontWeight:'600', fontSize:14, flexShrink:1 }}
                             numberOfLines={1}>
                             {websiteLabel(site)}
@@ -277,13 +277,13 @@ function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(directions).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
-                          <IconLabel icon={ICONS.location} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                          <AppIcon name={ICONS.location} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {item.hours ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <IconLabel icon={ICONS.clock} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
+                          <AppIcon name={ICONS.clock} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.hours}</Text>
                         </View>
                       ) : null}

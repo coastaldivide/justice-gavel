@@ -185,12 +185,12 @@ describe('CFM3. CourtFormsScreen — openFormUrl + renderStateItem', () => {
 
 // ── DSC2. DiscoveryScreen — fileIcon ─────────────────────────────────────
 describe('DSC2. DiscoveryScreen — fileIcon Emoji Mapper', () => {
-  test('DSC2-01: fileIcon(name) maps .pdf→📄 fallback→📎', async () => {
+  test('DSC2-01: fileIcon(name) maps .pdf→document icon, fallback→attach icon (UI pass 2: ICONS, no emoji)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
     expect(src).toContain('fileIcon');
     expect(src).toContain("'.pdf'");
-    expect(src).toContain('📎');
+    expect(src).toContain('return ICONS.attach');
     expect(src).toContain('ext');
   });
 });

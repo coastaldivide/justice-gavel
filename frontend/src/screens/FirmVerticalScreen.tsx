@@ -2,7 +2,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { EmptyState } from '../components/EmptyState';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * FirmVerticalScreen — Practice Area Configuration & Specialty Trackers
  *
@@ -35,7 +35,7 @@ import {
   LayoutAnimation,
   InteractionManager,
 } from 'react-native';
-import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, FONT, TYPE, COLORS, type ThemeColors, themed, themeColors } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { toLocalISODate } from '../utils/dateUtils';
@@ -44,26 +44,26 @@ import { t, perLang, useLang } from '../i18n';
 type Tab = 'setup' | 'pricing' | 'trackers' | 'deadlines';
 
 // ─── Vertical metadata ────────────────────────────────────────────────────────
-const VERTICALS = perLang((): { key: string; label: string; emoji: string; pitch: string }[] => [
-  { key: 'criminal_defense', label: t('x_court_forms_criminal_defense'),   emoji: '⚖️',  pitch: t('x_firm_vertical_bail_automation_expungement_pipeline') },
-  { key: 'civil_rights',     label: t('x_firm_acquisition_civil_rights_1983'),emoji: '✊',  pitch: t('x_firm_vertical_class_action_management_sol') },
-  { key: 'white_collar',     label: t('x_firm_acquisition_white_collar_reg'), emoji: '🏦',  pitch: t('x_firm_vertical_dpa_negotiation_tracker_cooperation') },
-  { key: 'family',           label: t('x_practice_area_selector_family_law'),         emoji: '👨‍👩‍👧',  pitch: t('x_firm_vertical_emergency_tro_flow_qdro') },
-  { key: 'immigration',      label: t('chat_cat_immigration'),        emoji: '🛂',  pitch: t('x_firm_vertical_asylum_clock_surveillance_detained') },
-  { key: 'personal_injury',  label: t('x_practice_area_selector_personal_injury'),    emoji: '🏥',  pitch: t('x_firm_vertical_expert_witness_matching_damages') },
-  { key: 'public_defense',   label: t('x_firm_acquisition_public_defense'),     emoji: '🛡️',  pitch: t('x_firm_vertical_caseload_dashboard_diversion_tracker') },
-  { key: 'appellate',        label: t('x_firm_acquisition_appellate_pcr'),    emoji: '📜',  pitch: t('x_firm_vertical_aedpa_deadline_tracking_capital') },
-  { key: 'military',         label: t('x_firm_acquisition_military_ucmj'),    emoji: '🎖️',  pitch: t('x_firm_vertical_ucmj_taxonomy_article_32') },
-  { key: 'juvenile',         label: t('x_firm_acquisition_juvenile_dependency'), emoji: '👦', pitch: t('x_firm_vertical_juvenile_expungement_transfer_monito') },
-  { key: 'general',          label: t('x_firm_acquisition_general_practice'),   emoji: '📁',  pitch: t('x_firm_vertical_full_platform_access_with') },
+const VERTICALS = perLang((): { key: string; label: string; emoji: IconName; pitch: string }[] => [
+  { key: 'criminal_defense', label: t('x_court_forms_criminal_defense'),   emoji: ICONS.lawyer,  pitch: t('x_firm_vertical_bail_automation_expungement_pipeline') },
+  { key: 'civil_rights',     label: t('x_firm_acquisition_civil_rights_1983'),emoji: ICONS.rights,  pitch: t('x_firm_vertical_class_action_management_sol') },
+  { key: 'white_collar',     label: t('x_firm_acquisition_white_collar_reg'), emoji: ICONS.courthouse,  pitch: t('x_firm_vertical_dpa_negotiation_tracker_cooperation') },
+  { key: 'family',           label: t('x_practice_area_selector_family_law'),         emoji: ICONS.family,  pitch: t('x_firm_vertical_emergency_tro_flow_qdro') },
+  { key: 'immigration',      label: t('chat_cat_immigration'),        emoji: ICONS.immigration,  pitch: t('x_firm_vertical_asylum_clock_surveillance_detained') },
+  { key: 'personal_injury',  label: t('x_practice_area_selector_personal_injury'),    emoji: ICONS.medical,  pitch: t('x_firm_vertical_expert_witness_matching_damages') },
+  { key: 'public_defense',   label: t('x_firm_acquisition_public_defense'),     emoji: ICONS.shield,  pitch: t('x_firm_vertical_caseload_dashboard_diversion_tracker') },
+  { key: 'appellate',        label: t('x_firm_acquisition_appellate_pcr'),    emoji: ICONS.document,  pitch: t('x_firm_vertical_aedpa_deadline_tracking_capital') },
+  { key: 'military',         label: t('x_firm_acquisition_military_ucmj'),    emoji: ICONS.medal,  pitch: t('x_firm_vertical_ucmj_taxonomy_article_32') },
+  { key: 'juvenile',         label: t('x_firm_acquisition_juvenile_dependency'), emoji: ICONS.juvenile, pitch: t('x_firm_vertical_juvenile_expungement_transfer_monito') },
+  { key: 'general',          label: t('x_firm_acquisition_general_practice'),   emoji: ICONS.cases,  pitch: t('x_firm_vertical_full_platform_access_with') },
 ]);
 
-const PRICING_COLORS: Record<string, string> = {
-  standard:   COLORS.blue,
-  mission:    COLORS.legal,
-  government: COLORS.navy,
-  enterprise: COLORS.emergency,
-};
+const PRICING_COLORS: Record<string, string> = themed(colors => ({
+  standard:   colors.blue,
+  mission:    colors.legal,
+  government: colors.navy,
+  enterprise: colors.emergency,
+}));
 
 // ─── Feature flag definitions per vertical ────────────────────────────────────
 const FEATURE_FLAGS = perLang((): Record<string, { key: string; label: string; desc: string }[]> => ({
@@ -410,7 +410,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}
         testID="firm-vertical-screen">
-        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+        <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? COLORS.navy, marginBottom: 8, textAlign: 'center' }}>
           {t('x_firm_vertical_set_up_legal_vertical')}
         </Text>
@@ -430,7 +430,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
       {/* Subscription grace period / read-only mode banner */}
       {(subscriptionStatus === 'grace' || subscriptionStatus === 'lapsed') && (
         <View style={s.graceBanner}>
-          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.graceBannerTitle} maxFontSizeMultiplier={1.4}>{subscriptionStatus === 'grace' ? t('x_firm_vertical_account_read_only_mode') : t('x_firm_vertical_subscription_inactive')}</IconLabel>
+          <IconLabel icon={subscriptionStatus === 'grace' ? ICONS.statusWarn : ICONS.statusError} textStyle={s.graceBannerTitle} maxFontSizeMultiplier={1.4}>{subscriptionStatus === 'grace' ? t('x_firm_vertical_account_read_only_mode') : t('x_firm_vertical_subscription_inactive')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={s.graceBannerBody}>
             {subscriptionStatus === 'grace' && graceUntil
               ? t('x_firm_vertical_can_view_all_data', { graceUntil })
@@ -447,7 +447,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
           accessibilityState={{  selected: false  }}
             accessibilityLabel={t('x_firm_vertical_switch_tab')}
           >
-            <IconLabel icon={ICONS.settings} textStyle={[s.tabLabel, tab===tItem && s.tabLabelActive]} maxFontSizeMultiplier={1.4}>{tItem === 'setup' ? t('x_firm_vertical_setup') : tItem === 'pricing' ? t('x_firm_vertical_pricing') : tItem === 'trackers' ? t('x_firm_vertical_trackers') : t('x_firm_vertical_deadlines')}</IconLabel>
+            <IconLabel icon={tItem === 'setup' ? ICONS.settings : tItem === 'pricing' ? ICONS.card : tItem === 'trackers' ? ICONS.search : ICONS.calendar} textStyle={[s.tabLabel, tab===tItem && s.tabLabelActive]} maxFontSizeMultiplier={1.4}>{tItem === 'setup' ? t('x_firm_vertical_setup') : tItem === 'pricing' ? t('x_firm_vertical_pricing') : tItem === 'trackers' ? t('x_firm_vertical_trackers') : t('x_firm_vertical_deadlines')}</IconLabel>
           </TouchableOpacity>
         ))}
       </View>
@@ -482,7 +482,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                 activeOpacity={0.75}
               >
                 <View style={s.vertHeader}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
+                  <AppIcon name={v.emoji} size={22} color={colors.textBrand} style={s.vertEmoji} />
                   <View style={{ flex: 1 }}>
                     <Text maxFontSizeMultiplier={1.4} style={[s.vertLabel, selectedV === v.key && s.vertLabelSelected]}>{v.label}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={s.vertPitch}>{v.pitch}</Text>
@@ -610,7 +610,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
           accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
           accessibilityState={{  selected: false  }}
                         >
-                  <IconLabel icon={ICONS.clock} textStyle={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]} maxFontSizeMultiplier={1.4}>{tt === 'asylum' ? t('x_firm_vertical_asylum_clock_2') : tt === 'dpa' ? t('x_firm_vertical_dpa_tracker_2') : t('x_firm_vertical_tro_tracker')}</IconLabel>
+                  <IconLabel icon={tt === 'asylum' ? ICONS.clock : tt === 'dpa' ? ICONS.money : ICONS.emergency} textStyle={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]} maxFontSizeMultiplier={1.4}>{tt === 'asylum' ? t('x_firm_vertical_asylum_clock_2') : tt === 'dpa' ? t('x_firm_vertical_dpa_tracker_2') : t('x_firm_vertical_tro_tracker')}</IconLabel>
                 </TouchableOpacity>
               ))}
             </View>
@@ -662,7 +662,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                           <TouchableOpacity
           accessibilityRole="button" key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
                                   >
-                            <IconLabel icon={ICONS.emergency} iconColor={colors.emergency} textStyle={[s.segLabel, acCountry===cc && s.segLabelActive]} maxFontSizeMultiplier={1.4}>{cc==='crisis'?t('x_firm_vertical_crisis'):cc==='deteriorating'?t('x_firm_vertical_deteriorating'):t('x_firm_vertical_stable')}</IconLabel>
+                            <IconLabel icon={cc==='crisis' ? ICONS.emergency : cc==='deteriorating' ? ICONS.alertHigh : ICONS.statusOk} textStyle={[s.segLabel, acCountry===cc && s.segLabelActive]} maxFontSizeMultiplier={1.4}>{cc==='crisis'?t('x_firm_vertical_crisis'):cc==='deteriorating'?t('x_firm_vertical_deteriorating'):t('x_firm_vertical_stable')}</IconLabel>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -695,7 +695,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                             <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
                           </View>
                           <View style={s.clockFooter}>
-                            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[s.clockDays, { color: barColor }]} maxFontSizeMultiplier={1.4}>{c.one_year_barred
+                            <IconLabel icon={c.one_year_barred ? ICONS.statusWarn : c.approaching_bar ? ICONS.alertHigh : ICONS.clock} textStyle={[s.clockDays, { color: barColor }]} maxFontSizeMultiplier={1.4}>{c.one_year_barred
                               ? t('x_firm_vertical_1_year_bar_exceeded')
                               : c.approaching_bar
                                 ? t('x_firm_vertical_approaching_bar_days_remaining', { days_until_bar: c.days_until_bar })
@@ -705,7 +705,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                         </View>
                       );
                     })}
-                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
+                    {<EmptyState icon={ICONS.clipboard} title={t('empty_state_nothing')} />}
                   </>
                 )}
 
@@ -775,9 +775,9 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                             onPress={() => closeTracker('dpa', d.id, d.client_name)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                             style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10,
-                              backgroundColor: COLORS.infoBg, borderRadius: 6, marginTop: 8 }}
+                              backgroundColor: colors.infoBg, borderRadius: 6, marginTop: 8 }}
                           >
-                            <Text style={{ fontSize: 12, color: COLORS.navy }}>{t('x_firm_vertical_mark_resolved_2')}</Text>
+                            <Text style={{ fontSize: 12, color: colors.textBrand }}>{t('x_firm_vertical_mark_resolved_2')}</Text>
                           </TouchableOpacity>
                           {d.wells_due && (
                             <IconLabel icon={ICONS.clipboard} textStyle={[s.troDue, d.wells_overdue && { color: colors.emergency }]} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_wells', { value: d.wells_overdue
@@ -797,7 +797,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                         </View>
                       );
                     })}
-                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
+                    {<EmptyState icon={ICONS.clipboard} title={t('empty_state_nothing')} />}
                   </>
                 )}
 
@@ -872,7 +872,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                         <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>{t('x_firm_vertical_asset_tier_2', { value: tItem.asset_tier.replace(/_/g, ' ') })}</Text>
                       </View>
                     ))}
-                    {<EmptyState icon="📋" title={t('empty_state_nothing')} />}
+                    {<EmptyState icon={ICONS.clipboard} title={t('empty_state_nothing')} />}
                   </>
                 )}
               </>
@@ -930,9 +930,9 @@ return (
 }
 
 // ─── STYLES ────────────────────────────────────────────────────────────────────
-const styles = (c: any) => StyleSheet.create({
-  root:             { flex: 1, backgroundColor: c.background },
-  center:           { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.background },
+const styles = (c: ThemeColors) => StyleSheet.create({
+  root:             { flex: 1, backgroundColor: c.bg },
+  center:           { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.bg },
   scroll:           { padding: 16, paddingBottom: 60 },
   tabBar:           { flexDirection: 'row', backgroundColor: c.card, borderBottomWidth: 0.5, borderBottomColor: c.borderSubtle },
   tabBtn:           { flex: 1, paddingVertical: 12, alignItems: 'center' },
@@ -975,7 +975,7 @@ const styles = (c: any) => StyleSheet.create({
   segBtnActive:     { backgroundColor: c.gold, borderColor: c.gold },
   segLabel:         { fontSize: TYPE.xs, color: c.textMuted, fontFamily: FONT.medium },
   segLabelActive:   { color: c.navy },
-  missionBtn:       { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
+  missionBtn:       { backgroundColor: c.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
   missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: c.bg },
   // Sub tabs
   subTabRow:        { flexDirection: 'row', backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 4, marginBottom: 16 },
@@ -998,8 +998,8 @@ const styles = (c: any) => StyleSheet.create({
   clockFooter:      { flexDirection: 'row', justifyContent: 'space-between' },
   clockDays:        { fontSize: TYPE.sm, fontFamily: FONT.medium },
   clockPct:         { fontSize: TYPE.sm, color: c.textMuted },
-  detBadge:         { backgroundColor: COLORS.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  detBadgeText:     { fontSize: TYPE.xs, color: COLORS.emergency, fontFamily: FONT.semiBold },
+  detBadge:         { backgroundColor: c.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  detBadgeText:     { fontSize: TYPE.xs, color: c.emergency, fontFamily: FONT.semiBold },
   // DPA tracker
   dpaCard:          { backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, marginBottom: 10 },
   dpaName:          { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, marginBottom: 2 },
@@ -1015,10 +1015,10 @@ const styles = (c: any) => StyleSheet.create({
   troName:          { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, flex: 1 },
   troDue:           { fontSize: TYPE.sm, color: c.textMuted, marginBottom: 4 },
   troAsset:         { fontSize: TYPE.xs, color: c.textMuted },
-  dvBadge:          { backgroundColor: COLORS.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  dvBadgeText:      { fontSize: TYPE.xs, color: COLORS.emergency, fontFamily: FONT.semiBold },
-  grantedBadge:     { backgroundColor: COLORS.legalBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  grantedBadgeText: { fontSize: TYPE.xs, color: COLORS.legal, fontFamily: FONT.semiBold },
+  dvBadge:          { backgroundColor: c.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  dvBadgeText:      { fontSize: TYPE.xs, color: c.emergency, fontFamily: FONT.semiBold },
+  grantedBadge:     { backgroundColor: c.legalBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  grantedBadgeText: { fontSize: TYPE.xs, color: c.legal, fontFamily: FONT.semiBold },
   // Deadlines
   dlRow:            { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 3, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   dlLabel:          { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 2 },

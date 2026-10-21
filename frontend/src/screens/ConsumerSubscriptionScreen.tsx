@@ -143,7 +143,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
     });
   };
 
-  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
 
   const currentKey = sub?.tier || null;
   const isCurrent = (p: ConsumerPlan) => currentKey === p.key || currentKey === p.annualKey;
@@ -163,7 +163,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
           <Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger, fontSize: 14, lineHeight: 20 }}>{notice.text}</Text>
         </View>
       )}
-      {busy === 'checkout' && <ActivityIndicator style={{ marginTop: 12 }} color={colors.navy} />}
+      {busy === 'checkout' && <ActivityIndicator style={{ marginTop: 12 }} color={colors.textBrand} />}
 
       {sub && (
         <View testID="current-plan" style={[s.card, { borderColor: colors.legal }]}>

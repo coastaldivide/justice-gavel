@@ -18,7 +18,7 @@ import {
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../constants/theme';
+import { COLORS, useTheme, type ThemeColors, themed } from '../constants/theme';
 import { AppIcon } from './AppIcon';
 
 interface HapticButtonProps {
@@ -41,7 +41,8 @@ export function HapticButton({
   icon, iconPosition = 'left', loading = false, disabled = false,
   style, textStyle, haptic, fullWidth = false,
 }: HapticButtonProps) {
-
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [pressing, setPressing] = useState(false);
 
   const handlePress = async () => {
@@ -125,11 +126,11 @@ const s = StyleSheet.create({
   iconRight: { marginLeft: 7 },
 });
 
-const styles = StyleSheet.create({
-  primary:   { backgroundColor: COLORS.navy },
-  secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: COLORS.navy },
-  danger:    { backgroundColor: COLORS.emergency },
-  success:   { backgroundColor: COLORS.legal },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  primary:   { backgroundColor: colors.navy },
+  secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.navy },
+  danger:    { backgroundColor: colors.emergency },
+  success:   { backgroundColor: colors.legal },
   ghost:     { backgroundColor: 'transparent' },
 });
 
@@ -139,13 +140,13 @@ const sizes = StyleSheet.create({
   lg:  { paddingVertical: 16, paddingHorizontal: 28 },
 });
 
-const textStyles = StyleSheet.create({
-  primary:   { color: COLORS.white         },
-  secondary: { color: COLORS.navy    },
-  danger:    { color: COLORS.white         },
-  success:   { color: COLORS.white         },
-  ghost:     { color: COLORS.navy    },
-});
+const textStyles = themed(colors => StyleSheet.create({
+  primary:   { color: colors.white     },
+  secondary: { color: colors.textBrand },
+  danger:    { color: colors.white     },
+  success:   { color: colors.white     },
+  ghost:     { color: colors.textBrand },
+}));
 
 const textSizes = StyleSheet.create({
   sm:  { fontSize: 13, fontWeight: '600' },

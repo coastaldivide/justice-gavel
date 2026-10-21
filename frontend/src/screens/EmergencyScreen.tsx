@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { activeContacts, sendSos, reportSosResult } from '../services/sos';
 import { useConfirm } from '../hooks/useConfirm';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, type ThemeColors } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 
@@ -45,7 +45,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
   }, []);
 
   const { colors } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -161,7 +161,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
               accessibilityLabel={t('x_emergency_send_emergency_alert_contacts')}
               accessibilityHint={t('x_emergency_starts_5_second_countdown')}
             >
-              <IconLabel center icon={ICONS.emergency} color={COLORS.emergencyDark} textStyle={styles.sosBtnText}>{t('x_emergency_send_emergency_alert')}</IconLabel>
+              <IconLabel center icon={ICONS.emergency} color={colors.emergencyDark} textStyle={styles.sosBtnText}>{t('x_emergency_send_emergency_alert')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -287,7 +287,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
   );
 }
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
   emergencyStrip: {
@@ -304,39 +304,39 @@ const makeStyles = () => StyleSheet.create({
     margin: 12, borderRadius: 20, padding: 24, alignItems: 'center', gap: 8,
   },
   panelTitle: {
-    color: COLORS.bgCard, fontSize: 20, fontWeight: '900', textAlign: 'center',
+    color: colors.bgCard, fontSize: 20, fontWeight: '900', textAlign: 'center',
   },
   panelSub: {
     color: 'rgba(255,255,255,0.85)', fontSize: 14, textAlign: 'center',
     lineHeight: 20, marginBottom: 8,
   },
   sosBtn: {
-    backgroundColor: COLORS.bgCard, borderRadius: 14, paddingVertical: 18,
+    backgroundColor: colors.bgCard, borderRadius: 14, paddingVertical: 18,
     paddingHorizontal: 32, marginTop: 4, width: '100%', alignItems: 'center',
   },
   sosBtnText: {
-    color: COLORS.textSecond, fontSize: 18, fontWeight: '900',
+    color: colors.textSecond, fontSize: 18, fontWeight: '900',
   },
   shareBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12,
     paddingVertical: 14, width: '100%', alignItems: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
-  shareBtnText: { color: COLORS.bgCard, fontWeight: '700', fontSize: 13 },
+  shareBtnText: { color: colors.bgCard, fontWeight: '700', fontSize: 13 },
   addContactsBtn: { paddingVertical: 8 },
   addContactsText: {
     color: 'rgba(255,255,255,0.75)', fontSize: 12,
     fontWeight: '600', textDecorationLine: 'underline',
   },
   countdownNum: {
-    fontSize: 80, fontWeight: '900', color: COLORS.bgCard, lineHeight: 88,
+    fontSize: 80, fontWeight: '900', color: colors.bgCard, lineHeight: 88,
   },
   cancelBtn: {
     backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12,
     paddingVertical: 14, paddingHorizontal: 32, marginTop: 8,
   },
-  cancelBtnText: { color: COLORS.bgCard, fontWeight: '800', fontSize: 16 },
-  bigCheck: { fontSize: 60, color: COLORS.bgCard },
+  cancelBtnText: { color: colors.bgCard, fontWeight: '800', fontSize: 16 },
+  bigCheck: { fontSize: 60, color: colors.bgCard },
 
   sectionLabel: {
     fontSize: 11, fontWeight: '800', letterSpacing: 1.2,

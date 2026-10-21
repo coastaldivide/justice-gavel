@@ -16,6 +16,7 @@ import en from './en.json';
 import es from './es.json';
 import pt from './pt.json';
 import vi from './vi.json';
+import { themeMode } from '../constants/theme';
 
 export type Lang = 'en' | 'es' | 'pt' | 'vi';
 export const LANGS: readonly Lang[] = ['en', 'es', 'pt', 'vi'];
@@ -82,14 +83,17 @@ export function tIn(l: Lang, key: string): string {
  * Module-level text (option lists, tile tables, templates) must not call t()
  * at import time — that freezes it in the start-up language. Wrap it:
  *   const TILES = perLang(() => [{ label: t('home_tile_x') }]);   …   TILES()
- * The value is built once per language and rebuilt after a switch (stable
- * identity per language, so it is safe in hook dependency lists).
+ * The value is built once per language (and theme) and rebuilt after a switch
+ * (stable identity per language and theme, so it is safe in hook dependency lists).
  */
 export function perLang<T>(build: () => T): () => T {
-  const cache: Partial<Record<Lang, T>> = {};
+  // Cached per language and per theme: these lists hold translated labels and,
+  // often, theme colours (read with themeColors() while building).
+  const cache: Partial<Record<string, T>> = {};
   return () => {
-    if (!(lang in cache)) cache[lang] = build();
-    return cache[lang] as T;
+    const key = `${lang}:${themeMode()}`;
+    if (!(key in cache)) cache[key] = build();
+    return cache[key] as T;
   };
 }
 

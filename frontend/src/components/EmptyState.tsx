@@ -7,7 +7,7 @@
  * Usage:
  *   {data.length === 0 && (
  *     <EmptyState
- *       icon="🔍"
+ *       icon={ICONS.search}
  *       title="No lawyers found"
  *       subtitle="Try adjusting your filters or search radius"
  *       action={{ label: 'Clear filters', onPress: clearFilters }}
@@ -21,6 +21,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useTheme } from '../constants/theme';
+import { AppIcon, type IconName } from './AppIcon';
 
 interface EmptyStateAction {
   label:   string;
@@ -28,7 +29,7 @@ interface EmptyStateAction {
 }
 
 interface EmptyStateProps {
-  icon?:     string;
+  icon?:     IconName;
   title:     string;
   subtitle?: string;
   action?:   EmptyStateAction;
@@ -41,7 +42,7 @@ export function EmptyState({ icon, title, subtitle, action, style }: EmptyStateP
   return (
     <View style={[styles.container, style]}>
       {icon ? (
-        <Text style={styles.icon}>{icon}</Text>
+        <AppIcon name={icon} size={40} color={colors.textMuted} style={styles.icon} />
       ) : null}
       <Text style={[styles.title, { color: colors?.text ?? colors.textPrimary }]}>
         {title}

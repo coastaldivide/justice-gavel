@@ -10,7 +10,7 @@
  */
 
 import React, { memo } from 'react';
-import { ART } from '../constants/theme';
+import { ART, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
@@ -26,6 +26,8 @@ interface LethalilyGaugeProps {
 
 export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGaugeProps) {
   useLang();
+  const { colors } = useTheme();
+  const gc = makeGc(colors);
   const pct      = Math.min(score / maxScore, 1);
   const r        = size * 0.38;
   const cx       = size / 2;
@@ -36,9 +38,9 @@ export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGa
   const endAngle   = startAngle + sweepAngle * pct;
 
   const level = score >= 8 ? 'extreme' : score >= 4 ? 'high' : score >= 2 ? 'moderate' : 'low';
-  const colors = { extreme: COLORS.emergency, high: COLORS.warn, moderate: ART.amber, low: COLORS.legal };
+  const tones = { extreme: colors.emergency, high: colors.warn, moderate: ART.amber, low: colors.legal };
   const labels = { extreme: t('x_legal_charts_extreme_risk'), high: t('x_legal_charts_high_risk'), moderate: t('x_pilead_moderate'), low: t('x_legal_charts_low_risk') };
-  const color  = colors[level];
+  const color  = tones[level];
 
   // Arc path calculation
   const polarToXY = (angle: number) => ({
@@ -73,7 +75,7 @@ export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGa
           {score}
         </SvgText>
         <SvgText x={cx} y={cy + size * 0.14} textAnchor="middle"
-                 fontSize={size * 0.09} fill={COLORS.textMuted} fontWeight="400">
+                 fontSize={size * 0.09} fill={colors.textMuted} fontWeight="400">
           / {maxScore}
         </SvgText>
       </Svg>
@@ -95,6 +97,8 @@ interface BailBreakdownProps {
 
 export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownProps) {
   useLang();
+  const { colors } = useTheme();
+  const gc = makeGc(colors);
   const rate = typeof quotedRate === 'number' && quotedRate > 0 && quotedRate < 1 ? quotedRate : null;
   const cashFull = bailAmount;
   const fmt = (n: number) => '$' + n.toLocaleString('en-US');
@@ -106,7 +110,7 @@ export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownPr
       {/* Cash bail */}
       <View style={gc.bailRow}>
         <View style={gc.bailLabelRow}>
-          <AppIcon name={ICONS.money} size={16} color={COLORS.navy} />
+          <AppIcon name={ICONS.money} size={16} color={themeColors().textBrand} />
           <Text style={gc.bailLabel}>{t('x_legal_charts_cash_bail_full_amount')}</Text>
         </View>
         <Text style={gc.bailAmount}>{fmt(cashFull)}</Text>
@@ -118,10 +122,10 @@ export function BailBreakdown({ bailAmount, quotedRate = null }: BailBreakdownPr
       {/* Bail agent — only with a quoted fee */}
       <View style={[gc.bailRow, { marginTop: 14 }]}>
         <View style={gc.bailLabelRow}>
-          <AppIcon name={ICONS.receipt} size={16} color={COLORS.gold} />
+          <AppIcon name={ICONS.receipt} size={16} color={colors.gold} />
           <Text style={gc.bailLabel}>{rate ? t('x_legal_charts_bail_agent_quoted_fee', { value: Math.round(rate * 1000) / 10 }) : t('x_legal_charts_bail_agent')}</Text>
         </View>
-        <Text style={[gc.bailAmount, { color: COLORS.goldText }]}>{rate ? fmt(Math.round(bailAmount * rate)) : t('x_legal_charts_ask_agent')}</Text>
+        <Text style={[gc.bailAmount, { color: colors.goldText }]}>{rate ? fmt(Math.round(bailAmount * rate)) : t('x_legal_charts_ask_agent')}</Text>
       </View>
 
       <Text style={gc.bailNote}>
@@ -139,10 +143,12 @@ interface RiskMeterProps {
 
 export function RiskMeter({ level, label }: RiskMeterProps) {
   useLang();
+  const { colors } = useTheme();
+  const gc = makeGc(colors);
   const config = {
-    low:      { pct: 0.20, color: COLORS.legal, bg: COLORS.legalBg, label: t('x_legal_charts_low') },
-    medium:   { pct: 0.50, color: COLORS.warn, bg: COLORS.warnBg, label: t('x_legal_charts_medium') },
-    high:     { pct: 0.75, color: COLORS.emergency, bg: COLORS.emergencyBg, label: t('x_legal_charts_high') },
+    low:      { pct: 0.20, color: colors.legal, bg: colors.legalBg, label: t('x_legal_charts_low') },
+    medium:   { pct: 0.50, color: colors.warn, bg: colors.warnBg, label: t('x_legal_charts_medium') },
+    high:     { pct: 0.75, color: colors.emergency, bg: colors.emergencyBg, label: t('x_legal_charts_high') },
     critical: { pct: 1.00, color: ART.purple, bg: ART.lilacTint, label: t('x_legal_charts_critical') },
   };
   const { pct, color, bg, label: defaultLabel } = config[level];
@@ -170,11 +176,13 @@ interface AsylumClockProps {
 
 export function AsylumClock({ daysInUS, deadline = 365 }: AsylumClockProps) {
   useLang();
+  const { colors } = useTheme();
+  const gc = makeGc(colors);
   const daysLeft = Math.max(0, deadline - daysInUS);
   const pct      = Math.min(daysInUS / deadline, 1);
   const urgent   = daysLeft <= 65;
   const barred   = daysInUS >= deadline;
-  const color    = barred ? COLORS.emergency : urgent ? COLORS.warn : COLORS.legal;
+  const color    = barred ? colors.emergency : urgent ? colors.warn : colors.legal;
 
   return (
     <View style={gc.clockCard}>
@@ -186,7 +194,7 @@ export function AsylumClock({ daysInUS, deadline = 365 }: AsylumClockProps) {
       </View>
       <View style={gc.clockNumbers}>
         <View style={gc.clockNum}>
-          <Text style={[gc.clockBig, { color: COLORS.navy }]}>{daysInUS.toLocaleString()}</Text>
+          <Text style={[gc.clockBig, { color: colors.textBrand }]}>{daysInUS.toLocaleString()}</Text>
           <Text style={gc.clockSub}>{t('x_legal_charts_days_us')}</Text>
         </View>
         <View style={gc.clockDivider} />
@@ -217,11 +225,13 @@ interface SignalBadgeProps {
 
 export function SignalBadge({ label, priority }: SignalBadgeProps) {
   useLang();
+  const { colors } = useTheme();
+  const gc = makeGc(colors);
   const config = {
-    CRITICAL: { bg: COLORS.emergency, text: COLORS.white, icon: ICONS.alertCritical },
-    HIGH:     { bg: COLORS.warn, text: COLORS.white, icon: ICONS.alertHigh },
+    CRITICAL: { bg: colors.emergency, text: COLORS.white, icon: ICONS.alertCritical },
+    HIGH:     { bg: colors.warn, text: COLORS.white, icon: ICONS.alertHigh },
     NORMAL:   { bg: COLORS.blue, text: COLORS.white, icon: ICONS.alertNormal },
-    INFO:     { bg: COLORS.infoBg, text: COLORS.blue, icon: ICONS.alertNormal },
+    INFO:     { bg: colors.infoBg, text: themeColors().info, icon: ICONS.alertNormal },
   };
   const { bg, text, icon } = config[priority];
 
@@ -233,36 +243,36 @@ export function SignalBadge({ label, priority }: SignalBadgeProps) {
   );
 }
 
-const gc = StyleSheet.create({
+const makeGc = (colors: ThemeColors) => StyleSheet.create({
   badge:        { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, borderWidth: 1, marginTop: 8 },
   badgeText:    { fontSize: 13, fontWeight: '700', fontFamily: 'Inter_700Bold' },
-  bailCard:     { backgroundColor: COLORS.white, borderRadius: 14, padding: 18, borderWidth: 0.5, borderColor: COLORS.border },
-  bailTitle:    { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 14, fontFamily: 'Inter_700Bold' },
+  bailCard:     { backgroundColor: colors.bgCard, borderRadius: 14, padding: 18, borderWidth: 0.5, borderColor: colors.border },
+  bailTitle:    { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginBottom: 14, fontFamily: 'Inter_700Bold' },
   bailRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   bailLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bailLabel:    { fontSize: 13, color: COLORS.textSecond, fontFamily: 'Inter_400Regular' },
-  bailAmount:   { fontSize: 15, fontWeight: '700', color: COLORS.navy, fontFamily: 'Inter_700Bold' },
+  bailLabel:    { fontSize: 13, color: colors.textSecond, fontFamily: 'Inter_400Regular' },
+  bailAmount:   { fontSize: 15, fontWeight: '700', color: colors.textBrand, fontFamily: 'Inter_700Bold' },
   track:        { height: 6, backgroundColor: ART.mist, borderRadius: 3, overflow: 'hidden' },
   fill:         { height: 6, borderRadius: 3 },
-  bailNote:     { fontSize: 12, color: COLORS.textMuted, marginTop: 12, lineHeight: 17, fontFamily: 'Inter_400Regular' },
+  bailNote:     { fontSize: 12, color: colors.textMuted, marginTop: 12, lineHeight: 17, fontFamily: 'Inter_400Regular' },
   riskContainer:{ marginVertical: 8 },
   riskHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  riskLabel:    { fontSize: 13, color: COLORS.textSecond, fontFamily: 'Inter_500Medium' },
+  riskLabel:    { fontSize: 13, color: colors.textSecond, fontFamily: 'Inter_500Medium' },
   riskBadge:    { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
   riskBadgeText:{ fontSize: 12, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
   riskTrack:    { height: 8, backgroundColor: ART.mist, borderRadius: 4, overflow: 'hidden' },
   riskFill:     { height: 8, borderRadius: 4 },
-  clockCard:    { backgroundColor: COLORS.white, borderRadius: 14, padding: 18, borderWidth: 0.5, borderColor: COLORS.border },
+  clockCard:    { backgroundColor: colors.bgCard, borderRadius: 14, padding: 18, borderWidth: 0.5, borderColor: colors.border },
   clockHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   clockTitle:   { fontSize: 14, fontWeight: '700', fontFamily: 'Inter_700Bold' },
   clockNumbers: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   clockNum:     { flex: 1, alignItems: 'center' },
-  clockDivider: { width: 1, height: 40, backgroundColor: COLORS.border },
+  clockDivider: { width: 1, height: 40, backgroundColor: colors.border },
   clockBig:     { fontSize: 28, fontWeight: '800', fontFamily: 'Inter_800ExtraBold' },
-  clockSub:     { fontSize: 12, color: COLORS.textMuted, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  clockSub:     { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_400Regular', marginTop: 2 },
   clockTrack:   { height: 8, backgroundColor: ART.mist, borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
   clockFill:    { height: 8, borderRadius: 4 },
-  clockNote:    { fontSize: 12, color: COLORS.textMuted, lineHeight: 17, fontFamily: 'Inter_400Regular' },
+  clockNote:    { fontSize: 12, color: colors.textMuted, lineHeight: 17, fontFamily: 'Inter_400Regular' },
   signalBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start' },
   signalText:   { fontSize: 12, fontWeight: '700', fontFamily: 'Inter_700Bold' },
 });

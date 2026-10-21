@@ -21,36 +21,42 @@ import { api, apiErrorMessage } from '../services/api';
 import { attorneyLeadFeeDisplay } from '../constants/leadFee';
 import { Picker } from '@react-native-picker/picker';
 import { getUserState, localizedStateList } from '../utils/userState';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { hapticImpact } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
 import { t, perLang, useLang } from '../i18n';
 
 type Step = 'type' | 'severity' | 'details' | 'submitted';
 
-const CASE_TYPES = perLang(() => [
-  { key: 'Personal Injury',  label: t('x_pilead_i_was_injured'),             icon: '🩹', color: COLORS.warnDark, bg: COLORS.bailBg,
+const CASE_TYPES = perLang(() => {
+  const c = themeColors();
+  return [
+  { key: 'Personal Injury',  label: t('x_pilead_i_was_injured'),             icon: ICONS.drug, color: c.warnDark, bg: c.bailBg,
     sub: t('x_pilead_car_accident_slip_fall') },
-  { key: 'Civil Rights',     label: t('x_pilead_my_rights_were_violated'),   icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle,
+  { key: 'Civil Rights',     label: t('x_pilead_my_rights_were_violated'),   icon: ICONS.rights, color: c.textBrand, bg: c.bgSubtle,
     sub: t('x_pilead_police_misconduct_wrongful_arrest') },
-  { key: 'Employment',       label: t('x_pilead_work_problem'),              icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg,
+  { key: 'Employment',       label: t('x_pilead_work_problem'),              icon: ICONS.briefcase, color: c.legalDark, bg: c.legalBg,
     sub: t('x_pilead_wrongful_termination_discrimination_') },
-  { key: 'Medical',          label: t('x_pilead_medical_malpractice'),       icon: '🏥', color: COLORS.emergencyDark, bg: COLORS.emergencyBg,
+  { key: 'Medical',          label: t('x_pilead_medical_malpractice'),       icon: ICONS.medical, color: c.emergencyDark, bg: c.emergencyBg,
     sub: t('x_pilead_surgical_error_misdiagnosis_medicati') },
-]);
+];
+});
 
-const SEVERITIES = perLang(() => [
-  { key: 'minor',        label: t('x_pilead_minor'),        sub: t('x_pilead_small_injury_recovered_quickly'),    color: COLORS.legalDark, bg: COLORS.legalBg },
-  { key: 'moderate',     label: t('x_pilead_moderate'),     sub: t('x_pilead_medical_treatment_needed'),           color: COLORS.warnDark, bg: COLORS.warnBg },
-  { key: 'serious',      label: t('x_pilead_serious'),      sub: t('x_pilead_hospitalized_lasting_impact'),     color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'catastrophic', label: t('x_pilead_catastrophic'), sub: t('x_pilead_permanent_disability_death'),      color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-]);
+const SEVERITIES = perLang(() => {
+  const c = themeColors();
+  return [
+  { key: 'minor',        label: t('x_pilead_minor'),        sub: t('x_pilead_small_injury_recovered_quickly'),    color: c.legalDark, bg: c.legalBg },
+  { key: 'moderate',     label: t('x_pilead_moderate'),     sub: t('x_pilead_medical_treatment_needed'),           color: c.warnDark, bg: c.warnBg },
+  { key: 'serious',      label: t('x_pilead_serious'),      sub: t('x_pilead_hospitalized_lasting_impact'),     color: c.info, bg: c.bgSubtle },
+  { key: 'catastrophic', label: t('x_pilead_catastrophic'), sub: t('x_pilead_permanent_disability_death'),      color: c.emergencyDark, bg: c.emergencyBg },
+];
+});
 
 function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -171,10 +177,10 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
                 accessibilityRole="button"
                 key={tItem.key}
                 style={[styles.typeCard, { backgroundColor: tItem.bg, borderColor: tItem.color + '55' }]}
-                accessibilityLabel={tItem.icon} onPress={() => { setCaseType(tItem.key); setStep('severity'); }}
+                accessibilityLabel={tItem.label} onPress={() => { setCaseType(tItem.key); setStep('severity'); }}
 
               >
-                <Text maxFontSizeMultiplier={1.4} style={styles.typeIcon}>{tItem.icon}</Text>
+                <AppIcon name={tItem.icon} size={22} color={colors.textBrand} style={styles.typeIcon} />
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.typeLabel, { color: tItem.color }]}>{tItem.label}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.typeSub, { color: colors.textMuted }]}>{tItem.sub}</Text>
@@ -231,7 +237,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
             {/* Summary badge */}
             <View style={[styles.summaryBadge, { backgroundColor: selectedType ? selectedType.bg : colors.bgCard,
               borderColor: selectedType ? selectedType.color + '55' : colors.border }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18 }}>{selectedType?.icon}</Text>
+              {!!selectedType && <AppIcon name={selectedType.icon} size={18} color={selectedType.color} />}
               <Text maxFontSizeMultiplier={1.4} style={[styles.summaryText, { color: selectedType?.color || colors.textPrimary }]}>
                 {selectedType?.label} · {selectedSeverity?.label}
               </Text>
@@ -249,7 +255,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               maxLength={2000}
               numberOfLines={7}
               placeholder={t('x_pilead_e_g_march_12')}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               value={description}
               onChangeText={setDesc}
               textAlignVertical="top"
@@ -279,7 +285,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
             {/* Privacy note */}
             <View style={[styles.privacyNote, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle,
               borderColor: colors.blue + '44' }]}>
-              <IconLabel icon={ICONS.lock} textStyle={[styles.privacyText, { color: colors.blue }]} maxFontSizeMultiplier={1.4}>{t('x_pilead_name_contact_info_hidden')}</IconLabel>
+              <IconLabel icon={ICONS.lock} textStyle={[styles.privacyText, { color: colors.info }]} maxFontSizeMultiplier={1.4}>{t('x_pilead_name_contact_info_hidden')}</IconLabel>
             </View>
 
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
@@ -303,7 +309,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   );
 }
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 60 },
 
@@ -358,7 +364,7 @@ const makeStyles = () => StyleSheet.create({
   privacyText: { fontSize: 12, lineHeight: 17 },
   submitBtn:         { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
   submitBtnDisabled: { opacity: 0.45 },
-  submitBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  submitBtnText:     { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
 
   // Submitted
   successWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
@@ -366,7 +372,7 @@ const makeStyles = () => StyleSheet.create({
   successTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 10 },
   successSub:   { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 28 },
   doneBtn:      { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center', ...SHADOW.md, marginBottom: 12 },
-  doneBtnText:  { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  doneBtnText:  { color: colors.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
   homeBtn:      { paddingVertical: 10 },
   homeBtnText:  { fontSize: 14,
     lineHeight: 21, },

@@ -16,7 +16,7 @@
  */
 
 import React, { memo } from 'react';
-import { ART, COLORS } from '../constants/theme';
+import { ART, COLORS, useTheme } from '../constants/theme';
 import Svg, { Circle, Rect, Path, Ellipse, Line } from 'react-native-svg';
 
 interface IllustrationProps {
@@ -72,6 +72,7 @@ export function IllustrationEmptySearch({ width = 200, height = 170 }: Illustrat
 
 // ── Bail / Bondsman Connected ─────────────────────────────────────────────────
 export function IllustrationBailSuccess({ width = 200, height = 170 }: IllustrationProps) {
+  const { colors } = useTheme();
   return (
     <Svg width={width} height={height} viewBox="0 0 200 170">
       {/* Handshake base */}
@@ -86,7 +87,7 @@ export function IllustrationBailSuccess({ width = 200, height = 170 }: Illustrat
       <Ellipse cx="100" cy="92" rx="22" ry="16" fill={ART.amber} />
       <Path d="M82 88 Q100 78 118 88 Q100 102 82 88Z" fill={ART.amberDeep} />
       {/* Check badge */}
-      <Circle cx="100" cy="46" r="20" fill={COLORS.legal} />
+      <Circle cx="100" cy="46" r="20" fill={colors.legal} />
       <Path d="M90 46 L97 53 L113 38" stroke={COLORS.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
@@ -121,13 +122,14 @@ export function IllustrationRights({ width = 200, height = 180 }: IllustrationPr
 
 // ── Crisis Support ────────────────────────────────────────────────────────────
 export function IllustrationCrisis({ width = 200, height = 170 }: IllustrationProps) {
+  const { colors } = useTheme();
   return (
     <Svg width={width} height={height} viewBox="0 0 200 170">
       {/* Phone */}
       <Rect x="70" y="30" width="60" height="110" rx="14" fill={COLORS.navy} />
       <Rect x="76" y="40" width="48" height="82" rx="6" fill={ART.mist} />
       {/* Screen content - heart */}
-      <Path d="M100 90 Q100 76 110 76 Q120 76 120 86 Q120 96 100 108 Q80 96 80 86 Q80 76 90 76 Q100 76 100 90Z" fill={COLORS.emergency} />
+      <Path d="M100 90 Q100 76 110 76 Q120 76 120 86 Q120 96 100 108 Q80 96 80 86 Q80 76 90 76 Q100 76 100 90Z" fill={colors.emergency} />
       {/* Home indicator */}
       <Rect x="90" y="130" width="20" height="4" rx="2" fill={COLORS.blue} />
       {/* Call waves */}
@@ -145,6 +147,7 @@ export function IllustrationCrisis({ width = 200, height = 170 }: IllustrationPr
 
 // ── Document Generated ────────────────────────────────────────────────────────
 export function IllustrationDocumentReady({ width = 200, height = 170 }: IllustrationProps) {
+  const { colors } = useTheme();
   return (
     <Svg width={width} height={height} viewBox="0 0 200 170">
       {/* Paper stack shadow */}
@@ -164,7 +167,7 @@ export function IllustrationDocumentReady({ width = 200, height = 170 }: Illustr
       <Rect x="64" y="116" width="50" height="4" rx="2" fill={ART.silver} />
       <Rect x="64" y="130" width="62" height="4" rx="2" fill={ART.silver} />
       {/* Checkmark badge */}
-      <Circle cx="148" cy="38" r="20" fill={COLORS.legal} />
+      <Circle cx="148" cy="38" r="20" fill={colors.legal} />
       <Path d="M138 38 L145 45 L160 28" stroke={COLORS.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       {/* Sparkle */}
       <Path d="M28 60 L31 52 L34 60 L42 63 L34 66 L31 74 L28 66 L20 63 Z" fill={ART.amber} opacity="0.8" />
@@ -174,15 +177,16 @@ export function IllustrationDocumentReady({ width = 200, height = 170 }: Illustr
 
 // ── Error State ───────────────────────────────────────────────────────────────
 export function IllustrationError({ width = 200, height = 170 }: IllustrationProps) {
+  const { colors } = useTheme();
   return (
     <Svg width={width} height={height} viewBox="0 0 200 170">
       <Ellipse cx="100" cy="155" rx="65" ry="8" fill={ART.roseTint} />
       {/* Triangle warning */}
-      <Path d="M100 30 L170 150 L30 150 Z" fill={COLORS.emergencyBg} stroke={COLORS.emergency} strokeWidth="2" strokeLinejoin="round" />
+      <Path d="M100 30 L170 150 L30 150 Z" fill={colors.emergencyBg} stroke={colors.emergency} strokeWidth="2" strokeLinejoin="round" />
       <Path d="M100 40 L162 144 L38 144 Z" fill={ART.blushTint} />
       {/* ! mark */}
-      <Rect x="96" y="70" width="8" height="42" rx="4" fill={COLORS.emergency} />
-      <Circle cx="100" cy="127" r="5" fill={COLORS.emergency} />
+      <Rect x="96" y="70" width="8" height="42" rx="4" fill={colors.emergency} />
+      <Circle cx="100" cy="127" r="5" fill={colors.emergency} />
       {/* Small bolts */}
       <Path d="M30 40 L24 52 L34 52 L28 64" stroke={ART.amber} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <Path d="M172 60 L166 70 L174 70 L168 80" stroke={ART.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.7" />

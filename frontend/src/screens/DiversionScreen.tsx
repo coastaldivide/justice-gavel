@@ -19,13 +19,14 @@ import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
 import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
+import { ICONS, AppIcon, type IconName } from '../components/AppIcon';
 
 type TabKey = 'drug' | 'mental' | 'veteran';
 
-const TABS = perLang((): { key: TabKey; label: string; emoji: string }[] => [
-  { key: 'drug',    label: t('x_diversion_drug_alcohol'), emoji: '💊' },
-  { key: 'mental',  label: t('x_diversion_mental_health'),  emoji: '🧠' },
-  { key: 'veteran', label: t('x_diversion_veterans_court'),  emoji: '🎖' },
+const TABS = perLang((): { key: TabKey; label: string; emoji: IconName }[] => [
+  { key: 'drug',    label: t('x_diversion_drug_alcohol'), emoji: ICONS.drug },
+  { key: 'mental',  label: t('x_diversion_mental_health'),  emoji: ICONS.mentalHealth },
+  { key: 'veteran', label: t('x_diversion_veterans_court'),  emoji: ICONS.medal },
 ]);
 
 // Drug diversion criteria (from DiversionScreen)
@@ -91,7 +92,7 @@ function DiversionScreen({ navigation, route }: ScreenProps) {
             aria-selected={activeTab === tab.key}
             accessibilityRole="tab"
           >
-            <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.emoji}</Text>
+            <AppIcon name={tab.emoji} size={16} color={colors.textBrand} style={{ fontSize: 16, marginBottom: 2 }} />
             <Text maxFontSizeMultiplier={1.3} style={[styles.tabText, { color: activeTab === tab.key ? colors.textBrand : colors.textMuted }]}>
               {tab.label}
             </Text>

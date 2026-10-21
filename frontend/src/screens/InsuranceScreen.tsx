@@ -51,7 +51,7 @@ function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={s.section}>{t('ins_plans_title')}</Text>
-      {loading && <ActivityIndicator color={colors.navy} style={{ marginTop: 16 }} />}
+      {loading && <ActivityIndicator color={colors.textBrand} style={{ marginTop: 16 }} />}
       {!!error && (
         <View style={s.card} testID="insurance-error">
           <Text maxFontSizeMultiplier={1.4} style={s.error}>{error}</Text>

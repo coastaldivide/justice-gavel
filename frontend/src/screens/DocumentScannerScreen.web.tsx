@@ -16,7 +16,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { CasePicker, CaseDocumentList, checkUpload } from '../components/CaseDocuments';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 function DocumentScannerScreen(): React.JSX.Element {
   useLang();
@@ -66,7 +66,7 @@ function DocumentScannerScreen(): React.JSX.Element {
             display: 'block', border: `2px dashed ${colors.border}`, borderRadius: 16, padding: '32px 16px',
             textAlign: 'center', cursor: 'pointer', backgroundColor: colors.bgCard, marginTop: 12, marginBottom: 12,
           }}>
-            <IconLabel icon={ICONS.document} textStyle={{ fontSize: 36 }} maxFontSizeMultiplier={1.3}></IconLabel>
+            <AppIcon name={ICONS.document} size={36} color={colors.textBrand} style={{ fontSize: 36 }} />
             <Text maxFontSizeMultiplier={1.3} style={[s.label, { display: 'flex' as any, justifyContent: 'center' }]}>{t('x_document_scanner_click_select_document_photo')}</Text>
             <Text maxFontSizeMultiplier={1.3} style={[s.muted, { display: 'flex' as any, justifyContent: 'center' }]}>{t('doc2_limits')}</Text>
             <input ref={inputRef} id="doc-upload" data-testid="doc-upload-input" type="file"

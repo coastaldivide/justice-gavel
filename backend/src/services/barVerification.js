@@ -204,7 +204,7 @@ export async function runNightlyVerification() {
         // Alert admin
         await sendEmail({
           to:      process.env.ADMIN_ALERT_EMAIL || 'admin@justicegavel.app',
-          subject: `⚠️ Attorney license change: ${attorney.full_name}`,
+          subject: `Attorney license change: ${attorney.full_name}`,
           body:    `Attorney ${attorney.full_name} (Bar #${attorney.bar_number}, ${attorney.bar_state})
 status changed from "${attorney.license_status}" to "${result.status}".
 Their profile has been automatically deactivated.

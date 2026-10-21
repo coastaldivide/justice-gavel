@@ -20,9 +20,10 @@ import { getUserState } from '../utils/userState';
 import { StatePicker } from '../components/StatePicker';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
-import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, themeColors } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
 import { t, perLang, useLang } from '../i18n';
+import { ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -92,42 +93,42 @@ const RIGHTS_SECTIONS = perLang(() => [
   {
     heading: t('x_juvenile_justice_have_right_remain_silent'),
     body:    t('x_juvenile_justice_miranda_warnings_apply_juveniles_2'),
-    icon:    '🤫',
+    icon:    ICONS.silent,
   },
   {
     heading: t('x_juvenile_justice_parent_must_be_notified'),
     body:    t('x_juvenile_justice_police_must_notify_parent'),
-    icon:    '👨‍👩‍👧',
+    icon:    ICONS.family,
   },
   {
     heading: t('x_juvenile_justice_have_right_attorney'),
     body:    t('x_juvenile_justice_re_gault_1967_supreme'),
-    icon:    '⚖️',
+    icon:    ICONS.lawyer,
   },
   {
     heading: t('x_juvenile_justice_records_confidential'),
     body:    t('x_juvenile_justice_juvenile_court_records_not'),
-    icon:    '🔒',
+    icon:    ICONS.lock,
   },
   {
     heading: t('x_juvenile_justice_not_convicted'),
     body:    t('x_juvenile_justice_terminology_different_it_matters'),
-    icon:    '📋',
+    icon:    ICONS.clipboard,
   },
   {
     heading: t('x_juvenile_justice_can_still_be_tried'),
     body:    t('x_juvenile_justice_serious_offenses_prosecutors_can'),
-    icon:    '⚠️',
+    icon:    ICONS.statusWarn,
   },
   {
     heading: t('x_juvenile_justice_rehabilitation_goal'),
     body:    t('x_juvenile_justice_juvenile_justice_system_designed'),
-    icon:    '🌱',
+    icon:    ICONS.breathe,
   },
   {
     heading: t('x_juvenile_justice_future_priority'),
     body:    t('x_juvenile_justice_juvenile_adjudication_does_not'),
-    icon:    '🏆',
+    icon:    ICONS.trophy,
   },
 ]);
 
@@ -222,7 +223,7 @@ function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
 </View>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+        <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('juv_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_juvenile_justice_rights_juvenile_system')}</Text>
       </View>
@@ -239,7 +240,7 @@ function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
       {tab === 'rights' && RIGHTS_SECTIONS().map(sec => (
         <View key={sec.heading} style={[styles.rightCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.rightCardHeader}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.rightCardIcon}>{sec.icon}</Text>
+            <AppIcon name={sec.icon} size={22} color={colors.textBrand} style={styles.rightCardIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.rightCardTitle, { color: colors.textPrimary }]}>{sec.heading}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rightCardBody, { color: colors.textMuted }]}>{sec.body}</Text>
@@ -311,7 +312,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll:           { padding: 16 },
   header:           { borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, alignItems: 'center' },
   headerIcon:       { fontSize: 36, marginBottom: 8 },
-  headerTitle:      { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
+  headerTitle:      { color: colors.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:        { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },
   tabs:             { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 14, overflow: 'hidden' },
   tabBtn:           { flex: 1, alignItems: 'center', paddingVertical: 12 },
@@ -324,7 +325,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   rightCardTitle:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
   rightCardBody:    { fontSize: 12, lineHeight: 20 },
   ctaBtn:           { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 10, marginBottom: 6 },
-  ctaBtnText:       { color: COLORS.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  ctaBtnText:       { color: colors.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   stepScroll:       { marginBottom: 12 },
   stepScrollContent:{ gap: 8, paddingBottom: 4 },
   stepPill:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.pill, borderWidth: 1, gap: 6 },
@@ -333,7 +334,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stepCard:         { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12 },
   stepCardHeader:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
   stepNumBadge:     { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  stepNumBadgeText: { color: COLORS.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  stepNumBadgeText: { color: colors.white, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' },
   stepCardTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
   stepTimeline:     { fontSize: 12 },
   stepSectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 12 },

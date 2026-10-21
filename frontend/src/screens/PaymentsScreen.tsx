@@ -92,7 +92,7 @@ function PaymentsScreen({ navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={s.heading} accessibilityRole="header">{t('bill_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={s.sub}>{t('bill_intro')}</Text>
       </View>
-      {!data && !error && <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />}
+      {!data && !error && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}
       {!!error && (
         <View style={s.card}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text>

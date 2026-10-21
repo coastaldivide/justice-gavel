@@ -24,11 +24,11 @@ export const MANDATORY_DISCLAIMER =
 
 // Layer 2: Shown when content is approaching staleness threshold.
 export const REVIEW_SOON_DISCLAIMER =
-  '⚠️ This information is scheduled for attorney review. Verify current law with your attorney.';
+  'This information is scheduled for attorney review. Verify current law with your attorney.';
 
 // Layer 3: Shown when content is past the 365-day suppress threshold.
 export const STALE_DISCLAIMER =
-  '⚠️ ACCURACY NOTICE: This information has not been recently verified by a licensed attorney. ' +
+  'ACCURACY NOTICE: This information has not been recently verified by a licensed attorney. ' +
   'Laws change. Do not rely on this information without independent verification.';
 
 /**

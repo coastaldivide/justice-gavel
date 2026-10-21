@@ -16,45 +16,46 @@ import React from 'react';
 
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
-import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, themeColors } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
 import { UnreviewedNotice } from '../components/LegalSource';
 import { t, perLang, useLang } from '../i18n';
+import { ICONS } from '../components/AppIcon';
 
 
 const CUSTODY_SECTIONS = perLang(() => [
   {
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     title: t('x_family_court_types_custody'),
     body: t('x_family_court_legal_custody_right_make'),
   },
   {
-    icon: '🧒',
+    icon: ICONS.juvenile,
     title: t('x_family_court_how_courts_decide'),
     body: t('x_family_court_every_state_uses_best'),
   },
   {
-    icon: '🔒',
+    icon: ICONS.lock,
     title: t('x_family_court_criminal_record_custody'),
     body: t('x_family_court_criminal_record_does_not'),
   },
   {
-    icon: '📋',
+    icon: ICONS.clipboard,
     title: t('x_family_court_emergency_custody'),
     body: t('x_family_court_if_child_immediate_danger'),
   },
   {
-    icon: '✏️',
+    icon: ICONS.edit,
     title: t('x_family_court_modifying_custody_order'),
     body: t('x_family_court_once_custody_order_place'),
   },
   {
-    icon: '🏛️',
+    icon: ICONS.courthouse,
     title: t('x_family_court_representing_yourself'),
     body: t('x_family_court_have_right_represent_yourself'),
   },
   {
-    icon: '📞',
+    icon: ICONS.phone,
     title: t('x_family_court_if_cannot_afford_attorney'),
     body: t('x_family_court_legal_aid_organizations_provide'),
   },
@@ -62,37 +63,37 @@ const CUSTODY_SECTIONS = perLang(() => [
 
 const ORDERS_SECTIONS = perLang(() => [
   {
-    icon: '🚨',
+    icon: ICONS.emergency,
     title: t('x_family_court_emergency_protective_order_epo'),
     body: t('x_family_court_issued_by_police_scene'),
   },
   {
-    icon: '📋',
+    icon: ICONS.clipboard,
     title: t('x_family_court_temporary_restraining_order_tro'),
     body: t('x_family_court_filed_at_courthouse_usually'),
   },
   {
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     title: t('x_family_court_permanent_protective_order'),
     body: t('x_family_court_issued_after_full_court'),
   },
   {
-    icon: '📝',
+    icon: ICONS.edit,
     title: t('x_family_court_how_file'),
     body: t('x_family_court_go_family_court_civil'),
   },
   {
-    icon: '🔒',
+    icon: ICONS.lock,
     title: t('x_family_court_what_protective_order_covers'),
     body: t('x_family_court_protective_order_can_protect'),
   },
   {
-    icon: '⚠️',
+    icon: ICONS.statusWarn,
     title: t('x_family_court_if_have_criminal_record'),
     body: t('x_family_court_criminal_history_does_not'),
   },
   {
-    icon: '🌐',
+    icon: ICONS.globe,
     title: t('x_family_court_national_resources'),
     body: t('x_family_court_national_domestic_violence_hotline'),
   },
@@ -100,32 +101,32 @@ const ORDERS_SECTIONS = perLang(() => [
 
 const SUPPORT_SECTIONS = perLang(() => [
   {
-    icon: '🧮',
+    icon: ICONS.calculator,
     title: t('x_family_court_how_child_support_calculated'),
     body: t('x_family_court_every_state_uses_formula'),
   },
   {
-    icon: '💼',
+    icon: ICONS.briefcase,
     title: t('x_family_court_income_unemployment'),
     body: t('x_family_court_if_unemployed_underemployed_courts'),
   },
   {
-    icon: '🔒',
+    icon: ICONS.lock,
     title: t('x_family_court_child_support_criminal_record'),
     body: t('x_family_court_if_incarcerated_still_legally'),
   },
   {
-    icon: '📝',
+    icon: ICONS.edit,
     title: t('x_family_court_modifying_support_order'),
     body: t('x_family_court_child_support_can_be'),
   },
   {
-    icon: '⚠️',
+    icon: ICONS.statusWarn,
     title: t('x_family_court_non_payment_consequences'),
     body: t('x_family_court_unpaid_child_support_treated'),
   },
   {
-    icon: '📞',
+    icon: ICONS.phone,
     title: t('x_family_court_getting_help'),
     body: t('x_family_court_every_state_has_child'),
   },
@@ -154,7 +155,7 @@ function FamilyCourtScreen({ navigation, route }: ScreenProps): React.JSX.Elemen
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+        <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('civil_family_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_family_court_custody_support_orders')}</Text>
       </View>
@@ -217,7 +218,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll:          { padding: 16 },
   header:          { borderRadius: RADIUS.lg, padding: 20, marginBottom: 14, alignItems: 'center' },
   headerIcon:      { fontSize: 36, marginBottom: 8 },
-  headerTitle:     { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
+  headerTitle:     { color: colors.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:       { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },
   tabs:            { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
   tabBtn:          { flex: 1, alignItems: 'center', paddingVertical: 11 },
@@ -230,7 +231,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cardTitle:       { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
   cardBody:        { fontSize: 12, lineHeight: 20 },
   cta:             { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 10 },
-  ctaText:         { color: COLORS.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  ctaText:         { color: colors.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   disclaimer:      { borderTopWidth: 1, paddingTop: 12 },
   disclaimerText:  { fontSize: 11, lineHeight: 17, textAlign: 'center' },
 });

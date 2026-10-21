@@ -60,7 +60,7 @@ function buildAttorneyAlert(attorney, arrests) {
   const withBail = arrests.filter(a => a.bail_amount > 0).length;
 
   return {
-    subject: `🚨 ${arrests.length} new arrest${arrests.length > 1 ? 's' : ''} in ${arrests[0]?.county} County — ${noAtty} with no attorney`,
+    subject: `${arrests.length} new arrest${arrests.length > 1 ? 's' : ''} in ${arrests[0]?.county} County — ${noAtty} with no attorney`,
     body: `New arrests matching your practice area in ${arrests[0]?.county} County:\n\n${lines}\n\n` +
           `${noAtty} have NO attorney of record\n` +
           `${withBail} have bail set\n\n` +
@@ -80,7 +80,7 @@ function buildBailAgentAlert(agent, arrests) {
   const totalBail = amounts.reduce((s, n) => s + n, 0);
 
   return {
-    subject: `💰 ${withBail.length} new bookings in ${arrests[0]?.county} — bail $${minBail.toLocaleString()}–$${maxBail.toLocaleString()}`,
+    subject: `${withBail.length} new bookings in ${arrests[0]?.county} — bail $${minBail.toLocaleString()}–$${maxBail.toLocaleString()}`,
     body: `New bookings with bail set in ${arrests[0]?.county} County:\n\n` +
           `  • ${withBail.length} bookings with bail set\n` +
           `  • Bail range: $${minBail.toLocaleString()} – $${maxBail.toLocaleString()}\n` +
@@ -175,7 +175,7 @@ function detectAreas(charges) {
 
 // ── Send alert (email via Resend / push notification) ────────────────────────
 async function sendAlert(recipient, message, type, db) {
-  logger.info(`  📧 ${type} alert → ${recipient.name} (${recipient.email || 'no email'})`);
+  logger.info(`  ${type} alert → ${recipient.name} (${recipient.email || 'no email'})`);
 
   // Record in DB regardless of delivery
   await db.run(
@@ -297,6 +297,6 @@ export async function sendArrestAlerts(options = {}) {
     );
   }
 
-  logger.info(`[alerts] ✅ ${alertsSent} alerts sent, ${newArrests.length} arrests marked`);
+  logger.info(`[alerts] ${alertsSent} alerts sent, ${newArrests.length} arrests marked`);
   return { alerts_sent: alertsSent, arrests_processed: newArrests.length, ...monitorStats, ...leadStats };
 }

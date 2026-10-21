@@ -88,9 +88,9 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
             </View>
           )}
           {!!lawyer.bar_verified && (
-            <View style={{ backgroundColor: COLORS.legal, borderRadius: 6,
+            <View style={{ backgroundColor: colors.legal, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>{t('x_lawyer_card_bar')}</Text>
+              <Text style={{ fontSize: 9, color: colors.textOnAccent, fontWeight: '700' }}>{t('x_lawyer_card_bar')}</Text>
             </View>
           )}
         </View>

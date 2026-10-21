@@ -1,4 +1,4 @@
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * SearchScreen -- Global search across all user data
  *
@@ -10,7 +10,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api } from '../services/api';
-import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, TYPE, FONTS, themeColors } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { getUserState } from '../utils/userState';
 import {
@@ -30,11 +30,11 @@ interface SearchResult {
 
 type SearchSection = { type: string; items: SearchResult[] };
 
-const TYPE_ICONS: Record<string, string> = {
-  case:    '📁',
-  message: '💬',
-  lawyer:  '⚖️',
-  lesson:  '📚' };
+const TYPE_ICONS: Record<string, IconName> = {
+  case:    ICONS.cases,
+  message: ICONS.message,
+  lawyer:  ICONS.lawyer,
+  lesson:  ICONS.book };
 
 const TYPE_LABELS = perLang((): Record<string, string> => ({
   case:    t('nav_cases'),
@@ -170,7 +170,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       testID="search-screen">
       {/* Search input */}
       <View style={[s.searchBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+        <AppIcon name="search-outline" size={20} color={themeColors().textBrand} />
         <TextInput
           style={[s.input, { color: colors.textPrimary }]}
           placeholder={t('x_search_search_cases_messages_attorneys')}
@@ -187,7 +187,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={t('cp_double_tap')}
         />
         {loading && (
-          <ActivityIndicator size="small" color={colors.navy} style={{ marginRight: 8 }} />
+          <ActivityIndicator size="small" color={colors.textBrand} style={{ marginRight: 8 }} />
         )}
       </View>
 
@@ -250,7 +250,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                 </View>
               )}
               <View style={s.empty}>
-                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+                <AppIcon name="search-outline" size={20} color={themeColors().textBrand} />
                 <Text maxFontSizeMultiplier={1.4}
                   style={[s.emptySub, { color: colors.textMuted }]}>
                   {t('x_search_search_across_cases_messages')}
@@ -261,10 +261,10 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         }
         renderItem={({ item: section }: { item: SearchSection }) => (
           <View style={s.section}>
-            <Text maxFontSizeMultiplier={1.4}
-              style={[s.sectionLabel, { color: colors.textMuted }]}>
-              {TYPE_ICONS[section.type]} {TYPE_LABELS()[section.type]}
-            </Text>
+            <IconLabel icon={TYPE_ICONS[section.type] || ICONS.search} maxFontSizeMultiplier={1.4}
+              textStyle={[s.sectionLabel, { color: colors.textMuted }]}>
+              {TYPE_LABELS()[section.type]}
+            </IconLabel>
             {(section.items || []).map((result, i) => (
               <TouchableOpacity
                 accessibilityRole="button"

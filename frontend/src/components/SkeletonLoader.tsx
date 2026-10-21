@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { COLORS } from '../constants/theme';
+import { useTheme, themed } from '../constants/theme';
 import { View, StyleSheet, Animated } from 'react-native';
 import { S, R } from '../constants/tokens';
 
@@ -42,11 +42,12 @@ interface SkeletonBoxProps {
 const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   width = '100%', height = 16, radius = R.sm, style,
 }) => {
+  const { colors } = useTheme();
   const opacity = usePulseOpacity();
   return (
     <Animated.View
       style={[
-        { width: width as number, height, borderRadius: radius, backgroundColor: COLORS.border },
+        { width: width as number, height, borderRadius: radius, backgroundColor: colors.border },
         { opacity },
         style,
       ]}
@@ -128,9 +129,9 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themed(colors => StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.bgCard,
     borderRadius: R.card,
     padding: S.card,
     marginBottom: S.sm,
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
   rowStart:   { flexDirection: 'row', alignItems: 'flex-start' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   col:        { flexDirection: 'column' },
-});
+}));
 
 export default SkeletonLoader;
 

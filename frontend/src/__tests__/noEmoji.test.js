@@ -4,19 +4,14 @@
  *
  * Checks
  *   - every value in src/i18n/{en,es,pt,vi}.json
- *   - every string literal, template literal and JSX text in src/**\/*.ts(x)
+ *   - every string literal, template literal and JSX text in src/**\/*.ts(x) and App.tsx
  *     (TypeScript AST, so comments are not counted; tests are excluded)
  *
  * "Emoji" = Unicode Extended_Pictographic (minus © ® ™, which are ordinary
  * typography), regional-indicator flags, the emoji variation selector U+FE0F
  * and the keycap U+20E3. Arrows (→), check marks (✓) and bullets (•) are text.
  * Allowlist: none — the language picker shows endonyms, not flags.
- *
- * PASS 1 SCOPE (temporary): the UI pass is done in two passes. Pass 1 fixed the
- * core path (PASS1_SCOPE below: those files, plus every i18n key they use).
- * Pass 2 converts the rest of the app and DELETES PASS1_SCOPE, after which this
- * test checks every file and every i18n value. The first test always reports
- * the app-wide count so progress is visible.
+ * Scope: the whole app (every source file and every i18n value, no exceptions).
  */
 const fs = require('fs');
 const path = require('path');
@@ -25,18 +20,6 @@ const ts = require('typescript');
 const ROOT = path.resolve(__dirname, '../..');
 const SRC = path.join(ROOT, 'src');
 const LANGS = ['en', 'es', 'pt', 'vi'];
-
-// Remove in pass 2 (then the whole app is checked).
-const PASS1_SCOPE = [
-  'screens/HomeScreen.tsx', 'screens/JustArrestedScreen.tsx', 'screens/RightsCardScreen.tsx',
-  'screens/HelpNowScreen.tsx', 'screens/EmergencyScreen.tsx', 'screens/EmergencyShareScreen.tsx',
-  'screens/CrisisResourcesScreen.tsx', 'screens/CourtDatesScreen.tsx', 'screens/CourtDateDetailScreen.tsx',
-  'navigation/AppNavigator.tsx',
-  'components/AppIcon.tsx', 'components/EmergencyStrip.tsx', 'components/FloatingSOSButton.tsx',
-  'components/ContactActions.tsx', 'components/LegalSource.tsx', 'components/SignInNeeded.tsx',
-  'components/ToastProvider.tsx', 'components/Toast.tsx', 'components/OfflineBanner.tsx',
-  'components/ErrorBoundary.tsx', 'services/sos.ts', 'services/corePath.ts',
-];
 
 const EMOJI = /(?![©®™])[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}️⃣]/gu;
 const emojiIn = (s) => [...new Set(String(s).match(EMOJI) || [])];
@@ -72,23 +55,10 @@ function codeFindings(file) {
 
 const dicts = Object.fromEntries(LANGS.map(l => [l, JSON.parse(fs.readFileSync(path.join(SRC, 'i18n', `${l}.json`), 'utf8'))]));
 
-/** i18n keys a source file uses: literal 'key' strings that exist, and t(`prefix_${…}`) families. */
-function keysUsedBy(file) {
-  const src = fs.readFileSync(file, 'utf8');
-  const en = dicts.en;
-  const keys = new Set();
-  for (const m of src.matchAll(/'([a-z][a-zA-Z0-9]*_[A-Za-z0-9_]+)'/g)) if (m[1] in en) keys.add(m[1]);
-  for (const m of src.matchAll(/\bt\(\s*`([a-z][a-zA-Z0-9]*_[A-Za-z0-9_]*)\$\{/g)) {
-    for (const k of Object.keys(en)) if (k.startsWith(m[1])) keys.add(k);
-  }
-  return keys;
-}
-
-function i18nFindings(onlyKeys) {
+function i18nFindings() {
   const out = [];
   for (const l of LANGS) {
     for (const [k, v] of Object.entries(dicts[l])) {
-      if (onlyKeys && !onlyKeys.has(k)) continue;
       const found = emojiIn(v);
       if (found.length) out.push(`${l}.json ${k}: ${found.join('')}  ${String(v).slice(0, 60)}`);
     }
@@ -96,30 +66,20 @@ function i18nFindings(onlyKeys) {
   return out;
 }
 
-const allFiles = walk(SRC);
-const scopeFiles = typeof PASS1_SCOPE === 'undefined' ? allFiles : PASS1_SCOPE.map(f => path.join(SRC, f));
+const allFiles = [...walk(SRC), path.join(ROOT, 'App.tsx')];
 
 describe('no emoji in UI text', () => {
-  it('reports the app-wide count (pass 1 scope still active until pass 2)', () => {
-    const code = allFiles.flatMap(codeFindings);
-    const i18n = i18nFindings(null);
-    console.log(`[noEmoji] app-wide: ${code.length} code literals with emoji in ${new Set(code.map(c => c.split(':')[0])).size} files, `
-      + `${i18n.length} i18n values with emoji (${i18n.length / LANGS.length} keys × ${LANGS.length} languages); `
-      + `checked scope: ${scopeFiles.length} files`);
-    expect(code.length).toBeGreaterThanOrEqual(0);
+  it('scans the whole app', () => {
+    expect(allFiles.length).toBeGreaterThan(100);
+    expect(allFiles.some(f => f.endsWith(path.join('screens', 'HomeScreen.tsx')))).toBe(true);
   });
 
-  it('the scoped files exist', () => {
-    expect(scopeFiles.filter(f => !fs.existsSync(f))).toEqual([]);
+  it('no emoji in any string literal / template / JSX text in src', () => {
+    expect(allFiles.flatMap(codeFindings)).toEqual([]);
   });
 
-  it('no emoji in string literals / JSX text of the checked files', () => {
-    expect(scopeFiles.flatMap(codeFindings)).toEqual([]);
-  });
-
-  it('no emoji in the i18n values those files use (all 4 languages)', () => {
-    const keys = typeof PASS1_SCOPE === 'undefined' ? null : new Set(scopeFiles.flatMap(f => [...keysUsedBy(f)]));
-    expect(i18nFindings(keys)).toEqual([]);
+  it('no emoji in any i18n value (en, es, pt, vi)', () => {
+    expect(i18nFindings()).toEqual([]);
   });
 
   it('the scanner catches a planted emoji and ignores comments (self-test)', () => {

@@ -196,7 +196,7 @@ describe('HAIR. StyleSheet.hairlineWidth — Device-Independent 1px Borders', ()
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('hairlineWidth');
-    expect(src).toContain('COLORS.border');
+    expect(src).toContain('colors.border');   // UI pass 2: theme colours, not the static light palette
   });
   test('HAIR-04: 4 screens use hairlineWidth — all list/form separation contexts', async () => {
     const fs   = await import('fs');

@@ -66,7 +66,7 @@ const AgentCard = React.memo(function AgentCard({ item }: { item: BailAgent }) {
         {item.rating != null && (
           <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
-            <IconLabel icon={ICONS.starFilled} textStyle={{ color: colors.goldText }} maxFontSizeMultiplier={1.3}></IconLabel>
+            <AppIcon name={ICONS.starFilled} size={20} color={colors.goldText} style={{ color: colors.goldText }} />
             <Text maxFontSizeMultiplier={1.3} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
           </View>
         )}
@@ -273,7 +273,7 @@ function BailSearchScreen(): React.JSX.Element {
               </Text>
             </View>
           }
-          ListFooterComponent={items.length > 0 ? (loadingMore ? <ActivityIndicator color={colors.navy} style={{ padding: 16 }} />
+          ListFooterComponent={items.length > 0 ? (loadingMore ? <ActivityIndicator color={colors.textBrand} style={{ padding: 16 }} />
             : !hasMore && !fromCache ? <Text testID="bail-end" maxFontSizeMultiplier={1.3} style={[styles.end, { color: colors.textMuted }]}>{t('bs_count', { count: items.length })} · {t('lw_end')}</Text> : null) : null}
           renderItem={({ item }) => <AgentCard item={item} />}
         />

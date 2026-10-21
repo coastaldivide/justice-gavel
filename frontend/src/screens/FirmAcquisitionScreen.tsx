@@ -21,7 +21,7 @@ import { useStoredUser, isAttorneyUser } from '../hooks/useStoredUser';
 import { useConfirm } from '../hooks/useConfirm';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 const VERTICALS = ['criminal_defense', 'civil_rights', 'white_collar', 'family', 'immigration', 'personal_injury', 'public_defense', 'appellate', 'military', 'juvenile', 'general'] as const;
 const ORG_TYPES = ['law_firm', 'solo', 'public_defender', 'legal_aid', 'nonprofit', 'government', 'other'] as const;
@@ -91,11 +91,11 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const requestPlan = (tier: (typeof PLAN_TIERS)[number]) => run(`plan-${tier}`, () => api.post('/firm-acquisition/upgrade', { target_tier: tier }));
 
   if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('x_nav_start_firm_trial')} body={t('fa_signin_body')} onSignedIn={recheck} /></View>;
-  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
   if (!isAttorneyUser(user)) {
     return <View testID="firm-acquisition-not-attorney" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}><Text maxFontSizeMultiplier={1.4} style={[s.title, { textAlign: 'center' }]}>{t('fa_attorney_only')}</Text></View>;
   }
-  if (!status) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (!status) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
 
   const f = status.firm;
   const canInvite = !!status.role && ADMIN_ROLES.has(status.role);
@@ -170,11 +170,11 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={s.card} testID="fa-checklist">
             <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_firm_acquisition_getting_started')}</Text>
             {steps.map(st => (
-              <TouchableOpacity key={st.key} accessibilityRole="button" style={s.step} onPress={() => {
+              <TouchableOpacity key={st.key} accessibilityRole="button" accessibilityState={{ checked: st.done }} style={s.step} onPress={() => {
                 if (st.key === 'vertical_set') navigation.navigate('FirmVertical' as never);
                 else if (st.key === 'first_matter') navigation.navigate('MatterIntelligence' as never);
               }} disabled={st.key === 'team_invited'}>
-                <Text maxFontSizeMultiplier={1.4} style={s.stepIcon}>{st.done ? '✅' : '⬜'}</Text>
+                <AppIcon name={st.done ? ICONS.statusOk : ICONS.checkboxEmpty} size={18} color={st.done ? colors.legal : colors.textMuted} style={s.stepIcon} />
                 <Text maxFontSizeMultiplier={1.4} style={[s.line, { flex: 1 }, st.done && { textDecorationLine: 'line-through' }]}>{t(`fa_step_${st.key}`)}</Text>
               </TouchableOpacity>
             ))}
@@ -250,7 +250,7 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   statVal: { fontSize: 18, ...FONTS.black, color: colors.textBrand },
   statLabel: { fontSize: 12, color: colors.textSecond, textAlign: 'center' },
   step: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 8 },
-  stepIcon: { fontSize: 16 },
+  stepIcon: { marginRight: 2 },
 });
 
 export default React.memo(FirmAcquisitionScreen);

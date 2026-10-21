@@ -141,7 +141,7 @@ function BondsmanDashboardScreen({ navigation, route }: ScreenProps): React.JSX.
       </View>
     );
   }
-  if (hasSession === null || profile === undefined) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.navy} size="large" /></View>;
+  if (hasSession === null || profile === undefined) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.textBrand} size="large" /></View>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'leads', label: t('bd_tab_leads') }, { key: 'mine', label: t('bd_tab_mine') },
@@ -194,7 +194,7 @@ function BondsmanDashboardScreen({ navigation, route }: ScreenProps): React.JSX.
               ))}
             </View>
             <Text maxFontSizeMultiplier={1.4} style={s.hint}>{t('bd_leads_hint', { fee: leadFeeLabel(leads[0]) })}</Text>
-            {loading && !leads.length && <ActivityIndicator style={{ marginTop: 20 }} color={colors.navy} />}
+            {loading && !leads.length && <ActivityIndicator style={{ marginTop: 20 }} color={colors.textBrand} />}
             {!loading && leads.length === 0 && (
               <View style={s.card} testID="bd-no-leads">
                 <Text maxFontSizeMultiplier={1.4} style={s.line}>{feeds ? t('bd_no_leads', { state: profile.states[0] ? stateName(profile.states[0]) : '' }) : t('x_bondsman_dashboard_no_public_arrest_feeds')}</Text>

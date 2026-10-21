@@ -79,7 +79,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     textAlign: 'center',
   },
   link: {
-    color: C.blue,
+    color: C.info,
     textDecorationLine: 'underline',
   },
 });

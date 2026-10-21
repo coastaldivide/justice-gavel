@@ -13,42 +13,42 @@ import { setPendingRoute } from '../services/corePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { t, initLang, setLang, useLang } from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themed } from '../constants/theme';
 import { detectAndSaveUserState } from '../services/location';
 import JTBLogo from '../components/JTBLogo';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 const { width } = Dimensions.get('window');
 
-const SITUATION_PATHS = {
+const SITUATION_PATHS = themed(colors => ({
   arrested: [
-    { key:'s_arrested', icon:'🔒', titleKey:'onboard_slide1_title', bodyKey:'onboard_slide1_body', accent: COLORS.navy },
-    { key:'bail',       icon:'💰', titleKey:'onboard_slide2_title', bodyKey:'onboard_slide2_body', accent: COLORS.bail },
-    { key:'rights',     icon:'✊', titleKey:'onboard_rights_title', bodyKey:'onboard_rights_body', accent: COLORS.navy },
-    { key:'lawyer',     icon:'⚖️', titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: COLORS.legal },
-    { key:'free',       icon:'✅', titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: COLORS.legal },
+    { key:'s_arrested', icon:ICONS.lock, titleKey:'onboard_slide1_title', bodyKey:'onboard_slide1_body', accent: colors.textBrand },
+    { key:'bail',       icon:ICONS.money, titleKey:'onboard_slide2_title', bodyKey:'onboard_slide2_body', accent: colors.bail },
+    { key:'rights',     icon:ICONS.rights, titleKey:'onboard_rights_title', bodyKey:'onboard_rights_body', accent: colors.textBrand },
+    { key:'lawyer',     icon:ICONS.lawyer, titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: colors.legal },
+    { key:'free',       icon:ICONS.statusOk, titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: colors.legal },
   ],
   family: [
-    { key:'s_family',  icon:'👪', titleKey:'onboard_family_title', bodyKey:'onboard_family_body', accent: COLORS.navy },
-    { key:'what_next', icon:'📋', titleKey:'onboard_whatnext_title', bodyKey:'onboard_whatnext_body', accent: COLORS.steel },
-    { key:'bail',      icon:'💰', titleKey:'onboard_slide2_title', bodyKey:'onboard_slide2_body', accent: COLORS.bail },
-    { key:'lawyer',    icon:'⚖️', titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: COLORS.legal },
-    { key:'free',      icon:'✅', titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: COLORS.legal },
+    { key:'s_family',  icon:ICONS.family, titleKey:'onboard_family_title', bodyKey:'onboard_family_body', accent: colors.textBrand },
+    { key:'what_next', icon:ICONS.clipboard, titleKey:'onboard_whatnext_title', bodyKey:'onboard_whatnext_body', accent: colors.steel },
+    { key:'bail',      icon:ICONS.money, titleKey:'onboard_slide2_title', bodyKey:'onboard_slide2_body', accent: colors.bail },
+    { key:'lawyer',    icon:ICONS.lawyer, titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: colors.legal },
+    { key:'free',      icon:ICONS.statusOk, titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: colors.legal },
   ],
   record: [
-    { key:'s_record',   icon:'📋', titleKey:'onboard_record_title', bodyKey:'onboard_record_body', accent: COLORS.legal },
-    { key:'expunge',    icon:'🗂️', titleKey:'onboard_expunge_title', bodyKey:'onboard_expunge_body', accent: COLORS.legal },
-    { key:'lawyer',     icon:'⚖️', titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: COLORS.legal },
-    { key:'free',       icon:'✅', titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: COLORS.legal },
-  ] };
+    { key:'s_record',   icon:ICONS.clipboard, titleKey:'onboard_record_title', bodyKey:'onboard_record_body', accent: colors.legal },
+    { key:'expunge',    icon:ICONS.cases, titleKey:'onboard_expunge_title', bodyKey:'onboard_expunge_body', accent: colors.legal },
+    { key:'lawyer',     icon:ICONS.lawyer, titleKey:'onboard_slide3_title', bodyKey:'onboard_slide3_body', accent: colors.legal },
+    { key:'free',       icon:ICONS.statusOk, titleKey:'onboard_slide4_title', bodyKey:'onboard_slide4_body', accent: colors.legal },
+  ] }));
 
 // Default slides for 'general' / no situation selected
-const SLIDES = [
-  { key: 'welcome', icon: '🔓', titleKey: 'onboard_slide1_title', bodyKey: 'onboard_slide1_body', accent: COLORS.navy },
-  { key: 'bail',    icon: '💰', titleKey: 'onboard_slide2_title', bodyKey: 'onboard_slide2_body', accent: COLORS.bail },
-  { key: 'lawyer',  icon: '⚖️', titleKey: 'onboard_slide3_title', bodyKey: 'onboard_slide3_body', accent: COLORS.legal },
-  { key: 'free',    icon: '✅', titleKey: 'onboard_slide4_title', bodyKey: 'onboard_slide4_body', accent: COLORS.legal },
-];
+const SLIDES = themed(colors => ([
+  { key: 'welcome', icon: ICONS.bail, titleKey: 'onboard_slide1_title', bodyKey: 'onboard_slide1_body', accent: colors.textBrand },
+  { key: 'bail',    icon: ICONS.money, titleKey: 'onboard_slide2_title', bodyKey: 'onboard_slide2_body', accent: colors.bail },
+  { key: 'lawyer',  icon: ICONS.lawyer, titleKey: 'onboard_slide3_title', bodyKey: 'onboard_slide3_body', accent: colors.legal },
+  { key: 'free',    icon: ICONS.statusOk, titleKey: 'onboard_slide4_title', bodyKey: 'onboard_slide4_body', accent: colors.legal },
+]));
 
 function OnboardingScreen({ navigation }: ScreenProps) {
   useLang(); // re-render in the chosen language
@@ -224,7 +224,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
             <View style={[styles.iconCircle, {
               backgroundColor: item.accent + '18',
               borderColor: item.accent + '44' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.slideIcon}>{item.icon}</Text>
+              <AppIcon name={item.icon} size={22} color={colors.textBrand} style={styles.slideIcon} />
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.slideTitle}>{t(item.titleKey)}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.slideBody}>{t(item.bodyKey)}</Text>
@@ -248,7 +248,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         {/* PRIMARY: Browse -- clear label on every slide */}
         <TouchableOpacity accessibilityRole="button" style={styles.browseBtn} onPress={browseNow} activeOpacity={0.85}
         >
-          <IconLabel icon={ICONS.bail} textStyle={styles.browseBtnText} maxFontSizeMultiplier={1.4}>{activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}</IconLabel>
+          <IconLabel icon={[ICONS.bail, ICONS.money, ICONS.lawyer, ICONS.search][Math.min(activeIndex, 3)]} textStyle={styles.browseBtnText} maxFontSizeMultiplier={1.4}>{activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnSub}>{t('onboard_browse_sub')}</Text>
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
           {t('onb_terms_pre')}
@@ -340,7 +340,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   nextBtn: {
     flex: 1, paddingVertical: 12,
     borderRadius: RADIUS.md,
-    borderWidth: 1.5, borderColor: COLORS.border,
+    borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', backgroundColor: 'rgba(133,183,235,0.08)' },
   nextBtnText: { color: colors.info, fontSize: 14, lineHeight: 21, ...FONTS.bold },
 

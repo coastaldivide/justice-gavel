@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { Text, TextStyle, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 
 interface TypographyProps {
   children: React.ReactNode;
@@ -25,6 +25,8 @@ interface TypographyProps {
 }
 
 export function Heading1({ children, style, color, center }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.h1, color ? { color } : null, center ? { textAlign: 'center' } : null, style]}
@@ -36,6 +38,8 @@ export function Heading1({ children, style, color, center }: TypographyProps) {
 }
 
 export function Heading2({ children, style, color, center }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.h2, color ? { color } : null, center ? { textAlign: 'center' } : null, style]}
@@ -47,6 +51,8 @@ export function Heading2({ children, style, color, center }: TypographyProps) {
 }
 
 export function Heading3({ children, style, color, center }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.h3, color ? { color } : null, center ? { textAlign: 'center' } : null, style]}
@@ -58,6 +64,8 @@ export function Heading3({ children, style, color, center }: TypographyProps) {
 }
 
 export function Body({ children, style, color, lines }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.body, color ? { color } : null, style]}
@@ -70,6 +78,8 @@ export function Body({ children, style, color, lines }: TypographyProps) {
 }
 
 export function BodySmall({ children, style, color }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.bodySmall, color ? { color } : null, style]}
@@ -81,6 +91,8 @@ export function BodySmall({ children, style, color }: TypographyProps) {
 }
 
 export function Label({ children, style, color }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.label, color ? { color } : null, style]}
@@ -92,6 +104,8 @@ export function Label({ children, style, color }: TypographyProps) {
 }
 
 export function Caption({ children, style, color, center }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.caption, color ? { color } : null, center ? { textAlign: 'center' } : null, style]}
@@ -103,6 +117,8 @@ export function Caption({ children, style, color, center }: TypographyProps) {
 }
 
 export function Emphasis({ children, style, color }: TypographyProps) {
+  const { colors } = useTheme();
+  const t = makeT(colors);
   return (
     <Text
       style={[t.emphasis, color ? { color } : null, style]}
@@ -113,24 +129,24 @@ export function Emphasis({ children, style, color }: TypographyProps) {
   );
 }
 
-const t = StyleSheet.create({
+const makeT = (colors: ThemeColors) => StyleSheet.create({
   h1:       { fontSize: 26, fontWeight: '800', fontFamily: 'Inter_800ExtraBold',
-               color: COLORS.textPrimary, lineHeight: 32, letterSpacing: -0.4 },
+               color: colors.textPrimary, lineHeight: 32, letterSpacing: -0.4 },
   h2:       { fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold',
-               color: COLORS.textPrimary, lineHeight: 26, letterSpacing: -0.2 },
+               color: colors.textPrimary, lineHeight: 26, letterSpacing: -0.2 },
   h3:       { fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold',
-               color: COLORS.textPrimary, lineHeight: 22 },
+               color: colors.textPrimary, lineHeight: 22 },
   body:     { fontSize: 15, fontWeight: '400', fontFamily: 'Inter_400Regular',
-               color: COLORS.textSecond, lineHeight: 23 },
+               color: colors.textSecond, lineHeight: 23 },
   bodySmall:{ fontSize: 13, fontWeight: '400', fontFamily: 'Inter_400Regular',
-               color: COLORS.textSecond, lineHeight: 19 },
+               color: colors.textSecond, lineHeight: 19 },
   label:    { fontSize: 11, fontWeight: '700', fontFamily: 'Inter_700Bold',
-               color: COLORS.textMuted, letterSpacing: 0.8,
+               color: colors.textMuted, letterSpacing: 0.8,
                textTransform: 'uppercase' },
   caption:  { fontSize: 12, fontWeight: '400', fontFamily: 'Inter_400Regular',
-               color: COLORS.textMuted, lineHeight: 17 },
+               color: colors.textMuted, lineHeight: 17 },
   emphasis: { fontSize: 15, fontWeight: '600', fontFamily: 'Inter_600SemiBold',
-               color: COLORS.textPrimary, lineHeight: 22 },
+               color: colors.textPrimary, lineHeight: 22 },
 });
 
 export const Typography = { Heading1, Heading2, Heading3, Body, BodySmall, Label, Caption, Emphasis };

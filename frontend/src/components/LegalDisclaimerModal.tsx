@@ -28,11 +28,11 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { COLORS, FONT } from '../constants/theme';
+import { COLORS, FONT, useTheme, type ThemeColors } from '../constants/theme';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { t, useLang } from '../i18n';
-import { AppIcon, ICONS } from './AppIcon';
+import JTBLogo from './JTBLogo';
 
 // ── Versioning ────────────────────────────────────────────────────────────────
 export const CONSENT_VERSION = '2.0';
@@ -70,6 +70,7 @@ interface Props {
 
 function LegalDisclaimerModal({ visible, onAccept }: Props) {
   useLang();
+  const { colors } = useTheme();
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
     Linking.openURL(url).catch(() => {});
   }, []);
 
-  const s = styles(COLORS, FONT);
+  const s = styles(colors, FONT);
 
   return (
     <Modal
@@ -99,7 +100,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
 
         {/* ── Logo / Brand ── */}
         <View style={s.brand}>
-          <AppIcon name={ICONS.gavel} size={52} color={COLORS.gold} style={s.logo} />
+          <View style={s.logo}><JTBLogo size={64} /></View>
           <Text maxFontSizeMultiplier={1.4} style={s.appName}>Justice Gavel</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.tagline}>{t('x_legal_disclaimer_modal_legal_self_help_everyone')}</Text>
         </View>
@@ -183,7 +184,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: any, F: typeof FONT) => StyleSheet.create({
+const styles = (C: ThemeColors, F: typeof FONT) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bg,
@@ -202,7 +203,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   appName: {
     fontSize: 28,
     fontFamily: F.bold,
-    color: C.navy,
+    color: C.textBrand,
     marginBottom: 4,
   },
   tagline: {
@@ -228,7 +229,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     fontFamily: F.bold,
   },
   link: {
-    color: C.blue,
+    color: C.info,
     textDecorationLine: 'underline',
   },
   checkRow: {
@@ -242,14 +243,14 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     height: 24,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
   },
   checkMark: {
-    color: COLORS.white,
+    color: C.white,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -275,7 +276,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   btnText: {
     fontSize: 16,
     fontFamily: F.bold,
-    color: COLORS.white,
+    color: C.white,
     letterSpacing: 0.3,
   },
   btnTextDisabled: {

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import { useToast } from './Toast';
-import { COLORS } from '../constants/theme';
+import { COLORS, useTheme, type ThemeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
 interface Props {
@@ -19,6 +19,8 @@ interface Props {
 
 export default function FeedbackButton({ screen }: Props) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [visible, setVisible]     = useState(false);
   const [issue, setIssue]         = useState('');
   const [contact, setContact]     = useState('');
@@ -110,23 +112,23 @@ export default function FeedbackButton({ screen }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   fab:        { position: 'absolute', bottom: 80, right: 16, width: 44, height: 44,
-                borderRadius: 22, backgroundColor: COLORS.navy, alignItems: 'center',
+                borderRadius: 22, backgroundColor: colors.navy, alignItems: 'center',
                 justifyContent: 'center', zIndex: 999, elevation: 4 },
-  fabText:    { color: COLORS.white, fontSize: 22, fontWeight: '700', lineHeight: 24 },
+  fabText:    { color: colors.white, fontSize: 22, fontWeight: '700', lineHeight: 24 },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modal:      { backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+  modal:      { backgroundColor: colors.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20,
                 padding: 24, paddingBottom: 40 },
-  title:      { fontSize: 18, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
-  subtitle:   { fontSize: 12, color: COLORS.textSecond, marginBottom: 16 },
-  input:      { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 12,
+  title:      { fontSize: 18, fontWeight: '700', color: colors.textBrand, marginBottom: 4 },
+  subtitle:   { fontSize: 12, color: colors.textSecond, marginBottom: 16 },
+  input:      { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12,
                 fontSize: 14, minHeight: 100, marginBottom: 12 },
   buttons:    { flexDirection: 'row', gap: 12 },
-  cancel:     { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
+  cancel:     { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border,
                 alignItems: 'center' },
-  cancelText: { fontSize: 15, color: COLORS.textSecond },
-  submit:     { flex: 2, padding: 14, borderRadius: 8, backgroundColor: COLORS.navy,
+  cancelText: { fontSize: 15, color: colors.textSecond },
+  submit:     { flex: 2, padding: 14, borderRadius: 8, backgroundColor: colors.navy,
                 alignItems: 'center' },
-  submitText: { fontSize: 15, color: COLORS.white, fontWeight: '700' },
+  submitText: { fontSize: 15, color: colors.white, fontWeight: '700' },
 });

@@ -32,7 +32,7 @@ function MatchCard({ item }: { item: Match }) {
   useLang();
   const { colors } = useTheme();
   const navigation = useNavigation<any>();
-  const rankColors = [COLORS.emergencyDark, COLORS.warnDark, COLORS.legalDark];
+  const rankColors = [colors.emergencyDark, colors.warnDark, colors.legalDark];
   const openProfile = () => navigation.navigate('LawyerProfile', { lawyerId: item.id });
   return (
     <View style={[styles.card, { backgroundColor: colors.bgCard }]} testID="match-card">
@@ -44,7 +44,7 @@ function MatchCard({ item }: { item: Match }) {
         <TouchableOpacity accessibilityRole="link" onPress={openProfile} accessibilityLabel={t('x_match_view_profile', { value: item.name })}>
           <View style={styles.nameRow}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.name, { color: colors.textBrand }]}>{item.name}</Text>
-            {item.rating != null && <Text maxFontSizeMultiplier={1.3} style={[styles.rating, { color: colors.textPrimary }]}>{item.rating.toFixed(1)} ★</Text>}
+            {item.rating != null && <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} maxFontSizeMultiplier={1.3} textStyle={[styles.rating, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</IconLabel>}
           </View>
           {!!item.address && <Text maxFontSizeMultiplier={1.3} style={[styles.address, { color: colors.textMuted }]}>{item.address}</Text>}
         </TouchableOpacity>
@@ -142,7 +142,7 @@ function MatchScreen(): React.JSX.Element {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} keyboardShouldPersistTaps="handled" testID="match-screen"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textBrand} />}>
         <View style={styles.header}>
           <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('x_match_ai_lawyer_match')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.subheading}>{t('x_match_tell_us_situation_we')}</Text>

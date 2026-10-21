@@ -61,7 +61,7 @@ export function DirectConversation({ who, onClose }: { who: { user_id: number; n
         <View style={{ width: 64 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
-        {msgs === null && <ActivityIndicator color={colors.navy} />}
+        {msgs === null && <ActivityIndicator color={colors.textBrand} />}
         {msgs?.length === 0 && !err && <Text maxFontSizeMultiplier={1.4} style={s.meta}>{t('dm_empty')}</Text>}
         {msgs?.map(m => (
           <View key={m.id} testID={`dm-${m.direction}`} style={[s.bubble, m.direction === 'sent'

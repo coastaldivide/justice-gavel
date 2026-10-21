@@ -17,6 +17,11 @@
  *      server's ranking note in that language.
  *   U4 Rights card: "Say these words" sits directly under the state picker; the
  *      "not yet reviewed" notice is a footnote below it (en, vi).
+ *   U7 Home quick-access tiles and the tab bar follow the theme in dark and
+ *      light mode: theme surfaces, labels ≥ 4.5:1 on their own background,
+ *      tiles and tabs ≥ 44 pt, secondary tiles compact (≤ 80 px) (en, vi).
+ *   U8 the SOS control reads "SOS" (no "hold"), its accessible name says what it
+ *      does, and a tap still opens the confirm step (en / es / pt / vi).
  *
  *   node scripts/web-journeys-ui.cjs dist out --api http://localhost:4300/api [--port 8300] [--shots dir]
  *
@@ -87,7 +92,7 @@ const base = `http://localhost:${PORT}`;
 const byTid = (page, id) => page.locator(`[data-testid="${id}"]`);
 let lastPage = null;
 
-async function open(browser, { lang = 'en', viewport = PHONE, account = null, state = null } = {}) {
+async function open(browser, { lang = 'en', viewport = PHONE, account = null, state = null, theme = null } = {}) {
   const ctx = await browser.newContext({ viewport, locale: LOCALES[lang], timezoneId: 'America/Chicago', serviceWorkers: 'block',
     extraHTTPHeaders: { 'X-Forwarded-For': freshIp() } });
   const page = await ctx.newPage();
@@ -96,14 +101,15 @@ async function open(browser, { lang = 'en', viewport = PHONE, account = null, st
   page.on('pageerror', e => errors.push(String(e && e.message || e)));
   page.on('dialog', d => d.dismiss().catch(() => {}));
   await page.goto(base + '/age-check', { waitUntil: 'domcontentloaded' });
-  await page.evaluate(([acc, st, lg]) => {
+  await page.evaluate(([acc, st, lg, th]) => {
     localStorage.clear(); sessionStorage.clear();
     localStorage.setItem('age_verified', '1');
     localStorage.setItem('has_browsed', 'true');
     localStorage.setItem('lang', lg);
+    if (th) localStorage.setItem('jg_theme_mode', th);
     if (st) localStorage.setItem('jg_user_state', st);
     if (acc) { sessionStorage.setItem('jg_token', acc.token); sessionStorage.setItem('jg_user', JSON.stringify(acc.user)); }
-  }, [account, state, lang]);
+  }, [account, state, lang, theme]);
   return { ctx, page, errors };
 }
 async function go(page, p) { await page.goto(base + p, { waitUntil: 'networkidle' }); await page.waitForTimeout(900); }
@@ -328,6 +334,87 @@ async function scrollHome(page, where) {
       }
     }
     return 'en, vi × 390, 1280';
+  });
+
+  // ── U7 Home tiles + tab bar follow the theme (dark AND light) ─────────────
+  // Every quick-access tile and the tab bar use the theme's surfaces: dark
+  // surfaces in dark mode, light in light mode; tile and tab labels pass AA
+  // (4.5:1) against their own background; every tile and tab is ≥ 44 pt tall;
+  // the secondary tiles are compact rows (≤ 80 px tall), not big squares.
+  await journey('U7 Home tiles + tab bar follow the theme in dark and light (AA, ≥44 pt, compact tiles; en / vi)', async () => {
+    const out = [];
+    for (const theme of ['dark', 'light']) {
+      for (const lang of ['en', 'vi']) {
+        const s = await open(browser, { lang, theme });
+        await go(s.page, '/');
+        await byTid(s.page, 'tile-Bail').first().waitFor({ timeout: 15000 });
+        await byTid(s.page, 'tile-Search').first().scrollIntoViewIfNeeded();
+        const m = await s.page.evaluate(() => {
+          const rgb = c => { const x = /rgba?\(([\d.]+), ([\d.]+), ([\d.]+)(?:, ([\d.]+))?/.exec(c); return x && (x[4] === undefined || +x[4] > 0.5) ? [+x[1], +x[2], +x[3]] : null; };
+          const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+          const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+          const bgOf = el => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c) return c; } return [255, 255, 255]; };
+          const tiles = [...document.querySelectorAll('[data-testid^="tile-"]')].map(t => {
+            const r = t.getBoundingClientRect(); const bg = bgOf(t);
+            const label = [...t.querySelectorAll('div[dir="auto"], span')].find(e => (e.innerText || '').trim());
+            const fg = label ? rgb(getComputedStyle(label).color) : null;
+            return { id: t.getAttribute('data-testid'), h: Math.round(r.height), w: Math.round(r.width), bgLum: lum(bg), ratio: fg ? cr(fg, bg) : 0 };
+          });
+          const tl = document.querySelector('[role="tablist"]');
+          const tabBg = tl ? bgOf(tl) : null;
+          const tabs = tl ? [...tl.querySelectorAll('[role="tab"]')].map(b => {
+            const r = b.getBoundingClientRect(); const lab = [...b.querySelectorAll('div[dir="auto"], span')].find(e => (e.innerText || '').trim());
+            return { h: Math.round(r.height), ratio: lab ? cr(rgb(getComputedStyle(lab).color), bgOf(b)) : 0 };
+          }) : [];
+          return { tiles, tabBgLum: tabBg ? lum(tabBg) : null, tabs };
+        });
+        const where = `${theme} ${lang}`;
+        if (m.tiles.length < 10) throw new Error(`${where}: only ${m.tiles.length} tiles`);
+        for (const tl of m.tiles) {
+          if (theme === 'dark' ? tl.bgLum > 0.08 : tl.bgLum < 0.6) throw new Error(`${where}: ${tl.id} background does not follow the ${theme} theme (luminance ${tl.bgLum.toFixed(2)})`);
+          if (tl.ratio < 4.5) throw new Error(`${where}: ${tl.id} label contrast ${tl.ratio.toFixed(2)} < 4.5`);
+          if (tl.h < 44) throw new Error(`${where}: ${tl.id} is ${tl.h}px tall (< 44)`);
+        }
+        const rows = m.tiles.filter(x => x.w >= 150 && x.w < 200);
+        if (rows.some(x => x.h > 80)) throw new Error(`${where}: secondary tiles are still big squares (${rows.map(x => x.h).join(',')}px)`);
+        if (m.tabBgLum === null) throw new Error(`${where}: no tab bar`);
+        if (theme === 'dark' ? m.tabBgLum > 0.08 : m.tabBgLum < 0.6) throw new Error(`${where}: tab bar does not follow the ${theme} theme (luminance ${m.tabBgLum.toFixed(2)})`);
+        if (m.tabs.length !== 5 || m.tabs.some(x => x.h < 44 || x.ratio < 4.5)) throw new Error(`${where}: tab targets ${JSON.stringify(m.tabs)}`);
+        await shot(s.page, `home-tiles-${theme}-${lang}-390`);
+        out.push(`${where}: ${m.tiles.length} tiles (min AA ${Math.min(...m.tiles.map(x => x.ratio)).toFixed(1)}, secondary ≤${Math.max(0, ...rows.map(x => x.h))}px), tabs min AA ${Math.min(...m.tabs.map(x => x.ratio)).toFixed(1)}`);
+        allErrors.push(...s.errors);
+        await s.ctx.close();
+      }
+    }
+    return out.join('; ');
+  });
+
+  // ── U8 SOS label is truthful: "SOS", tap → confirm (never "hold") ─────────
+  await journey('U8 SOS says "SOS" (no HOLD), accessible name says what it does; tap opens the confirm step (4 languages)', async () => {
+    const out = [];
+    for (const lang of ['en', 'es', 'pt', 'vi']) {
+      const s = await open(browser, { lang });
+      await go(s.page, '/');
+      const btn = byTid(s.page, 'sos-button').first();
+      await btn.waitFor({ timeout: 15000 });
+      const text = (await btn.innerText()).trim();
+      if (text !== 'SOS') throw new Error(`${lang}: SOS button reads "${text}"`);
+      const name = await btn.getAttribute('aria-label');
+      if (name !== L[lang].x_floating_sosbutton_emergency_call_help) throw new Error(`${lang}: accessible name "${name}"`);
+      if (/hold|mantener|segure|giữ/i.test(name || '')) throw new Error(`${lang}: accessible name still says hold`);
+      // behaviour unchanged: a tap goes to the confirm step (no contacts → "add contacts" prompt), nothing is sent
+      let dialog = null;
+      s.page.removeAllListeners('dialog');
+      s.page.on('dialog', d => { dialog = d.message(); d.dismiss().catch(() => {}); });
+      await btn.click();
+      await s.page.waitForTimeout(800);
+      const confirmShown = dialog !== null || await s.page.getByText(L[lang].home_sos_none_title).count() > 0 || await s.page.getByText(L[lang].home_sos_title).count() > 0;
+      if (!confirmShown) throw new Error(`${lang}: tapping SOS did not open the confirm step`);
+      out.push(`${lang} ok`);
+      allErrors.push(...s.errors);
+      await s.ctx.close();
+    }
+    return out.join(', ');
   });
 
   await journey('U6 no page errors during the UI journeys', async () => {

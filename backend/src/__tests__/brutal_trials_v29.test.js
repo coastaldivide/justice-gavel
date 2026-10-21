@@ -325,14 +325,12 @@ describe('5. i18n — 100% Coverage Verification', () => {
     expect(en['whn_assault_4_tip']).toContain('Justice Gavel');
     expect(en['whn_gen_4_tip']).toContain('Justice Gavel');
   });
-  test('5-09: all whn_ tips start with 💡', async () => {
+  test('5-09: all whn_ tips are plain text (UI pass 2: the tip icon is drawn by the screen, no 💡 in i18n)', async () => {
     const en = await getEn();
-    const tips = Object.entries(en).filter(([k]) => k.includes('_tip'));
+    const tips = Object.entries(en).filter(([k]) => k.startsWith('whn_') && k.endsWith('_tip'));
+    expect(tips.length).toBeGreaterThan(0);
     let errors = 0;
-    for (const [k, v] of tips) {
-      // whn_tip_label is the section label 'Attorney tip', not a tip body
-      if (k.startsWith('whn_') && k.endsWith('_tip') && !String(v).startsWith('💡')) errors++;
-    }
+    for (const [, v] of tips) if (!String(v).trim() || /\p{Extended_Pictographic}/u.test(String(v))) errors++;
     expect(errors).toBe(0);
   });
   test('5-10: all whn_ step times are non-empty strings', async () => {

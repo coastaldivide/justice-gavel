@@ -93,7 +93,7 @@ if (loading) return;
             <TextInput
               style={styles.input}
               placeholder={t('x_lg_email_phone_number_2')}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               value={identifier}
               onChangeText={(v) => { setIdentifier(v); setError(''); }}
 
@@ -113,7 +113,7 @@ if (loading) return;
               ref={passRef}
               style={[styles.input, { flex: 1 }]}
               placeholder={t('x_rg_at_least_8_characters')}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               testID="register-password-input" accessibilityLabel={t('password')} secureTextEntry={!showPass}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
@@ -148,7 +148,7 @@ if (loading) return;
                 borderWidth: 1, borderColor: on ? colors.navy : colors.border,
               }}
             >
-              <Text maxFontSizeMultiplier={1.3} style={{ color: on ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: on ? colors.white : colors.textSecond, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>
                 {t(opt.labelKey)}
               </Text>
             </TouchableOpacity>
@@ -156,7 +156,7 @@ if (loading) return;
         })}
       </View>
       {accountType === 'bail_agent' && (
-        <Text testID="register-bail-hint" maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 8 }}>
+        <Text testID="register-bail-hint" maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 8 }}>
           {t('rg_bail_agent_hint')}
         </Text>
       )}
@@ -169,7 +169,7 @@ if (loading) return;
             value={barNumber}
             onChangeText={setBarNumber}
             autoCapitalize="characters"
-            placeholderTextColor={COLORS.textSecond}
+            placeholderTextColor={colors.textSecond}
             style={styles.proInput}
           />
           <TextInput
@@ -179,7 +179,7 @@ if (loading) return;
             onChangeText={tItem => setBarState(tItem.toUpperCase().slice(0,2))}
             maxLength={2}
             autoCapitalize="characters"
-            placeholderTextColor={COLORS.textSecond}
+            placeholderTextColor={colors.textSecond}
             style={styles.proInput}
           />
           <TextInput
@@ -187,7 +187,7 @@ if (loading) return;
             placeholder={t('x_rg_firm_name_optional')}
             value={firmName}
             onChangeText={setFirmName}
-            placeholderTextColor={COLORS.textSecond}
+            placeholderTextColor={colors.textSecond}
             style={styles.proInput}
           />
         </View>
@@ -201,7 +201,7 @@ if (loading) return;
               ref={nameRef}
               style={styles.input}
               placeholder={t('x_rg_how_should_we_address')}
-              placeholderTextColor={COLORS.textSecond}
+              placeholderTextColor={colors.textSecond}
               value={displayName} onChangeText={setDisplayName}
               textContentType="name" returnKeyType="done"
               onSubmitEditing={onRegister}
@@ -266,36 +266,36 @@ const makeStyles = (colors: any) => StyleSheet.create({
   wordmark: { fontSize: 28, ...FONTS.black, color: colors.textPrimary, letterSpacing: 0.5, marginBottom: 4 },
   tagline: { fontSize: 12, ...FONTS.medium, color: colors.info },
   form: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xxl,
-    padding: 24, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.lg,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.xxl,
+    padding: 24, borderWidth: 1, borderColor: colors.border, ...SHADOW.lg,
   },
-  label: { fontSize: 12, ...FONTS.bold, color: COLORS.textMuted, marginBottom: 8, letterSpacing: 0.5, textTransform: 'uppercase' },
-  optional: { ...FONTS.reg, color: COLORS.textSecond, textTransform: 'none' },
+  label: { fontSize: 12, ...FONTS.bold, color: colors.textMuted, marginBottom: 8, letterSpacing: 0.5, textTransform: 'uppercase' },
+  optional: { ...FONTS.reg, color: colors.textSecond, textTransform: 'none' },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.border,
+    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: colors.border,
     paddingHorizontal: 16,
   },
-  input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: COLORS.bgCard, ...FONTS.medium },
-  proInput: { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, padding: 12, fontSize: 15, color: COLORS.bgCard, backgroundColor: 'rgba(255,255,255,0.05)' },
+  input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: colors.bgCard, ...FONTS.medium },
+  proInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, padding: 12, fontSize: 15, color: colors.bgCard, backgroundColor: 'rgba(255,255,255,0.05)' },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
-  showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.info, ...FONTS.semi },
+  showBtnText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
   errorBox: {
     backgroundColor: 'rgba(183,28,28,0.15)', borderRadius: RADIUS.sm,
     borderWidth: 1, borderColor: 'rgba(183,28,28,0.3)', padding: 12, marginTop: 12,
   },
-  errorText: { color: COLORS.textPrimary, fontSize: 12, lineHeight: 20, ...FONTS.medium },
+  errorText: { color: colors.textPrimary, fontSize: 12, lineHeight: 20, ...FONTS.medium },
   primaryBtn: {
     backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16,
     alignItems: 'center', marginTop: 24,
     borderWidth: 1, borderColor: COLORS.steel, ...SHADOW.md,
   },
   btnDisabled: { opacity: 0.5 },
-  primaryBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.5 },
+  primaryBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.5 },
   loginLink: { alignItems: 'center', marginTop: 16 },
-  loginText: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
-  loginHighlight: { color: COLORS.info, ...FONTS.bold },
+  loginText: { fontSize: 14, lineHeight: 21, color: colors.textMuted },
+  loginHighlight: { color: colors.info, ...FONTS.bold },
   privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 24, lineHeight: 18 },
 });
 

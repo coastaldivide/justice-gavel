@@ -16,7 +16,7 @@ import { t, useLang } from '../i18n';
 import { useConfirm } from '../hooks/useConfirm';
 import EmergencyStrip from '../components/EmergencyStrip';
 import { getUserState } from '../utils/userState';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 interface RecordingLaw { state: string | null; consent: 'one-party' | 'two-party'; law: string; warn: boolean; note: string }
@@ -183,9 +183,9 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
       {law && (
         <View testID="recorder-law" style={[card, { borderLeftWidth: 5, borderLeftColor: law.warn ? colors.warn : colors.legal, backgroundColor: law.warn ? colors.warnBg : colors.legalBg }]}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, fontWeight: '800', color: law.warn ? colors.warnDark : colors.legalDark }}>
-            {law.warn ? '⚠️ ' : '✅ '}{law.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
-          </Text>
+          <IconLabel icon={law.warn ? ICONS.statusWarn : ICONS.statusOk} maxFontSizeMultiplier={1.3} textStyle={{ fontSize: 14, fontWeight: '800', color: law.warn ? colors.warnDark : colors.legalDark }}>
+            {law.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
+          </IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, lineHeight: 19, color: colors.textPrimary }}>{law.note}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, fontStyle: 'italic', color: colors.textMuted }}>{law.law}</Text>
         </View>
@@ -226,7 +226,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 36 }}>{step === 'recording' ? '⏹' : '🎙️'}</Text>
+            <AppIcon name={step === 'recording' ? ICONS.stop : ICONS.record} size={40} color={colors.white} />
           </TouchableOpacity>
         )}
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
@@ -239,7 +239,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
       {step === 'uploading' && (
         <View style={{ alignItems: 'center', gap: 10 }}>
-          <ActivityIndicator size="large" color={colors.navy} />
+          <ActivityIndicator size="large" color={colors.textBrand} />
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted }}>{t('x_interrogation_recorder_transcribing_with_whisper_ai')}</Text>
         </View>
       )}

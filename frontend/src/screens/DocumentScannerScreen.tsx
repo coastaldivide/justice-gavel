@@ -23,12 +23,12 @@ import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 // Camera -- native only (web uses DocumentScannerScreen.web.tsx).
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
-import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, FONTS, TYPE, type ThemeColors } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
@@ -110,7 +110,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     send({ uri: a.uri, name: a.name || 'document', type: a.mimeType || 'application/octet-stream', size: a.size ?? null });
   }, [send]);
 
-  const s = styles(colors as any);
+  const s = styles(colors);
 
   // ── Signed out: documents belong to a case in the person's account ────────
   if (hasSession === false) {
@@ -144,7 +144,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{color:colors.textPrimary,fontWeight:'700',fontSize:14}}>{scanError}</IconLabel>
       </View>
     )}
-        <IconLabel icon={ICONS.camera} textStyle={s.permIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.camera} size={20} color={colors.textBrand} style={s.permIcon} />
         <Text maxFontSizeMultiplier={1.4} style={[s.permTitle, { color: colors.textPrimary }]}>
           {t('x_cs_camera_access_needed')}
         </Text>
@@ -236,8 +236,8 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
   );
 }
 
-const styles = (C: Record<string, string>) => StyleSheet.create({
-  screen:    { flex: 1, backgroundColor: COLORS.bgCard },
+const styles = (C: ThemeColors) => StyleSheet.create({
+  screen:    { flex: 1, backgroundColor: C.bgCard },
   camera:    { flex: 1 },
   centered:  { backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', padding: 32 },
 
@@ -246,17 +246,17 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   permTitle: { fontSize: TYPE.xl, lineHeight: 33, ...FONTS.bold, marginBottom: 8, textAlign: 'center' },
   permSub:   { fontSize: TYPE.base, lineHeight: 21, textAlign: 'center', marginBottom: 32 },
   btn:       { borderRadius: RADIUS.md, paddingHorizontal: 32, paddingVertical: 14, alignItems: 'center' },
-  btnText:   { color: COLORS.bgCard, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
+  btnText:   { color: C.bgCard, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
 
   // Frame guide
   frameGuide:{ position: 'absolute', top: '15%', left: '5%', right: '5%', bottom: '25%',
                borderRadius: 8 },
-  corner:    { position: 'absolute', width: 28, height: 28, borderColor: COLORS.bgCard, borderWidth: 3 },
+  corner:    { position: 'absolute', width: 28, height: 28, borderColor: C.bgCard, borderWidth: 3 },
   cornerTL:  { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 8 },
   cornerTR:  { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 8 },
   cornerBL:  { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 8 },
   cornerBR:  { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 8 },
-  guideText: { position: 'absolute', top: '12%', alignSelf: 'center', color: COLORS.textOnGold,
+  guideText: { position: 'absolute', top: '12%', alignSelf: 'center', color: C.textOnGold,
                fontSize: 13, lineHeight: 19, fontWeight: '600', textAlign: 'center',
                backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6,
                borderRadius: 8 },
@@ -265,8 +265,8 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   shutterRow:  { position: 'absolute', bottom: 48, left: 0, right: 0,
                  alignItems: 'center', justifyContent: 'center' },
   shutter:     { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.3)',
-                 alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: COLORS.bgCard },
-  shutterInner:{ width: 54, height: 54, borderRadius: 27, backgroundColor: COLORS.bgCard },
+                 alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.bgCard },
+  shutterInner:{ width: 54, height: 54, borderRadius: 27, backgroundColor: C.bgCard },
   fileBtn:     { position: 'absolute', left: 16, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: RADIUS.md, backgroundColor: 'rgba(0,0,0,0.75)' },
 
   // Preview
@@ -275,7 +275,7 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
                   flexDirection: 'row', gap: 12, padding: 24, paddingBottom: 40,
                   backgroundColor: 'rgba(0,0,0,0.7)' },
   previewBtn:   { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
-  previewBtnText:{ color: COLORS.white, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
+  previewBtnText:{ color: C.white, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
   previewHint:  { position: 'absolute', top: 20, alignSelf: 'center',
                   color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 18 } });
 export default React.memo(DocumentScannerScreen);

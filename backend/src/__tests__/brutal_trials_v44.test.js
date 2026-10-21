@@ -83,9 +83,10 @@ describe('A11Y. Component Accessibility — WCAG Roles & Hints', () => {
     expect(src).toContain('accessibilityRole="radio"');
     expect(src).toContain('LawyersScreen, MatchScreen, and QuickConnectScreen');
   });
-  test('A11Y-04: FloatingSOSButton has accessibilityHint="Activates emergency mode"', async () => {
+  test('A11Y-04: FloatingSOSButton has an accessibility hint that tells the truth: tap, then confirm (UI pass 2)', async () => {
     const src = feSource(__REPO + '/frontend/src/components/FloatingSOSButton.tsx');
-    expect(src).toContain('Activates emergency mode');
+    expect(src).toContain('Tap, then confirm to send your alert');
+    expect(src).not.toMatch(/\bHOLD\b/);
     expect(src).toContain('accessibilityRole="button"');
   });
   test('A11Y-05: LegalNotice uses accessibilityRole=link for the disclaimer link', async () => {

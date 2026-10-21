@@ -357,7 +357,7 @@ describe('13. i18n Final Sweep — 211 remaining keys', () => {
   test('13-08: qc_what_you_get, bail_directions, booking_done, juv_cta_ai, atty_office_name', async () => {
     const en = await getEn();
     expect(en['qc_what_you_get']).toBe('What you get');
-    expect(en['bail_directions']).toBe('🗺  Directions');
+    expect(en['bail_directions']).toBe('Directions');   // UI pass 2: no emoji in i18n values
     expect(en['booking_done']).toBe('Done');
     expect(en['juv_cta_ai']).toBe('Ask AI About Your Situation');
     expect(en['ad_office_id']).toBe('Office ID');   // section G: the dashboard's office field

@@ -1,7 +1,7 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * DiscoveryScreen -- AI Discovery Document Analysis
  *
@@ -34,7 +34,7 @@ import { unwrapList, api, apiErrorMessage, isPaymentsUnavailable } from '../serv
 import { pollJob } from '../services/jobPoller';
 import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { t, useLang, perLang, locale }   from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors, type ThemeColors } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { getToken } from '../utils/secureStorage';
 
@@ -58,6 +58,8 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const progress = useRef(new Animated.Value(0)).current;
   const anim     = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -91,19 +93,20 @@ function ProgressBar({ active }: { active: boolean }) {
 // ── Confidence tag helpers ───────────────────────────────────────────────────
 function ConfidenceTag({ text }: { text: string }) {
   useLang();
+  const { colors } = useTheme();
   if (text.startsWith('[STRONG]'))  return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.emergencyDark,
-      backgroundColor: COLORS.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency,
+      backgroundColor: colors.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_strong')}</Text>
   );
   if (text.startsWith('[NOTABLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.warnDark,
-      backgroundColor: COLORS.warnBg, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.warnDark,
+      backgroundColor: colors.warnBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_notable')}</Text>
   );
   if (text.startsWith('[POSSIBLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.textSecond,
-      backgroundColor: COLORS.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textSecond,
+      backgroundColor: colors.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_possible_verify')}</Text>
   );
   return null;
@@ -114,7 +117,7 @@ function stripTag(text: string): string {
 
 function Section({
   icon, title, items, color, bg, borderColor, numbered }: {
-  icon: string; title: string; items: string[];
+  icon: IconName; title: string; items: string[];
   color: string; bg: string; borderColor: string;
   numbered?: boolean;
   onItemPress?: (item: string) => void;
@@ -140,7 +143,7 @@ function Section({
         onPress={() => setExpanded(e => !e)}
       >
         <View style={styles.sectionTitleRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.sectionIcon}>{icon}</Text>
+          <AppIcon name={icon} size={18} color={color} style={styles.sectionIcon} />
           <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color }]}>{title}</Text>
           <View style={[styles.sectionCount, { backgroundColor: color }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.sectionCountText}>{items.length}</Text>
@@ -171,11 +174,11 @@ function Section({
               {/* The analysis tags findings [STRONG]/[NOTABLE]/[POSSIBLE]: show a badge, not the raw tag. */}
               <View style={{ flex: 1 }}>
                 <ConfidenceTag text={item} />
-                <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: COLORS.textSecond }]} selectable={true}>{stripTag(item)}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: colors.textSecond }]} selectable={true}>{stripTag(item)}</Text>
               </View>
             </TouchableOpacity>
           ))}
-          <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: COLORS.textMuted }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: colors.textMuted }]}>
             {t('x_discovery_tap_any_item_copy')}
           </Text>
         </View>
@@ -187,25 +190,27 @@ function Section({
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryRow({ item, onOpen, onDelete }: any) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-      style={[styles.histRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+      style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
       onPress={() => onOpen(item)}
     >
-      <View style={[styles.histDocIcon, { backgroundColor: COLORS.bgSubtle }]}>
-        <AppIcon name="document-outline" size={20} color={COLORS.navy} />
+      <View style={[styles.histDocIcon, { backgroundColor: colors.bgSubtle }]}>
+        <AppIcon name="document-outline" size={20} color={themeColors().textBrand} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histFilename, { color: COLORS.textPrimary }]}
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histFilename, { color: colors.textPrimary }]}
           numberOfLines={1}>{item.filename}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histMeta, { color: COLORS.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histMeta, { color: colors.textMuted }]}>
           {item.doc_type}
           {item.page_count > 0 ? '  ·  ' + t('x_discovery_pages_short', { n: item.page_count }) : ''}
           {item.inconsistencies_count > 0 ? '  ' + t('x_discovery_flags', { inconsistencies_count: item.inconsistencies_count }) : ''}
         </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: COLORS.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: colors.textMuted }]}>
           {new Date(item.created_at ?? 0).toLocaleDateString(locale(), {
             month: 'short', day: 'numeric', year: 'numeric'
           })}
@@ -219,7 +224,7 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
         accessibilityLabel={t('x_discovery_delete_analysis')}
           accessibilityHint={t('x_discovery_permanently_removes_this_item')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -239,6 +244,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { caseId, caseTitle } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -264,13 +270,13 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
 
   // Get icon based on file type
-  const fileIcon = (name: string = '') => {
+  const fileIcon = (name: string = ''): IconName => {
     const ext = name.toLowerCase();
-    if (ext.endsWith('.pdf')) return '📄';
-    if (['.jpg','.jpeg','.png','.tiff','.tif','.heic','.heif','.webp'].some(e => ext.endsWith(e))) return '🖼️';
-    if (['.doc','.docx'].some(e => ext.endsWith(e))) return '📝';
-    if (ext.endsWith('.txt')) return '📃';
-    return '📎';
+    if (ext.endsWith('.pdf')) return ICONS.document;
+    if (['.jpg','.jpeg','.png','.tiff','.tif','.heic','.heif','.webp'].some(e => ext.endsWith(e))) return ICONS.image;
+    if (['.doc','.docx'].some(e => ext.endsWith(e))) return ICONS.edit;
+    if (ext.endsWith('.txt')) return ICONS.document;
+    return ICONS.attach;
   };
 
   const pickFile = useCallback(async () => {
@@ -438,13 +444,13 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const shareAnalysis = useCallback(async () => {
     if (!analysis) return;
     const text = [
-      `📄 ${analysis.filename} -- Discovery Analysis`,
+      `${analysis.filename} -- Discovery Analysis`,
       `\nSUMMARY\n${analysis.summary}`,
       analysis.key_facts?.length
         ? '\n' + t('x_discovery_key_facts', { value: (analysis.key_facts ?? []).map((f,i) => `${i+1}. ${f}`).join('\n') })
         : '',
       analysis.inconsistencies?.length
-        ? `\n⚠️ INCONSISTENCIES\n${(analysis.inconsistencies ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? `\nINCONSISTENCIES\n${(analysis.inconsistencies ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
         : '',
       analysis.questions?.length
         ? '\n' + t('x_discovery_cross_examination_questions', { value: (analysis.questions ?? []).map((f,i) => `${i+1}. ${f}`).join('\n') })
@@ -466,7 +472,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {caseTitle && (
         <View style={[styles.casePill, { backgroundColor: COLORS.navy + '14', borderColor: COLORS.navy + '30' }]}>
-          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
+          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>{t('disc_title')}</Text>
@@ -479,7 +485,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
         style={[styles.dropZone, {
-          borderColor: file ? COLORS.legal : colors.border,
+          borderColor: file ? colors.legal : colors.border,
           backgroundColor: file
             ? (isDark ? colors.legalBg : colors.legalBg)
             : colors.bgCard }]}
@@ -489,8 +495,8 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       >
         {file ? (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.dropIcon}>{fileIcon(file.name)}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.dropFilename, { color: COLORS.legal }]}
+            <AppIcon name={fileIcon(file.name)} size={36} color={colors.textBrand} style={styles.dropIcon} />
+            <Text maxFontSizeMultiplier={1.4} style={[styles.dropFilename, { color: colors.legal }]}
               numberOfLines={2}>{file.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropSize, { color: colors.textMuted }]}>
               {file.size ? t('x_discovery_kb', { value: (file.size / 1024).toFixed(0) }) : t('x_discovery_ready')}
@@ -499,7 +505,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
           </>
         ) : (
           <>
-            <IconLabel icon={ICONS.up} textStyle={styles.dropIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.up} size={20} color={colors.textBrand} style={styles.dropIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropPrompt, { color: colors.textPrimary }]}>
               {t('disc_upload_prompt')}
             </Text>
@@ -543,17 +549,17 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       {/* What you'll get */}
       {!file && (
         <View style={[styles.previewCard, {
-          backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
+          backgroundColor: colors.bgSubtle,
           borderColor: COLORS.navy + '33' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.previewTitle, { color: COLORS.navy }]}>{t('x_discovery_what_ll_receive')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.previewTitle, { color: themeColors().textBrand }]}>{t('x_discovery_what_ll_receive')}</Text>
           {[
-            ['📝', t('x_discovery_plain_english_summary_document')],
-            ['🔍', t('x_discovery_key_facts_extracted_dates')],
-            ['⚠️', t('x_discovery_inconsistencies_flagged_with_exact')],
-            ['❓', t('x_discovery_suggested_cross_examination_question')],
+            [ICONS.edit, t('x_discovery_plain_english_summary_document')],
+            [ICONS.search, t('x_discovery_key_facts_extracted_dates')],
+            [ICONS.alertHigh, t('x_discovery_inconsistencies_flagged_with_exact')],
+            [ICONS.help, t('x_discovery_suggested_cross_examination_question')],
           ].map(([icon, text]) => (
             <View key={text as string} style={styles.previewRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.previewIcon}>{icon}</Text>
+              <AppIcon name={icon as IconName} size={16} color={colors.textBrand} style={styles.previewIcon} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.previewText, { color: colors.textSecond }]}>{text}</Text>
             </View>
           ))}
@@ -565,9 +571,9 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
         backgroundColor: hasPro
           ? (isDark ? colors.legalBg : colors.legalBg)
           : (isDark ? colors.bgCard : colors.bg),
-        borderColor: hasPro ? COLORS.legal + '55' : colors.border }]}>
+        borderColor: hasPro ? colors.legal + '55' : colors.border }]}>
         {hasPro ? (
-          <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={[styles.pricingText, { color: COLORS.legal }]} maxFontSizeMultiplier={1.4}>{t('x_discovery_discovery_pro_unlimited_analyses')}</IconLabel>
+          <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={[styles.pricingText, { color: colors.legal }]} maxFontSizeMultiplier={1.4}>{t('x_discovery_discovery_pro_unlimited_analyses')}</IconLabel>
         ) : (
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: colors.textPrimary }]}>
@@ -601,7 +607,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   if (phase === 'analyzing') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.analyzingWrap}>
-        <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+        <AppIcon name="search-outline" size={20} color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingTitle, { color: colors.textPrimary }]}>
           {t('disc_analyzing')}
         </Text>
@@ -626,11 +632,11 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={{ padding: 16 }}>
       {histLoad
-        ? <ActivityIndicator color={COLORS.navy} style={{ marginTop: 40 }} />
+        ? <ActivityIndicator color={themeColors().textBrand} style={{ marginTop: 40 }} />
         : history.length === 0
         ? (
           <View style={styles.emptyWrap}>
-            <AppIcon name="document-outline" size={20} color={COLORS.navy} />
+            <AppIcon name="document-outline" size={20} color={themeColors().textBrand} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('x_discovery_no_analyses_yet')}</Text>
             <TouchableOpacity
   accessibilityRole="button"
@@ -663,10 +669,10 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {/* Document header */}
       <View style={[styles.resultHeader, {
-        backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
+        backgroundColor: colors.bgSubtle,
         borderColor: COLORS.navy + '33' }]}>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.resultFilename, { color: COLORS.navy }]}
+          <Text maxFontSizeMultiplier={1.4} style={[styles.resultFilename, { color: themeColors().textBrand }]}
             numberOfLines={1}>{analysis?.filename}</Text>
           <View style={styles.resultMeta}>
             {analysis?.doc_type && (
@@ -693,7 +699,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
           accessibilityLabel={t('x_discovery_share_analysis')}
           accessibilityHint={t('x_deadline_calculator_shares_this_information')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>{t('x_bar_prep_explanation_share')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: themeColors().textBrand }]}>{t('x_bar_prep_explanation_share')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -713,7 +719,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       )}
       {!!analysis?.inconsistencies?.length && (
         <Section
-          icon="⚠️"
+          icon={ICONS.statusWarn}
           title={t('x_discovery_inconsistencies_red_flags')}
           items={analysis.inconsistencies}
           color={colors.bail}
@@ -737,21 +743,21 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {/* Key facts */}
       <Section
-        icon="🔍"
+        icon={ICONS.search}
         title={t('disc_result_facts')}
         items={analysis?.key_facts || []}
-        color={COLORS.legal}
+        color={colors.legal}
         bg={isDark ? colors.legalBg : colors.legalBg}
         borderColor={colors.legal}
       />
 
       {/* Questions */}
       <Section
-        icon="❓"
+        icon={ICONS.help}
         title={t('x_discovery_suggested_questions')}
         items={analysis?.questions || []}
-        color={COLORS.navy}
-        bg={isDark ? colors.textPrimary : colors.bgSubtle}
+        color={themeColors().textBrand}
+        bg={colors.bgSubtle}
         borderColor={COLORS.navy + '44'}
         numbered
       />
@@ -770,7 +776,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1 },
 
   // Upload
@@ -814,7 +820,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   analyzeBtn:   { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 10, ...SHADOW.sm },
-  analyzeBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  analyzeBtnText: { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
   disclaimer:   { fontSize: 11, textAlign: 'center', lineHeight: 16 },
 
   // Analyzing
@@ -823,7 +829,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   analyzingTitle: { fontSize: 20, ...FONTS.black, textAlign: 'center', marginBottom: 6 },
   analyzingFile:  { fontSize: 12, lineHeight: 20, maxWidth: 260, textAlign: 'center', marginBottom: 24 },
   progressBg:     { width: '100%', height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 16, overflow: 'hidden' },
-  progressFill:   { height: 4, borderRadius: 2, backgroundColor: COLORS.navy },
+  progressFill:   { height: 4, borderRadius: 2, backgroundColor: colors.navy },
   analyzingSteps: { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 12 },
   analyzingTime:  { fontSize: 11, textAlign: 'center' },
 
@@ -834,10 +840,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   resultFilename: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, marginBottom: 6 },
   resultMeta:     { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   docTypeBadge:   { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
-  docTypeBadgeText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  docTypeBadgeText: { color: colors.white, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   resultMetaText: { fontSize: 11 },
   shareBtn:       { paddingHorizontal: 12, paddingVertical: 10,
-    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.navy + '55' },
+    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: colors.navy + '55' },
   shareBtnText:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   summaryCard:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12 },
@@ -854,13 +860,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
     lineHeight: 24 },
   sectionTitle:   { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
   sectionCount:   { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: 'center' },
-  sectionCountText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  sectionCountText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   chevron:        { fontSize: 16, lineHeight: 24, fontWeight: '700' },
   sectionBody:    { paddingHorizontal: 16, paddingBottom: 12 },
   itemRow:        { flexDirection: 'row', gap: 8, marginBottom: 10, alignItems: 'flex-start' },
   itemBullet:     { width: 20, height: 20, borderRadius: 8, alignItems: 'center',
     justifyContent: 'center', flexShrink: 0, marginTop: 1 },
-  itemBulletText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  itemBulletText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   itemText:       { flex: 1, fontSize: 14, lineHeight: 19 },
   tapToCopy:      { fontSize: 11, marginTop: 4, textAlign: 'right' },
 
@@ -878,9 +884,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   emptyTitle:  { fontSize: 18, ...FONTS.heavy },
 
   discussBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
-  discussBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.3 },
+  discussBtnText: { color: colors.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.3 },
   inconsistNote:  { fontSize: 11, fontStyle: 'italic', marginBottom: 6, paddingHorizontal: 4 } });
-
-// Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(DiscoveryScreen);

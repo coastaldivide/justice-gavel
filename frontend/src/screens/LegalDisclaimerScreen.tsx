@@ -3,36 +3,37 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, useTheme, type ThemeColors } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import { getToken } from '../utils/secureStorage';
 import { t, perLang, useLang } from '../i18n';
+import { ICONS, AppIcon } from '../components/AppIcon';
 
 const VERSION = '2026-01-01.1';
 
 const DISCLAIMER_SECTIONS = perLang(() => [
   {
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     title: t('upl_heading'),
     body: t('x_legal_disclaimer_justice_gavel_legal_information'),
   },
   {
-    icon: '🤖',
+    icon: ICONS.ai,
     title: t('x_legal_disclaimer_ai_generated_content'),
     body: t('x_legal_disclaimer_ai_outputs_may_be'),
   },
   {
-    icon: '🔒',
+    icon: ICONS.lock,
     title: t('x_legal_disclaimer_data'),
     body: t('x_legal_disclaimer_case_information_private_not'),
   },
   {
-    icon: '🚨',
+    icon: ICONS.emergency,
     title: t('x_legal_disclaimer_emergencies'),
     body: t('x_legal_disclaimer_if_someone_else_immediate'),
   },
   {
-    icon: '⚠️',
+    icon: ICONS.statusWarn,
     title: t('x_legal_disclaimer_no_guarantees'),
     body: t('x_legal_disclaimer_legal_outcomes_depend_facts'),
   },
@@ -49,6 +50,8 @@ interface Props {
 
 function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
   useLang();
+  const { colors } = useTheme();
+  const s = makeS(colors);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -107,13 +110,13 @@ function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
         
           {DISCLAIMER_SECTIONS().length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: COLORS.textSecond, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
+              <Text style={{ color: colors.textSecond, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
             </View>
           )}
 {DISCLAIMER_SECTIONS().map((sec, i) => (
           <View key={`section-${i}`} style={s.section}>
             <View style={s.sectionHeader}>
-              <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+              <AppIcon name={sec.icon} size={22} color={colors.textBrand} style={s.sectionIcon} />
               <Text style={s.sectionTitle} maxFontSizeMultiplier={1.4}>{sec.title}</Text>
             </View>
             <Text style={s.sectionBody} maxFontSizeMultiplier={1.4}>{sec.body}</Text>
@@ -171,35 +174,35 @@ function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root:             { flex: 1, backgroundColor: COLORS.navy },
-  header:           { paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, backgroundColor: COLORS.navy },
-  headerTitle:      { fontSize: 22, fontWeight: '800', color: COLORS.white, marginBottom: 6 },
+const makeS = (colors: ThemeColors) => StyleSheet.create({
+  root:             { flex: 1, backgroundColor: colors.navy },
+  header:           { paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, backgroundColor: colors.navy },
+  headerTitle:      { fontSize: 22, fontWeight: '800', color: colors.white, marginBottom: 6 },
   headerSub:        { fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 18 },
-  scroll:           { flex: 1, backgroundColor: COLORS.bg },
+  scroll:           { flex: 1, backgroundColor: colors.bg },
   scrollContent:    { padding: 20, paddingBottom: 40 },
-  section:          { backgroundColor: COLORS.white, borderRadius: 12, padding: 16, marginBottom: 12,
-                       shadowColor: COLORS.textPrimary, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  section:          { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12,
+                       shadowColor: colors.textPrimary, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sectionIcon:      { fontSize: 20, marginRight: 10 },
-  sectionTitle:     { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  sectionBody:      { fontSize: 14, color: COLORS.textSecond, lineHeight: 21 },
-  formalBlock:      { backgroundColor: COLORS.warnBg, borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
-  formalText:       { fontSize: 13, color: COLORS.warnDark, lineHeight: 20 },
-  formalVersion:    { fontSize: 11, color: COLORS.warnDark, marginTop: 8 },
-  link:             { color: COLORS.blue, textDecorationLine: 'underline' },
-  footer:           { backgroundColor: COLORS.white, padding: 16, paddingBottom: 32,
-                       borderTopWidth: 1, borderTopColor: COLORS.border },
+  sectionTitle:     { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  sectionBody:      { fontSize: 14, color: colors.textSecond, lineHeight: 21 },
+  formalBlock:      { backgroundColor: colors.warnBg, borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: colors.steelMid },
+  formalText:       { fontSize: 13, color: colors.warnDark, lineHeight: 20 },
+  formalVersion:    { fontSize: 11, color: colors.warnDark, marginTop: 8 },
+  link:             { color: colors.info, textDecorationLine: 'underline' },
+  footer:           { backgroundColor: colors.bgCard, padding: 16, paddingBottom: 32,
+                       borderTopWidth: 1, borderTopColor: colors.border },
   checkRow:         { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
-  checkbox:         { width: 22, height: 22, borderRadius: 5, borderWidth: 2, borderColor: COLORS.navy,
+  checkbox:         { width: 22, height: 22, borderRadius: 5, borderWidth: 2, borderColor: colors.navy,
                        marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  checkboxChecked:  { backgroundColor: COLORS.navy },
-  checkmark:        { color: COLORS.textOnNavy, fontSize: 14, fontWeight: '800' }, // design-audit-ignore: rendered only when checked (navy fill)
-  checkLabel:       { flex: 1, fontSize: 13, color: COLORS.textSecond, lineHeight: 19 },
-  acceptBtn:        { backgroundColor: COLORS.navy, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
+  checkboxChecked:  { backgroundColor: colors.navy },
+  checkmark:        { color: colors.textOnNavy, fontSize: 14, fontWeight: '800' }, // design-audit-ignore: rendered only when checked (navy fill)
+  checkLabel:       { flex: 1, fontSize: 13, color: colors.textSecond, lineHeight: 19 },
+  acceptBtn:        { backgroundColor: colors.navy, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
   acceptBtnDisabled:{ opacity: 0.45 },
-  acceptBtnText:    { color: COLORS.white, fontSize: 15, fontWeight: '800' },
-  scrollHint:       { backgroundColor: COLORS.navy, padding: 10, alignItems: 'center' },
+  acceptBtnText:    { color: colors.white, fontSize: 15, fontWeight: '800' },
+  scrollHint:       { backgroundColor: colors.navy, padding: 10, alignItems: 'center' },
   scrollHintText:   { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
 });
 export default React.memo(LegalDisclaimerScreen);

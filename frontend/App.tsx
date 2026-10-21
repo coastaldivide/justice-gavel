@@ -20,7 +20,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Font from 'expo-font';
 import { PaymentsProvider } from './src/payments';
 import FeedbackButton from './src/components/FeedbackButton';
-import { NavigationContainer, createNavigationContainerRef, getStateFromPath, getActionFromState } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, getStateFromPath, getActionFromState, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
@@ -36,6 +36,7 @@ import { signOut, takePendingHome } from './src/services/session';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
+import { AppIcon, ICONS } from './src/components/AppIcon';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { Analytics } from './src/services/analytics';
 import { MainTabs, GuestNavigator, SplashScreen } from './src/navigation/AppNavigator';
@@ -140,7 +141,23 @@ function AppInner() {
   const [bioLocked,   setBioLocked]   = useState(false);
   const [bioChecked,  setBioChecked]  = useState(false);
   const [isOffline,   setIsOffline]   = useState(false);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  // Navigation chrome (screen background behind every screen, stack cards)
+  // follows the app theme, so no screen flashes or shows white in dark mode.
+  const navTheme = React.useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return { ...base, dark: isDark, colors: { ...base.colors, background: colors.bg, card: colors.headerBg,
+      text: colors.textPrimary, border: colors.border, primary: colors.textBrand } };
+  }, [isDark, colors]);
+  // Web: the page behind the app (#root, body) follows the theme too, so no
+  // white shows through transparent screens or around the phone-width column.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const root = document.getElementById('root');
+    if (root) root.style.background = colors.bg;
+    document.body.style.background = colors.bg;
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  }, [isDark, colors]);
 
   // ── OTA updates + push token refresh ───────────────────────────────────────
   useOTAUpdates();
@@ -277,7 +294,7 @@ function AppInner() {
     <Modal visible={bioLocked} animationType="none" onRequestClose={() => { /* stays until unlocked */ }}>
       <View style={{ flex:1, justifyContent:'center', alignItems:'center',
         backgroundColor: colors.bg }}>
-        <Text style={{ fontSize:48, marginBottom:24 }}>🔒</Text>
+        <AppIcon name={ICONS.lock} size={48} color={colors.textBrand} style={{ marginBottom:24 }} />
         <Text style={{ fontSize:18, color:colors.textPrimary, fontWeight:'700',
           marginBottom:8 }}>{t('app_locked_title')}</Text>
         <Text style={{ fontSize:14, color:colors.textMuted, marginBottom:32,
@@ -302,8 +319,9 @@ function AppInner() {
   return (
     <ErrorBoundary>
       <>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       <ToastProvider>
-      <NavigationContainer linking={activeLinking}
+      <NavigationContainer linking={activeLinking} theme={navTheme}
           ref={navigationRef}
           onReady={installDesktopBridge}
           onStateChange={(state) => {
@@ -371,7 +389,6 @@ function App() {
       {/* StripeProvider only mounts on native when a publishable key is set */}
       <PaymentsProvider>
       <SafeAreaProvider>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ThemeProvider>
         <AppInner />
       </ThemeProvider>

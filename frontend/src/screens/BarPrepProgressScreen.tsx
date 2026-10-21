@@ -17,7 +17,7 @@ import {
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { toLocalISODate } from '../utils/dateUtils';
@@ -56,9 +56,9 @@ interface Dashboard {
 
 
 function getAccuracyColor(pct: number): string {
-  if (pct >= 75) return COLORS.legal;
-  if (pct >= 55) return COLORS.steelMid;
-  return COLORS.bail;
+  if (pct >= 75) return themeColors().legal;
+  if (pct >= 55) return themeColors().steelMid;
+  return themeColors().bail;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -208,9 +208,9 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           {(data?.recent_sessions || []).slice(0, 8).map(ses => (
             <View key={ses.id} style={[styles.sessionRow, { backgroundColor: colors.card }]}>
               <View style={styles.sessionLeft}>
-                <Text style={styles.sessionMode}>
-                  {ses.mode === 'timed' ? `⏱ ${t('x_bar_prep_results_timed_mode')}` : `✏️ ${t('x_bar_prep_results_practice_mode')}`}
-                </Text>
+                <IconLabel icon={ses.mode === 'timed' ? ICONS.clock : ICONS.edit} textStyle={styles.sessionMode}>
+                  {ses.mode === 'timed' ? t('x_bar_prep_results_timed_mode') : t('x_bar_prep_results_practice_mode')}
+                </IconLabel>
                 <Text style={styles.sessionDate}>
                   {new Date(ses.started_at).toLocaleDateString(locale())}
                 </Text>

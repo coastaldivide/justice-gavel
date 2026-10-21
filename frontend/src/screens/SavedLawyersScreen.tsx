@@ -25,10 +25,10 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, RefreshControl, Pl
 import { FlashList } from '@shopify/flash-list';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { t, useLang, locale }   from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { ContactActions } from '../components/ContactActions';
 import * as secureStorage from '../utils/secureStorage';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 interface SavedLawyer {
   id:          number;
@@ -60,7 +60,7 @@ function SavedCard({
   useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const [note,        setNote]        = useState(lawyer.notes || '');
   const [editingNote, setEditingNote] = useState(false);
   const [saving,      setSaving]      = useState(false);
@@ -119,7 +119,7 @@ function SavedCard({
         <View style={styles.tagRow}>
           {lawyer.specialties.slice(0, 4).map((s, i) => (
             <View key={`row-${i}`} style={[styles.tag, { backgroundColor: colors.navy + '12', borderColor: colors.navy + '30' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color: colors.navy }]}>{s}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color: colors.textBrand }]}>{s}</Text>
             </View>
           ))}
         </View>
@@ -202,6 +202,8 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   const { colors } = useTheme();
+
+  const styles = makeStyles(colors);
   const [lawyers,   setLawyers]   = useState<SavedLawyer[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [refreshing,setRefreshing]= useState(false);
@@ -246,7 +248,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
   if (loading) return <SkeletonLoader count={5} label={t('saved_title')} />;
   if (signedIn === false) return (
     <View style={[styles.empty, { backgroundColor: colors.bg }]} testID="saved-signed-out">
-      <IconLabel icon={ICONS.starFilled} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+      <AppIcon name={ICONS.starFilled} size={20} color={colors.textBrand} style={styles.emptyIcon} />
       <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('saved_sign_in_title')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('saved_sign_in_sub')}</Text>
       <TouchableOpacity accessibilityRole="button" style={[styles.findBtn, { backgroundColor: COLORS.navy }]}
@@ -270,7 +272,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
       ) : lawyers.length === 0 ? (
         // ── Empty state ──────────────────────────────────────────────────────
         <View style={styles.empty}>
-          <IconLabel icon={ICONS.starFilled} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+          <AppIcon name={ICONS.starFilled} size={20} color={colors.textBrand} style={styles.emptyIcon} />
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
             {t('saved_empty_title')}
           </Text>
@@ -295,7 +297,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor={COLORS.navy}
+              tintColor={themeColors().textBrand}
             />
           }
           ListEmptyComponent={
@@ -320,7 +322,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
   );
 }
 
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:         { flex: 1 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   list:           { padding: 16, gap: 12, paddingBottom: 40 },
@@ -330,8 +332,8 @@ const makeStyles = () => StyleSheet.create({
     padding: 16, ...SHADOW.sm },
   cardHeader:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   cardHeaderLeft: { flex: 1 },
-  cardName:       { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy },
-  cardAddr:       { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  cardName:       { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: colors.textBrand },
+  cardAddr:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   cardRating:     { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', marginTop: 4 },
   removeBtn:      { padding: 6, marginLeft: 8, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   removeBtnText:  { fontSize: 16, lineHeight: 24 },
@@ -346,18 +348,15 @@ const makeStyles = () => StyleSheet.create({
   notesInput:     { borderWidth: 1.5, borderRadius: RADIUS.md, padding: 10, fontSize: 14, lineHeight: 21, marginBottom: 8, minHeight: 72 },
   notesBtnRow:    { flexDirection: 'row', gap: 8 },
   notesBtn:       { flex: 1, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center' },
-  notesBtnText:   { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  notesBtnText:   { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
   savedDate:      { fontSize: 11, marginTop: 8, textAlign: 'right' },
   empty:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon:      { fontSize: 48, marginBottom: 16 },
   emptyTitle:     { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center', marginBottom: 8 },
   emptySub:       { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 28 },
   findBtn:        { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32 },
-  findBtnText:    { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  findBtnText:    { color: colors.white, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   errorText:      { fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 16 },
-  retryBtn:       { paddingVertical: 12, paddingHorizontal: 24, borderRadius: RADIUS.md, backgroundColor: COLORS.navy },
-  retryBtnText:   { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' } });
-
-// Module-level fallback for helper components
-const styles = makeStyles();
+  retryBtn:       { paddingVertical: 12, paddingHorizontal: 24, borderRadius: RADIUS.md, backgroundColor: colors.navy },
+  retryBtnText:   { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700' } });
 export default React.memo(SavedLawyersScreen);

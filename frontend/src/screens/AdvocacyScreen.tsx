@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, LayoutAnimation} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 import { IconLabel, ICONS, AppIcon, type IconName } from '../components/AppIcon';
 
@@ -17,6 +17,8 @@ interface Stats {
 
 function StatCard({ icon, value, label, color }: { icon: IconName; value: string | number; label: string; color: string }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
       <AppIcon name={icon} size={22} color={color} style={styles.statIcon} />
@@ -76,7 +78,7 @@ function AdvocacyScreen(): React.JSX.Element {
       </View>
 
       {loading && !stats ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} size="large" />
+        <ActivityIndicator style={{ marginTop: 40 }} color={colors.textBrand} size="large" />
       ) : error ? (
         <View style={styles.errorCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{error}</Text>
@@ -92,11 +94,11 @@ function AdvocacyScreen(): React.JSX.Element {
           {/* Key stats grid */}
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_advocacy_network_stats')}</Text>
           <View style={styles.statsGrid}>
-            <StatCard icon={ICONS.lawyer} value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.navy} />
+            <StatCard icon={ICONS.lawyer} value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.textBrand} />
             <StatCard icon={ICONS.bail} value={stats.bailCount}      label={t("advocacy.stats.bail_agents")}       color={colors.warnDark} />
-            <StatCard icon={ICONS.location} value={stats.citiesCovered}  label={t('x_advocacy_cities_covered')}   color={colors.legalDark} />
-            <StatCard icon={ICONS.emergency} value={stats.alertsSent}     label={t('x_advocacy_sos_alerts_sent')}  color={colors.emergencyDark} />
-            <StatCard icon={ICONS.family} value={stats.userCount}      label={t('x_advocacy_registered_users')} color={colors.blue} />
+            <StatCard icon={ICONS.location} value={stats.citiesCovered}  label={t('x_advocacy_cities_covered')}   color={colors.legal} />
+            <StatCard icon={ICONS.emergency} value={stats.alertsSent}     label={t('x_advocacy_sos_alerts_sent')}  color={colors.emergency} />
+            <StatCard icon={ICONS.family} value={stats.userCount}      label={t('x_advocacy_registered_users')} color={colors.info} />
             <StatCard icon={ICONS.clock} value={formatDate(stats.lastUpdated)} label={t('x_advocacy_last_updated')} color={colors.textSecond} />
           </View>
 
@@ -134,34 +136,31 @@ function AdvocacyScreen(): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: 16, paddingBottom: 40 },
-  header: { backgroundColor: COLORS.navy, borderRadius: 16, padding: 16, marginBottom: 16 },
-  heading: { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  sub: { color: COLORS.bgSubtle, fontSize: 12, lineHeight: 20, marginTop: 4 },
+  header: { backgroundColor: colors.navy, borderRadius: 16, padding: 16, marginBottom: 16 },
+  heading: { color: colors.white, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  sub: { color: colors.white, fontSize: 12, lineHeight: 20, marginTop: 4 },
   sectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  statCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  statCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   statIcon: { marginBottom: 6 },
   statValue: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
   statLabel: { fontSize: 11, color: colors.info, fontWeight: '600', textAlign: 'center' },
-  coverageCard: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  coverageCard: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   coverageRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
-  coverageRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.bg },
+  coverageRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.bg },
   coverageCity: { width: 130, fontSize: 12, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  coverageBar: { flex: 1, height: 6, backgroundColor: COLORS.bgSubtle, borderRadius: 4, overflow: 'hidden' },
-  coverageFill: { height: '100%', backgroundColor: COLORS.navy, borderRadius: 4 },
+  coverageBar: { flex: 1, height: 6, backgroundColor: colors.bgSubtle, borderRadius: 4, overflow: 'hidden' },
+  coverageFill: { height: '100%', backgroundColor: colors.navy, borderRadius: 4 },
   coverageCount: { width: 60, fontSize: 11, color: colors.info, textAlign: 'right' },
-  missionCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: COLORS.navy },
-  missionTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 8 },
-  missionText: { fontSize: 12, color: colors.textOnGold, lineHeight: 21 },
+  missionCard: { backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: colors.navy },
+  missionTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
+  missionText: { fontSize: 12, color: colors.textPrimary, lineHeight: 21 },
   errorCard: { backgroundColor: colors.emergencyBg, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 20 },
   errorText: { color: colors.emergency, fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 12 },
   retryBtn: { backgroundColor: colors.emergency, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
   retryText: { color: colors.textOnAccent, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
 });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(AdvocacyScreen);

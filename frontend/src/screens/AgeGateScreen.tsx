@@ -21,7 +21,7 @@ import { useToast } from '../components/ToastProvider';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { hapticSelection } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
 import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
@@ -40,13 +40,14 @@ interface AgeGateProps {
 
 function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
   useLang();
+  const { colors } = useTheme();
 
   const { showToast } = useToast();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
   const { colors: COLORS } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const [year, setYear]   = useState('');
   const [phase, setPhase] = useState<Phase>('entry');
   const [error, setError] = useState('');
@@ -94,17 +95,17 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         onPress={() => { if (navigation) navigation.navigate('Emergency'); else Linking.openURL('tel:911').catch(() => {}); }}
         accessibilityRole="button"
         accessibilityLabel={t('x_age_gate_emergency_help_get_immediate')}
-        style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
+        style={{ backgroundColor: colors.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
           <IconLabel icon={ICONS.emergency} textStyle={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.textOnNavy, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
         </View>
-        <Text style={{ color: COLORS.white, fontSize: 20 }}>→</Text>
+        <Text style={{ color: colors.textOnAccent, fontSize: 20 }}>→</Text>
       </TouchableOpacity>
 
       <View style={styles.centered}>
-        <AppIcon name={ICONS.family} size={48} color={COLORS.navy} style={styles.underageEmoji} />
+        <AppIcon name={ICONS.family} size={48} color={themeColors().textBrand} style={styles.underageEmoji} />
         <Text maxFontSizeMultiplier={1.4} style={styles.underageTitle}>
           {t('x_age_gate_this_app_adults_18')}
         </Text>
@@ -176,7 +177,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
             keyboardType="number-pad"
             maxLength={4}
             placeholder={t('ag_year_placeholder')}
-            placeholderTextColor={COLORS.textSecond}
+            placeholderTextColor={colors.textSecond}
             returnKeyType="done"
             onSubmitEditing={verify}
             autoFocus
@@ -220,8 +221,8 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
   );
 }
 
-const makeStyles = () => StyleSheet.create({
-  screen:  { flex: 1, backgroundColor: COLORS.navy },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  screen:  { flex: 1, backgroundColor: colors.navy },
   centered: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 28,
@@ -229,65 +230,65 @@ const makeStyles = () => StyleSheet.create({
 
   logoWrap: {
     width: 64, height: 64, borderRadius: 14,
-    backgroundColor: COLORS.steel,
+    backgroundColor: colors.steel,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 12, ...SHADOW.md,
   },
-  logoText:  { fontSize: 22, ...FONTS.black, color: COLORS.navy },
-  title:     { fontSize: 28, ...FONTS.black, color: COLORS.bgCard, marginBottom: 4 },
-  subtitle:  { fontSize: 12, lineHeight: 20, color: COLORS.steel, marginBottom: 36 },
+  logoText:  { fontSize: 22, ...FONTS.black, color: colors.navy },
+  title:     { fontSize: 28, ...FONTS.black, color: colors.white, marginBottom: 4 },
+  subtitle:  { fontSize: 12, lineHeight: 20, color: colors.steel, marginBottom: 36 },
 
   gateCard: {
-    width: '100%', backgroundColor: COLORS.bgCard,
+    width: '100%', backgroundColor: colors.bgCard,
     borderRadius: RADIUS.xl, padding: 24,
     alignItems: 'center', ...SHADOW.lg,
     marginBottom: 20,
   },
-  gateTitle: { fontSize: 18, ...FONTS.black, color: COLORS.navy, marginBottom: 6, textAlign: 'center' },
-  gateHint:  { fontSize: 12, lineHeight: 20, color: COLORS.textMuted, marginBottom: 20, textAlign: 'center' },
+  gateTitle: { fontSize: 18, ...FONTS.black, color: colors.textBrand, marginBottom: 6, textAlign: 'center' },
+  gateHint:  { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 20, textAlign: 'center' },
 
   yearInput: {
     width: 160, height: 64,
-    borderWidth: 2, borderColor: COLORS.border,
+    borderWidth: 2, borderColor: colors.border,
     borderRadius: RADIUS.lg,
     textAlign: 'center',
-    fontSize: 32, ...FONTS.black, color: COLORS.navy,
-    backgroundColor: COLORS.bg,  // light bg fallback (AgeGateScreen is light-only)
+    fontSize: 32, ...FONTS.black, color: colors.textBrand,
+    backgroundColor: colors.bg,  // light bg fallback (AgeGateScreen is light-only)
     marginBottom: 8,
     letterSpacing: 6,
   },
-  yearInputError: { borderColor: COLORS.emergency },
-  errorText:      { fontSize: 12, color: COLORS.emergency, marginBottom: 10, textAlign: 'center' },
+  yearInputError: { borderColor: colors.emergency },
+  errorText:      { fontSize: 12, color: colors.emergency, marginBottom: 10, textAlign: 'center' },
 
   continueBtn: {
-    width: '100%', backgroundColor: COLORS.navy,
+    width: '100%', backgroundColor: colors.navy,
     borderRadius: RADIUS.lg, paddingVertical: 15,
     alignItems: 'center', marginTop: 8,
   },
-  continueBtnDisabled: { backgroundColor: COLORS.textSecond },
-  continueBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  continueBtnDisabled: { opacity: 0.5 },
+  continueBtnText:     { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
 
-  legalNote: { fontSize: 11, color: COLORS.steel, textAlign: 'center', lineHeight: 17 },
-  legalLink: { color: COLORS.steel, textDecorationLine: 'underline' },
+  legalNote: { fontSize: 11, color: colors.steel, textAlign: 'center', lineHeight: 17 },
+  legalLink: { color: colors.steel, textDecorationLine: 'underline' },
 
   // Under-18 screen
   underageEmoji: { marginBottom: 16 },
   underageTitle: {
-    fontSize: 20, ...FONTS.black, color: COLORS.bgCard,
+    fontSize: 20, ...FONTS.black, color: colors.white,
     textAlign: 'center', marginBottom: 12,
   },
   underageSub: {
-    fontSize: 14, color: COLORS.steel, textAlign: 'center',
+    fontSize: 14, color: colors.steel, textAlign: 'center',
     lineHeight: 21, marginBottom: 28,
   },
   familyBtn: {
-    width: '100%', backgroundColor: COLORS.bail,
+    width: '100%', backgroundColor: colors.bail,
     borderRadius: RADIUS.lg, paddingVertical: 16,
     alignItems: 'center', marginBottom: 12, ...SHADOW.md,
   },
-  familyBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  familyBtnText: { color: colors.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
   backBtn:       { paddingVertical: 12 },
-  backBtnText:   { color: COLORS.steel, fontSize: 14, lineHeight: 21, ...FONTS.semi },
+  backBtnText:   { color: colors.steel, fontSize: 14, lineHeight: 21, ...FONTS.semi },
 });
 
 export default React.memo(AgeGateScreen);

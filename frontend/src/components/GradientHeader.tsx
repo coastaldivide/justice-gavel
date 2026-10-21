@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { ART, COLORS } from '../constants/theme';
+import { ART, COLORS, themed } from '../constants/theme';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppIcon, ICONS } from './AppIcon';
@@ -26,13 +26,13 @@ interface GradientHeaderProps {
   compact?:     boolean;
 }
 
-const GRADIENTS = {
-  navy:      [COLORS.navy, COLORS.blue] as const,
-  emergency: [COLORS.emergency, COLORS.emergency] as const,
-  legal:     [COLORS.legal, COLORS.legalDark] as const,
+const GRADIENTS = themed(colors => ({
+  navy:      [colors.navy, colors.blue] as const,
+  emergency: [colors.emergency, colors.emergency] as const,
+  legal:     [colors.legal, colors.legalDark] as const,
   gold:      [ART.bronze, ART.amber] as const,
-  dark:      [COLORS.textPrimary, COLORS.navy] as const,
-};
+  dark:      [colors.textPrimary, colors.navy] as const,
+}));
 
 export function GradientHeader({
   title, subtitle, icon, iconName, badge, badgeColor,

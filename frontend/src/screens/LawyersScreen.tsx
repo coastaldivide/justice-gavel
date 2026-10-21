@@ -26,7 +26,7 @@ import { t, useLang, perLang } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage, unwrapList } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors, type ThemeColors } from '../constants/theme';
 import { getUserState, stateName } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
 
@@ -50,15 +50,18 @@ export interface DirectoryLawyer {
 /** Justice Gavel's own client-review summary for one lawyer (GET /reviews/summary). */
 type ReviewSummary = { avg_rating: number | null; count: number };
 
-const QUICK_NEEDS = perLang(() => [
-  { key: 'DUI',           label: t('whn_charge_dui'),                          icon: '🚗', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-  { key: 'Drug Offenses', label: t('x_practice_area_selector_drug_charges'),  icon: '💊', color: COLORS.blue,          bg: COLORS.bgSubtle },
-  { key: 'Assault',       label: t('x_lawyers_fight_assault'),                 icon: '⚠️', color: COLORS.warnDark,      bg: COLORS.warnBg },
-  { key: 'Family Law',    label: t('x_lawyers_family_divorce'),                icon: '👨‍👩‍👧', color: COLORS.blue,          bg: COLORS.bgSubtle },
-  { key: 'Immigration',   label: t('chat_cat_immigration'),                    icon: '✈️', color: COLORS.blue,          bg: COLORS.bgSubtle },
-  { key: 'Appeals',       label: t('x_lawyers_appeal_post_conviction'),        icon: '📜', color: COLORS.navy,          bg: COLORS.bgSubtle },
-  { key: '',              label: t('x_lawyers_something_else'),                icon: '⚖️', color: COLORS.navy,          bg: COLORS.bgSubtle },
-]);
+const QUICK_NEEDS = perLang(() => {
+  const c = themeColors();
+  return [
+  { key: 'DUI',           label: t('whn_charge_dui'),                          icon: ICONS.car, color: c.emergencyDark, bg: c.emergencyBg },
+  { key: 'Drug Offenses', label: t('x_practice_area_selector_drug_charges'),  icon: ICONS.drug, color: c.info,          bg: c.bgSubtle },
+  { key: 'Assault',       label: t('x_lawyers_fight_assault'),                 icon: ICONS.statusWarn, color: c.warnDark,      bg: c.warnBg },
+  { key: 'Family Law',    label: t('x_lawyers_family_divorce'),                icon: ICONS.family, color: c.info,          bg: c.bgSubtle },
+  { key: 'Immigration',   label: t('chat_cat_immigration'),                    icon: ICONS.immigration, color: c.info,          bg: c.bgSubtle },
+  { key: 'Appeals',       label: t('x_lawyers_appeal_post_conviction'),        icon: ICONS.document, color: c.textBrand,          bg: c.bgSubtle },
+  { key: '',              label: t('x_lawyers_something_else'),                icon: ICONS.lawyer, color: c.textBrand,          bg: c.bgSubtle },
+];
+});
 /** Case types the search filters on (the quick-need keys with a value). */
 const CASE_TYPE_OPTIONS = perLang(() => QUICK_NEEDS().filter(n => !!n.key));
 const caseTypeLabel = (key: string) => CASE_TYPE_OPTIONS().find(o => o.key === key)?.label || key;
@@ -78,6 +81,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
 }) {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const openProfile = () => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { lawyerId: item.id } });
   return (
     <View style={[styles.card, { backgroundColor: colors.bgCard }]} testID="lawyer-card">
@@ -90,7 +94,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
         {item.rating != null && (
           <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
             <Text testID="lawyer-rating" maxFontSizeMultiplier={1.4} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
-            <IconLabel icon={ICONS.starFilled} textStyle={[styles.ratingStar, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.starFilled} size={20} color={colors.goldText} style={[styles.ratingStar, { color: colors.goldText }]} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
           </View>
         )}
@@ -116,8 +120,8 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
         {item.sliding_scale && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_lawyers_sliding_scale')}</Text></View>}
         {item.jtb_verified && (
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('x_lawyers_what_does_justice_gavel')} onPress={() => onBadgeInfo('jtb')}
-            style={[styles.badge, { borderColor: COLORS.gold, backgroundColor: COLORS.navy }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.gold }]}>{t('x_lawyers_jtb_verified')}</Text>
+            style={[styles.badge, { borderColor: colors.gold, backgroundColor: COLORS.navy }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.gold }]}>{t('x_lawyers_jtb_verified')}</Text>
           </TouchableOpacity>
         )}
         {!item.jtb_verified && item.bar_verified && (
@@ -141,9 +145,9 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
         <TouchableOpacity accessibilityRole="button" testID="lawyer-card-save"
           accessibilityLabel={savedId ? t('x_lawyers_unsave', { name: item.name }) : t('x_lawyers_save_saved_list', { name: item.name })}
           accessibilityState={{ selected: !!savedId, busy: saving }}
-          style={[styles.secondaryBtn, { borderColor: savedId ? COLORS.gold : colors.border, backgroundColor: colors.bg }]}
+          style={[styles.secondaryBtn, { borderColor: savedId ? colors.gold : colors.border, backgroundColor: colors.bg }]}
           onPress={() => onToggleSave(item)} disabled={saving}>
-          <IconLabel icon={ICONS.starFilled} textStyle={[styles.secondaryBtnText, { color: savedId ? colors.goldText : colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
+          <IconLabel icon={savedId ? ICONS.starFilled : ICONS.star} textStyle={[styles.secondaryBtnText, { color: savedId ? colors.goldText : colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
         </TouchableOpacity>
         {item.on_app && (
           <TouchableOpacity accessibilityRole="button" testID="lawyer-card-book" style={[styles.secondaryBtn, { borderColor: colors.navy, backgroundColor: colors.bg }]}
@@ -160,7 +164,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
           <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }} testID="lawyer-card-select"
             accessibilityLabel={isSelected ? t('x_lawyers_remove_from_attorneys_contact', { name: item.name }) : t('x_lawyers_select_contact_several_attorneys', { name: item.name })}
             style={[styles.secondaryBtn, { borderColor: isSelected ? colors.navy : colors.border, backgroundColor: colors.bg }]} onPress={() => onToggleSelect(item.id)}>
-            <IconLabel icon={ICONS.checkbox} textStyle={[styles.secondaryBtnText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}</IconLabel>
+            <IconLabel icon={isSelected ? ICONS.checkbox : ICONS.checkboxEmpty} textStyle={[styles.secondaryBtnText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}</IconLabel>
           </TouchableOpacity>
         )}
       </View>
@@ -175,6 +179,7 @@ function FilterModal({ visible, onClose, caseType, language, proBonoOnly, onAppl
 }) {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [ct, setCt] = useState(caseType);
   const [lg, setLg] = useState(language);
   const [pb, setPb] = useState(proBonoOnly);
@@ -225,6 +230,7 @@ function FilterModal({ visible, onClose, caseType, language, proBonoOnly, onAppl
 // ── Skeleton placeholder card ─────────────────────────────────────────────────
 function SkeletonCard() {
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const shimmer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     // isInteraction:false — an endless loop must not hold InteractionManager
@@ -251,6 +257,7 @@ type Place = { kind: 'gps'; lat: number; lng: number; label: string } | { kind: 
 function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -279,7 +286,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [showBulk, setShowBulk] = useState(false);
   const [bulkMsg, setBulkMsg] = useState('');
   const [bulkSending, setBulkSending] = useState(false);
-  const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [badgeInfo, setBadgeInfo] = useState<'bar' | 'jtb' | null>(null);
   const reqSeq = useRef(0);
 
@@ -452,10 +459,10 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (noAccount.length) {
         text += '\n' + t(noAccount.length === 1 ? 'x_lawyers_not_app_messaging_one' : 'x_lawyers_not_app_messaging_other', { count: noAccount.length, list: noAccount.map(s => (s.phone ? `${s.name} (${s.phone})` : s.name)).join(', ') });
       }
-      setBulkResult(text);
+      setBulkResult({ ok: sent > 0, text });
       if (sent > 0) { setSelected([]); setBulkMsg(''); }
     } catch (e) {
-      setBulkResult('❌ ' + apiErrorMessage(e, t('x_lawyers_send_failed_check_connection')));
+      setBulkResult({ ok: false, text: apiErrorMessage(e, t('x_lawyers_send_failed_check_connection')) });
     } finally {
       setBulkSending(false);
     }
@@ -548,7 +555,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
           onEndReachedThreshold={0.5}
           extraData={{ selected, reviewSummaries, savedMap, savingId }}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => search(place, true)} tintColor={colors.navy} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => search(place, true)} tintColor={colors.textBrand} />}
           ListHeaderComponent={caseType && ['DUI', 'Drug Offenses', 'Assault'].includes(caseType) && lawyers.length > 0 ? (
             <TouchableOpacity accessibilityRole="button" style={[styles.walkthroughBanner, { backgroundColor: colors.bgSubtle }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'WhatHappensNext', params: { chargeType: caseType } })}>
@@ -556,13 +563,13 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
             </TouchableOpacity>
           ) : null}
           ListFooterComponent={lawyers.length > 0 ? (
-            loadingMore ? <ActivityIndicator color={colors.navy} style={{ padding: 16 }} />
+            loadingMore ? <ActivityIndicator color={colors.textBrand} style={{ padding: 16 }} />
               : !hasMore ? <Text testID="lawyers-end" maxFontSizeMultiplier={1.4} style={[styles.resultCount, { color: colors.textMuted }]}>{t(lawyers.length === 1 ? 'x_lawyers_lawyer_found_one' : 'x_lawyers_lawyer_found_other', { length: lawyers.length })} · {t('lw_end')}</Text>
                 : null
           ) : null}
           ListEmptyComponent={
             <View style={styles.emptyBlock} testID="lawyers-empty">
-              <AppIcon name="scale-outline" size={24} color={colors.textBrand} />
+              <AppIcon name={ICONS.lawyer} size={24} color={colors.textBrand} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.emptyText, { color: colors.textMuted }]}>{emptyText}</Text>
               {activeFilters > 0 ? (
                 <TouchableOpacity accessibilityRole="button" testID="lawyers-clear-filters" style={[styles.emptyBtn, { backgroundColor: colors.navy }]}
@@ -595,7 +602,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
               {QUICK_NEEDS().map(n => (
                 <TouchableOpacity accessibilityRole="button" key={n.key || 'other'} testID={`need-${n.key || 'other'}`}
                   style={[styles.needBtn, { backgroundColor: n.bg, borderColor: n.color + '55' }]} onPress={() => pickNeed(n.key)}>
-                  <Text maxFontSizeMultiplier={1.3} style={styles.needBtnIcon}>{n.icon}</Text>
+                  <AppIcon name={n.icon} size={22} color={colors.textBrand} style={styles.needBtnIcon} />
                   <Text maxFontSizeMultiplier={1.3} style={[styles.needBtnLabel, { color: n.color }]}>{n.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -643,7 +650,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
               placeholder={t('x_lawyers_briefly_describe_situation_what')} placeholderTextColor={colors.placeholder}
               value={bulkMsg} onChangeText={setBulkMsg} multiline maxLength={500} accessibilityLabel={t('x_lawyers_message_send_selected_attorneys')} />
             {!!bulkResult && (
-              <Text testID="lawyers-bulk-result" maxFontSizeMultiplier={1.4} style={[styles.bulkResult, { color: bulkResult.startsWith('❌') ? colors.emergencyDark : colors.legalDark }]}>{bulkResult}</Text>
+              <IconLabel testID="lawyers-bulk-result" icon={bulkResult.ok ? ICONS.statusOk : ICONS.statusWarn} maxFontSizeMultiplier={1.4} textStyle={[styles.bulkResult, { color: bulkResult.ok ? colors.legalDark : colors.emergencyDark }]}>{bulkResult.text}</IconLabel>
             )}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity accessibilityRole="button" style={[styles.bulkCancel, { borderColor: colors.border }]} onPress={() => setShowBulk(false)}>
@@ -663,7 +670,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1 },
   headerBar: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 2, ...SHADOW.sm },
   headerTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -672,8 +679,8 @@ const styles = StyleSheet.create({
   resultBadge: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
   resultBadgeText: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   locationLabel: { fontSize: 12, marginTop: 2 },
-  savedHeaderBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.warn + '60', backgroundColor: COLORS.warn + '10' },
-  savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warnDark },
+  savedHeaderBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.warn + '60', backgroundColor: colors.warn + '10' },
+  savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.warnDark },
   searchRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   searchInput: { flex: 1, minWidth: 0, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, lineHeight: 20 },
   searchBtn: { borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center', minHeight: 44 },
@@ -706,21 +713,21 @@ const styles = StyleSheet.create({
   walkthroughBanner: { borderRadius: RADIUS.md, padding: 12, marginBottom: 8 },
   walkthroughBannerText: { fontSize: 12, lineHeight: 18 },
   modalContainer: { flex: 1 },
-  modalHeader: { backgroundColor: COLORS.navy, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle: { fontSize: 20, ...FONTS.black, color: COLORS.white, flexShrink: 1 },
+  modalHeader: { backgroundColor: colors.navy, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontSize: 20, ...FONTS.black, color: colors.white, flexShrink: 1 },
   modalCloseBtn: { padding: 10 },
-  modalCloseText: { fontSize: 20, color: COLORS.white, ...FONTS.semi },
+  modalCloseText: { fontSize: 20, color: colors.white, ...FONTS.semi },
   modalBody: { padding: 20, paddingBottom: 40 },
   filterLabel: { fontSize: 12, ...FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   pickerWrap: { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden' },
   picker: { height: 48, borderWidth: 0, paddingHorizontal: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingVertical: 6, gap: 12 },
   toggle: { width: 44, height: 24, borderRadius: 12, padding: 2 },
-  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.white },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.white },
   knobOn: { transform: [{ translateX: 20 }] },
   toggleLabel: { fontSize: 14, lineHeight: 21, flex: 1 },
-  applyBtn: { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
-  applyBtnText: { color: COLORS.white, ...FONTS.black, fontSize: 15, lineHeight: 22 },
+  applyBtn: { backgroundColor: colors.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
+  applyBtnText: { color: colors.white, ...FONTS.black, fontSize: 15, lineHeight: 22 },
   clearBtn: { alignItems: 'center', paddingVertical: 16 },
   clearBtnText: { fontSize: 14, lineHeight: 21, ...FONTS.semi },
   needOverlay: { flex: 1, backgroundColor: 'rgba(2,14,28,0.82)', justifyContent: 'center', alignItems: 'center', padding: 16 },

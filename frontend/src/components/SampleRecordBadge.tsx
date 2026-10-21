@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
 export function isSampleRecord(row: unknown): boolean {
@@ -15,6 +15,8 @@ export function isSampleRecord(row: unknown): boolean {
 
 export function SampleRecordBadge({ row }: { row: unknown }): React.JSX.Element | null {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   if (!isSampleRecord(row)) return null;
   return (
     <View
@@ -28,18 +30,18 @@ export function SampleRecordBadge({ row }: { row: unknown }): React.JSX.Element 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.warnBg,
-    borderColor: COLORS.warnDark,
+    backgroundColor: colors.warnBg,
+    borderColor: colors.warnDark,
     borderWidth: 1,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginBottom: 4,
   },
-  text: { fontSize: 11, fontWeight: '700', color: COLORS.warnDark },
+  text: { fontSize: 11, fontWeight: '700', color: colors.warnDark },
 });
 
 export default SampleRecordBadge;

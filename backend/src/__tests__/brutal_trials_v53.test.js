@@ -79,11 +79,12 @@ describe('A11Y. maxFontSizeMultiplier=1.4 — Accessibility Pattern', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('maxFontSizeMultiplier={1.4}');
   });
-  test('A11Y-03: LegalDisclaimerModal has highest density — 13 maxFontSizeMultiplier instances', async () => {
+  test('A11Y-03: LegalDisclaimerModal has highest density — 12 maxFontSizeMultiplier instances', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     const count = (src.match(/maxFontSizeMultiplier/g) || []).length;
-    expect(count).toBeGreaterThanOrEqual(13);
+    // UI pass 2: the ⚖️ logo <Text> became an icon (AppIcon), so one fewer Text
+    expect(count).toBeGreaterThanOrEqual(12);
   });
   test('A11Y-04: 8 components use maxFontSizeMultiplier (consistent with screen pattern)', async () => {
     const fs   = await import('fs');

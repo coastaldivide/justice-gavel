@@ -191,7 +191,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
+        <ActivityIndicator style={{ marginTop: 40 }} color={colors.textBrand} />
       ) : lessons.length === 0 ? (
         <View style={styles.empty}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{t('x_lessons_no_lessons_available_yet')}</Text></View>
       ) : (
@@ -266,15 +266,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   progressCard: { backgroundColor: COLORS.navy, padding: 20, margin: 12, borderRadius: 16 },
   progressTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressTitle: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  progressPts: { color: COLORS.bgSubtle, fontSize: 12, lineHeight: 20, fontWeight: '700' },
+  progressTitle: { color: colors.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  progressPts: { color: colors.white, fontSize: 12, lineHeight: 20, fontWeight: '700' },
   progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: colors.legal, borderRadius: 4 },
-  progressSub: { color: COLORS.bgSubtle, fontSize: 12, marginTop: 6 },
+  progressSub: { color: colors.white, fontSize: 12, marginTop: 6 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyText: { color: colors.info, fontSize: 14,
     lineHeight: 21, },
-  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   cardDone: { borderWidth: 1, borderColor: colors.legal },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   doneCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.textMuted, alignItems: 'center', justifyContent: 'center' },
@@ -287,27 +287,27 @@ const makeStyles = (colors: any) => StyleSheet.create({
   catText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   ptsText: { fontSize: 12, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   chevron: { fontSize: 12, color: colors.info, marginLeft: 4 },
-  contentArea: { marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.bg, paddingTop: 10 },
+  contentArea: { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.bg, paddingTop: 10 },
   contentText: { fontSize: 14, color: colors.textPrimary, lineHeight: 22, marginBottom: 14 },
   completeBtn: { backgroundColor: colors.legal, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   completeBtnText: { color: colors.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   completedLabel: { textAlign: 'center', color: colors.legal, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   lifeCard: {
     backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16,
-    margin: 12, borderWidth: 1, borderColor: COLORS.bgSubtle,
+    margin: 12, borderWidth: 1, borderColor: colors.bgSubtle,
   },
   lifeTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
   lifeSub:   { fontSize: 12, color: colors.info, lineHeight: 17 },
   lifeBtn:   { backgroundColor: COLORS.navy, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 },
-  lifeBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  lifeBtnText: { color: colors.white, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   englishOnly: { marginHorizontal: 12, marginTop: 4, fontSize: 12, lineHeight: 18, color: colors.textSecond },
   catChip: { paddingHorizontal: 12, minHeight: 44, justifyContent: 'center', borderRadius: 20, borderWidth: 1, borderColor: colors.border },
   catChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   streakBanner: { flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.lg, borderWidth: 1,
-    borderColor: COLORS.steelMid, margin: 12, padding: 12 },
+    backgroundColor: colors.steelMid, borderRadius: RADIUS.lg, borderWidth: 1,
+    borderColor: colors.steelMid, margin: 12, padding: 12 },
   streakFlame: { fontSize: 28 },
-  streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid },
+  streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steelMid },
   streakSub:   { fontSize: 11, color: colors.emergency },
 });
 

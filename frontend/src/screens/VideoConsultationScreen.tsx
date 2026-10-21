@@ -13,6 +13,7 @@ const openBrowserAsync = (url: string) => Linking.openURL(url);
 import { api, apiErrorMessage } from '../services/api';
 import { ScreenProps } from '../types/navigation';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Props = ScreenProps<'VideoConsultation'>;
 interface VideoParams { matterId?: number | string; attorneyId?: number | string; topic?: string; room?: string }
@@ -107,16 +108,16 @@ function VideoConsultationScreen({ route, navigation }: Props) {
 
       <View style={styles.infoCard}>
         <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>{t('x_video_consultation_before_start')}</Text>
-        {[
-          t('x_video_consultation_end_end_encrypted_daily'),
-          t('x_video_consultation_protected_by_attorney_client'),
-          t('x_video_consultation_works_ios_android_web'),
-          t('x_video_consultation_session_lasts_up_2'),
-          t('x_video_consultation_session_not_recorded_by'),
-        ].map((item, i) => (
-          <Text key={`info-${i}`} style={[styles.infoItem, { color: colors.textSecond }]}>
+        {([
+          [ICONS.lock, t('x_video_consultation_end_end_encrypted_daily')],
+          [ICONS.lawyer, t('x_video_consultation_protected_by_attorney_client')],
+          [ICONS.mobile, t('x_video_consultation_works_ios_android_web')],
+          [ICONS.clock, t('x_video_consultation_session_lasts_up_2')],
+          [ICONS.ban, t('x_video_consultation_session_not_recorded_by')],
+        ] as const).map(([icon, item], i) => (
+          <IconLabel key={`info-${i}`} icon={icon} textStyle={[styles.infoItem, { color: colors.textSecond }]}>
             {item}
-          </Text>
+          </IconLabel>
         ))}
       </View>
 

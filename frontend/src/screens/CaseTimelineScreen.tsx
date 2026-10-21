@@ -1,6 +1,6 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * CaseTimelineScreen -- Chronological view of a case's events
  *
@@ -15,7 +15,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshCont
 import { FlashList } from '@shopify/flash-list';
 import { api, apiErrorMessage } from '../services/api';
 import { scheduleReminder, localReminderInstant, formatReminderTime } from '../services/reminders';
-import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS, type ThemeColors, themed, themeColors } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
@@ -25,39 +25,39 @@ import { getToken } from '../utils/secureStorage';
 import { SignInNeeded } from '../components/SignInNeeded';
 import { t, perLang, useLang, locale } from '../i18n';
 
-const EVENT_ICONS: Record<string, string> = {
-  arrest:          '🔒',
-  bail_set:        '💰',
-  arraignment:     '⚖️',
-  hearing:         '🏛️',
-  motion_filed:    '📄',
-  continuance:     '📅',
-  verdict:         '⚡',
-  sentencing:      '📋',
-  appeal:          '🔁',
-  attorney_added:  '👔',
-  document_added:  '📎',
-  note:            '📝',
-  other:           '•',
-  status_change:   '🔄',
+const EVENT_ICONS: Record<string, IconName> = {
+  arrest:          ICONS.lock,
+  bail_set:        ICONS.money,
+  arraignment:     ICONS.lawyer,
+  hearing:         ICONS.courthouse,
+  motion_filed:    ICONS.document,
+  continuance:     ICONS.calendar,
+  verdict:         ICONS.gavel,
+  sentencing:      ICONS.clipboard,
+  appeal:          ICONS.refresh,
+  attorney_added:  ICONS.attorney,
+  document_added:  ICONS.attach,
+  note:            ICONS.edit,
+  other:           ICONS.dotRed,
+  status_change:   ICONS.diversion,
 };
 
-const EVENT_COLORS: Record<string, string> = {
-  arrest:         COLORS.emergencyDark,
-  bail_set:       COLORS.warnDark,
-  arraignment:    COLORS.blue,
-  hearing:        COLORS.blue,
-  motion_filed:   COLORS.navy,
-  continuance:    COLORS.warn,
-  verdict:        COLORS.legalDark,
-  sentencing:     COLORS.emergencyDark,
-  appeal:         COLORS.blue,
-  attorney_added: COLORS.legalDark,
-  document_added: COLORS.warnDark,
-  note:           COLORS.textMuted,
-  other:          COLORS.textMuted,
-  status_change:  COLORS.blue,
-};
+const EVENT_COLORS: Record<string, string> = themed(colors => ({
+  arrest:         colors.emergencyDark,
+  bail_set:       colors.warnDark,
+  arraignment:    colors.blue,
+  hearing:        colors.blue,
+  motion_filed:   colors.navy,
+  continuance:    colors.warn,
+  verdict:        colors.legalDark,
+  sentencing:     colors.emergencyDark,
+  appeal:         colors.blue,
+  attorney_added: colors.legalDark,
+  document_added: colors.warnDark,
+  note:           colors.textMuted,
+  other:          colors.textMuted,
+  status_change:  colors.blue,
+}));
 
 const EVENT_TYPE_LABELS = perLang((): Record<string, string> => ({
   arrest:          t('whn_dui_1_title'),
@@ -237,11 +237,11 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
     }
   };
 
-  const s = styles();
+  const s = styles(colors);
 
   const renderItem = ({ item, index }: { item: CaseEvent; index: number }) => {
     const color = EVENT_COLORS[item.event_type] || EVENT_COLORS.textMuted;
-    const icon  = EVENT_ICONS[item.event_type]  || '•';
+    const icon  = EVENT_ICONS[item.event_type]  || ICONS.dotRed;
     const label = EVENT_TYPE_LABELS()[item.event_type] || t('x_case_timeline_event');
     const isLast = index === events.length - 1;
 
@@ -251,7 +251,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
         {/* Timeline line */}
         <View style={s.timelineCol}>
           <View style={[s.dot, { backgroundColor: color }]}>
-            <Text maxFontSizeMultiplier={1.4} style={s.dotIcon}>{icon}</Text>
+            <AppIcon name={icon} size={16} color={COLORS.white} />
           </View>
           {!isLast && <View style={[s.line, { backgroundColor: colors.border }]} />}
         </View>
@@ -315,14 +315,14 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
       {signedOut ? <SignInNeeded navigation={navigation} testID="timeline-sign-in" body={t('sin_case_body')} onSignedIn={loadEvents} />
         : unavailable ? (
           <View testID="timeline-unavailable" style={s.unavailable}>
-            <IconLabel icon={ICONS.lock} textStyle={s.unavailableIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.lock} size={20} color={colors.textBrand} style={s.unavailableIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[s.unavailableTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.unavailableBody, { color: colors.textSecond }]}>{t('case_unavailable_body')}</Text>
           </View>
         ) : (<>
       {loading && !events.length && (
         <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
-          <ActivityIndicator size="large" color={colors.navy} />
+          <ActivityIndicator size="large" color={colors.textBrand} />
           <Text maxFontSizeMultiplier={1.4} style={{ marginTop:12, fontSize:13,
             lineHeight:19, color:colors.textMuted }}>
             {t('x_case_timeline_loading_timeline')}
@@ -344,7 +344,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
         renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
-            tintColor={colors.navy} />
+            tintColor={colors.textBrand} />
         }
         ListHeaderComponent={
           <View style={s.header}>
@@ -359,7 +359,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
         ListEmptyComponent={
           !loading && !fetchError ? (
             <View style={s.empty}>
-              <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
+              <AppIcon name="document-text-outline" size={20} color={themeColors().textBrand} />
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
                 {t('x_case_timeline_no_events_yet')}
               </Text>
@@ -405,12 +405,12 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
                     borderColor:     newType===tItem ? (EVENT_COLORS[tItem]||colors.navy) : colors.border,
                   }]}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={{
+                  <IconLabel icon={EVENT_ICONS[tItem] || ICONS.dotRed} textStyle={{
                     fontSize:11, lineHeight:18, fontWeight:'700',
                     color: newType===tItem ? colors.bgCard : colors.textMuted,
                   }}>
-                    {EVENT_ICONS[tItem]} {EVENT_TYPE_LABELS()[tItem]}
-                  </Text>
+                    {EVENT_TYPE_LABELS()[tItem]}
+                  </IconLabel>
                 </TouchableOpacity>
               ))}
             </View>
@@ -500,7 +500,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
   );
 }
 
-const styles = () => StyleSheet.create({
+const styles = (colors: ThemeColors) => StyleSheet.create({
   screen:       { flex:1 },
   unavailable:  { alignItems:'center', padding:32, gap:10 },
   unavailableIcon: { fontSize:36 },
@@ -515,7 +515,6 @@ const styles = () => StyleSheet.create({
   timelineCol:  { alignItems:'center', width:40 },
   dot:          { width:36, height:36, borderRadius:18, alignItems:'center',
                   justifyContent:'center', flexShrink:0 },
-  dotIcon:      { fontSize:16 },
   line:         { width:2, flex:1, marginTop:4, borderRadius:1 },
 
   eventCard:    { flex:1, borderRadius:RADIUS.md, borderWidth:1, padding:12, marginBottom:8 },
@@ -536,7 +535,7 @@ const styles = () => StyleSheet.create({
   fab:          { position:'absolute', bottom: Platform.OS==='ios'?32:20,
                   right:20, borderRadius:28, paddingHorizontal:20, paddingVertical:14,
                   flexDirection:'row', alignItems:'center', gap:6, ...SHADOW.md },
-  fabText:      { fontSize:TYPE.base, lineHeight:21, color:COLORS.bgCard, ...FONTS.bold },
+  fabText:      { fontSize:TYPE.base, lineHeight:21, color:colors.white, ...FONTS.bold },
 
   modalOverlay: { flex:1, backgroundColor:'rgba(0,0,0,0.5)', justifyContent:'flex-end' },
   modalSheet:   { borderTopLeftRadius:20, borderTopRightRadius:20, padding:20,

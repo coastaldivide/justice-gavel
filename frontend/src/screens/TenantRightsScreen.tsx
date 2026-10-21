@@ -23,21 +23,24 @@ import React from 'react';
 
 import { View, Text, StyleSheet, ScrollView, LayoutAnimation, TouchableOpacity } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { UnreviewedNotice } from '../components/LegalSource';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 
 
 type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability';
 
-const SITUATIONS = perLang((): { key: Situation; label: string; icon: string; color: string; bg: string }[] => [
-  { key: 'eviction_notice',    label: t('x_tenant_rights_i_got_eviction_notice'),        icon: '📄', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
-  { key: 'lockout',            label: t('x_tenant_rights_my_landlord_locked_me'),       icon: '🔒', color: COLORS.warnDark, bg: COLORS.warnBg },
-  { key: 'utility_shutoff',    label: t('x_tenant_rights_utilities_were_shut_off'),         icon: '💡', color: COLORS.gold, bg: COLORS.warnBg },
-  { key: 'harassment',         label: t('x_tenant_rights_landlord_harassing_me'),        icon: '⚠️', color: COLORS.blue, bg: COLORS.bgSubtle },
-  { key: 'mold_habitability',  label: t('x_tenant_rights_unsafe_uninhabitable_unit'),     icon: '🏚️', color: COLORS.textSecond, bg: COLORS.bgSubtle },
-]);
+const SITUATIONS = perLang((): { key: Situation; label: string; icon: IconName; color: string; bg: string }[] => {
+  const c = themeColors();
+  return [
+  { key: 'eviction_notice',    label: t('x_tenant_rights_i_got_eviction_notice'),        icon: ICONS.document, color: c.emergencyDark, bg: c.emergencyBg },
+  { key: 'lockout',            label: t('x_tenant_rights_my_landlord_locked_me'),       icon: ICONS.lock, color: c.warnDark, bg: c.warnBg },
+  { key: 'utility_shutoff',    label: t('x_tenant_rights_utilities_were_shut_off'),         icon: ICONS.idea, color: c.gold, bg: c.warnBg },
+  { key: 'harassment',         label: t('x_tenant_rights_landlord_harassing_me'),        icon: ICONS.statusWarn, color: c.info, bg: c.bgSubtle },
+  { key: 'mold_habitability',  label: t('x_tenant_rights_unsafe_uninhabitable_unit'),     icon: ICONS.housing, color: c.textSecond, bg: c.bgSubtle },
+];
+});
 
 const GUIDANCE = perLang((): Record<Situation, { urgent: string[]; rights: string[]; deadline?: string }> => ({
   eviction_notice: {
@@ -135,7 +138,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <IconLabel icon={ICONS.housing} textStyle={{ fontSize: 32 }} maxFontSizeMultiplier={1.4}></IconLabel>
+        <AppIcon name={ICONS.housing} size={32} color={colors.textBrand} style={{ fontSize: 32 }} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('tr_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_tenant_rights_housing_landlord_tenant_law')}</Text>
       </View>
@@ -154,7 +157,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
             onPress={() => setSituation(active ? '' : sit.key)}
             style={[styles.sitCard, { backgroundColor: sit.bg, borderWidth: active ? 2 : 0, borderColor: sit.color }]}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.sitIcon}>{sit.icon}</Text>
+            <AppIcon name={sit.icon} size={22} color={colors.textBrand} style={styles.sitIcon} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.sitLabel, { color: sit.color }]}>{sit.label}</Text>
             {active && <Text maxFontSizeMultiplier={1.4} style={[styles.sitCheck, { color: sit.color }]}>✓</Text>}
           </TouchableOpacity>
@@ -164,8 +167,8 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
       {guidance && selected && (
         <View testID="tenant-guidance">
           {!!guidance.deadline && (
-            <View style={[styles.deadlineBanner, { borderColor: COLORS.emergency, backgroundColor: colors.bgCard }]}>
-              <IconLabel icon={ICONS.alarm} textStyle={styles.deadlineIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <View style={[styles.deadlineBanner, { borderColor: colors.emergency, backgroundColor: colors.bgCard }]}>
+              <AppIcon name={ICONS.alarm} size={20} color={colors.textBrand} style={styles.deadlineIcon} />
               <Text maxFontSizeMultiplier={1.4} style={styles.deadlineText}>{guidance.deadline}</Text>
             </View>
           )}
@@ -215,7 +218,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll: { padding: 0, paddingBottom: 40 },
 
   header: { padding: 20, paddingTop: 16, marginBottom: 16 },
-  headerTitle: { fontSize: 22, ...FONTS.black, color: COLORS.bgCard, marginBottom: 4 },
+  headerTitle: { fontSize: 22, ...FONTS.black, color: colors.bgCard, marginBottom: 4 },
   headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
 
   sectionLabel: { fontSize: 11, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, paddingHorizontal: 16 },
@@ -231,7 +234,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   stepRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
   stepNum: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stepNumText: { color: COLORS.bgCard, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  stepNumText: { color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   stepText: { flex: 1, fontSize: 12, lineHeight: 19 },
 
   rightsCard: { marginHorizontal: 16, borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 20 },
@@ -241,7 +244,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   ctaBlock: { paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   ctaBtn:   { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', ...SHADOW.sm },
-  ctaBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  ctaBtnText: { color: colors.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
   legalAidBtn: { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center' },
   legalAidText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 

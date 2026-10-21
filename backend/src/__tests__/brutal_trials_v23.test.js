@@ -402,8 +402,9 @@ describe('10. i18n — Final Category Sweeps', () => {
     const en = await getEn();
     expect(en['lawyers_need_title']).toBe('What do you need help with?');
     expect(en['lawyers_need_sub']).toBe("We'll find the right lawyer for you");
-    expect(en['lawyers_directions']).toBe('🗺 Directions');
-    expect(en['lawyers_website']).toBe('🌐 Website');
+    // UI pass 2: no emoji in i18n values — the icon is drawn by the screen (ICONS)
+    expect(en['lawyers_directions']).toBe('Directions');
+    expect(en['lawyers_website']).toBe('Website');
   });
 
   test('10-04: help_ call-now with GPS states', async () => {

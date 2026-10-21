@@ -270,7 +270,7 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
             {!m.contracting && <Text maxFontSizeMultiplier={1.3} style={s.muted}>{t('hg_not_party')}</Text>}
           </TouchableOpacity>
         ))}
-        {authLoading && <ActivityIndicator color={colors.navy} style={{ marginTop: 16 }} />}
+        {authLoading && <ActivityIndicator color={colors.textBrand} style={{ marginTop: 16 }} />}
         {!!authError && <Text maxFontSizeMultiplier={1.4} style={s.error}>{authError}</Text>}
         {authority && !authLoading && (
           <View style={s.card} testID="hague-authority">
@@ -304,7 +304,7 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
       {!!params.caseName && <IconLabel icon={ICONS.cases} textStyle={s.tag} maxFontSizeMultiplier={1.4}>{params.caseName}</IconLabel>}
       <UnreviewedNotice inset={false} text={t('hg_not_reviewed')} testID="hague-notice" />
 
-      {loading && <ActivityIndicator color={colors.navy} style={{ marginTop: 24 }} />}
+      {loading && <ActivityIndicator color={colors.textBrand} style={{ marginTop: 24 }} />}
       {!!loadError && (
         <View style={s.card} testID="hague-load-error">
           <Text maxFontSizeMultiplier={1.4} style={s.error}>{loadError}</Text>

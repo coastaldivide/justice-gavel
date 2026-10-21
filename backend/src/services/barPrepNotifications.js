@@ -92,8 +92,8 @@ async function sendDailyReminders() {
   for (const u of users) {
     const streak = u.current_streak;
     const body   = streak > 0
-      ? `🔥 Day ${streak} streak! Your ${u.daily_goal} daily questions are ready.`
-      : `📚 Ready to study? Your ${u.daily_goal} Criminal Law questions are waiting.`;
+      ? `Day ${streak} streak! Your ${u.daily_goal} daily questions are ready.`
+      : `Ready to study? Your ${u.daily_goal} Criminal Law questions are waiting.`;
 
     await sendPushNotification(u.token, u.platform, {
       title: 'Bar Prep — Daily Questions',
@@ -123,7 +123,7 @@ async function sendStreakWarnings() {
   for (const u of users) {
     const remaining = u.daily_goal - u.done_today;
     await sendPushNotification(u.token, u.platform, {
-      title: '⚠️ Streak at Risk!',
+      title: 'Streak at Risk!',
       body:  `Only ${remaining} more questions to protect your ${u.current_streak}-day streak.`,
       data:  { screen: 'QuizScreen', action: 'daily_session' },
     });
@@ -146,11 +146,11 @@ async function sendExamCountdowns() {
     if (!countdownDays.includes(daysLeft)) continue;
 
     const messages = {
-      30: { title: '30 Days to Bar Exam 📅', body: "One month out. Let's lock in Criminal Law." },
-      14: { title: '2 Weeks to Bar Exam ⚡', body: 'Final stretch. Focus on your weak areas today.' },
-       7: { title: '1 Week to Bar Exam 🎯', body: 'Review mode only — no new questions today.' },
-       3: { title: '3 Days Out 💪',          body: 'Light review only. Protect your sleep.' },
-       1: { title: 'Tomorrow is Bar Day 🏛️', body: "You're ready. Rest tonight." },
+      30: { title: '30 Days to Bar Exam', body: "One month out. Let's lock in Criminal Law." },
+      14: { title: '2 Weeks to Bar Exam', body: 'Final stretch. Focus on your weak areas today.' },
+       7: { title: '1 Week to Bar Exam', body: 'Review mode only — no new questions today.' },
+       3: { title: '3 Days Out',          body: 'Light review only. Protect your sleep.' },
+       1: { title: 'Tomorrow is Bar Day', body: "You're ready. Rest tonight." },
     };
 
     const msg = messages[daysLeft];

@@ -1,4 +1,4 @@
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 /**
  * FirmPublicProfileScreen.tsx — Public-facing firm profile for clients
  * Navigated to from FirmDiscoveryScreen when user taps a firm card.
@@ -17,7 +17,6 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { ContactActions } from '../components/ContactActions';
-import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { IconLabel, ICONS } from '../components/AppIcon';
 
@@ -36,6 +35,7 @@ function FirmPublicProfileScreen() {
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();
   const { colors } = useTheme();
+  const s = makeS(colors);
   const { firmId, firmName } = route.params ?? ({} as Partial<RouteParams>);
 
   const [firm, setFirm]       = useState<FirmProfile | null>(null);
@@ -71,7 +71,7 @@ function FirmPublicProfileScreen() {
 
   if (loading) return (
     <View style={[s.center, { backgroundColor: colors.bg }]}>
-      <ActivityIndicator color={colors.blue} />
+      <ActivityIndicator color={colors.info} />
     </View>
   );
 
@@ -161,7 +161,7 @@ function FirmPublicProfileScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: ThemeColors) => StyleSheet.create({
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },
   firmName:    { fontSize: 22, fontWeight: '800', marginBottom: 6 },
@@ -172,12 +172,12 @@ const s = StyleSheet.create({
   body:        { fontSize: 14, lineHeight: 21 },
   attRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8,
                  borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' },
-  avatar:      { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.infoBg,
+  avatar:      { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.infoBg,
                  alignItems: 'center', justifyContent: 'center' },
-  avatarText:  { fontSize: 15, fontWeight: '700', color: COLORS.blue },
+  avatarText:  { fontSize: 15, fontWeight: '700', color: colors.info },
   attName:     { fontSize: 14, fontWeight: '600' },
   btn:         { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10,
                  alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-  btnText:     { color: COLORS.white, fontWeight: '700', fontSize: 14 },
+  btnText:     { color: colors.white, fontWeight: '700', fontSize: 14 },
 });
 export default React.memo(FirmPublicProfileScreen);

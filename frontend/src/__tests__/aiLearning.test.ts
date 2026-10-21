@@ -10,7 +10,7 @@ jest.mock('../services/api', () => ({
   api: { get: jest.fn(), post: jest.fn() },
 }));
 jest.mock('../utils/secureStorage', () => ({ getToken: jest.fn(async () => 'tok') }));
-jest.mock('../constants/theme', () => ({ useTheme: () => ({ colors: {} }) }));
+jest.mock('../constants/theme', () => ({ useTheme: () => ({ colors: {} }), themeMode: () => 'dark', themeColors: () => ({}) }));
 
 import { api } from '../services/api';
 import { detectCrisis, foldText } from '../utils/crisisDetect';

@@ -24,7 +24,7 @@ import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { getLocation } from '../services/location';
 import { getUserState } from '../utils/userState';
 import { formatPhone } from '../utils/contact';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, type ThemeColors } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { t, useLang, locale } from '../i18n';
 
@@ -39,6 +39,8 @@ function callPhone(phone: string, onError?: () => void) {
 // ── Step indicator ────────────────────────────────────────────────────────────
 function StepBar({ step }: { step: number }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const steps = [t('x_family_connect_step_find'), t('x_family_connect_step_info'), t('x_family_connect_step_connect')];
   return (
     <View style={styles.stepBar}>
@@ -67,10 +69,12 @@ function StepBar({ step }: { step: number }) {
 // ── Contact card ─────────────────────────────────────────────────────────────
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'attorney' | 'bail' }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const isAtty = type === 'attorney';
-  const color = isAtty ? COLORS.navy : COLORS.bail;
-  const bg = isAtty ? COLORS.bgSubtle : COLORS.emergencyBg;
+  const color = isAtty ? COLORS.navy : colors.bail;
+  const bg = isAtty ? colors.bgSubtle : colors.emergencyBg;
 
   const specialties: string[] = Array.isArray(contact.specialties) ? contact.specialties : [];
 
@@ -84,7 +88,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
           )}
         </View>
         <View style={[styles.contactTypeBadge, { backgroundColor: bg }]}>
-          <IconLabel icon={ICONS.lawyer} textStyle={[styles.contactTypeBadgeText, { color }]} maxFontSizeMultiplier={1.4}>{isAtty ? t('x_family_connect_attorney') : t('x_family_connect_bail_agent')}</IconLabel>
+          <IconLabel icon={isAtty ? ICONS.lawyer : ICONS.bail} textStyle={[styles.contactTypeBadgeText, { color }]} maxFontSizeMultiplier={1.4}>{isAtty ? t('x_family_connect_attorney') : t('x_family_connect_bail_agent')}</IconLabel>
         </View>
       </View>
 
@@ -112,7 +116,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
           <IconLabel icon={ICONS.phone} textStyle={styles.callBtnText} maxFontSizeMultiplier={1.4}>{t('x_family_connect_call', { value: formatPhone(contact.phone) })}</IconLabel>
         </TouchableOpacity>
       ) : (
-        <View style={[styles.callBtn, { backgroundColor: COLORS.emergencyDark }]}>
+        <View style={[styles.callBtn, { backgroundColor: colors.emergencyDark }]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_no_phone')}</Text>
         </View>
       )}
@@ -439,15 +443,15 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
           <View style={styles.feeBlock}>
             <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{t('fc2_what_you_get', { price: usd(priceCents) })}</Text>
-            {[
-              t('fc2_get_lawyers'),
-              t('fc2_get_agents'),
-              t('x_family_connect_direct_call_buttons_reach'),
-              t('x_family_connect_one_time_fee_no'),
-              t('fc2_listing_note'),
-            ].map(item => (
+            {([
+              [ICONS.lawyer, t('fc2_get_lawyers')],
+              [ICONS.bail, t('fc2_get_agents')],
+              [ICONS.phone, t('x_family_connect_direct_call_buttons_reach')],
+              [ICONS.lock, t('x_family_connect_one_time_fee_no')],
+              [ICONS.alertNormal, t('fc2_listing_note')],
+            ] as const).map(([icon, item]) => (
               <View key={item} style={styles.feeItem}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.feeItemText}>{item}</Text>
+                <IconLabel icon={icon} maxFontSizeMultiplier={1.4} textStyle={styles.feeItemText}>{item}</IconLabel>
               </View>
             ))}
           </View>
@@ -478,7 +482,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         <View style={styles.section}>
           {paying ? (
             <View style={styles.payingBlock}>
-              <ActivityIndicator size="large" color={colors.navy} />
+              <ActivityIndicator size="large" color={colors.textBrand} />
               <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>{t('fc2_paying')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.payingHint}>{t('x_family_connect_this_takes_just_moment')}</Text>
             </View>
@@ -566,7 +570,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   scroll: { paddingBottom: 40 },
 
@@ -577,16 +581,16 @@ const makeStyles = (colors: any) => StyleSheet.create({
   priceText: { color: colors.textPrimary, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 18 },
   priceSubText: { color: colors.textSecond, fontSize: 11, marginTop: 1 },
 
-  stepBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bgCard, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: COLORS.bgSubtle },
+  stepBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.bgSubtle },
   stepItem: { alignItems: 'center' },
-  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.bgSubtle, alignItems: 'center', justifyContent: 'center', marginBottom: 3 },
+  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginBottom: 3 },
   stepDotActive: { backgroundColor: colors.emergency },
   stepDotDone: { backgroundColor: colors.legal },
-  stepDotText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.info },
+  stepDotText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
   stepDotTextActive: { color: colors.bgCard },
-  stepLabel: { fontSize: 11, color: COLORS.info, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  stepLabelActive: { color: COLORS.emergency },
-  stepLine: { flex: 1, height: 2, backgroundColor: COLORS.bgSubtle, marginHorizontal: 4, marginBottom: 14 },
+  stepLabel: { fontSize: 11, color: colors.info, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  stepLabelActive: { color: colors.emergency },
+  stepLine: { flex: 1, height: 2, backgroundColor: colors.bgSubtle, marginHorizontal: 4, marginBottom: 14 },
   stepLineDone: { backgroundColor: colors.legal },
 
   section: { padding: 16 },
@@ -601,7 +605,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   resultsList: { marginTop: 4 },
   resultsHeader: { fontSize: 12, fontWeight: '700', color: colors.info, marginBottom: 8 },
-  arrestResult: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', elevation: 1, borderWidth: 1.5, borderColor: COLORS.bgSubtle },
+  arrestResult: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', elevation: 1, borderWidth: 1.5, borderColor: colors.bgSubtle },
   arrestResultName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 2 },
   arrestResultDetail: { fontSize: 12, color: colors.info, marginBottom: 2 },
   arrestResultCharges: { fontSize: 12, color: colors.info, marginBottom: 2 },
@@ -614,15 +618,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   emptyResults: { backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 8 },
   emptyResultsTitle: { fontSize: 14, fontWeight: '700', color: colors.textBrand, marginBottom: 4 },
   emptyResultsText: { fontSize: 12, lineHeight: 18, color: colors.info },
-  arrestSummary: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.steel },
-  arrestSummaryTitle: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
-  arrestSummaryDetail: { fontSize: 12, lineHeight: 20, color: colors.blue, marginBottom: 4 },
-  arrestSummaryCharges: { fontSize: 12, color: colors.blue, lineHeight: 16 },
+  arrestSummary: { backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.steel },
+  arrestSummaryTitle: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
+  arrestSummaryDetail: { fontSize: 12, lineHeight: 20, color: colors.info, marginBottom: 4 },
+  arrestSummaryCharges: { fontSize: 12, color: colors.info, lineHeight: 16 },
 
   fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary, marginBottom: 6, marginTop: 12 },
   input: { backgroundColor: colors.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.textPrimary },
 
-  feeBlock: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginTop: 20, marginBottom: 8, borderWidth: 1.5, borderColor: COLORS.bgSubtle },
+  feeBlock: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginTop: 20, marginBottom: 8, borderWidth: 1.5, borderColor: colors.bgSubtle },
   feeBlockTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 10 },
   feeItem: { marginBottom: 6 },
   feeItemText: { fontSize: 12, color: colors.info, lineHeight: 18 },
@@ -643,15 +647,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   successTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textPrimary, marginBottom: 4 },
   successSub: { fontSize: 12, color: colors.legal, textAlign: 'center', lineHeight: 18 },
 
-  caseCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.steel },
-  caseTitle: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.blue, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  caseName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
-  caseCharges: { fontSize: 12, color: colors.blue, marginBottom: 4, lineHeight: 17 },
-  caseBail: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.emergency, marginBottom: 2 },
-  caseLocation: { fontSize: 12, color: colors.blue },
+  caseCard: { backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.steel },
+  caseTitle: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  caseName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
+  caseCharges: { fontSize: 12, color: colors.info, marginBottom: 4, lineHeight: 17 },
+  caseBail: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency, marginBottom: 2 },
+  caseLocation: { fontSize: 12, color: colors.info },
 
   contactsHeading: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textPrimary, marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  contactCard: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 4 },
+  contactCard: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 10, elevation: 2, shadowColor: colors.bg, shadowOpacity: 0.06, shadowRadius: 4 },
   contactHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   contactName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 2 },
   contactAddress: { fontSize: 12, color: colors.info },
@@ -662,7 +666,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tagText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   contactRating: { fontSize: 12, color: colors.info, fontWeight: '700', marginBottom: 8 },
   callBtn: { borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  callBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
+  callBtnText: { color: colors.white, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
 
   noContacts: { backgroundColor: colors.infoBg, borderRadius: 12, padding: 16, marginVertical: 8 },
@@ -679,7 +683,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   errorBlock: { alignItems: 'center', padding: 40 },
   errorText: { fontSize: 14, color: colors.info, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
 });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(FamilyConnectScreen);

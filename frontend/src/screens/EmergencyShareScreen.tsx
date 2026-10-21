@@ -31,7 +31,7 @@ import { getLocation } from '../services/location';
 import { activeContacts, openSmsComposer, isPhoneContact, smsUrl } from '../services/sos';
 import { getUserName } from '../services/storage';
 import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
@@ -343,7 +343,7 @@ if (phase === 'ready') return (
         testID="emergency-share-go"
         activeOpacity={0.85}
        accessibilityLabel={t('x_emergency_share_get_info_preview_message')}>
-        <IconLabel center icon={ICONS.emergency} color={COLORS.bgCard} textStyle={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</IconLabel>
+        <IconLabel center icon={ICONS.emergency} color={colors.bgCard} textStyle={styles.goBtnText}>{t('x_emergency_share_get_info_preview_message')}</IconLabel>
       </TouchableOpacity>
 
       {canEditContacts && (
@@ -435,7 +435,7 @@ if (phase === 'ready') return (
           accessibilityLabel={t('x_emergency_share_national_domestic_violence_hotline')}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.emergencyBg }]}>
-            <AppIcon name="shield-checkmark-outline" size={20} color={COLORS.navy} />
+            <AppIcon name="shield-checkmark-outline" size={20} color={themeColors().textBrand} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>{t('x_emergency_share_national_domestic_violence_hotline')}</Text>
@@ -452,7 +452,7 @@ if (phase === 'ready') return (
   // ── Locating / Finding ─────────────────────────────────────────────────────
   if (phase === 'locating' || phase === 'finding' || phase === 'sharing') return (
     <View style={styles.center}>
-      <ActivityIndicator size="large" color={COLORS.emergency} />
+      <ActivityIndicator size="large" color={colors.emergency} />
       <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>
         {phase === 'locating' ? t('qc_loc_getting')
          : phase === 'finding' ? t('x_emergency_share_finding_nearest_bail_agent')
@@ -528,7 +528,7 @@ if (phase === 'ready') return (
       {/* Provider cards */}
       {bondsman && (
         <View style={styles.providerCard}>
-          <IconLabel icon={ICONS.bail} size={13} color={COLORS.bail} textStyle={styles.providerLabel}>{t('x_emergency_share_bail_bondsman')}</IconLabel>
+          <IconLabel icon={ICONS.bail} size={13} color={colors.bail} textStyle={styles.providerLabel}>{t('x_emergency_share_bail_bondsman')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{bondsman.name}</Text>
           {bondsman.phone && (
             <TouchableOpacity
@@ -542,8 +542,8 @@ if (phase === 'ready') return (
         </View>
       )}
       {lawyer && (
-        <View style={[styles.providerCard, { borderLeftColor: COLORS.legal }]}>
-          <IconLabel icon={ICONS.lawyer} size={13} color={COLORS.legal} textStyle={[styles.providerLabel, { color: COLORS.legal }]}>{t('x_emergency_share_lawyer')}</IconLabel>
+        <View style={[styles.providerCard, { borderLeftColor: colors.legal }]}>
+          <IconLabel icon={ICONS.lawyer} size={13} color={colors.legal} textStyle={[styles.providerLabel, { color: colors.legal }]}>{t('x_emergency_share_lawyer')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{lawyer.name}</Text>
           {lawyer.phone && (
             <TouchableOpacity
@@ -551,7 +551,7 @@ if (phase === 'ready') return (
           accessibilityHint={t('cp_double_tap')}
                onPress={() => Linking.openURL('tel:' + String(lawyer.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(t('x_emergency_share_please_dial_manually', { phone: lawyer.phone }), 'warning'))}
                accessibilityLabel={lawyer.phone}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: colors.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -563,7 +563,7 @@ if (phase === 'ready') return (
         onPress={sendShare}
         testID="emergency-share-send"
        accessibilityLabel={t('x_emergency_share_send_now')}>
-        <IconLabel center icon={ICONS.send} color={COLORS.bgCard} textStyle={styles.sendBtnText}>{t('x_emergency_share_send_now')}</IconLabel>
+        <IconLabel center icon={ICONS.send} color={colors.bgCard} textStyle={styles.sendBtnText}>{t('x_emergency_share_send_now')}</IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>{t('x_emergency_share_opens_messages_app')}</Text>
       </TouchableOpacity>
 
@@ -581,38 +581,38 @@ if (phase === 'ready') return (
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+  screen: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
   hero: {
-    backgroundColor: COLORS.emergency, borderRadius: RADIUS.xl,
+    backgroundColor: colors.emergency, borderRadius: RADIUS.xl,
     padding: 20, marginBottom: 16, ...SHADOW.md },
-  heroTitle: { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, marginBottom: 6 },
-  heroSub:   { fontSize: 12, color: colors.textOnNavy, lineHeight: 18 },
+  heroTitle: { fontSize: 20, ...FONTS.black, color: colors.bgCard, marginBottom: 6 },
+  heroSub:   { fontSize: 12, color: colors.textOnAccent, lineHeight: 18 },
 
   noContactsCard: {
-    backgroundColor: COLORS.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: COLORS.steelMid },
-  noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textOnGold, marginBottom: 6 },
-  noContactsBody:  { fontSize: 12, lineHeight: 20, color: COLORS.textSecond, marginBottom: 12 },
-  addContactsBtn:  { backgroundColor: COLORS.warn, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
+    backgroundColor: colors.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
+    borderWidth: 1, borderColor: colors.steelMid },
+  noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 6 },
+  noContactsBody:  { fontSize: 12, lineHeight: 20, color: colors.textSecond, marginBottom: 12 },
+  addContactsBtn:  { backgroundColor: colors.warn, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
   addContactsBtnText: { color: colors.textOnGold, ...FONTS.heavy, fontSize: 12 },
 
-  contactsList:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm },
-  contactsLabel: { fontSize: 12, ...FONTS.heavy, color: COLORS.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
-  contactRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  contactNum:    { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.navy, color: COLORS.bgCard, textAlign: 'center', lineHeight: 24, fontSize: 12, ...FONTS.black, overflow: 'hidden' },
-  contactVal:    { fontSize: 14, lineHeight: 21, ...FONTS.semi, color: COLORS.textPrimary },
+  contactsList:  { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border, ...SHADOW.sm },
+  contactsLabel: { fontSize: 12, ...FONTS.heavy, color: colors.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
+  contactRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  contactNum:    { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.navy, color: colors.white, textAlign: 'center', lineHeight: 24, fontSize: 12, ...FONTS.black, overflow: 'hidden' },
+  contactVal:    { fontSize: 14, lineHeight: 21, ...FONTS.semi, color: colors.textPrimary },
 
-  whatIncluded:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm },
-  whatTitle:     { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 8 },
-  whatItem:      { fontSize: 12, color: COLORS.textSecond, lineHeight: 22 },
+  whatIncluded:  { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border, ...SHADOW.sm },
+  whatTitle:     { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: colors.textBrand, marginBottom: 8 },
+  whatItem:      { fontSize: 12, color: colors.textSecond, lineHeight: 22 },
   whatRow:       { marginBottom: 2 },
 
-  goBtn:         { backgroundColor: COLORS.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
-  goBtnDisabled: { backgroundColor: COLORS.textMuted },
-  goBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  goBtn:         { backgroundColor: colors.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
+  goBtnDisabled: { backgroundColor: colors.textMuted },
+  goBtnText:     { color: colors.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
 
   editContactsLink: { alignItems: 'center', paddingVertical: 12 },
   editContactsText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
@@ -622,35 +622,35 @@ const makeStyles = (colors: any) => StyleSheet.create({
   errorTitle: { fontSize: 18, ...FONTS.heavy, color: colors.emergency, marginBottom: 8 },
   errorBody:  { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
   retryBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 28 },
-  retryBtnText: { color: COLORS.bgCard, ...FONTS.heavy },
+  retryBtnText: { color: colors.white, ...FONTS.heavy },
 
   doneIcon:  { fontSize: 72, marginBottom: 8 },
   doneTitle: { fontSize: 22, ...FONTS.black, color: colors.legal, marginBottom: 4 },
   doneSub:   { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 24 },
   doneBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 40, alignItems: 'center' },
-  doneBtnText: { color: COLORS.bgCard, ...FONTS.black, fontSize: 15,
+  doneBtnText: { color: colors.white, ...FONTS.black, fontSize: 15,
     lineHeight: 22 },
 
-  confirmHeader: { backgroundColor: COLORS.emergency, borderRadius: RADIUS.xl, padding: 16, marginBottom: 14, ...SHADOW.md },
-  confirmTitle:  { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, marginBottom: 2 },
-  confirmSub:    { fontSize: 12, color: colors.textOnNavy },
+  confirmHeader: { backgroundColor: colors.emergency, borderRadius: RADIUS.xl, padding: 16, marginBottom: 14, ...SHADOW.md },
+  confirmTitle:  { fontSize: 20, ...FONTS.black, color: colors.bgCard, marginBottom: 2 },
+  confirmSub:    { fontSize: 12, color: colors.textOnAccent },
 
   messagePreview: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: COLORS.border, borderLeftWidth: 3, borderLeftColor: COLORS.emergency,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
+    borderWidth: 1, borderColor: colors.border, borderLeftWidth: 3, borderLeftColor: colors.emergency,
     ...SHADOW.sm },
-  messageText: { fontSize: 12, color: COLORS.textSecond, lineHeight: 19, fontFamily: 'monospace' },
+  messageText: { fontSize: 12, color: colors.textSecond, lineHeight: 19, fontFamily: 'monospace' },
 
   providerCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md, padding: 12, marginBottom: 10,
-    borderLeftWidth: 4, borderLeftColor: COLORS.bail, borderWidth: 1, borderColor: COLORS.border },
-  providerLabel: { fontSize: 11, ...FONTS.black, color: COLORS.bail, marginBottom: 2, letterSpacing: 0.5 },
-  providerName:  { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 4 },
-  providerPhone: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.bail },
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.md, padding: 12, marginBottom: 10,
+    borderLeftWidth: 4, borderLeftColor: colors.bail, borderWidth: 1, borderColor: colors.border },
+  providerLabel: { fontSize: 11, ...FONTS.black, color: colors.bail, marginBottom: 2, letterSpacing: 0.5 },
+  providerName:  { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 4 },
+  providerPhone: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.bail },
 
-  sendBtn:     { backgroundColor: COLORS.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginTop: 8, ...SHADOW.md },
-  sendBtnText: { color: COLORS.bgCard, fontSize: 18, ...FONTS.black },
-  sendBtnSub:  { color: colors.textOnNavy, fontSize: 11, marginTop: 3 },
+  sendBtn:     { backgroundColor: colors.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginTop: 8, ...SHADOW.md },
+  sendBtnText: { color: colors.bgCard, fontSize: 18, ...FONTS.black },
+  sendBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3 },
   cancelBtn:   { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
   cancelBtnText: { fontSize: 14, lineHeight: 21, color: colors.textMuted, ...FONTS.semi },
   crisisSection: {
@@ -658,21 +658,21 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginTop: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.bgCard,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
     overflow: 'hidden' },
   crisisSectionTitle: {
     fontSize: 15,
     lineHeight: 22,
     ...FONTS.bold,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 2 },
   crisisSectionSub: {
     fontSize: 12,
     ...FONTS.regular,
-    color: COLORS.textMuted,
+    color: colors.textMuted,
     paddingHorizontal: 16,
     paddingBottom: 10 },
   crisisRow: {
@@ -681,7 +681,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
     gap: 12 },
   crisisIcon: {
     width: 38,
@@ -691,9 +691,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0 },
   crisisInfo:     { flex: 1 },
-  crisisName:     { fontSize: 12, ...FONTS.semiBold, color: COLORS.textPrimary },
-  crisisDetail:   { fontSize: 11, ...FONTS.regular, color: COLORS.textMuted, marginTop: 1 },
-  crisisArrow:    { fontSize: 18, color: COLORS.textMuted },
+  crisisName:     { fontSize: 12, ...FONTS.semiBold, color: colors.textPrimary },
+  crisisDetail:   { fontSize: 11, ...FONTS.regular, color: colors.textMuted, marginTop: 1 },
+  crisisArrow:    { fontSize: 18, color: colors.textMuted },
   quickExitBar: {
     flexDirection: 'row',
     alignItems: 'center',

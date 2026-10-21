@@ -1208,7 +1208,7 @@
   "home_nudge_sub": "Save cases, send SOS alerts, get notifications",
   "home_footer_innocent": "Innocent until proven guilty.",
   "home_footer_title": "Your Legal Connection",
-  "home_footer_sub": "Available 24/7 · 97 cities nationwide",
+  "home_footer_sub": "Available 24/7 · All 50 states + DC",
   "home_offline_body": "No internet connection. Search, AI advice, and account features require connection. Emergency resources and saved rights cards work offline.",
   "home_offline_ok": "OK",
   "home_offline_a11y": "No internet connection -- tap to see what works offline",
@@ -1346,8 +1346,7 @@
   "x_feedback_button_cancel_feedback": "Cancel feedback",
   "x_feedback_button_submit_feedback": "Submit feedback",
   "x_feedback_button_send_feedback": "Send Feedback",
-  "x_floating_sosbutton_emergency_call_help": "Emergency — call for help",
-  "x_floating_sosbutton_activates_emergency_mode": "Activates emergency mode",
+  "x_floating_sosbutton_emergency_call_help": "SOS: alert your emergency contacts",
   "x_gradient_header_go_back": "Go back",
   "x_lawyer_card_attorney": "Attorney {name}{value}",
   "x_lawyer_card_away": ", {dist} away",
@@ -3920,7 +3919,6 @@
   "x_permissions_turn_reminders": "Turn on reminders",
   "x_date_utils_days": "In {days} days",
   "x_ics_export_add_calendar": "Add to calendar",
-  "x_floating_sosbutton_hold": "HOLD",
   "x_legal_disclaimer_modal_text": "and",
   "x_advocacy_lawyers": "{n} lawyers",
   "x_arrest_monitor_monitors": "{length} / {MAX_WATCHES} monitors",
@@ -5055,5 +5053,8 @@
   "bd_profile_saved": "Profile saved.",
   "x_video_consultation_join_video_call": "Join Video Call",
   "hn_how_sorted": "How results are sorted",
-  "cd_clear_courthouse_a11y": "Remove"
+  "cd_clear_courthouse_a11y": "Remove",
+  "adm_rating_of_5": "{n} of 5 stars",
+  "gg_featured": "Featured",
+  "sos_btn_hint": "Tap, then confirm to send your alert. Nothing is sent until you confirm."
 }

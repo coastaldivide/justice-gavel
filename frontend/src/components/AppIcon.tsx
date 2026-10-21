@@ -15,7 +15,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/theme';
+import { themeColors, useTheme } from '../constants/theme';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,11 +29,11 @@ interface AppIconProps {
   testID?: string;
 }
 
-export function AppIcon({ name, size = 22, color = COLORS.textPrimary, style, accessibilityLabel, testID }: AppIconProps) {
+export function AppIcon({ name, size = 22, color, style, accessibilityLabel, testID }: AppIconProps) {
   const a11y = accessibilityLabel
     ? { accessibilityLabel, accessibilityRole: 'image' as const }
     : { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const, 'aria-hidden': true };
-  return <Ionicons name={name} size={size} color={color} style={style} testID={testID} {...a11y} />;
+  return <Ionicons name={name} size={size} color={color ?? themeColors().textPrimary} style={style} testID={testID} {...a11y} />;
 }
 
 /**
@@ -50,6 +50,7 @@ export function IconLabel({ icon, color, iconColor, size, textStyle, style, chil
   size?: number; textStyle?: StyleProp<TextStyle>; style?: StyleProp<ViewStyle>;
   children: React.ReactNode; numberOfLines?: number; maxFontSizeMultiplier?: number; testID?: string; center?: boolean;
 }) {
+  const { colors } = useTheme();
   // Margins on the label style belong to the row (so a heading style with
   // marginBottom keeps the icon level with its text).
   const flat = { ...(StyleSheet.flatten(textStyle) || {}) } as TextStyle;
@@ -61,7 +62,7 @@ export function IconLabel({ icon, color, iconColor, size, textStyle, style, chil
   }
   const centered = center || flat.textAlign === 'center';
   const fontSize = flat.fontSize ?? 15;
-  const textColor = (flat.color as string | undefined) ?? color ?? COLORS.textPrimary;
+  const textColor = (flat.color as string | undefined) ?? color ?? colors.textPrimary;
   return (
     <View style={[iconLabelStyles.row, centered && iconLabelStyles.center, margins, style]}>
       <AppIcon name={icon} size={size ?? Math.round(fontSize * 1.15)} color={iconColor ?? color ?? textColor} style={iconLabelStyles.icon} />
@@ -71,7 +72,18 @@ export function IconLabel({ icon, color, iconColor, size, textStyle, style, chil
   );
 }
 
+/** A 0–5 star rating drawn with icons (decorative; give the parent an accessibilityLabel). */
+export function Stars({ value, size = 14, color, style }: { value: number; size?: number; color: string; style?: StyleProp<ViewStyle> }) {
+  const n = Math.max(0, Math.min(5, Math.round(value)));
+  return (
+    <View style={[iconLabelStyles.stars, style]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {[1, 2, 3, 4, 5].map(i => <AppIcon key={i} name={i <= n ? 'star' : 'star-outline'} size={size} color={color} />)}
+    </View>
+  );
+}
+
 const iconLabelStyles = StyleSheet.create({
+  stars: { flexDirection: 'row', gap: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
   center: { justifyContent: 'center' },
   icon: { flexShrink: 0 },
@@ -119,7 +131,7 @@ export const ICONS = {
   tag:            'pricetag-outline',          // 🏷
   immigration:    'airplane-outline',          // ✈ 🛂 (ICE, travel)
   globe:          'globe-outline',             // 🌐 🌎 (website, language, international)
-  juvenile:       'happy-outline',             // 🧒 👶 👦 👧 (children, juvenile)
+  juvenile:       'person-outline',            // 🧒 👶 👦 👧 (children, juvenile)
   family:         'people-circle-outline',     // 👨‍👩‍👧 👪 👥 (family)
   housing:        'home-outline',              // 🏘 🏡 🏚 (housing, tenant)
   car:            'car-outline',               // 🚗 🚦 (DUI, traffic, searches)

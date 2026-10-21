@@ -258,7 +258,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           );
         })}
 
-        {/* EmptyState: use <EmptyState icon="📋" title="Nothing here yet" subtitle="Content will appear when available" /> */}
+        {/* EmptyState: use <EmptyState icon={ICONS.clipboard} title="Nothing here yet" subtitle="Content will appear when available" /> */}
 
         {/* Innocent until proven guilty context */}
         {!!selected && (

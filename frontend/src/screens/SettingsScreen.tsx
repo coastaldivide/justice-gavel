@@ -1,7 +1,7 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { requestNotificationsInContext } from '../services/permissions';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS, type IconName } from '../components/AppIcon';
 /**
  * SettingsScreen -- User preferences
  *
@@ -17,7 +17,7 @@ import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import type {} from '../types/navigation';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform, TextInput, Linking } from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
@@ -97,7 +97,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   codeLabel:   { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   codeText:    { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 3 },
   shareBtn:    { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
-  shareBtnText:{ color: COLORS.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  shareBtnText:{ color: colors.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 
   // Menu
   menuRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, gap: 12 },
@@ -121,7 +121,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   navRowArrow:  { fontSize: 16, color: colors.textFaint },
   testPushBtn:  { backgroundColor: colors.navy, borderRadius: 8, padding: 12, margin: 16, alignItems: 'center' },
   testPushText: { color: colors.bg, fontSize: 14, fontWeight: '700' },
-  menuHint: { fontSize: 11, marginTop: 1, color: COLORS.textMuted } });
+  menuHint: { fontSize: 11, marginTop: 1, color: colors.textMuted } });
 
 // Module-level fallback for helper components
 function SettingsScreen({ navigation }: any) {
@@ -353,9 +353,9 @@ function SettingsScreen({ navigation }: any) {
 
 
   // ── Reusable row components ──────────────────────────────────────────────
-  const InfoRow = ({ icon, label, value }: { icon: string; label: string; value?: string }) => (
+  const InfoRow = ({ icon, label, value }: { icon: IconName; label: string; value?: string }) => (
     <View style={[styles.infoRow, { borderBottomColor: colors.surface }]}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.infoIcon}>{icon}</Text>
+      <AppIcon name={icon} size={20} color={colors.textBrand} style={styles.infoIcon} />
       <View style={{ flex: 1 }}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.infoLabel, { color: colors.textMuted }]}>{label}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.infoValue, { color: colors.textPrimary }]}>{value || '--'}</Text>
@@ -401,18 +401,18 @@ function SettingsScreen({ navigation }: any) {
       {/* ── Account ──────────────────────────────────────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_account')}</Text>
       <View style={card}>
-        <InfoRow icon="👤" label={t("settings.display_name")} value={user.displayName || user.name} />
-        {!!user.email && <InfoRow icon="✉️" label={t('email')} value={user.email} />}
+        <InfoRow icon={ICONS.user} label={t("settings.display_name")} value={user.displayName || user.name} />
+        {!!user.email && <InfoRow icon={ICONS.mail} label={t('email')} value={user.email} />}
         <TouchableOpacity
           accessibilityRole="button"
           testID="settings-golden-gavel"
           onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
         >
           {goldenGavel
-            ? <InfoRow icon="🏆" label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
-            : <InfoRow icon="⚖️" label={t('gg_title')} value={t('x_st_check_eligibility')} />}
+            ? <InfoRow icon={ICONS.trophy} label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
+            : <InfoRow icon={ICONS.lawyer} label={t('gg_title')} value={t('x_st_check_eligibility')} />}
         </TouchableOpacity>
-        {!!user.phone && <InfoRow icon="📱" label={t('phone')} value={user.phone} />}
+        {!!user.phone && <InfoRow icon={ICONS.mobile} label={t('phone')} value={user.phone} />}
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity accessibilityRole="button"
           style={styles.row}
@@ -420,7 +420,7 @@ function SettingsScreen({ navigation }: any) {
           accessibilityLabel={t('x_st_change_state_preference')}
         >
           <View style={styles.rowLeft}>
-            <IconLabel icon={ICONS.directions} textStyle={styles.rowIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.directions} size={20} color={colors.textBrand} style={styles.rowIcon} />
             <View>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>{t('x_st_state')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
@@ -433,9 +433,9 @@ function SettingsScreen({ navigation }: any) {
         {/* Official Court Forms -- all 50 states */}
         <TouchableOpacity accessibilityRole="button"
         onPress={goToCourtForms}
-        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}
+        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:colors.border }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-        <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
+        <AppIcon name="document-text-outline" size={20} color={themeColors().textBrand} />
         <View style={{ flex:1 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:colors.textBrand }}>{t('x_court_forms_official_court_forms')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:colors.textMuted }}>{t('x_st_government_forms_all_50')}</Text>
@@ -573,7 +573,7 @@ function SettingsScreen({ navigation }: any) {
             </Text>
 
             {prefsLoading ? (
-              <ActivityIndicator size="small" color={COLORS.navy} style={{ marginVertical: 12 }} />
+              <ActivityIndicator size="small" color={themeColors().textBrand} style={{ marginVertical: 12 }} />
             ) : (
               <>
                 <SwitchRow
@@ -633,27 +633,27 @@ function SettingsScreen({ navigation }: any) {
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_st_my_tools')}</Text>
       <View style={card}>
         {[
-          { icon: '💳', label: t('bill_title'),               hint: t('st_billing_hint'),                       screen: 'Payments' },
-          { icon: '📬', label: t('x_nav_attorney_inbox'),     hint: t('st_inbox_hint'),                         screen: 'AttorneyInbox' },
-          { icon: '🔎', label: t('x_nav_conflict_check'),     hint: t('st_conflicts_hint'),                     screen: 'ConflictCheck' },
-          { icon: '📋', label: t('x_nav_lead_dashboard'),     hint: t('st_leads_hint'),                         screen: 'BondsmanDashboard' },
-          { icon: '🏢', label: t('x_st_firm_vertical_setup'),   hint: t('x_st_configure_practice_area_pricing'), screen: 'FirmVertical' },
-          { icon: '🚀', label: t('x_st_start_firm_trial'),       hint: t('x_st_self_serve_onboarding_activate'),  screen: 'FirmAcquisition' },
-          { icon: '⭐', label: t('saved_title'),         hint: t('x_st_personal_attorney_contact_list'),        screen: 'SavedLawyers' },
-          { icon: '⏰', label: t('x_cs_deadline_calculator'),   hint: t('x_st_arraignment_appeal_aedpa_all'), screen: 'DeadlineCalculator' },
-          { icon: '🔔', label: t('x_st_arrest_monitor'),        hint: t('x_st_get_alerted_when_someone'),         screen: 'ArrestMonitor' },
-          { icon: '✓',  label: t('x_check_in_daily_check'),        hint: t('x_st_court_ordered_check_compliance'),          screen: 'CheckIn' },
-          { icon: '🤝', label: t('x_st_diversion_checker'),     hint: t('div_title'),                  screen: 'Diversion' },
-          { icon: '🏆', label: t('gg_title'),           hint: t('x_st_path_elite_status'),                  screen: 'GoldenGavel' },
-          { icon: '🛡️', label: t('x_insurance_legal_insurance'),       hint: t('x_st_monthly_coverage_plans'),                    screen: 'Insurance' },
-          { icon: '🧒', label: t('juv_title'),       hint: t('x_st_rights_process_record_sealing'),        screen: 'JuvenileJustice' },
-          { icon: '🧠', label: t('x_st_mental_health_law'),    hint: t('x_st_mh_courts_competency_diversion'),           screen: 'MentalHealthDiversion' },
-          { icon: '👨\u200d👩\u200d👧', label: t('civil_family_title'),        hint: t('x_st_custody_protective_orders_child'),   screen: 'FamilyCourt' },
-          { icon: '🌎', label: t('civil_imm_title'), hint: t('x_st_how_record_affects_immigration'),    screen: 'ImmigrationConsequences' },
-          { icon: '🏘️', label: t('civil_housing_title'),           hint: t('x_st_criminal_record_housing_eviction'), screen: 'HousingRights' },
-          { icon: '⚖️', label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
-          { icon: '📵', label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
-          { icon: '📊', label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
+          { icon: ICONS.card, label: t('bill_title'),               hint: t('st_billing_hint'),                       screen: 'Payments' },
+          { icon: ICONS.mail, label: t('x_nav_attorney_inbox'),     hint: t('st_inbox_hint'),                         screen: 'AttorneyInbox' },
+          { icon: ICONS.search, label: t('x_nav_conflict_check'),     hint: t('st_conflicts_hint'),                     screen: 'ConflictCheck' },
+          { icon: ICONS.clipboard, label: t('x_nav_lead_dashboard'),     hint: t('st_leads_hint'),                         screen: 'BondsmanDashboard' },
+          { icon: ICONS.firm, label: t('x_st_firm_vertical_setup'),   hint: t('x_st_configure_practice_area_pricing'), screen: 'FirmVertical' },
+          { icon: ICONS.rocket, label: t('x_st_start_firm_trial'),       hint: t('x_st_self_serve_onboarding_activate'),  screen: 'FirmAcquisition' },
+          { icon: ICONS.starFilled, label: t('saved_title'),         hint: t('x_st_personal_attorney_contact_list'),        screen: 'SavedLawyers' },
+          { icon: ICONS.alarm, label: t('x_cs_deadline_calculator'),   hint: t('x_st_arraignment_appeal_aedpa_all'), screen: 'DeadlineCalculator' },
+          { icon: ICONS.notification, label: t('x_st_arrest_monitor'),        hint: t('x_st_get_alerted_when_someone'),         screen: 'ArrestMonitor' },
+          { icon: ICONS.checkOutline, label: t('x_check_in_daily_check'),        hint: t('x_st_court_ordered_check_compliance'),          screen: 'CheckIn' },
+          { icon: ICONS.handshake, label: t('x_st_diversion_checker'),     hint: t('div_title'),                  screen: 'Diversion' },
+          { icon: ICONS.trophy, label: t('gg_title'),           hint: t('x_st_path_elite_status'),                  screen: 'GoldenGavel' },
+          { icon: ICONS.shield, label: t('x_insurance_legal_insurance'),       hint: t('x_st_monthly_coverage_plans'),                    screen: 'Insurance' },
+          { icon: ICONS.juvenile, label: t('juv_title'),       hint: t('x_st_rights_process_record_sealing'),        screen: 'JuvenileJustice' },
+          { icon: ICONS.mentalHealth, label: t('x_st_mental_health_law'),    hint: t('x_st_mh_courts_competency_diversion'),           screen: 'MentalHealthDiversion' },
+          { icon: ICONS.family, label: t('civil_family_title'),        hint: t('x_st_custody_protective_orders_child'),   screen: 'FamilyCourt' },
+          { icon: ICONS.globe, label: t('civil_imm_title'), hint: t('x_st_how_record_affects_immigration'),    screen: 'ImmigrationConsequences' },
+          { icon: ICONS.housing, label: t('civil_housing_title'),           hint: t('x_st_criminal_record_housing_eviction'), screen: 'HousingRights' },
+          { icon: ICONS.lawyer, label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
+          { icon: ICONS.ban, label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
+          { icon: ICONS.stats, label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
         ].filter(item => (!PRO_TOOLS.has(item.screen) || isProfessional(user)) && (!AGENT_TOOLS.has(item.screen) || user?.accountType === 'bail_agent')).map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
@@ -662,7 +662,7 @@ function SettingsScreen({ navigation }: any) {
             onPress={() => navigation.navigate('MoreTab', { screen: item.screen })}
             accessibilityLabel={item.label}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
+            <AppIcon name={item.icon} size={22} color={colors.textBrand} style={styles.menuIcon} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.menuHint, { color: colors.textMuted }]}>{item.hint}</Text>
@@ -694,11 +694,11 @@ function SettingsScreen({ navigation }: any) {
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>{t('x_firm_public_profile_about')}</Text>
       <View style={card}>
         {[
-          { icon: '📄', label: t('onb_terms_tos'),  nav: 'TermsOfService' },
-          { icon: '🔒', label: t('onb_terms_pp'),    nav: 'PrivacyPolicy' },
-          { icon: '💬', label: t('x_feedback_button_send_feedback'),     url: 'mailto:support@justicegavel.app' },
-          { icon: '📸', label: 'Instagram',         url: 'https://instagram.com/yourjusticegavel', hint: '@yourjusticegavel' },
-          { icon: '🌐', label: t('hn_website'),           url: 'https://justicegavel.app' },
+          { icon: ICONS.document, label: t('onb_terms_tos'),  nav: 'TermsOfService' },
+          { icon: ICONS.lock, label: t('onb_terms_pp'),    nav: 'PrivacyPolicy' },
+          { icon: ICONS.message, label: t('x_feedback_button_send_feedback'),     url: 'mailto:support@justicegavel.app' },
+          { icon: ICONS.camera, label: 'Instagram',         url: 'https://instagram.com/yourjusticegavel', hint: '@yourjusticegavel' },
+          { icon: ICONS.globe, label: t('hn_website'),           url: 'https://justicegavel.app' },
         ].map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
@@ -707,7 +707,7 @@ function SettingsScreen({ navigation }: any) {
             onPress={() => openAbout(item)}
             accessibilityLabel={item.label}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
+            <AppIcon name={item.icon} size={22} color={colors.textBrand} style={styles.menuIcon} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
               {item.hint && <Text maxFontSizeMultiplier={1.4} style={[styles.menuHint, { color: colors.textMuted }]}>{item.hint}</Text>}

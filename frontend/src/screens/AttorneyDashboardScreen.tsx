@@ -79,7 +79,7 @@ function AttorneyDashboardScreen({ navigation, route }: ScreenProps): React.JSX.
   if (hasSession === false) {
     return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('atty_title')} body={t('ad_signin_body')} onSignedIn={recheck} /></View>;
   }
-  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
   if (!isAttorneyUser(user)) {
     return (
       <View testID="attorney-dashboard-not-attorney" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}>
@@ -125,7 +125,7 @@ function Overview({ profile, navigation }: { profile: Profile | null; navigation
   useLang();
   const { colors } = useTheme();
   const s = makeStyles(colors);
-  if (!profile) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />;
+  if (!profile) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />;
   const st = profile.stats;
   const cells: [string, string][] = [
     [String(st.active_cases), t('x_attorney_dashboard_active_cases')],
@@ -181,7 +181,7 @@ function Cases({ navigation }: { navigation: ScreenProps['navigation'] }) {
     api.get('/attorney/cases').then(r => setRows((r.data?.cases || []) as CaseRow[])).catch(e => setErr(apiErrorMessage(e, t('ad_load_error'))));
   }, []);
   if (err) return <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{err}</Text></View>;
-  if (!rows) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />;
+  if (!rows) return <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />;
   if (!rows.length) return <View style={s.card} testID="ad-no-cases"><Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_no_assigned_cases')}</Text><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_no_cases_body')}</Text></View>;
   return (
     <>
@@ -272,7 +272,7 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
       <Text maxFontSizeMultiplier={1.4} style={s.section}>{t('ad_leads_open')}</Text>
       <View style={{ marginHorizontal: 12, marginTop: 8 }}><StatePicker value={state} onChange={setState} allowAll remember={false} testID="ad-leads-state" /></View>
       <Text maxFontSizeMultiplier={1.3} style={s.hint}>{t('ad_leads_hint')}</Text>
-      {open === null && <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />}
+      {open === null && <ActivityIndicator style={{ marginTop: 16 }} color={colors.textBrand} />}
       {open?.length === 0 && <View style={s.card} testID="ad-no-leads"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_no_leads')}</Text></View>}
       {open?.map(l => (
         <View key={l.id} style={s.card} testID="ad-open-lead">
@@ -309,7 +309,7 @@ function Templates({ navigation }: { navigation: ScreenProps['navigation'] }) {
         ))}
       </View>
       {!!err && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{err}</Text></View>}
-      {rows === null && !err && <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />}
+      {rows === null && !err && <ActivityIndicator style={{ marginTop: 16 }} color={colors.textBrand} />}
       {rows?.length === 0 && (
         <View style={s.card} testID="ad-no-templates">
           <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_no_templates_yet')}</Text>
@@ -345,7 +345,7 @@ function Cle() {
     catch (e) { showToast(apiErrorMessage(e, t('x_attorney_dashboard_could_not_complete_course')), 'error'); }
     finally { setBusy(null); }
   };
-  if (rows === null) return <ActivityIndicator style={{ marginTop: 16 }} color={colors.navy} />;
+  if (rows === null) return <ActivityIndicator style={{ marginTop: 16 }} color={colors.textBrand} />;
   if (!rows.length) return <View style={s.card} testID="ad-no-cle"><Text maxFontSizeMultiplier={1.4} style={s.title}>{t('ad_cle_none')}</Text><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_cle_note')}</Text></View>;
   return (
     <>

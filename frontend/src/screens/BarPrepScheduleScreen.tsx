@@ -20,7 +20,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
 import { validCourtDate } from '../utils/dateUtils';
 import { categoryLabel } from '../constants/barPrepCategories';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
@@ -50,9 +50,9 @@ interface StudySchedule {
 
 
 function daysUntilColor(days: number): string {
-  if (days <= 7)  return COLORS.bail;
-  if (days <= 30) return COLORS.steelMid;
-  return COLORS.legal;
+  if (days <= 7)  return themeColors().bail;
+  if (days <= 30) return themeColors().steelMid;
+  return themeColors().legal;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               styles.goalFill,
               {
                 width: `${todayProgress * 100}%` as any,
-                backgroundColor: todayProgress >= 1 ? COLORS.legal : colors.primary,
+                backgroundColor: todayProgress >= 1 ? colors.legal : colors.primary,
               },
             ]} />
           </View>
@@ -236,7 +236,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             {(schedule?.calendar || []).map(day => {
               // A calendar day (no time, no zone): noon UTC names the same day everywhere.
               const label = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
-              const bg    = day.goal_met  ? COLORS.legal
+              const bg    = day.goal_met  ? colors.legal
                           : day.is_today  ? colors.primary
                           : day.due_count > 0 ? colors.primary + '44'
                           : colors.border;
@@ -258,7 +258,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             })}
           </View>
           <View style={styles.calendarLegendRow}>
-            <LegendDot color={COLORS.legal} label={t('x_bar_prep_schedule_goal_met')} />
+            <LegendDot color={colors.legal} label={t('x_bar_prep_schedule_goal_met')} />
             <LegendDot color={colors.primary} label={t('x_attorney_inbox_today')} />
             <LegendDot color={colors.primary + '44'} label={t('x_bar_prep_schedule_due')} />
           </View>
@@ -329,8 +329,8 @@ function makeStyles(colors: any) {
     },
     recommendRank:   {
       width: 24, height: 24, borderRadius: 12,
-      backgroundColor: COLORS.primary, textAlign: 'center',
-      fontSize: 12, ...FONTS.bold, color: colors.white,
+      backgroundColor: colors.primary, textAlign: 'center',
+      fontSize: 12, ...FONTS.bold, color: colors.textOnAccent,
       lineHeight: 24,
     },
     recommendName:   { fontSize: 14, color: colors.text, ...FONTS.medium },

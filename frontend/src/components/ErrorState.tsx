@@ -50,7 +50,7 @@ export default function ErrorState({
           accessibilityLabel={t('x_error_state_retry_try_again')}
           accessibilityHint={t('x_error_state_attempts_reload_data')}
         >
-          <Text style={[s.retryText, { color: colors.blue }]}>{t('help_now_error_retry')}</Text>
+          <Text style={[s.retryText, { color: colors.info }]}>{t('help_now_error_retry')}</Text>
         </TouchableOpacity>
       )}
     </View>

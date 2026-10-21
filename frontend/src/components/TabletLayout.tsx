@@ -17,7 +17,7 @@
  */
 
 import React from 'react';
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 
@@ -36,6 +36,8 @@ export function TabletLayout({
   padding   = 0,
   style,
 }: TabletLayoutProps) {
+  const { colors } = useTheme();
+  const s = makeS(colors);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
 
@@ -68,11 +70,11 @@ export function TabletLayout({
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: ThemeColors) => StyleSheet.create({
   center:  { flex: 1, alignItems: 'center', width: '100%' },
   phone:   { flex: 1 },
   row:     { flex: 1, flexDirection: 'row' },
-  sidebar: { width: 320, borderRightWidth: 0.5, borderRightColor: COLORS.border },
+  sidebar: { width: 320, borderRightWidth: 0.5, borderRightColor: colors.border },
   main:    { flex: 1, paddingHorizontal: 24 },
 });
 

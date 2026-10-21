@@ -21,7 +21,7 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, type ThemeColors } from '../constants/theme';
 import { useHaptics }       from '../hooks/useHaptics';
 import { GradientHeader }   from '../components/GradientHeader';
 import { useAuthGate }      from '../components/AuthGate';
@@ -251,7 +251,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                   setQuestionCount(m === 'timed' ? 100 : 10);
                 }}
               >
-                <IconLabel icon={ICONS.edit} textStyle={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>{m === 'practice' ? t('x_bar_prep_home_practice') : t('x_bar_prep_home_timed_mbe_sim')}</IconLabel>
+                <IconLabel icon={m === 'practice' ? ICONS.edit : ICONS.clock} textStyle={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>{m === 'practice' ? t('x_bar_prep_home_practice') : t('x_bar_prep_home_timed_mbe_sim')}</IconLabel>
                 <Text style={styles.modeSubtext}>
                   {m === 'practice' ? t('x_bar_prep_home_explanations_shown_after_each') : t('x_bar_prep_home_100q_2_5_hrs')}
                 </Text>
@@ -290,7 +290,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
             disabled={!selectedSubject}
             activeOpacity={0.85}
           >
-            <IconLabel icon={ICONS.flash} textStyle={styles.startBtnText}>{mode === 'timed' ? t('x_bar_prep_home_start_mbe_simulation') : t('x_bar_prep_home_start_questions', { questionCount })}</IconLabel>
+            <IconLabel icon={mode === 'timed' ? ICONS.flash : ICONS.play} textStyle={styles.startBtnText}>{mode === 'timed' ? t('x_bar_prep_home_start_mbe_simulation') : t('x_bar_prep_home_start_questions', { questionCount })}</IconLabel>
           </TouchableOpacity>
 
           {/* ── Footer Links ─────────────────────────────────────────── */}
@@ -310,6 +310,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
 function StatPill({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   useLang();
   const { colors } = useTheme();
+  const pillStyles = makePillStyles(colors);
   return (
     <View style={[pillStyles.pill, accent && pillStyles.accent]}>
       <Text style={[pillStyles.label, { color: colors.textMuted }]}>{label}</Text>
@@ -319,12 +320,12 @@ function StatPill({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-const pillStyles = StyleSheet.create({
+const makePillStyles = (colors: ThemeColors) => StyleSheet.create({
   pill:       { alignItems: 'center', minWidth: 64, padding: 8 },
-  accent:     { backgroundColor: COLORS.primary + '18', borderRadius: 10 },
-  label:      { fontSize: 10, color: COLORS.textMuted, marginBottom: 2 },
-  value:      { fontSize: 15, ...FONTS.bold, color: COLORS.textPrimary },
-  accentText: { color: COLORS.primary },
+  accent:     { backgroundColor: colors.primary + '18', borderRadius: 10 },
+  label:      { fontSize: 10, color: colors.textMuted, marginBottom: 2 },
+  value:      { fontSize: 15, ...FONTS.bold, color: colors.textPrimary },
+  accentText: { color: colors.primary },
 });
 
 function makeStyles(colors: any) {

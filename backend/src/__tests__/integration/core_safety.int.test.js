@@ -69,7 +69,7 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
       { contact: 'mom@example.test', method: 'email', delivered: false, reason: 'email_not_configured' },
       { contact: '(615) 555-0103', method: 'sms', delivered: false, reason: 'sms_not_configured' },
     ]);
-    expect(r.body.message).toMatch(new RegExp(`^🚨 EMERGENCIA: Alice ${ctx.tag} necesita ayuda inmediata\\. No se pudo compartir su ubicación`));
+    expect(r.body.message).toMatch(new RegExp(`^EMERGENCIA: Alice ${ctx.tag} necesita ayuda inmediata\\. No se pudo compartir su ubicación`));
     const logged = await ctx.db.all('SELECT status FROM alerts WHERE user_name = ?', [`Alice ${ctx.tag}`]);
     expect(logged.map(x => x.status).sort()).toEqual(['email_not_configured', 'sms_not_configured', 'sms_not_configured']);
   });
@@ -87,7 +87,7 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
     expect(r.body.results[1]).toMatchObject({ contact: '12', delivered: false, reason: 'invalid_contact' });
     expect(twilio.received).toHaveLength(1);
     expect(twilio.received[0].To).toBe('+16155550101');
-    expect(twilio.received[0].Body).toBe('🚨 EMERGENCY: Someone you know needs immediate help. Location: https://maps.google.com/?q=36.16,-86.78');
+    expect(twilio.received[0].Body).toBe('EMERGENCY: Someone you know needs immediate help. Location: https://maps.google.com/?q=36.16,-86.78');
   });
 
   // ── 2 recording law ────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useTheme, COLORS, FONT } from '../constants/theme';
+import { useTheme, FONT, type ThemeColors, themeColors } from '../constants/theme';
 import {
   STATE_COURT_FORMS,
   FEDERAL_SOURCES,
@@ -40,32 +40,32 @@ const FORM_CATEGORIES = perLang(() => [
   {
     key: 'criminal_defense',
     label: t('x_court_forms_criminal_defense'),
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     description: t('x_court_forms_motions_responses_pro_se')},
   {
     key: 'expungement',
     label: t('x_court_forms_expungement_record_sealing'),
-    icon: '🗂️',
+    icon: ICONS.cases,
     description: t('x_court_forms_clear_seal_criminal_records')},
   {
     key: 'bail_bond',
     label: t('x_court_forms_bail_bond'),
-    icon: '🔓',
+    icon: ICONS.bail,
     description: t('x_court_forms_bail_reduction_bond_review')},
   {
     key: 'protective_order',
     label: t('x_court_forms_protective_orders'),
-    icon: '🛡️',
+    icon: ICONS.shield,
     description: t('x_court_forms_restraining_orders_protective_orders')},
   {
     key: 'civil_rights',
     label: t('x_practice_area_selector_civil_rights'),
-    icon: '✊',
+    icon: ICONS.rights,
     description: t('x_court_forms_1983_claims_rights_violations')},
   {
     key: 'small_claims',
     label: t('x_court_forms_small_claims'),
-    icon: '📋',
+    icon: ICONS.clipboard,
     description: t('x_court_forms_claims_under_state_s')},
 ]);
 
@@ -75,7 +75,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
   useLang();
   const { showToast } = useToast();
   const { colors } = useTheme();
-  const s = styles(COLORS, FONT);
+  const s = styles(colors, FONT);
 
   const [phase, setPhase] = useState<Phase>('state_select');
   const [selectedState, setSelectedState] = useState<CourtFormSource | null>(null);
@@ -212,7 +212,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           <TextInput
             style={s.searchInput}
             placeholder={t('x_court_forms_search_states')}
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -226,7 +226,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           data={filteredStates}
           ListEmptyComponent={
             <View style={{ padding:40, alignItems:'center' }}>
-              <IconLabel icon={ICONS.document} textStyle={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }} maxFontSizeMultiplier={1.4}>{t('x_court_forms_no_states_match_search')}</IconLabel>
+              <IconLabel icon={ICONS.document} textStyle={{ fontSize:15, color:colors.textMuted, textAlign:'center' }} maxFontSizeMultiplier={1.4}>{t('x_court_forms_no_states_match_search')}</IconLabel>
             </View>
           }
           keyExtractor={item => item.state}
@@ -276,9 +276,9 @@ function CourtFormsScreen(): React.JSX.Element | null {
             <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}
-              accessibilityLabel={cat.icon} onPress={() => onSelectCategory(cat.key)}
+              accessibilityLabel={cat.label} onPress={() => onSelectCategory(cat.key)}
             >
-              <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>{cat.icon}</Text>
+              <AppIcon name={cat.icon} size={22} color={colors.textBrand} style={s.categoryIcon} />
               <View style={s.categoryInfo}>
                 <Text maxFontSizeMultiplier={1.4} style={s.categoryLabel}>{cat.label}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.categoryDesc} numberOfLines={2} ellipsizeMode="tail">{cat.description}</Text>
@@ -310,12 +310,12 @@ function CourtFormsScreen(): React.JSX.Element | null {
             onPress={() => openFormUrl(selectedState.selfHelpUrl ?? selectedState.formsPortalUrl)}
             accessibilityLabel={t('x_court_forms_all_forms_open_official')}
           >
-            <IconLabel icon={ICONS.globe} textStyle={s.categoryIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.globe} size={20} color={colors.textBrand} style={s.categoryIcon} />
             <View style={s.categoryInfo}>
               <Text maxFontSizeMultiplier={1.4} style={s.categoryLabel}>{t('x_court_forms_all_forms_official_portal')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.categoryDesc}>{selectedState.aocName}</Text>
             </View>
-            <Text maxFontSizeMultiplier={1.4} style={s.chevron}>↗</Text>
+            <AppIcon name={ICONS.external} size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </ScrollView>
         <LegalDisclaimerModal
@@ -434,7 +434,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
             onPress={loadAiGuide}
             accessibilityLabel={t('x_court_forms_get_ai_field_guide')}
           >
-            <AppIcon name="hardware-chip-outline" size={20} color={COLORS.navy} />
+            <AppIcon name="hardware-chip-outline" size={20} color={themeColors().textBrand} />
             <View style={s.aiGuideBtnInfo}>
               <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnTitle}>
                 {t('x_court_forms_ai_field_guide_what')}
@@ -495,7 +495,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
           {aiLoading ? (
             <View style={s.loadingBox}>
-              <ActivityIndicator size="large" color={COLORS.navy} />
+              <ActivityIndicator size="large" color={themeColors().textBrand} />
               <Text maxFontSizeMultiplier={1.4} style={s.loadingText}>{t('x_court_forms_loading_field_guide')}</Text>
             </View>
           ) : aiGuide ? (
@@ -532,15 +532,15 @@ function CourtFormsScreen(): React.JSX.Element | null {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: any, F: typeof FONT) => StyleSheet.create({
+const styles = (C: ThemeColors, F: typeof FONT) => StyleSheet.create({
   root:            { flex: 1, backgroundColor: C.bg },
   header:          { backgroundColor: C.navy, paddingTop: Platform.OS === 'ios' ? 56 : 32, paddingBottom: 16, paddingHorizontal: 20 },
-  headerTitle:     { fontSize: 22, fontFamily: F.bold, color: COLORS.bgCard, marginBottom: 4 },
-  headerSub:       { fontSize: 12, fontFamily: F.regular, color: COLORS.border },
+  headerTitle:     { fontSize: 22, fontFamily: F.bold, color: C.bgCard, marginBottom: 4 },
+  headerSub:       { fontSize: 12, fontFamily: F.regular, color: C.border },
   subHeader:       { backgroundColor: C.bgCard, paddingTop: Platform.OS === 'ios' ? 56 : 32, paddingBottom: 12, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.border },
   backBtn:         { marginBottom: 4 },
   backBtnText:     { fontSize: 14,
-    lineHeight: 21, fontFamily: F.medium, color: C.blue },
+    lineHeight: 21, fontFamily: F.medium, color: C.info },
   subHeaderTitle:  { fontSize: 18, fontFamily: F.bold, color: C.textPrimary },
   subHeaderSub:    { fontSize: 12, fontFamily: F.regular, color: C.textMuted, marginTop: 2 },
   searchBox:       { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.bgCard, borderBottomWidth: 1, borderBottomColor: C.border },
@@ -569,7 +569,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   formContent:     { padding: 16, gap: 0 },
   infoNotice:      { backgroundColor: C.bgSubtle, borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: C.blue, marginBottom: 20 },
   infoNoticeTitle: { fontSize: 14,
-    lineHeight: 21, fontFamily: F.bold, color: C.blue, marginBottom: 4 },
+    lineHeight: 21, fontFamily: F.bold, color: C.info, marginBottom: 4 },
   infoNoticeText:  { fontSize: 12, fontFamily: F.regular, color: C.textSecond, lineHeight: 19 },
   sectionLabel:    { fontSize: 11, fontFamily: F.medium, color: C.textMuted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 16 },
   formLink:        { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgCard, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, marginBottom: 10, gap: 12 },
@@ -577,25 +577,25 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   formLinkLeft:    { flex: 1 },
   formLinkTitle:   { fontSize: 14,
     lineHeight: 21, fontFamily: F.semiBold, color: C.textPrimary, marginBottom: 2 },
-  formLinkUrl:     { fontSize: 11, fontFamily: F.regular, color: C.blue, marginBottom: 2 },
+  formLinkUrl:     { fontSize: 11, fontFamily: F.regular, color: C.info, marginBottom: 2 },
   formLinkSource:  { fontSize: 11, fontFamily: F.regular, color: C.textMuted },
   formLinkSub:     { fontSize: 12, fontFamily: F.regular, color: C.textMuted, marginTop: 2 },
-  govBadge:        { backgroundColor: COLORS.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  govBadgeText:    { fontSize: 11, fontFamily: F.bold, color: COLORS.legal },
+  govBadge:        { backgroundColor: C.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  govBadgeText:    { fontSize: 11, fontFamily: F.bold, color: C.legal },
   aiGuideBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: C.navy, borderRadius: 12, padding: 16, gap: 12, marginBottom: 10 },
   aiGuideBtnIcon:  { fontSize: 22 },
   aiGuideBtnInfo:  { flex: 1 },
   aiGuideBtnTitle: { fontSize: 14,
-    lineHeight: 21, fontFamily: F.semiBold, color: COLORS.bgCard },
-  aiGuideBtnSub:   { fontSize: 12, fontFamily: F.regular, color: COLORS.border, marginTop: 2 },
+    lineHeight: 21, fontFamily: F.semiBold, color: C.bgCard },
+  aiGuideBtnSub:   { fontSize: 12, fontFamily: F.regular, color: C.border, marginTop: 2 },
   filingReminder:  { backgroundColor: C.bgCard, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, marginTop: 10 },
   filingReminderTitle: { fontSize: 14,
     lineHeight: 21, fontFamily: F.bold, color: C.textPrimary, marginBottom: 8 },
   filingReminderText: { fontSize: 12, fontFamily: F.regular, color: C.textSecond, lineHeight: 22 },
-  link:            { color: C.blue, textDecorationLine: 'underline' },
-  aiDisclaimerBanner: { backgroundColor: COLORS.infoBg, borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: COLORS.steelMid, marginBottom: 16 },
-  aiDisclaimerTitle: { fontSize: 12, fontFamily: F.bold, color: COLORS.emergency, marginBottom: 4 },
-  aiDisclaimerText: { fontSize: 12, fontFamily: F.regular, color: COLORS.info, lineHeight: 18 },
+  link:            { color: C.info, textDecorationLine: 'underline' },
+  aiDisclaimerBanner: { backgroundColor: C.infoBg, borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: C.steelMid, marginBottom: 16 },
+  aiDisclaimerTitle: { fontSize: 12, fontFamily: F.bold, color: C.emergency, marginBottom: 4 },
+  aiDisclaimerText: { fontSize: 12, fontFamily: F.regular, color: C.info, lineHeight: 18 },
   loadingBox:      { alignItems: 'center', paddingVertical: 40, gap: 12 },
   loadingText:     { fontSize: 14,
     lineHeight: 21, fontFamily: F.regular, color: C.textMuted },

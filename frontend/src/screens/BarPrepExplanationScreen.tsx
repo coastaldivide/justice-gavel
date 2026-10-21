@@ -16,7 +16,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
 import { categoryLabel } from '../constants/barPrepCategories';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, themed } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { useHaptics }     from '../hooks/useHaptics';
 import { t, useLang } from '../i18n';
@@ -45,9 +45,9 @@ interface ExplainResponse {
   };
 }
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: COLORS.legal, medium: COLORS.steelMid, hard: COLORS.bail,
-};
+const DIFFICULTY_COLOR: Record<string, string> = themed(colors => ({
+  easy: colors.legal, medium: colors.steelMid, hard: colors.bail,
+}));
 
 export default function BarPrepExplanationScreen({
   route, navigation
@@ -180,7 +180,7 @@ export default function BarPrepExplanationScreen({
         <SectionCard
           title={t('x_bar_prep_explanation_why_this_answer')}
           colors={colors}
-          accent={COLORS.legal}
+          accent={colors.legal}
         >
           <Text style={styles.explanationText}>{data.explanation}</Text>
         </SectionCard>
@@ -277,10 +277,10 @@ function makeStyles(colors: any) {
     },
     correctAnswerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     correctBadge:     {
-      backgroundColor: COLORS.legal, paddingHorizontal: 10, paddingVertical: 4,
+      backgroundColor: colors.legal, paddingHorizontal: 10, paddingVertical: 4,
       borderRadius: 8, flexShrink: 0,
     },
-    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: colors.white },
+    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: colors.textOnAccent },
     correctAnswerText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     ruleText:      { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     citationText:  { fontSize: 13, color: colors.textMuted, marginTop: 8, fontStyle: 'italic' },

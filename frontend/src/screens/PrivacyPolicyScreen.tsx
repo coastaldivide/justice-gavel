@@ -1,4 +1,4 @@
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 /**
@@ -17,9 +17,8 @@ import { useToast } from '../components/ToastProvider';
 import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { hapticImpact } from '../utils/webCompat';
-import {useTheme} from '../constants/theme';
 import { t, perLang, useLang, locale } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 /** Effective date (shown in the reader's language, e.g. "1 de mayo de 2026"). */
 const EFFECTIVE_ISO = '2026-05-01';
@@ -166,6 +165,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const scrollRef = useRef<ScrollView>(null);
   const [tableExpanded, setTableExpanded] = useState(false);
 
@@ -254,7 +254,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           {DATA_TABLE()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <IconLabel icon={ICONS.inbox} textStyle={{ fontSize: 32, marginBottom: 12 }}></IconLabel>
+          <AppIcon name={ICONS.inbox} size={32} color={colors.textBrand} style={{ fontSize: 32, marginBottom: 12 }} />
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
@@ -356,17 +356,17 @@ function PrivacyPolicyScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll:           { paddingBottom: 32 },
   header:           { padding: 28, paddingTop: 48 },
   headerEyebrow:    { color: 'rgba(133,183,235,0.8)', fontSize: 11, fontWeight: '800',
                       letterSpacing: 3, marginBottom: 6 },
-  headerTitle:      { color: COLORS.bg, fontSize: 28, fontWeight: '900', marginBottom: 8 },
+  headerTitle:      { color: colors.white, fontSize: 28, fontWeight: '900', marginBottom: 8 },
   headerMeta:       { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 14 },
   headerBadges:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   badge:            { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20,
                       paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText:        { color: COLORS.bg, fontSize: 11, fontWeight: '700' },
+  badgeText:        { color: colors.white, fontSize: 11, fontWeight: '700' },
   summaryBox:       { margin: 16, borderRadius: 12, padding: 16, borderLeftWidth: 5, gap: 6 },
   summaryTitle:     { fontSize: 14, fontWeight: '800', marginBottom: 8 },
   summaryItem:      { fontSize: 13, lineHeight: 20 },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   rightsCard:       { margin: 16, borderRadius: 14, padding: 20, gap: 12 },
   rightsTitle:      { fontSize: 16, fontWeight: '800', marginBottom: 4 },
   rightsBtn:        { borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
-  rightsBtnText:    { color: COLORS.bg, fontSize: 14, fontWeight: '700' },
+  rightsBtnText:    { color: colors.bg, fontSize: 14, fontWeight: '700' },
   rightsNote:       { fontSize: 12, textAlign: 'center' },
   footer:           { margin: 16, borderRadius: 12, padding: 20, alignItems: 'center' },
   footerText:       { fontSize: 12, textAlign: 'center' },

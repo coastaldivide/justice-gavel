@@ -20,7 +20,7 @@ import React, { useMemo } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation, ActivityIndicator } from 'react-native';
 import { t, perLang, useLang }   from '../i18n';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constants/theme';
 
 // ── Hotlines ──────────────────────────────────────────────────────────────────
 // `dial` is what the phone dials; `sms` lines are text-only (Crisis Text Line);
@@ -30,24 +30,27 @@ interface CrisisLine {
   key: string; name: string; number: string; dial?: string; sms?: { to: string; body: string };
   desc: string; primary?: boolean; color?: string; bg?: string;
 }
-const CRISIS_LINES = perLang((): CrisisLine[] => [
+const CRISIS_LINES = perLang((): CrisisLine[] => {
+  const c = themeColors();
+  return [
   { key: '988', name: t('x_emergency_share_988_suicide_crisis_lifeline'), number: '988', dial: '988',
-    desc: t('x_crisis_resources_suicidal_thoughts_emotional_distress'), primary: true, color: COLORS.blue, bg: COLORS.bgSubtle },
+    desc: t('x_crisis_resources_suicidal_thoughts_emotional_distress'), primary: true, color: c.info, bg: c.bgSubtle },
   { key: '211', name: t('crisis_line_211'), number: '211', dial: '211', desc: t('x_crisis_resources_housing_food_utilities_crisis') },
   { key: 'rainn', name: t('crisis_line_rainn'), number: '1-800-656-4673', dial: '18006564673', desc: t('x_crisis_resources_national_sexual_assault_hotline') },
   { key: 'trafficking', name: t('crisis_line_trafficking'), number: '1-888-373-7888', dial: '18883737888', desc: t('x_crisis_resources_national_human_trafficking_hotline') },
   { key: 'trans', name: 'Trans Lifeline', number: '1-877-565-8860', dial: '18775658860', desc: t('x_crisis_resources_peer_support_by_trans') },
   { key: 'text', name: 'Crisis Text Line', number: t('crisis_text_home'), sms: { to: '741741', body: 'HOME' }, desc: t('x_crisis_resources_text_based_crisis_support') },
   { key: 'samhsa', name: t('x_emergency_share_samhsa_national_helpline'), number: '1-800-662-4357', dial: '18006624357',
-    desc: t('x_crisis_resources_substance_abuse_addiction_mental'), color: COLORS.legalDark, bg: COLORS.legalBg },
+    desc: t('x_crisis_resources_substance_abuse_addiction_mental'), color: c.legalDark, bg: c.legalBg },
   { key: 'domestic', name: t('x_emergency_share_national_domestic_violence_hotline'), number: '1-800-799-7233', dial: '18007997233',
-    desc: t('x_crisis_resources_domestic_violence_intimate_partner'), color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+    desc: t('x_crisis_resources_domestic_violence_intimate_partner'), color: c.emergencyDark, bg: c.emergencyBg },
   // The Veterans Crisis Line is reached through 988, then pressing 1.
   { key: 'veterans', name: t('crisis_line_veterans'), number: t('crisis_988_press_1'), dial: '988',
-    desc: `${t('x_crisis_resources_veterans_service_members_their')} ${t('x_crisis_resources_press_1_after_dialing')}`, color: COLORS.blue, bg: COLORS.bgSubtle },
+    desc: `${t('x_crisis_resources_veterans_service_members_their')} ${t('x_crisis_resources_press_1_after_dialing')}`, color: c.info, bg: c.bgSubtle },
   { key: 'trevor', name: 'The Trevor Project', number: '1-866-488-7386', dial: '18664887386',
-    desc: t('x_crisis_resources_lgbtq_young_people_crisis'), color: COLORS.legalDark, bg: COLORS.legalBg },
-]);
+    desc: t('x_crisis_resources_lgbtq_young_people_crisis'), color: c.legalDark, bg: c.legalBg },
+];
+});
 
 // ── Self-help grounding tips ──────────────────────────────────────────────────
 const GROUNDING = perLang((): { icon: IconName; title: string; body: string }[] => [
@@ -174,7 +177,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityLabel={line.sms ? t('crisis_text_a11y', { name: line.name }) : t('hn_call_a11y', { name: line.name })}
           accessibilityHint={line.desc}
         >
-          <View style={[styles.lineDot, { backgroundColor: line.bg ?? COLORS.bgSubtle }]}>
+          <View style={[styles.lineDot, { backgroundColor: line.bg ?? colors.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={{ flex: 1 }}>
@@ -198,7 +201,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityLabel={t('hn_call_a11y', { name: r.name })}
           accessibilityHint={r.description || undefined}
         >
-          <View style={[styles.lineDot, { backgroundColor: COLORS.bgSubtle }]}>
+          <View style={[styles.lineDot, { backgroundColor: colors.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={{ flex: 1 }}>
@@ -225,12 +228,12 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           onPress={() => navigation.navigate('LawyersTab')}
           accessibilityLabel={t('find_lawyer')}
         >
-          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+          <AppIcon name={ICONS.lawyer} size={20} color={COLORS.white} />
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>{t('lawyers_heading')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          style={[styles.legalBtn, { backgroundColor: COLORS.bail }]}
+          style={[styles.legalBtn, { backgroundColor: COLORS.blue }]}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
           accessibilityLabel={t('x_crisis_resources_get_immediate_help')}
         >
@@ -276,7 +279,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   primaryBtnIcon:  { fontSize: 28 },
   primaryBtnText:  { flex: 1 },
-  primaryBtnTitle: { fontSize: 22, ...FONTS.black, color: COLORS.bgCard, letterSpacing: 0.3 },
+  primaryBtnTitle: { fontSize: 22, ...FONTS.black, color: colors.white, letterSpacing: 0.3 },
   primaryBtnSub:   { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3, lineHeight: 17 },
   primaryBtnArrow: { fontSize: 28, color: 'rgba(255,255,255,0.6)', ...FONTS.medium },
 
@@ -288,7 +291,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Grounding exercises
   groundingCard: {
     borderRadius: RADIUS.lg, padding: 16, marginBottom: 20,
-    borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm,
+    borderWidth: 1, borderColor: colors.border, ...SHADOW.sm,
   },
   groundingLabel: {
     fontSize: 11, ...FONTS.black, color: colors.textMuted,
@@ -296,7 +299,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   groundingRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.border,
+    paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.border,
   },
   groundingIcon:  { marginTop: 1 },
   groundingTitle: { fontSize: 14,
@@ -312,7 +315,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   lineCard: {
     borderRadius: RADIUS.lg, padding: 16, marginBottom: 9,
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm,
+    borderWidth: 1, borderColor: colors.border, ...SHADOW.sm,
   },
   lineDot: {
     width: 40, height: 40, borderRadius: 20,
@@ -335,7 +338,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1, borderRadius: RADIUS.lg, paddingVertical: 16,
     alignItems: 'center', gap: 8, ...SHADOW.sm,
   },
-  legalBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, ...FONTS.black },
+  legalBtnText: { color: colors.white, fontSize: 12, lineHeight: 20, ...FONTS.black },
 
   footer: {
     fontSize: 11, textAlign: 'center', lineHeight: 17, paddingHorizontal: 12,

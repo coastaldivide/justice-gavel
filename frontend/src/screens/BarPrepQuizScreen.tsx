@@ -24,7 +24,7 @@ import {
   BackHandler, Platform, Animated, Vibration,
 } from 'react-native';
 import { api }            from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { FONTS, RADIUS, SHADOW, useTheme, themed } from '../constants/theme';
 import { useHaptics }     from '../hooks/useHaptics';
 import { t, useLang } from '../i18n';
 import { IconLabel, ICONS } from '../components/AppIcon';
@@ -59,11 +59,11 @@ interface GradeResponse {
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
 type OptionLetter = typeof OPTION_LETTERS[number];
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  easy:   COLORS.legal,
-  medium: COLORS.steelMid,
-  hard:   COLORS.bail,
-};
+const DIFFICULTY_COLOR: Record<string, string> = themed(colors => ({
+  easy:   colors.legal,
+  medium: colors.steelMid,
+  hard:   colors.bail,
+}));
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'BarPrepQuiz'>) {
@@ -258,7 +258,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   // Opened without a quiz (e.g. deep link / stale state) — nothing to show.
   if (!current) {
     return (
-      <EmptyState icon="📝" title={t('x_bar_prep_quiz_no_quiz_progress')}
+      <EmptyState icon={ICONS.edit} title={t('x_bar_prep_quiz_no_quiz_progress')}
         subtitle={t('x_bar_prep_quiz_start_practice_session_from')}
         action={{ label: t('x_bar_prep_quiz_go_bar_prep'), onPress: () => navigation.navigate('BarPrepHome') }} />
     );
@@ -334,7 +334,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
                 ]}>
                   <Text style={[
                     styles.optionLetterText,
-                    (isCorrect || isWrong) && { color: colors.white },
+                    (isCorrect || isWrong) && { color: colors.textOnAccent },
                   ]}>{letter}</Text>
                 </View>
                 <Text style={[
@@ -352,7 +352,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             styles.explanationCard,
             selected === correctAnswer ? styles.correctCard : styles.wrongCard,
           ]}>
-            <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={styles.explanationIcon}>{selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}</IconLabel>
+            <IconLabel icon={selected === correctAnswer ? ICONS.statusOk : ICONS.statusError} iconColor={selected === correctAnswer ? colors.legal : colors.emergency} textStyle={styles.explanationIcon}>{selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}</IconLabel>
             {!!explanation && <Text style={styles.explanationText}>{explanation}</Text>}
             <TouchableOpacity accessibilityRole="button"
               style={styles.fullExplanationLink}
@@ -438,22 +438,22 @@ function makeStyles(colors: any) {
       backgroundColor: colors.card, ...SHADOW.sm,
     },
     optionSelected:     { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
-    optionCorrect:      { borderColor: COLORS.legal, backgroundColor: colors.legalBg },
-    optionWrong:        { borderColor: COLORS.bail, backgroundColor: colors.emergencyBg },
+    optionCorrect:      { borderColor: colors.legal, backgroundColor: colors.legalBg },
+    optionWrong:        { borderColor: colors.bail, backgroundColor: colors.emergencyBg },
     optionLetter:       {
       width: 28, height: 28, borderRadius: 14, borderWidth: 2,
       borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
       marginRight: 12, flexShrink: 0,
     },
-    optionLetterCorrect: { backgroundColor: COLORS.legal, borderColor: COLORS.legal },
-    optionLetterWrong:   { backgroundColor: COLORS.bail, borderColor: COLORS.bail },
+    optionLetterCorrect: { backgroundColor: colors.legal, borderColor: colors.legal },
+    optionLetterWrong:   { backgroundColor: colors.bail, borderColor: colors.bail },
     optionLetterText:   { fontSize: 13, ...FONTS.bold, color: colors.text },
     optionText:         { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
-    optionTextCorrect:  { color: COLORS.legal, ...FONTS.semiBold },
+    optionTextCorrect:  { color: colors.legal, ...FONTS.semiBold },
     optionTextWrong:    { color: colors.bail },
     explanationCard:    { marginTop: 20, padding: 16, borderRadius: RADIUS.lg, borderLeftWidth: 4 },
-    correctCard:        { backgroundColor: colors.legalBg, borderLeftColor: COLORS.legal },
-    wrongCard:          { backgroundColor: colors.emergencyBg, borderLeftColor: COLORS.bail },
+    correctCard:        { backgroundColor: colors.legalBg, borderLeftColor: colors.legal },
+    wrongCard:          { backgroundColor: colors.emergencyBg, borderLeftColor: colors.bail },
     explanationIcon:    { fontSize: 14, ...FONTS.bold, color: colors.text, marginBottom: 8 },
     explanationText:    { fontSize: 14, color: colors.text, lineHeight: 21 },
     fullExplanationLink: { marginTop: 12 },

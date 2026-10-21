@@ -36,10 +36,10 @@ import * as Location from 'expo-location';
 import { FileSystem, hapticImpact, hapticNotification, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, API_BASE_URL } from '../services/api';
-import { useTheme, COLORS } from '../constants/theme';
+import { useTheme } from '../constants/theme';
 import { getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 
@@ -367,12 +367,12 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       {recordingLaw && (
         <View style={[styles.lawBox, {
           backgroundColor: recordingLaw.warn ? colors.warnBg : colors.legalBg,
-          borderLeftColor: recordingLaw.warn ? COLORS.steelMid : colors.legal,
+          borderLeftColor: recordingLaw.warn ? colors.steelMid : colors.legal,
         }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[styles.lawTitle,
+          <IconLabel icon={recordingLaw.warn ? ICONS.statusWarn : ICONS.statusOk} iconColor={recordingLaw.warn ? colors.warnDark : colors.legal} maxFontSizeMultiplier={1.3} textStyle={[styles.lawTitle,
             { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
-            {recordingLaw.warn ? '⚠️ ' : '✅ '}{recordingLaw.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
-          </Text>
+            {recordingLaw.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
+          </IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawNote, { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
             {recordingLaw.note}
           </Text>
@@ -406,7 +406,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           activeOpacity={0.85}
           accessibilityLabel={t('x_interrogation_recorder_start_recording_police_encounter')}
           accessibilityHint={t('x_interrogation_recorder_records_audio_generates_timestamped')}>
-          <IconLabel icon={ICONS.record} textStyle={styles.recordBtnIcon}></IconLabel>
+          <AppIcon name={ICONS.record} size={20} color={colors.textBrand} style={styles.recordBtnIcon} />
           <Text maxFontSizeMultiplier={1.2} style={styles.recordBtnText}>{t('x_interrogation_recorder_start_recording')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.recordBtnSub}>{t('x_interrogation_recorder_tap_begin_tap_again')}</Text>
         </TouchableOpacity>
@@ -436,7 +436,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
       {phase === 'processing' && (
         <View style={[styles.processingBox, { backgroundColor: colors.bgCard }]}>
-          <ActivityIndicator size="large" color={colors.blue} />
+          <ActivityIndicator size="large" color={colors.info} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.processingText, { color: colors.textPrimary }]}>
             {t('x_interrogation_recorder_transcribing_generating_pdf')}
           </Text>
@@ -529,17 +529,17 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.3} style={[styles.infoTitle, { color: colors.textPrimary }]}>
             {t('x_interrogation_recorder_what_this_does')}
           </Text>
-          {[
-            t('x_interrogation_recorder_records_audio_device'),
-            t('x_interrogation_recorder_transcribes_every_word_with'),
-            t('x_interrogation_recorder_identifies_who_said_what'),
-            t('x_interrogation_recorder_generates_pdf_with_automated'),
-            t('x_interrogation_recorder_lets_share_pdf_with'),
-            t('x_interrogation_recorder_recording_stays_device_until'),
-          ].map((item, i) => (
-            <Text key={`item-${i}`} maxFontSizeMultiplier={1.3} style={[styles.infoItem, { color: colors.textSecond }]}>
+          {([
+            [ICONS.record, t('x_interrogation_recorder_records_audio_device')],
+            [ICONS.edit, t('x_interrogation_recorder_transcribes_every_word_with')],
+            [ICONS.tag, t('x_interrogation_recorder_identifies_who_said_what')],
+            [ICONS.document, t('x_interrogation_recorder_generates_pdf_with_automated')],
+            [ICONS.share, t('x_interrogation_recorder_lets_share_pdf_with')],
+            [ICONS.lock, t('x_interrogation_recorder_recording_stays_device_until')],
+          ] as const).map(([icon, item], i) => (
+            <IconLabel key={`item-${i}`} icon={icon} maxFontSizeMultiplier={1.3} textStyle={[styles.infoItem, { color: colors.textSecond }]}>
               {item}
-            </Text>
+            </IconLabel>
           ))}
         </View>
       )}

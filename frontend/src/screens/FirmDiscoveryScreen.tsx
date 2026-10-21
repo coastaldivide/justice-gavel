@@ -1,4 +1,4 @@
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmDiscoveryScreen.tsx — Public firm directory for defendants and clients
@@ -14,9 +14,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
-import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, ICONS } from '../components/AppIcon';
 
 interface Firm {
   id: number;
@@ -34,6 +33,7 @@ function FirmDiscoveryScreen() {
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
+  const s = makeS(colors);
   const [firms, setFirms]           = useState<Firm[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -168,7 +168,7 @@ function FirmDiscoveryScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 60 }} color={colors.blue} />
+        <ActivityIndicator style={{ marginTop: 60 }} color={colors.info} />
       ) : (
         <FlashList
           data={firms ?? []}
@@ -178,7 +178,7 @@ function FirmDiscoveryScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           ListEmptyComponent={
             <View style={s.empty}>
-              <IconLabel icon={ICONS.courthouse} textStyle={[s.emptyIcon]}></IconLabel>
+              <AppIcon name={ICONS.courthouse} size={20} color={colors.textBrand} style={[s.emptyIcon]} />
               <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textPrimary }]}>{error || t('x_firm_discovery_no_firms_found')}</Text>
               {!error && (
                 <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textMuted }]}>
@@ -193,19 +193,19 @@ function FirmDiscoveryScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: ThemeColors) => StyleSheet.create({
   container:   { flex: 1 },
   codeBar:     { flexDirection: 'row', margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
   codeInput:   { flex: 1, minWidth: 0, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
-  codeBtn:     { backgroundColor: COLORS.navy, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
-  codeBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
+  codeBtn:     { backgroundColor: colors.navy, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
+  codeBtnText: { color: colors.white, fontWeight: '700', fontSize: 13 },
   filters:     { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 4 },
   filterInput: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   firmName:    { flex: 1, fontSize: 16, fontWeight: '700' },
-  badge:       { backgroundColor: COLORS.legalBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText:   { fontSize: 11, fontWeight: '600', color: COLORS.legal },
+  badge:       { backgroundColor: colors.legalBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeText:   { fontSize: 11, fontWeight: '600', color: colors.legal },
   location:    { fontSize: 13, marginBottom: 4 },
   areas:       { fontSize: 13, marginBottom: 8 },
   cardFooter:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

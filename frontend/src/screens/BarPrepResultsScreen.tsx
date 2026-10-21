@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { ScreenParams } from '../navigation/NavigationTypes';
 import { ScreenProps } from '../types/navigation';
-import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, useTheme, type ThemeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
@@ -26,8 +26,9 @@ type Props = ScreenProps<'BarPrepResults'>;
 function ScoreRing({ pct }: { pct: number }) {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const passing = pct >= 65;
-  const color   = pct >= 80 ? COLORS.legal : pct >= 65 ? COLORS.steel : COLORS.bail;
+  const color   = pct >= 80 ? colors.legal : pct >= 65 ? COLORS.steel : colors.bail;
   const verdict = pct >= 75 ? t('x_bar_prep_results_excellent') : pct >= 65 ? t('x_bar_prep_results_passing') : t('x_bar_prep_results_keep_studying');
   return (
     <View style={styles.ringWrapper} accessibilityRole="none">
@@ -55,6 +56,7 @@ function AnswerRow({
 }) {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [expanded, setExpanded] = useState(false);
   const correctLetter = q.correct_answer?.toUpperCase();
   const correctText   = q[`option_${q.correct_answer?.toLowerCase()}`] ?? correctLetter;
@@ -83,13 +85,13 @@ function AnswerRow({
         <View style={styles.ansDetail}>
           {!isCorrect && (
             <View style={styles.ansLine}>
-              <Text style={[styles.ansLineLabel, { color: COLORS.bail }]}>{t('x_bar_prep_results_answer')}{' '}</Text>
-              <Text style={[styles.ansLineVal, { color: COLORS.bail }]}>{userText}</Text>
+              <Text style={[styles.ansLineLabel, { color: colors.bail }]}>{t('x_bar_prep_results_answer')}{' '}</Text>
+              <Text style={[styles.ansLineVal, { color: colors.bail }]}>{userText}</Text>
             </View>
           )}
           <View style={styles.ansLine}>
-            <Text style={[styles.ansLineLabel, { color: COLORS.legal }]}>{t('x_bar_prep_results_correct_answer')}{' '}</Text>
-            <Text style={[styles.ansLineVal, { color: COLORS.legal }]}>{correctText}</Text>
+            <Text style={[styles.ansLineLabel, { color: colors.legal }]}>{t('x_bar_prep_results_correct_answer')}{' '}</Text>
+            <Text style={[styles.ansLineVal, { color: colors.legal }]}>{correctText}</Text>
           </View>
           {q.rule_tested ? (
             <Text style={styles.ansRule}>{t('x_bar_prep_results_rule', { rule_tested: q.rule_tested })}</Text>
@@ -121,6 +123,8 @@ function AnswerRow({
 
 export default function BarPrepResultsScreen({ route, navigation }: Props) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const {
     score_pct, correct, total, mode,
     answers, questions, timed_out,
@@ -168,7 +172,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
 
   if (!route.params) {
     return (
-      <EmptyState icon="📊" title={t('x_bar_prep_results_no_results_show')}
+      <EmptyState icon={ICONS.stats} title={t('x_bar_prep_results_no_results_show')}
         subtitle={t('x_bar_prep_results_finish_bar_prep_quiz')}
         action={{ label: t('x_bar_prep_results_view_progress'), onPress: handleViewProgress }} />
     );
@@ -194,17 +198,17 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
       {/* ── Summary stats ─────────────────────────────────────────────────── */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: COLORS.legal }]}>{correct}</Text>
+          <Text style={[styles.statNum, { color: colors.legal }]}>{correct}</Text>
           <Text style={styles.statLabel}>{t('x_bar_prep_results_correct')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: COLORS.bail }]}>{total - correct}</Text>
+          <Text style={[styles.statNum, { color: colors.bail }]}>{total - correct}</Text>
           <Text style={styles.statLabel}>{t('x_bar_prep_results_wrong')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: COLORS.info }]}>{total}</Text>
+          <Text style={[styles.statNum, { color: colors.info }]}>{total}</Text>
           <Text style={styles.statLabel}>{t('qc_total')}</Text>
         </View>
       </View>
@@ -255,62 +259,62 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: COLORS.navy },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:    { flex: 1, backgroundColor: colors.navy },
   content: { padding: 20 },
 
   header:   { alignItems: 'center', marginBottom: 24 },
-  title:    { ...FONTS.bold, fontSize: 22, color: COLORS.surface, marginBottom: 4 },
-  subtitle: { ...FONTS.regular, fontSize: 13, color: COLORS.steel },
+  title:    { ...FONTS.bold, fontSize: 22, color: colors.surface, marginBottom: 4 },
+  subtitle: { ...FONTS.regular, fontSize: 13, color: colors.steel },
 
   // Score ring
   ringWrapper: { alignItems: 'center', marginBottom: 24 },
   ring: {
     width: 140, height: 140, borderRadius: 70,
     borderWidth: 6, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.bgCard,
-    ...Platform.select({ ios: { shadowColor: COLORS.black, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
+    backgroundColor: colors.bgCard,
+    ...Platform.select({ ios: { shadowColor: colors.black, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
   },
   ringPct:    { ...FONTS.bold, fontSize: 38, fontVariant: ['tabular-nums'] },
-  ringLabel:  { ...FONTS.regular, fontSize: 13, color: COLORS.info, marginTop: 2 },
+  ringLabel:  { ...FONTS.regular, fontSize: 13, color: colors.info, marginTop: 2 },
   passBadge:  { ...FONTS.bold, fontSize: 14, marginTop: 12 },
 
   // Stats row
-  statsRow:    { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderRadius: RADIUS?.md ?? 12, marginBottom: 20, padding: 16 },
+  statsRow:    { flexDirection: 'row', backgroundColor: colors.bgCard, borderRadius: RADIUS?.md ?? 12, marginBottom: 20, padding: 16 },
   statBox:     { flex: 1, alignItems: 'center' },
   statNum:     { ...FONTS.bold, fontSize: 28, fontVariant: ['tabular-nums'] },
-  statLabel:   { ...FONTS.regular, fontSize: 12, color: COLORS.info, marginTop: 2 },
+  statLabel:   { ...FONTS.regular, fontSize: 12, color: colors.info, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: 'rgba(133,183,235,0.15)', marginVertical: 4 },
 
   // CTAs
   ctaRow:               { flexDirection: 'column', gap: 10, marginBottom: 28 },
   ctaBtn:               { borderRadius: RADIUS?.md ?? 12, paddingVertical: 14, alignItems: 'center' },
-  ctaPrimary:           { backgroundColor: COLORS.legal },
-  ctaSecondary:         { backgroundColor: COLORS.bgCard, borderWidth: 1, borderColor: COLORS.steel },
-  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: COLORS.white },
-  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: COLORS.info },
+  ctaPrimary:           { backgroundColor: colors.legal },
+  ctaSecondary:         { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.steel },
+  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: colors.white },
+  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: colors.info },
 
   // Section label
-  sectionLabel: { ...FONTS.bold, fontSize: 16, color: COLORS.surface, marginBottom: 4 },
-  sectionHint:  { ...FONTS.regular, fontSize: 12, color: COLORS.steel, marginBottom: 12 },
+  sectionLabel: { ...FONTS.bold, fontSize: 16, color: colors.white, marginBottom: 4 },
+  sectionHint:  { ...FONTS.regular, fontSize: 12, color: colors.steel, marginBottom: 12 },
 
   // Answer rows
   ansRow:     { borderRadius: RADIUS?.md ?? 10, marginBottom: 8, overflow: 'hidden' },
-  ansCorrect: { backgroundColor: COLORS.legalBg ?? COLORS.legalBg, borderLeftWidth: 3, borderLeftColor: COLORS.legal },
-  ansWrong:   { backgroundColor: COLORS.bailBg  ?? COLORS.bailBg, borderLeftWidth: 3, borderLeftColor: COLORS.bail },
+  ansCorrect: { backgroundColor: colors.legalBg ?? colors.legalBg, borderLeftWidth: 3, borderLeftColor: colors.legal },
+  ansWrong:   { backgroundColor: colors.bailBg  ?? colors.bailBg, borderLeftWidth: 3, borderLeftColor: colors.bail },
 
   ansHeader:  { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8 },
   // rows sit on the light legalBg / bailBg tints: dark text
-  ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: COLORS.navy, marginTop: 1 },
-  ansNum:     { ...FONTS.bold, fontSize: 13, color: COLORS.navy, width: 30 },
-  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: COLORS.navy, lineHeight: 18 },
-  ansChevron: { ...FONTS.regular, fontSize: 11, color: COLORS.steel, marginTop: 2 },
+  ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: colors.textBrand, marginTop: 1 },
+  ansNum:     { ...FONTS.bold, fontSize: 13, color: colors.textBrand, width: 30 },
+  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: colors.textBrand, lineHeight: 18 },
+  ansChevron: { ...FONTS.regular, fontSize: 11, color: colors.steel, marginTop: 2 },
 
   ansDetail:     { paddingHorizontal: 12, paddingBottom: 12 },
   ansLine:       { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
   ansLineLabel:  { ...FONTS.bold, fontSize: 13 },
   ansLineVal:    { ...FONTS.regular, fontSize: 13, flex: 1 },
-  ansRule:       { ...FONTS.regular, fontStyle: 'italic' as const, fontSize: 12, color: COLORS.steel, marginTop: 6 },
+  ansRule:       { ...FONTS.regular, fontStyle: 'italic' as const, fontSize: 12, color: colors.steel, marginTop: 6 },
   explainBtn:    { marginTop: 8, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: 'rgba(133,183,235,0.12)', borderRadius: 8, alignSelf: 'flex-start' },
-  explainBtnText:{ ...FONTS.bold, fontSize: 13, color: COLORS.steel },
+  explainBtnText:{ ...FONTS.bold, fontSize: 13, color: colors.steel },
 });

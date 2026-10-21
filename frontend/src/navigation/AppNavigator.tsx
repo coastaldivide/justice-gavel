@@ -9,7 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { RootStackParamList } from '../types/navigation';
 import { t, useLang, locale, perLang } from '../i18n';
-import { COLORS } from '../constants/theme';
+import { COLORS, useTheme } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
 import { AppIcon, ICONS, type IconName } from '../components/AppIcon';
@@ -60,10 +60,11 @@ import OfflineStatusScreen from '../screens/OfflineStatusScreen';
 // tree on every lazy load, losing tab state and back history.
 function ScreenFallback() {
   useLang();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center',
-                   backgroundColor: COLORS.white }}>
-      <ActivityIndicator size="large" color={COLORS.navyMid} />
+                   backgroundColor: colors.bg }}>
+      <ActivityIndicator size="large" color={colors.textBrand} />
     </View>
   );
 }
@@ -172,6 +173,7 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
 // ── More stack — all secondary screens ────────────────────────────────────────
 function MoreNavigator() {
   useLang();
+  const { colors } = useTheme();
   // The Electron menu / deep-link bridge (window.__navigateTo) lives in
   // App.tsx, where it has access to the root navigation container ref.
   return (
@@ -217,7 +219,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />
-      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: t('x_nav_emergency_share'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: t('x_nav_emergency_share'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: t('x_nav_crisis_support'), headerStyle: { backgroundColor: COLORS.blue }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: t('x_nav_diversion_eligibility') }} />
       <MoreStack.Screen name="Translator"            component={TranslatorScreen}            options={{ title: t('x_nav_interpreter') }} />
@@ -229,8 +231,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="SavedLawyers"          component={SavedLawyersScreen}          options={{ title: t('x_nav_saved_lawyers') }} />
       <MoreStack.Screen name="DeadlineCalculator"    component={DeadlineCalculatorScreen}    options={{ title: t('x_nav_deadline_calculator') }} />
       <MoreStack.Screen name="PILead"                component={PILeadScreen}                options={{ title: t('x_nav_submit_case') }} />
-      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: t('x_nav_tenant_rights'), headerStyle: { backgroundColor: COLORS.legalDark }, headerTintColor: COLORS.white }} />
-      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: t('x_nav_ice_detention_help'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: t('x_nav_tenant_rights'), headerStyle: { backgroundColor: colors.legalDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: t('x_nav_ice_detention_help'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="JuvenileJustice"       component={JuvenileJusticeScreen}       options={{ title: t('x_nav_juvenile_justice') }} />
         <MoreStack.Screen name="HagueContact"
           component={HagueContactScreen}
@@ -246,9 +248,9 @@ function MoreNavigator() {
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: t('x_nav_specialty_courts') }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: t('x_nav_court_locator') }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: t('bail_calculator') }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: t('x_nav_court_forms') }} />
-      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: t('x_nav_document_scanner') }} />
       <MoreStack.Screen name="LawyerProfile"         component={LawyerProfileScreen}         options={{ title: t('x_nav_attorney_profile') }} />
       <MoreStack.Screen name="Search"                component={SearchScreen}                options={{ title: t('x_nav_search') }} />
@@ -289,16 +291,17 @@ options={{ title: t('x_nav_settings') }} />
 
 function MainTabs() {
   useLang();
+  const { colors } = useTheme();
   return (
     <ErrorBoundary>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor:    COLORS.tabActive,
-        tabBarInactiveTintColor:  COLORS.tabInactive,
+        tabBarActiveTintColor:    colors.tabActive,
+        tabBarInactiveTintColor:  colors.tabInactive,
         tabBarStyle: {
-          backgroundColor: COLORS.tabBg,
-          borderTopColor:  COLORS.tabBorder,
+          backgroundColor: colors.tabBg,
+          borderTopColor:  colors.tabBorder,
           borderTopWidth:  1.5,
           height:          62,
           paddingBottom:   8,

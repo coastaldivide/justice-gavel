@@ -227,9 +227,10 @@ describe('6. i18n qc_ — Quick Connect (28 keys full)', () => {
   });
   test('6-02: trust badge labels', async () => {
     const en = await getEn();
-    expect(en['qc_encrypted']).toBe('🔒 Encrypted');
+    // UI pass 2: no emoji in i18n values (✓ is a text mark and stays)
+    expect(en['qc_encrypted']).toBe('Encrypted');
     expect(en['qc_no_sub']).toBe('✓ No subscription');
-    expect(en['qc_nearest']).toBe('📍 Nearest to you');
+    expect(en['qc_nearest']).toBe('Nearest to you');
   });
   test('6-03: GPS location states', async () => {
     const en = await getEn();
@@ -278,10 +279,11 @@ describe('7. i18n onboard_ — Onboarding (27 keys full)', () => {
 describe('8. i18n help_ — Help Now Screen (22 keys full)', () => {
   test('8-01: provider card labels', async () => {
     const en = await getEn();
-    expect(en['help_now_bail_label']).toBe('🔓 Bail Bondsman');
-    expect(en['help_now_lawyer_label']).toBe('⚖️ Criminal Defense Lawyer');
+    // UI pass 2: no emoji in i18n values — the icon is drawn by the screen (ICONS)
+    expect(en['help_now_bail_label']).toBe('Bail Bondsman');
+    expect(en['help_now_lawyer_label']).toBe('Criminal Defense Lawyer');
     expect(en['help_now_no_phone']).toBe('No phone on file');
-    expect(en['help_now_directions']).toBe('🗺  Get Directions');
+    expect(en['help_now_directions']).toBe('Get Directions');
   });
   test('8-02: more/quick-connect CTAs', async () => {
     const en = await getEn();
@@ -337,8 +339,9 @@ describe('10. i18n res_ — AI Legal Research (22 keys full)', () => {
     expect(en['res_placeholder_new']).toContain('suppression motion');
     expect(en['res_placeholder_follow']).toContain('Follow-up');
     expect(en['res_history_start']).toBe('Start Researching →');
-    expect(en['res_copy']).toBe('📋 Copy');
-    expect(en['res_discuss_ai']).toBe('⚖️ Discuss with AI');
+    // UI pass 2: no emoji in i18n values — the icon is drawn by the screen (ICONS)
+    expect(en['res_copy']).toBe('Copy');
+    expect(en['res_discuss_ai']).toBe('Discuss with AI');
     expect(en['res_new_search']).toBe('New Research');
     expect(en['res_session_label']).toBe('Research session');
   });

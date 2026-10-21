@@ -33,9 +33,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Activit
 import { FileSystem, RNShare, Clipboard } from '../utils/webCompat';
 import { appendCaseNote } from '../services/caseNotes';
 import { api, apiErrorMessage } from '../services/api';
-import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
@@ -51,6 +51,8 @@ interface StructuredNote {
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const scale  = useRef(new Animated.Value(1)).current;
   const opac   = useRef(new Animated.Value(0)).current;
   const anim   = useRef<Animated.CompositeAnimation | null>(null);
@@ -83,7 +85,7 @@ function PulseRing({ active }: { active: boolean }) {
     <Animated.View style={[styles.pulseRing, {
       transform: [{ scale }],
       opacity: opac,
-      backgroundColor: COLORS.emergency,
+      backgroundColor: colors.emergency,
     }]} />
   );
 }
@@ -120,7 +122,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     return () => { mountedRef.current = false; };
   }, []);
   const { colors, isDark } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
 
   const { caseId, caseTitle, onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -234,7 +236,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   // ── Format note for case notes field ─────────────────────────────────────────
   function formatNoteForCase(n: StructuredNote | undefined): string {
     if (!n) return '';
-    let out = `📝 ${n.date}\n\n`;
+    let out = `${n.date}\n\n`;
     out += `${n.summary}\n`;
     if (n.next_steps?.length) {
       out += '\n' + t('x_voice_note_next_steps') + '\n';
@@ -254,7 +256,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         {caseTitle && (
           <View style={[styles.casePill, { backgroundColor: COLORS.navy + '18', borderColor: COLORS.navy + '33' }]}>
-            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
+            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
           </View>
         )}
         <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>
@@ -273,7 +275,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           activeOpacity={0.85}
         >
           <View style={[styles.micBtn, { backgroundColor: COLORS.navy }]}>
-            <IconLabel icon={ICONS.record} textStyle={styles.micIcon} maxFontSizeMultiplier={1.4}></IconLabel>
+            <AppIcon name={ICONS.record} size={20} color={colors.textBrand} style={styles.micIcon} />
           </View>
         </TouchableOpacity>
 
@@ -295,7 +297,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   if (phase === 'recording') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.centreWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.timer, { color: COLORS.emergency }]}>{timer}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.timer, { color: colors.emergency }]}>{timer}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.recordingLabel, { color: colors.textMuted }]}>{t('x_voice_note_recording')}</Text>
 
         {/* Pulsing stop button */}
@@ -303,7 +305,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           <PulseRing active />
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-            style={[styles.micBtn, { backgroundColor: COLORS.emergency }]}
+            style={[styles.micBtn, { backgroundColor: colors.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
             accessibilityLabel={t('x_voice_note_stop_recording_process_note')}
@@ -324,7 +326,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   if (phase === 'processing') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.centreWrap}>
-        <ActivityIndicator size="large" color={COLORS.navy} />
+        <ActivityIndicator size="large" color={themeColors().textBrand} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.processingLabel, { color: colors.textPrimary }]}>
           {t('x_voice_note_structuring_note')}
         </Text>
@@ -344,7 +346,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       <ScrollView contentContainerStyle={styles.textInputScroll} keyboardShouldPersistTaps="handled">
         {caseTitle && (
           <View style={[styles.casePill, { backgroundColor: COLORS.navy + '18', borderColor: COLORS.navy + '33' }]}>
-            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
+            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
           </View>
         )}
         <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>{t('x_voice_note_type_note')}</Text>
@@ -358,7 +360,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
               maxLength={2000}
           numberOfLines={10}
           placeholder={t('x_voice_note_e_g_met_with')}
-          placeholderTextColor={COLORS.textSecond}
+          placeholderTextColor={colors.textSecond}
           value={textIn}
           onChangeText={setTextIn}
           textAlignVertical="top"
@@ -407,10 +409,10 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
             {note.next_steps?.length > 0 && (
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.legalBg : colors.legalBg, borderColor: colors.legal }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.legal }]}>{t('x_voice_note_next_steps_2')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: colors.legal }]}>{t('x_voice_note_next_steps_2')}</Text>
                 {note.next_steps.map((s, i) => (
                   <View key={`next_ste-${i}`} style={styles.resultBulletRow}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.legal }]}>›</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: colors.legal }]}>›</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBulletText, { color: colors.textSecond }]}>{s}</Text>
                   </View>
                 ))}
@@ -419,10 +421,10 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
             {note.flags?.length > 0 && (
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warn }]}>
-                <IconLabel icon={ICONS.flag} textStyle={[styles.resultSectionTitle, { color: COLORS.bail }]} maxFontSizeMultiplier={1.4}>{t('x_voice_note_flagged')}</IconLabel>
+                <IconLabel icon={ICONS.flag} textStyle={[styles.resultSectionTitle, { color: colors.bail }]} maxFontSizeMultiplier={1.4}>{t('x_voice_note_flagged')}</IconLabel>
                 {note.flags.map((f, i) => (
                   <View key={`flags-${i}`} style={styles.resultBulletRow}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.bail }]}>!</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: colors.bail }]}>!</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBulletText, { color: colors.textSecond }]}>{f}</Text>
                   </View>
                 ))}
@@ -488,7 +490,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:    { flex: 1 },
   centreWrap:{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -506,7 +508,7 @@ const makeStyles = () => StyleSheet.create({
   micBtn:    { width: 100, height: 100, borderRadius: 40,
     alignItems: 'center', justifyContent: 'center', ...SHADOW.md },
   micIcon:   { fontSize: 44 },
-  stopSquare:{ width: 32, height: 32, borderRadius: 8, backgroundColor: COLORS.bgCard },
+  stopSquare:{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.bgCard },
 
   tapHint:   { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 20 },
 
@@ -528,7 +530,7 @@ const makeStyles = () => StyleSheet.create({
   editArea:  { minHeight: 200, marginBottom: 16 },
   processBtn:{ borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
     marginBottom: 12, ...SHADOW.sm },
-  processBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  processBtnText: { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
 
   typeLink:  { paddingVertical: 10, alignItems: 'center', marginBottom: 8 },
   typeLinkText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
@@ -552,12 +554,9 @@ const makeStyles = () => StyleSheet.create({
 
   saveBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 12, ...SHADOW.md },
-  saveBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  saveBtnText: { color: colors.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
   shareNoteBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11,
     alignItems: 'center', marginBottom: 10 },
   shareNoteBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
-
-// Module-level fallback for helper components
-const styles = makeStyles();
 export default React.memo(VoiceNoteScreen);

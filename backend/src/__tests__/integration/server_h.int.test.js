@@ -180,7 +180,7 @@ describeIntegration('section H — server-wide', () => {
     expect(s.body).toMatchObject({ attorney_invited: true, token: `tok-${client.user.id}-guest` });
     expect(daily.requests.every(r => r.auth === 'Bearer daily-test-key')).toBe(true);
     const invite = pushesTo(token(`h3-atty-${ctx.tag}`)).pop();
-    expect(invite).toMatchObject({ title: '📹 Consulta por video', data: { type: 'video_invite', screen: 'VideoConsultation', room: s.body.room_name } });
+    expect(invite).toMatchObject({ title: 'Consulta por video', data: { type: 'video_invite', screen: 'VideoConsultation', room: s.body.room_name } });
     expect(invite.body).toMatch(/inició una videollamada con usted/);
 
     const join = await ctx.request().post(`/api/video/session/${s.body.room_name}/join`).set(atty.headers).send({});
@@ -255,9 +255,9 @@ describeIntegration('section H — server-wide', () => {
     const toAtty = pushesTo(token(`h5-atty-${ctx.tag}`)).filter(m => m.data?.type === 'consultation_reminder');
     expect(toClient).toHaveLength(1);
     expect(toAtty).toHaveLength(1);
-    expect(toClient[0].title).toBe('📅 Consulta mañana');
+    expect(toClient[0].title).toBe('Consulta mañana');
     expect(toClient[0].body).toMatch(/^.+ — lunes, 2 de junio · 10:00 a\.\s?m\. CDT\.$/);
-    expect(toAtty[0].title).toBe('📅 Consulta com cliente amanhã');
+    expect(toAtty[0].title).toBe('Consulta com cliente amanhã');
     expect((await ctx.db.get('SELECT reminder_sent FROM consultation_bookings WHERE id = ?', [b.id])).reminder_sent).toBeTruthy();
   });
 
@@ -273,7 +273,7 @@ describeIntegration('section H — server-wide', () => {
     expect((await runExpungementTriggerSweep(ctx.db)).planned).toBe(0);
     const rows = await ctx.db.all(`SELECT title, body, notification_type FROM scheduled_pushes WHERE dedupe_key = ?`, [`expunge:${caseId}`]);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ notification_type: 'expungement', title: '📋 Vụ việc của bạn đã kết thúc — bước tiếp theo?' });
+    expect(rows[0]).toMatchObject({ notification_type: 'expungement', title: 'Vụ việc của bạn đã kết thúc — bước tiếp theo?' });
     expect(rows[0].body).toContain(`H6 ${ctx.tag}`);
   });
 
@@ -320,7 +320,7 @@ describeIntegration('section H — server-wide', () => {
     await sched.runDocketReminderSweep();
     const got = pushesTo(token(`h8-${ctx.tag}`)).filter(m => m.data?.type === 'deadline_reminder');
     expect(got).toHaveLength(1);
-    expect(got[0].title).toBe('⚖️ Hạn chót ngày mai');
+    expect(got[0].title).toBe('Hạn chót ngày mai');
     expect(got[0].body).toBe(`H8 filing ${ctx.tag} lúc 09:30`);
   });
 

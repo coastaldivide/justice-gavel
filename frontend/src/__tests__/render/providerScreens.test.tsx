@@ -101,7 +101,9 @@ describe('LawyersScreen', () => {
     wrap(<LawyersScreen navigation={makeNavigation()} route={{ params: {} }} />);
     await screen.findByText('What do you need help with?');
     expect(screen.getByTestId('need-Appeals')).toBeTruthy();
-    expect(screen.getByText('📜')).toBeTruthy();
+    // the need's icon is an Ionicon from ICONS (no emoji), decorative to screen readers
+    const icon = screen.getByTestId('need-Appeals').findAll((n: any) => n.props && n.props.accessibilityElementsHidden === true);
+    expect(icon.length).toBeGreaterThan(0);
   });
 
   it('loads lawyers near the user in the SERVER order (no client re-sort by rating)', async () => {

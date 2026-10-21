@@ -1,4 +1,4 @@
-import { COLORS } from '../constants/theme';
+import { useTheme, type ThemeColors } from '../constants/theme';
 /**
  * MatterScreen.tsx — Law firm matter detail view
  * Shows matter details, assigned attorney, court dates, linked cases, billing.
@@ -16,6 +16,8 @@ type Props = ScreenProps<'Matter'>;
 
 function MatterScreen({ route, navigation }: Props) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const matterId = (route.params as RouteParams | undefined)?.matterId;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -83,18 +85,18 @@ function MatterScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen:   { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  screen:   { flex: 1, backgroundColor: colors.bg },
   content:  { padding: 20 },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title:    { fontSize: 22, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
-  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 20 },
-  row:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  label:    { fontSize: 14, color: COLORS.textMuted, fontWeight: '500' },
-  value:    { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
+  title:    { fontSize: 22, fontWeight: '700', color: colors.textBrand, marginBottom: 4 },
+  subtitle: { fontSize: 15, color: colors.textMuted, marginBottom: 20 },
+  row:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  label:    { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
+  value:    { fontSize: 14, color: colors.textPrimary, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   notes:    { marginTop: 16 },
-  noteText: { fontSize: 14, color: COLORS.textSecond, lineHeight: 22, marginTop: 4 },
-  btn:      { backgroundColor: COLORS.navy, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
-  btnText:  { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  noteText: { fontSize: 14, color: colors.textSecond, lineHeight: 22, marginTop: 4 },
+  btn:      { backgroundColor: colors.navy, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
+  btnText:  { color: colors.white, fontSize: 16, fontWeight: '700' },
 });
 export default React.memo(MatterScreen);

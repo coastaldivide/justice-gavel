@@ -1208,7 +1208,7 @@
   "home_nudge_sub": "Guarde casos, envíe alertas SOS y reciba notificaciones",
   "home_footer_innocent": "Inocente hasta que se demuestre lo contrario.",
   "home_footer_title": "Su conexión legal",
-  "home_footer_sub": "Disponible 24/7 · 97 ciudades en todo el país",
+  "home_footer_sub": "Disponible 24/7 · Los 50 estados + DC",
   "home_offline_body": "Sin conexión a internet. La búsqueda, la orientación de IA y las funciones de la cuenta necesitan conexión. Los recursos de emergencia y las tarjetas de derechos guardadas funcionan sin conexión.",
   "home_offline_ok": "Aceptar",
   "home_offline_a11y": "Sin conexión a internet: toque para ver qué funciona sin conexión",
@@ -1346,8 +1346,7 @@
   "x_feedback_button_cancel_feedback": "Cancelar comentarios",
   "x_feedback_button_submit_feedback": "Enviar comentarios",
   "x_feedback_button_send_feedback": "Enviar comentarios",
-  "x_floating_sosbutton_emergency_call_help": "Emergencia: pedir ayuda",
-  "x_floating_sosbutton_activates_emergency_mode": "Activa el modo de emergencia",
+  "x_floating_sosbutton_emergency_call_help": "SOS: avisar a sus contactos de emergencia",
   "x_gradient_header_go_back": "Volver",
   "x_lawyer_card_attorney": "Abogado {name}{value}",
   "x_lawyer_card_away": ", a {dist}",
@@ -3920,7 +3919,6 @@
   "x_permissions_turn_reminders": "Activar recordatorios",
   "x_date_utils_days": "En {days} días",
   "x_ics_export_add_calendar": "Agregar al calendario",
-  "x_floating_sosbutton_hold": "MANTENER",
   "x_legal_disclaimer_modal_text": "y",
   "x_advocacy_lawyers": "{n} abogados",
   "x_arrest_monitor_monitors": "{length} / {MAX_WATCHES} monitoreos",
@@ -5055,5 +5053,8 @@
   "bd_profile_saved": "Perfil guardado.",
   "x_video_consultation_join_video_call": "Unirse a la videollamada",
   "hn_how_sorted": "Cómo se ordenan los resultados",
-  "cd_clear_courthouse_a11y": "Quitar"
+  "cd_clear_courthouse_a11y": "Quitar",
+  "adm_rating_of_5": "{n} de 5 estrellas",
+  "gg_featured": "Destacado",
+  "sos_btn_hint": "Toque y luego confirme para enviar su alerta. No se envía nada hasta que confirme."
 }

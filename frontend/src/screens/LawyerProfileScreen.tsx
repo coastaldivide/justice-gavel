@@ -16,7 +16,7 @@ import { ContactActions } from '../components/ContactActions';
 import { useAuthGate } from '../components/AuthGate';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { api, apiErrorMessage, unwrapList } from '../services/api';
-import { useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
+import { useTheme, RADIUS, TYPE, FONTS, COLORS, themeColors } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 import Analytics from '../services/analytics';
@@ -24,7 +24,7 @@ import { t, useLang, locale } from '../i18n';
 import { formatPhone, websiteLabel } from '../utils/contact';
 import { parseWeek, weekdayName, clock } from '../utils/hours';
 import * as secureStorage from '../utils/secureStorage';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon, Stars } from '../components/AppIcon';
 
 type Review = { id: number; rating: number; comment?: string | null; verified?: number; created_at?: string; status?: string };
 type Profile = {
@@ -206,7 +206,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   });
 
   const s = makeStyles();
-  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.navy} size="large" /></View>;
+  if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.textBrand} size="large" /></View>;
   if (!lawyer) return (
     <View testID="lawyer-profile-unavailable" style={[s.center, { backgroundColor: colors.bg, padding: 32 }]}>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, color: colors.textMuted, textAlign: 'center' }}>
@@ -239,7 +239,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={s.badges}>
           {lawyer.source === 'google' && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_source_google')}</Text></View>}
           {lawyer.bar_verified && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_expungement_bar_verified')}</Text></View>}
-          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: COLORS.gold }]}><IconLabel icon={ICONS.lawyer} textStyle={[s.badgeText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_jtb_verified')}</IconLabel></View>}
+          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: colors.gold }]}><IconLabel icon={ICONS.lawyer} textStyle={[s.badgeText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_jtb_verified')}</IconLabel></View>}
           {lawyer.golden_gavel && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_nav_golden_gavel')}</Text></View>}
           {lawyer.on_app && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_on_app')}</Text></View>}
         </View>
@@ -255,13 +255,13 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       <View style={[s.statsRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         {lawyer.rating != null && lawyer.rating > 0 && (
           <View style={s.stat} testID="lp-google-rating">
-            <Text maxFontSizeMultiplier={1.3} style={[s.statValue, { color: colors.textPrimary }]}>{lawyer.rating.toFixed(1)}★</Text>
+            <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} maxFontSizeMultiplier={1.3} textStyle={[s.statValue, { color: colors.textPrimary }]}>{lawyer.rating.toFixed(1)}</IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={[s.statLabel, { color: colors.textMuted }]}>{t(lawyer.reviews === 1 ? 'lp_google_reviews_one' : 'lp_google_reviews', { count: lawyer.reviews ?? 0 })}</Text>
           </View>
         )}
         {appCount > 0 && appAvg != null && (
           <View style={s.stat}>
-            <Text maxFontSizeMultiplier={1.3} style={[s.statValue, { color: colors.textPrimary }]}>{appAvg.toFixed(1)}★</Text>
+            <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} maxFontSizeMultiplier={1.3} textStyle={[s.statValue, { color: colors.textPrimary }]}>{appAvg.toFixed(1)}</IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={[s.statLabel, { color: colors.textMuted }]}>{t(appCount === 1 ? 'lp_app_reviews_one' : 'lp_app_reviews', { count: appCount })}</Text>
           </View>
         )}
@@ -309,8 +309,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={s.actionRow}>
           <TouchableOpacity accessibilityRole="button" testID="lp-save" accessibilityState={{ selected: !!savedId, busy: saving }}
             accessibilityLabel={savedId ? t('x_lawyers_unsave', { name: lawyer.name }) : t('x_lawyers_save_saved_list', { name: lawyer.name })}
-            style={[s.ghostBtn, { borderColor: savedId ? COLORS.gold : colors.border, backgroundColor: colors.bgCard }]} onPress={toggleSave} disabled={saving}>
-            <IconLabel icon={ICONS.starFilled} textStyle={[s.ghostBtnText, { color: savedId ? colors.goldText : colors.textPrimary }]} maxFontSizeMultiplier={1.3}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
+            style={[s.ghostBtn, { borderColor: savedId ? colors.gold : colors.border, backgroundColor: colors.bgCard }]} onPress={toggleSave} disabled={saving}>
+            <IconLabel icon={savedId ? ICONS.starFilled : ICONS.star} textStyle={[s.ghostBtnText, { color: savedId ? colors.goldText : colors.textPrimary }]} maxFontSizeMultiplier={1.3}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="lp-share" style={[s.ghostBtn, { borderColor: colors.border, backgroundColor: colors.bgCard }]} onPress={share}>
             <Text maxFontSizeMultiplier={1.3} style={[s.ghostBtnText, { color: colors.textPrimary }]}>{t('x_bar_prep_explanation_share')}</Text>
@@ -410,7 +410,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                 {[1, 2, 3, 4, 5].map(n => (
                   <TouchableOpacity key={n} accessibilityRole="button" accessibilityLabel={t(n === 1 ? 'x_lawyer_profile_star_one' : 'x_lawyer_profile_star_other', { n })}
                     accessibilityState={{ selected: userRating === n }} onPress={() => setUserRating(n)} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} testID={`review-star-${n}`}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 26, color: colors.goldText }}>{n <= userRating ? '★' : '☆'}</Text>
+                    <AppIcon name={n <= userRating ? ICONS.starFilled : ICONS.star} size={30} color={colors.goldText} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -438,9 +438,9 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           ) : reviews.map(r => (
             <View key={r.id} style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]} testID="review-item">
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.goldText }} accessibilityLabel={t(r.rating === 1 ? 'x_lawyer_profile_star_one' : 'x_lawyer_profile_star_other', { n: r.rating })}>
-                  {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
-                </Text>
+                <View accessible accessibilityRole="image" accessibilityLabel={t(r.rating === 1 ? 'x_lawyer_profile_star_one' : 'x_lawyer_profile_star_other', { n: r.rating })}>
+                  <Stars value={r.rating} size={14} color={colors.goldText} />
+                </View>
                 <Text testID={Number(r.verified) === 1 ? 'review-verified' : 'review-unverified'} maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: Number(r.verified) === 1 ? colors.legal : colors.textMuted }}>
                   {Number(r.verified) === 1 ? t('x_lawyer_profile_verified_client') : t('x_lawyer_profile_unverified_review')}
                 </Text>

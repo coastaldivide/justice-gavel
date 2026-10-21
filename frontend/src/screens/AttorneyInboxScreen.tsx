@@ -72,7 +72,7 @@ export default function AttorneyInboxScreen() {
 
   if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation as never} title={t('x_nav_attorney_inbox')} body={t('ai_signin_body')} onSignedIn={recheck} /></View>;
   if (openWith) return <DirectConversation who={{ user_id: openWith.user_id, name: openWith.name }} onClose={() => { setOpenWith(null); load(true); }} />;
-  if (!data && !error) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (!data && !error) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
 
   const sm = data?.summary;
   const empty = data && !data.direct_messages.length && !data.unread_messages.length && !data.pending_assignments.length && !data.upcoming_consultations.length && !data.today_hearings.length;

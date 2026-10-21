@@ -66,7 +66,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
   });
 
   if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('adm_title')} body={t('adm_signin_body')} onSignedIn={recheck} /></View>;
-  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.navy} /></View>;
+  if (hasSession === null || !ready) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator size="large" color={colors.textBrand} /></View>;
   if (!allowed) return <View testID="admin-not-allowed" style={[s.center, { backgroundColor: colors.bg, padding: 24 }]}><Text maxFontSizeMultiplier={1.4} style={[s.title, { textAlign: 'center' }]}>{t('adm_forbidden')}</Text></View>;
 
   const tabs: Q[] = ['bar', 'claims', 'reports', 'reviews'];
@@ -84,7 +84,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(q); }} />}>
         {!!notice && <View testID="adm-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
         {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
-        {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />}
+        {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}
         {rows?.length === 0 && !error && <View style={s.card} testID="adm-empty"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_empty')}</Text></View>}
 
         {q === 'bar' && (rows as Bar[] | null)?.map(b => (

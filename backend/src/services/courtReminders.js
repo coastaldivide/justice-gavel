@@ -42,10 +42,10 @@ import {
 import { msg, formatDay, formatTime, userLang, rememberLanguage, requestedLang } from '../i18n/index.js';
 
 export const COURT_REMINDER_PLAN = Object.freeze([
-  { days: 7, hh: 9,  mm: 0,  title: '📅 Court date in 7 days' },
-  { days: 3, hh: 9,  mm: 0,  title: '⚠️ Court date in 3 days' },
-  { days: 1, hh: 18, mm: 0,  title: '🚨 Court date TOMORROW' },
-  { days: 0, hh: 6,  mm: 30, title: '🏛️ Court date TODAY' },
+  { days: 7, hh: 9,  mm: 0,  title: 'Court date in 7 days' },
+  { days: 3, hh: 9,  mm: 0,  title: 'Court date in 3 days' },
+  { days: 1, hh: 18, mm: 0,  title: 'Court date TOMORROW' },
+  { days: 0, hh: 6,  mm: 30, title: 'Court date TODAY' },
 ]);
 
 /** Case statuses after which no court reminder should go out. */

@@ -4,10 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { getToken } from '../utils/secureStorage';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, themed, type ThemeColors } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { t, useLang, perLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 interface GavelCriteria {
   avg_rating?: number;
@@ -21,14 +21,14 @@ interface GavelCriteria {
 
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const GAVEL_EMOJI  = { 0: '',    1: '🥉', 2: '🥈', 3: '🏆' } as const;
+const GAVEL_ICON  = { 0: ICONS.gavel, 1: ICONS.medal, 2: ICONS.medal, 3: ICONS.trophy } as const;
 const GAVEL_LABEL = perLang(() => ({ 0: t('x_firm_vertical_none'), 1: t('x_golden_gavel_bronze'), 2: t('x_golden_gavel_silver'), 3: t('x_golden_gavel_golden') } as const));
-const GAVEL_COLOR  = {
-  0: { bg: COLORS.bg, text: COLORS.textMuted, border: COLORS.border, header: COLORS.textMuted },
-  1: { bg: COLORS.bailBg, text: COLORS.bail, border: COLORS.bail, header: COLORS.bail },
-  2: { bg: COLORS.bgSubtle, text: COLORS.textSecond, border: COLORS.border, header: COLORS.textMuted },
-  3: { bg: COLORS.warnBg, text: COLORS.gold, border: COLORS.gold, header: COLORS.gold },
-} as const;
+const GAVEL_COLOR  = themed(colors => ({
+  0: { bg: colors.bg, text: colors.textMuted, border: colors.border, header: colors.textMuted },
+  1: { bg: colors.bailBg, text: colors.bail, border: colors.bail, header: colors.bail },
+  2: { bg: colors.bgSubtle, text: colors.textSecond, border: colors.border, header: colors.textMuted },
+  3: { bg: colors.warnBg, text: colors.gold, border: colors.gold, header: colors.gold },
+} as const));
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type GavelLevel = 0 | 1 | 2 | 3;
@@ -82,7 +82,7 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
   const styles = makeStyles(colors);
   return (
     <View style={styles.critRow}>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.critIcon, { color: met ? COLORS.legalDark : COLORS.emergencyDark }]}>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.critIcon, { color: met ? colors.legalDark : colors.emergencyDark }]}>
         {met ? '✓' : '✗'}
       </Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.critLabel, { color: colors.textMuted }]}>{label}</Text>
@@ -93,6 +93,8 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
 // ── Journey bar ───────────────────────────────────────────────────────────────
 function JourneyBar({ level }: { level: GavelLevel }) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const steps: GavelLevel[] = [1, 2, 3];
   return (
     <View style={styles.journeyRow}
@@ -100,13 +102,13 @@ function JourneyBar({ level }: { level: GavelLevel }) {
       {steps.map((s, i) => (
         <React.Fragment key={s}>
           {i > 0 && (
-            <View style={[styles.journeyLine, { backgroundColor: level >= s ? GAVEL_COLOR[s].border : COLORS.border }]} />
+            <View style={[styles.journeyLine, { backgroundColor: level >= s ? GAVEL_COLOR[s].border : colors.border }]} />
           )}
           <View style={[styles.journeyStep,
-            { backgroundColor: level >= s ? GAVEL_COLOR[s].bg : COLORS.bg,
-              borderColor:      level >= s ? GAVEL_COLOR[s].border : COLORS.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.journeyEmoji}>{level >= s ? GAVEL_EMOJI[s] : '○'}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.journeyLabel, { color: level >= s ? GAVEL_COLOR[s].text : COLORS.textMuted }]}>
+            { backgroundColor: level >= s ? GAVEL_COLOR[s].bg : colors.bg,
+              borderColor:      level >= s ? GAVEL_COLOR[s].border : colors.border }]}>
+            <AppIcon name={level >= s ? GAVEL_ICON[s] : ICONS.radioOff} size={22} color={level >= s ? GAVEL_COLOR[s].text : colors.textMuted} style={styles.journeyEmoji} />
+            <Text maxFontSizeMultiplier={1.4} style={[styles.journeyLabel, { color: level >= s ? GAVEL_COLOR[s].text : colors.textMuted }]}>
               {GAVEL_LABEL()[s]}
             </Text>
           </View>
@@ -122,6 +124,7 @@ function CriteriaSection({ title, progress, criteria, earned }:
   { title: string; progress: Progress; criteria: Record<string, unknown>; earned: boolean }) {
   useLang();
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   if (!criteria) return null;
   const { user_type: ut } = progress;
 
@@ -182,6 +185,7 @@ function GoldenGavelScreen(): React.JSX.Element {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [status,    setStatus]    = useState<Status | null>(null);
   const [elig,      setElig]      = useState<EligResult | null>(null);
   const [hall,      setHall]      = useState<HallEntry[]>([]);
@@ -250,7 +254,7 @@ function GoldenGavelScreen(): React.JSX.Element {
       )}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: headerColor }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.headerIcon}>{hasAny ? GAVEL_EMOJI[level] : '⚖️'}</Text>
+        <AppIcon name={GAVEL_ICON[hasAny ? level : 0]} size={42} color={COLORS.white} style={styles.headerIcon} />
         <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_golden_gavel_gavel_program')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
           {hasAny
@@ -277,21 +281,21 @@ function GoldenGavelScreen(): React.JSX.Element {
         <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {status?.bronze_at && (
             <View style={styles.dateRow}>
-              <IconLabel icon={ICONS.medal} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+              <AppIcon name={ICONS.medal} size={20} color={GAVEL_COLOR[1].text} style={styles.dateEmoji} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_bronze_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.bronze_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.silver_at && (
             <View style={styles.dateRow}>
-              <IconLabel icon={ICONS.medal} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+              <AppIcon name={ICONS.medal} size={20} color={colors.textBrand} style={styles.dateEmoji} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_silver_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.silver_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.golden_at && (
             <View style={styles.dateRow}>
-              <IconLabel icon={ICONS.trophy} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
+              <AppIcon name={ICONS.trophy} size={20} color={GAVEL_COLOR[3].text} style={styles.dateEmoji} />
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_golden_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>
@@ -348,10 +352,11 @@ function GoldenGavelScreen(): React.JSX.Element {
               borderColor: entry.featured ? colors.gold : GAVEL_COLOR[entry.gavel_level as GavelLevel]?.border || colors.border,
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.hallIcon}>{entry.level_emoji || GAVEL_EMOJI[entry.gavel_level as GavelLevel]}</Text>
+                <AppIcon name={GAVEL_ICON[entry.gavel_level as GavelLevel] ?? ICONS.gavel} size={22} color={GAVEL_COLOR[entry.gavel_level as GavelLevel]?.text ?? colors.textBrand} style={styles.hallIcon} />
                 <View style={{ flex: 1 }}>
+                  {entry.featured && <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} textStyle={[styles.hallMeta, { color: colors.textMuted }]}>{t('gg_featured')}</IconLabel>}
                   <Text maxFontSizeMultiplier={1.4} style={[styles.hallName, { color: colors.textPrimary }]}>
-                    {entry.display_name}{entry.featured ? '  ★' : ''}
+                    {entry.display_name}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.hallMeta, { color: colors.textMuted }]}>
                     {t('x_golden_gavel_gavel_2', { value: GAVEL_LABEL()[entry.gavel_level as GavelLevel] || entry.level_label, value2: entry.tier === 'attorney' ? ' ' + t('x_golden_gavel_attorney') : entry.tier === 'bondsman' ? ' ' + t('x_golden_gavel_bondsman') : ' ' + t('x_golden_gavel_member'), value3: entry.state ? ` · ${entry.state}` : '' })}
@@ -379,12 +384,12 @@ function GoldenGavelScreen(): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:            { flex: 1 },
   scroll:            { padding: 16 },
   header:            { borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  headerIcon:        { fontSize: 42, marginBottom: 8 },
-  headerTitle:       { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
+  headerIcon:        { marginBottom: 8 },
+  headerTitle:       { color: colors.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:         { color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 20, textAlign: 'center' },
   card:              { borderRadius: 14, padding: 16, borderWidth: 1, marginBottom: 10 },
   cardBody:          { fontSize: 12, lineHeight: 20 },
@@ -392,32 +397,29 @@ const makeStyles = (colors: any) => StyleSheet.create({
   journeyRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
   journeyLine:       { flex: 1, height: 2, maxWidth: 48 },
   journeyStep:       { alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, minWidth: 76 },
-  journeyEmoji:      { fontSize: 22, marginBottom: 3 },
+  journeyEmoji:      { marginBottom: 3 },
   journeyLabel:      { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   nextHint:          { fontSize: 12, textAlign: 'center', marginTop: 10, lineHeight: 18 },
-  dateRow:           { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  dateEmoji:         { fontSize: 18, width: 26 },
+  dateRow:           { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.bg },
+  dateEmoji:         { width: 26 },
   dateLabel:         { flex: 1, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   dateVal:           { fontSize: 12 },
   optInBtn:          { marginTop: 12, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  optInBtnText:      { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
+  optInBtnText:      { color: colors.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
   critSection:       { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   critSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   critSectionTitle:  { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   earnedTag:         { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, backgroundColor: colors.legalBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
-  critRow:           { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
+  critRow:           { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.bg },
   critIcon:          { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18, marginTop: 1 },
   critLabel:         { fontSize: 12, flex: 1, lineHeight: 18 },
   hallCard:          { borderRadius: 12, padding: 12, borderWidth: 1, marginBottom: 8 },
-  hallIcon:          { fontSize: 22 },
+  hallIcon:          {},
   hallName:          { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   hallMeta:          { fontSize: 12, marginTop: 2 },
   helpedBadge:       { alignItems: 'center', minWidth: 48 },
-  helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.steelMid },
+  helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.steelMid },
   helpedLabel:       { fontSize: 11, color: colors.steel, fontWeight: '600' },
 });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(GoldenGavelScreen);

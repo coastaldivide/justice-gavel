@@ -232,7 +232,7 @@ function generatePDF(dialogue, meta) {
     doc.moveDown(0.3);
     doc.font('Helvetica-Bold').fontSize(11)
        .fillColor('#B71C1C')
-       .text('⚖  INNOCENT UNTIL PROVEN GUILTY', { align: 'center' });
+       .text('INNOCENT UNTIL PROVEN GUILTY', { align: 'center' });
 
     doc.moveDown(0.5);
     doc.moveTo(72, doc.y).lineTo(540, doc.y).strokeColor('#1E2D42').lineWidth(1.5).stroke();

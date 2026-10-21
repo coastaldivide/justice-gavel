@@ -36,7 +36,7 @@ import { isOnline } from '../services/offlineCache';
 import { detectCrisis } from '../utils/crisisDetect';
 import { t, useLang, perLang, locale } from '../i18n';
 import { getUserState } from '../utils/userState';
-import { useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, themeColors, type ThemeColors } from '../constants/theme';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 
 // ── Message shape ──────────────────────────────────────────────────────────────
@@ -108,6 +108,8 @@ interface BubbleProps {
 
 function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, onOpenCrisis, onRetry }: BubbleProps) {
   useLang();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const isUser = msg.role === 'user';
   const copy = () => {
@@ -119,7 +121,9 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
     <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}>
       {!isUser && (
         <View style={styles.avatarDot}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>{isDefender ? '⚖️' : 'JG'}</Text>
+          {isDefender
+            ? <AppIcon name={ICONS.lawyer} size={14} color={COLORS.white} />
+            : <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>JG</Text> /* i18n-exempt: brand initials (Justice Gavel) */}
         </View>
       )}
       {isUser ? (
@@ -137,7 +141,7 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
           style={[styles.bubble, styles.bubbleAssistant, msg.crisis && styles.bubbleCrisis]}
         >
           {msg.status === 'streaming' && !msg.text
-            ? <View style={styles.typingInline}><ActivityIndicator size="small" color={COLORS.navy} /><Text maxFontSizeMultiplier={1.4} style={styles.typingText}>{t('chat_thinking')}</Text></View>
+            ? <View style={styles.typingInline}><ActivityIndicator size="small" color={themeColors().textBrand} /><Text maxFontSizeMultiplier={1.4} style={styles.typingText}>{t('chat_thinking')}</Text></View>
             : <MarkdownText text={msg.text} style={styles.bubbleText} testID="chat-answer-text" />}
 
           {msg.crisis && (
@@ -195,10 +199,12 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
 
 // ── Quick-start prompt categories ─────────────────────────────────────────────
 // T1-G: colors.* replaced with hex literals (module scope — no hook access here)
-const PROMPT_CATEGORIES = perLang(() => [
+const PROMPT_CATEGORIES = perLang(() => {
+  const c = themeColors();
+  return [
   {
     category: t('chat_cat_emergency'),
-    color: COLORS.emergency,          // was COLORS.emergencyDark
+    color: c.emergency,          // was COLORS.emergencyDark
     prompts: [
       { label: t('chat_prompt_just_arrested'), text: t('x_ch_i_was_just_arrested') },
       { label: t('chat_prompt_know_rights'),   text: t('x_ch_what_my_rights_during') },
@@ -208,7 +214,7 @@ const PROMPT_CATEGORIES = perLang(() => [
   },
   {
     category: t('chat_cat_drug_criminal'),
-    color: COLORS.blue,          // was COLORS.blue
+    color: c.info,          // was COLORS.blue
     prompts: [
       { label: t('chat_prompt_drug'),         text: t('x_ch_i_was_charged_with_2') },
       { label: t('chat_prompt_assault'),      text: t('x_ch_i_have_assault_charge') },
@@ -218,7 +224,7 @@ const PROMPT_CATEGORIES = perLang(() => [
   },
   {
     category: t('chat_cat_family'),
-    color: COLORS.blue,
+    color: c.info,
     prompts: [
       { label: t('chat_prompt_divorce'),     text: t('x_ch_i_want_file_divorce') },
       { label: t('chat_prompt_custody'),     text: t('x_ch_how_does_child_custody') },
@@ -228,7 +234,7 @@ const PROMPT_CATEGORIES = perLang(() => [
   },
   {
     category: t('chat_cat_work'),
-    color: COLORS.navy,          // was COLORS.legalDark
+    color: c.textBrand,          // was COLORS.legalDark
     prompts: [
       { label: t('chat_prompt_wrongful'),    text: t('x_ch_i_think_i_was') },
       { label: t('chat_prompt_wage'),        text: t('x_ch_my_employer_not_paying') },
@@ -238,7 +244,7 @@ const PROMPT_CATEGORIES = perLang(() => [
   },
   {
     category: t('chat_cat_immigration'),
-    color: COLORS.emergency,          // was COLORS.warnDark
+    color: c.emergency,          // was COLORS.warnDark
     prompts: [
       { label: t('chat_prompt_ice'),   text: t('x_ch_family_member_was_detained'), intent: 'ice_detention' },
       { label: t('chat_prompt_asylum'),text: t('x_ch_how_do_i_apply') },
@@ -246,7 +252,8 @@ const PROMPT_CATEGORIES = perLang(() => [
       { label: t('chat_prompt_daca'),  text: t('x_ch_what_my_rights_as') },
     ],
   },
-]);
+];
+});
 
 const QUICK_PROMPTS = perLang(() => PROMPT_CATEGORIES()[0].prompts);
 
@@ -642,7 +649,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
       {isEmpty ? (
         <View style={styles.emptyState}>
-          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
+          <AppIcon name={ICONS.lawyer} size={20} color={themeColors().textBrand} />
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('ja_s1')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_ch_ask_anything_about_legal')}</Text>
           <View style={styles.quickPrompts}>
@@ -678,7 +685,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_nav_voice_note')}
           accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}>
-          <IconLabel icon={ICONS.record} textStyle={{ fontSize: 20 }} maxFontSizeMultiplier={1.4}></IconLabel>
+          <AppIcon name={ICONS.record} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
         </TouchableOpacity>
 
         <TextInput
@@ -700,7 +707,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_ch_open_interpreter')}
           accessibilityHint={t('x_ch_opens_real_time_translation')}>
-          <IconLabel icon={ICONS.globe} textStyle={{ fontSize: 20 }} maxFontSizeMultiplier={1.4}></IconLabel>
+          <AppIcon name={ICONS.globe} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
         </TouchableOpacity>
 
         {busy ? (
@@ -725,48 +732,48 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 // T2-B: COLORS constant is defined at module scope above; all refs resolve correctly
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:           { flex: 1, backgroundColor: 'transparent' },
-  header:           { backgroundColor: COLORS.navy, padding: 16, paddingTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle:      { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
-  headerSub:        { fontSize: 12, color: COLORS.bgSubtle, marginTop: 1 },
+  header:           { backgroundColor: colors.navy, padding: 16, paddingTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitle:      { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.white },
+  headerSub:        { fontSize: 12, color: colors.white, marginTop: 1 },
   clearBtn:         { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8 },
-  clearBtnText:     { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  clearBtnText:     { color: colors.white, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   messageList:      { padding: 12, paddingBottom: 4 },
   emptyState:       { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon:        { fontSize: 48, marginBottom: 12 },
   emptyTitle:       { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
   emptySub:         { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  promptCatRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.bgSubtle, marginBottom: 8 },
+  promptCatRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.bgSubtle, marginBottom: 8 },
   promptCatBtn:     { paddingHorizontal: 10, paddingVertical: 8, marginRight: 2, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   promptCatText:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textMuted, letterSpacing: 0.3 },
   quickPrompts:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  quickChip:        { backgroundColor: COLORS.bgSubtle, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },
-  quickChipText:    { fontSize: 14, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  iconBtn:          { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.bgSubtle, alignItems: 'center', justifyContent: 'center', marginHorizontal: 2 },
+  quickChip:        { backgroundColor: colors.bgSubtle, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: colors.bgSubtle },
+  quickChipText:    { fontSize: 14, lineHeight: 20, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  iconBtn:          { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginHorizontal: 2 },
   bubbleWrap:       { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
   bubbleWrapUser:   { justifyContent: 'flex-end' },
-  avatarDot:        { width: 30, height: 30, borderRadius: 16, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 2, borderWidth: 1.5, borderColor: 'rgba(133,183,235,0.4)' },
-  avatarText:       { color: COLORS.white, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
+  avatarDot:        { width: 30, height: 30, borderRadius: 16, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 2, borderWidth: 1.5, borderColor: 'rgba(133,183,235,0.4)' },
+  avatarText:       { color: colors.white, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
   bubble:           { maxWidth: '78%', borderRadius: 20, padding: 12 },
-  bubbleAssistant:  { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 3 },
-  bubbleUser:       { backgroundColor: COLORS.navy, borderBottomRightRadius: 4 },
+  bubbleAssistant:  { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4, elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 3 },
+  bubbleUser:       { backgroundColor: colors.navy, borderBottomRightRadius: 4 },
   bubbleText:       { fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
-  bubbleTextUser:   { color: COLORS.bgCard },
+  bubbleTextUser:   { color: colors.white },
   rightsRefs:       { marginTop: 10, gap: 6 },
   rightsRef:        { backgroundColor: colors.infoBg, borderRadius: 8, padding: 10, minHeight: 44 },
   rightsRefText:    { fontSize: 13, lineHeight: 19, color: colors.textPrimary, fontWeight: '700' },
   rightsRefSource:  { fontSize: 11, lineHeight: 15, color: colors.textSecond, marginTop: 2 },
   lawyerCta:        { marginTop: 10, backgroundColor: colors.legal, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.legal },
   lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  upgradeCta:       { marginTop: 10, backgroundColor: COLORS.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },
-  upgradeCtaText:   { fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  upgradeCta:       { marginTop: 10, backgroundColor: colors.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.bgSubtle },
+  upgradeCtaText:   { fontSize: 12, lineHeight: 20, color: themeColors().textBrand, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   typingInline:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typingText:       { fontSize: 12, lineHeight: 20, color: colors.textMuted },
   bubbleCrisis:     { borderColor: colors.emergency, borderWidth: 2 },
   crisisActions:    { marginTop: 10, gap: 8 },
   crisisBtn:        { backgroundColor: colors.emergencyDark, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
-  crisisBtnText:    { color: COLORS.white, fontSize: 14, fontWeight: '800' },
+  crisisBtnText:    { color: colors.white, fontSize: 14, fontWeight: '800' },
   crisisBtnAlt:     { borderWidth: 1, borderColor: colors.border, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   crisisBtnAltText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   statusNote:       { marginTop: 6, fontSize: 12, lineHeight: 18, color: colors.textMuted, fontStyle: 'italic' },
@@ -779,21 +786,18 @@ const makeStyles = (colors: any) => StyleSheet.create({
   disclaimerBody:   { fontSize: 11, lineHeight: 16 },
   guestCrisis:      { alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 },
   guestCrisisText:  { color: colors.textBrand, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' },
-  inputBar:         { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 10 : 10, backgroundColor: COLORS.bgCard, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
-  textInput:        { flex: 1, backgroundColor: COLORS.bg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
-  sendBtn:          { width: 52, height: 52, borderRadius: 20, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' },
+  inputBar:         { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 10 : 10, backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
+  textInput:        { flex: 1, backgroundColor: colors.bg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
+  sendBtn:          { width: 52, height: 52, borderRadius: 20, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled:  { backgroundColor: colors.bgSubtle },
   sendBtnText:      { color: colors.textOnNavy, fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 22 },
   sendBtnTextDisabled: { color: colors.textMuted },
   disclaimer:       { textAlign: 'center', fontSize: 11, color: colors.textMuted, paddingVertical: 10, backgroundColor: colors.bgCard },
   defenderBanner:    { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)' },
-  defenderBannerText:{ color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  defenderBannerText:{ color: colors.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   defenderBannerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 },
   defenderPrompts:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 },
   defenderChip:      { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1.5 },
   defenderChipText:  { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
-
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(ChatScreen);
