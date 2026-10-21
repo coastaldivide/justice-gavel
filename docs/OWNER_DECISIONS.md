@@ -45,6 +45,7 @@ decision, a lawyer, an account key, or a real phone.
   - the bail schedule (vague source labels);
   - matter-intelligence signals.
 - **Child support:** no state formula has a source, so the calculator shows "unavailable" for all 51 states until sourced guidelines are added.
+- **Home "Legal tip" rotation:** tips such as "A DUI checkpoint must be publicly announced in advance in most US states" have no source (some states don't allow checkpoints at all). Review every tip.
 - **Bar prep:** the answer keys lean heavily towards "B".
 - **Translations to do after the review:** expungement notes and other database legal text are shown in English (labelled) in es/pt/vi. Translate them once the English is approved.
 
