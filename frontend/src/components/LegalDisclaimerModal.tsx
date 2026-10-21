@@ -32,6 +32,7 @@ import { COLORS, FONT } from '../constants/theme';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS } from './AppIcon';
 
 // ── Versioning ────────────────────────────────────────────────────────────────
 export const CONSENT_VERSION = '2.0';
@@ -98,7 +99,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
 
         {/* ── Logo / Brand ── */}
         <View style={s.brand}>
-          <Text maxFontSizeMultiplier={1.4} style={s.logo}>⚖️</Text>
+          <AppIcon name={ICONS.gavel} size={52} color={COLORS.gold} style={s.logo} />
           <Text maxFontSizeMultiplier={1.4} style={s.appName}>Justice Gavel</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.tagline}>{t('x_legal_disclaimer_modal_legal_self_help_everyone')}</Text>
         </View>
@@ -196,7 +197,6 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    fontSize: 52,
     marginBottom: 10,
   },
   appName: {

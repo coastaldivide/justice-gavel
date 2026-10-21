@@ -15,6 +15,7 @@ import { openAttachment } from '../services/attachments';
 import { useToast } from './ToastProvider';
 import { useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from './AppIcon';
 
 export const DOC_MAX_BYTES = 10 * 1024 * 1024;
 export const DOC_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
@@ -44,13 +45,13 @@ export function CasePicker({ onPick }: { onPick: (c: { id: number; title: string
       {!cases && !error && <ActivityIndicator color={colors.textBrand} />}
       {!!error && (
         <TouchableOpacity accessibilityRole="button" style={s.row} onPress={load}>
-          <Text maxFontSizeMultiplier={1.4} style={s.rowText}>⚠ {error} · {t('try_again')}</Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.rowText}>{error} · {t('try_again')}</IconLabel>
         </TouchableOpacity>
       )}
       {cases?.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.muted}>{t('doc2_no_cases')}</Text>}
       {cases?.map(c => (
         <TouchableOpacity key={c.id} accessibilityRole="button" testID="doc-case-option" style={s.row} onPress={() => onPick({ id: Number(c.id), title: c.title })}>
-          <Text maxFontSizeMultiplier={1.4} style={s.rowText} numberOfLines={1}>📁 {c.title}</Text>
+          <IconLabel icon={ICONS.cases} textStyle={s.rowText} numberOfLines={1} style={{ flex: 1 }}>{c.title}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={s.muted}>›</Text>
         </TouchableOpacity>
       ))}
@@ -84,14 +85,14 @@ export function CaseDocumentList({ caseId, refreshKey }: { caseId: number; refre
   return (
     <View testID="doc-list">
       <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('doc2_case_docs')}</Text>
-      {!!error && <Text maxFontSizeMultiplier={1.4} style={s.muted}>⚠ {error}</Text>}
+      {!!error && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.muted}>{error}</IconLabel>}
       {!docs && !error && <ActivityIndicator color={colors.textBrand} />}
       {docs?.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.muted}>{t('doc2_none')}</Text>}
       {docs?.map(d => (
         <TouchableOpacity key={d.id} accessibilityRole="button" testID="doc-item" style={s.row} onPress={() => open(d)}
           accessibilityLabel={t('doc2_open', { name: d.attachment_name || '' })}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={s.rowText} numberOfLines={1}>{d.attachment_type === 'application/pdf' ? '📄' : '🖼'} {d.attachment_name}</Text>
+            <IconLabel icon={d.attachment_type === 'application/pdf' ? ICONS.document : ICONS.image} textStyle={s.rowText} numberOfLines={1}>{d.attachment_name}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={s.muted}>
               {[new Date(d.sent_at).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' }), kb(d.attachment_size)].filter(Boolean).join(' · ')}
             </Text>

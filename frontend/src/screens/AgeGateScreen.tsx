@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticSelection } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
@@ -96,14 +97,14 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }}>{t('x_age_gate_need_help_right_now')}</Text>
+          <IconLabel icon={ICONS.emergency} textStyle={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.textOnNavy, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
         </View>
         <Text style={{ color: COLORS.white, fontSize: 20 }}>→</Text>
       </TouchableOpacity>
 
       <View style={styles.centered}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.underageEmoji}>👨‍👩‍👧</Text>
+        <AppIcon name={ICONS.family} size={48} color={COLORS.navy} style={styles.underageEmoji} />
         <Text maxFontSizeMultiplier={1.4} style={styles.underageTitle}>
           {t('x_age_gate_this_app_adults_18')}
         </Text>
@@ -270,7 +271,7 @@ const makeStyles = () => StyleSheet.create({
   legalLink: { color: COLORS.steel, textDecorationLine: 'underline' },
 
   // Under-18 screen
-  underageEmoji: { fontSize: 48, marginBottom: 16 },
+  underageEmoji: { marginBottom: 16 },
   underageTitle: {
     fontSize: 20, ...FONTS.black, color: COLORS.bgCard,
     textAlign: 'center', marginBottom: 12,

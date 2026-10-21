@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS } from './AppIcon';
 
 interface Props {
   onUnlock: () => Promise<void>;
@@ -23,7 +24,7 @@ export const BiometricLockView = React.memo(function BiometricLockView({ onUnloc
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <Text style={styles.icon}>🔒</Text>
+      <AppIcon name={ICONS.lock} size={48} color={colors.textBrand} style={styles.icon} />
       <Text maxFontSizeMultiplier={1.4}
         style={[styles.title, { color: colors.textPrimary }]}>
         {t('x_biometric_lock_view_locked')}
@@ -53,7 +54,7 @@ export const BiometricLockView = React.memo(function BiometricLockView({ onUnloc
 
 const styles = StyleSheet.create({
   screen:  { flex:1, alignItems:'center', justifyContent:'center', padding:32 },
-  icon:    { fontSize:52, marginBottom:20 },
+  icon:    { marginBottom:20 },
   title:   { fontSize:22, lineHeight:33, fontWeight:'700', marginBottom:8 },
   sub:     { fontSize:15, lineHeight:23, textAlign:'center', marginBottom:36 },
   btn:     { borderRadius:14, paddingHorizontal:40, paddingVertical:16,

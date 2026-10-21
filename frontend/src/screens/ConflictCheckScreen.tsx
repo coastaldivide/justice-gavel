@@ -15,6 +15,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Match = { matched_name: string; role: string | null; match: 'exact' | 'partial'; matter_title: string | null; matter_status: string | null; source: string };
 type Result = { clear: boolean; conflicts: { name: string; matches: Match[] }[]; checked_count: number; index_size: number };
@@ -88,9 +89,7 @@ function ConflictCheckScreen({ navigation }: ScreenProps): React.JSX.Element {
           {!!error && <Text maxFontSizeMultiplier={1.4} style={s.error} testID="cc-error">{error}</Text>}
           {result && (
             <View testID="cc-result" style={[s.banner, { backgroundColor: result.clear ? colors.legalBg : colors.emergencyBg, borderColor: result.clear ? colors.legal : colors.emergency }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[s.bannerTitle, { color: result.clear ? colors.legalDark : colors.emergencyDark }]}>
-                {result.clear ? t('x_conflict_check_no_conflicts_found') : t(result.conflicts.length === 1 ? 'cc_found_one' : 'cc_found_other', { n: result.conflicts.length })}
-              </Text>
+              <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={[s.bannerTitle, { color: result.clear ? colors.legalDark : colors.emergencyDark }]} maxFontSizeMultiplier={1.4}>{result.clear ? t('x_conflict_check_no_conflicts_found') : t(result.conflicts.length === 1 ? 'cc_found_one' : 'cc_found_other', { n: result.conflicts.length })}</IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('cc_checked', { n: result.checked_count, m: result.index_size })}</Text>
               {result.index_size === 0 && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('cc_index_empty')}</Text>}
             </View>

@@ -17,6 +17,7 @@ import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Props = ScreenProps<'BarPrepResults'>;
 
@@ -99,7 +100,7 @@ function AnswerRow({
             accessibilityRole="button"
             accessibilityLabel={t('x_bar_prep_results_view_full_explanation')}
           >
-            <Text style={styles.explainBtnText}>{t('x_bar_prep_results_full_explanation')}</Text>
+            <IconLabel icon={ICONS.book} textStyle={styles.explainBtnText}>{t('x_bar_prep_results_full_explanation')}</IconLabel>
           </TouchableOpacity>
         
         {/* Supplemental study disclaimer */}
@@ -181,9 +182,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
     >
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {timed_out ? t('x_bar_prep_results_time_s_up') : t('x_bar_prep_results_session_complete')}
-        </Text>
+        <IconLabel icon={ICONS.clock} textStyle={styles.title}>{timed_out ? t('x_bar_prep_results_time_s_up') : t('x_bar_prep_results_session_complete')}</IconLabel>
         <Text style={styles.subtitle}>
           {t('x_bar_prep_results_questions', { value: mode === 'timed' ? t('x_bar_prep_results_timed_mode') : t('x_bar_prep_results_practice_mode'), total })}
         </Text>
@@ -220,9 +219,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
             accessibilityRole="button"
             accessibilityLabel={t('x_bar_prep_results_retry_wrong_questions', { length: wrongQuestions.length })}
           >
-            <Text style={styles.ctaBtnTextPrimary}>
-              {t('x_bar_prep_results_retry_wrong', { length: wrongQuestions.length })}
-            </Text>
+            <IconLabel icon={ICONS.refresh} textStyle={styles.ctaBtnTextPrimary}>{t('x_bar_prep_results_retry_wrong', { length: wrongQuestions.length })}</IconLabel>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -231,7 +228,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
           accessibilityRole="button"
           accessibilityLabel={t('x_bar_prep_results_view_progress_dashboard')}
         >
-          <Text style={styles.ctaBtnTextSecondary}>{t('x_bar_prep_results_view_progress_2')}</Text>
+          <IconLabel icon={ICONS.progress} textStyle={styles.ctaBtnTextSecondary}>{t('x_bar_prep_results_view_progress_2')}</IconLabel>
         </TouchableOpacity>
       </View>
 

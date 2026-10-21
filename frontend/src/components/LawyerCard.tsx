@@ -8,6 +8,7 @@ import {
   View, Text, TouchableOpacity, Linking,
 } from 'react-native';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from './AppIcon';
 
 export type Lawyer = {
   id: number;
@@ -107,9 +108,9 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
       {/* Meta row */}
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
         {lawyer.rating != null && (
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>
-            ⭐ {lawyer.rating.toFixed(1)} ({lawyer.reviews ?? 0})
-          </Text>
+          <IconLabel icon={ICONS.starFilled} iconColor={colors.goldText} textStyle={{ fontSize: 12, color: colors.textMuted }}>
+            {lawyer.rating.toFixed(1)} ({lawyer.reviews ?? 0})
+          </IconLabel>
         )}
         {!!lawyer.free_consultation && (
           <Text style={{ fontSize: 12, color: colors.legal }}>{t('x_lawyer_card_free_consult')}</Text>
@@ -131,9 +132,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           }}
           accessibilityRole="button"
           accessibilityLabel={t('hn_call_a11y', { name: lawyer.name })}>
-          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>
-            {t('x_lawyer_card_call_now')}
-          </Text>
+          <IconLabel icon={ICONS.phone} textStyle={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>{t('x_lawyer_card_call_now')}</IconLabel>
         </TouchableOpacity>
       )}
     </TouchableOpacity>

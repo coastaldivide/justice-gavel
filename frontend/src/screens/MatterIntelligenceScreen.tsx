@@ -1,6 +1,6 @@
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * MatterIntelligenceScreen — All 40 simulation signals surfaced as live matter intelligence
  *
@@ -141,7 +141,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
       {loading && <ActivityIndicator color={colors.gold} />}
       {!!mattersError && (
         <TouchableOpacity accessibilityRole="button" onPress={() => { setLoading(true); load(); }}>
-          <Text maxFontSizeMultiplier={1.4} style={s.empty}>⚠️ {mattersError} · {t('try_again')}</Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.empty} maxFontSizeMultiplier={1.4}>{mattersError}· {t('try_again')}</IconLabel>
         </TouchableOpacity>
       )}
       {matters?.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>{t('mi2_none')}</Text>}
@@ -176,7 +176,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             onPress={() => { setErrorMsg(null); load(); }}
             style={[s.metaPill, { backgroundColor: colors.errorBg }]}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: TYPE.xs }}>⚠️ {errorMsg}</Text>
+            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{ color: colors.emergency, fontSize: TYPE.xs }} maxFontSizeMultiplier={1.4}>{errorMsg}</IconLabel>
           </TouchableOpacity>
         )}
         {partialLoad && (
@@ -186,9 +186,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             onPress={() => { setErrorMsg(null); load(); }}
             style={[s.metaPill, { backgroundColor: colors.errorBg }]}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: TYPE.xs }}>
-              {t('x_matter_intelligence_partial_data_tap_retry')}
-            </Text>
+            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{ color: colors.emergency, fontSize: TYPE.xs }} maxFontSizeMultiplier={1.4}>{t('x_matter_intelligence_partial_data_tap_retry')}</IconLabel>
           </TouchableOpacity>
         )}
         {signals && (
@@ -390,7 +388,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{t('x_matter_intelligence_escalation_triggers')}</Text>
                 {escalation.triggers.map((tItem: string) => (
                   <View key={`trigger-${tItem}`} style={s.triggerRow}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }}>⚡</Text>
+                    <IconLabel icon={ICONS.flash} textStyle={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }} maxFontSizeMultiplier={1.4}></IconLabel>
                     <Text maxFontSizeMultiplier={1.4} style={s.triggerText}>{tItem.replace(/_/g, ' ')}</Text>
                   </View>
                 ))}

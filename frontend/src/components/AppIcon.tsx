@@ -38,25 +38,35 @@ export function AppIcon({ name, size = 22, color = COLORS.textPrimary, style, ac
 
 /**
  * An icon followed by a label on one line (wraps under itself, not under the
- * icon). The label is the accessible text; the icon is decorative.
+ * icon). The label is the accessible text; the icon is decorative. A label
+ * style with textAlign 'center' centres the row.
  */
-export function IconLabel({ icon, color, size, textStyle, style, children, numberOfLines, maxFontSizeMultiplier = 1.4, testID, center }: {
-  icon: IconName; color: string; size?: number; textStyle?: StyleProp<TextStyle>; style?: StyleProp<ViewStyle>;
+export function IconLabel({ icon, color, iconColor, size, textStyle, style, children, numberOfLines, maxFontSizeMultiplier = 1.4, testID, center }: {
+  icon: IconName;
+  /** Text and icon colour; defaults to the colour in textStyle. */
+  color?: string;
+  /** Icon colour when it differs from the text (e.g. a semantic status colour). */
+  iconColor?: string;
+  size?: number; textStyle?: StyleProp<TextStyle>; style?: StyleProp<ViewStyle>;
   children: React.ReactNode; numberOfLines?: number; maxFontSizeMultiplier?: number; testID?: string; center?: boolean;
 }) {
   // Margins on the label style belong to the row (so a heading style with
   // marginBottom keeps the icon level with its text).
   const flat = { ...(StyleSheet.flatten(textStyle) || {}) } as TextStyle;
   const margins: ViewStyle = {};
-  for (const k of ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical'] as const) {
+  // So do the label's own flex / alignSelf / width (they size the row in its parent).
+  for (const k of ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical',
+    'flex', 'flexGrow', 'alignSelf', 'width', 'maxWidth'] as const) {
     if (flat[k] !== undefined) { (margins as Record<string, unknown>)[k] = flat[k]; delete flat[k]; }
   }
+  const centered = center || flat.textAlign === 'center';
   const fontSize = flat.fontSize ?? 15;
+  const textColor = (flat.color as string | undefined) ?? color ?? COLORS.textPrimary;
   return (
-    <View style={[iconLabelStyles.row, center && iconLabelStyles.center, margins, style]}>
-      <AppIcon name={icon} size={size ?? Math.round(fontSize * 1.15)} color={color} style={iconLabelStyles.icon} />
+    <View style={[iconLabelStyles.row, centered && iconLabelStyles.center, margins, style]}>
+      <AppIcon name={icon} size={size ?? Math.round(fontSize * 1.15)} color={iconColor ?? color ?? textColor} style={iconLabelStyles.icon} />
       <Text testID={testID} maxFontSizeMultiplier={maxFontSizeMultiplier} numberOfLines={numberOfLines}
-        style={[{ color }, flat, iconLabelStyles.text, center && iconLabelStyles.textCenter]}>{children}</Text>
+        style={[{ color: color ?? textColor }, flat, iconLabelStyles.text, centered && iconLabelStyles.textCenter]}>{children}</Text>
     </View>
   );
 }
@@ -141,7 +151,12 @@ export const ICONS = {
   flag:           'flag-outline',              // ⚑ 🚩 (report a listing)
   construction:   'construct-outline',         // 🚧
 
-  // Status
+  // Status (pair the icon with its word and a semantic theme colour:
+  // colors.legal = ok, colors.warn = caution, colors.emergency = error)
+  statusOk:       'checkmark-circle',          // ✅ (ok / done)
+  statusWarn:     'warning',                   // ⚠️ (caution)
+  statusError:    'close-circle',              // ❌ ⛔ (failed / not eligible)
+  statusUnknown:  'help-circle',               // ❔ (unknown / check)
   checkmark:      'checkmark-circle',          // ✅
   checkOutline:   'checkmark-circle-outline',
   checkbox:       'checkbox-outline',          // ☑
@@ -152,7 +167,8 @@ export const ICONS = {
   star:           'star-outline',              // ☆
   starFilled:     'star',                      // ⭐ ★
   trophy:         'trophy-outline',            // 🏆 🥇
-  medal:          'medal-outline',             // 🥈 🥉 🎖
+  medal:          'medal-outline',             // 🥈 🥉 🎖 (also veterans)
+  perfect:        'ribbon-outline',            // 💯
   diamond:        'diamond-outline',           // 💎
   target:         'locate-outline',            // 🎯
   rocket:         'rocket-outline',            // 🚀
@@ -185,6 +201,8 @@ export const ICONS = {
   stop:           'stop-circle-outline',       // ⏹
   play:           'play-circle-outline',       // ▶
   camera:         'camera-outline',            // 📷 📸
+  video:          'videocam-outline',          // 📹 (video consultation)
+  scan:           'scan-outline',              // document scanner
   image:          'image-outline',             // 🖼
   exit:           'exit-outline',              // 🚪
 
@@ -209,7 +227,7 @@ export const ICONS = {
   wallet:         'wallet-outline',
 
   // People / account
-  user:           'person-outline',            // 👤
+  user:           'person-outline',            // 👤 🪑 (seat)
   attorney:       'person-circle-outline',     // 👔 (attorney)
   firm:           'business-outline',          // 🏢
   lawyerBadge:    'ribbon-outline',

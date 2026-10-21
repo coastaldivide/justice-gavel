@@ -26,6 +26,7 @@ import { hapticImpact, hapticSelection, RNShare, COPIED_ACTION } from '../utils/
 import { t, tl, useLang, type Lang } from '../i18n';
 import { formatPhone, telUrl } from '../utils/contact';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
+import { IconLabel, ICONS } from '../components/AppIcon';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
 const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
@@ -177,7 +178,7 @@ function IceDetentionScreen(): React.JSX.Element {
 
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerEmoji} maxFontSizeMultiplier={1.4}>🛑</Text>
+        <IconLabel icon={ICONS.alertHigh} textStyle={s.headerEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{L.title}</Text>
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>{L.subtitle}</Text>
       </View>
@@ -248,7 +249,7 @@ function IceDetentionScreen(): React.JSX.Element {
               accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
-              <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {formatPhone(r.phone)}</Text>
+              <IconLabel icon={ICONS.phone} textStyle={s.callBtnTxt} maxFontSizeMultiplier={1.4}>{formatPhone(r.phone)}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"

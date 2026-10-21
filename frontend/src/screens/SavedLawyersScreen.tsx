@@ -28,6 +28,7 @@ import { t, useLang, locale }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { ContactActions } from '../components/ContactActions';
 import * as secureStorage from '../utils/secureStorage';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface SavedLawyer {
   id:          number;
@@ -97,12 +98,10 @@ function SavedCard({
             </Text>
           )}
           {lawyer.rating != null && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.cardRating, { color: colors.goldText }]}>
-              ★ {lawyer.rating.toFixed(1)}
-            </Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={[styles.cardRating, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}>{lawyer.rating.toFixed(1)}</IconLabel>
           )}
-          {lawyer.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bail, marginTop: 3 }}>{t('x_match_bronze_gavel')}</Text>}
-          {lawyer.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textSecond, marginTop: 3 }}>{t('x_match_silver_gavel')}</Text>}
+          {lawyer.gavel_level === 1 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bail, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_bronze_gavel')}</IconLabel>}
+          {lawyer.gavel_level === 2 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textSecond, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_silver_gavel')}</IconLabel>}
           {(lawyer.gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
         </View>
         <TouchableOpacity accessibilityRole="button"
@@ -247,7 +246,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
   if (loading) return <SkeletonLoader count={5} label={t('saved_title')} />;
   if (signedIn === false) return (
     <View style={[styles.empty, { backgroundColor: colors.bg }]} testID="saved-signed-out">
-      <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⭐</Text>
+      <IconLabel icon={ICONS.starFilled} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
       <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('saved_sign_in_title')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('saved_sign_in_sub')}</Text>
       <TouchableOpacity accessibilityRole="button" style={[styles.findBtn, { backgroundColor: COLORS.navy }]}
@@ -271,7 +270,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
       ) : lawyers.length === 0 ? (
         // ── Empty state ──────────────────────────────────────────────────────
         <View style={styles.empty}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⭐</Text>
+          <IconLabel icon={ICONS.starFilled} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
             {t('saved_empty_title')}
           </Text>
@@ -300,9 +299,7 @@ confirm(t('x_saved_lawyers_remove_attorney'), t('x_saved_lawyers_remove_this_att
             />
           }
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              {t('x_saved_lawyers_no_saved_attorneys_browse')}
-            </Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }} maxFontSizeMultiplier={1.4}>{t('x_saved_lawyers_no_saved_attorneys_browse')}</IconLabel>
           }
           renderItem={({ item }) => (
             <SavedCard

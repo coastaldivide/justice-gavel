@@ -19,6 +19,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { ContactActions } from '../components/ContactActions';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type RouteParams = { firmId: number; firmName?: string };
 
@@ -103,9 +104,7 @@ function FirmPublicProfileScreen() {
           {firm.name}
         </Text>
         {(firm.city || firm.state) && (
-          <Text maxFontSizeMultiplier={1.3} style={[s.location, { color: colors.textMuted }]}>
-            📍 {[firm.city, firm.state].filter(Boolean).join(', ')}
-          </Text>
+          <IconLabel icon={ICONS.location} textStyle={[s.location, { color: colors.textMuted }]} maxFontSizeMultiplier={1.3}>{[firm.city, firm.state].filter(Boolean).join(', ')}</IconLabel>
         )}
         <View style={s.badges}>
           {firm.accepting_clients && (

@@ -18,6 +18,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'rea
 import { storage, storageReady } from '../utils/storage';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS, AppIcon } from './AppIcon';
 
 const DISCLAIMER_KEY = 'upl_disclaimer_acknowledged_v1';
 
@@ -57,9 +58,7 @@ export function AIDisclaimer({ variant = 'banner', feature = t('x_aidisclaimer_a
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {t('x_aidisclaimer_important_legal_notice')}
-            </Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={[styles.modalTitle, { color: colors.text }]}>{t('x_aidisclaimer_important_legal_notice')}</IconLabel>
             <ScrollView style={{ maxHeight: 280 }}>
               <Text style={[styles.modalBody, { color: colors.textMuted }]}>
                 <Text style={{ fontWeight: '700' }}>{t('x_aidisclaimer_justice_gavel_provides_legal')}</Text>
@@ -95,8 +94,9 @@ export function AIDisclaimer({ variant = 'banner', feature = t('x_aidisclaimer_a
         accessibilityRole="text"
         accessibilityLabel={t('aid_inline_a11y')}
       >
-        <Text style={[styles.inlineText, { color: colors.textMuted }]}>
-          ⚖️ <Text style={{ fontWeight: '600' }}>{t('aid_inline_strong')}</Text> — {t('aid_inline_rest')}
+        <AppIcon name={ICONS.alertNormal} size={14} color={colors.textMuted} style={styles.inlineIcon} />
+        <Text style={[styles.inlineText, { color: colors.textMuted, flexShrink: 1 }]}>
+          <Text style={{ fontWeight: '600' }}>{t('aid_inline_strong')}</Text> — {t('aid_inline_rest')}
           {' '}
           <Text style={{ textDecorationLine: 'underline' }}>{t('aid_what_this_means')}</Text>
         </Text>
@@ -111,9 +111,9 @@ export function AIDisclaimer({ variant = 'banner', feature = t('x_aidisclaimer_a
       accessibilityRole="text"
       accessibilityLabel={t('aid_banner_a11y')}
     >
-      <Text style={[styles.bannerText, { color: colors.textSecond }]}>
-        ⚖️ {t('aid_banner')}
-      </Text>
+      <IconLabel icon={ICONS.alertNormal} textStyle={[styles.bannerText, { color: colors.textSecond }]} center>
+        {t('aid_banner')}
+      </IconLabel>
     </View>
   );
 }
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   bannerText:    { fontSize: 11, textAlign: 'center', lineHeight: 16 },
   inlineBanner:  { margin: 12, padding: 10, borderRadius: 8, borderWidth: 1, flexDirection: 'row' },
   inlineText:    { fontSize: 12, flex: 1, lineHeight: 17 },
+  inlineIcon:    { marginRight: 6, marginTop: 1 },
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
   modalCard:     { borderRadius: 16, padding: 24, shadowColor: COLORS.black, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
   modalTitle:    { fontSize: 20, fontWeight: '800', marginBottom: 16, textAlign: 'center' },

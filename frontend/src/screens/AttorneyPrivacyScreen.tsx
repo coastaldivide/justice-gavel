@@ -3,43 +3,44 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Linking, LayoutAnimation} from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, useTheme } from '../constants/theme';
+import { AppIcon, ICONS } from '../components/AppIcon';
 import { t, perLang, useLang } from '../i18n';
 
 const SECTIONS = perLang(() => [
   {
     title: t('x_attorney_privacy_attorney_client_privilege'),
-    icon: '⚖️',
+    icon: ICONS.lawyer,
     body: t('x_attorney_privacy_justice_gavel_legal_technology'),
   },
   {
     title: t('x_attorney_privacy_data_segregation'),
-    icon: '🔒',
+    icon: ICONS.lock,
     body: t('x_attorney_privacy_each_attorney_account_logically'),
   },
   {
     title: t('x_attorney_privacy_professional_responsibility_complian'),
-    icon: '📋',
+    icon: ICONS.clipboard,
     body: t('x_attorney_privacy_justice_gavel_designed_help'),
   },
   {
     title: t('x_attorney_privacy_data_storage_security'),
-    icon: '🛡️',
+    icon: ICONS.shield,
     body: t('x_attorney_privacy_data_at_rest_aes'),
   },
   {
     title: t('x_attorney_privacy_baa_data_processing_agreement'),
-    icon: '📄',
+    icon: ICONS.document,
     body: t('x_attorney_privacy_firms_requiring_formal_business'),
   },
   {
     title: t('x_attorney_privacy_ethical_walls_conflict_screening'),
-    icon: '🚧',
+    icon: ICONS.construction,
     body: t('x_attorney_privacy_ethical_wall_functionality_available'),
   },
   {
     title: t('x_attorney_privacy_ai_disclaimer'),
-    icon: '🤖',
+    icon: ICONS.ai,
     body: t('x_attorney_privacy_all_ai_generated_content'),
   },
 ]);
@@ -50,7 +51,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
   const { showToast } = useToast();
-  const colors = COLORS;
+  const { colors } = useTheme();
   const [expanded, setExpanded] = useState<number | null>(0);
 
   return (
@@ -60,7 +61,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
     >
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>
-        <Text style={s.headerIcon} maxFontSizeMultiplier={1.4}>🔏</Text>
+        <AppIcon name={ICONS.lock} size={40} color={COLORS.white} style={s.headerIcon} />
         <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{t('x_attorney_privacy_attorney_platform_privacy')}</Text>
         <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
           {t('x_attorney_privacy_data_policy_professional_responsibil')}
@@ -86,7 +87,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
       {SECTIONS()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <AppIcon name={ICONS.inbox} size={32} color={colors.textMuted} style={{ marginBottom: 12 }} />
           <Text style={{ fontSize: 16, fontWeight: '700', color: (colors as any).text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
@@ -103,15 +104,13 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={s.sectionHeader}
-            accessibilityLabel={sec.icon} onPress={() => setExpanded(expanded === idx ? null : idx)}
+            accessibilityLabel={sec.title} accessibilityState={{ expanded: expanded === idx }} onPress={() => setExpanded(expanded === idx ? null : idx)}
           >
-            <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+            <AppIcon name={sec.icon} size={22} color={colors.textBrand} style={s.sectionIcon} />
             <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>
               {sec.title}
             </Text>
-            <Text style={[s.chevron, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
-              {expanded === idx ? '▲' : '▼'}
-            </Text>
+            <AppIcon name={expanded === idx ? ICONS.chevronUp : ICONS.chevronDown} size={16} color={colors.textMuted} style={s.chevron} />
           </TouchableOpacity>
           {expanded === idx && (
             <View style={[s.sectionBody, { borderTopColor: COLORS.border }]}>
@@ -156,7 +155,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
 const s = StyleSheet.create({
   container:        { padding: 0, paddingBottom: 24 },
   header:           { padding: 28, paddingTop: 52, alignItems: 'center' },
-  headerIcon:       { fontSize: 40, marginBottom: 12 },
+  headerIcon:       { marginBottom: 12 },
   headerTitle:      { fontSize: 22, fontWeight: '800', color: COLORS.white, textAlign: 'center', marginBottom: 8 },
   headerSub:        { fontSize: 14, color: 'rgba(255,255,255,0.82)', textAlign: 'center', lineHeight: 20 },
   effectiveBadge:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, marginHorizontal: 0 },
@@ -164,9 +163,9 @@ const s = StyleSheet.create({
   fullPolicyLink:   { fontSize: 12, fontWeight: '600' },
   section:          { marginHorizontal: 16, marginTop: 12, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  sectionIcon:      { fontSize: 22, marginRight: 12 },
+  sectionIcon:      { marginRight: 12 },
   sectionTitle:     { fontSize: 15, fontWeight: '700', lineHeight: 20 },
-  chevron:          { fontSize: 12, marginLeft: 8 },
+  chevron:          { marginLeft: 8 },
   sectionBody:      { padding: 16, paddingTop: 12, borderTopWidth: 1 },
   bodyText:         { fontSize: 14, lineHeight: 22 },
   contactBlock:     { margin: 16, marginTop: 24, borderRadius: 12, borderWidth: 1, padding: 20 },

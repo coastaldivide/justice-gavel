@@ -26,6 +26,7 @@ import { leadFeeLabel } from '../constants/leadFee';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 import { stateName } from '../utils/userState';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Tab = 'leads' | 'mine' | 'clients' | 'profile';
 type Lead = { id: number; name: string; booking_date: string | null; charges: string | null; bail_amount: number; county: string | null; state: string | null; purchased: boolean; is_sample?: boolean; lead_fee_cents: number; lead_fee_display: string };
@@ -212,7 +213,7 @@ function BondsmanDashboardScreen({ navigation, route }: ScreenProps): React.JSX.
                     <Text maxFontSizeMultiplier={1.2} style={s.line}>{t('x_bondsman_dashboard_bail')}</Text>
                   </View>
                 </View>
-                {!!l.charges && <Text maxFontSizeMultiplier={1.4} style={s.line} testID="lead-charge">📋 {l.charges}</Text>}
+                {!!l.charges && <IconLabel icon={ICONS.clipboard} textStyle={s.line} maxFontSizeMultiplier={1.4} testID="lead-charge">{l.charges}</IconLabel>}
                 {l.purchased ? (
                   <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => setTab('mine')}>
                     <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('bd_owned')}</Text>
@@ -290,9 +291,9 @@ function MyLeadCard({ lead, onSaved }: { lead: MyLead; onSaved: () => void }) {
         <Text maxFontSizeMultiplier={1.3} style={s.bail}>{money(lead.bail_amount)}</Text>
       </View>
       <Text maxFontSizeMultiplier={1.4} style={s.line}>{[lead.county ? t('x_bondsman_dashboard_county', { county: lead.county }) : '', lead.state ? stateName(lead.state) : ''].filter(Boolean).join(', ')}</Text>
-      {!!lead.charges && <Text maxFontSizeMultiplier={1.4} style={s.line}>📋 {lead.charges}</Text>}
-      {!!lead.jail_location && <Text maxFontSizeMultiplier={1.4} style={s.line}>🏛 {lead.jail_location}</Text>}
-      {!!lead.case_number && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('x_bondsman_dashboard_case', { case_number: lead.case_number })}</Text>}
+      {!!lead.charges && <IconLabel icon={ICONS.clipboard} textStyle={s.line} maxFontSizeMultiplier={1.4}>{lead.charges}</IconLabel>}
+      {!!lead.jail_location && <IconLabel icon={ICONS.courthouse} textStyle={s.line} maxFontSizeMultiplier={1.4}>{lead.jail_location}</IconLabel>}
+      {!!lead.case_number && <IconLabel icon={ICONS.attach} textStyle={s.line} maxFontSizeMultiplier={1.4}>{t('x_bondsman_dashboard_case', { case_number: lead.case_number })}</IconLabel>}
       {!!lead.court_date && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_court_date', { date: fmtDay(lead.court_date) })}</Text>}
       <Text maxFontSizeMultiplier={1.3} style={[s.line, { marginTop: 6 }]}>{t('bd_bought_on', { date: fmtDay(lead.created_at), fee: usd(lead.lead_fee_cents) })}</Text>
       <View style={s.chips}>

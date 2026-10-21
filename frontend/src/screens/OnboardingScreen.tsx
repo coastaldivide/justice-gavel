@@ -16,6 +16,7 @@ import { t, initLang, setLang, useLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { detectAndSaveUserState } from '../services/location';
 import JTBLogo from '../components/JTBLogo';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -177,7 +178,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         accessibilityHint={t('onb_core_hint')}
       >
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.justArrestedTitle}>🚨 {t('ja_title')}</Text>
+          <IconLabel icon={ICONS.emergency} textStyle={styles.justArrestedTitle} maxFontSizeMultiplier={1.3}>{t('ja_title')}</IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={styles.justArrestedSub}>1) {t('ja_s1')} · 2) {t('ja_s2')} · 3) {t('ja_s3')}</Text>
         </View>
         <Text style={styles.justArrestedTitle}>→</Text>
@@ -247,9 +248,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         {/* PRIMARY: Browse -- clear label on every slide */}
         <TouchableOpacity accessibilityRole="button" style={styles.browseBtn} onPress={browseNow} activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnText}>
-{activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}
-          </Text>
+          <IconLabel icon={ICONS.bail} textStyle={styles.browseBtnText} maxFontSizeMultiplier={1.4}>{activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnSub}>{t('onboard_browse_sub')}</Text>
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
           {t('onb_terms_pre')}

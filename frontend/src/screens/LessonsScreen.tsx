@@ -11,6 +11,7 @@ import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { t, useLang, getLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 /**
  * LessonsScreen — "Know your rights" lessons (public; GET /api/lessons).
@@ -240,7 +241,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
                   accessibilityLabel={t('x_lessons_get_rights_card')} onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>{t('x_lessons_get_rights_card')}</Text>
+                  <IconLabel icon={ICONS.clipboard} textStyle={styles.lifeBtnText} maxFontSizeMultiplier={1.4}>{t('x_lessons_get_rights_card')}</IconLabel>
                 </TouchableOpacity>
               </View>
             </View>

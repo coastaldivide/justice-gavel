@@ -24,6 +24,7 @@ import { useToast } from '../components/ToastProvider';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang, locale, getLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface Source { label: string; url: string | null; recorded_at: string | null; last_verified_at: string | null }
 interface Authority {
@@ -147,12 +148,12 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
 
   const usCard = us && (
     <View style={[s.card, s.emergency]} testID="hague-us-authority">
-      <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('x_hague_contact_emergency_contacts')}</Text>
+      <IconLabel icon={ICONS.emergency} textStyle={s.cardTitle} maxFontSizeMultiplier={1.4}>{t('x_hague_contact_emergency_contacts')}</IconLabel>
       <Text maxFontSizeMultiplier={1.4} style={s.name}>{us.central_authority.name}</Text>
       {!!us.central_authority.emergency_phone && (
         <TouchableOpacity accessibilityRole="button" testID="hague-call-emergency" style={s.callBtn} onPress={() => call(us.central_authority.emergency_phone)}
           accessibilityLabel={t('x_hague_contact_call_office_children_s')}>
-          <Text maxFontSizeMultiplier={1.3} style={s.callText}>📞 {t('hg_emergency_phone', { phone: formatPhone(us.central_authority.emergency_phone) })}</Text>
+          <IconLabel icon={ICONS.phone} textStyle={s.callText} maxFontSizeMultiplier={1.3}>{t('hg_emergency_phone', { phone: formatPhone(us.central_authority.emergency_phone) })}</IconLabel>
         </TouchableOpacity>
       )}
       {!!us.central_authority.phone && (
@@ -213,7 +214,7 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
 
           <Text maxFontSizeMultiplier={1.4} style={s.label}>{t('hg_case')}</Text>
           {params.caseId ? (
-            <Text maxFontSizeMultiplier={1.4} style={s.tag}>📁 {params.caseName || `#${params.caseId}`}</Text>
+            <IconLabel icon={ICONS.cases} textStyle={s.tag} maxFontSizeMultiplier={1.4}>{params.caseName || `#${params.caseId}`}</IconLabel>
           ) : cases.length === 0 ? (
             <Text maxFontSizeMultiplier={1.4} style={s.muted} testID="hague-no-cases">{t('hg_no_cases')}</Text>
           ) : (
@@ -300,7 +301,7 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
     <ScrollView style={s.container} contentContainerStyle={s.content} testID="hague-contact-screen">
       <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_nav_hague_convention')}</Text>
       <Text maxFontSizeMultiplier={1.4} style={s.sub}>{t('x_hague_contact_international_child_abduction_centra')}</Text>
-      {!!params.caseName && <Text maxFontSizeMultiplier={1.4} style={s.tag}>📁 {params.caseName}</Text>}
+      {!!params.caseName && <IconLabel icon={ICONS.cases} textStyle={s.tag} maxFontSizeMultiplier={1.4}>{params.caseName}</IconLabel>}
       <UnreviewedNotice inset={false} text={t('hg_not_reviewed')} testID="hague-notice" />
 
       {loading && <ActivityIndicator color={colors.navy} style={{ marginTop: 24 }} />}
@@ -324,7 +325,7 @@ function HagueContactScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
               <View style={s.row}>
                 {!!telUrl(r.phone) && (
                   <TouchableOpacity accessibilityRole="button" style={s.smallBtn} onPress={() => call(r.phone)} accessibilityLabel={t('ca_call', { phone: formatPhone(r.phone) })}>
-                    <Text maxFontSizeMultiplier={1.3} style={s.smallText}>📞 {formatPhone(r.phone)}</Text>
+                    <IconLabel icon={ICONS.phone} textStyle={s.smallText} maxFontSizeMultiplier={1.3}>{formatPhone(r.phone)}</IconLabel>
                   </TouchableOpacity>
                 )}
                 {!!websiteUrl(r.website) && (

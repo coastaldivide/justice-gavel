@@ -15,6 +15,7 @@ import { cachedGet, apiErrorMessage } from '../services/api';
 import { useTheme } from '../constants/theme';
 import { getUserState, setUserState, stateName, localizedStateList } from '../utils/userState';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type TabKey = 'drug' | 'dui';
 
@@ -100,14 +101,12 @@ function LegalPenaltiesScreen({ route }: ScreenProps) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <TouchableOpacity accessibilityRole="button" testID="penalties-state" style={styles.statePick} onPress={() => setPicking(true)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.stateText}>📍 {stateName(state)}</Text>
+          <IconLabel icon={ICONS.location} textStyle={styles.stateText} maxFontSizeMultiplier={1.3}>{stateName(state)}</IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={styles.stateChange}>{t('pen_change_state')}</Text>
         </TouchableOpacity>
 
         <View style={styles.notice} testID="penalties-notice">
-          <Text maxFontSizeMultiplier={1.4} style={styles.noticeText}>
-            ⚠️ {meta.disclaimer || t('pen_not_reviewed')}
-          </Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.noticeText} maxFontSizeMultiplier={1.4}>{meta.disclaimer || t('pen_not_reviewed')}</IconLabel>
         </View>
 
         {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.navy} />

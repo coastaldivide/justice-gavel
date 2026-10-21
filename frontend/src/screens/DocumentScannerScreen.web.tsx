@@ -16,6 +16,7 @@ import { api, apiErrorMessage } from '../services/api';
 import { CasePicker, CaseDocumentList, checkUpload } from '../components/CaseDocuments';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 function DocumentScannerScreen(): React.JSX.Element {
   useLang();
@@ -59,13 +60,13 @@ function DocumentScannerScreen(): React.JSX.Element {
       {hasSession === null ? null : !hasSession ? <SignInNeeded navigation={navigation} testID="doc-sign-in" body={t('sin_docs_body')} onSignedIn={recheck} />
         : !picked ? <CasePicker onPick={setPicked} /> : (
         <>
-          {!!picked.title && <Text maxFontSizeMultiplier={1.4} style={s.muted}>📁 {picked.title}</Text>}
+          {!!picked.title && <IconLabel icon={ICONS.cases} textStyle={s.muted} maxFontSizeMultiplier={1.4}>{picked.title}</IconLabel>}
           <Text maxFontSizeMultiplier={1.4} style={s.muted}>{t('doc2_web_intro')}</Text>
           <label htmlFor="doc-upload" style={{
             display: 'block', border: `2px dashed ${colors.border}`, borderRadius: 16, padding: '32px 16px',
             textAlign: 'center', cursor: 'pointer', backgroundColor: colors.bgCard, marginTop: 12, marginBottom: 12,
           }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 36 }}>📄</Text>
+            <IconLabel icon={ICONS.document} textStyle={{ fontSize: 36 }} maxFontSizeMultiplier={1.3}></IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={[s.label, { display: 'flex' as any, justifyContent: 'center' }]}>{t('x_document_scanner_click_select_document_photo')}</Text>
             <Text maxFontSizeMultiplier={1.3} style={[s.muted, { display: 'flex' as any, justifyContent: 'center' }]}>{t('doc2_limits')}</Text>
             <input ref={inputRef} id="doc-upload" data-testid="doc-upload-input" type="file"
@@ -73,7 +74,7 @@ function DocumentScannerScreen(): React.JSX.Element {
               onChange={e => upload(e.target.files?.[0])} style={{ display: 'none' }} disabled={uploading} />
           </label>
           {uploading && <View style={s.center}><ActivityIndicator color={colors.textBrand} /><Text maxFontSizeMultiplier={1.3} style={s.muted}>{t('doc2_uploading')}</Text></View>}
-          {!!error && <Text maxFontSizeMultiplier={1.4} style={s.error} testID="doc-upload-error">⚠ {error}</Text>}
+          {!!error && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.error} maxFontSizeMultiplier={1.4} testID="doc-upload-error">{error}</IconLabel>}
           {!!done && (
             <View style={s.okBox} testID="doc-upload-done">
               <Text maxFontSizeMultiplier={1.4} style={s.label}>✓ {done}</Text>

@@ -29,6 +29,7 @@ import { t, useLang } from '../i18n';
 import { categoryLabel } from '../constants/barPrepCategories';
 import { useToast } from '../components/ToastProvider';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 /** GET /bar-prep/subjects → { subjects: Subject[] } */
@@ -250,9 +251,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                   setQuestionCount(m === 'timed' ? 100 : 10);
                 }}
               >
-                <Text style={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>
-                  {m === 'practice' ? t('x_bar_prep_home_practice') : t('x_bar_prep_home_timed_mbe_sim')}
-                </Text>
+                <IconLabel icon={ICONS.edit} textStyle={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>{m === 'practice' ? t('x_bar_prep_home_practice') : t('x_bar_prep_home_timed_mbe_sim')}</IconLabel>
                 <Text style={styles.modeSubtext}>
                   {m === 'practice' ? t('x_bar_prep_home_explanations_shown_after_each') : t('x_bar_prep_home_100q_2_5_hrs')}
                 </Text>
@@ -291,15 +290,13 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
             disabled={!selectedSubject}
             activeOpacity={0.85}
           >
-            <Text style={styles.startBtnText}>
-              {mode === 'timed' ? t('x_bar_prep_home_start_mbe_simulation') : t('x_bar_prep_home_start_questions', { questionCount })}
-            </Text>
+            <IconLabel icon={ICONS.flash} textStyle={styles.startBtnText}>{mode === 'timed' ? t('x_bar_prep_home_start_mbe_simulation') : t('x_bar_prep_home_start_questions', { questionCount })}</IconLabel>
           </TouchableOpacity>
 
           {/* ── Footer Links ─────────────────────────────────────────── */}
           <View style={styles.footerLinks}>
             <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepProgress')}>
-              <Text style={styles.footerLink}>{t('x_bar_prep_home_progress_dashboard')}</Text>
+              <IconLabel icon={ICONS.progress} textStyle={styles.footerLink}>{t('x_bar_prep_home_progress_dashboard')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepSchedule')}>
               <Text style={styles.footerLink}>{t('x_nav_study_schedule')}</Text>

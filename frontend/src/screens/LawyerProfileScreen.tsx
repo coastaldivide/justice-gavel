@@ -24,6 +24,7 @@ import { t, useLang, locale } from '../i18n';
 import { formatPhone, websiteLabel } from '../utils/contact';
 import { parseWeek, weekdayName, clock } from '../utils/hours';
 import * as secureStorage from '../utils/secureStorage';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Review = { id: number; rating: number; comment?: string | null; verified?: number; created_at?: string; status?: string };
 type Profile = {
@@ -238,7 +239,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={s.badges}>
           {lawyer.source === 'google' && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_source_google')}</Text></View>}
           {lawyer.bar_verified && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_expungement_bar_verified')}</Text></View>}
-          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: COLORS.gold }]}><Text maxFontSizeMultiplier={1.3} style={[s.badgeText, { color: COLORS.navy }]}>{t('x_lawyer_profile_jtb_verified')}</Text></View>}
+          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: COLORS.gold }]}><IconLabel icon={ICONS.lawyer} textStyle={[s.badgeText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_jtb_verified')}</IconLabel></View>}
           {lawyer.golden_gavel && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_nav_golden_gavel')}</Text></View>}
           {lawyer.on_app && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_on_app')}</Text></View>}
         </View>
@@ -287,10 +288,10 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           <View style={s.actionRow}>
             <TouchableOpacity accessibilityRole="button" testID="lawyer-book-button" style={[s.actionBtn, { backgroundColor: colors.navy }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'Booking', params: { lawyerId: lawyer.id, lawyerName: lawyer.name } })}>
-              <Text maxFontSizeMultiplier={1.3} style={s.actionBtnText}>{t('x_lawyer_profile_book_consultation')}</Text>
+              <IconLabel icon={ICONS.calendar} textStyle={s.actionBtnText} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_book_consultation')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="lawyer-message-button" style={[s.actionBtn, { backgroundColor: colors.legalDark }]} onPress={() => setShowMsg(v => !v)}>
-              <Text maxFontSizeMultiplier={1.3} style={s.actionBtnText}>{t('x_lawyer_profile_send_message_2')}</Text>
+              <IconLabel icon={ICONS.message} textStyle={s.actionBtnText} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_send_message_2')}</IconLabel>
             </TouchableOpacity>
           </View>
         )}
@@ -309,7 +310,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           <TouchableOpacity accessibilityRole="button" testID="lp-save" accessibilityState={{ selected: !!savedId, busy: saving }}
             accessibilityLabel={savedId ? t('x_lawyers_unsave', { name: lawyer.name }) : t('x_lawyers_save_saved_list', { name: lawyer.name })}
             style={[s.ghostBtn, { borderColor: savedId ? COLORS.gold : colors.border, backgroundColor: colors.bgCard }]} onPress={toggleSave} disabled={saving}>
-            <Text maxFontSizeMultiplier={1.3} style={[s.ghostBtnText, { color: savedId ? colors.goldText : colors.textPrimary }]}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={[s.ghostBtnText, { color: savedId ? colors.goldText : colors.textPrimary }]} maxFontSizeMultiplier={1.3}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="lp-share" style={[s.ghostBtn, { borderColor: colors.border, backgroundColor: colors.bgCard }]} onPress={share}>
             <Text maxFontSizeMultiplier={1.3} style={[s.ghostBtnText, { color: colors.textPrimary }]}>{t('x_bar_prep_explanation_share')}</Text>
@@ -380,7 +381,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {jtb?.is_jtb_registered && (
           <View style={[s.card, { backgroundColor: colors.legalBg, borderColor: colors.legal }]}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, fontWeight: '700', color: colors.legal, marginBottom: 6 }}>{t('x_lawyer_profile_responds_via_justice_gavel')}</Text>
-            {jtb.platform_rating != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.textSecond }}>{t('x_lawyer_profile_platform_rating', { value: Number(jtb.platform_rating).toFixed(1), value2: jtb.platform_review_count ? ' ' + t('x_lawyer_profile_consultations', { platform_review_count: jtb.platform_review_count }) : '' })}</Text>}
+            {jtb.platform_rating != null && <IconLabel icon={ICONS.starFilled} textStyle={{ fontSize: 13, color: colors.textSecond }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_platform_rating', { value: Number(jtb.platform_rating).toFixed(1), value2: jtb.platform_review_count ? ' ' + t('x_lawyer_profile_consultations', { platform_review_count: jtb.platform_review_count }) : '' })}</IconLabel>}
             {jtb.outcome_positive_pct != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textSecond }}>{t('lp_outcomes', { pct: jtb.outcome_positive_pct })}</Text>}
             {(jtb.next_slots?.length ?? 0) > 0 && (
               <View style={{ marginTop: 4 }}>
@@ -429,7 +430,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             </View>
           ) : (
             <TouchableOpacity accessibilityRole="button" testID="write-review-button" onPress={() => requireAuth(() => setShowReview(true))} style={{ paddingVertical: 8, marginBottom: 8 }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontWeight: '700', color: colors.textBrand }}>{t('x_lawyer_profile_write_review_2')}</Text>
+              <IconLabel icon={ICONS.edit} textStyle={{ fontSize: 13, fontWeight: '700', color: colors.textBrand }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_write_review_2')}</IconLabel>
             </TouchableOpacity>
           ))}
           {reviews.length === 0 ? (

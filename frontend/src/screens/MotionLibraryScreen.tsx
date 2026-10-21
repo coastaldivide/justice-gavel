@@ -3,7 +3,7 @@ import { escapeHtml } from '../utils/html';
 import { unwrapList, apiErrorMessage } from '../services/api';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import Analytics from '../services/analytics';
 import { ScreenCapture, hapticImpact, RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
@@ -709,9 +709,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.libraryScroll} testID="motion-library">
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, marginBottom: 12,
         borderLeftWidth: 4, borderLeftColor: colors.gold }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
-          {t('x_motion_library_ai_generated_drafts_attorney')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.goldText, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }} maxFontSizeMultiplier={1.4}>{t('x_motion_library_ai_generated_drafts_attorney')}</IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
           {t('x_motion_library_these_motions_ai_generated')}
         </Text>
@@ -720,15 +718,13 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       <LegalDisclaimerModal visible={disclaimerVisible} onAccept={onConsentAccepted} />
       {isOffline && (
         <View testID="motion-offline-banner" style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.warnDark, fontSize: 12 }}>
-            {t('x_motion_library_re_offline_drafting_motion')}
-          </Text>
+          <IconLabel icon={ICONS.offline} textStyle={{ color: colors.warnDark, fontSize: 12 }} maxFontSizeMultiplier={1.4}>{t('x_motion_library_re_offline_drafting_motion')}</IconLabel>
         </View>
       )}
 
       {caseTitle && (
         <View style={[styles.casePill, { backgroundColor: COLORS.navy + '14', borderColor: COLORS.navy + '30' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.casePillText, { color: COLORS.navy }]}>📁  {caseTitle}</Text>
+          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>{t('x_cs_motion_library')}</Text>
@@ -791,11 +787,9 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       {/* Deadline warning banner for time-critical appeal motions */}
       {(selected.key === 'notice_of_appeal' || selected.key === 'habeas_corpus') && (
         <View style={[styles.deadlineBanner, { backgroundColor: COLORS.emergency }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.deadlineBannerText}>
-            {selected.key === 'notice_of_appeal'
+          <IconLabel icon={ICONS.alarm} textStyle={styles.deadlineBannerText} maxFontSizeMultiplier={1.4}>{selected.key === 'notice_of_appeal'
               ? t('x_motion_library_deadline_critical_federal_14')
-              : t('x_motion_library_aedpa_1_year_statute')}
-          </Text>
+              : t('x_motion_library_aedpa_1_year_statute')}</IconLabel>
         </View>
       )}
       <KeyboardAvoidingView
@@ -853,9 +847,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           backgroundColor: isDark ? colors.bgCard : colors.warnBg,
           borderColor: colors.gold + '66'
         }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]}>
-            {t('x_motion_library_ai_generated_drafts_require')}
-          </Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_ai_generated_drafts_require')}</IconLabel>
         </View>
 
         {/* Generate button */}
@@ -896,7 +888,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         <Modal visible transparent animationType="fade" onRequestClose={() => setShowExportGate(false)}>
           <View style={egStyles.overlay}>
             <View style={egStyles.card}>
-              <Text maxFontSizeMultiplier={1.4} style={egStyles.title}>{t('x_motion_library_before_export')}</Text>
+              <IconLabel icon={ICONS.lawyer} textStyle={egStyles.title} maxFontSizeMultiplier={1.4}>{t('x_motion_library_before_export')}</IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={egStyles.body}>
                 {t('x_motion_library_this_motion_draft_has')}{' '}
                 <Text maxFontSizeMultiplier={1.4} style={egStyles.bold}>{t('x_motion_library_has_not_been_reviewed')}</Text>
@@ -984,9 +976,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         {/* Appellate draft scope notice */}
       {selected && ['appeal_brief'].includes(selected.key) && (
         <View style={[styles.citationWarning, { backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle, borderColor: COLORS.navy + '60', marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.citationWarningTitle, { color: COLORS.navy }]}>
-            {t('x_motion_library_this_structural_draft_attorney')}
-          </Text>
+          <IconLabel icon={ICONS.clipboard} textStyle={[styles.citationWarningTitle, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_this_structural_draft_attorney')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={[styles.citationWarningBody, { color: isDark ? colors.steel : colors.blue }]}>
             {t('x_motion_library_complete_appellate_brief_requires')}
           </Text>
@@ -1002,7 +992,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             accessibilityLabel={t('x_motion_library_copy_motion_clipboard')}
           accessibilityHint={t('x_motion_library_copies_clipboard')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>{copied ? t('x_motion_library_copied') : t('res_copy')}</Text>
+            <IconLabel icon={ICONS.clipboard} textStyle={styles.resultActionText} maxFontSizeMultiplier={1.4}>{copied ? t('x_motion_library_copied') : t('res_copy')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
 
@@ -1037,7 +1027,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                 : '' })}
             accessibilityLabel={t('x_motion_library_research_precedent_this_motion')}
             >
-            <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>{t('x_motion_library_research')}</Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={styles.resultActionText} maxFontSizeMultiplier={1.4}>{t('x_motion_library_research')}</IconLabel>
           </TouchableOpacity>
         </View>
 
@@ -1071,14 +1061,12 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                   borderColor:
                     reviewResult.score==='pass' ? COLORS.legalDark :
                     reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
+                  <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={{ fontSize:14, lineHeight:21,
                     fontWeight:'700', marginBottom:6,
                     color:
                       reviewResult.score==='pass' ? COLORS.legalDark :
-                      reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
-                    {reviewResult.score==='pass' ? t('x_motion_library_looks_good') :
-                     reviewResult.score==='fail' ? t('x_motion_library_issues_found') : t('x_motion_library_minor_issues')}
-                  </Text>
+                      reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }} maxFontSizeMultiplier={1.4}>{reviewResult.score==='pass' ? t('x_motion_library_looks_good') :
+                     reviewResult.score==='fail' ? t('x_motion_library_issues_found') : t('x_motion_library_minor_issues')}</IconLabel>
                   {reviewResult.missing_fields?.length > 0 && (
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
                       color:COLORS.emergencyDark, marginBottom:4 }}>
@@ -1092,19 +1080,15 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                     </Text>
                   ))}
                   {reviewResult.suggestions?.length > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
-                      color:COLORS.blue, marginTop:4 }}>
-                      💡 {reviewResult.suggestions[0]}
-                    </Text>
+                    <IconLabel icon={ICONS.idea} textStyle={{ fontSize:12, lineHeight:18,
+                      color:COLORS.blue, marginTop:4 }} maxFontSizeMultiplier={1.4}>{reviewResult.suggestions[0]}</IconLabel>
                   )}
                 </View>
               )}
 
         {/* MANDATORY citation warning -- impossible to dismiss without reading */}
         <View style={[styles.citationWarning, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warnDark }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.citationWarningTitle, { color: colors.bail }]}>
-            {t('x_motion_library_required_verify_before_filing')}
-          </Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.citationWarningTitle, { color: colors.bail }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_required_verify_before_filing')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={[styles.citationWarningBody, { color: isDark ? colors.warn : colors.textSecond }]}>
             {t('x_motion_library_every_case_citation_this')}
           </Text>
@@ -1112,9 +1096,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
         {/* Info chip */}
         <View style={[styles.editChip, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle, borderColor: colors.blue + '44' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.editChipText, { color: colors.blue }]}>
-            {t('x_motion_library_review_edit_below_before')}
-          </Text>
+          <IconLabel icon={ICONS.edit} textStyle={[styles.editChipText, { color: colors.blue }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_review_edit_below_before')}</IconLabel>
         </View>
 
         {/* Editable draft -- document typography */}
@@ -1198,7 +1180,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         : filteredHistoryView.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>{histFilter === 'all' ? t('x_motion_library_no_saved_motions_yet') : t('x_motion_library_no_motions_with_status', { value: FILING_STATUS()[histFilter as FilingStatus]?.label || histFilter })}</Text>
+            <IconLabel icon={ICONS.document} textStyle={[styles.generatingSub, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{histFilter === 'all' ? t('x_motion_library_no_saved_motions_yet') : t('x_motion_library_no_motions_with_status', { value: FILING_STATUS()[histFilter as FilingStatus]?.label || histFilter })}</IconLabel>
           </View>
         )
         : filteredHistoryView.map(item => (

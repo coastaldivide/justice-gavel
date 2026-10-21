@@ -24,6 +24,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ScheduleDay {
@@ -146,7 +147,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
       >
         {/* ── Exam Date ────────────────────────────────────────────── */}
         <View style={[styles.examCard, { backgroundColor: colors.card }]}>
-          <Text style={styles.examCardTitle}>{t('x_bar_prep_schedule_bar_exam_date')}</Text>
+          <IconLabel icon={ICONS.calendar} textStyle={styles.examCardTitle}>{t('x_bar_prep_schedule_bar_exam_date')}</IconLabel>
           <View style={styles.examInputRow}>
             <TextInput
               style={[styles.examInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
@@ -194,13 +195,9 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             ]} />
           </View>
           <View style={styles.goalMeta}>
-            <Text style={styles.goalMetaText}>
-              {t('x_bar_prep_schedule_min_complete_today_s', { value: schedule?.estimated_study_mins || 0 })}
-            </Text>
+            <IconLabel icon={ICONS.clock} textStyle={styles.goalMetaText}>{t('x_bar_prep_schedule_min_complete_today_s', { value: schedule?.estimated_study_mins || 0 })}</IconLabel>
             {(schedule?.total_overdue || 0) > 0 && (
-              <Text style={styles.overdueText}>
-                {t('x_bar_prep_schedule_overdue', { total_overdue: schedule?.total_overdue })}
-              </Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.overdueText}>{t('x_bar_prep_schedule_overdue', { total_overdue: schedule?.total_overdue })}</IconLabel>
             )}
           </View>
 
@@ -209,18 +206,16 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             onPress={() => navigation.navigate('BarPrepHome')}
             activeOpacity={0.85}
           >
-            <Text style={styles.startBtnText}>
-              {(schedule?.completed_today || 0) >= (schedule?.daily_goal || 1)
+            <IconLabel icon={ICONS.play} textStyle={styles.startBtnText}>{(schedule?.completed_today || 0) >= (schedule?.daily_goal || 1)
                 ? t('x_bar_prep_schedule_goal_complete_study_more')
-                : t('x_bar_prep_schedule_study_remaining', { value: (schedule?.daily_goal || 0) - (schedule?.completed_today || 0) })}
-            </Text>
+                : t('x_bar_prep_schedule_study_remaining', { value: (schedule?.daily_goal || 0) - (schedule?.completed_today || 0) })}</IconLabel>
           </TouchableOpacity>
         </View>
 
         {/* ── Recommended Categories ───────────────────────────────── */}
         {(schedule?.recommended_categories || []).length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>{t('x_bar_prep_schedule_focus_today')}</Text>
+            <IconLabel icon={ICONS.pin} textStyle={styles.sectionTitle}>{t('x_bar_prep_schedule_focus_today')}</IconLabel>
             <View style={styles.recommendList}>
               {(schedule?.recommended_categories || []).map((cat, i) => (
                 <View key={cat} style={[styles.recommendChip, { backgroundColor: colors.card }]}>
@@ -235,7 +230,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
         )}
 
         {/* ── 14-Day Calendar ──────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>{t('x_bar_prep_schedule_14_day_review_calendar')}</Text>
+        <IconLabel icon={ICONS.calendar} textStyle={styles.sectionTitle}>{t('x_bar_prep_schedule_14_day_review_calendar')}</IconLabel>
         <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
           <View style={styles.calendarGrid}>
             {(schedule?.calendar || []).map(day => {

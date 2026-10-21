@@ -27,7 +27,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
@@ -139,15 +139,12 @@ const CaseCard = React.memo(function CaseCard({ item, styles, colors, unread, on
         <View style={styles.statusBadge}><Text maxFontSizeMultiplier={1.3} style={styles.statusText}>{statusLabel(item.status)}</Text></View>
       </View>
       {item._offline ? (
-        <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="case-card-offline">⏳ {t('cs2_waiting_to_sync')}</Text>
+        <IconLabel icon={ICONS.hourglass} textStyle={styles.muted} maxFontSizeMultiplier={1.4} testID="case-card-offline">{t('cs2_waiting_to_sync')}</IconLabel>
       ) : (
         <>
           {date ? (
             <View style={[styles.courtRow, days !== null && days >= 0 && days <= 7 && styles.courtRowUrgent]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.courtText} testID="case-court-date-label">
-                📅 {formatCourtDay(date)}
-                {days !== null && days >= 0 ? `  (${days === 0 ? t('x_cs_today') : days === 1 ? t('x_cs_tomorrow') : t('x_cs_days', { days })})` : ''}
-              </Text>
+              <IconLabel icon={ICONS.calendar} textStyle={styles.courtText} maxFontSizeMultiplier={1.4} testID="case-court-date-label">{formatCourtDay(date)}{days !== null && days >= 0 ? `  (${days === 0 ? t('x_cs_today') : days === 1 ? t('x_cs_tomorrow') : t('x_cs_days', { days })})` : ''}</IconLabel>
               {open && (
                 <TouchableOpacity accessibilityRole="button" testID="case-remind-me" style={styles.remindBtn} onPress={() => onRemind(item)}
                   accessibilityLabel={t('x_cs_set_court_date_reminder')}>
@@ -166,7 +163,7 @@ const CaseCard = React.memo(function CaseCard({ item, styles, colors, unread, on
           <View style={styles.actions}>
             <TouchableOpacity accessibilityRole="button" testID="case-edit" style={[styles.action, styles.actionPrimary]} onPress={() => onEdit(item)}
               accessibilityLabel={t('cs2_edit_a11y', { title: item.title })}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.actionPrimaryText}>✏️ {t('x_cs_edit_case')}</Text>
+              <IconLabel icon={ICONS.edit} textStyle={styles.actionPrimaryText} maxFontSizeMultiplier={1.3}>{t('x_cs_edit_case')}</IconLabel>
             </TouchableOpacity>
             <Action id="court-dates" icon="📅" label={t('cs_court_dates')} />
             <Action id="timeline" icon="🕑" label={t('cs2_act_timeline')} />
@@ -495,18 +492,16 @@ function CaseScreen({ navigation }: any) {
     ) : (
       <ScrollView testID="case-list" contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecond} />}>
         {casesState === 'offline' && (
-          <View testID="case-list-offline" style={styles.banner}><Text maxFontSizeMultiplier={1.4} style={styles.bannerText}>{t('x_cs_offline_showing_court_dates', { casesCacheAge: cacheAge })}</Text></View>
+          <View testID="case-list-offline" style={styles.banner}><IconLabel icon={ICONS.offline} textStyle={styles.bannerText} maxFontSizeMultiplier={1.4}>{t('x_cs_offline_showing_court_dates', { casesCacheAge: cacheAge })}</IconLabel></View>
         )}
         {offlineCases.length > 0 && (
           <View testID="case-offline-message" style={styles.banner}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.bannerText}>{t(offlineCases.length === 1 ? 'x_cs_case_saved_offline_will_one' : 'x_cs_case_saved_offline_will_other', { length: offlineCases.length })}</Text>
+            <IconLabel icon={ICONS.offline} textStyle={styles.bannerText} maxFontSizeMultiplier={1.4}>{t(offlineCases.length === 1 ? 'x_cs_case_saved_offline_will_one' : 'x_cs_case_saved_offline_will_other', { length: offlineCases.length })}</IconLabel>
           </View>
         )}
         {!!nextReminder && casesState === 'ok' && (
           <TouchableOpacity accessibilityRole="button" testID="court-reminders-banner" style={styles.banner} onPress={() => navigation.navigate('CourtDates')}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.bannerTitle}>
-              📅 {t(nextReminder.count === 1 ? 'x_cs_upcoming_court_reminder_one' : 'x_cs_upcoming_court_reminder_other', { length: nextReminder.count })}
-            </Text>
+            <IconLabel icon={ICONS.calendar} textStyle={styles.bannerTitle} maxFontSizeMultiplier={1.4}>{t(nextReminder.count === 1 ? 'x_cs_upcoming_court_reminder_one' : 'x_cs_upcoming_court_reminder_other', { length: nextReminder.count })}</IconLabel>
             {!!nextReminder.deliver_at && (
               <Text maxFontSizeMultiplier={1.4} style={styles.bannerText} numberOfLines={2}>{t('x_cs_next', { title: nextReminder.title || '', deliver_at: formatReminderTime(nextReminder.deliver_at) })}</Text>
             )}
@@ -514,7 +509,7 @@ function CaseScreen({ navigation }: any) {
         )}
         {listAll.length === 0 ? (
           <View testID="case-empty-state" style={styles.empty}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
+            <IconLabel icon={ICONS.cases} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('case_empty_title')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>{t('x_cs_tap_new_case_start')}</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={openNew}>
@@ -527,7 +522,7 @@ function CaseScreen({ navigation }: any) {
         ))}
         {familyCases.length > 0 && (
           <View testID="case-family-section">
-            <Text maxFontSizeMultiplier={1.4} style={styles.section}>👨‍👩‍👧 {t('cs_shared_with_me', { n: familyCases.length })}</Text>
+            <IconLabel icon={ICONS.family} textStyle={styles.section} maxFontSizeMultiplier={1.4}>{t('cs_shared_with_me', { n: familyCases.length })}</IconLabel>
             {familyCases.map(fc => (
               <TouchableOpacity key={fc.id} accessibilityRole="button" style={styles.row} onPress={() => navigation.navigate('CourtDates')}
                 accessibilityLabel={t('cs_shared_a11y', { title: fc.title })}>
@@ -561,7 +556,7 @@ function CaseScreen({ navigation }: any) {
         <TouchableOpacity key={`d${d.user_id}`} accessibilityRole="button" testID="case-direct-row" style={styles.row}
           onPress={() => navigation.navigate('Messages', { directWith: d.user_id, directName: d.name || undefined })}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle} numberOfLines={1}>✉️ {d.name || t('ai_someone')}</Text>
+            <IconLabel icon={ICONS.mail} textStyle={styles.rowTitle} maxFontSizeMultiplier={1.4} numberOfLines={1}>{d.name || t('ai_someone')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={styles.rowSub} numberOfLines={1}>{d.last_from_me ? `${t('ai_you')}: ` : ''}{d.last_message}</Text>
           </View>
           {d.unread > 0 && <View style={styles.unread}><Text maxFontSizeMultiplier={1.2} style={styles.unreadText}>{d.unread > 9 ? '9+' : d.unread}</Text></View>}
@@ -617,7 +612,7 @@ function CaseScreen({ navigation }: any) {
 
   const lawyersBody = (
     <ScrollView testID="case-saved-lawyers" contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={false} onRefresh={loadSaved} tintColor={colors.textSecond} />}>
-      {lawyersState === 'offline' && <View style={styles.banner}><Text maxFontSizeMultiplier={1.4} style={styles.bannerText}>{t('x_cs_offline_showing_saved_lawyers', { cacheAge: lawyersAge })}</Text></View>}
+      {lawyersState === 'offline' && <View style={styles.banner}><IconLabel icon={ICONS.offline} textStyle={styles.bannerText} maxFontSizeMultiplier={1.4}>{t('x_cs_offline_showing_saved_lawyers', { cacheAge: lawyersAge })}</IconLabel></View>}
       {lawyersState === 'loading' && <ActivityIndicator style={{ marginTop: 40 }} color={colors.textBrand} />}
       {lawyersState === 'guest' && (
         <SignInNeeded navigation={navigation} testID="case-lawyers-sign-in" title={t('x_cs_sign_see_saved_lawyers')} body={t('x_cs_lawyers_save_kept_account')} onSignedIn={loadSaved} />
@@ -696,13 +691,13 @@ function CaseScreen({ navigation }: any) {
           </View>
           {!!editing && (
             <ScrollView testID="case-editor" style={{ flex: 1 }} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-              {!!error && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="case-editor-error">⚠ {error}</Text>}
+              {!!error && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4} testID="case-editor-error">{error}</IconLabel>}
               {!editing.id && (
                 <TouchableOpacity accessibilityRole="button" testID="case-scan" style={[styles.scanBtn, scanning && { opacity: 0.6 }]} onPress={scan} disabled={scanning}
                   accessibilityLabel={t('x_cs_scan_document_auto_fill')}>
                   {scanning ? <ActivityIndicator color={colors.textOnNavy} /> : (
                     <>
-                      <Text maxFontSizeMultiplier={1.3} style={styles.scanIcon}>📷</Text>
+                      <IconLabel icon={ICONS.camera} textStyle={styles.scanIcon} maxFontSizeMultiplier={1.3}></IconLabel>
                       <View style={{ flex: 1 }}>
                         <Text maxFontSizeMultiplier={1.3} style={styles.scanTitle}>{t('x_cs_scan_document_2')}</Text>
                         <Text maxFontSizeMultiplier={1.3} style={styles.scanSub}>{t('x_cs_auto_fill_from_charging')}</Text>
@@ -743,7 +738,7 @@ function CaseScreen({ navigation }: any) {
               <TextInput testID="case-court-date-input" accessibilityLabel={t('x_cs_next_court_date')} style={styles.input} value={editing.next_court_date}
                 onChangeText={v => setField('next_court_date', v)} placeholder={t('x_cs_yyyy_mm_dd_e')} placeholderTextColor={colors.textMuted}
                 keyboardType="numbers-and-punctuation" maxLength={10} />
-              {validCourtDate(editing.next_court_date) && <Text maxFontSizeMultiplier={1.4} style={styles.hint}>📅 {formatCourtDay(editing.next_court_date)}</Text>}
+              {validCourtDate(editing.next_court_date) && <IconLabel icon={ICONS.calendar} textStyle={styles.hint} maxFontSizeMultiplier={1.4}>{formatCourtDay(editing.next_court_date)}</IconLabel>}
 
               <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('x_cs_state_2_letter_code')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.hint}>{t('x_cs_used_expungement_eligibility_checks')}</Text>
@@ -758,17 +753,17 @@ function CaseScreen({ navigation }: any) {
                 </View>
                 {!!editing.id && (
                   <TouchableOpacity accessibilityRole="button" testID="case-voice-note" style={styles.smallChip} onPress={openVoiceNote} accessibilityLabel={t('x_cs_record_voice_note_this')}>
-                    <Text maxFontSizeMultiplier={1.3} style={styles.smallChipText}>🎙 {t('x_cs_voice_note_2')}</Text>
+                    <IconLabel icon={ICONS.record} textStyle={styles.smallChipText} maxFontSizeMultiplier={1.3}>{t('x_cs_voice_note_2')}</IconLabel>
                   </TouchableOpacity>
                 )}
               </View>
               <TextInput testID="case-notes-input" accessibilityLabel={t('x_cs_notes')} style={[styles.input, styles.textArea]} value={editing.notes}
                 onChangeText={v => setField('notes', v)} placeholder={t('x_cs_e_g_attorney_john')} placeholderTextColor={colors.textMuted} multiline maxLength={10_000} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>🔒 {t('case_notes_privilege')}</Text>
+              <IconLabel icon={ICONS.lock} textStyle={styles.privacy} maxFontSizeMultiplier={1.4}>{t('case_notes_privilege')}</IconLabel>
 
               {!!editing.id && (
                 <TouchableOpacity accessibilityRole="button" testID="case-delete" style={styles.deleteBtn} onPress={remove}>
-                  <Text maxFontSizeMultiplier={1.3} style={styles.deleteText}>🗑 {t('cs2_delete_btn')}</Text>
+                  <IconLabel icon={ICONS.delete} textStyle={styles.deleteText} maxFontSizeMultiplier={1.3}>{t('cs2_delete_btn')}</IconLabel>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -794,7 +789,7 @@ function CaseScreen({ navigation }: any) {
                 {!!inviteCode.message && (
                   <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn}
                     onPress={async () => { const r = await RNShare.share({ message: inviteCode.message, title: t('cdd_share_title') }).catch(() => null); if (r?.action === COPIED_ACTION) showToast(t('cs2_copied'), 'success'); }}>
-                    <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>📤 {t('cdd_send_code')}</Text>
+                    <IconLabel icon={ICONS.share} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_send_code')}</IconLabel>
                   </TouchableOpacity>
                 )}
               </View>
@@ -808,10 +803,10 @@ function CaseScreen({ navigation }: any) {
                   onPress={() => setInviteConsent(v => !v)}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.checkText}>{inviteConsent ? '☑' : '☐'} {t('cs_invite_consent')}</Text>
                 </TouchableOpacity>
-                {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={styles.error}>⚠ {inviteError}</Text>}
+                {!!inviteError && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4}>{inviteError}</IconLabel>}
                 <TouchableOpacity accessibilityRole="button" testID="case-invite-create" style={[styles.primaryBtn, (!inviteConsent || inviting) && { opacity: 0.5 }]}
                   onPress={sendInvite} disabled={inviting || !inviteConsent}>
-                  {inviting ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>👨‍👩‍👧 {t('cdd_create_code')}</Text>}
+                  {inviting ? <ActivityIndicator color={colors.textOnNavy} /> : <IconLabel icon={ICONS.family} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_create_code')}</IconLabel>}
                 </TouchableOpacity>
               </>
             )}

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS, AppIcon, type IconName } from '../components/AppIcon';
 
 interface Stats {
   lawyerCount: number;
@@ -14,11 +15,11 @@ interface Stats {
   lastUpdated: string;
 }
 
-function StatCard({ icon, value, label, color }: { icon: string; value: string | number; label: string; color: string }) {
+function StatCard({ icon, value, label, color }: { icon: IconName; value: string | number; label: string; color: string }) {
   useLang();
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.statIcon}>{icon}</Text>
+      <AppIcon name={icon} size={22} color={color} style={styles.statIcon} />
       <Text maxFontSizeMultiplier={1.4} style={[styles.statValue, { color }]}>{value}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{label}</Text>
     </View>
@@ -91,12 +92,12 @@ function AdvocacyScreen(): React.JSX.Element {
           {/* Key stats grid */}
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_advocacy_network_stats')}</Text>
           <View style={styles.statsGrid}>
-            <StatCard icon="⚖️" value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.navy} />
-            <StatCard icon="🔓" value={stats.bailCount}      label={t("advocacy.stats.bail_agents")}       color={colors.warnDark} />
-            <StatCard icon="📍" value={stats.citiesCovered}  label={t('x_advocacy_cities_covered')}   color={colors.legalDark} />
-            <StatCard icon="🚨" value={stats.alertsSent}     label={t('x_advocacy_sos_alerts_sent')}  color={colors.emergencyDark} />
-            <StatCard icon="👥" value={stats.userCount}      label={t('x_advocacy_registered_users')} color={colors.blue} />
-            <StatCard icon="🕐" value={formatDate(stats.lastUpdated)} label={t('x_advocacy_last_updated')} color={colors.textSecond} />
+            <StatCard icon={ICONS.lawyer} value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.navy} />
+            <StatCard icon={ICONS.bail} value={stats.bailCount}      label={t("advocacy.stats.bail_agents")}       color={colors.warnDark} />
+            <StatCard icon={ICONS.location} value={stats.citiesCovered}  label={t('x_advocacy_cities_covered')}   color={colors.legalDark} />
+            <StatCard icon={ICONS.emergency} value={stats.alertsSent}     label={t('x_advocacy_sos_alerts_sent')}  color={colors.emergencyDark} />
+            <StatCard icon={ICONS.family} value={stats.userCount}      label={t('x_advocacy_registered_users')} color={colors.blue} />
+            <StatCard icon={ICONS.clock} value={formatDate(stats.lastUpdated)} label={t('x_advocacy_last_updated')} color={colors.textSecond} />
           </View>
 
           {/* City coverage */}
@@ -128,7 +129,7 @@ function AdvocacyScreen(): React.JSX.Element {
         </>
       ) : null}
 
-        <Text style={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>{t('x_advocacy_this_content_general_educational')}</Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>{t('x_advocacy_this_content_general_educational')}</IconLabel>
         </ScrollView>
   );
 }
@@ -142,7 +143,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
-  statIcon: { fontSize: 22, marginBottom: 6 },
+  statIcon: { marginBottom: 6 },
   statValue: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
   statLabel: { fontSize: 11, color: colors.info, fontWeight: '600', textAlign: 'center' },
   coverageCard: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },

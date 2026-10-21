@@ -8,6 +8,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import JTBLogo from '../components/JTBLogo';
 import { isValidIdentifier } from '../utils/identifier';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const ACCOUNT_TYPES: { type: AccountType; labelKey: string; a11yKey: string }[] = [
   { type: 'consumer',   labelKey: 'x_rg_i_need_legal_help', a11yKey: 'x_rg_defendant_family_member_account' },
@@ -211,7 +212,7 @@ if (loading) return;
 
           {!!error && (
             <View testID="register-error-message" style={styles.errorBox}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠  {error}</Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.errorText} maxFontSizeMultiplier={1.4}>{error}</IconLabel>
             </View>
           )}
           <TouchableOpacity

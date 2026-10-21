@@ -1,5 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { setContacts, getContacts, getUserName, setUserName } from '../services/storage';
@@ -74,7 +74,7 @@ function ContactsScreen(): React.JSX.Element {
         <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
       <View style={styles.infoCard}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.infoIcon}>ℹ️</Text>
+        <IconLabel icon={ICONS.alertNormal} textStyle={styles.infoIcon} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={styles.infoText}>
           {t('x_contacts_when_tap_sos_these')}
         </Text>
@@ -143,7 +143,7 @@ function ContactsScreen(): React.JSX.Element {
       {/* Empty state */}
       {contacts?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>👥</Text>
+          <IconLabel icon={ICONS.family} textStyle={{ fontSize: 40 }}></IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>{t('x_contacts_no_contacts_saved')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>{t('x_contacts_add_attorneys_bondsmen_family')}</Text>
         </View>

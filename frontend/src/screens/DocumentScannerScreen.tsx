@@ -28,6 +28,7 @@ import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
@@ -140,10 +141,10 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     {scanError && (
       <View style={{margin:16,padding:14,backgroundColor:colors.surface,
         borderRadius:10,borderWidth:1,borderColor:colors.border}}>
-        <Text style={{color:colors.textPrimary,fontWeight:'700',fontSize:14}}>⚠ {scanError}</Text>
+        <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{color:colors.textPrimary,fontWeight:'700',fontSize:14}}>{scanError}</IconLabel>
       </View>
     )}
-        <Text maxFontSizeMultiplier={1.4} style={s.permIcon}>📷</Text>
+        <IconLabel icon={ICONS.camera} textStyle={s.permIcon} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[s.permTitle, { color: colors.textPrimary }]}>
           {t('x_cs_camera_access_needed')}
         </Text>
@@ -176,7 +177,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
             accessibilityLabel={t('x_document_scanner_retake')} onPress={() => setCaptured(null)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>{t('x_document_scanner_retake')}</Text>
+            <IconLabel icon={ICONS.undo} textStyle={s.previewBtnText} maxFontSizeMultiplier={1.4}>{t('x_document_scanner_retake')}</IconLabel>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -189,7 +190,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
           >
             {uploading
               ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>{t('x_document_scanner_attach_case_2')}</Text>
+              : <IconLabel icon={ICONS.attach} textStyle={s.previewBtnText} maxFontSizeMultiplier={1.4}>{t('x_document_scanner_attach_case_2')}</IconLabel>
             }
           </TouchableOpacity>
         </View>

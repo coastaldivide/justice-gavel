@@ -11,6 +11,7 @@ import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { t, useLang, perLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const OFFLINE_FEATURES = perLang((): { icon: string; label: string; hint: string; screen: string }[] => [
   { icon: '📋', label: t('rc_page_title'), hint: t('x_offline_status_rights_during_stop_arrest'),     screen: 'RightsCard' },
@@ -35,9 +36,7 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={styles.scroll}>
       <View style={[styles.status, { backgroundColor: online ? colors.legalBg : colors.warnBg }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.statusText, { color: online ? colors.legalDark : colors.warnDark }]}>
-          {online ? t('x_offline_status_online_everything_available') : t('x_offline_status_offline_these_tools_still')}
-        </Text>
+        <IconLabel icon={ICONS.offline} textStyle={[styles.statusText, { color: online ? colors.legalDark : colors.warnDark }]} maxFontSizeMultiplier={1.4}>{online ? t('x_offline_status_online_everything_available') : t('x_offline_status_offline_these_tools_still')}</IconLabel>
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.section, { color: colors.textMuted }]}>{t('x_offline_status_works_offline')}</Text>

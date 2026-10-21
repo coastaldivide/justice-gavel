@@ -39,6 +39,7 @@ import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { useCaseMessages, CaseMessage } from '../hooks/useCaseMessages';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatTime(iso: string): string {
@@ -271,7 +272,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View testID="messages-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       <AuthGateModal />
       <View style={styles.emptyWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>💬</Text>
+        <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
           {t('x_messages_sign_send_messages')}
         </Text>
@@ -306,7 +307,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         ) : null}
         {cases.length === 0 && !resolveError ? (
           <View style={styles.emptyWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>💬</Text>
+            <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
               {t('msg_empty')}
             </Text>
@@ -362,7 +363,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (unavailable) return (
     <View testID="messages-screen" style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
       <View testID="messages-unavailable" style={styles.emptyWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>🔒</Text>
+        <IconLabel icon={ICONS.lock} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>{t('case_unavailable_body')}</Text>
         <TouchableOpacity accessibilityRole="button" testID="messages-unavailable-back" style={[styles.primaryBtn, { backgroundColor: colors.navy }]} onPress={() => setActiveCase(null)}>
@@ -381,9 +382,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     >
       {/* Privacy note — factual: bodies are encrypted at rest server-side */}
       <View style={[styles.privacyNote, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.privacyNoteText, { color: colors.textMuted }]}>
-          🔒 {t('msg_e2e_note')}
-        </Text>
+        <IconLabel icon={ICONS.lock} textStyle={[styles.privacyNoteText, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{t('msg_e2e_note')}</IconLabel>
       </View>
       {counsel && (
         <View testID="messages-counsel" style={[styles.counselBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
@@ -391,9 +390,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={[styles.counselText, { color: colors.textPrimary }]}>{t('msg2_no_counsel')}</Text>
           ) : counsel.map(c => (
             <View key={c.assignment_id} style={styles.counselRow}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.counselText, { color: colors.textPrimary, flex: 1 }]}>
-                ⚖️ {c.attorney_name || t('x_attorney_dashboard_attorney')} · {c.status === 'active' ? t('msg2_counsel_active') : t('msg2_counsel_pending')}
-              </Text>
+              <IconLabel icon={ICONS.lawyer} textStyle={[styles.counselText, { color: colors.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>{c.attorney_name || t('x_attorney_dashboard_attorney')}· {c.status === 'active' ? t('msg2_counsel_active') : t('msg2_counsel_pending')}</IconLabel>
               <TouchableOpacity accessibilityRole="button" style={styles.counselBtn} onPress={() => removeCounsel(c)} accessibilityLabel={t('saved_remove')}>
                 <Text maxFontSizeMultiplier={1.3} style={[styles.counselBtnText, { color: colors.emergency }]}>{t('saved_remove')}</Text>
               </TouchableOpacity>
@@ -435,7 +432,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>💬</Text>
+              <IconLabel icon={ICONS.message} textStyle={styles.emptyIcon} maxFontSizeMultiplier={1.4}></IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                 {t('msg_empty')}
               </Text>
@@ -483,10 +480,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                       {msg.body}
                     </Text>
                     {msg.attachment_id ? (
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.attachmentText, { color: mine ? colors.textOnNavy : colors.textMuted }]}>
-                        📎 {msg.attachment_name || t('x_messages_attachment')}
-                        {msg.attachment_size ? `  ·  ${formatBytes(msg.attachment_size)}` : ''}
-                      </Text>
+                      <IconLabel icon={ICONS.attach} textStyle={[styles.attachmentText, { color: mine ? colors.textOnNavy : colors.textMuted }]} maxFontSizeMultiplier={1.4}>{msg.attachment_name || t('x_messages_attachment')}{msg.attachment_size ? `  ·  ${formatBytes(msg.attachment_size)}` : ''}</IconLabel>
                     ) : null}
                   </View>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.metaText, mine && styles.metaTextMine, { color: colors.textMuted }]}>
@@ -508,7 +502,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('msg2_add_document')} testID="messages-add-document"
           style={[styles.sendBtn, { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border }]}
           onPress={() => navigation.navigate('DocumentScanner', { caseId: activeCase.id, caseTitle: activeCase.title })}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 18 }}>📎</Text>
+          <IconLabel icon={ICONS.attach} textStyle={{ fontSize: 18 }} maxFontSizeMultiplier={1.3}></IconLabel>
         </TouchableOpacity>
         <TextInput
           style={[styles.input, {

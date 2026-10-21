@@ -26,6 +26,7 @@ import { daysUntil, validCourtDate } from '../utils/dateUtils';
 import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 export interface DefendantRow {
   id: number; defendant_name: string; defendant_phone: string | null; defendant_email: string | null; case_number: string | null;
@@ -183,12 +184,12 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
         )}
         {!!data && (
           <View style={styles.note} testID="checkin-manager-billing">
-            <Text maxFontSizeMultiplier={1.4} style={styles.noteText}>💳 {t(data.billing_active ? 'ckm_billing_on' : 'ckm_billing_off', { price: money(data.fee_cents) })}</Text>
+            <IconLabel icon={ICONS.card} textStyle={styles.noteText} maxFontSizeMultiplier={1.4}>{t(data.billing_active ? 'ckm_billing_on' : 'ckm_billing_off', { price: money(data.fee_cents) })}</IconLabel>
           </View>
         )}
         {(phase === 'ok' || phase === 'guest') && active.length === 0 && (
           <View style={styles.box} testID="checkin-manager-how">
-            <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>{t('x_check_in_manager_digital_check_defendants')}</Text>
+            <IconLabel icon={ICONS.mobile} textStyle={styles.boxTitle} maxFontSizeMultiplier={1.4}>{t('x_check_in_manager_digital_check_defendants')}</IconLabel>
             {['ckm_how_1', 'ckm_how_2', 'ckm_how_3', 'ckm_how_4'].map(k => <Text key={k} maxFontSizeMultiplier={1.4} style={styles.body}>{t(k)}</Text>)}
             {isAgent ? (
               <TouchableOpacity accessibilityRole="button" style={styles.primaryBtn} onPress={() => requireAuth(() => { resetForm(); setEnrollOpen(true); })}>
@@ -219,11 +220,11 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
               </Text>
               <View style={styles.actions}>
                 <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => openHistory(row)} testID="checkin-manager-history">
-                  <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>{t('x_check_in_manager_view_history')}</Text>
+                  <IconLabel icon={ICONS.clipboard} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('x_check_in_manager_view_history')}</IconLabel>
                 </TouchableOpacity>
                 {!!row.active && (
                   <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => shareLink(row)} testID="checkin-manager-send-link">
-                    <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>📤 {t('ckm_send_link')}</Text>
+                    <IconLabel icon={ICONS.share} textStyle={styles.actionText} maxFontSizeMultiplier={1.3}>{t('ckm_send_link')}</IconLabel>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity accessibilityRole="button" style={styles.action} onPress={() => setActive(row, !row.active)} testID="checkin-manager-toggle">
@@ -245,7 +246,7 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" testID="checkin-enroll-form">
-            {!!formError && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="checkin-enroll-error">⚠ {formError}</Text>}
+            {!!formError && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4} testID="checkin-enroll-error">{formError}</IconLabel>}
             {[
               { id: 'name', label: t('x_check_in_manager_full_name'), value: name, set: setName, ph: t('x_check_in_manager_john_smith'), kb: 'default' as const },
               { id: 'phone', label: t('ckm_phone'), value: phone, set: setPhone, ph: '(615) 555-0100', kb: 'phone-pad' as const },
@@ -286,7 +287,7 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.scroll} testID="checkin-history">
-            {!!history?.error && <Text maxFontSizeMultiplier={1.4} style={styles.error}>⚠ {history.error}</Text>}
+            {!!history?.error && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4}>{history.error}</IconLabel>}
             {!history?.data && !history?.error && <ActivityIndicator style={{ marginTop: 30 }} color={colors.textBrand} />}
             {!!history?.data && (
               <>
@@ -306,8 +307,8 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
                     <Text maxFontSizeMultiplier={1.4} style={styles.label}>
                       ✓ {formatCourtDay(r.local_day)} · {new Date(r.checked_in_at).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit', timeZone: history.data?.time_zone })}
                     </Text>
-                    {!!r.location_label && <Text maxFontSizeMultiplier={1.4} style={styles.small}>📍 {r.location_label}</Text>}
-                    {r.lat != null && r.lng != null && <Text maxFontSizeMultiplier={1.4} style={styles.small}>📍 {r.lat.toFixed(4)}, {r.lng.toFixed(4)}</Text>}
+                    {!!r.location_label && <IconLabel icon={ICONS.location} textStyle={styles.small} maxFontSizeMultiplier={1.4}>{r.location_label}</IconLabel>}
+                    {r.lat != null && r.lng != null && <IconLabel icon={ICONS.location} textStyle={styles.small} maxFontSizeMultiplier={1.4}>{r.lat.toFixed(4)}, {r.lng.toFixed(4)}</IconLabel>}
                     {!!r.notes && <Text maxFontSizeMultiplier={1.4} style={styles.small} numberOfLines={3}>{r.notes}</Text>}
                   </View>
                 ))}

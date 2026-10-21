@@ -2,7 +2,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { EmptyState } from '../components/EmptyState';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * FirmVerticalScreen — Practice Area Configuration & Specialty Trackers
  *
@@ -430,9 +430,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
       {/* Subscription grace period / read-only mode banner */}
       {(subscriptionStatus === 'grace' || subscriptionStatus === 'lapsed') && (
         <View style={s.graceBanner}>
-          <Text maxFontSizeMultiplier={1.4} style={s.graceBannerTitle}>
-            {subscriptionStatus === 'grace' ? t('x_firm_vertical_account_read_only_mode') : t('x_firm_vertical_subscription_inactive')}
-          </Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.graceBannerTitle} maxFontSizeMultiplier={1.4}>{subscriptionStatus === 'grace' ? t('x_firm_vertical_account_read_only_mode') : t('x_firm_vertical_subscription_inactive')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={s.graceBannerBody}>
             {subscriptionStatus === 'grace' && graceUntil
               ? t('x_firm_vertical_can_view_all_data', { graceUntil })
@@ -449,9 +447,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
           accessibilityState={{  selected: false  }}
             accessibilityLabel={t('x_firm_vertical_switch_tab')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===tItem && s.tabLabelActive]}>
-              {tItem === 'setup' ? t('x_firm_vertical_setup') : tItem === 'pricing' ? t('x_firm_vertical_pricing') : tItem === 'trackers' ? t('x_firm_vertical_trackers') : t('x_firm_vertical_deadlines')}
-            </Text>
+            <IconLabel icon={ICONS.settings} textStyle={[s.tabLabel, tab===tItem && s.tabLabelActive]} maxFontSizeMultiplier={1.4}>{tItem === 'setup' ? t('x_firm_vertical_setup') : tItem === 'pricing' ? t('x_firm_vertical_pricing') : tItem === 'trackers' ? t('x_firm_vertical_trackers') : t('x_firm_vertical_deadlines')}</IconLabel>
           </TouchableOpacity>
         ))}
       </View>
@@ -541,9 +537,9 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{tItem.description}</Text>
                 <View style={s.tierStats}>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_acquisition_seats', { value: tItem.seat_limit === 999 ? t('x_firm_vertical_unlimited') : tItem.seat_limit })}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_acquisition_matters_2', { value: tItem.matter_limit >= 99999 ? t('x_firm_vertical_unlimited') : tItem.matter_limit })}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>{t('x_firm_vertical_day_ai_calls', { ai_calls_daily: tItem.ai_calls_daily })}</Text>
+                  <IconLabel icon={ICONS.user} textStyle={s.tierStat} maxFontSizeMultiplier={1.4}>{t('x_firm_acquisition_seats', { value: tItem.seat_limit === 999 ? t('x_firm_vertical_unlimited') : tItem.seat_limit })}</IconLabel>
+                  <IconLabel icon={ICONS.cases} textStyle={s.tierStat} maxFontSizeMultiplier={1.4}>{t('x_firm_acquisition_matters_2', { value: tItem.matter_limit >= 99999 ? t('x_firm_vertical_unlimited') : tItem.matter_limit })}</IconLabel>
+                  <IconLabel icon={ICONS.ai} textStyle={s.tierStat} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_day_ai_calls', { ai_calls_daily: tItem.ai_calls_daily })}</IconLabel>
                 </View>
                 {firm?.pricing_tier === tItem.tier_key && (
                   <View style={s.currentBadge}><Text maxFontSizeMultiplier={1.4} style={s.currentBadgeText}>{t('x_firm_vertical_current_plan')}</Text></View>
@@ -614,9 +610,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
           accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
           accessibilityState={{  selected: false  }}
                         >
-                  <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
-                    {tt === 'asylum' ? t('x_firm_vertical_asylum_clock_2') : tt === 'dpa' ? t('x_firm_vertical_dpa_tracker_2') : t('x_firm_vertical_tro_tracker')}
-                  </Text>
+                  <IconLabel icon={ICONS.clock} textStyle={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]} maxFontSizeMultiplier={1.4}>{tt === 'asylum' ? t('x_firm_vertical_asylum_clock_2') : tt === 'dpa' ? t('x_firm_vertical_dpa_tracker_2') : t('x_firm_vertical_tro_tracker')}</IconLabel>
                 </TouchableOpacity>
               ))}
             </View>
@@ -668,9 +662,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                           <TouchableOpacity
           accessibilityRole="button" key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
                                   >
-                            <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acCountry===cc && s.segLabelActive]}>
-                              {cc==='crisis'?t('x_firm_vertical_crisis'):cc==='deteriorating'?t('x_firm_vertical_deteriorating'):t('x_firm_vertical_stable')}
-                            </Text>
+                            <IconLabel icon={ICONS.emergency} iconColor={colors.emergency} textStyle={[s.segLabel, acCountry===cc && s.segLabelActive]} maxFontSizeMultiplier={1.4}>{cc==='crisis'?t('x_firm_vertical_crisis'):cc==='deteriorating'?t('x_firm_vertical_deteriorating'):t('x_firm_vertical_stable')}</IconLabel>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -703,13 +695,11 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                             <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
                           </View>
                           <View style={s.clockFooter}>
-                            <Text maxFontSizeMultiplier={1.4} style={[s.clockDays, { color: barColor }]}>
-                              {c.one_year_barred
+                            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[s.clockDays, { color: barColor }]} maxFontSizeMultiplier={1.4}>{c.one_year_barred
                               ? t('x_firm_vertical_1_year_bar_exceeded')
                               : c.approaching_bar
                                 ? t('x_firm_vertical_approaching_bar_days_remaining', { days_until_bar: c.days_until_bar })
-                                : t('x_firm_vertical_days_elapsed_days_until', { elapsed_days: c.elapsed_days, days_until_bar: c.days_until_bar })}
-                            </Text>
+                                : t('x_firm_vertical_days_elapsed_days_until', { elapsed_days: c.elapsed_days, days_until_bar: c.days_until_bar })}</IconLabel>
                             <Text maxFontSizeMultiplier={1.4} style={s.clockPct}>{pct}%</Text>
                           </View>
                         </View>
@@ -790,25 +780,19 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                             <Text style={{ fontSize: 12, color: COLORS.navy }}>{t('x_firm_vertical_mark_resolved_2')}</Text>
                           </TouchableOpacity>
                           {d.wells_due && (
-                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.wells_overdue && { color: colors.emergency }]}>
-                              {t('x_firm_vertical_wells', { value: d.wells_overdue
+                            <IconLabel icon={ICONS.clipboard} textStyle={[s.troDue, d.wells_overdue && { color: colors.emergency }]} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_wells', { value: d.wells_overdue
                                 ? t('x_firm_vertical_overdue_by_d', { days_until_wells: Math.abs(d.days_until_wells) })
-                                : t('x_firm_vertical_d_remaining', { days_until_wells: d.days_until_wells, wells_due: d.wells_due }) })}
-                            </Text>
+                                : t('x_firm_vertical_d_remaining', { days_until_wells: d.days_until_wells, wells_due: d.wells_due }) })}</IconLabel>
                           )}
                           {d.subpoena_due && (
-                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.subpoena_overdue && { color: colors.emergency }]}>
-                              {t('x_firm_vertical_subpoena', { value: d.subpoena_overdue
+                            <IconLabel icon={ICONS.attach} textStyle={[s.troDue, d.subpoena_overdue && { color: colors.emergency }]} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_subpoena', { value: d.subpoena_overdue
                                 ? t('x_firm_vertical_overdue_by_d_2', { days_until_subpoena: Math.abs(d.days_until_subpoena) })
-                                : t('x_firm_vertical_d_remaining_2', { days_until_subpoena: d.days_until_subpoena, subpoena_due: d.subpoena_due }) })}
-                            </Text>
+                                : t('x_firm_vertical_d_remaining_2', { days_until_subpoena: d.days_until_subpoena, subpoena_due: d.subpoena_due }) })}</IconLabel>
                           )}
                           {d.dpa_sign_due && (
-                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.sign_overdue && { color: colors.emergency }]}>
-                              {t('x_firm_vertical_sign', { value: d.sign_overdue
+                            <IconLabel icon={ICONS.edit} textStyle={[s.troDue, d.sign_overdue && { color: colors.emergency }]} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_sign', { value: d.sign_overdue
                                 ? t('x_firm_vertical_overdue_by_d_3', { days_until_sign: Math.abs(d.days_until_sign) })
-                                : t('x_firm_vertical_d_remaining_3', { days_until_sign: d.days_until_sign, dpa_sign_due: d.dpa_sign_due }) })}
-                            </Text>
+                                : t('x_firm_vertical_d_remaining_3', { days_until_sign: d.days_until_sign, dpa_sign_due: d.dpa_sign_due }) })}</IconLabel>
                           )}
                         </View>
                       );
@@ -856,7 +840,7 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                       </View>
                       <TouchableOpacity accessibilityRole="button" style={[s.addBtn, troDV && { backgroundColor: colors.emergency }]} onPress={createTRO}
           >
-                        <Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{troDV ? t('x_firm_vertical_file_emergency_tro') : t('x_firm_vertical_add_tro_tracker')}</Text>
+                        <IconLabel icon={ICONS.emergency} textStyle={s.addBtnText} maxFontSizeMultiplier={1.4}>{troDV ? t('x_firm_vertical_file_emergency_tro') : t('x_firm_vertical_add_tro_tracker')}</IconLabel>
                       </TouchableOpacity>
                     </View>
 
@@ -868,26 +852,22 @@ confirm(t('x_firm_vertical_mark_as_resolved'), t('x_firm_vertical_mark_as_resolv
                           {tItem.tro_granted ? <View style={s.grantedBadge}><Text maxFontSizeMultiplier={1.4} style={s.grantedBadgeText}>{t('x_firm_vertical_granted')}</Text></View> : null}
                         </View>
                         {tItem.tro_hearing_due && (
-                          <Text maxFontSizeMultiplier={1.4} style={[
+                          <IconLabel icon={ICONS.alarm} textStyle={[
                             s.troDue,
                             tItem.hearing_overdue && { color: colors.emergency }
-                          ]}>
-                            ⏰ {tItem.hearing_overdue
+                          ]} maxFontSizeMultiplier={1.4}>{tItem.hearing_overdue
                               ? t(Math.abs(tItem.days_until_hearing) === 1 ? 'x_firm_vertical_hearing_overdue_by_day_one' : 'x_firm_vertical_hearing_overdue_by_day_other', { days_until_hearing: Math.abs(tItem.days_until_hearing) })
                               : tItem.days_until_hearing !== null
                                 ? t(tItem.days_until_hearing === 1 ? 'x_firm_vertical_hearing_day_one' : 'x_firm_vertical_hearing_day_other', { days_until_hearing: tItem.days_until_hearing, tro_hearing_due: tItem.tro_hearing_due })
                                 : t('x_firm_vertical_hearing_due', { tro_hearing_due: tItem.tro_hearing_due })
-                            }
-                          </Text>
+                            }</IconLabel>
                         )}
                         {tItem.protective_order_due && (
-                          <Text maxFontSizeMultiplier={1.4} style={[s.troDue, tItem.po_overdue && { color: colors.emergency }]}>
-                            {t('x_firm_vertical_po', { value: tItem.po_overdue
+                          <IconLabel icon={ICONS.clipboard} textStyle={[s.troDue, tItem.po_overdue && { color: colors.emergency }]} maxFontSizeMultiplier={1.4}>{t('x_firm_vertical_po', { value: tItem.po_overdue
                               ? t('x_firm_vertical_overdue_by_d_4', { days_until_po: Math.abs(tItem.days_until_po) })
                               : tItem.days_until_po !== null
                                 ? t('x_firm_vertical_d_remaining_4', { days_until_po: tItem.days_until_po, protective_order_due: tItem.protective_order_due })
-                                : tItem.protective_order_due })}
-                          </Text>
+                                : tItem.protective_order_due })}</IconLabel>
                         )}
                         <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>{t('x_firm_vertical_asset_tier_2', { value: tItem.asset_tier.replace(/_/g, ' ') })}</Text>
                       </View>

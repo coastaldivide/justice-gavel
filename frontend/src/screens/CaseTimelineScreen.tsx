@@ -1,6 +1,6 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * CaseTimelineScreen -- Chronological view of a case's events
  *
@@ -286,9 +286,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
             {formatAmount(item.amount_cents)}
           </Text>
           {!!item.location && (
-            <Text maxFontSizeMultiplier={1.4} style={[s.eventMeta, { color: colors.textMuted }]}>
-              📍 {item.location}
-            </Text>
+            <IconLabel icon={ICONS.location} textStyle={[s.eventMeta, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{item.location}</IconLabel>
           )}
           {!!item.description && (
             <Text maxFontSizeMultiplier={1.4} style={[s.eventDesc, { color: colors.textSecond }]}
@@ -317,7 +315,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
       {signedOut ? <SignInNeeded navigation={navigation} testID="timeline-sign-in" body={t('sin_case_body')} onSignedIn={loadEvents} />
         : unavailable ? (
           <View testID="timeline-unavailable" style={s.unavailable}>
-            <Text maxFontSizeMultiplier={1.4} style={s.unavailableIcon}>🔒</Text>
+            <IconLabel icon={ICONS.lock} textStyle={s.unavailableIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[s.unavailableTitle, { color: colors.textPrimary }]}>{t('case_unavailable_title')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.unavailableBody, { color: colors.textSecond }]}>{t('case_unavailable_body')}</Text>
           </View>

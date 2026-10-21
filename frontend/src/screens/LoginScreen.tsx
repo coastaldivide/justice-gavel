@@ -14,6 +14,7 @@ import { startSession } from '../services/session';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { isEmail } from '../utils/identifier';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
@@ -79,7 +80,7 @@ if (loading) return;
         <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')} style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>{t('x_lg_search_without_account')}</Text>
+          <IconLabel icon={ICONS.search} textStyle={styles.topBrowseBtnText} maxFontSizeMultiplier={1.4}>{t('x_lg_search_without_account')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnSub}>{t('x_lg_find_lawyers_bail_agents')}</Text>
         </TouchableOpacity>
 
@@ -138,7 +139,7 @@ if (loading) return;
 
           {!!error && (
             <View style={styles.errorBox} testID="login-error-message">
-              <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠  {error}</Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.errorText} maxFontSizeMultiplier={1.4}>{error}</IconLabel>
             </View>
           )}
           <TouchableOpacity
@@ -190,9 +191,7 @@ if (loading) return;
           </TouchableOpacity>
         </View>
 
-        <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>
-          {t('x_lg_encrypted_never_sold_ccpa')}
-        </Text>
+        <IconLabel icon={ICONS.lock} textStyle={styles.privacy} maxFontSizeMultiplier={1.4}>{t('x_lg_encrypted_never_sold_ccpa')}</IconLabel>
       </ScrollView>
     </KeyboardAvoidingView>
   );

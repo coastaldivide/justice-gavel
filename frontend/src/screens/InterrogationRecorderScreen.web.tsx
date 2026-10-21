@@ -16,6 +16,7 @@ import { t, useLang } from '../i18n';
 import { useConfirm } from '../hooks/useConfirm';
 import EmergencyStrip from '../components/EmergencyStrip';
 import { getUserState } from '../utils/userState';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 interface RecordingLaw { state: string | null; consent: 'one-party' | 'two-party'; law: string; warn: boolean; note: string }
@@ -258,7 +259,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
                 </TouchableOpacity>
               )}
               <TouchableOpacity accessibilityRole="button" testID="recorder-save-audio" style={btn.green} onPress={saveRecording}>
-                <Text maxFontSizeMultiplier={1.3} style={btn.text}>{t('ir_save_recording')}</Text>
+                <IconLabel icon={ICONS.save} textStyle={btn.text} maxFontSizeMultiplier={1.3}>{t('ir_save_recording')}</IconLabel>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" testID="recorder-discard" onPress={reset} style={{ padding: 8, alignItems: 'center' }}>
                 <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textSecond, fontWeight: '600' }}>{t('x_interrogation_recorder_record_another')}</Text>
@@ -272,7 +273,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         <View testID="recorder-result" style={[card, { padding: 16, gap: 12 }]}>
           {!!pdf && (
             <TouchableOpacity accessibilityRole="button" testID="recorder-save-pdf" style={btn.green} onPress={savePdf}>
-              <Text maxFontSizeMultiplier={1.3} style={btn.text}>{t('x_interrogation_recorder_save_share_pdf_2')}</Text>
+              <IconLabel icon={ICONS.document} textStyle={btn.text} maxFontSizeMultiplier={1.3}>{t('x_interrogation_recorder_save_share_pdf_2')}</IconLabel>
             </TouchableOpacity>
           )}
           <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: colors.textPrimary, fontSize: 15 }}>{t('disc_doc_transcript')}</Text>

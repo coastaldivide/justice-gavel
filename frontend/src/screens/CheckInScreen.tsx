@@ -21,6 +21,7 @@ import { getToken } from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 export interface Enrollment {
   id: number; defendant_name: string; case_number: string | null; court_date: string | null; check_in_freq: 'daily' | 'weekly';
@@ -192,7 +193,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           )}
         </View>
         {!!e.court_date && courtDays !== null && courtDays >= 0 && courtDays <= 7 && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.warn}>⚠️ {t('ck2_court_soon', { day: formatCourtDay(e.court_date) })}</Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.warn} maxFontSizeMultiplier={1.4}>{t('ck2_court_soon', { day: formatCourtDay(e.court_date) })}</IconLabel>
         )}
 
         {e.done_for_period ? (
@@ -214,7 +215,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: withLocation }} testID="checkin-location-toggle" style={styles.toggleRow}
               onPress={toggleLocation} accessibilityLabel={t('x_check_in_include_gps_location_this')}>
               <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('x_check_in_include_my_location')}</Text>
+                <IconLabel icon={ICONS.location} textStyle={styles.label} maxFontSizeMultiplier={1.4}>{t('x_check_in_include_my_location')}</IconLabel>
                 <Text maxFontSizeMultiplier={1.4} style={styles.small}>
                   {locStatus === 'getting' ? t('qc_loc_getting') : locStatus === 'ready' ? t('x_check_in_location_ready')
                     : locStatus === 'unavailable' ? t('x_check_in_location_unavailable_can_still') : t('ck2_location_off')}
@@ -222,7 +223,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               </View>
               <View style={[styles.switch, withLocation && styles.switchOn]}><View style={[styles.knob, withLocation && { alignSelf: 'flex-end' }]} /></View>
             </TouchableOpacity>
-            {!!errorMsg && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="checkin-error-msg">⚠ {errorMsg}</Text>}
+            {!!errorMsg && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.error} maxFontSizeMultiplier={1.4} testID="checkin-error-msg">{errorMsg}</IconLabel>}
             <TouchableOpacity accessibilityRole="button" testID="checkin-submit-button" style={[styles.checkBtn, phase === 'submitting' && { opacity: 0.6 }]}
               disabled={phase === 'submitting' || locStatus === 'getting'} onPress={submit} accessibilityLabel={t('x_check_in_check_now')}>
               {phase === 'submitting' ? <ActivityIndicator color={colors.textOnNavy} /> : (
@@ -240,7 +241,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('ck2_other_enrollment')}</Text>
           </TouchableOpacity>
         )}
-        <Text maxFontSizeMultiplier={1.3} style={[styles.small, { marginTop: 16 }]}>{t('x_check_in_check_requirements_set_by')}</Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={[styles.small, { marginTop: 16 }]} maxFontSizeMultiplier={1.3}>{t('x_check_in_check_requirements_set_by')}</IconLabel>
         <AuthGateModal />
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,7 +1,7 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * DiscoveryScreen -- AI Discovery Document Analysis
  *
@@ -466,7 +466,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {caseTitle && (
         <View style={[styles.casePill, { backgroundColor: COLORS.navy + '14', borderColor: COLORS.navy + '30' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.casePillText, { color: COLORS.navy }]}>📁  {caseTitle}</Text>
+          <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{caseTitle}</IconLabel>
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>{t('disc_title')}</Text>
@@ -499,7 +499,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
           </>
         ) : (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.dropIcon}>⬆️</Text>
+            <IconLabel icon={ICONS.up} textStyle={styles.dropIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.dropPrompt, { color: colors.textPrimary }]}>
               {t('disc_upload_prompt')}
             </Text>
@@ -567,9 +567,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
           : (isDark ? colors.bgCard : colors.bg),
         borderColor: hasPro ? COLORS.legal + '55' : colors.border }]}>
         {hasPro ? (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: COLORS.legal }]}>
-            {t('x_discovery_discovery_pro_unlimited_analyses')}
-          </Text>
+          <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={[styles.pricingText, { color: COLORS.legal }]} maxFontSizeMultiplier={1.4}>{t('x_discovery_discovery_pro_unlimited_analyses')}</IconLabel>
         ) : (
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: colors.textPrimary }]}>
@@ -763,9 +761,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
-          {t('x_discovery_ai_document_analysis_not')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }} maxFontSizeMultiplier={1.3}>{t('x_discovery_ai_document_analysis_not')}</IconLabel>
       </View>
       <AIDisclaimer variant="banner" />
 

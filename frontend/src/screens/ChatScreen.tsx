@@ -26,7 +26,7 @@ import { MarkdownText } from '../components/MarkdownText';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { track } from '../services/analytics';
 import type { ScreenProps } from '../types/navigation';
 import { unwrapList, api } from '../services/api';
@@ -143,7 +143,7 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
           {msg.crisis && (
             <View style={styles.crisisActions}>
               <TouchableOpacity accessibilityRole="button" testID="chat-crisis-call" style={styles.crisisBtn} onPress={() => call(CRISIS_CALLS[msg.crisis as 'crisis' | 'dv'].url)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.crisisBtnText}>📞 {CRISIS_CALLS[msg.crisis].label()}</Text>
+                <IconLabel icon={ICONS.phone} textStyle={styles.crisisBtnText} maxFontSizeMultiplier={1.3}>{CRISIS_CALLS[msg.crisis].label()}</IconLabel>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" testID="chat-crisis-all" style={styles.crisisBtnAlt} onPress={onOpenCrisis}>
                 <Text maxFontSizeMultiplier={1.3} style={styles.crisisBtnAltText}>{t('chat_crisis_all_lines')}</Text>
@@ -156,7 +156,7 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
           )}
           {msg.status === 'error' && (
             <View testID="chat-error">
-              <Text maxFontSizeMultiplier={1.3} style={styles.errorNote}>⚠️ {msg.errorText}</Text>
+              <IconLabel icon={ICONS.statusWarn} textStyle={styles.errorNote} maxFontSizeMultiplier={1.3}>{msg.errorText}</IconLabel>
               {!!msg.question && (
                 <TouchableOpacity accessibilityRole="button" testID="chat-retry" disabled={busy}
                   style={[styles.retryBtn, busy && { opacity: 0.5 }]} onPress={() => onRetry(msg)}>
@@ -171,7 +171,7 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
               {msg.rightsRefs.map(r => (
                 <TouchableOpacity key={r.key} accessibilityRole="link" accessibilityLabel={t('x_ch_from_rights_card', { heading: r.heading })}
                   style={styles.rightsRef} onPress={onOpenRights}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefText}>{t('x_ch_from_rights_card_2', { value: r.heading.replace(/^\d+\.\s*/, '') })}</Text>
+                  <IconLabel icon={ICONS.clipboard} textStyle={styles.rightsRefText} maxFontSizeMultiplier={1.4}>{t('x_ch_from_rights_card_2', { value: r.heading.replace(/^\d+\.\s*/, '') })}</IconLabel>
                   <Text maxFontSizeMultiplier={1.4} style={styles.rightsRefSource}>{t('x_ch_source', { source: r.source })}</Text>
                 </TouchableOpacity>
               ))}
@@ -179,12 +179,12 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
           )}
           {msg.suggestLawyerSearch && (
             <TouchableOpacity accessibilityRole="button" style={styles.lawyerCta} onPress={onFindLawyer}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.lawyerCtaText}>📍 {t('chat_find_lawyer')}</Text>
+              <IconLabel icon={ICONS.location} textStyle={styles.lawyerCtaText} maxFontSizeMultiplier={1.4}>{t('chat_find_lawyer')}</IconLabel>
             </TouchableOpacity>
           )}
           {msg.showUpgrade && (
             <TouchableOpacity accessibilityRole="button" style={styles.upgradeCta} onPress={onUpgrade}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.upgradeCtaText}>💎 {t('chat_upgrade_cta')}</Text>
+              <IconLabel icon={ICONS.diamond} textStyle={styles.upgradeCtaText} maxFontSizeMultiplier={1.4}>{t('chat_upgrade_cta')}</IconLabel>
             </TouchableOpacity>
           )}
         </Pressable>
@@ -635,7 +635,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           testID="chat-disclaimer"
           onPress={() => { setShowDisclaimer(false); recordConsent(); }}
           style={[styles.disclaimerCard, { backgroundColor: colors.bgCard, borderLeftColor: colors.gold }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerTitle, { color: colors.goldText }]}>{t('x_ch_ai_legal_information_not')}</Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.disclaimerTitle, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}>{t('x_ch_ai_legal_information_not')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerBody, { color: colors.textSecond }]}>{t('x_ch_i_am_ai_guide')}</Text>
         </TouchableOpacity>
       )}
@@ -678,7 +678,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_nav_voice_note')}
           accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🎙</Text>
+          <IconLabel icon={ICONS.record} textStyle={{ fontSize: 20 }} maxFontSizeMultiplier={1.4}></IconLabel>
         </TouchableOpacity>
 
         <TextInput
@@ -700,7 +700,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_ch_open_interpreter')}
           accessibilityHint={t('x_ch_opens_real_time_translation')}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🌐</Text>
+          <IconLabel icon={ICONS.globe} textStyle={{ fontSize: 20 }} maxFontSizeMultiplier={1.4}></IconLabel>
         </TouchableOpacity>
 
         {busy ? (

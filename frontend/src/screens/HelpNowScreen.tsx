@@ -245,7 +245,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
               : <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_hours_unknown')}</Text>}
         {p.kind === 'lawyer' && p.free_consultation && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_free_consult_listed')}</Text>}
         {!!p.license_number && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_license', { num: String(p.license_number) })}</Text>}
-        {p.rating != null && p.rating > 0 && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>★ {p.rating.toFixed(1)}{p.review_count ? ` (${p.review_count})` : ''}</Text>}
+        {p.rating != null && p.rating > 0 && <IconLabel icon={ICONS.starFilled} textStyle={[styles.badge, styles.badgeUnknown]} maxFontSizeMultiplier={1.3}>{p.rating.toFixed(1)}{p.review_count ? ` (${p.review_count})` : ''}</IconLabel>}
       </View>
       <View style={styles.actions}>
         <TouchableOpacity accessibilityRole="button" testID="help-call" disabled={!p.phone} accessibilityLabel={p.phone ? t('hn_call_a11y', { name: p.name }) : t('hn_no_phone')}

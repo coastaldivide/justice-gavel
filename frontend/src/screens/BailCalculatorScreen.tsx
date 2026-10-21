@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import { unwrapList, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const STATES = [
   'ALL','AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI',
@@ -87,9 +88,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         <View style={{
           backgroundColor: colors.primary, borderRadius: 14, padding: 16, marginBottom: 16,
         }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '800', fontSize: 18 }}>
-            💰 {t('bc_title')}
-          </Text>
+          <IconLabel icon={ICONS.money} textStyle={{ color: colors.bgCard, fontWeight: '800', fontSize: 18 }} maxFontSizeMultiplier={1.4}>{t('bc_title')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 13, marginTop: 4 }}>
             {t('bc_intro')}
           </Text>
@@ -212,9 +211,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                   marginTop: 12, borderTopWidth: 1,
                   borderTopColor: colors.border, paddingTop: 12, gap: 8,
                 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14 }}>
-                    💡 {t('bc_breakdown')}
-                  </Text>
+                  <IconLabel icon={ICONS.idea} textStyle={{ color: text, fontWeight: '700', fontSize: 14 }} maxFontSizeMultiplier={1.4}>{t('bc_breakdown')}</IconLabel>
 
                   {s.bail_min > 0 && (
                     <>
@@ -238,9 +235,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                       backgroundColor: isDark ? colors.surface : colors.bgCard,
                       borderRadius: 8, padding: 10,
                     }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.gold : colors.warnDark, fontSize: 12 }}>
-                        ℹ️  {s.bail_note}
-                      </Text>
+                      <IconLabel icon={ICONS.alertNormal} textStyle={{ color: isDark ? colors.gold : colors.warnDark, fontSize: 12 }} maxFontSizeMultiplier={1.4}>{s.bail_note}</IconLabel>
                     </View>
                   ) : null}
                   {/* legalBg is the tinted surface in BOTH themes; the old dark-mode
@@ -269,10 +264,8 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         {!!selected && (
           <View style={{ backgroundColor: colors.bgCard, borderRadius: 12,
             padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700',
-              color: colors.textPrimary, marginBottom: 4 }}>
-              ⚖️ {t('bc_not_convicted')}
-            </Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 13, fontWeight: '700',
+              color: colors.textPrimary, marginBottom: 4 }} maxFontSizeMultiplier={1.3}>{t('bc_not_convicted')}</IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textSecond, lineHeight: 18 }}>
               {t('bc_not_convicted_body')}
             </Text>
@@ -288,9 +281,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
             accessibilityHint={t('cp_double_tap')}
             onPress={() => navigation.navigate('BailTab')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
-              🔓 {t('bc_find_bondsman')}
-            </Text>
+            <IconLabel icon={ICONS.bail} textStyle={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }} maxFontSizeMultiplier={1.4}>{t('bc_find_bondsman')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
               textAlign:'center', marginTop:4 }}>
               {t('bc_find_bondsman_sub')}
@@ -311,10 +302,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
             activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.2}
-              style={{ color: colors.textOnNavy, fontSize: 15, fontWeight: '800' }}>
-              ⚖️ {t('bc_find_attorneys')}
-            </Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.textOnNavy, fontSize: 15, fontWeight: '800' }} maxFontSizeMultiplier={1.2}>{t('bc_find_attorneys')}</IconLabel>
             <Text maxFontSizeMultiplier={1.3}
               style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 3 }}>
               {t('bc_find_attorneys_sub')}
@@ -326,10 +314,8 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ {t('bc_disclaimer')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, lineHeight: 16,
+          color: colors.textSecond, fontStyle: 'italic' }} maxFontSizeMultiplier={1.3}>{t('bc_disclaimer')}</IconLabel>
       </View>
       </ScrollView>
       <AIDisclaimer variant="banner" />

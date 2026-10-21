@@ -7,6 +7,7 @@ import { getToken } from '../utils/secureStorage';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { t, useLang, perLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface GavelCriteria {
   avg_rating?: number;
@@ -243,7 +244,7 @@ function GoldenGavelScreen(): React.JSX.Element {
     >
       {fetchError && (
         <View style={{ margin: 16, padding: 14, backgroundColor: colors.bgCard, borderRadius: 10, borderWidth: 1, borderColor: colors.emergency }}>
-          <Text style={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>{t('x_golden_gavel_unable_load')}</Text>
+          <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>{t('x_golden_gavel_unable_load')}</IconLabel>
           <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
         </View>
       )}
@@ -267,9 +268,7 @@ function GoldenGavelScreen(): React.JSX.Element {
           </Text>
         )}
         {level === 3 && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.goldText }]}>
-            {t('x_golden_gavel_have_reached_highest_level')}
-          </Text>
+          <IconLabel icon={ICONS.trophy} textStyle={[styles.nextHint, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}>{t('x_golden_gavel_have_reached_highest_level')}</IconLabel>
         )}
       </View>
 
@@ -278,21 +277,21 @@ function GoldenGavelScreen(): React.JSX.Element {
         <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {status?.bronze_at && (
             <View style={styles.dateRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥉</Text>
+              <IconLabel icon={ICONS.medal} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_bronze_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.bronze_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.silver_at && (
             <View style={styles.dateRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥈</Text>
+              <IconLabel icon={ICONS.medal} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_silver_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.silver_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.golden_at && (
             <View style={styles.dateRow}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🏆</Text>
+              <IconLabel icon={ICONS.trophy} textStyle={styles.dateEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>{t('x_golden_gavel_golden_awarded')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>

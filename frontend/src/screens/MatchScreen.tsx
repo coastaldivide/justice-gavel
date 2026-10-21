@@ -20,6 +20,7 @@ import { getLocationWithCity, formatDistance } from '../services/location';
 import { useTheme, COLORS } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import type { DirectoryLawyer } from './LawyersScreen';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // Language values as lawyer profiles store them (English); the picker shows langLabel().
 const LANGUAGES = ['Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo']; // i18n-exempt: stored values
@@ -37,7 +38,7 @@ function MatchCard({ item }: { item: Match }) {
     <View style={[styles.card, { backgroundColor: colors.bgCard }]} testID="match-card">
       <View style={[styles.rankBanner, { backgroundColor: rankColors[item.rank - 1] ?? COLORS.navy }]}>
         <Text maxFontSizeMultiplier={1.3} style={styles.rankText}>{t('x_match_match', { rank: item.rank })}</Text>
-        {item.distanceKm != null && <Text maxFontSizeMultiplier={1.3} style={styles.rankDist}>📍 {formatDistance(item.distanceKm)}</Text>}
+        {item.distanceKm != null && <IconLabel icon={ICONS.location} textStyle={styles.rankDist} maxFontSizeMultiplier={1.3}>{formatDistance(item.distanceKm)}</IconLabel>}
       </View>
       <View style={styles.cardBody}>
         <TouchableOpacity accessibilityRole="link" onPress={openProfile} accessibilityLabel={t('x_match_view_profile', { value: item.name })}>
@@ -188,10 +189,10 @@ function MatchScreen(): React.JSX.Element {
 
         <TouchableOpacity accessibilityRole="button" testID="match-submit" style={[styles.searchBtn, loading && { opacity: 0.6 }]} onPress={findMatches} disabled={loading}
           accessibilityLabel={t('x_match_find_my_best_matches')}>
-          {loading ? <ActivityIndicator color={COLORS.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.searchBtnText}>{t('x_match_find_my_best_matches')}</Text>}
+          {loading ? <ActivityIndicator color={COLORS.white} /> : <IconLabel icon={ICONS.location} textStyle={styles.searchBtnText} maxFontSizeMultiplier={1.3}>{t('x_match_find_my_best_matches')}</IconLabel>}
         </TouchableOpacity>
 
-        {!!locationLabel && <Text maxFontSizeMultiplier={1.3} style={[styles.locLabel, { color: colors.textBrand }]}>📍 {locationLabel}</Text>}
+        {!!locationLabel && <IconLabel icon={ICONS.location} textStyle={[styles.locLabel, { color: colors.textBrand }]} maxFontSizeMultiplier={1.3}>{locationLabel}</IconLabel>}
         {!!statusMsg && <Text testID="match-status" maxFontSizeMultiplier={1.3} style={[styles.statusMsg, { color: colors.textSecond }]}>{statusMsg}</Text>}
 
         {results.length > 0 && (

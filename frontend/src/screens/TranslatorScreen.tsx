@@ -34,6 +34,7 @@ import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
 import { t, useLang, perLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = perLang(() => [
@@ -118,9 +119,7 @@ function TurnBubble({
 
       {/* Not translated (AI unavailable / busy): say so, never pass the original off as a translation */}
       {!msg._pending && msg.translated == null && (
-        <Text maxFontSizeMultiplier={1.4} testID="translator-not-translated" style={[styles.notTranslated, { color: COLORS.textSecond }]}>
-          ⚠️ {t('translator_not_translated', { lang: tgtLang.native })}
-        </Text>
+        <IconLabel icon={ICONS.statusWarn} textStyle={[styles.notTranslated, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4} testID="translator-not-translated">{t('translator_not_translated', { lang: tgtLang.native })}</IconLabel>
       )}
 
       {/* Translation */}
@@ -370,7 +369,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
     >
       <AuthGateModal />
       <ScrollView contentContainerStyle={styles.setupScroll} keyboardShouldPersistTaps="handled">
-        <Text maxFontSizeMultiplier={1.4} style={styles.joinEmoji}>🗝</Text>
+        <IconLabel icon={ICONS.key} textStyle={styles.joinEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[styles.joinTitle, { color: colors.textPrimary }]}>
           {t('x_translator_join_translation_session_2')}
         </Text>
@@ -431,7 +430,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       <AuthGateModal />
       <ScrollView contentContainerStyle={styles.setupScroll} keyboardShouldPersistTaps="handled">
 
-        <Text maxFontSizeMultiplier={1.4} style={styles.setupEmoji}>🗣</Text>
+        <IconLabel icon={ICONS.speak} textStyle={styles.setupEmoji} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupTitle, { color: colors.textPrimary }]}>
           {t('x_translator_attorney_client_interpreter')}
         </Text>
@@ -490,9 +489,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           style={[styles.joinExisting, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
           onPress={() => setPhase('join')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.joinExistingText, { color: colors.textPrimary }]}>
-            {t('x_translator_join_with_code_client')}
-          </Text>
+          <IconLabel icon={ICONS.key} textStyle={[styles.joinExistingText, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{t('x_translator_join_with_code_client')}</IconLabel>
         </TouchableOpacity>
 
         <Text maxFontSizeMultiplier={1.4} style={[styles.setupDisclaimer, { color: colors.textMuted }]}>
@@ -552,7 +549,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       >
         {messages.length === 0 && (
           <View style={styles.emptyThread}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emptyThreadIcon}>💬</Text>
+            <IconLabel icon={ICONS.message} textStyle={styles.emptyThreadIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyThreadText, { color: colors.textMuted }]}>
               {onlySideB
                 ? t('x_translator_type_below_attorney_will', { native: langBObj.native, native2: langAObj.native })

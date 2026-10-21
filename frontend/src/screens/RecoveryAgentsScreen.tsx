@@ -1,7 +1,7 @@
 import { COLORS } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * RecoveryAgentsScreen
  *
@@ -159,10 +159,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         </View>
         <View style={styles.ratingBox}>
           {item.rating > 0 && (
-            <Text maxFontSizeMultiplier={1.2} style={[styles.rating,
-              { color: colors.goldText }]}>
-              ★ {item.rating.toFixed(1)}
-            </Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={[styles.rating,
+              { color: colors.goldText }]} maxFontSizeMultiplier={1.2}>{item.rating.toFixed(1)}</IconLabel>
           )}
           {item.reviews > 0 && (
             <Text maxFontSizeMultiplier={1.2} style={[styles.reviews,
@@ -177,8 +175,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
       <View style={styles.badgeRow}>
         {item.armed_certified ? (
           <View style={[styles.badge, { backgroundColor: colors.emergencyBg }]}>
-            <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.emergency }]}>{t('x_recovery_agents_armed_certified')}</Text>
+            <IconLabel icon={ICONS.weapon} textStyle={[styles.badgeText,
+              { color: colors.emergency }]} maxFontSizeMultiplier={1.2}>{t('x_recovery_agents_armed_certified')}</IconLabel>
           </View>
         ) : (
           <View style={[styles.badge, { backgroundColor: colors.bgSubtle }]}>
@@ -202,10 +200,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
 
       {/* Address */}
       {item.address ? (
-        <Text maxFontSizeMultiplier={1.3} style={[styles.address,
-          { color: colors.textSecond }]} numberOfLines={2}>
-          📍 {item.address}
-        </Text>
+        <IconLabel icon={ICONS.location} textStyle={[styles.address,
+          { color: colors.textSecond }]} maxFontSizeMultiplier={1.3} numberOfLines={2}>{item.address}</IconLabel>
       ) : null}
 
       {/* Bio */}
@@ -225,9 +221,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             accessibilityLabel={t('lawyers_call')} onPress={() => call(item.phone, item.name)}
             activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.2} style={styles.callBtnText}>
-              {t('lawyers_call')}
-            </Text>
+            <IconLabel icon={ICONS.phone} textStyle={styles.callBtnText} maxFontSizeMultiplier={1.2}>{t('lawyers_call')}</IconLabel>
           </TouchableOpacity>
         ) : (
           <View style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}>
@@ -242,8 +236,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             accessibilityLabel={t('lawyers_website')} onPress={() => openWeb(item.website)}
             activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
-              { color: colors.textBrand }]}>{t('lawyers_website')}</Text>
+            <IconLabel icon={ICONS.globe} textStyle={[styles.webBtnText,
+              { color: colors.textBrand }]} maxFontSizeMultiplier={1.2}>{t('lawyers_website')}</IconLabel>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -309,10 +303,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           disabled={!selectedState || loading}
           activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
-            { color: selectedState ? colors.bg : colors.textMuted }]}>
-            {loading ? t('bail_searching') : t('x_recovery_agents_search_recovery_agents')}
-          </Text>
+          <IconLabel icon={ICONS.search} textStyle={[styles.searchBtnText,
+            { color: selectedState ? colors.bg : colors.textMuted }]} maxFontSizeMultiplier={1.2}>{loading ? t('bail_searching') : t('x_recovery_agents_search_recovery_agents')}</IconLabel>
         </TouchableOpacity>
       </View>
 
@@ -349,10 +341,8 @@ function RecoveryAgentsScreen(): React.JSX.Element {
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { backgroundColor: colors.bgSubtle,
         borderLeftColor: colors.warnDark }]}>
-        <Text maxFontSizeMultiplier={1.2} style={[styles.disclaimerText,
-          { color: colors.textMuted }]}>
-          {t('x_recovery_agents_this_directory_licensed_bondsmen')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={[styles.disclaimerText,
+          { color: colors.textMuted }]} maxFontSizeMultiplier={1.2}>{t('x_recovery_agents_this_directory_licensed_bondsmen')}</IconLabel>
       </View>
 
       {/* Results */}

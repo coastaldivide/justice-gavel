@@ -1,4 +1,4 @@
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * SearchScreen -- Global search across all user data
  *
@@ -215,10 +215,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <View style={{ marginBottom: 20 }}>
                   <View style={{ flexDirection:'row', justifyContent:'space-between',
                     alignItems:'center', marginBottom:8 }}>
-                    <Text maxFontSizeMultiplier={1.4}
-                      style={[s.sectionLabel, { color: colors.textMuted }]}>
-                      {t('x_search_recent_searches')}
-                    </Text>
+                    <IconLabel icon={ICONS.clock} textStyle={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{t('x_search_recent_searches')}</IconLabel>
                     <TouchableOpacity
                       accessibilityRole="button"
                       onPress={() => {

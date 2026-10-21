@@ -20,7 +20,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { ContactActions } from '../components/ContactActions';
 import { t, useLang, perLang } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
@@ -90,7 +90,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
         {item.rating != null && (
           <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
             <Text testID="lawyer-rating" maxFontSizeMultiplier={1.4} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.ratingStar, { color: colors.goldText }]}>★</Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={[styles.ratingStar, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
           </View>
         )}
@@ -99,7 +99,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
       <View style={styles.metaRow}>
         {item.distanceKm != null && (
           <View style={[styles.badge, { borderColor: colors.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.textSecond }]}>📍 {formatDistance(item.distanceKm)}</Text>
+            <IconLabel icon={ICONS.location} textStyle={[styles.badgeText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{formatDistance(item.distanceKm)}</IconLabel>
           </View>
         )}
         {item.open_24_7 ? (
@@ -129,9 +129,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
       </View>
 
       {!!reviewSummary && reviewSummary.count > 0 && reviewSummary.avg_rating != null && (
-        <Text testID="lawyer-review-summary" maxFontSizeMultiplier={1.4} style={[styles.reviewSummary, { color: colors.textSecond }]}>
-          {t(reviewSummary.count === 1 ? 'x_lawyers_from_justice_gavel_client_one' : 'x_lawyers_from_justice_gavel_client_other', { value: Number(reviewSummary.avg_rating).toFixed(1), count: reviewSummary.count })}
-        </Text>
+        <IconLabel icon={ICONS.starFilled} textStyle={[styles.reviewSummary, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4} testID="lawyer-review-summary">{t(reviewSummary.count === 1 ? 'x_lawyers_from_justice_gavel_client_one' : 'x_lawyers_from_justice_gavel_client_other', { value: Number(reviewSummary.avg_rating).toFixed(1), count: reviewSummary.count })}</IconLabel>
       )}
 
       <ContactActions listing={item} />
@@ -145,26 +143,24 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, savedId, o
           accessibilityState={{ selected: !!savedId, busy: saving }}
           style={[styles.secondaryBtn, { borderColor: savedId ? COLORS.gold : colors.border, backgroundColor: colors.bg }]}
           onPress={() => onToggleSave(item)} disabled={saving}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: savedId ? colors.goldText : colors.textSecond }]} numberOfLines={1}>
-            {saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}
-          </Text>
+          <IconLabel icon={ICONS.starFilled} textStyle={[styles.secondaryBtnText, { color: savedId ? colors.goldText : colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{saving ? '…' : savedId ? t('lw_saved') : t('lw_save')}</IconLabel>
         </TouchableOpacity>
         {item.on_app && (
           <TouchableOpacity accessibilityRole="button" testID="lawyer-card-book" style={[styles.secondaryBtn, { borderColor: colors.navy, backgroundColor: colors.bg }]}
             onPress={() => navigation.navigate('MoreTab', { screen: 'Booking', params: { lawyerId: item.id, lawyerName: item.name } })}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.textBrand }]} numberOfLines={1}>{t('x_lawyers_book_consult')}</Text>
+            <IconLabel icon={ICONS.calendar} textStyle={[styles.secondaryBtnText, { color: colors.textBrand }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{t('x_lawyers_book_consult')}</IconLabel>
           </TouchableOpacity>
         )}
         {item.on_app && (
           <TouchableOpacity accessibilityRole="button" testID="lawyer-card-message" style={[styles.secondaryBtn, { borderColor: colors.legal, backgroundColor: colors.bg }]} onPress={() => onMessage(item)}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.legal }]} numberOfLines={1}>{t('x_lawyers_message_2')}</Text>
+            <IconLabel icon={ICONS.lock} textStyle={[styles.secondaryBtnText, { color: colors.legal }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{t('x_lawyers_message_2')}</IconLabel>
           </TouchableOpacity>
         )}
         {item.on_app && (
           <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }} testID="lawyer-card-select"
             accessibilityLabel={isSelected ? t('x_lawyers_remove_from_attorneys_contact', { name: item.name }) : t('x_lawyers_select_contact_several_attorneys', { name: item.name })}
             style={[styles.secondaryBtn, { borderColor: isSelected ? colors.navy : colors.border, backgroundColor: colors.bg }]} onPress={() => onToggleSelect(item.id)}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: colors.textSecond }]} numberOfLines={1}>{isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}</Text>
+            <IconLabel icon={ICONS.checkbox} textStyle={[styles.secondaryBtnText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{isSelected ? t('x_lawyers_selected') : t('x_lawyers_select')}</IconLabel>
           </TouchableOpacity>
         )}
       </View>
@@ -505,11 +501,11 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
                 </View>
               )}
             </View>
-            {!!placeLabel && <Text testID="lawyers-place" maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.locationLabel, { color: colors.info }]}>📍 {placeLabel}</Text>}
+            {!!placeLabel && <IconLabel icon={ICONS.location} textStyle={[styles.locationLabel, { color: colors.info }]} maxFontSizeMultiplier={1.3} numberOfLines={1} testID="lawyers-place">{placeLabel}</IconLabel>}
           </View>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('saved_title')} style={styles.savedHeaderBtn}
             testID="lawyer-save-button" onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.savedHeaderBtnText}>{t('x_lawyers_saved')}</Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={styles.savedHeaderBtnText} maxFontSizeMultiplier={1.3}>{t('x_lawyers_saved')}</IconLabel>
           </TouchableOpacity>
         </View>
         <View style={styles.searchRow}>
@@ -524,12 +520,10 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
         </View>
         <View style={styles.chipRow}>
           <TouchableOpacity accessibilityRole="button" testID="lawyers-use-location" style={[styles.chip, { borderColor: colors.border }]} onPress={useMyLocation}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, { color: colors.textSecond }]} numberOfLines={1}>{t('lw_use_location')}</Text>
+            <IconLabel icon={ICONS.location} textStyle={[styles.chipText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('lw_use_location')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="lawyers-filters" style={[styles.chip, { borderColor: activeFilters ? colors.navy : colors.border }]} onPress={() => setShowFilters(true)}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, { color: activeFilters ? colors.textBrand : colors.textSecond }]} numberOfLines={1}>
-              {t('x_lawyers_filters', { value: activeFilters > 0 ? ` (${activeFilters})` : '' })}
-            </Text>
+            <IconLabel icon={ICONS.settings} textStyle={[styles.chipText, { color: activeFilters ? colors.textBrand : colors.textSecond }]} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('x_lawyers_filters', { value: activeFilters > 0 ? ` (${activeFilters})` : '' })}</IconLabel>
           </TouchableOpacity>
         </View>
         {locationOff && !queryText && place?.kind !== 'query' && (
@@ -558,7 +552,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
           ListHeaderComponent={caseType && ['DUI', 'Drug Offenses', 'Assault'].includes(caseType) && lawyers.length > 0 ? (
             <TouchableOpacity accessibilityRole="button" style={[styles.walkthroughBanner, { backgroundColor: colors.bgSubtle }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'WhatHappensNext', params: { chargeType: caseType } })}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.walkthroughBannerText, { color: colors.textBrand }]}>{t('x_lawyers_know_what_expect_with', { caseType: caseTypeLabel(caseType) })}</Text>
+              <IconLabel icon={ICONS.book} textStyle={[styles.walkthroughBannerText, { color: colors.textBrand }]} maxFontSizeMultiplier={1.4}>{t('x_lawyers_know_what_expect_with', { caseType: caseTypeLabel(caseType) })}</IconLabel>
             </TouchableOpacity>
           ) : null}
           ListFooterComponent={lawyers.length > 0 ? (
@@ -577,7 +571,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity accessibilityRole="button" style={[styles.emptyBtn, { backgroundColor: colors.navy }]} onPress={useMyLocation}>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBtnText, { color: colors.textOnNavy }]}>{t('lw_use_location')}</Text>
+                  <IconLabel icon={ICONS.location} textStyle={[styles.emptyBtnText, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>{t('lw_use_location')}</IconLabel>
                 </TouchableOpacity>
               )}
             </View>
@@ -617,9 +611,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
       <Modal accessibilityViewIsModal visible={!!badgeInfo} transparent animationType="fade" onRequestClose={() => setBadgeInfo(null)}>
         <View style={styles.badgeOverlay}>
           <View style={[styles.badgeSheet, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetTitle, { color: colors.textPrimary }]}>
-              {badgeInfo === 'jtb' ? t('x_lawyers_justice_gavel_verified') : t('x_expungement_bar_verified')}
-            </Text>
+            <IconLabel icon={ICONS.lawyer} textStyle={[styles.badgeSheetTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{badgeInfo === 'jtb' ? t('x_lawyers_justice_gavel_verified') : t('x_expungement_bar_verified')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.badgeSheetBody, { color: colors.textPrimary }]}>
               {badgeInfo === 'jtb' ? t('x_lawyers_this_attorney_has_been') : t('x_lawyers_this_attorney_s_bar')}
             </Text>

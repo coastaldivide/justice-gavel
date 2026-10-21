@@ -1,5 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import type { ScreenProps } from '../types/navigation';
 import { t, useLang } from '../i18n';
 import { hapticSuccess, hapticWarn } from '../services/haptics';
@@ -84,7 +84,7 @@ function ResultCard({ contact, type, price }: { contact: QcContact; type: 'bonds
 
       {/* Rating */}
       {!!contact.rating && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {Number(contact.rating).toFixed(1)}</Text>
+        <IconLabel icon={ICONS.starFilled} textStyle={styles.contactRating} maxFontSizeMultiplier={1.4}>{Number(contact.rating).toFixed(1)}</IconLabel>
       )}
 
       {/* Specialties */}
@@ -114,7 +114,7 @@ function ResultCard({ contact, type, price }: { contact: QcContact; type: 'bonds
             activeOpacity={0.85}
           accessibilityHint={t('x_bail_search_opens_phone_dialer')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_call')}</Text>
+          <IconLabel icon={ICONS.phone} textStyle={styles.callBtnText} maxFontSizeMultiplier={1.4}>{t('help_now_call')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnPhone}>{contact.phone}</Text>
         </TouchableOpacity>
       ) : (
@@ -131,7 +131,7 @@ function ResultCard({ contact, type, price }: { contact: QcContact; type: 'bonds
           accessibilityLabel={t('help_now_directions')} onPress={() => openDirections(Number(contact.lat), Number(contact.lng), contact.name, onLinkError)}
             activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>{t('help_now_directions')}</Text>
+          <IconLabel icon={ICONS.directions} textStyle={styles.dirBtnText} maxFontSizeMultiplier={1.4}>{t('help_now_directions')}</IconLabel>
         </TouchableOpacity>
       )}
     </View>
@@ -361,20 +361,18 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
             </View>
           ) : locError ? (
             <View style={[styles.locRow, styles.locError]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.locErrorText}>
-                {t('x_quick_connect_location_unavailable_we_ll')}
-              </Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.locErrorText} maxFontSizeMultiplier={1.4}>{t('x_quick_connect_location_unavailable_we_ll')}</IconLabel>
             </View>
           ) : (
             <View style={[styles.locRow, styles.locReady]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.locReadyText}>{t('x_quick_connect_location_ready_results_near')}</Text>
+              <IconLabel icon={ICONS.location} textStyle={styles.locReadyText} maxFontSizeMultiplier={1.4}>{t('x_quick_connect_location_ready_results_near')}</IconLabel>
             </View>
           )}
 
           {/* Error */}
           {!!error && (
             <View style={styles.errorBox}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠ {error}</Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.errorText} maxFontSizeMultiplier={1.4}>{error}</IconLabel>
             </View>
           )}
 

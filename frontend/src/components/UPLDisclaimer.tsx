@@ -9,6 +9,7 @@ import React from 'react';
 import { TINTS } from '../constants/theme';
 import { View, Text, StyleSheet } from 'react-native';
 import { t, useLang } from '../i18n';
+import { AppIcon, IconLabel, ICONS } from './AppIcon';
 
 interface Props {
   compact?: boolean;   // one-line version for tight spaces
@@ -20,15 +21,15 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
   if (compact) {
     return (
       <View style={s.compact}>
-        <Text style={s.compactText} maxFontSizeMultiplier={1.2} accessibilityRole="text">
-          ⚖️ {t('upl_compact')}
-        </Text>
+        <IconLabel icon={ICONS.alertNormal} textStyle={s.compactText} maxFontSizeMultiplier={1.2}>
+          {t('upl_compact')}
+        </IconLabel>
       </View>
     );
   }
   return (
     <View style={s.banner} accessibilityRole="text" accessibilityLabel={t('upl_a11y')}>
-      <Text style={s.icon}>⚖️</Text>
+      <AppIcon name={ICONS.alertNormal} size={18} color={TINTS.amber.text} style={s.icon} />
       <View style={s.textBlock}>
         <Text style={s.heading} maxFontSizeMultiplier={1.3}>
           {attorney ? t('upl_attorney_heading') : t('upl_heading')}
@@ -43,7 +44,7 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
 
 const s = StyleSheet.create({
   banner:      { flexDirection: 'row', backgroundColor: TINTS.amber.bg, borderLeftWidth: 3, borderLeftColor: TINTS.amber.border, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
-  icon:        { fontSize: 18, marginRight: 10, marginTop: 1 },
+  icon:        { marginRight: 10, marginTop: 1 },
   textBlock:   { flex: 1 },
   heading:     { fontSize: 12, fontWeight: '700', color: TINTS.amber.text, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
   body:        { fontSize: 11, color: TINTS.amber.text, lineHeight: 16 },

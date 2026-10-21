@@ -19,6 +19,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'r
 import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
 import { t, perLang, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 /** Effective date (shown in the reader's language, e.g. "1 de mayo de 2026"). */
 const EFFECTIVE_ISO = '2026-05-25';
@@ -147,10 +148,8 @@ function TermsOfServiceScreen(): React.JSX.Element {
       {/* ── Critical notice ─────────────────────────────────────── */}
       <View style={[styles.noticeBox, { backgroundColor: isDark ? colors.surface : colors.warnBg,
         borderLeftColor: colors.warnDark }]}>
-        <Text maxFontSizeMultiplier={1.3} style={[styles.noticeTitle,
-          { color: colors.warnDark }]}>
-          {t('x_terms_of_service_not_legal_advice')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={[styles.noticeTitle,
+          { color: colors.warnDark }]} maxFontSizeMultiplier={1.3}>{t('x_terms_of_service_not_legal_advice')}</IconLabel>
         <Text maxFontSizeMultiplier={1.3} style={[styles.noticeBody,
           { color: isDark ? colors.warn : colors.textMuted }]}>
           {t('x_terms_of_service_justice_gavel_provides_legal')}
@@ -161,7 +160,7 @@ function TermsOfServiceScreen(): React.JSX.Element {
       {SECTIONS()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <IconLabel icon={ICONS.inbox} textStyle={{ fontSize: 32, marginBottom: 12 }}></IconLabel>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
@@ -197,10 +196,8 @@ function TermsOfServiceScreen(): React.JSX.Element {
           accessibilityRole="link"
           accessibilityLabel={t('x_terms_of_service_email_legal_justicegavel_app')}
         >
-          <Text maxFontSizeMultiplier={1.3} style={[styles.footerBtnText,
-            { color: colors.textBrand }]}>
-            📧 {CONTACT_EMAIL}
-          </Text>
+          <IconLabel icon={ICONS.mail} textStyle={[styles.footerBtnText,
+            { color: colors.textBrand }]} maxFontSizeMultiplier={1.3}>{CONTACT_EMAIL}</IconLabel>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.3} style={[styles.footerCopy,
           { color: colors.textMuted }]}>

@@ -16,7 +16,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { ContactActions } from '../components/ContactActions';
 import { useAuthGate } from '../components/AuthGate';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
@@ -194,7 +194,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={[s.receiptRow, { color: colors.textSecond }]}>{t('x_booking_booking')}<Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{confirmed.id}</Text></Text>
       </View>
       <TouchableOpacity accessibilityRole="button" style={[s.doneBtn, { backgroundColor: colors.legalDark, marginBottom: 10 }]} onPress={addToCalendar}>
-        <Text maxFontSizeMultiplier={1.4} style={s.doneBtnText}>{t('x_booking_add_calendar')}</Text>
+        <IconLabel icon={ICONS.calendar} textStyle={s.doneBtnText} maxFontSizeMultiplier={1.4}>{t('x_booking_add_calendar')}</IconLabel>
       </TouchableOpacity>
       <TouchableOpacity accessibilityRole="button" style={[s.doneBtn, { backgroundColor: COLORS.navy }]} onPress={goBack}>
         <Text maxFontSizeMultiplier={1.4} style={s.doneBtnText}>{t('booking_done')}</Text>

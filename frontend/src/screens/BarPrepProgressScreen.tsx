@@ -23,6 +23,7 @@ import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { toLocalISODate } from '../utils/dateUtils';
 import { t, useLang, locale } from '../i18n';
 import { categoryLabel } from '../constants/barPrepCategories';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CategoryStat {
@@ -142,9 +143,8 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           {/* Streak + Peer */}
           <View style={styles.heroCard}>
             <Text style={styles.heroLabel}>{t('x_bar_prep_progress_streak')}</Text>
-            <Text style={[styles.heroValue, { color: colors.primary }]}>
-              🔥 {data?.streak_days || 0}d
-            </Text>
+            <IconLabel icon={ICONS.fire} textStyle={[styles.heroValue, { color: colors.primary }]}>{data?.streak_days || 0}d
+            </IconLabel>
             <Text style={styles.heroSub}>{t('x_bar_prep_progress_top', { value: data?.peer_percentile ?? '—' })}</Text>
           </View>
         </View>
@@ -238,7 +238,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
           style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('BarPrepHome')}
         >
-          <Text style={styles.ctaBtnText}>{t('x_bar_prep_progress_start_new_session')}</Text>
+          <IconLabel icon={ICONS.play} textStyle={styles.ctaBtnText}>{t('x_bar_prep_progress_start_new_session')}</IconLabel>
         </TouchableOpacity>
 
         {/* Bar prep disclaimer */}

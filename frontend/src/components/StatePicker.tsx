@@ -8,6 +8,7 @@ import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react
 import { useTheme } from '../constants/theme';
 import { localizedStateList, setUserState, stateName } from '../utils/userState';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from './AppIcon';
 
 export function StatePicker({ value, onChange, allowAll = false, remember = true, testID = 'state-picker' }: {
   value: string; onChange: (code: string) => void; allowAll?: boolean; remember?: boolean; testID?: string;
@@ -25,9 +26,9 @@ export function StatePicker({ value, onChange, allowAll = false, remember = true
     <>
       <TouchableOpacity accessibilityRole="button" testID={testID} accessibilityLabel={t('src_choose_state_a11y', { state: value ? stateName(value) : t('src_no_state') })}
         style={[styles.pick, { borderColor: colors.border, backgroundColor: colors.bgCard }]} onPress={() => setOpen(true)}>
-        <Text maxFontSizeMultiplier={1.3} style={[styles.pickText, { color: colors.textPrimary }]} numberOfLines={1}>
-          📍 {value ? stateName(value) : allowAll ? t('src_all_states') : t('src_no_state')}
-        </Text>
+        <IconLabel icon={ICONS.location} maxFontSizeMultiplier={1.3} textStyle={[styles.pickText, { color: colors.textPrimary }]} numberOfLines={1}>
+          {value ? stateName(value) : allowAll ? t('src_all_states') : t('src_no_state')}
+        </IconLabel>
         <Text maxFontSizeMultiplier={1.3} style={[styles.change, { color: colors.textBrand }]}>{t('pen_change_state')}</Text>
       </TouchableOpacity>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>

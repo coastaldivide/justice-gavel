@@ -26,6 +26,7 @@ import type { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { UnreviewedNotice } from '../components/LegalSource';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 
 type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability';
@@ -134,7 +135,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>🏘️</Text>
+        <IconLabel icon={ICONS.housing} textStyle={{ fontSize: 32 }} maxFontSizeMultiplier={1.4}></IconLabel>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('tr_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_tenant_rights_housing_landlord_tenant_law')}</Text>
       </View>
@@ -164,7 +165,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View testID="tenant-guidance">
           {!!guidance.deadline && (
             <View style={[styles.deadlineBanner, { borderColor: COLORS.emergency, backgroundColor: colors.bgCard }]}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.deadlineIcon}>⏰</Text>
+              <IconLabel icon={ICONS.alarm} textStyle={styles.deadlineIcon} maxFontSizeMultiplier={1.4}></IconLabel>
               <Text maxFontSizeMultiplier={1.4} style={styles.deadlineText}>{guidance.deadline}</Text>
             </View>
           )}
@@ -193,7 +194,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
               onPress={() => navigation.navigate('LawyersTab')}
               style={[styles.ctaBtn, { backgroundColor: colors.navy }]}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>{t('x_tenant_rights_find_housing_attorney_2')}</Text>
+              <IconLabel icon={ICONS.lawyer} textStyle={styles.ctaBtnText} maxFontSizeMultiplier={1.4}>{t('x_tenant_rights_find_housing_attorney_2')}</IconLabel>
             </TouchableOpacity>
           </View>
         </View>

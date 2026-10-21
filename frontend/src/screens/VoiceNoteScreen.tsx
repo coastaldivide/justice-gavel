@@ -35,6 +35,7 @@ import { appendCaseNote } from '../services/caseNotes';
 import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
@@ -253,9 +254,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         {caseTitle && (
           <View style={[styles.casePill, { backgroundColor: COLORS.navy + '18', borderColor: COLORS.navy + '33' }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.casePillText, { color: COLORS.navy }]} numberOfLines={1}>
-              📁  {caseTitle}
-            </Text>
+            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
           </View>
         )}
         <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>
@@ -274,7 +273,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           activeOpacity={0.85}
         >
           <View style={[styles.micBtn, { backgroundColor: COLORS.navy }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.micIcon}>🎙</Text>
+            <IconLabel icon={ICONS.record} textStyle={styles.micIcon} maxFontSizeMultiplier={1.4}></IconLabel>
           </View>
         </TouchableOpacity>
 
@@ -286,9 +285,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={styles.typeLink}
           accessibilityLabel={t('x_voice_note_type_instead_2')} onPress={() => setPhase('text_input')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>
-            {t('x_voice_note_type_instead_2')}
-          </Text>
+          <IconLabel icon={ICONS.edit} textStyle={[styles.typeLinkText, { color: colors.info }]} maxFontSizeMultiplier={1.4}>{t('x_voice_note_type_instead_2')}</IconLabel>
         </TouchableOpacity>
       </View>
     </View>
@@ -347,9 +344,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       <ScrollView contentContainerStyle={styles.textInputScroll} keyboardShouldPersistTaps="handled">
         {caseTitle && (
           <View style={[styles.casePill, { backgroundColor: COLORS.navy + '18', borderColor: COLORS.navy + '33' }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.casePillText, { color: COLORS.navy }]} numberOfLines={1}>
-              📁  {caseTitle}
-            </Text>
+            <IconLabel icon={ICONS.cases} textStyle={[styles.casePillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseTitle}</IconLabel>
           </View>
         )}
         <Text maxFontSizeMultiplier={1.4} style={[styles.headline, { color: colors.textPrimary }]}>{t('x_voice_note_type_note')}</Text>
@@ -424,7 +419,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
             {note.flags?.length > 0 && (
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warn }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.bail }]}>{t('x_voice_note_flagged')}</Text>
+                <IconLabel icon={ICONS.flag} textStyle={[styles.resultSectionTitle, { color: COLORS.bail }]} maxFontSizeMultiplier={1.4}>{t('x_voice_note_flagged')}</IconLabel>
                 {note.flags.map((f, i) => (
                   <View key={`flags-${i}`} style={styles.resultBulletRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.bail }]}>!</Text>
@@ -459,9 +454,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         >
           {saving
             ? <ActivityIndicator color={colors.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>
-                {caseId ? t('x_voice_note_save_case') : t('x_voice_note_copy_note')}
-              </Text>}
+            : <IconLabel icon={ICONS.save} textStyle={styles.saveBtnText} maxFontSizeMultiplier={1.4}>{caseId ? t('x_voice_note_save_case') : t('x_voice_note_copy_note')}</IconLabel>}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -482,7 +475,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={styles.typeLink}
           accessibilityLabel={t('x_voice_note_record_another_note')} onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>{t('x_voice_note_record_another_note')}</Text>
+          <IconLabel icon={ICONS.record} textStyle={[styles.typeLinkText, { color: colors.info }]} maxFontSizeMultiplier={1.4}>{t('x_voice_note_record_another_note')}</IconLabel>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />

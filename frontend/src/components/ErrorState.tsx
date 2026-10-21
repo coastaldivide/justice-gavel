@@ -6,18 +6,19 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { AppIcon, ICONS, type IconName } from './AppIcon';
 
 interface Props {
   message?:  string;
   onRetry?:  () => void;
-  icon?:     string;
+  icon?:     IconName;
   fullScreen?: boolean;
 }
 
 export default function ErrorState({
   message    = t('x_error_state_something_went_wrong_please'),
   onRetry,
-  icon       = '⚠️',
+  icon       = ICONS.statusWarn,
   fullScreen = false,
 }: Props) {
   useLang();
@@ -34,7 +35,7 @@ export default function ErrorState({
       accessibilityRole="alert"
       accessibilityLabel={message}
     >
-      <Text style={s.icon}>{icon}</Text>
+      <AppIcon name={icon} size={48} color={colors.warn} style={s.icon} />
       <Text
         maxFontSizeMultiplier={1.3}
         style={[s.message, { color: colors.textPrimary }]}
@@ -59,7 +60,7 @@ export default function ErrorState({
 const s = StyleSheet.create({
   container:  { alignItems: 'center', justifyContent: 'center', padding: 32 },
   fullScreen: { flex: 1 },
-  icon:       { fontSize: 48, marginBottom: 16 },
+  icon:       { marginBottom: 16 },
   message:    { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 20, maxWidth: 280 },
   retryBtn:   { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 12, minHeight: 44 },
   retryText:  { fontSize: 15, fontWeight: '700' },

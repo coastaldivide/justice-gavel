@@ -15,6 +15,7 @@ import { appendCaseNote } from '../services/caseNotes';
 import { useToast } from '../components/ToastProvider';
 import { Clipboard } from '../utils/webCompat';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Phase = 'idle' | 'recording' | 'processing' | 'text_input' | 'result';
 interface StructuredNote { date: string; summary: string; next_steps: string[]; flags: string[]; raw: string }
@@ -133,7 +134,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 24, gap: 18 }} testID="voice-note-screen" keyboardShouldPersistTaps="handled">
       {!!caseTitle && (
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textBrand, fontWeight: '700' }} numberOfLines={1}>📁  {caseTitle}</Text>
+        <IconLabel icon={ICONS.cases} textStyle={{ color: colors.textBrand, fontWeight: '700' }} maxFontSizeMultiplier={1.3} numberOfLines={1}>{caseTitle}</IconLabel>
       )}
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary }}>
         {phase === 'text_input' ? t('x_voice_note_type_note') : t('x_cs_voice_note_2')}
@@ -166,7 +167,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           </Text>
           {phase === 'idle' && (
             <TouchableOpacity accessibilityRole="button" testID="voice-note-type-instead" style={link} onPress={() => { setError(''); setPhase('text_input'); }}>
-              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontWeight: '600' }}>{t('x_voice_note_type_instead_2')}</Text>
+              <IconLabel icon={ICONS.edit} textStyle={{ color: colors.info, fontWeight: '600' }} maxFontSizeMultiplier={1.3}>{t('x_voice_note_type_instead_2')}</IconLabel>
             </TouchableOpacity>
           )}
         </View>
@@ -208,10 +209,10 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
             accessibilityLabel={t('x_voice_note_edit_before_saving')} />
           <TouchableOpacity accessibilityRole="button" testID="voice-note-save" disabled={saving} style={[btn.primary, saving && { opacity: 0.6 }]} onPress={save}>
             {saving ? <ActivityIndicator color={colors.white} />
-              : <Text maxFontSizeMultiplier={1.3} style={btn.text}>{caseId ? t('x_voice_note_save_case') : t('x_voice_note_copy_note')}</Text>}
+              : <IconLabel icon={ICONS.save} textStyle={btn.text} maxFontSizeMultiplier={1.3}>{caseId ? t('x_voice_note_save_case') : t('x_voice_note_copy_note')}</IconLabel>}
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" style={link} onPress={() => { setNote(null); setEditText(''); setTextIn(''); setPhase('idle'); }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontWeight: '600' }}>{t('x_voice_note_record_another_note')}</Text>
+            <IconLabel icon={ICONS.record} textStyle={{ color: colors.info, fontWeight: '600' }} maxFontSizeMultiplier={1.3}>{t('x_voice_note_record_another_note')}</IconLabel>
           </TouchableOpacity>
         </View>
       )}

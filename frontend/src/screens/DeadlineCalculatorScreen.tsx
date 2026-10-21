@@ -28,6 +28,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
 import { getUserState, stateName } from '../utils/userState';
 import { t, useLang, perLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
@@ -443,7 +444,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           </View>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={[styles.rowDate, { color: col.text }]}>{formatDate(deadline)}</Text>
-        {weekend && <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: COLORS.textPrimary }]} testID="deadline-weekend">⚠️ {t('dl2_weekend')}</Text>}
+        {weekend && <IconLabel icon={ICONS.statusWarn} textStyle={[styles.rowDesc, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4} testID="deadline-weekend">{t('dl2_weekend')}</IconLabel>}
         <Text maxFontSizeMultiplier={1.4} style={[styles.rowDesc, { color: COLORS.textSecond }]}>{rule.description}</Text>
         {expanded && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowNote, { color: COLORS.textMuted, borderTopColor: COLORS.border }]}>
@@ -462,10 +463,8 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
                 borderWidth: 1, borderColor: COLORS.navy + '40',
                 backgroundColor: COLORS.navy + '08', alignSelf: 'flex-start', opacity: remindLoading ? 0.6 : 1 }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18,
-                color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
-                {remindLoading ? t('x_deadline_calculator_setting') : t('x_deadline_calculator_remind_me')}
-              </Text>
+              <IconLabel icon={ICONS.notification} textStyle={{ fontSize: 12, lineHeight: 18,
+                color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }} maxFontSizeMultiplier={1.4}>{remindLoading ? t('x_deadline_calculator_setting') : t('x_deadline_calculator_remind_me')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -595,9 +594,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
       {urgentCount > 0 && (
         <View style={[styles.urgentBanner, { backgroundColor: isDark ? colors.emergencyBg : colors.emergencyBg,
           borderColor: colors.emergencyDark }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.urgentText, { color: colors.emergencyDark }]}>
-            {t(urgentCount === 1 ? 'x_deadline_calculator_deadline_require_immediate_attention_one' : 'x_deadline_calculator_deadline_require_immediate_attention_other', { urgentCount })}
-          </Text>
+          <IconLabel icon={ICONS.alarm} textStyle={[styles.urgentText, { color: colors.emergencyDark }]} maxFontSizeMultiplier={1.4}>{t(urgentCount === 1 ? 'x_deadline_calculator_deadline_require_immediate_attention_one' : 'x_deadline_calculator_deadline_require_immediate_attention_other', { urgentCount })}</IconLabel>
         </View>
       )}
 
@@ -658,19 +655,15 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
           accessibilityLabel={t('x_deadline_calculator_share_deadline_results')}
           accessibilityHint={t('x_deadline_calculator_shares_this_information')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700', fontSize:14 }}>
-            {t('x_deadline_calculator_share_results')}
-          </Text>
+          <IconLabel icon={ICONS.share} textStyle={{ color:colors.textOnNavy, fontWeight:'700', fontSize:14 }} maxFontSizeMultiplier={1.4}>{t('x_deadline_calculator_share_results')}</IconLabel>
         </TouchableOpacity>
 
       {/* ── Not legal advice disclaimer ──────────────────────── */}
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: colors.textSecond, fontStyle: 'italic' }}>
-          {t('x_deadline_calculator_critical_deadlines_shown_general')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, lineHeight: 16,
+          color: colors.textSecond, fontStyle: 'italic' }} maxFontSizeMultiplier={1.3}>{t('x_deadline_calculator_critical_deadlines_shown_general')}</IconLabel>
       </View>
 
       </ScrollView>

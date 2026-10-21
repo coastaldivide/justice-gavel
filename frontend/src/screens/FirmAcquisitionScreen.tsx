@@ -21,6 +21,7 @@ import { useStoredUser, isAttorneyUser } from '../hooks/useStoredUser';
 import { useConfirm } from '../hooks/useConfirm';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const VERTICALS = ['criminal_defense', 'civil_rights', 'white_collar', 'family', 'immigration', 'personal_injury', 'public_defense', 'appellate', 'military', 'juvenile', 'general'] as const;
 const ORG_TYPES = ['law_firm', 'solo', 'public_defender', 'legal_aid', 'nonprofit', 'government', 'other'] as const;
@@ -155,9 +156,7 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={s.h1}>{f.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.line}>{t(`fa_v_${(VERTICALS as readonly string[]).includes(f.vertical) ? f.vertical : 'general'}`)}</Text>
             {status.trial_active ? (
-              <Text maxFontSizeMultiplier={1.4} testID="fa-trial" style={[s.badge, { backgroundColor: colors.legalBg, color: colors.legal }]}>
-                {t(status.trial_days_left === 1 ? 'x_firm_acquisition_trial_day_remaining_one' : 'x_firm_acquisition_trial_day_remaining_other', { trial_days_left: status.trial_days_left })}
-              </Text>
+              <IconLabel icon={ICONS.clock} textStyle={[s.badge, { backgroundColor: colors.legalBg, color: colors.legal }]} maxFontSizeMultiplier={1.4} testID="fa-trial">{t(status.trial_days_left === 1 ? 'x_firm_acquisition_trial_day_remaining_one' : 'x_firm_acquisition_trial_day_remaining_other', { trial_days_left: status.trial_days_left })}</IconLabel>
             ) : status.trial_ended ? (
               <Text maxFontSizeMultiplier={1.4} testID="fa-trial-ended" style={[s.badge, { backgroundColor: colors.warnBg, color: colors.warnDark }]}>{t('fa_trial_ended', { date: fmtDay(status.trial_end) })}</Text>
             ) : null}

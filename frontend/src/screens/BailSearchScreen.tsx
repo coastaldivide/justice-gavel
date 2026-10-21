@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Animated, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { ContactActions } from '../components/ContactActions';
 import { t, useLang } from '../i18n';
 import { getLocationWithCity, formatDistance } from '../services/location';
@@ -66,20 +66,20 @@ const AgentCard = React.memo(function AgentCard({ item }: { item: BailAgent }) {
         {item.rating != null && (
           <View style={styles.ratingBlock} accessibilityLabel={t('lw_rating_a11y', { rating: item.rating.toFixed(1), count: item.reviews ?? 0 })}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.ratingNum, { color: colors.textPrimary }]}>{item.rating.toFixed(1)}</Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.goldText }}>★</Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={{ color: colors.goldText }} maxFontSizeMultiplier={1.3}></IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={[styles.reviewCount, { color: colors.textMuted }]}>({item.reviews ?? 0})</Text>
           </View>
         )}
       </View>
       <View style={styles.badgeRow}>
-        {item.distanceKm != null && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>📍 {formatDistance(item.distanceKm)}</Text></View>}
+        {item.distanceKm != null && <View style={[styles.badge, { borderColor: colors.border }]}><IconLabel icon={ICONS.location} textStyle={[styles.badgeText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3}>{formatDistance(item.distanceKm)}</IconLabel></View>}
         {item.open_24_7 ? (
           <View style={[styles.badge, { borderColor: colors.legal, backgroundColor: colors.legalBg }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.legal }]}>{t('lw_open_24_7')}</Text></View>
         ) : item.open_now != null && (
           <View style={[styles.badge, { borderColor: colors.border, backgroundColor: item.open_now ? colors.legalBg : colors.bgSubtle }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: item.open_now ? colors.legalDark : colors.textMuted }]}>{item.open_now ? t('lw_open_now') : t('lw_closed_now')}</Text></View>
         )}
-        {item.payment_plans && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_bail_search_payment_plans')}</Text></View>}
-        {!!item.license_number && <View style={[styles.badge, { borderColor: colors.border }]}><Text maxFontSizeMultiplier={1.3} style={[styles.badgeText, { color: colors.textSecond }]}>{t('x_bail_search_lic', { value: '', license_number: item.license_number })}</Text></View>}
+        {item.payment_plans && <View style={[styles.badge, { borderColor: colors.border }]}><IconLabel icon={ICONS.card} textStyle={[styles.badgeText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3}>{t('x_bail_search_payment_plans')}</IconLabel></View>}
+        {!!item.license_number && <View style={[styles.badge, { borderColor: colors.border }]}><IconLabel icon={ICONS.idCard} textStyle={[styles.badgeText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3}>{t('x_bail_search_lic', { value: '', license_number: item.license_number })}</IconLabel></View>}
       </View>
       <ContactActions listing={item} primaryColor={colors.legalDark} />
     </View>
@@ -224,7 +224,7 @@ function BailSearchScreen(): React.JSX.Element {
             </View>
           )}
         </View>
-        {!!placeLabel && <Text testID="bail-place" maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.sub, { color: colors.textSecond }]}>📍 {placeLabel}</Text>}
+        {!!placeLabel && <IconLabel icon={ICONS.location} textStyle={[styles.sub, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3} numberOfLines={1} testID="bail-place">{placeLabel}</IconLabel>}
         <View style={styles.searchRow}>
           <TextInput testID="bail-search-city-input"
             style={[styles.searchInput, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.inputText }]}
@@ -237,7 +237,7 @@ function BailSearchScreen(): React.JSX.Element {
         </View>
         <View style={styles.chipRow}>
           <TouchableOpacity accessibilityRole="button" testID="bail-use-location" style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.bgCard }]} onPress={useMyLocation}>
-            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.chipText, { color: colors.textSecond }]}>{t('lw_use_location')}</Text>
+            <IconLabel icon={ICONS.location} textStyle={[styles.chipText, { color: colors.textSecond }]} maxFontSizeMultiplier={1.3} numberOfLines={1}>{t('lw_use_location')}</IconLabel>
           </TouchableOpacity>
           {filterChip(open24, () => setOpen24(v => !v), t('lw_open_24_7'), 'bail-filter-24')}
           {filterChip(paymentPlans, () => setPaymentPlans(v => !v), t('x_bail_search_payment_plans'), 'bail-filter-plans')}

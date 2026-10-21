@@ -19,6 +19,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'r
 import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
 import { t, perLang, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 /** Effective date (shown in the reader's language, e.g. "1 de mayo de 2026"). */
 const EFFECTIVE_ISO = '2026-05-01';
@@ -212,10 +213,8 @@ function PrivacyPolicyScreen(): React.JSX.Element {
       {/* ── Quick summary ────────────────────────────────────────── */}
       <View style={[styles.summaryBox, { backgroundColor: isDark ? colors.surface : colors.legalBg,
         borderLeftColor: colors.legalDark }]}>
-        <Text maxFontSizeMultiplier={1.2} style={[styles.summaryTitle,
-          { color: colors.legalDark }]}>
-          {t('x_privacy_policy_privacy_plain_english')}
-        </Text>
+        <IconLabel icon={ICONS.lock} textStyle={[styles.summaryTitle,
+          { color: colors.legalDark }]} maxFontSizeMultiplier={1.2}>{t('x_privacy_policy_privacy_plain_english')}</IconLabel>
         {[
           t('x_privacy_policy_we_do_not_sell'),
           t('x_privacy_policy_we_do_not_show'),
@@ -243,10 +242,8 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           accessibilityState={{ selected: false }}
         accessibilityLabel={t('x_privacy_policy_toggle_data_collection_table')}
       >
-        <Text maxFontSizeMultiplier={1.3} style={[styles.tableToggleText,
-          { color: colors.textPrimary }]}>
-          {t('x_privacy_policy_what_data_we_collect')}
-        </Text>
+        <IconLabel icon={ICONS.stats} textStyle={[styles.tableToggleText,
+          { color: colors.textPrimary }]} maxFontSizeMultiplier={1.3}>{t('x_privacy_policy_what_data_we_collect')}</IconLabel>
         <Text style={[styles.tableChevron, { color: colors.textMuted }]}>
           {tableExpanded ? '▲' : '▼'}
         </Text>
@@ -257,7 +254,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           {DATA_TABLE()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <IconLabel icon={ICONS.inbox} textStyle={{ fontSize: 32, marginBottom: 12 }}></IconLabel>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
@@ -324,9 +321,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           onPress={() => openEmail(CONTACT_EMAIL)}
           activeOpacity={0.85}
         >
-          <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>
-            {t('x_privacy_policy_request_data_access_correction')}
-          </Text>
+          <IconLabel icon={ICONS.clipboard} textStyle={styles.rightsBtnText} maxFontSizeMultiplier={1.3}>{t('x_privacy_policy_request_data_access_correction')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -336,9 +331,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           activeOpacity={0.85}
           accessibilityLabel={t('x_privacy_policy_request_account_data_deletion')}
         >
-          <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>
-            {t('x_privacy_policy_request_account_deletion')}
-          </Text>
+          <IconLabel icon={ICONS.delete} textStyle={styles.rightsBtnText} maxFontSizeMultiplier={1.3}>{t('x_privacy_policy_request_account_deletion')}</IconLabel>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsNote,
           { color: colors.textMuted }]}>

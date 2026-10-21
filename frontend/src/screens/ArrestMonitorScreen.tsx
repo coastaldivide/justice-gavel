@@ -1,6 +1,6 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 /**
@@ -200,7 +200,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
           {/* Active watches */}
           {watches.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>👁</Text>
+              <AppIcon name={ICONS.eye} size={36} color={colors.textBrand} style={styles.emptyIcon} />
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>{t('x_arrest_monitor_no_monitors_yet')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
                 {t('x_arrest_monitor_add_name_below_we')}
@@ -221,7 +221,7 @@ confirm(t('x_arrest_monitor_stop_monitoring'),t('x_arrest_monitor_we_ll_stop_ale
                   </Text>
                   {w.last_result === 'found' && (
                     <View style={styles.matchBadge}>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.matchText}>{t('x_arrest_monitor_match_found_check_arrest')}</Text>
+                      <IconLabel icon={ICONS.alertHigh} textStyle={styles.matchText} maxFontSizeMultiplier={1.4}>{t('x_arrest_monitor_match_found_check_arrest')}</IconLabel>
                     </View>
                   )}
                 </View>
@@ -349,7 +349,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Empty
   emptyCard:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xl, padding: 32, alignItems: 'center', marginBottom: 12, ...SHADOW.sm },
-  emptyIcon:  { fontSize: 36, marginBottom: 10 },
+  emptyIcon:  { marginBottom: 10 },
   emptyTitle: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   emptySub:   { fontSize: 12, color: COLORS.textMuted, textAlign: 'center', lineHeight: 18 },
 

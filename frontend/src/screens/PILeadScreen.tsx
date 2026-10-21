@@ -1,5 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * PILeadScreen -- Personal Injury & Civil Rights Lead Submission
  *
@@ -124,7 +124,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           accessibilityLabel={t('x_pilead_browse_lawyers_now')} onPress={() => navigation.navigate('LawyersTab')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>{t('x_pilead_browse_lawyers_now_2')}</Text>
+          <IconLabel icon={ICONS.lawyer} textStyle={styles.doneBtnText} maxFontSizeMultiplier={1.4}>{t('x_pilead_browse_lawyers_now_2')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -279,9 +279,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
             {/* Privacy note */}
             <View style={[styles.privacyNote, { backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle,
               borderColor: colors.blue + '44' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.privacyText, { color: colors.blue }]}>
-                {t('x_pilead_name_contact_info_hidden')}
-              </Text>
+              <IconLabel icon={ICONS.lock} textStyle={[styles.privacyText, { color: colors.blue }]} maxFontSizeMultiplier={1.4}>{t('x_pilead_name_contact_info_hidden')}</IconLabel>
             </View>
 
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}

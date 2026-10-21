@@ -1,7 +1,7 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { requestNotificationsInContext } from '../services/permissions';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * SettingsScreen -- User preferences
  *
@@ -420,7 +420,7 @@ function SettingsScreen({ navigation }: any) {
           accessibilityLabel={t('x_st_change_state_preference')}
         >
           <View style={styles.rowLeft}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.rowIcon}>🗺️</Text>
+            <IconLabel icon={ICONS.directions} textStyle={styles.rowIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <View>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>{t('x_st_state')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
@@ -805,9 +805,7 @@ function SettingsScreen({ navigation }: any) {
               }
             }}
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ color:colors.textPrimary, fontSize: 14, fontWeight:"600" }}>
-              {t('x_st_rate_justice_gavel')}
-            </Text>
+            <IconLabel icon={ICONS.starFilled} textStyle={{ color:colors.textPrimary, fontSize: 14, fontWeight:"600" }} maxFontSizeMultiplier={1.3}>{t('x_st_rate_justice_gavel')}</IconLabel>
             <Text style={{ color:colors.textMuted, fontSize:12 }}>{t('x_st_tell_us_what_think')}</Text>
           </TouchableOpacity>}
 

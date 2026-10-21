@@ -29,6 +29,7 @@ import { formatPhone, telUrl } from '../utils/contact';
 import { stateName } from '../utils/userState';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile';
 type Stats = { active_cases: number; pending_assignments: number; hearings_this_week: number; unread_messages: number; motions_generated: number; cle_hours: number; upcoming_consultations: number | null; avg_rating: number | null; review_count: number | null };
@@ -133,7 +134,7 @@ function Overview({ profile, navigation }: { profile: Profile | null; navigation
     [String(st.unread_messages), t('x_attorney_dashboard_unread_msgs')],
     [String(st.motions_generated), t('ad_stat_motions')],
     ...(st.upcoming_consultations != null ? [[String(st.upcoming_consultations), t('ad_stat_consults')] as [string, string]] : []),
-    ...(st.review_count ? [[`${st.avg_rating}★`, t('ad_stat_rating', { n: st.review_count })] as [string, string]] : []),
+    ...(st.review_count ? [[`${st.avg_rating}/5`, t('ad_stat_rating', { n: st.review_count })] as [string, string]] : []),
   ];
   const tools: { key: string; label: string; sub: string; go: () => void }[] = [
     { key: 'inbox', label: t('ad_tool_inbox'), sub: st.unread_messages ? t('ad_tool_inbox_unread', { n: st.unread_messages }) : t('ad_tool_inbox_sub'), go: () => navigation.navigate('AttorneyInbox' as never) },
@@ -191,10 +192,10 @@ function Cases({ navigation }: { navigation: ScreenProps['navigation'] }) {
           {!!c.next_hearing_date && <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ad_next_hearing', { date: fmtDay(c.next_hearing_date) })}</Text>}
           <View style={s.rowWrap}>
             <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('Messages', { caseId: c.id, caseTitle: c.title || undefined })}>
-              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{c.unread_count ? t('ad_messages_unread', { n: c.unread_count }) : t('x_attorney_dashboard_message')}</Text>
+              <IconLabel icon={ICONS.message} textStyle={s.ghostText} maxFontSizeMultiplier={1.4}>{c.unread_count ? t('ad_messages_unread', { n: c.unread_count }) : t('x_attorney_dashboard_message')}</IconLabel>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('MotionLibrary', { caseId: c.id })}>
-              <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('x_attorney_dashboard_motion')}</Text>
+              <IconLabel icon={ICONS.clipboard} textStyle={s.ghostText} maxFontSizeMultiplier={1.4}>{t('x_attorney_dashboard_motion')}</IconLabel>
             </TouchableOpacity>
           </View>
         </View>
@@ -262,9 +263,9 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
         <View key={l.id} style={s.card} testID="ad-my-lead">
           <Text maxFontSizeMultiplier={1.4} style={s.title}>{leadType(l.case_type)} · {[l.city, l.state ? stateName(l.state) : ''].filter(Boolean).join(', ')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.line}>{l.description}</Text>
-          {!!l.contact_name && <Text maxFontSizeMultiplier={1.4} style={[s.line, { marginTop: 6 }]}>👤 {l.contact_name}</Text>}
-          {!!l.contact_phone && <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.info }]} onPress={() => { const u = telUrl(l.contact_phone || ''); if (u) Linking.openURL(u).catch(() => {}); }}>📞 {formatPhone(l.contact_phone)}</Text>}
-          {!!l.contact_email && <Text maxFontSizeMultiplier={1.4} style={[s.line, { color: colors.info }]} onPress={() => Linking.openURL(`mailto:${l.contact_email}`).catch(() => {})}>✉️ {l.contact_email}</Text>}
+          {!!l.contact_name && <IconLabel icon={ICONS.user} textStyle={[s.line, { marginTop: 6 }]}>{l.contact_name}</IconLabel>}
+          {!!l.contact_phone && <TouchableOpacity accessibilityRole="link" style={s.contactLink} onPress={() => { const u = telUrl(l.contact_phone || ''); if (u) Linking.openURL(u).catch(() => {}); }}><IconLabel icon={ICONS.phone} textStyle={[s.line, { color: colors.info }]}>{formatPhone(l.contact_phone)}</IconLabel></TouchableOpacity>}
+          {!!l.contact_email && <TouchableOpacity accessibilityRole="link" style={s.contactLink} onPress={() => Linking.openURL(`mailto:${l.contact_email}`).catch(() => {})}><IconLabel icon={ICONS.mail} textStyle={[s.line, { color: colors.info }]}>{l.contact_email}</IconLabel></TouchableOpacity>}
           <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('ad_lead_bought_on', { date: fmtDay(l.accepted_at), fee: usd(l.lead_fee_cents) })}</Text>
         </View>
       ))}
@@ -433,7 +434,7 @@ function ProfileTab({ profile, onSaved }: { profile: Profile; onSaved: () => voi
       </View>
 
       <View style={s.card} testID="ad-availability">
-        <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('x_attorney_dashboard_weekly_availability')}</Text>
+        <IconLabel icon={ICONS.calendar} textStyle={s.title} maxFontSizeMultiplier={1.4}>{t('x_attorney_dashboard_weekly_availability')}</IconLabel>
         {DAYS.map(d => (
           <View key={d} style={[s.rowWrap, { marginHorizontal: 0, alignItems: 'center' }]}>
             <Text maxFontSizeMultiplier={1.2} style={[s.line, { width: 44 }]}>{t(`x_attorney_dashboard_${d}`)}</Text>
@@ -467,6 +468,7 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   section: { fontSize: 12, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginTop: 18, marginHorizontal: 16, textTransform: 'uppercase' },
   title: { fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
   line: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 2 },
+  contactLink: { minHeight: 44, justifyContent: 'center' },
   hint: { fontSize: 12, lineHeight: 17, color: colors.textMuted, marginHorizontal: 16, marginTop: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 8, marginTop: 6 },
   cell: { width: '33.33%', padding: 4 },

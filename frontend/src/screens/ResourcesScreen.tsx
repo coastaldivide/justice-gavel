@@ -1,6 +1,6 @@
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
@@ -193,9 +193,7 @@ function ResourcesScreen(): React.JSX.Element {
           contentContainerStyle={{ paddingHorizontal:16, paddingBottom:24 }}
           initialNumToRender={15}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color:sub, textAlign:'center', marginTop:40 }}>
-              {t('x_resources_no_resources_found', { value: q ? ' ' + t('x_resources_text', { q }) : '' })}
-            </Text>
+            <IconLabel icon={ICONS.search} textStyle={{ color:sub, textAlign:'center', marginTop:40 }} maxFontSizeMultiplier={1.4}>{t('x_resources_no_resources_found', { value: q ? ' ' + t('x_resources_text', { q }) : '' })}</IconLabel>
           }
           renderItem={({ item }: { item: any }) => {
             const isOpen = expanded === item.id;
@@ -268,7 +266,7 @@ function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="link" testID="resource-website"
                           onPress={() => Linking.openURL(site).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🌐</Text>
+                          <IconLabel icon={ICONS.globe} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textBrand, fontWeight:'600', fontSize:14, flexShrink:1 }}
                             numberOfLines={1}>
                             {websiteLabel(site)}
@@ -279,13 +277,13 @@ function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(directions).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>
+                          <IconLabel icon={ICONS.location} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {item.hours ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🕐</Text>
+                          <IconLabel icon={ICONS.clock} textStyle={{ fontSize:16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.hours}</Text>
                         </View>
                       ) : null}

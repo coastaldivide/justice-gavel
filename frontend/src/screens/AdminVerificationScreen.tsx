@@ -19,6 +19,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { stateName } from '../utils/userState';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Q = 'bar' | 'claims' | 'reports' | 'reviews';
 type Bar = { user_id: number; display_name: string | null; email: string; bar_number: string; bar_state: string; bar_submitted_at: string | null; lookup_url: string | null };
@@ -93,7 +94,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
             <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_bar_line', { bar: b.bar_number, state: stateName(b.bar_state) })} · {fmtDay(b.bar_submitted_at)}</Text>
             {!!b.lookup_url && (
               <TouchableOpacity accessibilityRole="link" style={s.ghostBtn} onPress={() => Linking.openURL(b.lookup_url as string).catch(() => {})}>
-                <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('adm_bar_lookup', { state: stateName(b.bar_state) })} ↗</Text>
+                <IconLabel icon={ICONS.external} textStyle={s.ghostText}>{t('adm_bar_lookup', { state: stateName(b.bar_state) })}</IconLabel>
               </TouchableOpacity>
             )}
             <TextInput style={s.field} value={reasons[b.user_id] || ''} onChangeText={v => setReasons(r => ({ ...r, [b.user_id]: v }))} maxLength={500}
@@ -146,7 +147,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
 
         {q === 'reviews' && (rows as Review[] | null)?.map(r => (
           <View key={r.id} style={s.card} testID="adm-review">
-            <Text maxFontSizeMultiplier={1.4} style={s.title}>{r.listing_name} · {'★'.repeat(Math.max(0, Math.min(5, r.rating)))}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{r.listing_name} · {t('adm_rating_of_5', { n: Math.max(0, Math.min(5, r.rating)) })}</Text>
             {!!r.comment && <Text maxFontSizeMultiplier={1.4} style={s.line}>“{r.comment}”</Text>}
             <Text maxFontSizeMultiplier={1.3} style={s.line}>{fmtDay(r.created_at)}{r.open_reports ? ` · ${t('adm_reports_n', { n: r.open_reports })}` : ''}</Text>
             <View style={s.row}>

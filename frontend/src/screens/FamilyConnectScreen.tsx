@@ -1,6 +1,6 @@
 import { SampleRecordBadge } from '../components/SampleRecordBadge';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * FamilyConnectScreen — emergency connection for the family of someone just arrested.
  *
@@ -84,9 +84,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
           )}
         </View>
         <View style={[styles.contactTypeBadge, { backgroundColor: bg }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeBadgeText, { color }]}>
-            {isAtty ? t('x_family_connect_attorney') : t('x_family_connect_bail_agent')}
-          </Text>
+          <IconLabel icon={ICONS.lawyer} textStyle={[styles.contactTypeBadgeText, { color }]} maxFontSizeMultiplier={1.4}>{isAtty ? t('x_family_connect_attorney') : t('x_family_connect_bail_agent')}</IconLabel>
         </View>
       </View>
 
@@ -101,7 +99,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
       )}
 
       {Number(contact.rating) > 0 && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.contactRating}>★ {Number(contact.rating).toFixed(1)}</Text>
+        <IconLabel icon={ICONS.starFilled} textStyle={styles.contactRating} maxFontSizeMultiplier={1.4}>{Number(contact.rating).toFixed(1)}</IconLabel>
       )}
 
       {contact.phone ? (
@@ -111,7 +109,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
           style={[styles.callBtn, { backgroundColor: color }]}
           onPress={() => callPhone(contact.phone, () => showToast(t('x_emergency_share_please_dial_manually', { phone: contact.phone }), 'warning'))}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('x_family_connect_call', { value: formatPhone(contact.phone) })}</Text>
+          <IconLabel icon={ICONS.phone} textStyle={styles.callBtnText} maxFontSizeMultiplier={1.4}>{t('x_family_connect_call', { value: formatPhone(contact.phone) })}</IconLabel>
         </TouchableOpacity>
       ) : (
         <View style={[styles.callBtn, { backgroundColor: COLORS.emergencyDark }]}>
@@ -454,7 +452,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             ))}
           </View>
 
-          {!!payError && <Text maxFontSizeMultiplier={1.4} style={styles.payError} testID="family-connect-error">⚠ {payError}</Text>}
+          {!!payError && <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={styles.payError} maxFontSizeMultiplier={1.4} testID="family-connect-error">{payError}</IconLabel>}
           {paidPi ? (
             <TouchableOpacity accessibilityRole="button" testID="family-connect-retry" style={styles.payBtn} onPress={retryConfirm}>
               <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('fc2_load_contacts')}</Text>
@@ -514,7 +512,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
               {result.attorneys?.length > 0 && (
                 <>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>{t('x_family_connect_criminal_defense_attorneys')}</Text>
+                  <IconLabel icon={ICONS.lawyer} textStyle={styles.contactsHeading} maxFontSizeMultiplier={1.4}>{t('x_family_connect_criminal_defense_attorneys')}</IconLabel>
                   {result.attorneys.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="attorney" />
                   ))}
@@ -523,7 +521,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
               {result.bail_agents?.length > 0 && (
                 <>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>{t('x_family_connect_bail_bondsmen')}</Text>
+                  <IconLabel icon={ICONS.bail} textStyle={styles.contactsHeading} maxFontSizeMultiplier={1.4}>{t('x_family_connect_bail_bondsmen')}</IconLabel>
                   {result.bail_agents.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="bail" />
                   ))}

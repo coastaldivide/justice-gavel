@@ -20,6 +20,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
 import { useHaptics }     from '../hooks/useHaptics';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface ExplanationData {
   question_id:   string;
@@ -171,7 +172,7 @@ export default function BarPrepExplanationScreen({
         >
           <Text style={styles.ruleText}>{data.rule_tested || t('barprep_rule_not_recorded')}</Text>
           {data.case_citation && (
-            <Text style={styles.citationText}>📖 {data.case_citation}</Text>
+            <IconLabel icon={ICONS.book} textStyle={styles.citationText}>{data.case_citation}</IconLabel>
           )}
         </SectionCard>
 
@@ -215,9 +216,7 @@ export default function BarPrepExplanationScreen({
             onPress={flagQuestion}
             disabled={flagging}
           >
-            <Text style={styles.flagBtnText}>
-              {flagging ? t('x_bar_prep_explanation_flagging') : t('x_bar_prep_explanation_flag_question')}
-            </Text>
+            <IconLabel icon={ICONS.flag} textStyle={styles.flagBtnText}>{flagging ? t('x_bar_prep_explanation_flagging') : t('x_bar_prep_explanation_flag_question')}</IconLabel>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
             style={[styles.actionBtn, styles.doneBtn]}

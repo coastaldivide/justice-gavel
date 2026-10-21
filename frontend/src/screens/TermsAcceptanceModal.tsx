@@ -33,6 +33,7 @@ import {
 import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
 import { t, perLang, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
 
@@ -195,7 +196,7 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
             onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
             accessibilityLabel={t('x_terms_acceptance_modal_read_full_terms_service')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>{t('x_terms_acceptance_modal_read_full_terms_service_2')}</Text>
+            <IconLabel icon={ICONS.document} textStyle={s.fullTosLinkText} maxFontSizeMultiplier={1.4}>{t('x_terms_acceptance_modal_read_full_terms_service_2')}</IconLabel>
           </TouchableOpacity>
 
           {/* Scroll indicator */}

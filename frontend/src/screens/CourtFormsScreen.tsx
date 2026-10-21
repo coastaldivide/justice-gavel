@@ -1,5 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 /**
  * CourtFormsScreen.tsx
  *
@@ -226,9 +226,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           data={filteredStates}
           ListEmptyComponent={
             <View style={{ padding:40, alignItems:'center' }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>
-                {t('x_court_forms_no_states_match_search')}
-              </Text>
+              <IconLabel icon={ICONS.document} textStyle={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }} maxFontSizeMultiplier={1.4}>{t('x_court_forms_no_states_match_search')}</IconLabel>
             </View>
           }
           keyExtractor={item => item.state}
@@ -293,9 +291,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           <View style={{
             backgroundColor: colors.warnBg, borderRadius: 12, padding: 16,
             borderWidth: 1, borderColor: colors.gold}}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight: '700', color: colors.warnDark, marginBottom: 4 }}>
-              {t('x_court_forms_juvenile_records_different_process')}
-            </Text>
+            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{ fontSize: 12, fontWeight: '700', color: colors.warnDark, marginBottom: 4 }} maxFontSizeMultiplier={1.4}>{t('x_court_forms_juvenile_records_different_process')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.warnDark, lineHeight: 19 }}>
               {t('x_court_forms_juvenile_records_use_separate')}{' '}
               <Text maxFontSizeMultiplier={1.4}
@@ -314,7 +310,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
             onPress={() => openFormUrl(selectedState.selfHelpUrl ?? selectedState.formsPortalUrl)}
             accessibilityLabel={t('x_court_forms_all_forms_open_official')}
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>🌐</Text>
+            <IconLabel icon={ICONS.globe} textStyle={s.categoryIcon} maxFontSizeMultiplier={1.4}></IconLabel>
             <View style={s.categoryInfo}>
               <Text maxFontSizeMultiplier={1.4} style={s.categoryLabel}>{t('x_court_forms_all_forms_official_portal')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.categoryDesc}>{selectedState.aocName}</Text>
@@ -353,7 +349,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
           {/* Information notice */}
           <View style={s.infoNotice}>
-            <Text maxFontSizeMultiplier={1.4} style={s.infoNoticeTitle}>{t('x_court_forms_legal_information_only')}</Text>
+            <IconLabel icon={ICONS.alertNormal} textStyle={s.infoNoticeTitle} maxFontSizeMultiplier={1.4}>{t('x_court_forms_legal_information_only')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={s.infoNoticeText}>
               {t('x_court_forms_links_below_open_official')}
             </Text>
@@ -491,7 +487,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
 
           {/* Disclaimer banner -- always shown in AI phase */}
           <View style={s.aiDisclaimerBanner}>
-            <Text maxFontSizeMultiplier={1.4} style={s.aiDisclaimerTitle}>{t('x_court_forms_not_legal_advice')}</Text>
+            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={s.aiDisclaimerTitle} maxFontSizeMultiplier={1.4}>{t('x_court_forms_not_legal_advice')}</IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={s.aiDisclaimerText}>
               {t('x_court_forms_this_ai_explanation_describes')}
             </Text>

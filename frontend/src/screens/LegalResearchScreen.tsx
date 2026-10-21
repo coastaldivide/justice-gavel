@@ -2,7 +2,7 @@ import { AIDisclaimer } from '../components/AIDisclaimer';
 import { escapeHtml } from '../utils/html';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * LegalResearchScreen -- AI Legal Research ($49/mo)
@@ -175,9 +175,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
       {/* Knowledge cutoff banner -- every result, every time */}
       <View style={[styles.cutoffBanner, { backgroundColor: COLORS.warnBg,
         borderColor: COLORS.gold + '70' }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: COLORS.warnDark }]}>
-          {t('res_may_be_outdated')}
-        </Text>
+        <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.cutoffText, { color: COLORS.warnDark }]} maxFontSizeMultiplier={1.4}>{t('res_may_be_outdated')}</IconLabel>
       </View>
 
       <MarkdownText
@@ -228,7 +226,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
           onPress={() => onDiscussWithAI(msg.content)}
           accessibilityLabel={t('x_legal_research_discuss_this_research_with')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>{t('res_discuss_ai')}</Text>
+          <IconLabel icon={ICONS.lawyer} textStyle={[styles.copyBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{t('res_discuss_ai')}</IconLabel>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -550,7 +548,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         : history.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📚</Text>
+            <IconLabel icon={ICONS.book} textStyle={{ fontSize: 40, marginBottom: 12 }} maxFontSizeMultiplier={1.4}></IconLabel>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('res_history_empty')}</Text>
             <TouchableOpacity
   accessibilityRole="button"
@@ -617,8 +615,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
                 backgroundColor: COLORS.navy + '14',
                 borderColor: COLORS.navy + '33'
               }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contextPillText, { color: COLORS.navy }]}
-                  numberOfLines={1}>📁 {caseContext}</Text>
+                <IconLabel icon={ICONS.cases} textStyle={[styles.contextPillText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4} numberOfLines={1}>{caseContext}</IconLabel>
               </View>
             )}
 
@@ -650,9 +647,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
               backgroundColor: isDark ? colors.bgCard : colors.warnBg,
               borderColor: colors.gold + '55'
             }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]}>
-                {t('x_legal_research_always_verify_citations_before')}
-              </Text>
+              <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]} maxFontSizeMultiplier={1.4}>{t('x_legal_research_always_verify_citations_before')}</IconLabel>
             </View>
           </>
         )}
@@ -660,7 +655,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         {/* ── Thread ──────────────────────────────────────────────────────── */}
         {(messages ?? []).map((msg, i) => msg.error ? (
           <View key={`msg-${i}`} testID="research-error-msg" style={[styles.searchingRow, { backgroundColor: colors.bgCard, borderColor: colors.border, flexDirection: 'column', alignItems: 'flex-start' }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.searchingText, { color: colors.textPrimary }]}>⚠️ {msg.content}</Text>
+            <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.searchingText, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{msg.content}</IconLabel>
             <TouchableOpacity accessibilityRole="button" testID="research-retry" disabled={searching}
               style={[styles.copyBtn, { borderColor: COLORS.navy }]} onPress={() => runSearch(msg.retryQuery || '', { retry: true })}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textBrand }]}>↻ {t('chat_retry')}</Text>
@@ -690,9 +685,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
-          {t('x_legal_research_ai_legal_research_not')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }} maxFontSizeMultiplier={1.3}>{t('x_legal_research_ai_legal_research_not')}</IconLabel>
       </View>
       </ScrollView>
 

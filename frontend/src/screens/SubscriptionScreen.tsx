@@ -22,6 +22,7 @@ import { plansFrom, featureLabel, usd, type SubscriptionView } from '../services
 import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type ProviderType = 'lawyer' | 'bail_agent';
 
@@ -251,7 +252,7 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
 
       {type === 'bail_agent' && (
         <View style={s.card}>
-          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('x_subscription_leads')}</Text>
+          <IconLabel icon={ICONS.bail} textStyle={s.cardTitle} maxFontSizeMultiplier={1.4}>{t('x_subscription_leads')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('plan_bondsman_leads_note', { fee: BONDSMAN_LEAD_FEE_DISPLAY })}</Text>
           <TouchableOpacity accessibilityRole="button" style={[s.primaryBtn, { marginTop: 12 }]} onPress={() => navigation.navigate('BondsmanDashboard' as never)}>
             <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('x_subscription_open_lead_dashboard')}</Text>

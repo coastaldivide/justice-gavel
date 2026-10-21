@@ -19,6 +19,7 @@ import { StatePicker } from '../components/StatePicker';
 import { ContactActions } from '../components/ContactActions';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang, getLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type CourtType = 'Veterans' | 'Drug Court' | 'Mental Health Court';
 interface SpecialtyCourt {
@@ -132,7 +133,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
                         <Text maxFontSizeMultiplier={1.4} style={s.body}>{item.eligibility}</Text>
                       </View>
                     )}
-                    {!!item.notes && <Text maxFontSizeMultiplier={1.4} style={s.body}>ℹ️ {item.notes}</Text>}
+                    {!!item.notes && <IconLabel icon={ICONS.alertNormal} textStyle={s.body} maxFontSizeMultiplier={1.4}>{item.notes}</IconLabel>}
                     {item.text_lang === 'en' && getLang() !== 'en' && <Text maxFontSizeMultiplier={1.3} style={s.muted}>{t('pen_notes_english')}</Text>}
                     <ContactActions listing={{ name: item.name, phone: item.phone, address: item.address, lat: item.lat, lng: item.lng, website: item.url }} />
                     <View style={[s.box, { backgroundColor: colors.bgSubtle }]}>

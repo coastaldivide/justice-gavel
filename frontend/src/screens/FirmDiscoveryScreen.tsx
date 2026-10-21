@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 interface Firm {
   id: number;
@@ -177,7 +178,7 @@ function FirmDiscoveryScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Text style={[s.emptyIcon]}>🏛️</Text>
+              <IconLabel icon={ICONS.courthouse} textStyle={[s.emptyIcon]}></IconLabel>
               <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textPrimary }]}>{error || t('x_firm_discovery_no_firms_found')}</Text>
               {!error && (
                 <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textMuted }]}>

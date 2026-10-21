@@ -1,6 +1,6 @@
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
@@ -126,10 +126,8 @@ function CourtLocatorScreen(): React.JSX.Element {
               backgroundColor: courtMode===mode ? colors.primary : card,
               borderWidth:1.5, borderColor: courtMode===mode ? colors.primary : (colors.border),
             }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: courtMode===mode ? colors.bgCard : text,
-              fontWeight:'700', fontSize:13 }}>
-              {mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}
-            </Text>
+            <IconLabel icon={ICONS.courthouse} textStyle={{ color: courtMode===mode ? colors.bgCard : text,
+              fontWeight:'700', fontSize:13 }} maxFontSizeMultiplier={1.4}>{mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}</IconLabel>
           </TouchableOpacity>
         ))}
       </View>
@@ -171,11 +169,9 @@ function CourtLocatorScreen(): React.JSX.Element {
         contentContainerStyle={{ padding: 16, paddingTop: 4 }}
         ListEmptyComponent={
           !loading && !error ? (
-            <Text testID="court-locator-empty" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
-              {search.trim().length >= 2
+            <IconLabel icon={ICONS.clipboard} textStyle={{ color: sub, textAlign: 'center', marginTop: 40 }} maxFontSizeMultiplier={1.4} testID="court-locator-empty">{search.trim().length >= 2
                 ? t('x_court_locator_no_courthouses_found_try', { search: search.trim() })
-                : t('x_court_locator_search_city_county_find')}
-            </Text>
+                : t('x_court_locator_search_city_county_find')}</IconLabel>
           ) : null
         }
         renderItem={({ item }: { item: Courthouse }) => {
@@ -209,9 +205,7 @@ function CourtLocatorScreen(): React.JSX.Element {
 
               {/* Collapsed preview */}
               {!open && (
-                <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, marginTop: 6 }} numberOfLines={1}>
-                  📍 {item.address}
-                </Text>
+                <IconLabel icon={ICONS.location} textStyle={{ color: sub, fontSize: 12, marginTop: 6 }} maxFontSizeMultiplier={1.4} numberOfLines={1}>{item.address}</IconLabel>
               )}
 
               {/* Expanded detail */}
@@ -223,7 +217,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     accessibilityLabel={t('x_court_locator_tap_directions')}
                     onPress={() => openMaps(item.address)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📍</Text>
+                    <IconLabel icon={ICONS.location} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                     <View style={{ flex: 1 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                         {item.address}
@@ -248,7 +242,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                   {/* Hours */}
                   {item.hours ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>🕐</Text>
+                      <IconLabel icon={ICONS.clock} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontSize: 13 }}>{item.hours}</Text>
                     </View>
                   ) : null}
@@ -259,9 +253,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       backgroundColor: isDark ? colors.surface : colors.bgCard,
                       borderRadius: 8, padding: 10, marginTop: 4,
                     }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.gold : colors.warnDark, fontSize: 12 }}>
-                        ℹ️  {item.notes}
-                      </Text>
+                      <IconLabel icon={ICONS.alertNormal} textStyle={{ color: isDark ? colors.gold : colors.warnDark, fontSize: 12 }} maxFontSizeMultiplier={1.4}>{item.notes}</IconLabel>
                     </View>
                   ) : null}
 
@@ -272,7 +264,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       accessibilityLabel={t('x_court_locator_court_website')}
                       onPress={() => Linking.openURL(item.url ?? '').catch(() => showToast(t('action_failed'), 'error'))}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>🌐</Text>
+                      <IconLabel icon={ICONS.globe} textStyle={{ fontSize: 16 }} maxFontSizeMultiplier={1.4}></IconLabel>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>
                         {t('x_court_locator_court_website')}
                       </Text>

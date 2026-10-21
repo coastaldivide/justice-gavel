@@ -27,6 +27,7 @@ import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useHaptics }     from '../hooks/useHaptics';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Question {
@@ -351,9 +352,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             styles.explanationCard,
             selected === correctAnswer ? styles.correctCard : styles.wrongCard,
           ]}>
-            <Text style={styles.explanationIcon}>
-              {selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}
-            </Text>
+            <IconLabel icon={ICONS.statusOk} iconColor={colors.legal} textStyle={styles.explanationIcon}>{selected === correctAnswer ? t('x_bar_prep_quiz_correct') : t('x_bar_prep_quiz_incorrect')}</IconLabel>
             {!!explanation && <Text style={styles.explanationText}>{explanation}</Text>}
             <TouchableOpacity accessibilityRole="button"
               style={styles.fullExplanationLink}

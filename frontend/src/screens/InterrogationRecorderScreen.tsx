@@ -39,6 +39,7 @@ import { api, API_BASE_URL } from '../services/api';
 import { useTheme, COLORS } from '../constants/theme';
 import { getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { t, useLang } from '../i18n';
+import { IconLabel, ICONS } from '../components/AppIcon';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 
@@ -338,9 +339,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         }>
       {/* ── Header ──────────────────────────────────── */}
       <View style={[styles.headerBox, { backgroundColor: colors.emergency }]}>
-        <Text maxFontSizeMultiplier={1.2} style={styles.headerTitle}>
-          {t('x_interrogation_recorder_encounter_recorder')}
-        </Text>
+        <IconLabel icon={ICONS.record} textStyle={styles.headerTitle} maxFontSizeMultiplier={1.2}>{t('x_interrogation_recorder_encounter_recorder')}</IconLabel>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerSub}>
           {t('x_interrogation_recorder_records_transcribes_generates_pdf')}
         </Text>
@@ -353,14 +352,14 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
           accessibilityLabel={t('x_emergency_call_911')} onPress={() => Linking.openURL('tel:911').catch(() => showToast(t('x_interrogation_recorder_please_dial_911'), 'error'))}
         >
-          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>{t('x_interrogation_recorder_call_911')}</Text>
+          <IconLabel icon={ICONS.emergency} textStyle={styles.emergencyBtnText} maxFontSizeMultiplier={1.2}>{t('x_interrogation_recorder_call_911')}</IconLabel>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
           accessibilityLabel={t('x_interrogation_recorder_crisis_988')} onPress={() => Linking.openURL('tel:988').catch(() => showToast(t('action_failed'), 'error'))}
         >
-          <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>{t('x_interrogation_recorder_crisis_988')}</Text>
+          <IconLabel icon={ICONS.crisis} textStyle={styles.emergencyBtnText} maxFontSizeMultiplier={1.2}>{t('x_interrogation_recorder_crisis_988')}</IconLabel>
         </TouchableOpacity>
       </View>
 
@@ -407,7 +406,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           activeOpacity={0.85}
           accessibilityLabel={t('x_interrogation_recorder_start_recording_police_encounter')}
           accessibilityHint={t('x_interrogation_recorder_records_audio_generates_timestamped')}>
-          <Text style={styles.recordBtnIcon}>🎙</Text>
+          <IconLabel icon={ICONS.record} textStyle={styles.recordBtnIcon}></IconLabel>
           <Text maxFontSizeMultiplier={1.2} style={styles.recordBtnText}>{t('x_interrogation_recorder_start_recording')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.recordBtnSub}>{t('x_interrogation_recorder_tap_begin_tap_again')}</Text>
         </TouchableOpacity>
@@ -427,9 +426,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             onPress={stopAndProcess}
             activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.2} style={[styles.stopBtnText, { color: colors.emergency }]}>
-              {t('x_interrogation_recorder_stop_transcribe_2')}
-            </Text>
+            <IconLabel icon={ICONS.stop} textStyle={[styles.stopBtnText, { color: colors.emergency }]} maxFontSizeMultiplier={1.2}>{t('x_interrogation_recorder_stop_transcribe_2')}</IconLabel>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.3} style={[styles.hint, { color: colors.textMuted }]}>
             {t('x_interrogation_recorder_keep_app_open_recording')}
@@ -456,7 +453,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           {!!failedUri && (
             <TouchableOpacity accessibilityRole="button" style={[styles.retryBtn, { marginBottom: 8 }]} onPress={saveRecording}
               accessibilityLabel={t('ir_save_recording')}>
-              <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>{t('ir_save_recording')}</Text>
+              <IconLabel icon={ICONS.save} textStyle={styles.retryBtnText} maxFontSizeMultiplier={1.2}>{t('ir_save_recording')}</IconLabel>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -478,9 +475,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
               onPress={savePDF}
               activeOpacity={0.85}
             >
-              <Text maxFontSizeMultiplier={1.2} style={styles.saveBtnText}>
-                {t('x_interrogation_recorder_save_share_pdf_2')}
-              </Text>
+              <IconLabel icon={ICONS.document} textStyle={styles.saveBtnText} maxFontSizeMultiplier={1.2}>{t('x_interrogation_recorder_save_share_pdf_2')}</IconLabel>
               <Text maxFontSizeMultiplier={1.3} style={styles.saveBtnSub}>
                 {t('x_interrogation_recorder_send_attorney_immediately')}
               </Text>
@@ -553,10 +548,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: colors.textSecond, fontStyle: 'italic' }}>
-          {t('x_interrogation_recorder_general_legal_information_only')}
-        </Text>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, lineHeight: 16,
+          color: colors.textSecond, fontStyle: 'italic' }} maxFontSizeMultiplier={1.3}>{t('x_interrogation_recorder_general_legal_information_only')}</IconLabel>
       </View>
       <AIDisclaimer variant="banner" />
 
