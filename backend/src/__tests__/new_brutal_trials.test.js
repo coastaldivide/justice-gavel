@@ -1248,7 +1248,8 @@ describe('FF. Outbound Bot — Function Exports & Model', () => {
   test('FF-04: 7-day payment link expiry', () => {
     const created = new Date();
     const expires = new Date(created);
-    expires.setDate(expires.getDate() + 7);
+    // UTC day arithmetic: local setDate across a DST change (e.g. Nov 1) is 7 days ± 1 h
+    expires.setUTCDate(expires.getUTCDate() + 7);
     const diff = (expires - created) / 86400000;
     expect(diff).toBe(7);
   });

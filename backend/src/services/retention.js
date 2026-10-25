@@ -297,7 +297,7 @@ export async function onSubscriptionLapse(firmId) {
   const db = await getDb();
 
   const graceUntil = new Date();
-  graceUntil.setDate(graceUntil.getDate() + 30);
+  graceUntil.setUTCDate(graceUntil.getUTCDate() + 30); // UTC: exactly 30×24 h whatever the server zone (DST-safe)
   const graceDate = graceUntil.toISOString().slice(0, 10);
 
   await db.run(
