@@ -25,6 +25,7 @@ import { getDb } from '../db/index.js';
 import { haversineKm } from '../services/geolink.js';
 import { resolveLang, msg } from '../i18n/index.js';
 import { searchDirectory, pageOf, formatLawyer, formatBailAgent } from '../services/providerDirectory.js';
+import { directoryRows } from '../services/directoryCache.js';
 
 const router = Router();
 const searchLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Provider search limit reached.' });
@@ -72,7 +73,7 @@ router.get('/lawyers', optionalAuth, searchLimiter, async (req, res) => {
   try {
     const o = searchOptions(req);
     const db = await getDb();
-    const rows = await db.all(`SELECT ${LAWYER_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1`);
+    const rows = await directoryRows(db, `SELECT ${LAWYER_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1`);
     const found = searchDirectory(rows, {
       ...o,
       filters: {
@@ -119,7 +120,7 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
   try {
     const o = searchOptions(req);
     const db = await getDb();
-    let rows = await db.all(`SELECT ${BAIL_COLS} FROM bail_agents WHERE COALESCE(active, 1) = 1`);
+    let rows = await directoryRows(db, `SELECT ${BAIL_COLS} FROM bail_agents WHERE COALESCE(active, 1) = 1`);
     if (yes(req.query.paymentPlans)) rows = rows.filter(r => Number(r.payment_plans) === 1);
     const found = searchDirectory(rows, { ...o, minResults: 20 });
     if (yes(req.query.open24)) {

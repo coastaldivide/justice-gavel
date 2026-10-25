@@ -303,33 +303,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           </Text>
         </TouchableOpacity>
 
-          {/* Plans card for people without a paid plan. Price and features come from
-              GET /billing/tiers (the list the server charges from); nothing is hard-coded. */}
-          {!isPro && cheapest && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityHint={t('cp_double_tap')}
-              testID="home-plans-card"
-              onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-              style={{
-                backgroundColor: colors.bgCard,
-                borderRadius: 16, padding: 16,
-                borderWidth: 1, borderColor: colors.border,
-                marginBottom: 12,
-              }}
-              accessibilityLabel={t('home_plans_a11y', { price: cheapest.price })}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>
-                {t('home_plans_title')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textSecond, marginBottom: 8 }}>
-                {cheapest.features.map(featureLabel).join(' · ')}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textBrand, fontWeight: '600' }}>
-                {t('home_plans_from', { price: cheapest.price })}
-              </Text>
-            </TouchableOpacity>
-          )}
-
         {/* Emergency banner -- prominent, always first */}
         <TouchableOpacity
           accessibilityRole="button"
@@ -406,6 +379,34 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownArrow}>›</Text>
           </TouchableOpacity>
         )}
+
+          {/* Plans card for people without a paid plan (below the emergency cards, so
+              an upsell never comes before help, and its late load can't push them down). Price and features come from
+              GET /billing/tiers (the list the server charges from); nothing is hard-coded. */}
+          {!isPro && cheapest && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityHint={t('cp_double_tap')}
+              testID="home-plans-card"
+              onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
+              style={{
+                backgroundColor: colors.bgCard,
+                borderRadius: 16, padding: 16,
+                borderWidth: 1, borderColor: colors.border,
+                marginBottom: 12,
+              }}
+              accessibilityLabel={t('home_plans_a11y', { price: cheapest.price })}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>
+                {t('home_plans_title')}
+              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textSecond, marginBottom: 8 }}>
+                {cheapest.features.map(featureLabel).join(' · ')}
+              </Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textBrand, fontWeight: '600' }}>
+                {t('home_plans_from', { price: cheapest.price })}
+              </Text>
+            </TouchableOpacity>
+          )}
 
         {/* Legal Tip of the Day */}
         {!!legalTip && (

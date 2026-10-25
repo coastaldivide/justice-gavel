@@ -16,6 +16,7 @@ import { searchDirectory, formatLawyer, formatBailAgent } from '../../services/p
 import { LAWYER_COLS, BAIL_COLS } from '../providers.js';
 import { toE164 }         from '../../services/sms.js';
 import { resolveLang, msg } from '../../i18n/index.js';
+import { directoryRows } from '../../services/directoryCache.js';
 
 const router = Router();
 
@@ -45,8 +46,8 @@ async function pickFamilyContacts(db, { lat, lng, state }) {
   const st = /^[A-Za-z]{2}$/.test(String(state || '')) ? String(state).toUpperCase() : '';
   const opts = near ? { lat: vLat, lng: vLng, minResults: 10 } : st ? { state: st } : null;
   if (!opts) return { attorneys: [], bail_agents: [] };
-  const lawyers = await db.all(`SELECT ${LAWYER_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1 AND l.phone IS NOT NULL AND l.phone <> ''`);
-  const agents = await db.all(`SELECT ${BAIL_COLS} FROM bail_agents WHERE COALESCE(active, 1) = 1 AND phone IS NOT NULL AND phone <> ''`);
+  const lawyers = await directoryRows(db, `SELECT ${LAWYER_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1 AND l.phone IS NOT NULL AND l.phone <> ''`);
+  const agents = await directoryRows(db, `SELECT ${BAIL_COLS} FROM bail_agents WHERE COALESCE(active, 1) = 1 AND phone IS NOT NULL AND phone <> ''`);
   const lw = searchDirectory(lawyers, opts).rows.slice(0, FC_LAWYERS);
   const ag = searchDirectory(agents, opts).rows.slice(0, FC_AGENTS);
   return { attorneys: lw.map(l => formatLawyer(l, Number.isFinite(l._dist) ? l._dist : null)), bail_agents: ag.map(a => formatBailAgent(a, Number.isFinite(a._dist) ? a._dist : null)) };

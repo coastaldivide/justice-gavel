@@ -82,6 +82,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   useEffect(() => () => { mounted.current = false; }, []);
 
   const [where, setWhere] = useState<Where | null>(null);
+  const [resolving, setResolving] = useState(true); // working out GPS / saved state on first open
   const [cityInput, setCityInput] = useState('');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [result, setResult] = useState<HelpResult | null>(null);
@@ -138,12 +139,13 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
         if (c) w = { lat: c.lat, lng: c.lng };
       }
       if (!w) {
-        const st = await getUserState();
+        const st = await getUserState().catch(() => null);
         if (st?.code) w = { state: st.code };
       }
       if (!mounted.current) return;
+      setResolving(false);
       if (w) { setWhere(w); search(w, EMPTY_FILTERS); }
-    })();
+    })().catch(() => { if (mounted.current) setResolving(false); });
   }, [search]);
 
   // Language switched: the server notes come back in the new language.
@@ -312,10 +314,16 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           ))}
         </ScrollView>
 
-        {!where && phase === 'idle' && (
+        {!where && !resolving && phase === 'idle' && (
           <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">{t('hn_need_location')}</Text>
         )}
-        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 24 }} color={colors.textBrand} accessibilityLabel={t('bail_searching')} />}
+        {/* Reserve about the height of the first results while they load, so the
+            "More help" footer doesn't jump down when they arrive (layout shift). */}
+        {(phase === 'loading' || (phase === 'idle' && (resolving || !!where))) && (
+          <View style={styles.loadingSlot}>
+            <ActivityIndicator style={{ marginVertical: 24 }} color={colors.textBrand} accessibilityLabel={t('bail_searching')} />
+          </View>
+        )}
         {phase === 'error' && (
           <View style={styles.errorBox} testID="help-error">
             <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
@@ -520,6 +528,7 @@ const makeStyles = (c: any) => StyleSheet.create({
   lookupText: { color: c.textPrimary, fontSize: 14, fontWeight: '600' },
   calcBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 8 },
   calcBtnText: { color: c.textPrimary, fontSize: 15, fontWeight: '800' },
+  loadingSlot: { minHeight: 560 },
   disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 16, fontStyle: 'italic' },
   moreRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   moreBtn: { flex: 1, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48, paddingHorizontal: 6 },

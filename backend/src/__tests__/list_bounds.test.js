@@ -63,7 +63,8 @@ function scan() {
   const hits = [];
   for (const f of files) {
     const src = fs.readFileSync(f, 'utf8');
-    const re = /\.all\(\s*([`'"])([\s\S]*?)\1/g;
+    // db.all(...) and the cached directoryRows(db, ...) (services/directoryCache.js)
+    const re = /(?:\.all|directoryRows)\(\s*(?:\w+,\s*)?([`'"])([\s\S]*?)\1/g;
     let m;
     while ((m = re.exec(src))) {
       const sql = m[2].replace(/\s+/g, ' ').trim();

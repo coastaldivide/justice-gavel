@@ -29,6 +29,7 @@ import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
+import { directoryRows } from '../services/directoryCache.js';
 
 
 // ── Shared column list for providers DB — keeps projections consistent ──────
@@ -70,7 +71,7 @@ function scoreLawyer(l, { language, userState }) {
 }
 
 async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, proBonoOnly, user_state = null }) {
-  const rows = await db.all(`SELECT ${LAWYERS_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1`);
+  const rows = await directoryRows(db, `SELECT ${LAWYERS_COLS} FROM lawyers l WHERE COALESCE(l.active, 1) = 1`);
   const found = searchDirectory(rows, {
     lat, lng, q: Number.isFinite(lat) && Number.isFinite(lng) ? '' : city,
     minResults: 6, filters: { caseType, language, proBonoOnly },

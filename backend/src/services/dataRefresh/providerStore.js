@@ -34,6 +34,7 @@ import {
   FIELD_RULES, cleanText, normalizePhone, normalizeUrl, normalizeState, nameKey, phoneKey,
   sourceKey, valueText, normalizeCity,
 } from './normalize.js';
+import { invalidateDirectory } from '../directoryCache.js';
 
 const COMMON_PROPOSABLE = ['phone', 'email', 'address', 'website', 'hours', 'rating', 'reviews', 'lat', 'lng'];
 
@@ -330,6 +331,7 @@ export function createProviderWriter(db, table, { runId = null, dryRun = false, 
         }
       }
     });
+    invalidateDirectory();
     // only rows that are committed join the index
     for (const out of results) if (out.result === 'inserted' && out.row) idx.add(out.row);
     return results;

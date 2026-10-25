@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons'; // one icon set only: the package root bundles every set's glyph map
 import { themeColors, useTheme } from '../constants/theme';
 
 export type IconName = keyof typeof Ionicons.glyphMap;

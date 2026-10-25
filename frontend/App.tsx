@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons'; // one icon set only: the package root bundles every set's glyph map
 import 'react-native-gesture-handler';
 import OfflineBanner from './src/components/OfflineBanner';
 /**

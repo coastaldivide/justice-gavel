@@ -16,6 +16,7 @@
  */
 import { FIELD_RULES, castForColumn, valueText } from './normalize.js';
 import { isProposableField, PROVIDER_TABLES } from './providerStore.js';
+import { invalidateDirectory } from '../directoryCache.js';
 
 export const PROPOSAL_STATUSES = ['pending', 'applied', 'rejected', 'superseded'];
 export const MAX_BULK = 500;
@@ -85,7 +86,7 @@ async function audit(tx, userId, action, p, details) {
 export async function applyProposal(db, id, { userId, note = null, force = false } = {}) {
   const pid = parseInt(id, 10);
   if (!Number.isFinite(pid)) throw new ProposalError(400, 'bad_id', 'proposal id must be an integer');
-  return await db.transaction(async (tx) => {
+  const out = await db.transaction(async (tx) => {
     const p = await tx.get('SELECT * FROM provider_update_proposals WHERE id = ? FOR UPDATE', [pid]);
     if (!p) throw new ProposalError(404, 'not_found', 'Proposal not found');
     if (p.status !== 'pending') throw new ProposalError(409, 'not_pending', `Proposal is ${p.status}`);
@@ -117,6 +118,8 @@ export async function applyProposal(db, id, { userId, note = null, force = false
       { old_value: current, new_value: p.new_value, source: p.source, forced: !!force, note: note || undefined });
     return { id: pid, status: 'applied', table, record_id: Number(p.record_id), field, old_value: current, new_value: p.new_value };
   });
+  invalidateDirectory();
+  return out;
 }
 
 export async function rejectProposal(db, id, { userId, note = null } = {}) {
