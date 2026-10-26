@@ -348,6 +348,7 @@ export const ALL_ENV_VARS = {
   REDIS_URL:                process.env.REDIS_URL                  || '',
   REPORT_DIR:               process.env.REPORT_DIR                 || '/tmp/reports',
   RATE_LIMIT_PER_MIN:       process.env.RATE_LIMIT_PER_MIN         || '200', // global per-IP limit (app.js)
+  DIRECTORY_CACHE_TTL_MS:   process.env.DIRECTORY_CACHE_TTL_MS     || '', // lawyer/bail directory cache, ms (services/directoryCache.js; default 60000, 0 = off)
   CORS_ORIGIN:              process.env.CORS_ORIGIN                || '',
   EXTRA_ORIGINS:            process.env.EXTRA_ORIGINS              || '',
   FRONTEND_URL:             process.env.FRONTEND_URL               || '',

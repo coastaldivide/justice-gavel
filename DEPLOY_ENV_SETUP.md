@@ -160,6 +160,7 @@ JWT_REFRESH_EXPIRES_IN=60d               refresh-token lifetime (single-use, rot
 AUTH_RATE_LIMIT=10                       logins per 15 min per IP
 REGISTER_RATE_LIMIT=5                    registrations per hour per IP
 RATE_LIMIT_PER_MIN=200                   global per-IP request limit
+DIRECTORY_CACHE_TTL_MS=60000            lawyer / bail-agent directory cache in ms (0 = off; default 60000)
 ```
 
 ## Attachments
