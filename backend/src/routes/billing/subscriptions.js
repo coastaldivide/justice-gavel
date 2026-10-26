@@ -191,17 +191,19 @@ router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
 });
 
 // ── Refunds ───────────────────────────────────────────────────────────────────
-// Policy (the same text the app shows, billing.refund.policy):
-//   • no charge yet (still in the free trial): nothing to refund — cancel instead;
-//   • within 7 days of the latest charge, or a billing error: full refund, automatic;
-//   • later: the request goes to support for review.
-// Refunding cancels the plan at once.
-const REFUND_REASONS = ['billing_error', 'unsatisfied', 'accidental', 'duplicate', 'other'];
-const AUTO_REFUND_DAYS = 7;
+// Policy (owner decision, Oct 26 2026): ALL SALES ARE FINAL. No refunds for change of mind,
+// dissatisfaction, non-use or partial periods; cancelling stops the next renewal only.
+// The ONLY refunds are charges that should never have happened — a billing error or a
+// duplicate charge — which card networks reverse anyway through chargebacks (plus a fee).
+// Those are refunded automatically and cancel the plan. Anything else: 403 no_refunds.
+const REFUND_REASONS = ['billing_error', 'duplicate'];
 
 router.post('/refund', billingLimiter, authRequired, async (req, res) => {
   const lang = resolveLang(req);
   const reason = req.body?.reason;
+  if (['unsatisfied', 'accidental', 'other'].includes(reason)) {
+    return res.status(403).json({ error: msg(lang, 'billing.err.no_refunds'), code: 'no_refunds' });
+  }
   if (!REFUND_REASONS.includes(reason)) return res.status(400).json({ error: msg(lang, 'billing.err.refund_reason'), code: 'bad_reason' });
   const info = typeof req.body?.additional_info === 'string' ? req.body.additional_info.trim().slice(0, 1000) || null : null;
   try {
@@ -217,7 +219,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
     }
     const paidAt = new Date(((inv.status_transitions?.paid_at || inv.created) || 0) * 1000);
     const days = Math.max(0, (Date.now() - paidAt.getTime()) / 86_400_000);
-    const auto = days <= AUTO_REFUND_DAYS || reason === 'billing_error';
+    const auto = true;   // billing error / duplicate only (see policy above)
     const reqRow = await db.get(
       `INSERT INTO refund_requests (user_id, subscription_id, stripe_sub_id, reason, additional_info, days_since_charge, auto_approve, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW()) RETURNING id`,

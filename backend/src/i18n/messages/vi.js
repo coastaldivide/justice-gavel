@@ -339,7 +339,7 @@ export default {
   "consult.refund.none": "Bạn chưa bị trừ tiền nên không có gì để hoàn lại.",
   "consult.refund.full": "Đã hoàn lại toàn bộ {fee}.",
   "consult.refund.manual": "Khoản hoàn tiền của bạn đang được đội ngũ xem xét.",
-  "consult.refund.too_late": "Hủy trước giờ bắt đầu chưa đến {hours} giờ nên phí không được hoàn lại.",
+  "consult.refund.too_late": "Lịch hẹn đã bị hủy. Phí nền tảng không được hoàn lại.",
   "consult.cancelled": "Đã hủy lịch hẹn.",
   "consult.err.bad_contact": "Hãy nhập số điện thoại (kèm mã vùng) hoặc địa chỉ e-mail.",
   "consult.push.callback_title": "{name} nhờ bạn gọi lại",
@@ -765,7 +765,7 @@ export default {
   "email.booking.subject": "Đã xác nhận buổi tư vấn — {lawyer}, {when}",
   "email.booking.title": "Buổi tư vấn của bạn đã được xác nhận",
   "email.booking.body": "Buổi tư vấn {minutes} phút của bạn với {lawyer} đã được đặt.",
-  "email.booking.cancel": "Cần hủy? Mở lịch hẹn trong ứng dụng Justice Gavel. Phí được hoàn lại toàn bộ nếu hủy trước giờ bắt đầu ít nhất {hours} giờ.",
+  "email.booking.cancel": "Cần hủy? Mở lịch hẹn trong ứng dụng Justice Gavel. Phí nền tảng không được hoàn lại.",
   "email.booking.notice": "Thông báo pháp lý: đây là buổi tư vấn chung. Buổi tư vấn này không tạo ra quan hệ luật sư – thân chủ.",
   "email.atty.subject": "Có lịch tư vấn mới — {client}, {when}",
   "email.atty.title": "Có lịch tư vấn mới",
@@ -821,4 +821,5 @@ export default {
   "reclaw.generic.all": "Ở {state}, mọi người trong cuộc trò chuyện riêng tư phải đồng ý trước khi ghi âm ({law}). Cảnh sát làm nhiệm vụ nơi công cộng nhìn chung không có quyền riêng tư về lời nói của họ, nên ghi hình công khai họ được xét khác — nhưng ghi âm lén cuộc trò chuyện riêng tư là phạm tội ở đây.",
   "reclaw.generic.one": "Ở {state}, bạn có thể ghi âm cuộc trò chuyện mà bạn tham gia mà không cần báo cho người khác ({law}). Ghi hình công khai cảnh sát làm nhiệm vụ nơi công cộng được bảo vệ ở hầu hết cả nước; đừng cản trở hoặc lại gần hơn mức cảnh sát cho phép.",
   "reclaw.generic.mixed": "{state} có quy định hỗn hợp: một số trường hợp ghi âm (ví dụ cuộc gọi điện thoại, hoặc nói chuyện trực tiếp) cần sự đồng ý của tất cả mọi người, trường hợp khác chỉ cần bạn đồng ý ({law}). Để an toàn, hãy báo cho mọi người biết bạn đang ghi âm. Ghi hình công khai cảnh sát làm nhiệm vụ nơi công cộng được xét khác với cuộc trò chuyện riêng tư.",
+  "billing.err.no_refunds": "Mọi giao dịch đều là cuối cùng. Chỉ hoàn tiền khi có lỗi thanh toán hoặc bị tính phí trùng. Bạn có thể hủy để dừng lần gia hạn kế tiếp.",
 };

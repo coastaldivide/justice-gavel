@@ -131,7 +131,7 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     await linkLawyer();
     const slots = await ctx.request().get(`/api/consultations/slots/${linked.id}`).set(user.headers);
     expect(slots.status).toBe(200);
-    expect(slots.body).toMatchObject({ bookable: true, time_zone: 'America/Chicago', refund_cutoff_hours: 2 });
+    expect(slots.body).toMatchObject({ bookable: true, time_zone: 'America/Chicago', refund_cutoff_hours: 0 });   // 0 = platform fee non-refundable once confirmed
     expect(slots.body.prices.map(p => p.fee_display)).toEqual(['$10.00', '$15.00', '$25.00']);
     expect(slots.body.slots.length).toBeGreaterThan(0);
     expect(slots.body.slots[0]).toEqual(expect.objectContaining({

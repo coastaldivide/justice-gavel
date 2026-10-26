@@ -288,11 +288,12 @@ describeIntegration('section C — directory, reviews, booking, match (real Post
       const nine = ny.slots[0].times.find(t => t.time === '9:00 AM');
       expect(new Date(nine.starts_at).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' })).toBe('8:00 AM');
 
-      // cancel well before the start → full refund of the platform fee
+      // cancel well before the start → the platform fee is non-refundable (owner decision, Oct 2026)
+      const refundsBefore = fake.refunds.length;
       const cancel = await ctx.request().post(`/api/consultations/${id}/cancel`).set(alice.headers);
       expect(cancel.status).toBe(200);
-      expect(cancel.body.refund).toMatch(/\$25\.00/);
-      expect(fake.refunds.at(-1)).toMatchObject({ payment_intent: booked.body.payment_intent_id });
+      expect(cancel.body.refund).toMatch(/non-refundable/);
+      expect(fake.refunds.length).toBe(refundsBefore);
       expect((await ctx.request().post(`/api/consultations/${id}/cancel`).set(alice.headers)).status).toBe(409);
     } finally {
       delete process.env.STRIPE_SECRET_KEY;

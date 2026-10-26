@@ -341,7 +341,7 @@ export default {
   "consult.refund.none": "Nothing was charged, so there is nothing to refund.",
   "consult.refund.full": "A full refund of {fee} has been issued.",
   "consult.refund.manual": "Your refund is being reviewed by our team.",
-  "consult.refund.too_late": "Cancelled less than {hours} hours before the start, so the fee is not refunded.",
+  "consult.refund.too_late": "The booking was cancelled. The platform fee is non-refundable.",
   "consult.cancelled": "Booking cancelled.",
   "consult.err.bad_contact": "Enter a phone number (with area code) or an e-mail address.",
   "consult.push.callback_title": "{name} asked you to call back",
@@ -767,7 +767,7 @@ export default {
   "email.booking.subject": "Consultation confirmed — {lawyer}, {when}",
   "email.booking.title": "Your consultation is confirmed",
   "email.booking.body": "Your {minutes}-minute consultation with {lawyer} is booked.",
-  "email.booking.cancel": "Need to cancel? Open the booking in the Justice Gavel app. The fee is refunded in full until {hours} hours before the start.",
+  "email.booking.cancel": "Need to cancel? Open the booking in the Justice Gavel app. The platform fee is non-refundable.",
   "email.booking.notice": "Legal notice: this is a general consultation. It does not create an attorney-client relationship.",
   "email.atty.subject": "New consultation booked — {client}, {when}",
   "email.atty.title": "New consultation booked",
@@ -838,4 +838,5 @@ export default {
   "reclaw.generic.all": "In {state}, everyone in a private conversation must agree before it is recorded ({law}). Police doing their job in public generally have no privacy in what they say, so openly recording them is treated differently — but secret recording of a private talk is a crime here.",
   "reclaw.generic.one": "In {state}, you may record a conversation you are part of without telling the others ({law}). Openly recording police doing their job in public is protected in most of the country; do not interfere or get closer than an officer allows.",
   "reclaw.generic.mixed": "{state} has mixed rules: some recordings (for example phone calls, or in-person talks) need everyone's consent and others need only yours ({law}). Tell everyone you are recording to be safe. Openly recording police doing their job in public is treated differently from a private conversation.",
+  "billing.err.no_refunds": "All sales are final. Refunds are only issued for a billing error or a duplicate charge. You can cancel to stop the next renewal.",
 };

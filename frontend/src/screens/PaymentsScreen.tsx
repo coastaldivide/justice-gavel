@@ -25,7 +25,8 @@ type Purchase = { kind: 'bail_lead' | 'case_lead'; id: number; amount_cents: num
 type RefundReq = { id: number; reason: string; status: string; created_at: string };
 type Overview = { subscriptions: SubscriptionView[]; bondsman_subscriptions: BondsSub[]; purchases: Purchase[]; refund_requests: RefundReq[]; payments_live: boolean };
 
-const REASONS = ['billing_error', 'duplicate', 'accidental', 'unsatisfied', 'other'] as const;
+// All sales final (Oct 2026): only charges that should never have happened can be refunded.
+const REASONS = ['billing_error', 'duplicate'] as const;
 const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { year: 'numeric', month: 'short', day: 'numeric' }) : '');
 
 function PaymentsScreen({ navigation }: ScreenProps): React.JSX.Element {

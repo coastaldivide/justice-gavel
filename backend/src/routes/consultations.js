@@ -285,7 +285,9 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
     if (booking.status === 'confirmed' && booking.stripe_pi_id && stripeConfigured()) {
       const startMs = booking.starts_at ? new Date(booking.starts_at).getTime() : NaN;
       const hoursUntil = (startMs - Date.now()) / 3_600_000;
-      if (Number.isFinite(hoursUntil) && hoursUntil > REFUND_CUTOFF_HOURS) {
+      // Owner decision (Oct 26 2026): the platform fee is non-refundable once the booking is
+      // confirmed, whenever the person cancels. REFUND_CUTOFF_HOURS = 0 disables the refund branch.
+      if (REFUND_CUTOFF_HOURS > 0 && Number.isFinite(hoursUntil) && hoursUntil > REFUND_CUTOFF_HOURS) {
         try {
           const refund = await stripe().refunds.create({
             payment_intent: booking.stripe_pi_id, reason: 'requested_by_customer',

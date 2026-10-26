@@ -36,10 +36,11 @@ sell through Apple In-App Purchase or Google Play Billing, and never sees your f
 - Consumer plans renew every month at the price shown until you cancel.
 - Cancel any time online in Settings → Billing. Cancelling stops the next renewal; you keep access
   until the end of the period you paid for. Cancelling during a free trial means you are not charged.
-- Refunds: within 7 days of a charge, or for a billing error, a refund requested in
-  Settings → Billing is issued automatically. Other requests are reviewed and answered by e-mail.
-- Consultation platform fees: cancel more than the cut-off shown at booking (REFUND_CUTOFF_HOURS in
-  the code) before the start for a full refund of the platform fee; the attorney's own fees are separate.
+- **All sales are final.** Payments — subscriptions, passes and consultation platform fees — are not
+  refunded for change of mind, dissatisfaction, non-use or unused time. Cancelling stops the next renewal.
+- The only refunds are for a billing error or a duplicate charge (Settings → Billing).
+- Consultation platform fees are non-refundable once the booking is confirmed; the attorney's own fees
+  are separate.
 
 ## Acceptable Use
 You may not use Justice Gavel to:

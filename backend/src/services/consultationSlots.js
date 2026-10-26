@@ -17,7 +17,7 @@ import { stateTimeZone, DEFAULT_TIME_ZONE, zonedDateTimeToUtc, todayInZone, addD
 /** Platform fee (cents) per duration (minutes) — the only prices the app shows or charges. */
 export const FEE_BY_DURATION = Object.freeze({ 15: 1000, 30: 1500, 60: 2500 });
 /** Full refund when cancelled more than this many hours before the start. */
-export const REFUND_CUTOFF_HOURS = 2;
+export const REFUND_CUTOFF_HOURS = 0;   // 0 = platform fee non-refundable once confirmed (owner decision, Oct 26 2026)
 /** A booking waiting for its payment holds the slot this long. */
 export const PENDING_HOLD_MINUTES = 30;
 /** Earliest bookable start: this long from now. */

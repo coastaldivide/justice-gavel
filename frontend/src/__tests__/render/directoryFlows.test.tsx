@@ -101,7 +101,7 @@ describe('BookingScreen', () => {
     fireEvent.press(chips[0]);
     fireEvent.press(screen.getByTestId('booking-confirm-button'));
     expect(await screen.findByTestId('booking-refund-terms')).toBeTruthy();
-    expect(screen.getByText(/more than 2 hours/)).toBeTruthy();  // not the old "24h" promise
+    expect(screen.getByText(/non-refundable once the booking is confirmed/)).toBeTruthy();  // not the old "24h" promise
     fireEvent.press(screen.getByTestId('booking-confirm'));
     expect(await screen.findByText(/Payments are not available yet, so consultations cannot be booked/)).toBeTruthy();
     expect(calls.find(c => c.method === 'post' && c.url === '/consultations/book')?.data)

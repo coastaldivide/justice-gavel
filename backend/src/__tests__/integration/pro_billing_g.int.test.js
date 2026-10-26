@@ -328,24 +328,30 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect((await ctx.db.get('SELECT status FROM subscriptions WHERE stripe_sub_id = ?', [st2.body.subscription_id])).status).toBe('incomplete');
   });
 
-  test('G7 refunds: nothing charged yet → 409; a charge within 7 days is refunded and the plan ends', async () => {
+  test('G7 refunds (all sales final, Oct 2026): change of mind → 403 no_refunds; nothing charged → 409; billing error → refunded and the plan ends', async () => {
     if (!ctx.app) return;
     const user = await ctx.register({ displayName: 'G refund' });
     const start = await req('post', '/api/billing/subscribe', user).send({ tier: 'legal_radar' });
     paySub(start.body.subscription_id, 0);
     await req('post', '/api/billing/subscription/confirm', user).send({ subscription_id: start.body.subscription_id });
     expect((await req('post', '/api/billing/refund', user).send({ reason: 'nope' })).status).toBe(400);
-    const none = await req('post', '/api/billing/refund', user).send({ reason: 'unsatisfied' });
+    for (const reason of ['unsatisfied', 'accidental', 'other']) {
+      const r = await req('post', '/api/billing/refund', user).send({ reason });
+      expect(r.status).toBe(403);
+      expect(r.body.code).toBe('no_refunds');
+    }
+    const none = await req('post', '/api/billing/refund', user).send({ reason: 'billing_error' });
     expect(none.status).toBe(409);
     const s = fake.subs.get(start.body.subscription_id);
     fake.pis.set('pi_g_inv', { id: 'pi_g_inv', amount: 1999, status: 'succeeded', metadata: {} });
     s.paidInvoice = { id: 'in_r', status: 'paid', amount_paid: 1999, payment_intent: 'pi_g_inv', status_transitions: { paid_at: now() - 86400 } };
-    const ok = await req('post', '/api/billing/refund', user).send({ reason: 'unsatisfied' });
+    expect((await req('post', '/api/billing/refund', user).send({ reason: 'unsatisfied' })).status).toBe(403);   // still final
+    const ok = await req('post', '/api/billing/refund', user).send({ reason: 'billing_error' });
     expect(ok.status).toBe(200);
     expect(ok.body).toMatchObject({ status: 'refunded', amount_cents: 1999 });
     expect(fake.refunds.at(-1).payment_intent).toBe('pi_g_inv');
     expect((await ctx.db.get('SELECT status FROM subscriptions WHERE stripe_sub_id = ?', [s.id])).status).toBe('refunded');
-    expect((await req('post', '/api/billing/refund', user).send({ reason: 'other' })).status).toBe(404);
+    expect((await req('post', '/api/billing/refund', user).send({ reason: 'duplicate' })).status).toBe(404);
   });
 
   test('G8 bail leads: $100 flat, full record only after a verified payment, never credited twice', async () => {

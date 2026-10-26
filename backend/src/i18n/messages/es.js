@@ -339,7 +339,7 @@ export default {
   "consult.refund.none": "No se cobró nada, así que no hay nada que reembolsar.",
   "consult.refund.full": "Se emitió un reembolso completo de {fee}.",
   "consult.refund.manual": "Nuestro equipo está revisando su reembolso.",
-  "consult.refund.too_late": "Se canceló menos de {hours} horas antes del inicio, así que la tarifa no se reembolsa.",
+  "consult.refund.too_late": "La cita se canceló. La tarifa de la plataforma no es reembolsable.",
   "consult.cancelled": "Cita cancelada.",
   "consult.err.bad_contact": "Escriba un número de teléfono (con código de área) o un correo electrónico.",
   "consult.push.callback_title": "{name} le pidió que le devuelva la llamada",
@@ -765,7 +765,7 @@ export default {
   "email.booking.subject": "Consulta confirmada — {lawyer}, {when}",
   "email.booking.title": "Su consulta está confirmada",
   "email.booking.body": "Su consulta de {minutes} minutos con {lawyer} está reservada.",
-  "email.booking.cancel": "¿Necesita cancelar? Abra la reserva en la app Justice Gavel. La tarifa se reembolsa por completo hasta {hours} horas antes del inicio.",
+  "email.booking.cancel": "¿Necesita cancelar? Abra la cita en la aplicación Justice Gavel. La tarifa de la plataforma no es reembolsable.",
   "email.booking.notice": "Aviso legal: esta es una consulta general. No crea una relación abogado-cliente.",
   "email.atty.subject": "Nueva consulta reservada — {client}, {when}",
   "email.atty.title": "Nueva consulta reservada",
@@ -821,4 +821,5 @@ export default {
   "reclaw.generic.all": "En {state}, todas las personas de una conversación privada deben aceptar antes de que se grabe ({law}). La policía que trabaja en público por lo general no tiene privacidad en lo que dice, así que grabarla abiertamente se trata de otra forma; pero grabar en secreto una conversación privada es un delito aquí.",
   "reclaw.generic.one": "En {state}, puede grabar una conversación en la que usted participa sin avisar a los demás ({law}). Grabar abiertamente a la policía mientras trabaja en público está protegido en la mayor parte del país; no interfiera ni se acerque más de lo que permita el agente.",
   "reclaw.generic.mixed": "{state} tiene normas mixtas: algunas grabaciones (por ejemplo, llamadas telefónicas o conversaciones en persona) requieren el consentimiento de todos y otras solo el suyo ({law}). Para estar seguro, avise a todos que está grabando. Grabar abiertamente a la policía mientras trabaja en público se trata de otra forma que una conversación privada.",
+  "billing.err.no_refunds": "Todas las ventas son definitivas. Solo se reembolsan errores de facturación o cobros duplicados. Puede cancelar para detener la próxima renovación.",
 };
