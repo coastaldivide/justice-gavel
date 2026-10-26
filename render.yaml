@@ -93,9 +93,33 @@ services:
         sync: false
       - key: ONCALL_EMAIL
         sync: false
-      # Stripe is not set up yet: payments answer 503 payments_unavailable.
-      # When it is, add STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / the price
-      # ids in the dashboard (DEPLOY_ENV_SETUP.md) — no code change needed.
+      # ── Payments, texts, push (prompted once; each enables one feature) ──
+      # Stripe: LIVE keys (sk_live_…).
+      # Webhook endpoint: <service URL>/api/billing/webhook (events: checkout.session.completed,
+      # customer.subscription.*, invoice.paid, invoice.payment_succeeded, invoice.payment_failed,
+      # payment_intent.succeeded, charge.refunded). Price ids are optional: without them the
+      # exact amounts in plans.js are sent inline (run scripts/setup-stripe-products.js to create them).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Telnyx texts (court reminders, Bond Desk signing links and reminders). Messaging webhook:
+      # <service URL>/api/webhooks/telnyx (STOP/START replies + delivery status).
+      - key: TELNYX_API_KEY
+        sync: false
+      - key: TELNYX_FROM_NUMBER
+        sync: false
+      - key: TELNYX_MESSAGING_PROFILE_ID
+        sync: false
+      - key: TELNYX_PUBLIC_KEY
+        sync: false
+      # Browser push (web app). Generate once: npx web-push generate-vapid-keys
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_EMAIL
+        sync: false
     # ── Alternative to Supabase Storage: a persistent disk for attachments ──
     # Paid plans only; pins the service to ONE instance (no scaling) and turns
     # off zero-downtime deploys (each deploy stops the old instance first).
@@ -162,4 +186,31 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # ── Payments, texts, push (prompted once; each enables one feature) ──
+      # Stripe: TEST-mode keys only (sk_test_…) — scripts/check-env.js refuses a live key on staging.
+      # Webhook endpoint: <service URL>/api/billing/webhook (events: checkout.session.completed,
+      # customer.subscription.*, invoice.paid, invoice.payment_succeeded, invoice.payment_failed,
+      # payment_intent.succeeded, charge.refunded). Price ids are optional: without them the
+      # exact amounts in plans.js are sent inline (run scripts/setup-stripe-products.js to create them).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Telnyx texts (court reminders, Bond Desk signing links and reminders). Messaging webhook:
+      # <service URL>/api/webhooks/telnyx (STOP/START replies + delivery status).
+      - key: TELNYX_API_KEY
+        sync: false
+      - key: TELNYX_FROM_NUMBER
+        sync: false
+      - key: TELNYX_MESSAGING_PROFILE_ID
+        sync: false
+      - key: TELNYX_PUBLIC_KEY
+        sync: false
+      # Browser push (web app). Generate once: npx web-push generate-vapid-keys
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_EMAIL
         sync: false

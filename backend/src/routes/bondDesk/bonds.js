@@ -571,12 +571,15 @@ router.post('/powers/:id/return', handle(async (req, res, db) => {
 router.get('/texts', handle(async (req, res, db) => {
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(req.query.month || '')) ? req.query.month : new Date().toISOString().slice(0, 7);
   const rows = await db.all(
-    `SELECT sent_at, purpose, to_masked, bond_id, cents FROM bd_texts
-      WHERE agent_id = ? AND sent_at >= (?::date) AND sent_at < ((?::date) + INTERVAL '1 month') ORDER BY sent_at DESC LIMIT 2000`,
+    `SELECT t.sent_at, t.purpose, t.to_masked, t.bond_id, t.cents, d.status AS delivery_status, d.error_code
+       FROM bd_texts t LEFT JOIN sms_delivery d ON d.provider_id = t.provider_id
+      WHERE t.agent_id = ? AND t.sent_at >= (?::date) AND t.sent_at < ((?::date) + INTERVAL '1 month') ORDER BY t.sent_at DESC LIMIT 2000`,
     [req.agentId, `${month}-01`, `${month}-01`]);
   res.json({
     month, count: rows.length, cents: rows.reduce((s, r) => s + Number(r.cents), 0),
-    rows: rows.map((r) => ({ at: r.sent_at, purpose: r.purpose, to_masked: r.to_masked, bond_id: r.bond_id == null ? null : Number(r.bond_id) })),
+    rows: rows.map((r) => ({ at: r.sent_at, purpose: r.purpose, to_masked: r.to_masked, bond_id: r.bond_id == null ? null : Number(r.bond_id),
+      // null until the carrier reports back (delivered / delivery_failed / sending_failed / delivery_unconfirmed)
+      delivery_status: r.delivery_status || null, error_code: r.error_code || null })),
   });
 }));
 

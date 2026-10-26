@@ -33,7 +33,12 @@ All payments — on iPhone, Android and the web — are processed by Stripe. Jus
 sell through Apple In-App Purchase or Google Play Billing, and never sees your full card number.
 - Before you subscribe, the app shows the price, how often you will be charged, the length of any
   free trial and the date of the first charge.
-- Consumer plans renew every month at the price shown until you cancel.
+- Subscriptions (Legal Pro, attorney and bail-agent plans) renew at the end of each period — every
+  month, or every year for an annual plan — at the price shown until you cancel.
+- The Case Pass is a one-time purchase for 90 days ($29; $19 adds 90 days). It never renews and is
+  never charged again unless you buy it again.
+- Bail-agent plans: texts that Bond Desk sends for you (signing links, payment reminders) are 5¢ each,
+  added to your next plan invoice.
 - Cancel any time online in Settings → Billing. Cancelling stops the next renewal; you keep access
   until the end of the period you paid for. Cancelling during a free trial means you are not charged.
 - **All sales are final.** Payments — subscriptions, passes and consultation platform fees — are not
@@ -41,6 +46,15 @@ sell through Apple In-App Purchase or Google Play Billing, and never sees your f
 - The only refunds are for a billing error or a duplicate charge (Settings → Billing).
 - Consultation platform fees are non-refundable once the booking is confirmed; the attorney's own fees
   are separate.
+
+## Bond Desk (bail agents)
+- You are responsible for the forms you upload, the information you send to defendants and
+  indemnitors, and for keeping the records your state requires. Justice Gavel stores what you enter;
+  it does not review your forms or give legal advice about them.
+- Text a person only at a number they gave you for messages about their bond. Numbers that replied
+  STOP are never texted.
+- Signers sign by typing their name after agreeing to sign electronically; each signed copy carries a
+  certificate of how and when it was signed.
 
 ## Acceptable Use
 You may not use Justice Gavel to:

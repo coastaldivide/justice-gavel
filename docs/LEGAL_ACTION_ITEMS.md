@@ -1,4 +1,8 @@
 # Justice Gavel — Legal Action Items
+
+> **Oct 26, 2026:** the current, complete list of questions for counsel — with today's prices
+> (PI lead $250, bail-agent plans $99/$199/$349), Bond Desk e-signatures and texting — is
+> **docs/COUNSEL_REVIEW_PACKET.md**. Fee amounts below are from August and are out of date.
 ## What Aaron Must Do (cannot be automated)
 
 Generated from: JusticeGavel_v8756_Counsel_Reviews.md

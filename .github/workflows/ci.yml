@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # every pull request, whatever branch it targets (feature branches were never checked before)
   pull_request:
-    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -167,7 +167,9 @@ jobs:
         # These suites skip themselves in the in-memory jest run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
-        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/integration
+        # Two workers: the suites share one database, and four parallel suites hit jest's 5 s hook
+        # timeout on a 2-core runner (seen Oct 26 2026) — slower, never flaky.
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci --maxWorkers=2 src/__tests__/integration
 
       - name: Security regression suite on real Postgres (jest)
         # audit11 attacks replayed against the real app: attorney self-assignment
@@ -180,7 +182,7 @@ jobs:
         # flow still works. The PG-gated suites skip in the in-memory run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
-        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/security
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci --maxWorkers=2 src/__tests__/security
 
       - name: Data refresh suite on real Postgres (jest)
         # Scrapers / importers / scheduler write the main database through

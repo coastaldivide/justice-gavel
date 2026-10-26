@@ -417,7 +417,7 @@ describeIntegration('Bond Desk (real Postgres, fake Telnyx and Stripe)', () => {
     const month = (await bd('get', '/texts')).body;
     expect(month.count).toBeGreaterThanOrEqual(3);
     expect(month.cents).toBe(month.count * 5);
-  });
+  }, 30_000);   // fills, signs and merges real PDFs: ~3 s alone, longer under a loaded runner
 
   test('BD8 CSV reports neutralise formula cells', async () => {
     if (!ctx.app) return;

@@ -215,6 +215,26 @@ server.on('listening', () => {
   }, 5 * 60 * 1000);
   firstBill.unref();
   timers.push(firstBill);
+
+  // Hourly watchdog: one alert per failing or silent job (monitoring/jobHealth.js) and when
+  // many texts stop arriving (monitoring/smsHealth.js).
+  const jobWatch = () => Promise.all([import('./monitoring/jobHealth.js'), import('./monitoring/errorNotifier.js'), import('./db/index.js')])
+    .then(async ([jh, en, dbm]) => {
+      const db = await dbm.getDb();
+      for (const j of await jh.jobHealth(db)) {
+        if (j.status === 'failing' || j.status === 'stale') {
+          await en.notifyError(`Scheduled job ${j.status}: ${j.job}`, { code: `job_${j.status}_${j.job}`, ...j });
+        }
+      }
+      const sms = await (await import('./monitoring/smsHealth.js')).smsHealth(db);
+      if (sms.alarm) {
+        await en.notifyError(`Texts failing: ${sms.failed} of ${sms.total} in the last hour did not arrive`, { code: 'sms_delivery_failing', ...sms });
+      }
+    })
+    .catch(err => logger.error({ err: err.message }, '[jobs] watchdog run failed'));
+  const watch = setInterval(jobWatch, 60 * 60 * 1000);
+  watch.unref();
+  timers.push(watch);
 });
 
 server.on('error', (err) => {

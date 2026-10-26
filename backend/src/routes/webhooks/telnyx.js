@@ -9,6 +9,8 @@
  *       goes on sms_opt_outs (no more Bond Desk texts sent for bail agents, migration 32)
  *   message.received with START / UNSTOP → the number leaves sms_opt_outs; app reminders stay
  *     off until the person turns them on in the app, which records fresh consent (migration 31).
+ *   message.finalized → the text's final delivery status into sms_delivery (migration 33):
+ *     Bond Desk shows it per text; monitoring/smsHealth.js alerts when many texts fail.
  * Other events are acknowledged and ignored.
  *
  * Security: Telnyx signs each webhook with Ed25519 — headers telnyx-signature-ed25519
@@ -74,6 +76,18 @@ router.post('/', async (req, res) => {
         const db = await getDb();
         await db.run('DELETE FROM sms_opt_outs WHERE phone = ?', [from]);
       }
+    }
+    if (type === 'message.finalized' && p.id) {
+      // Final delivery status of a text we sent (one recipient per message).
+      const to = Array.isArray(p.to) ? p.to[0] : null;
+      const status = String(to?.status || p.status || 'unknown').slice(0, 40);
+      const code = Array.isArray(p.errors) && p.errors[0]?.code ? String(p.errors[0].code).slice(0, 20) : null;
+      const digits = String(to?.phone_number || '').replace(/\D/g, '');
+      const db = await getDb();
+      await db.run(`INSERT INTO sms_delivery (provider_id, status, error_code, to_masked) VALUES (?, ?, ?, ?)
+                    ON CONFLICT (provider_id) DO UPDATE SET status = EXCLUDED.status, error_code = EXCLUDED.error_code, finalized_at = NOW()`,
+        [String(p.id).slice(0, 80), status, code, digits.length >= 4 ? `•••-•••-${digits.slice(-4)}` : null]);
+      if (status !== 'delivered') logger.warn({ status, code }, '[telnyx] text not delivered');
     }
     return res.json({ ok: true });
   } catch (e) {

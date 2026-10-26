@@ -1,0 +1,132 @@
+name: Nightly database backup + restore drill
+
+# Off-platform copy of the production database, every night, proven restorable.
+#
+#   1. pg_dump the production database (backend/scripts/db-backup.sh: custom format,
+#      checksum, core tables present)
+#   2. restore drill: restore that dump into an empty Postgres 16 and compare row counts
+#      and the provider-directory md5 with production (backend/scripts/db-restore.sh)
+#   3. encrypt the dump (AES-256, gpg symmetric) and keep it as a workflow artifact for
+#      30 days; when BACKUP_S3_BUCKET is set also copy it to that S3-compatible bucket
+#      (AWS S3, Cloudflare R2, Backblaze B2 …) — a second provider
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   BACKUP_DATABASE_URL   production connection string, read-only role recommended
+#                         (Supabase: Session pooler URL, port 5432, ?sslmode=require)
+#   BACKUP_PASSPHRASE     long random passphrase — store it in your password manager;
+#                         without it the backups cannot be opened
+#   optional: BACKUP_S3_BUCKET (s3://bucket/path), BACKUP_S3_ENDPOINT (R2/B2 URL),
+#             BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY, BACKUP_S3_REGION
+# Without BACKUP_DATABASE_URL the job says so and stops without failing.
+#
+# Restore a nightly copy: download the artifact (or the S3 object), then
+#   gpg --batch --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" -o jg.dump -d jg-….dump.gpg
+#   TARGET_DATABASE_URL=postgres://…/empty_db backend/scripts/db-restore.sh jg.dump
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # 07:17 UTC = 02:17 / 03:17 US Eastern, quiet hours
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jg_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d jg_restore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+    steps:
+      - name: Configured?
+        id: cfg
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ]; then
+            echo "::notice::BACKUP_DATABASE_URL is not set — no backup taken. See the header of .github/workflows/backup.yml."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::BACKUP_PASSPHRASE is not set — refusing to keep an unencrypted backup."; exit 1
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.run == 'true'
+
+      - name: Postgres 16 client tools
+        if: steps.cfg.outputs.run == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+
+      - name: Back up production
+        if: steps.cfg.outputs.run == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: bash backend/scripts/db-backup.sh "$RUNNER_TEMP/backups"
+
+      - name: Restore drill (fresh Postgres 16, counts + provider md5 must match production)
+        if: steps.cfg.outputs.run == 'true'
+        env:
+          TARGET_DATABASE_URL: postgres://postgres:postgres@localhost:5432/jg_restore
+          SOURCE_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: bash backend/scripts/db-restore.sh "$(ls "$RUNNER_TEMP"/backups/jg-*.dump | head -1)"
+
+      - name: Encrypt
+        if: steps.cfg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/backups"
+          f=$(ls jg-*.dump | head -1)
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 -o "$f.gpg" "$f"
+          cp "$f.sha256" "$f.gpg.source-sha256"
+          shred -u "$f"
+          ls -la
+
+      - name: Keep 30 days (workflow artifact)
+        if: steps.cfg.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jg-db-backup-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/backups/*.gpg
+            ${{ runner.temp }}/backups/*.source-sha256
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Copy to the second provider (S3-compatible)
+        if: steps.cfg.outputs.run == 'true' && env.BACKUP_S3_BUCKET != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION || 'auto' }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+        run: |
+          set -euo pipefail
+          ep=(); [ -n "$BACKUP_S3_ENDPOINT" ] && ep=(--endpoint-url "$BACKUP_S3_ENDPOINT")
+          for f in "$RUNNER_TEMP"/backups/*.gpg "$RUNNER_TEMP"/backups/*.source-sha256; do
+            aws s3 cp "${ep[@]}" "$f" "${BACKUP_S3_BUCKET%/}/$(basename "$f")"
+          done

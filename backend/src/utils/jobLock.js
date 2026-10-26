@@ -69,6 +69,10 @@ export async function runOnce(job, runKey, fn, { db: dbArg } = {}) {
     return { ran: true, result };
   } catch (e) {
     await finishRun(db, job, runKey, 'failed', e?.message);
+    // Tell a person: a failed run is not retried in the same window.
+    import('../monitoring/errorNotifier.js')
+      .then((m) => m.notifyError(`Scheduled job failed: ${job}`, { code: `job_failed_${job}`, job, run_key: runKey, error: e?.message }))
+      .catch((err) => logger.warn({ job, err: err.message }, '[jobLock] could not send the failure alert'));
     throw e;
   }
 }

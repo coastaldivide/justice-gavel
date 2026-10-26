@@ -392,6 +392,19 @@ router.get('/diagnostics/client-ip', (req, res) => {
   res.json(clientIpReport(req));
 });
 
+// ── Diagnostics: scheduled jobs (monitoring/jobHealth.js) ────────────────────
+router.get('/diagnostics/jobs', async (req, res) => {
+  try {
+    const { jobHealth } = await import('../monitoring/jobHealth.js');
+    res.set('Cache-Control', 'no-store');
+    const jobs = await jobHealth(await getDb());
+    res.json({ ok: jobs.every((j) => j.status === 'ok' || j.status === 'not_expected'), jobs });
+  } catch (e) {
+    logger.error({ msg: '[admin/diagnostics/jobs]', error: e?.message });
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
 // ── Trigger refresh (in-process, main Postgres) ──────────────────────────────
 
 router.post('/refresh', async (req, res) => {

@@ -76,5 +76,9 @@ export async function billAgentTexts(db) {
       logger.error({ err: e?.message, batch: b.id }, '[bond-desk] text billing failed — retried next run');
     }
   }
+  if (failed) {
+    const { notifyError } = await import('../../monitoring/errorNotifier.js');
+    await notifyError(`Bond Desk text billing: ${failed} batch(es) not billed (retried tomorrow)`, { code: 'bd_text_billing_failed', failed });
+  }
   return { batches, billed, failed };
 }
