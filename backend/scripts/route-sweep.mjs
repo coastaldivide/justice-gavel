@@ -323,7 +323,8 @@ function junkBodies(fields) {
 // ── 6. Checks on one response ─────────────────────────────────────────────────
 const OK_503 = new Set(['payments_unavailable', 'ai_unavailable', 'storage_unavailable', 'email_unavailable', 'video_unavailable',
   'sms_unavailable', 'auth_unavailable', 'feature_unavailable', 'service_unavailable', 'search_unavailable', 'integration_unavailable',
-  'sso_unavailable', 'transcription_unavailable', 'unavailable', 'upload_busy', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable']);
+  'sso_unavailable', 'transcription_unavailable', 'unavailable', 'upload_busy', 'push_unavailable', 'queue_unavailable', 'not_configured', 'ai_busy', 'ai_timeout', 'scheduler_unavailable',
+  'telnyx_webhook_not_configured']);   // refuses every request until TELNYX_PUBLIC_KEY is set (never trusts an unsigned STOP)
 const LEAK = [/\n\s+at [\w$.<>]+ \(/, /node_modules\//, /\/src\/[\w/]+\.js:\d+/, /syntax error at or near/i, /column "[^"]+" (of relation|does not exist)/i,
   /relation "[^"]+" does not exist/i, /duplicate key value violates/i, /invalid input syntax for type/i, /violates (check|foreign key|not-null) constraint/i,
   /\bSequelize|\bSQLITE_|ECONNREFUSED/];
