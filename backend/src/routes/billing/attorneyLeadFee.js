@@ -43,3 +43,13 @@ export function attorneyLeadFeeCents(leadType, _severity) {
   return FEES_BY_TYPE[normalizeLeadType(leadType)] ?? PI_LEAD_FEE_CENTS;
 }
 
+
+/**
+ * Credits a lead of this type costs when paid from a prepaid pack (services/leadRules.js
+ * CREDIT_CENTS = $25 a credit): the same flat price, expressed in credits. Every flat fee
+ * above is a whole number of credits (lead_rules.test.js checks it).
+ */
+export const LEAD_CREDIT_CENTS = 2500;
+export function attorneyLeadCredits(leadType) {
+  return Math.ceil(attorneyLeadFeeCents(leadType) / LEAD_CREDIT_CENTS);
+}

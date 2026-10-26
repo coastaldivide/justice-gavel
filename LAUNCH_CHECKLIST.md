@@ -1,5 +1,5 @@
 # Justice Gavel — Pre-Launch Security Checklist
-*(claims verified against the code at v8.7.60)*
+*(claims verified against the code at v8.7.61)*
 
 ## Authentication ✅
 - [x] JWT access tokens: `JWT_EXPIRES_IN` default **30d** (the mobile app

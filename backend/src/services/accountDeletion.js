@@ -231,6 +231,7 @@ export const USER_REFS = {
   'bd_events.signer_id': 'retain',      // bd_signers.id, not a users.id
   'bd_documents.signer_id': 'retain',   // bd_signers.id, not a users.id
   'case_passes.user_id': 'delete',
+  'attorney_lead_credits.attorney_id': 'delete', // prepaid lead-credit ledger (payments stay in Stripe)
 };
 
 /** Rows keyed by case_id: what happens to them when one of the user's cases goes. */

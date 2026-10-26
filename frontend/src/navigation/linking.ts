@@ -43,6 +43,10 @@ export const linking: LinkingOptions<any> = {
           ChatTab:    'chat',
           LawyersTab: 'lawyers',
           BailTab:    'bail',
+          // Core path tabs (Oct 26 2026). Each tab is a stack opening on its own screen.
+          RightsTab:  'my-rights',
+          HelpTab:    'get-help',
+          CourtTab:   'my-court-dates',
           MoreTab: {
             screens: {
               MoreHome:           'home',

@@ -31,6 +31,7 @@ import { useInFlight } from '../hooks/useInFlight';
 import { signOut, unsyncedCaseCount } from '../services/session';
 import { registerForPush, unregisterPush } from '../services/push';
 import { saveAccountExport } from '../utils/dataExport';
+import { isScreenEnabled } from '../constants/features';
 
 interface User { id?: number; displayName?: string; name?: string; email?: string; phone?: string; role?: string; accountType?: string; is_admin?: boolean }
 
@@ -403,7 +404,7 @@ function SettingsScreen({ navigation }: any) {
       <View style={card}>
         <InfoRow icon={ICONS.user} label={t("settings.display_name")} value={user.displayName || user.name} />
         {!!user.email && <InfoRow icon={ICONS.mail} label={t('email')} value={user.email} />}
-        <TouchableOpacity
+        {isScreenEnabled('GoldenGavel') && <TouchableOpacity
           accessibilityRole="button"
           testID="settings-golden-gavel"
           onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
@@ -411,7 +412,7 @@ function SettingsScreen({ navigation }: any) {
           {goldenGavel
             ? <InfoRow icon={ICONS.trophy} label={t("settings.account_status")} value={t('x_st_golden_gavel_value')} />
             : <InfoRow icon={ICONS.lawyer} label={t('gg_title')} value={t('x_st_check_eligibility')} />}
-        </TouchableOpacity>
+        </TouchableOpacity>}
         {!!user.phone && <InfoRow icon={ICONS.mobile} label={t('phone')} value={user.phone} />}
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity accessibilityRole="button"
@@ -654,7 +655,8 @@ function SettingsScreen({ navigation }: any) {
           { icon: ICONS.lawyer, label: t('atty_title'),     hint: t('x_st_cases_templates_cle_credits'),    screen: 'AttorneyDashboard' },
           { icon: ICONS.ban, label: t('offline_title'),           hint: t('x_st_what_works_without_connection'),            screen: 'OfflineStatus' },
           { icon: ICONS.stats, label: t('x_st_advocacy'),              hint: t('x_st_criminal_justice_data_reform'),     screen: 'Advocacy' },
-        ].filter(item => (!PRO_TOOLS.has(item.screen) || isProfessional(user)) && (!AGENT_TOOLS.has(item.screen) || user?.accountType === 'bail_agent')).map((item, i, arr) => (
+        ].filter(item => (!PRO_TOOLS.has(item.screen) || isProfessional(user)) && (!AGENT_TOOLS.has(item.screen) || user?.accountType === 'bail_agent')
+          && isScreenEnabled(item.screen, user?.accountType === 'bail_agent' ? 'bail_agent' : user?.role)).map((item, i, arr) => (
           <TouchableOpacity
   accessibilityRole="button"
             key={item.screen}

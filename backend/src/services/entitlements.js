@@ -14,6 +14,7 @@
  * GET /api/billing/tiers shows on the plan cards.
  */
 import { planFeatures, monthlyKey } from '../routes/billing/plans.js';
+import { activeFamilyPass } from './casePass.js';
 
 export const PAID_STATUSES = Object.freeze(['trialing', 'active', 'past_due']);
 const PAID_SQL = PAID_STATUSES.map(s => `'${s}'`).join(',');
@@ -33,6 +34,10 @@ export async function activeSubscriptions(db, userId) {
     `SELECT MAX(ends_at) AS ends_at FROM case_passes WHERE user_id = ? HAVING MAX(ends_at) > NOW()`, [userId]).catch(() => null);
   if (pass?.ends_at) {
     subs.push({ id: null, tier: 'case_pass', status: 'active', provider_type: 'case_pass', current_period_end: pass.ends_at, cancel_at_period_end: 1 });
+  } else {
+    // A Family Case Pass bought by someone in this person's case circle.
+    const fam = await activeFamilyPass(db, userId);
+    if (fam?.ends_at) subs.push({ id: null, tier: 'case_pass', status: 'active', provider_type: 'family_case_pass', current_period_end: fam.ends_at, cancel_at_period_end: 1 });
   }
   return subs;
 }

@@ -29,6 +29,7 @@ import { isOfflineError, saveCoreProgress } from '../services/corePath';
 import { getToken } from '../utils/secureStorage';
 import { t, useLang, getLang, locale } from '../i18n';
 import { IconLabel, ICONS } from '../components/AppIcon';
+import { Analytics } from '../services/analytics';
 
 export interface Provider {
   id: number; kind: 'lawyer' | 'bail_agent'; name: string; organization: string | null; phone: string | null;
@@ -175,7 +176,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
   const onRefresh = async () => { if (!where) return; setRefreshing(true); await search(where, filters); setRefreshing(false); };
 
-  const call = (p: Provider) => { if (!p.phone) return; hapticCall(); Linking.openURL(`tel:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('cp_dial_manually', { num: String(p.phone) }), 'warning')); };
+  const call = (p: Provider) => { if (!p.phone) return; hapticCall(); Analytics.track('help_call_tapped', { kind: String((p as any).type || (p as any).provider_type || 'provider') }); Linking.openURL(`tel:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('cp_dial_manually', { num: String(p.phone) }), 'warning')); };
   const text = (p: Provider) => { if (!p.phone) return; Linking.openURL(`sms:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('hn_text_unavailable'), 'warning')); };
   const directions = (p: Provider) => {
     const dest = p.lat != null && p.lng != null ? `${p.lat},${p.lng}` : encodeURIComponent(p.address || `${p.name} ${p.city} ${p.state}`);
@@ -367,7 +368,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
                 <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>{result.public_defender.note}</Text>
                 <View style={styles.actions}>
                   {!!result.public_defender.phone && (
-                    <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.actionCall]} onPress={() => Linking.openURL(`tel:${String(result.public_defender?.phone).replace(/[^\d+]/g, '')}`).catch(() => {})}>
+                    <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.actionCall]} onPress={() => { Analytics.track('help_call_tapped', { kind: 'public_defender' }); Linking.openURL(`tel:${String(result.public_defender?.phone).replace(/[^\d+]/g, '')}`).catch(() => {}); }}>
                       <IconLabel center icon={ICONS.phoneFilled} color={colors.white} textStyle={styles.actionCallText} maxFontSizeMultiplier={1.3}>{t('hn_call')}</IconLabel>
                     </TouchableOpacity>
                   )}

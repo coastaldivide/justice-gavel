@@ -604,10 +604,12 @@ describe('11. AppNavigator — Screen Registration & Tab Structure', () => {
     expect(nav).toContain('MatterIntelligence');
   });
 
-  test('11-06: navigator has exactly 5 tabs', async () => {
+  test('11-06: navigator shows exactly 5 tabs', async () => {
     const fs  = await import('fs');
     const nav = fs.readFileSync(__REPO + '/frontend/src/navigation/AppNavigator.tsx', 'utf8');
-    const tabs = nav.match(/Tab\.Screen/g) || [];
+    // Oct 26 2026: Home · My rights · Get help · Court dates · More. ChatTab / LawyersTab / BailTab
+    // stay registered (navigate targets) with their bar button removed.
+    const tabs = (nav.match(/<Tab\.Screen [^\n]*/g) || []).filter(l => !/tabBarButton: \(\) => null/.test(l));
     expect(tabs.length).toBe(5);
   });
 

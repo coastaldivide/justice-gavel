@@ -1,4 +1,55 @@
-# Justice Gavel — monetization plan and pricing (October 26, 2026 — v3: priced to match competitors)
+# Justice Gavel — monetization plan and pricing (October 26, 2026 — v4: consumer-first)
+
+## v4 (Oct 26, 2026): revenue from the people arrested and their families
+
+v4 puts the people who are arrested, and their families, at the center of the revenue model.
+Bail-agent and lawyer revenue are left out of the numbers below entirely. They are upside on top.
+Lead fees now follow the state table in `docs/LEAD_FEE_RULES.md`.
+
+**Consumer price list (in the code now):**
+
+| Product | Price | Who buys | Status |
+|---|---|---|---|
+| Core path: rights, help search, court reminders (now **with no account** on phones), family sharing | Free | Everyone | Live |
+| Case Pass (90 days, no renewal) | $29, $19 to extend | The person or a family member | Live once Stripe is on |
+| **Family Case Pass** (new) | **$39**, $25 to extend | Usually the family: the person arrested often has no phone for the first 72 hours | Live once Stripe is on. Covers the case owner and everyone following the case with consent |
+| Legal Pro (probation, repeat users) | $19.99/mo or $149/yr | Ongoing users | Live once Stripe is on |
+| Consultation booking fee | $10 / $15 / $25 | The person | Live once Stripe is on |
+| **Record Clearing packet** (new) | **$99** one time (EasyExpunctions $399; lawyers $1,200+) | Anyone with an old record (70M+ Americans) | **Priced, not on sale.** Needs the packet builder and statute-sourced rules per state (147 of 306 have them today) |
+
+**Model assumptions:**
+- 7,522,824 US arrests in 2024 (FBI).
+- 70M+ Americans with a record (Brennan Center).
+- Year 1: Tennessee only, about 2.1% of arrests (estimated from its share of the population).
+- Year 2: TN plus 5 states, about 15% of arrests. Year 3: national.
+- "Reach" = the share of arrests where the person or family uses the app.
+- Base case: 10% of cases buy a Case Pass (40% of them extend), 6% book a consult, 2% take
+  Legal Pro yearly, and 0.1% of record-holders in covered states buy Record Clearing each year.
+- Stripe fees are taken out. Purchases go through a web checkout link, so Apple takes 0%.
+- Running costs (AI answers plus free reminder texts) are about 1% of revenue. Marketing is not included.
+
+| Scenario | Reach (Y1 → Y3) | Year 1 (TN) | Year 2 (6 states) | Year 3 (national) |
+|---|---|---|---|---|
+| Conservative | 2% → 3% | $82K | $623K | $4.2M |
+| Base | 4% → 6% | $187K | $1.4M | $10.0M |
+| Strong | 6% → 10% | $389K | $3.0M | $21.9M |
+
+Base Year 3 by product: Record Clearing $6.7M (67%), Case Pass $1.6M, Legal Pro $1.3M,
+consult fees $0.4M.
+
+**What the numbers show:**
+1. Record clearing is the money; the arrest moment is how people find the app. Shipping the
+   packet builder state by state is the highest-value engineering work after launch.
+2. Families are the buyers, so the Family Case Pass is priced and marketed to the family.
+3. Reminders stay free. They keep people in the app until they need record clearing.
+
+These are scenario models, not forecasts.
+
+---
+
+*(v3 below: competitor price map and professional pricing, kept for reference.)*
+
+# v3: priced to match competitors
 
 *A quant's view: who pays, how much, what it costs to serve them, and which money is safe to take.
 Figures marked "benchmark" come from the sources at the end. Scenario numbers are illustrative
@@ -220,6 +271,9 @@ before raising prices.
 | Case Pass | $29 one time for 90 days, $19 adds 90 days after the current pass; no renewal | `CASE_PASS`, `routes/billing/casePass.js` |
 | Family Connect | Free; no Stripe call | `routes/billing/connections.js` |
 | PI / medical lead | $250 flat (civil rights $200, employment $100, ICE $75) | `routes/billing/attorneyLeadFee.js` + app `constants/leadFee.ts` |
+| Lead rules by state (v4) | Card per lead only in NY / WA. Credit packs ($25 a credit; packs of 20 / 40 / 100) in TN and most states. Not sold in CO, TX, or CA / FL until registered | `services/leadRules.js`, `services/leadCredits.js`, docs/LEAD_FEE_RULES.md |
+| Family Case Pass (v4) | $39 one time for 90 days, $25 to extend. Covers the case owner and active followers | `FAMILY_CASE_PASS`, `services/casePass.js` `activeFamilyPass` |
+| Record Clearing (v4) | $99, **not on sale** (`on_sale: false`) | `RECORD_CLEARING`, `GET /api/billing/record-clearing` |
 | Attorney Pro Profile $49.95 / Case Match $455 | Priced, **not on sale** until the features exist | `ATTORNEY_MARKETING` (`on_sale: false`) |
 | Refunds | All sales final; only billing errors and duplicate charges are refunded | `routes/billing/subscriptions.js` |
 

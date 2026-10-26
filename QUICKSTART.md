@@ -1,5 +1,5 @@
 # Justice Gavel — Quick Start
-**v8.7.60**
+**v8.7.61**
 
 Local setup from zero to a running API + app. The condensed version lives in
 the [README](./README.md); environment variables are documented in

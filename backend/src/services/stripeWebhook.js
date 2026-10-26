@@ -32,6 +32,7 @@ import { stripeClient } from '../routes/billing/_shared.js';
 import { syncFromStripe, setStatusByStripeId } from './subscriptionStore.js';
 import { recordBailLead, recordCaseLead } from './leadPurchases.js';
 import { recordCasePass } from './casePass.js';
+import { recordCreditPurchase } from './leadCredits.js';
 import { sendPushToUser } from './pushDelivery.js';
 import { msg, userLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
@@ -72,6 +73,10 @@ async function onPaymentSucceeded(db, pi) {
   if (md.package === 'case_lead' && Number.isSafeInteger(userId)) {
     const leadId = Number(md.lead_id);
     if (Number.isSafeInteger(leadId)) await recordCaseLead(db, { attorneyId: userId, leadId, pi });
+    return;
+  }
+  if (md.package === 'lead_credits' && Number.isSafeInteger(userId)) {
+    await recordCreditPurchase(db, { attorneyId: userId, pi }).catch((e) => logger.error('[webhook:stripe] lead credits', pi.id, e?.code || e?.message));
     return;
   }
   if (md.package === 'case_pass' && Number.isSafeInteger(userId)) {

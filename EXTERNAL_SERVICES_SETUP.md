@@ -481,5 +481,5 @@ Google Play: requires Google Play Developer account ($25 one-time).
 
 ---
 
-*Last verified against the code: October 2026 — v8.7.60.*
+*Last verified against the code: October 2026 — v8.7.61.*
 *Update this document when adding new external services.*

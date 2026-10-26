@@ -30,13 +30,13 @@ describeIntegration('C2 — leads never reveal contact details without a complet
 
     const pi = await ctx.request().post('/api/billing/pi-lead/submit').set(victim.headers).send({
       case_type: 'Civil Rights', description: `Officer beat me, my name is ${VICTIM_NAME} ${VICTIM_PHONE}`,
-      severity: 'serious', city: 'Houston', state: 'TX',
+      severity: 'serious', city: 'Albany', state: 'NY', // a per-lead state (services/leadRules.js)
     });
     expect(pi.status).toBe(201);
     piLeadId = pi.body.lead_id;
     expect(leaks(pi, VICTIM_PHONE)).toBe(false);
     const ice = await ctx.request().post('/api/billing/pi-lead/submit').set(victim.headers).send({
-      case_type: 'ice_detention', description: `My husband was detained by ICE, call ${VICTIM_PHONE}`, city: 'Houston', state: 'TX',
+      case_type: 'ice_detention', description: `My husband was detained by ICE, call ${VICTIM_PHONE}`, city: 'Albany', state: 'NY',
     });
     expect(ice.status).toBe(201);
     iceLeadId = ice.body.lead_id;
@@ -57,7 +57,7 @@ describeIntegration('C2 — leads never reveal contact details without a complet
   });
 
   it('LEGIT: an attorney sees the lead, but only non-identifying fields and the flat fee', async () => {
-    const r = await ctx.request().get('/api/billing/pi-leads?state=TX').set(attorney.headers);
+    const r = await ctx.request().get('/api/billing/pi-leads?state=NY').set(attorney.headers);
     expect(r.status).toBe(200);
     const pl = r.body.find(l => Number(l.id) === Number(piLeadId));
     expect(pl).toBeTruthy();
@@ -105,7 +105,7 @@ describeIntegration('C2 — leads never reveal contact details without a complet
       const o = await ctx.request().get('/api/billing/pi-leads/mine').set(other.headers);
       expect(leaks(o, VICTIM_PHONE)).toBe(false);
     }
-    const open = await ctx.request().get('/api/billing/pi-leads?state=TX').set(attorney.headers);
+    const open = await ctx.request().get('/api/billing/pi-leads?state=NY').set(attorney.headers);
     expect(open.body.find(l => Number(l.id) === Number(iceLeadId))).toBeUndefined();   // sold: off the open list
   });
 

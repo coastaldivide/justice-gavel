@@ -42,6 +42,8 @@ const router = Router();
 // Every write here is for a signed-in person, so the sign-in check comes first:
 // a guest gets 401 (sign in), never "payments are not available".
 const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/,
+  // Spending lead credits already paid for (services/leadCredits.js) never calls Stripe.
+  /^\/pi-lead\/claim\/\d+\/?$/,
   // Family Connect is free (no charge, no Stripe call) while its price is 0.
   ...(FAMILY_CONNECT_PRICE_CENTS <= 0 ? [/^\/family\/connect\/?$/] : [])];
 router.use((req, res, next) => {

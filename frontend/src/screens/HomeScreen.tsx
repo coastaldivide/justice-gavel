@@ -17,6 +17,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constan
 import { getCoreProgress, consumePendingRoute, prefetchRights, type CourtDatesList } from '../services/corePath';
 import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
+import { isScreenEnabled, tileScreen } from '../constants/features';
 
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
@@ -29,17 +30,18 @@ const TILES = perLang((): Tile[] => {
   const c = themeColors();
   return [
   { key: 'Emergency', label: t('home_tile_Emergency'), icon: ICONS.location, color: c.textBrand, bg: c.bgCard, nav: 'More:HelpNow',   primary: false },
-  // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
-  // Ordered by urgency. Most people arriving at this app need these in order.
-  { key: 'Bail',      label: t('home_tile_Bail'),    icon: ICONS.bail, color: c.bail,      bg: c.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
-  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: ICONS.lawyer, color: c.legal,     bg: c.legalBg, nav: 'LawyersTab',     primary: true },
-  { key: 'Rights',    label: t('home_tile_Rights'),     icon: ICONS.rights, color: c.textBrand,      bg: c.bgCard, nav: 'More:Education', primary: true },
-  { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: c.info, bg: c.bgCard, nav: 'ChatTab',        primary: true },
+  // ── Primary 4 -- the core path (Oct 26 2026): rights → help → court dates → clear my record ──
+  { key: 'Rights',    label: t('home_tile_Rights'),     icon: ICONS.rights, color: c.textBrand,      bg: c.bgCard, nav: 'RightsTab',      primary: true },
+  { key: 'GetHelp',   label: t('home_tile_GetHelp'),    icon: ICONS.lawyer, color: c.legal,     bg: c.legalBg, nav: 'HelpTab',        primary: true },
+  { key: 'CourtDates',label: t('home_tile_CourtDates'), icon: ICONS.calendar, color: c.info,    bg: c.bgCard, nav: 'CourtTab',       primary: true },
+  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: ICONS.clean, color: c.legal,     bg: c.legalBg, nav: 'More:Expungement', primary: true },
+  { key: 'Bail',      label: t('home_tile_Bail'),    icon: ICONS.bail, color: c.bail,      bg: c.bgCard, nav: 'More:Bail',      primary: false },  // more-bail-search-link testID: 'more-bail-search-link',
+  { key: 'Lawyers',   label: t('home_tile_Lawyers'),      icon: ICONS.lawyer, color: c.legal,     bg: c.legalBg, nav: 'LawyersTab',     primary: false },
+  { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: c.info, bg: c.bgCard, nav: 'ChatTab',        primary: false },
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
   { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: ICONS.clipboard, color: c.textBrand,      bg: c.bgCard, nav: 'More:WhatHappensNext', primary: false },
   { key: 'Cases',     label: t('home_tile_Cases'),           icon: ICONS.cases, color: c.info, bg: c.bgCard, nav: 'More:Cases',     primary: false },
-  { key: 'Expunge',   label: t('home_tile_Expunge'),    icon: ICONS.clean, color: c.legal,     bg: c.legalBg, nav: 'More:Expungement', primary: false },
   { key: 'court_locator',  icon: ICONS.courthouse, label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: c.bgCard, color: c.info, primary: false },
   { key: 'bail_calc',      icon: ICONS.calculator, label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: c.legalBg, color: c.legal, primary: false },
   { key: 'dui_laws',       icon: ICONS.car, label: t('home_tile_dui_laws'),          nav: 'More:DUILaws',         bg: c.bgCard, color: c.textBrand, primary: false },
@@ -429,7 +431,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES().filter(tile => !tile.roles || tile.roles.includes(role))
+          {TILES().filter(tile => (!tile.roles || tile.roles.includes(role)) && isScreenEnabled(tileScreen(tile.nav), role))
             // the square primary tiles first, then the compact two-column rows
             .sort((a, b) => Number(b.primary) - Number(a.primary)).map(tile => (
             <TouchableOpacity

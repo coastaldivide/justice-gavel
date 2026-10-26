@@ -1,6 +1,6 @@
 # Justice Gavel
 
-> *Justice, in your hands.* — **v8.7.60**
+> *Justice, in your hands.* — **v8.7.61**
 
 **New lead developer? Start with [LEAD_DEVELOPER_HANDOFF.md](./LEAD_DEVELOPER_HANDOFF.md).**
 
@@ -11,7 +11,7 @@ attorney practice dashboard, and a bail-bondsman lead pipeline.
 
 All version numbers (root, `backend/`, `frontend/` package.json,
 `frontend/app.json`, the `/health` response and the `X-API-Version` header)
-are aligned at **8.7.60**; the backend reads its version from
+are aligned at **8.7.61**; the backend reads its version from
 `backend/package.json` at startup (`backend/src/utils/version.js`).
 
 ## Architecture

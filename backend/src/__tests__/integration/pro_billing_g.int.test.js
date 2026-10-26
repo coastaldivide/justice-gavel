@@ -146,7 +146,7 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
         for (const sql of [
           `DELETE FROM lead_purchases WHERE bondsman_id IN (${ids})`, `DELETE FROM lead_alert_log WHERE user_id IN (${ids})`,
           `DELETE FROM bondsman_subscriptions WHERE user_id IN (${ids})`, `DELETE FROM bondsman_profiles WHERE user_id IN (${ids})`,
-          `DELETE FROM pi_leads WHERE user_id IN (${ids})`, `DELETE FROM refund_requests WHERE user_id IN (${ids})`,
+          `DELETE FROM pi_leads WHERE user_id IN (${ids})`, `DELETE FROM attorney_lead_credits WHERE attorney_id IN (${ids})`, `DELETE FROM refund_requests WHERE user_id IN (${ids})`,
           `DELETE FROM messages WHERE sender_id IN (${ids}) OR recipient_id IN (${ids})`,
           `DELETE FROM conflict_index WHERE firm_id IN (SELECT id FROM firms WHERE owner_id IN (${ids}))`,
           `DELETE FROM firm_invites WHERE firm_id IN (SELECT id FROM firms WHERE owner_id IN (${ids}))`,
@@ -414,12 +414,14 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
   });
 
   test('G9 case leads: flat fee per type, sold once, contact details only for the buyer', async () => {
+    // Card payment one lead at a time only where the state's rule is per_lead (New York, Op. 1294).
+    const ST = 'NY', CITY = 'Albany';
     if (!ctx.app) return;
     const fees = (await req('get', '/api/billing/pi-lead/fees')).body.fees;
     expect(Object.fromEntries(fees.map(f => [f.lead_type, f.fee_cents]))).toMatchObject({ personal_injury: 25000, civil_rights: 20000, employment: 10000, ice_detention: 7500 });
     const leads = {};
     for (const [type, cents] of [['personal_injury', 25000], ['civil_rights', 20000], ['employment', 10000], ['ice_detention', 7500]]) {
-      const r = await req('post', '/api/billing/pi-lead/submit', consumer2).send({ case_type: type, description: 'A detailed description of what happened to me.', state: 'TN', city: 'Nashville' });
+      const r = await req('post', '/api/billing/pi-lead/submit', consumer2).send({ case_type: type, description: 'A detailed description of what happened to me.', state: ST, city: CITY });
       expect(r.status).toBe(201);
       leads[type] = r.body.lead_id;
       const start = await req('post', `/api/billing/pi-lead/accept/${r.body.lead_id}`, attorney).send({});
@@ -429,12 +431,12 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     }
     const unverified = await ctx.register({ displayName: 'G unverified', accountType: 'attorney' });
     expect((await req('post', `/api/billing/pi-lead/accept/${leads.employment}`, unverified).send({})).status).toBe(403);
-    const before = await req('get', '/api/billing/pi-leads?state=TN', attorney2);
+    const before = await req('get', '/api/billing/pi-leads?state=NY', attorney2);
     const row = before.body.find(l => l.id === leads.employment);
     expect(row.description).toBeUndefined();
     expect(row.contact_email).toBeUndefined();
     const hold = await req('post', `/api/billing/pi-lead/accept/${leads.employment}`, attorney).send({});
-    expect((await req('get', '/api/billing/pi-leads?state=TN', attorney2)).body.some(l => l.id === leads.employment)).toBe(false);
+    expect((await req('get', '/api/billing/pi-leads?state=NY', attorney2)).body.some(l => l.id === leads.employment)).toBe(false);
     expect((await req('post', `/api/billing/pi-lead/accept/${leads.employment}`, attorney2).send({})).status).toBe(409);
     const pi = hold.body.payment_intent_id;
     fake.pis.get(pi).status = 'succeeded';
@@ -452,7 +454,70 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect(fake.refunds.some(r => r.payment_intent === 'pi_g_late')).toBe(true);
   });
 
-  test('G10 bail-agent plan: verified before it counts; new-arrest alerts for the covered county, once', async () => {
+    test('G9b state lead rules: Tennessee is credit packs only; Colorado / Texas leads are not sold', async () => {
+    if (!ctx.app) return;
+    const { leadRuleFor } = await import('../../services/leadRules.js');
+    expect(leadRuleFor('TN').mode).toBe('credits');
+    const rules = (await req('get', '/api/billing/pi-lead/rules?state=TN')).body;
+    expect(rules.rule).toMatchObject({ state: 'TN', mode: 'credits', source: 'Tenn. Formal Ethics Op. 2018-F-165' });
+    expect(rules.disclosure).toMatch(/does not recommend or endorse any lawyer/);
+    const submit = (state, type = 'personal_injury') => req('post', '/api/billing/pi-lead/submit', consumer2)
+      .send({ case_type: type, description: 'A detailed description of what happened to me.', state, city: 'Somewhere' });
+    const tn = (await submit('TN')).body.lead_id;
+    const tn2 = (await submit('TN', 'employment')).body.lead_id;
+    const co = (await submit('CO')).body.lead_id;
+    const tx = (await submit('TX')).body.lead_id;
+    // no one-at-a-time card payment in TN; nothing at all in CO (SB 26-174) or TX (subscription only)
+    const card = await req('post', `/api/billing/pi-lead/accept/${tn}`, attorney).send({});
+    expect([card.status, card.body.code, card.body.mode]).toEqual([403, 'per_lead_not_allowed', 'credits']);
+    expect((await req('post', `/api/billing/pi-lead/accept/${co}`, attorney).send({})).body.code).toBe('leads_not_sold_in_state');
+    expect((await req('post', `/api/billing/pi-lead/claim/${tx}`, attorney).send({})).body.code).toBe('leads_not_sold_in_state');
+    const listed = (await req('get', '/api/billing/pi-leads', attorney2)).body.map(l => l.id);
+    expect(listed).toContain(tn);
+    expect(listed).not.toContain(co);
+    expect(listed).not.toContain(tx);
+    const row = (await req('get', '/api/billing/pi-leads?state=TN', attorney2)).body.find(l => l.id === tn);
+    expect(row).toMatchObject({ credits: 10, pay_by_card: false, rule_mode: 'credits' });
+    // no credits yet → 402 with what is needed
+    const broke = await req('post', `/api/billing/pi-lead/claim/${tn}`, attorney).send({});
+    expect([broke.status, broke.body.code, broke.body.needed, broke.body.balance]).toEqual([402, 'not_enough_credits', 10, 0]);
+    // buy a 20-credit pack: fixed price, added once even if confirm and the webhook both run
+    expect((await req('post', '/api/billing/pi-lead/credits/buy', attorney).send({ pack: 'pack_7' })).body.code).toBe('bad_pack');
+    const buy = await req('post', '/api/billing/pi-lead/credits/buy', attorney).send({ pack: 'pack_20' });
+    expect([buy.status, buy.body.amount_cents, buy.body.credits]).toEqual([200, 50000, 20]);
+    const pi = buy.body.payment_intent_id;
+    expect((await req('post', '/api/billing/pi-lead/credits/confirm', attorney).send({ payment_intent_id: pi })).status).toBe(402);
+    fake.pis.get(pi).status = 'succeeded';
+    const ok = await req('post', '/api/billing/pi-lead/credits/confirm', attorney).send({ payment_intent_id: pi });
+    expect(ok.body).toMatchObject({ ok: true, added: 20, balance: 20 });
+    await webhook(event('payment_intent.succeeded', clone(fake.pis.get(pi))));
+    expect((await req('post', '/api/billing/pi-lead/credits/confirm', attorney).send({ payment_intent_id: pi })).body).toMatchObject({ added: 0, balance: 20 });
+    expect((await req('post', '/api/billing/pi-lead/credits/confirm', attorney2).send({ payment_intent_id: pi })).status).toBe(404);
+    // spend: PI lead = 10 credits; the buyer gets the details, nobody else
+    const claim = await req('post', `/api/billing/pi-lead/claim/${tn}`, attorney).send({});
+    expect(claim.status).toBe(200);
+    expect(claim.body).toMatchObject({ credits_spent: 10, balance: 10 });
+    expect(claim.body.lead).toMatchObject({ description: 'A detailed description of what happened to me.', contact_email: consumer2.email });
+    expect((await req('post', `/api/billing/pi-lead/claim/${tn}`, attorney).send({})).body.code).toBe('lead_owned');
+    expect((await req('post', `/api/billing/pi-lead/claim/${tn}`, attorney2).send({})).body.code).toBe('lead_taken');
+    expect((await req('get', '/api/billing/pi-leads/mine', attorney)).body.leads.map(l => l.id)).toContain(tn);
+    expect(await ctx.db.get('SELECT status, paid_with, fee_charged FROM pi_leads WHERE id = ?', [tn])).toMatchObject({ status: 'accepted', paid_with: 'credits' });
+    // employment = 4 credits; two claims at once can't overspend
+    const [a, b] = await Promise.all([
+      req('post', `/api/billing/pi-lead/claim/${tn2}`, attorney).send({}),
+      req('post', `/api/billing/pi-lead/claim/${tn2}`, attorney).send({}),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    expect((await req('get', '/api/billing/pi-lead/credits', attorney)).body.balance).toBe(6);
+    // registration-gated states stay closed until the operator records the filing
+    const { leadRuleFor: rule } = await import('../../services/leadRules.js');
+    expect(rule('FL', {}).mode).toBe('directory_only');
+    expect(rule('FL', { LEAD_REG_FL_QUALIFYING_PROVIDER: '1' }).mode).toBe('credits');
+    expect(rule('CA', { LEAD_REG_CA_CERTIFIED_LRS: '1' }).mode).toBe('credits');
+    await ctx.db.run('DELETE FROM attorney_lead_credits WHERE attorney_id IN (?, ?)', [attorney.user.id, attorney2.user.id]);
+  });
+
+test('G10 bail-agent plan: verified before it counts; new-arrest alerts for the covered county, once', async () => {
     if (!ctx.app) return;
     const tiers = (await req('get', '/api/billing/bondsman/tiers')).body.tiers;
     expect(tiers.map(t => [t.key, t.monthly_cents, t.counties])).toEqual([['starter', 9900, 1], ['pro', 19900, 3], ['market', 34900, 'all']]);
@@ -621,5 +686,40 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     await ctx.db.run(`UPDATE case_passes SET starts_at = NOW() - INTERVAL '200 days', ends_at = NOW() - INTERVAL '1 second' WHERE user_id = ?`, [buyer.user.id]);
     expect((await req('get', '/api/research/status', buyer)).body.has_access).toBe(false);
     expect((await req('get', '/api/billing/case-pass', buyer)).body).toMatchObject({ active_until: null, can_extend: false });
+  });
+
+  test('G15 Family Case Pass: $39, unlocks the pass for the case owner and active followers only', async () => {
+    if (!ctx.app) return;
+    const [mom, son, aunt, stranger] = await Promise.all(['mom', 'son', 'aunt', 'stranger'].map(n => ctx.register({ displayName: `G fam ${n}` })));
+    for (const u of [mom, son, aunt, stranger]) await ctx.acceptDisclaimer(u);
+    // the son's case; mom and aunt follow it with his consent
+    const c = await req('post', '/api/cases', son).send({ title: 'My case', next_court_date: '2026-12-20' });
+    for (const f of [mom, aunt]) {
+      const inv = await req('post', `/api/cases/${c.body.id}/followers`, son).send({ consent: true });
+      expect((await req('post', '/api/following/accept', f).send({ code: inv.body.invite_code })).status).toBe(201);
+    }
+    const q = await req('get', '/api/billing/case-pass', mom);
+    expect(q.body.family).toEqual({ cents: 3900, extend_cents: 2500, days: 90 });
+    const start = await req('post', '/api/billing/case-pass/buy', mom).send({ family: true });
+    expect(start.body).toMatchObject({ amount_cents: 3900, kind: 'new', family: true });
+    const pi = start.body.payment_intent_id;
+    expect(fake.pis.get(pi).metadata).toMatchObject({ package: 'case_pass', family: '1' });
+    for (const u of [mom, son, aunt]) expect((await req('get', '/api/research/status', u)).body.has_access).toBe(false);
+    fake.pis.get(pi).status = 'succeeded';
+    expect((await req('post', '/api/billing/case-pass/confirm', mom).send({ payment_intent_id: pi })).status).toBe(200);
+    expect((await ctx.db.get('SELECT family FROM case_passes WHERE stripe_pi_id = ?', [pi])).family).toBe(true);
+    // the buyer, the person arrested and the co-follower all get it; a stranger does not
+    for (const u of [mom, son, aunt]) expect((await req('get', '/api/research/status', u)).body.has_access).toBe(true);
+    expect((await req('get', '/api/research/status', stranger)).body.has_access).toBe(false);
+    // stop following → no longer covered
+    const fol = (await req('get', '/api/following', aunt)).body.following.find(f => f.case_id === c.body.id);
+    await req('delete', `/api/following/${fol.follow_id}`, aunt);
+    expect((await req('get', '/api/research/status', aunt)).body.has_access).toBe(false);
+    // a plain Case Pass does not cover the family
+    await ctx.db.run('UPDATE case_passes SET family = FALSE WHERE stripe_pi_id = ?', [pi]);
+    expect((await req('get', '/api/research/status', son)).body.has_access).toBe(false);
+    expect((await req('get', '/api/research/status', mom)).body.has_access).toBe(true);
+    // Record Clearing is priced but not sold until the packet builder and sourced rules exist
+    expect((await req('get', '/api/billing/record-clearing')).body).toMatchObject({ cents: 9900, on_sale: false, states_on_sale: [] });
   });
 });

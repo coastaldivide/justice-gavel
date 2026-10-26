@@ -1,9 +1,23 @@
 # Justice Gavel — Launch KPI Dashboard
 ## Tracking period: First 90 days post-launch
 
-### North Star Metric
-**Weekly Active Users (WAU)** — users who open the app and perform at least one action.
-Target: 1,000 WAU by Day 90.
+### North Star Metric (changed Oct 26, 2026)
+**Court dates with reminders set**, and the **appearance rate** of those dates (the "Did you make
+it to court?" follow-up). This is the number a public defender office or county buys on, and it
+is what the 21–26% reminder evidence is about. Target: 1,000 court dates with reminders by Day 90
+in Tennessee. Weekly active users is tracked, but it is no longer the headline.
+
+### Core path funnel (analytics.ts events, Oct 26 2026)
+
+| Event | What it counts |
+|-------|----------------|
+| core_started | "Just arrested?" opened (from_guest: no account) |
+| rights_viewed | A state rights card shown (state) |
+| help_call_tapped | A call to a lawyer, bail agent or the public defender (kind) |
+| family_shared | "Alert my family" sent |
+| court_date_added | A court date saved (guest: on the phone without an account; reminders: how many) |
+| record_check_started | The record-clearing check opened |
+| court_attended | Reserved for the post-court follow-up text (not sent yet: needs Telnyx) |
 
 ### Conversion Funnel KPIs (tracked via analytics.ts events)
 

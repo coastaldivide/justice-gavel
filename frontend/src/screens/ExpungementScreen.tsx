@@ -27,6 +27,7 @@ import { StatePicker } from '../components/StatePicker';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { t, useLang, getLang } from '../i18n';
 import { ICONS, AppIcon, type IconName, IconLabel } from '../components/AppIcon';
+import { Analytics } from '../services/analytics';
 
 type Status = 'Dismissed' | 'Convicted' | 'Open';
 type ChargeType = 'misdemeanor' | 'felony' | 'dui' | 'domestic' | 'sexual' | 'unknown';
@@ -100,6 +101,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
 
   // Tells the nightly scheduler not to send the "you may be able to clear your record" push again.
   useEffect(() => { if (hasSession) api.post('/expungement/log-visit').catch(() => {}); }, [hasSession]);
+  useEffect(() => { Analytics.track('record_check_started', { signed_in: !!hasSession }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const check = useCallback(async () => {
     if (!state) { setError(t('x_expungement_please_select_state_first')); return; }

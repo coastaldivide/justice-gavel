@@ -110,6 +110,25 @@ export const AGENT_TEXT_CENTS = 5;
 export const CASE_PASS = Object.freeze({ cents: 2900, extend_cents: 1900, days: 90, display: '$29 for 90 days', extend_display: '$19 for 90 more days' });
 
 /**
+ * Family Case Pass (Oct 26 2026): the same 90 days, but it also unlocks the pass for the
+ * family circle of the buyer's cases — the person arrested and everyone who follows the case
+ * with consent (case_family_access, at most the follower limit per case). The person arrested
+ * often has no phone for the first 72 hours, so the family is usually the buyer.
+ * services/entitlements.js grants it; services/casePass.js records it (case_passes.family).
+ */
+export const FAMILY_CASE_PASS = Object.freeze({ cents: 3900, extend_cents: 2500, days: 90, display: '$39 for 90 days, for the whole family', extend_display: '$25 for 90 more days' });
+
+/**
+ * Record Clearing (Oct 26 2026): a $99 self-help filing packet — eligibility check against the
+ * state's sourced rules, the state's petition filled in from the person's answers, and filing
+ * steps (court fees are the court's, paid by the person). NOT SOLD YET: the packet builder is not
+ * built, and only rules that cite a statute may decide eligibility (docs/LEGAL_ACCURACY_REVIEW.md).
+ * Flip `on_sale` per state only when both exist; until then the free eligibility screen stays free.
+ * Benchmarks: EasyExpunctions $399 flat; lawyers typically $1,200+.
+ */
+export const RECORD_CLEARING = Object.freeze({ cents: 9900, display: '$99 one time', on_sale: false, states_on_sale: Object.freeze([]) });
+
+/**
  * Attorney marketing products, priced to match the market (Avvo Pro $49.95/mo; LegalMatch from
  * $455/mo). NOT SOLD YET: the profile perks (Pro badge, photo/bio, profile stats) and exclusive
  * case-match requests are not built. Selling them before they exist would be a deceptive claim

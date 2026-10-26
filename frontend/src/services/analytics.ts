@@ -36,7 +36,10 @@ type EventName =  'sign_up'
   | 'booking_cancelled'
   | 'outcome_recorded'
   | 'expungement_triggered'
-  | 'review_submitted';
+  | 'review_submitted'
+  // Core path (Oct 26 2026): the funnel investors and counties ask about.
+  | 'core_started' | 'rights_viewed' | 'help_call_tapped' | 'family_shared'
+  | 'court_date_added' | 'reminder_scheduled' | 'court_attended' | 'record_check_started';
 
 type EventProps = Record<string, string | number | boolean | null>;
 

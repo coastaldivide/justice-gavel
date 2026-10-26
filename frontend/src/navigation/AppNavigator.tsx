@@ -35,6 +35,7 @@ import CourtDateDetailScreen from '../screens/CourtDateDetailScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import { Analytics } from '../services/analytics';
 import { getGuestStart } from '../services/auth';
+import { CoreOnlyGate } from './CoreOnlyGate';
 import AgeGateScreen            from '../screens/AgeGateScreen';
 import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
 // Bundled with the app (not lazy chunks): Home and every screen the app
@@ -175,15 +176,20 @@ function TabIcon({ name, color, focused }: { name: IconName; color: string; focu
   return <AppIcon name={name} size={focused ? 23 : 22} color={color} />;
 }
 
-// ── More stack — all secondary screens ────────────────────────────────────────
-function MoreNavigator() {
+// ── Section stacks — every tab is a stack with the full screen list ─────────────
+// Core path tabs (Rights, Get help, Court dates) open on their own screen but
+// register every screen, so a navigate() from inside them never lands on a
+// route their stack doesn't know. CoreOnlyGate (screenLayout) hides parked and
+// professional screens from consumers (constants/features.ts).
+function SectionStack({ initial }: { initial: string }) {
   useLang();
   const { colors } = useTheme();
   // The Electron menu / deep-link bridge (window.__navigateTo) lives in
   // App.tsx, where it has access to the root navigation container ref.
   return (
     <ErrorBoundary>
-    <MoreStack.Navigator screenOptions={HDR()}>
+    <MoreStack.Navigator initialRouteName={initial} screenOptions={HDR()}
+      screenLayout={({ children, route }) => <CoreOnlyGate screen={route.name}>{children}</CoreOnlyGate>}>
       <MoreStack.Screen name="MoreHome"              component={HomeScreen}                 options={{ headerShown: false }} />
       <MoreStack.Screen name="Emergency"             component={EmergencyScreen}             options={{ title: t('x_nav_emergency_alert') }} />
       <MoreStack.Screen name="CaseTimeline"          component={CaseTimelineScreen}          options={{ title: t('x_nav_case_timeline') }} />
@@ -288,6 +294,10 @@ options={{ title: t('x_nav_settings') }} />
     </ErrorBoundary>
   );
 }
+function MoreNavigator()   { return <SectionStack initial="MoreHome" />; }
+function RightsNavigator() { return <SectionStack initial="RightsCard" />; }
+function HelpNavigator()   { return <SectionStack initial="HelpNow" />; }
+function CourtNavigator()  { return <SectionStack initial="CourtDates" />; }
 
 // ── Main tab navigator ─────────────────────────────────────────────────────────
 // ── PHASE 2 UX ENHANCEMENT — Role-based tab bars ─────────────────────────────
@@ -323,11 +333,16 @@ function MainTabs() {
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
+      {/* Core path tabs (Oct 26 2026): Home · My rights · Get help · Court dates · More. */}
       <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
-      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.message} color={color} focused={focused} /> }} />
-      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
-      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: t('tab_bail_help'),tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.bail} color={color} focused={focused} /> }} />
+      <Tab.Screen name="RightsTab"  component={RightsNavigator} options={{ tabBarButton: (props: any) => <TouchableOpacity testID="rights-tab" {...props} />, tabBarLabel: t('tab_rights'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.rights} color={color} focused={focused} /> }} />
+      <Tab.Screen name="HelpTab"    component={HelpNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="help-tab" {...props} />, tabBarLabel: t('tab_get_help'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
+      <Tab.Screen name="CourtTab"   component={CourtNavigator}  options={{ tabBarButton: (props: any) => <TouchableOpacity testID="court-tab" {...props} />, tabBarLabel: t('tab_court_dates'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.calendar} color={color} focused={focused} /> }} />
       <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
+      {/* Still reachable from Get help / Home (navigate('LawyersTab') etc.), no longer in the bar. */}
+      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
+      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
+      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: t('tab_bail_help'),tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
     </Tab.Navigator>
     </ErrorBoundary>
   );

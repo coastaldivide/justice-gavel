@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Justice Gavel API",
-    "version": "8.7.60",
+    "version": "8.7.61",
     "description": "Generated from the mounted Express routes by backend/scripts/generate-openapi.mjs. Do not edit by hand — rerun the generator after route changes (src/__tests__/openapi_drift.test.js fails on drift). Auth: most routes need `Authorization: Bearer <JWT>` from POST /api/auth/login; routes marked x-auth=admin-key need the X-Admin-Key header; x-auth=public routes need neither. Billing endpoints return 503 payments_unavailable until Stripe keys are configured; AI endpoints return 503 ai_unavailable without ANTHROPIC_API_KEY. See API_REFERENCE.md for the human-readable overview."
   },
   "servers": [
@@ -5954,6 +5954,55 @@
         }
       }
     },
+    "/api/billing/pi-lead/claim/{id}": {
+      "post": {
+        "operationId": "post_api_billing_pi-lead_claim_id",
+        "summary": "POST /api/billing/pi-lead/claim/{id}",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/billing/pi-lead/confirm/{id}": {
       "post": {
         "operationId": "post_api_billing_pi-lead_confirm_id",
@@ -5998,6 +6047,116 @@
             }
           }
         ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/pi-lead/credits": {
+      "get": {
+        "operationId": "get_api_billing_pi-lead_credits",
+        "summary": "GET /api/billing/pi-lead/credits",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/billing/pi-lead/credits/buy": {
+      "post": {
+        "operationId": "post_api_billing_pi-lead_credits_buy",
+        "summary": "POST /api/billing/pi-lead/credits/buy",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/pi-lead/credits/confirm": {
+      "post": {
+        "operationId": "post_api_billing_pi-lead_credits_confirm",
+        "summary": "POST /api/billing/pi-lead/credits/confirm",
+        "tags": [
+          "billing"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -6074,6 +6233,31 @@
         ],
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/billing/pi-lead/rules": {
+      "get": {
+        "operationId": "get_api_billing_pi-lead_rules",
+        "summary": "GET /api/billing/pi-lead/rules",
+        "tags": [
+          "billing"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },
@@ -6276,6 +6460,31 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/billing/record-clearing": {
+      "get": {
+        "operationId": "get_api_billing_record-clearing",
+        "summary": "GET /api/billing/record-clearing",
+        "tags": [
+          "billing"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"

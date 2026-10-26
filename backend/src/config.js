@@ -248,6 +248,9 @@ export const ALL_ENV_VARS = {
   STRIPE_SECRET_KEY:        process.env.STRIPE_SECRET_KEY          || '',    // unset → billing 503 payments_unavailable
   STRIPE_SECRET:            process.env.STRIPE_SECRET              || '',    // legacy alias of STRIPE_SECRET_KEY
   STRIPE_WEBHOOK_SECRET:    process.env.STRIPE_WEBHOOK_SECRET      || '',
+  // Lead rules (services/leadRules.js): set to 1 only after the filing is complete (docs/LEAD_FEE_RULES.md)
+  LEAD_REG_FL_QUALIFYING_PROVIDER: process.env.LEAD_REG_FL_QUALIFYING_PROVIDER || '',
+  LEAD_REG_CA_CERTIFIED_LRS:       process.env.LEAD_REG_CA_CERTIFIED_LRS       || '',
   STRIPE_ACH_ENABLED:       process.env.STRIPE_ACH_ENABLED         || 'false',
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',
   STRIPE_CANCEL_URL:        process.env.STRIPE_CANCEL_URL          || 'https://justicegavel.app/payment/cancel',

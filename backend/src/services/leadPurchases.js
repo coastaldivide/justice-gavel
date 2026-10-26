@@ -70,7 +70,7 @@ export async function recordBailLead(db, { bondsmanId, arrestId, pi }) {
 export async function recordCaseLead(db, { attorneyId, leadId, pi }) {
   const claim = await db.run(
     `UPDATE pi_leads SET status = 'accepted', accepted_by = ?, accepted_at = NOW(), fee_charged = ?, stripe_pi_id = ?,
-            reserved_until = NULL, updated_at = NOW()
+            paid_with = 'card', reserved_until = NULL, updated_at = NOW()
       WHERE id = ? AND (status = 'open' OR (status = 'reserved' AND (accepted_by = ? OR reserved_until < NOW())))`,
     [attorneyId, pi.amount, pi.id, leadId, attorneyId]);
   const created = !!claim.changes;

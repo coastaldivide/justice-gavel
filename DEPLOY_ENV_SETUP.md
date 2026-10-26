@@ -88,6 +88,8 @@ STRIPE_SECRET_KEY=<sk_live_/sk_test_...> payments; unset → charging/subscribin
                                           available yet". Setting it re-enables Stripe, no code change.
 STRIPE_SECRET                            legacy alias of STRIPE_SECRET_KEY (prefer STRIPE_SECRET_KEY)
 STRIPE_WEBHOOK_SECRET=<whsec_...>        Stripe webhook verification (POST /webhooks/stripe)
+LEAD_REG_FL_QUALIFYING_PROVIDER=1       Only after the Florida Bar Qualifying Provider registration (docs/LEAD_FEE_RULES.md); unset = no lead sales in FL
+LEAD_REG_CA_CERTIFIED_LRS=1             Only after State Bar certification as a lawyer referral service; unset = no lead sales in CA
 STRIPE_LEGAL_RADAR_ID                    consumer subscription price ids: Legal Radar $19.99/mo,
 STRIPE_ADVISOR_PRICE_ID                   24 Hour Advisor $24.99/mo or $199/yr, Legal Pro
 STRIPE_ADVISOR_ANNUAL_ID                  $34.99/mo or $299/yr, Esquire $49/mo or $410/yr. Create
@@ -351,6 +353,7 @@ the backend. They are listed in all three `.env.example` files.
 | Variable | Effect |
 |---|---|
 | `EXPO_PUBLIC_API_BASE` | API base URL. Unset → `https://api.justicegavel.app/api`. Local: `http://localhost:4000/api` |
+| `EXPO_PUBLIC_FULL_APP` | `1` shows every screen. Unset (default) shows the consumer core path; parked and professional screens show a "not available" card (`src/constants/features.ts`). |
 | `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Native payment sheet. Leave empty until Stripe is live |
 | `EXPO_PUBLIC_SENTRY_DSN` | App error tracking (off when empty) |
 | `EXPO_PUBLIC_MIXPANEL_TOKEN` | Analytics (off when empty) |

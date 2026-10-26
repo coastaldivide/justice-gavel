@@ -22,6 +22,7 @@ import { t, useLang, getLang } from '../i18n';
 import { RNShare, COPIED_ACTION } from '../utils/webCompat';
 import { getUserState, setUserState, localizedStateList, stateName as localStateName } from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
+import { Analytics } from '../services/analytics';
 import {
   fetchRightsCard, getCachedRightsCard, reviewPendingNotice, reviewedLabel as monthLabel, type RightsCardData, type RightsSection,
 } from '../services/corePath';
@@ -63,6 +64,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       const fresh = await fetchRightsCard(code || 'US');
       if (mounted.current) { setCard(fresh); setSource('live'); setSavedAt(null); }
     } catch { /* offline — bundled / saved copy stays on screen */ }
+    Analytics.track('rights_viewed', { state: code || 'US' });
   }, []);
 
   useEffect(() => {

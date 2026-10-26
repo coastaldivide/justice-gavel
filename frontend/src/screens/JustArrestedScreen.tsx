@@ -27,6 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { IllustrationRights } from '../components/Illustrations';
 import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
+import { Analytics } from '../services/analytics';
 import {
   getCoreProgress, saveCoreProgress, setPendingRoute, fetchRightsCard, getCachedRightsCard, prefetchRights, reviewedLabel,
   type CoreStep, type RightsCardData,
@@ -68,6 +69,8 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (mounted.current) setCard(fresh);
     } catch { /* offline: bundled script / cached copy stays */ }
   }, []);
+
+  useEffect(() => { Analytics.track('core_started', { from_guest: !inMainApp }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A language switch: show this language's saved copy / fetch it.
   const firstLang = useRef(true);
@@ -127,6 +130,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
 
   const alertFamily = async () => {
+    Analytics.track('family_shared', { channel: Platform.OS === 'web' ? 'share' : 'app' });
     const msg = t('ja_alert_msg', { url: 'https://justicegavel.app/just-arrested' });
     const enc = encodeURIComponent(msg);
     if (Platform.OS === 'web') {

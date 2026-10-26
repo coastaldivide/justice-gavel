@@ -20,7 +20,7 @@
 ```json
 {
   "ok": true, "status": "ok", "db": "ok",
-  "version": "8.7.60", "uptime_s": 12345,
+  "version": "8.7.61", "uptime_s": 12345,
   "features": { "ai": true, "payments": false, "email": false }
 }
 ```

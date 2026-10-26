@@ -31,6 +31,18 @@ import {
   formatCourtDay, formatCourtTime, hearingLabel, statusLabel, HEARING_TYPES, shouldShowDeliveryPrompt, dismissDeliveryPrompt,
   type CourtDate, type CourtDatesList, type FollowedCase, type ReminderDelivery,
 } from '../services/corePath';
+import {
+  addGuestCourtDate, listGuestCourtDates, removeGuestCourtDate, migrateGuestCourtDates, localRemindersSupported,
+  GuestCourtDateError, type GuestCourtDate, type ReminderText,
+} from '../services/guestCourtDates';
+import { Analytics } from '../services/analytics';
+
+/** Local-notification text for a guest court date, in the app's language. */
+export const guestReminderText: ReminderText = (kind, d) => {
+  const when = d.court_time ? `${formatCourtDay(d.court_date)} · ${formatCourtTime(d.court_time)}` : formatCourtDay(d.court_date);
+  const body = t(`gcd_n_${kind}`, { when });
+  return { title: t('gcd_n_title'), body: d.place ? `${body} ${t('gcd_n_place', { place: d.place })}` : body };
+};
 
 export interface GuidanceItem { id?: string; text: string; source: string }
 export interface Guidance {
@@ -124,6 +136,8 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
+  const toastRef = useRef(showToast);
+  toastRef.current = showToast;
   const { confirm } = useConfirm();
   const params = (route?.params || {}) as { add?: boolean; guidance?: 'missed'; caseId?: number | string };
   // Opened from one case ("Court dates & reminders" on its card): show that case's hearings, with "Show all".
@@ -160,6 +174,14 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
 
+  // signed out: court dates kept on this phone (services/guestCourtDates)
+  const [guestDates, setGuestDates] = useState<GuestCourtDate[]>([]);
+  const [gDate, setGDate] = useState('');
+  const [gTime, setGTime] = useState('');
+  const [gPlace, setGPlace] = useState('');
+  const [gError, setGError] = useState('');
+  const [gSaving, setGSaving] = useState(false);
+
   // follow
   const [code, setCode] = useState('');
   const [following_, setFollowingBusy] = useState(false);
@@ -169,7 +191,20 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     if (!mounted.current) return;
     setSignedIn(!!tok);
     api.get<Guidance>('/court-dates/guidance').then(r => { if (mounted.current && r.data?.missed) setServerGuidance(r.data); }).catch(() => {});
-    if (!tok) { setPhase('ok'); return; }
+    if (!tok) {
+      const g = await listGuestCourtDates();
+      if (mounted.current) { setGuestDates(g); setPhase('ok'); }
+      return;
+    }
+    // Signed in now: move any dates saved on this phone to the account (once; failures stay local).
+    const pending = await listGuestCourtDates();
+    if (pending.length) {
+      const tz = deviceTimeZone();
+      const out = await migrateGuestCourtDates(
+        async (body) => { await api.post('/court-dates', body, tz ? { headers: { 'X-Timezone': tz } } : undefined); },
+        t('gcd_case_title')).catch(() => ({ moved: 0, kept: pending.length }));
+      if (out.moved && mounted.current) toastRef.current(t('gcd_moved', { n: out.moved }), 'success');
+    }
     try {
       const [cd, fol] = await Promise.all([
         api.get<CourtDatesList>('/court-dates'),
@@ -241,6 +276,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       const tz = deviceTimeZone();
       const r = await api.post<CourtDate & { reminders: { deliver_at: string; days_before: number }[] }>('/court-dates', body, tz ? { headers: { 'X-Timezone': tz } } : undefined);
       const n = r.data.reminders?.length || 0;
+      Analytics.track('court_date_added', { guest: false, reminders: n });
       showToast(n ? (n === 4 ? t('cd_saved_all') : n === 1 ? t('cd_saved_one') : t('cd_saved_n', { n })) : t('cd_saved_past'), 'success');
       saveCoreProgress({ mark: 'court' }).catch(() => {});
       setAdding(false);
@@ -251,6 +287,35 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     } catch (e: any) {
       setFormError(e?.response?.status === 409 ? t('cd_err_duplicate') : apiErrorMessage(e, t('cd_save_failed')));
     } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
+  };
+
+  const saveGuest = async () => {
+    if (gSaving) return;
+    setGError(''); setGSaving(true);
+    try {
+      if (localRemindersSupported()) await requestNotificationsInContext().catch(() => 'declined');
+      const { reminders } = await addGuestCourtDate({ court_date: gDate.trim(), court_time: gTime.trim() || null, place: gPlace }, guestReminderText);
+      Analytics.track('court_date_added', { guest: true, reminders });
+      saveCoreProgress({ mark: 'court' }).catch(() => {});
+      showToast(localRemindersSupported()
+        ? (reminders ? t('gcd_saved_n', { n: reminders }) : t('gcd_saved_no_reminders'))
+        : t('gcd_saved_web'), reminders || !localRemindersSupported() ? 'success' : 'warning');
+      setGDate(''); setGTime(''); setGPlace('');
+      const g = await listGuestCourtDates();
+      if (mounted.current) setGuestDates(g);
+    } catch (e) {
+      const code = e instanceof GuestCourtDateError ? e.code : 'failed';
+      setGError(code === 'bad_date' ? t('cd_err_date') : code === 'bad_time' ? t('cd_err_time')
+        : code === 'duplicate' ? t('cd_err_duplicate') : code === 'past' ? t('gcd_err_past') : code === 'full' ? t('gcd_err_full') : t('cd_save_failed'));
+    } finally { if (mounted.current) setGSaving(false); }
+  };
+
+  const removeGuest = async (g: GuestCourtDate) => {
+    const ok = await confirm(t('gcd_remove_q'), t('gcd_remove_body'), { confirmLabel: t('gcd_remove'), destructive: true });
+    if (!ok) return;
+    await removeGuestCourtDate(g.id).catch(() => {});
+    const rows = await listGuestCourtDates();
+    if (mounted.current) setGuestDates(rows);
   };
 
   const follow = async () => {
@@ -294,8 +359,36 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="court-dates-screen">
         <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('ja_s3')}</Text>
+        {/* No account needed: the date and its reminders live on this phone. */}
+        <View style={styles.box} testID="guest-court-form">
+          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>{t('gcd_title')}</Text>
+          <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>{localRemindersSupported() ? t('gcd_intro') : t('gcd_intro_web')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_court_date')}</Text>
+          <TextInput accessibilityLabel={t('cd_date_a11y')} testID="guest-court-date" style={styles.inputFull} value={gDate} onChangeText={setGDate}
+            placeholder={t('cd_date_placeholder')} placeholderTextColor={colors.textMuted} maxLength={10} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_time_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_time_a11y')} testID="guest-court-time" style={styles.inputFull} value={gTime} onChangeText={setGTime}
+            placeholder={t('cd_time_placeholder')} placeholderTextColor={colors.textMuted} maxLength={5} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_room_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_room_a11y')} testID="guest-court-place" style={styles.inputFull} value={gPlace} onChangeText={setGPlace}
+            placeholder={t('cd_room_placeholder')} placeholderTextColor={colors.textMuted} maxLength={200} />
+          {!!gError && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="guest-court-error" accessibilityRole="alert">{gError}</Text>}
+          <TouchableOpacity accessibilityRole="button" testID="guest-court-save" style={[styles.primaryBtn, gSaving && { opacity: 0.6 }]} onPress={saveGuest} disabled={gSaving}>
+            <IconLabel center icon={ICONS.calendarAdd} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('gcd_save')}</IconLabel>
+          </TouchableOpacity>
+        </View>
+        {guestDates.map(g => (
+          <View key={g.id} style={styles.row} testID="guest-court-row">
+            <IconLabel icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate}>{formatCourtDay(g.court_date)}{g.court_time ? ` · ${formatCourtTime(g.court_time)}` : ''}</IconLabel>
+            {!!g.place && <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{g.place}</Text>}
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{!localRemindersSupported() ? t('gcd_row_web') : g.notification_ids.length ? t('gcd_row_reminders', { n: g.notification_ids.length }) : t('gcd_row_no_reminders')}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="guest-court-remove" onPress={() => removeGuest(g)} style={{ marginTop: 6 }}>
+              <Text maxFontSizeMultiplier={1.3} style={styles.link}>{t('gcd_remove')}</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
         <View style={styles.box} testID="court-dates-sign-in">
-          <IconLabel icon={ICONS.lock} color={colors.textPrimary} textStyle={styles.boxText} maxFontSizeMultiplier={1.5}>{t('ja_court_signin')}</IconLabel>
+          <IconLabel icon={ICONS.lock} color={colors.textPrimary} textStyle={styles.boxText} maxFontSizeMultiplier={1.5}>{t('gcd_account_pitch')}</IconLabel>
           <TouchableOpacity accessibilityRole="button" testID="court-dates-register" style={styles.primaryBtn} onPress={() => (navigation as any).navigate('Register')}>
             <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('ja_create')}</Text>
           </TouchableOpacity>
@@ -539,6 +632,7 @@ export const makeStyles = (c: any) => StyleSheet.create({
   chipOn: { backgroundColor: c.navy, borderColor: c.navy },
   chipText: { color: c.textPrimary, fontSize: 14, fontWeight: '700' },
   chipTextOn: { color: c.white },
+  link: { color: c.textBrand, fontSize: 15, fontWeight: '800', textDecorationLine: 'underline' },
   error: { color: c.textPrimary, backgroundColor: c.emergencyBg, borderRadius: 10, padding: 10, fontSize: 14, marginTop: 10 },
 });
 

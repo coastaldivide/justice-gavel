@@ -1,6 +1,6 @@
 # Justice Gavel — Incident Runbook
 
-**App version:** 8.7.60 (all packages aligned; `/health` reports it) |
+**App version:** 8.7.61 (all packages aligned; `/health` reports it) |
 **On-call contact:** engineering@justicegavel.app
 
 ---
