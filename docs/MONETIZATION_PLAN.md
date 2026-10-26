@@ -1,9 +1,41 @@
-# Justice Gavel — monetization plan and pricing (October 26, 2026 — v2, after independent quant review)
+# Justice Gavel — monetization plan and pricing (October 26, 2026 — v3: priced to match competitors)
 
 *A quant's view: who pays, how much, what it costs to serve them, and which money is safe to take.
 Figures marked "benchmark" come from the sources at the end. Scenario numbers are illustrative
 models, not forecasts. Not legal or financial advice. Every line that charges lawyers or bail agents
 for business needs an attorney's sign-off in each state first.*
+
+## 0. Competitor price map (v3 — prices copied from the market)
+
+Rule: match the competitor that sells the **same thing**. Where Justice Gavel has less (no bond
+accounting, no citator, no lawyer included), copy the competitor tier that has the same features,
+not the top one. Prices checked October 26, 2026.
+
+| JG product | Closest competitor (published price) | JG price (copied) |
+|---|---|---|
+| **Bail agent software** — check-ins, court reminders, client tracking | **eBail** $99 / $199 / $349 a month, 20% off annual · **Captira** $99/mo flat · **BailBooks** from ~$55/mo | **$99 / $199 / $349 a month** (Starter 1 county · Pro 3 · Market all), **20% off annual** = $950 / $1,910 / $3,350 a year |
+| Reminder texts sent for bail agents | Captira and eBail: **5¢ per text** | **5¢ per text** (our cost ≈0.7¢) |
+| Re-arrest monitoring per client | eBail: 10 free, then **$0.65–0.75 per client a month** | **$0.75 per client a month** after 10 free — *paused until counsel clears arrest data use* |
+| **Lawyer profile** — badge, photo, reviews, no competitor ads | **Avvo Pro** $49.95/mo ($599/yr) · **Justia Connect Pro** $19.99/mo ($199.80/yr) | **$49.95/mo, $499/yr** |
+| **Lawyer case-match membership** — exclusive client requests in chosen areas | **LegalMatch** from **$455/mo** · FindLaw packages from ~$500/mo | **$455/mo**. Sell only once a county shows steady request volume; until then, Pro Profile only |
+| **Per-lead (where state ethics rules allow)** | Google Local Services Ads, legal: **$195–250 a lead** · criminal market: DUI $75–150, felony $150–300, drug $50–125 · PI $100–600 | **DUI $110 · felony $225 · drug $90 · misdemeanor $110 · PI $250** (market midpoints) |
+| **Attorney AI tools** (Esquire: AI research chat, motions, deadlines) | Budget legal AI: LegesGPT $13.99, TheLawGPT $19.99, Descrybe $25–50 · grounded research: Midpage $80–100, Vaquill $100–120 | **$49/mo** (Descrybe tier — no citator, so not $100) |
+| **Consumer legal help subscription** (AI answers, no lawyer included) | AI chat apps $13.99–19.99 · Rocket Lawyer $34.99–64.99/mo, annual $149–349 · LegalShield $39.95–59.95 (real lawyers) · LegalZoom Personal $199/yr (lawyer consults) | **Legal Pro $19.99/mo or $149/yr** (AI-app tier; JG includes no lawyer, so not LegalShield's price) |
+| One-time **Case Pass** (90 days) | No direct competitor. JustAnswer charges $1–5 to ask, then $28–60/mo — and draws FTC complaints for it. **Do not copy the trial-to-membership trap.** | **$29 one time** (≈ 1.5 months of Legal Pro) |
+| **Consultation booking** (platform fee on top of the lawyer's own fee) | Rocket Lawyer sessions $149 (30 min) / $249 (60 min) *including* the lawyer | **$10 / $15 / $25** platform fee (unchanged; the lawyer sets their own fee) |
+| **Court / PD reminder service** | **Tyler Technologies** (Burnet County TX): **$15,000/yr** ≤50k texts · $25k ≤100k · $45k ≤300k · $50k ≤500k · $70k ≤1M · **$6,135 setup** | **Same tiers: $15k / $25k / $45k / $50k / $70k a year + $6,000 setup** |
+| **Bar prep** | **UWorld MBE** $419 · **AdaptiBar** $395 | Parked: 548 unreviewed questions can't be sold at their price. If relaunched after review, **$199** |
+
+**Where this changes v2:**
+- Bail agents: $69/$199/$399 → **$99/$199/$349**, to match eBail exactly.
+- Lawyers: one $199 profile → **$49.95 profile + $455 case-match membership**, to match Avvo Pro and LegalMatch.
+- Consumer: $14.99 → **$19.99/mo, $149/yr**.
+- Counties: $12k → **Tyler's tiers**.
+- Per-lead: moved to market midpoints.
+
+**The one thing not to copy:** JustAnswer-style $1 trials that turn into $46–60 a month without
+clear consent. Under the FTC's ROSCA and state auto-renewal laws that model draws complaints and
+enforcement. Justice Gavel shows the price and the renewal before charging.
 
 ## 1. The core insight
 
@@ -45,10 +77,10 @@ Every missed court date can cost a bail agent the full bail amount. Check-ins an
 
 | Plan | Price | Includes | Benchmark |
 |---|---|---|---|
-| Agent Starter | **$69/mo** ($690/yr) | Upgraded listing (photo, hours, languages, license number shown), up to 25 active clients with GPS check-ins and court reminders by text/push | Captira charges $99/mo for full bail software; many agents already pay that, so Starter must sit below it (v2: $99 → $69) |
-| Agent Pro | **$199/mo** ($1,990/yr) | 3 counties, up to 100 active clients, missed-check-in alerts, reports | |
-| Agency | **$399/mo** ($3,990/yr) | All counties, up to 300 active clients, multiple users | |
-| Extra clients | **$1.50 per client per month** above the plan limit | | Replaces the planned $9.99/client, which is far above market |
+| Agent Starter | **$99/mo** ($950/yr) — v3, matches eBail/Captira | Upgraded listing (photo, hours, languages, license number shown), up to 25 active clients with GPS check-ins and court reminders by text/push | Captira charges $99/mo for full bail software; many agents already pay that, so Starter must sit below it (v2: $99 → $69) |
+| Agent Pro | **$199/mo** ($1,910/yr) — matches eBail | 3 counties, up to 100 active clients, missed-check-in alerts, reports | |
+| Agency | **$349/mo** ($3,350/yr) — matches eBail | All counties, up to 300 active clients, multiple users | |
+| Reminder texts | **5¢ per text** (matches Captira/eBail); client limits removed, as at eBail | | Replaces the planned $9.99/client, which is far above market |
 
 - **Stop:** the "Top placement in all searches" promise (the app doesn't do it, and it would be a
   paid recommendation).
@@ -61,9 +93,10 @@ Every missed court date can cost a bail agent the full bail amount. Check-ins an
 | Product | Price | Rule that keeps it legal |
 |---|---|---|
 | Free basic listing | $0 | Keeps the directory complete and neutral. |
-| Verified Pro Profile | **$199/mo flat, everywhere** (v2). **Founding rate $149/mo** for the first 50 lawyers, locked for 12 months. No guarantees, no refunds; billed monthly or annually, cancel anytime to stop renewal. | Bar-verified badge, photo, practice areas, languages, intake form, booking calendar, video consults, profile stats. A flat advertising fee (ABA Rule 7.2(b)(1) allows paying for advertising). **Search order stays merit-based, never paid.** |
-| Esquire practice tools | **$49/mo**, or included free in Pro Profile | AI research, motion templates, deadline tools (only once the deadline rules are verified). |
-| Per-lead (only in states whose ethics rules allow it) | **DUI $90 · misdemeanor $75 · felony $150 · drug $75 · PI $250 · civil rights $200 · employment $100** | The person asks for contact and picks the lawyer(s). Price is flat and never tied to the case fee. No "we recommend" wording. Benchmarks: criminal $50–$300 a lead; PI $100–$600, average ~$284. Today's $200 PI fee is below market. |
+| Verified Pro Profile | **$49.95/mo or $499/yr, flat everywhere** (v3 — matches Avvo Pro). No guarantees, no refunds. |
+| Case-match membership | **$455/mo** (matches LegalMatch). Exclusive client requests in chosen practice areas and counties. Launch per county once request volume is steady. No guarantees, no refunds. | Bar-verified badge, photo, practice areas, languages, intake form, booking calendar, video consults, profile stats. A flat advertising fee (ABA Rule 7.2(b)(1) allows paying for advertising). **Search order stays merit-based, never paid.** |
+| Esquire practice tools | **$49/mo** (matches Descrybe-tier legal AI) | AI research, motion templates, deadline tools (only once the deadline rules are verified). |
+| Per-lead (only in states whose ethics rules allow it) | **DUI $110 · misdemeanor $110 · felony $225 · drug $90 · PI $250 · civil rights $200 · employment $100** (v3 market midpoints) | The person asks for contact and picks the lawyer(s). Price is flat and never tied to the case fee. No "we recommend" wording. Benchmarks: criminal $50–$300 a lead; PI $100–$600, average ~$284. Today's $200 PI fee is below market. |
 
 ### C. Courts, public defenders, pretrial services (slowest to close, steadiest money)
 Court reminders are a known government purchase. They are also the use the 21–26% evidence
@@ -71,9 +104,9 @@ supports, once texting via Telnyx is live.
 
 | Package | Annual price | Benchmark |
 |---|---|---|
-| Small county / one PD office (≤50,000 texts) | **$12,000/yr** + $5,000 setup | Tyler Technologies, Burnet County TX: $15,000/yr for ≤50k texts + $6,135 setup |
-| Mid county (≤150,000 texts) | **$25,000–$40,000/yr** | Tyler tiers: $25k (≤100k), $45k (≤300k) |
-| Large county (≤1M texts) | **$50,000–$70,000/yr** | Tyler: $70k (≤1M) |
+| Small county / one PD office (≤50,000 texts) | **$15,000/yr** + $6,000 setup (v3 — matches Tyler) | Tyler Technologies, Burnet County TX: $15,000/yr for ≤50k texts + $6,135 setup |
+| Mid county | **$25,000/yr** (≤100k texts) · **$45,000/yr** (≤300k) | Tyler tiers: $25k (≤100k), $45k (≤300k) |
+| Large county | **$50,000/yr** (≤500k) · **$70,000/yr** (≤1M) | Tyler: $70k (≤1M) |
 
 Texts cost ~$0.007 each, so 50,000 texts cost about $350. The gross margin is in the software and
 the reporting (appearance rates). Start with a free 90-day pilot at one public defender office —
@@ -84,7 +117,7 @@ how Uptrust entered the market — and use the measured appearance rate to sell 
 |---|---|---|
 | Core path | **Free** | Rights card, lawyer + bail search, court reminders (push, browser, email, text), family followers, 3 AI questions a day |
 | Case Pass | **$29 one time for 90 days**; $19 to extend 90 days | Unlimited AI questions, document scan + translation, interpreter, audio transcription, case file tools. Matches how long a case actually lasts. |
-| Ongoing Legal Pro (probation, expungement, repeat users) | **$14.99/mo or $149/yr** (v2: true "2 months free") | Replaces the three current tiers. Benchmark: LegalShield $39.95–$59.95/mo includes real lawyers; this app can't promise that, so it must price well below. |
+| Ongoing Legal Pro (probation, expungement, repeat users) | **$19.99/mo or $149/yr** (v3 — AI legal app tier; Rocket Lawyer's entry annual is $149) | Replaces the three current tiers. Benchmark: LegalShield $39.95–$59.95/mo includes real lawyers; this app can't promise that, so it must price well below. |
 | Video consult booking fee | **$10 / $15 / $25** (15 / 30 / 60 min) — keep | Paid by the person, flat. Never a percentage of the lawyer's fee (fee-splitting). |
 | Family Connect ($28.99 for the 3 nearest lawyers + 2 bail agents) | **Make free** | It charges a panicked family for publicly listed phone numbers. Low value, high complaint and FTC risk. Earn on the professional side instead. |
 
@@ -123,20 +156,25 @@ The v1 scenarios had four problems, each fixed here:
 
 | | Conservative | Base | Strong |
 |---|---|---|---|
-| Paying bail agents (avg) | 20 @ $99 | 60 @ $110 | 150 @ $140 |
-| Paying lawyers (founding/list mix) | 25 @ $174 | 80 @ $174 | 200 @ $199 |
-| County / PD contracts signed | 0 (pilots only) | 1 @ $12k/yr | 3 @ $12k/yr |
-| Case Pass buyers per month (one-time, not recurring) | 0.5% of 4,000 | 1% of 12,000 | 1.5% of 40,000 |
-| **Revenue per month** | **$7,735** | **$28,000** | **$90,950** |
-| **Annual run rate** | **$93K** | **$336K** | **$1.09M** |
-| Per-lead fees (only after counsel, state by state) | upside | upside | upside |
+| Paying bail agents (avg plan) | 20 @ $120 | 60 @ $150 | 150 @ $180 |
+| Agent reminder texts (5¢; 150 clients × 8 texts) | $1,200 | $3,600 | $9,000 |
+| Lawyer Pro Profiles @ $49.95 | 40 | 120 | 300 |
+| Case-match memberships @ $455 | 0 | 10 | 40 |
+| County / PD contracts @ $15k | 0 (pilots) | 1 | 3 |
+| Case Pass buyers per month ($29, one-time) | 0.5% of 4,000 | 1% of 12,000 | 1.5% of 40,000 |
+| **Revenue per month** | **$6,778** | **$30,124** | **$97,835** |
+| **Annual run rate** | **$81K** | **$361K** | **$1.17M** |
+| Per-lead fees (only after counsel) | upside | upside | upside |
 
-Base-case mix:
-- lawyers 50%
-- bail agents 27% (subscriptions 24% + extra clients 3%)
+Base-case mix (v3):
+- bail agents 42% (plans 30% + texts 12%)
+- lawyers 35% (profiles 20% + case-match 15%)
 - Case Pass 12%
-- consult fees 8%
+- consult fees 7%
 - counties 4%
+
+Copying competitor prices lowers the lawyer profile price ($199 → $49.95) and moves the money to
+the case-match tier, which, like LegalMatch's, must deliver real client requests to hold.
 
 **AI cost guardrail:** the $50/day AI cap covers about 2,900 answers a day. At 12,000 monthly
 users that can bind, so raise the cap as Case Pass revenue grows (each $29 pass covers about
