@@ -59,4 +59,4 @@ Stripe (all payments), Resend (e-mail, password reset), Twilio (SMS and SOS text
 
 Camera, microphone, recording, the document scanner, the native payment sheet, push
 delivery and the iOS multi-recipient SMS link were checked in code only. They need a run on
-a real iPhone and Android phone (see the Real-World Test Script).
+a real iPhone and Android phone (see [REAL_DEVICE_TEST_SCRIPT.md](./REAL_DEVICE_TEST_SCRIPT.md)).

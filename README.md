@@ -2,6 +2,8 @@
 
 > *Justice, in your hands.* — **v8.7.60**
 
+**New lead developer? Start with [LEAD_DEVELOPER_HANDOFF.md](./LEAD_DEVELOPER_HANDOFF.md).**
+
 Mobile legal-services platform for criminal defendants, their families, and
 defense attorneys: AI legal chat, lawyer & bail-agent search, case files,
 encrypted attorney messaging, know-your-rights content, expungement tools, an
@@ -25,7 +27,7 @@ backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             Email: Resend (emails are logged, not sent, until RESEND_API_KEY is set)
             Queue: BullMQ when REDIS_URL is set, in-process otherwise
 
-supabase/migrations/   PostgreSQL schema — plain-SQL files (00…23), applied
+supabase/migrations/   PostgreSQL schema — plain-SQL files (00…28), applied
             in filename order with psql (backend/scripts/migrate.sh, the
             Render pre-deploy step); idempotent; RLS enabled deny-all
             (no policies — the Express backend is the only DB client)
@@ -52,9 +54,12 @@ implicate ABA Model Rules 5.4/7.2). Single sources of truth:
 | Employment | $100 |
 | ICE detention | $75 |
 
-Consumer subscriptions: Legal Radar $19.99/mo · Advisor $24.99/mo ($199/yr) ·
-Legal Pro $34.99/mo ($299/yr) · Esquire $49/mo ($410/yr). Bondsman plans
-$49 / $149 / $349 per month, plus the flat $100 per accepted lead. Lawyer
+Plans (single source of truth: `backend/src/routes/billing/plans.js` — every
+screen, push and the Stripe setup script read from it): consumer Legal Radar
+$19.99/mo · 24 Hour Advisor $24.99/mo · Legal Pro $34.99/mo (monthly only, 7-day
+trial); attorney Justice Gavel Esquire $49.00/mo. Bail-agent arrest-alert plans
+by county coverage: Starter $49/mo (1 county) · Pro $149/mo (3) · Market $349/mo
+(all), annual $490 / $1,490 / $3,490 — plus the flat $100 per accepted lead. Lawyer
 search results are merit-ordered — no paid placement, no referral program.
 
 ## Quick start

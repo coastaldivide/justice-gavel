@@ -10,7 +10,8 @@ these notes describe the codebase *as of the note's date*, not today. For
 current documentation see:
 
 - [README.md](../../README.md) — what the app is, architecture, quick start
-- [RAILWAY_ENV_SETUP.md](../../RAILWAY_ENV_SETUP.md) — environment variables + deploy
+- [DEPLOY_ENV_SETUP.md](../../DEPLOY_ENV_SETUP.md) — environment variables + deploy (Render)
+- [LEAD_DEVELOPER_HANDOFF.md](../../LEAD_DEVELOPER_HANDOFF.md) — start here
 - [API_REFERENCE.md](../../API_REFERENCE.md) / [openapi.json](../../openapi.json) — the API
 - [RUNBOOK.md](../../RUNBOOK.md) — operations and incidents
 
