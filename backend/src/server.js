@@ -205,7 +205,7 @@ server.on('listening', () => {
 
   // Bond Desk: texts sent for bail agents (5¢ each) go on their plan invoice once a day.
   const textBillTick = () => import('./services/bondDesk/textBilling.js')
-    .then(async (m) => runOnce('bd-text-billing', dayKey(), async () => m.billAgentTexts(await (await import('./db/index.js')).getDb())))
+    .then((m) => runOnce('bd-text-billing', dayKey(), async () => m.billAgentTexts(await (await import('./db/index.js')).getDb())))
     .catch(err => logger.error({ err: err.message }, '[bond-desk] text billing run failed'));
   const firstBill = setTimeout(() => {
     textBillTick();

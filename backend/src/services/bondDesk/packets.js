@@ -2,6 +2,7 @@
  * services/bondDesk/packets.js — a signer's copies: prepare (fill), sign (typed name +
  * certificate), and the packet's status. Files are stored encrypted (attachmentStorage).
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { newStorageKey } from '../attachmentStorage.js';
 import { encryptBuffer, decryptBuffer } from '../encryption.js';
 import { preparePdf, signPdf, certificatePdf, sha256, PdfError } from './pdf.js';
@@ -74,7 +75,7 @@ export async function prepareSigner(db, storage, { packet, signer, ip, ua }) {
       made.push({ form: f, key: await putFile(storage, pdf), sha: sha256(pdf) });
     }
   } catch (e) {
-    for (const m of made) await storage.remove(m.key).catch(() => {});
+    for (const m of made) await storage.remove(m.key).catch(logIgnored('bondDesk/packets: remove unused copy'));
     throw e;
   }
   const won = await db.transaction(async (tx) => {
@@ -89,7 +90,7 @@ export async function prepareSigner(db, storage, { packet, signer, ip, ua }) {
     await tx.run(`UPDATE bd_packets SET status = 'in_progress' WHERE id = ? AND status = 'sent'`, [packet.id]);
     return true;
   });
-  if (!won) for (const m of made) await storage.remove(m.key).catch(() => {});
+  if (!won) for (const m of made) await storage.remove(m.key).catch(logIgnored('bondDesk/packets: remove unused copy'));
   return listDocs(db, signer.id);
 }
 
@@ -146,7 +147,7 @@ export async function signSigner(db, storage, { packet, signer, typedName, ip, u
       made.push({ doc: d, key: await putFile(storage, signed), sha: sha256(signed) });
     }
   } catch (e) {
-    for (const m of made) await storage.remove(m.key).catch(() => {});
+    for (const m of made) await storage.remove(m.key).catch(logIgnored('bondDesk/packets: remove unused copy'));
     throw e;
   }
   let won;
@@ -166,11 +167,11 @@ export async function signSigner(db, storage, { packet, signer, typedName, ip, u
     await refreshPacketStatus(tx, packet.id);
     return true;
   }); } catch (e) {
-    for (const m of made) await storage.remove(m.key).catch(() => {});
+    for (const m of made) await storage.remove(m.key).catch(logIgnored('bondDesk/packets: remove unused copy'));
     throw e;
   }
   if (!won) {
-    for (const m of made) await storage.remove(m.key).catch(() => {});
+    for (const m of made) await storage.remove(m.key).catch(logIgnored('bondDesk/packets: remove unused copy'));
     throw new SignError(409, 'already_signed');
   }
   return { signed_at: signedAt.toISOString() };

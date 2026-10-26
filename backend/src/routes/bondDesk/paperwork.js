@@ -246,8 +246,8 @@ router.post('/packets/:id/signers/:signerId/link', handle(async (req, res, db) =
   const deliverHow = oneOf(b.deliver, ['sms', 'email', 'both', 'none'], 'deliver', { required: false, fallback: 'none' });
   if ((deliverHow === 'sms' || deliverHow === 'both') && b.consent_confirmed !== true) throw new BdError(400, 'consent_required');
   const token = newToken();
-  await db.run(`UPDATE bd_signers SET token_hash = ?, token_expires_at = make_interval(days => ?) + NOW(), sent_at = NOW() WHERE id = ?`,
-    [hashToken(token), LINK_DAYS, s.id]);
+  const rotate = `UPDATE bd_signers SET token_hash = ?, token_expires_at = NOW() + make_interval(days => ?), sent_at = NOW() WHERE id = ?`;
+  await db.run(rotate, [hashToken(token), LINK_DAYS, s.id]);
   await event(db, { packetId: p.id, signerId: Number(s.id), event: 'link_rotated' });
   const link = signLink(token);
   const bond = await db.get('SELECT id, defendant_name FROM bd_bonds WHERE id = ?', [p.bond_id]);
