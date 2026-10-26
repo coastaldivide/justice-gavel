@@ -42,11 +42,11 @@ export const PLAN_NAMES = perLang((): Record<string, string> => ({
 
 /** Monthly prices in USD for display only (not billing) */
 export const PLAN_DISPLAY_PRICES = {
-  legal_radar:  19.99,
-  advisor:      24.99,
-  legal_pro:    34.99,
+  legal_radar:  19.99,         // retired Oct 2026 (old subscribers only)
+  advisor:      24.99,         // retired Oct 2026 (old subscribers only)
+  legal_pro:    19.99,
   esquire:      49.00,
-  advisor_annual:   199 / 12,   // ~$16.58/mo billed annually
-  legal_pro_annual: 299 / 12,   // ~$24.92/mo billed annually
+  advisor_annual:   199 / 12,   // retired Oct 2026
+  legal_pro_annual: 149 / 12,   // ~$12.42/mo billed $149/yr
   esquire_annual:   410 / 12,   // ~$34.17/mo billed annually
 } as const;

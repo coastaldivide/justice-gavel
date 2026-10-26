@@ -4,6 +4,8 @@ import barVerifyRouter from './routes/admin/barVerification.js';
 import impactRouter from './routes/impact.js';
 import legalAidRouter from './routes/legalAid.js';
 import bondsmanCRMRouter from './routes/bondsmanCRM.js';
+import bondDeskRouter from './routes/bondDesk/index.js';
+import signRouter from './routes/sign.js';
 import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
@@ -245,6 +247,8 @@ app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
 if (process.env.NODE_ENV !== 'test') {
+  // Signing links carry their credential in the path (/api/sign/<token>/…): never log it.
+  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/)[^/]+/, '$1[link]');
   if (IS_PROD) {
     // One JSON object per line (Render log stream / Datadog-friendly). Logs req.path, never
     // the query string — search params can carry PII (names, emails, counties).
@@ -255,14 +259,15 @@ if (process.env.NODE_ENV !== 'test') {
       method:     tokens.method(req, res),
       // originalUrl, not req.path: by log time routing has rewritten req.path
       // to the router-relative path. Query string stripped — it can carry PII.
-      path:       String(req.originalUrl || req.url || '').split('?')[0],
+      path:       redactSecretPath(String(req.originalUrl || req.url || '').split('?')[0]),
       status:     Number(tokens.status(req, res)) || 0,
       length:     Number(tokens.res(req, res, 'content-length')) || 0,
       ms:         Number(tokens['response-time'](req, res)) || 0,
       request_id: req.id,
     }), { skip: (req) => req.path === '/health' }));
   } else {
-    app.use(morgan('dev'));
+    morgan.token('safe-url', (req) => redactSecretPath(String(req.originalUrl || req.url || '').split('?')[0]));
+    app.use(morgan(':method :safe-url :status :response-time ms'));
   }
 }
 
@@ -536,6 +541,8 @@ app.use('/api/jobs',           jobsRouter);           // async AI job polling   
 app.use('/api/cases', caseLifecycleRouter);
 app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
 app.use('/api/bondsman', bondsmanCRMRouter);
+app.use('/api/bond-desk', bondDeskRouter);   // bond paperwork, e-sign, ledger, powers (docs/BOND_DESK.md)
+app.use('/api/sign', signRouter);            // public signing links (no account)
 app.use('/api/legal-aid', legalAidRouter);
 app.use('/api/impact', impactRouter);
 app.use('/api/admin/bar-verification', barVerifyRouter);

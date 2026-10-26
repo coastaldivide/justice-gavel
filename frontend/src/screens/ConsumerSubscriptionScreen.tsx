@@ -6,6 +6,10 @@
  * enforces. Buying: services/purchase.ts (payment sheet on a phone, Stripe Checkout
  * in a browser, then a server-verified confirm). Nothing unlocks before the card is
  * confirmed. Without Stripe the server answers payments_unavailable → friendly message.
+ *
+ * Case Pass (one-time, 90 days, no renewal): GET /billing/case-pass, then
+ * POST /billing/case-pass/buy → card → POST /billing/case-pass/confirm (the
+ * server picks $29, or $19 to add 90 days to a pass that is still active).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -23,6 +27,9 @@ import { t, useLang, locale } from '../i18n';
 export { consumerPlansFrom };
 export type { ConsumerPlan };
 
+export interface CasePassInfo { cents: number; extend_cents: number; days: number; payments_live?: boolean; active_until: string | null; can_extend: boolean; features: string[] }
+type CasePassConfirm = { ok: boolean; active_until: string | null; message: string };
+const centsUsd = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD', minimumFractionDigits: cents % 100 ? 2 : 0 });
 const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '');
 
 /** One line about the current plan's state (trial end, renewal, failed payment, ending). */
@@ -76,22 +83,36 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
 
   const confirmPlan = useCallback(async (ids: Record<string, string | undefined>) =>
     (await api.post('/billing/subscription/confirm', ids)).data as { subscription: SubscriptionView; message: string }, []);
+  const confirmPass = useCallback(async (ids: Record<string, string | undefined>) =>
+    (await api.post('/billing/case-pass/confirm', ids)).data as CasePassConfirm, []);
+  const [pass, setPass] = useState<CasePassInfo | null>(null);
+  const loadPass = useCallback(() => {
+    api.get<CasePassInfo>('/billing/case-pass').then(r => { if (mounted.current) setPass(r.data || null); }).catch(() => { /* card hidden offline */ });
+  }, []);
+  useEffect(() => { loadPass(); }, [loadPass, hasSession]);
 
   // Back from Stripe Checkout (web): finish the purchase once.
   const sessionId = (route?.params as { checkout_session_id?: string } | undefined)?.checkout_session_id;
   useEffect(() => {
     if (!sessionId || !hasSession) return;
-    takePendingCheckout('consumer_plan');
+    const isPass = !!takePendingCheckout('case_pass');
+    if (!isPass) takePendingCheckout('consumer_plan');
     setBusy('checkout');
-    purchase.finish(confirmPlan, { checkout_session_id: sessionId }).then(r => {
+    const done = (r: { status: string; data?: { message: string }; message?: string }) => {
       if (!mounted.current) return;
       setBusy(null);
-      if (r.status === 'done') { setNotice({ text: r.data.message, tone: 'ok' }); load(); }
-      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+      if (r.status === 'done') { setNotice({ text: r.data?.message || '', tone: 'ok' }); load(); loadPass(); }
+      else if (r.status === 'error') setNotice({ text: r.message || t('pay_failed'), tone: 'error' });
+    };
+    if (isPass) { purchase.finish(confirmPass, { checkout_session_id: sessionId }).then(done); return; }
+    purchase.finish(confirmPlan, { checkout_session_id: sessionId }).then(r => {
+      // No remembered purchase (private browsing): the session may be a Case Pass payment.
+      if (r.status === 'error') purchase.finish(confirmPass, { checkout_session_id: sessionId }).then(r2 => done(r2.status === 'done' ? r2 : r));
+      else done(r);
     });
     // purchase.finish is stable for this screen's lifetime
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, hasSession, confirmPlan, load]);
+  }, [sessionId, hasSession, confirmPlan, confirmPass, load, loadPass]);
 
   const iosGate = () => {
     // Apple §3.1.1: digital subscriptions on iOS are bought on the website.
@@ -111,6 +132,20 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
     if (!mounted.current) return;
     setBusy(null);
     if (r.status === 'done') { setNotice({ text: r.data.message, tone: 'ok' }); load(); }
+    else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+  });
+
+  const buyPass = () => requireAuth(async () => {
+    if (Platform.OS === 'ios') return iosGate();
+    setBusy('case_pass'); setNotice(null);
+    const r = await purchase.run({
+      key: 'case_pass',
+      start: async (ui) => (await api.post('/billing/case-pass/buy', { ui, return_path: '/plans' })).data,
+      confirm: confirmPass,
+    });
+    if (!mounted.current) return;
+    setBusy(null);
+    if (r.status === 'done') { setNotice({ text: r.data.message, tone: 'ok' }); loadPass(); load(); }
     else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
   });
 
@@ -206,6 +241,32 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
       </View>
 
       {!!loadError && <Text maxFontSizeMultiplier={1.4} style={s.footer}>{loadError}</Text>}
+      {pass && (
+        <View testID="case-pass-card" style={[s.card, !!pass.active_until && { borderColor: colors.legal }]}>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('cp_title')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.price} testID="case-pass-price">{t('cp_price', { price: centsUsd(pass.cents), days: pass.days })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('cp_no_renewal')}</Text>
+          {!!pass.active_until && <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { color: colors.legal }]} testID="case-pass-active">{t('cp_active_until', { date: fmtDay(pass.active_until) })}</Text>}
+          <View style={{ marginVertical: 10 }}>
+            {(pass.features || []).map(f => (
+              <View key={f} style={s.featureRow}>
+                <Text maxFontSizeMultiplier={1.4} style={[s.check, { color: colors.textBrand }]}>✓</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.featureText}>{featureLabel(f)}</Text>
+              </View>
+            ))}
+          </View>
+          {(!pass.active_until || pass.can_extend) && (
+            <TouchableOpacity accessibilityRole="button" testID="case-pass-buy" style={[s.primaryBtn, !!busy && { opacity: 0.6 }]} disabled={!!busy} onPress={buyPass}>
+              {busy === 'case_pass' ? <ActivityIndicator color={COLORS.white} /> : (
+                <Text maxFontSizeMultiplier={1.4} style={s.primaryBtnText}>
+                  {pass.active_until ? t('cp_extend', { days: pass.days, price: centsUsd(pass.extend_cents) }) : t('cp_buy', { price: centsUsd(pass.cents) })}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+          <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { textAlign: 'center' }]}>{t('cp_final')}</Text>
+        </View>
+      )}
       {plans.map(p => {
         const useAnnual = annual && !!p.annualKey;
         const key = useAnnual ? (p.annualKey as string) : p.key;

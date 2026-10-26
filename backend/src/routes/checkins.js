@@ -47,7 +47,9 @@ const router = Router();
 const say = (req, key, params) => msg(resolveLang(req), key, params);
 const fail = (req, res, status, key, extra = {}) => res.status(status).json({ error: say(req, key), ...extra });
 
-export const FEE_PER_DEFENDANT_CENTS = 999;   // the price shown to bail agents ($9.99 / month / defendant); not charged yet
+// Oct 26 2026: check-ins are included in every bail-agent plan (eBail and Captira include them; no
+// per-defendant fee). Kept as a named 0 so the enrollment rows and the API stay explicit about it.
+export const FEE_PER_DEFENDANT_CENTS = 0;
 const APP_URL = () => String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
 export const checkinLink = (id) => `${APP_URL()}/checkin?enrollmentId=${Number(id)}`;
 
@@ -192,7 +194,7 @@ router.get('/enrollments', authRequired, async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({
       enrollments, total_active: totalActive, fee_cents: FEE_PER_DEFENDANT_CENTS,
-      monthly_cost_cents: totalActive * FEE_PER_DEFENDANT_CENTS, billing_active: false,
+      monthly_cost_cents: totalActive * FEE_PER_DEFENDANT_CENTS, billing_active: false, included_in_plan: true,
     });
   } catch (e) {
     logger.error({ err: e.message }, '[checkins/enrollments]');

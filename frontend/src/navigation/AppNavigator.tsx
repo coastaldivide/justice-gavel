@@ -93,6 +93,11 @@ const BookingScreen = withSuspense(React.lazy(() => import('../screens/BookingSc
 const CaseTimelineScreen = withSuspense(React.lazy(() => import('../screens/CaseTimelineScreen')));
 const ChatScreen = withSuspense(React.lazy(() => import('../screens/ChatScreen')));
 const CheckInManagerScreen = withSuspense(React.lazy(() => import('../screens/CheckInManagerScreen')));
+const BondDeskScreen = withSuspense(React.lazy(() => import('../screens/BondDeskScreen')));
+const BondDetailScreen = withSuspense(React.lazy(() => import('../screens/BondDetailScreen')));
+const BondFormsScreen = withSuspense(React.lazy(() => import('../screens/BondFormsScreen')));
+const PowersScreen = withSuspense(React.lazy(() => import('../screens/PowersScreen')));
+const BondReportsScreen = withSuspense(React.lazy(() => import('../screens/BondReportsScreen')));
 const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
 const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
 const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
@@ -216,6 +221,11 @@ function MoreNavigator() {
       <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: t('nav_title_court_date') }} />
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: t('x_nav_daily_check'), headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: t('x_nav_check_manager') }} />
+      <MoreStack.Screen name="BondDesk"              component={BondDeskScreen}              options={{ title: t('bdk_title') }} />
+      <MoreStack.Screen name="BondDetail"            component={BondDetailScreen}            options={{ title: t('bdk_nav_bond') }} />
+      <MoreStack.Screen name="BondForms"             component={BondFormsScreen}             options={{ title: t('bdk_forms') }} />
+      <MoreStack.Screen name="BondPowers"            component={PowersScreen}                options={{ title: t('bdk_powers') }} />
+      <MoreStack.Screen name="BondReports"           component={BondReportsScreen}           options={{ title: t('bdk_reports') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />

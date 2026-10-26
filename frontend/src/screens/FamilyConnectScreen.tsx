@@ -29,7 +29,7 @@ import { useAuthGate } from '../components/AuthGate';
 import { t, useLang, locale } from '../i18n';
 
 const usd = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD' });
-const FALLBACK_PRICE_CENTS = 2899;
+const FALLBACK_PRICE_CENTS = 0;   // free since Oct 26 2026 (server: billing/connections.js)
 
 // Plain helper (no hooks); failures are reported through onError.
 function callPhone(phone: string, onError?: () => void) {
@@ -158,6 +158,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const [result, setResult] = useState<any>(null);
   const [priceCents, setPriceCents] = useState(FALLBACK_PRICE_CENTS);
+  const free = priceCents <= 0;
   const [payError, setPayError] = useState('');
   // A payment that went through whose contacts could not be loaded yet — retried, never re-charged.
   const [paidPi, setPaidPi] = useState<string | null>(null);
@@ -248,6 +249,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         family_name: familyName.trim(), family_phone: familyPhone.trim(), family_email: familyEmail.trim() || undefined,
         lat: loc?.lat, lng: loc?.lng, state: selectedArrest?.state || st?.code || undefined,
       });
+      // Free (price 0): the server returns the contacts at once — no card, no payment sheet.
+      if (res.data?.requires_payment === false) {
+        if (!mountedRef.current) return;
+        setResult(res.data);
+        setPaying(false);
+        return;
+      }
       const pi = res.data?.payment_intent_id;
       // The card is collected by Stripe's payment sheet; nothing is revealed until it succeeds.
       if (!sheetAvailable || !res.data?.client_secret || !pi) return fail(PAYMENTS_COMING_SOON());
@@ -285,7 +293,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           {t('fc2_sub')}
         </Text>
         <View style={styles.priceBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.priceText} testID="family-connect-price">{t('fc2_price', { price: usd(priceCents) })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.priceText} testID="family-connect-price">{free ? t('fc2_price_free') : t('fc2_price', { price: usd(priceCents) })}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.priceSubText}>{t('x_family_connect_no_subscription_instant_results')}</Text>
         </View>
       </View>
@@ -442,12 +450,12 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         />
 
           <View style={styles.feeBlock}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{t('fc2_what_you_get', { price: usd(priceCents) })}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>{free ? t('fc2_what_you_get_free') : t('fc2_what_you_get', { price: usd(priceCents) })}</Text>
             {([
               [ICONS.lawyer, t('fc2_get_lawyers')],
               [ICONS.bail, t('fc2_get_agents')],
               [ICONS.phone, t('x_family_connect_direct_call_buttons_reach')],
-              [ICONS.lock, t('x_family_connect_one_time_fee_no')],
+              ...(free ? [] : [[ICONS.lock, t('x_family_connect_one_time_fee_no')] as const]),
               [ICONS.alertNormal, t('fc2_listing_note')],
             ] as const).map(([icon, item]) => (
               <View key={item} style={styles.feeItem}>
@@ -463,9 +471,9 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             </TouchableOpacity>
           ) : (
             <TouchableOpacity accessibilityRole="button" testID="family-connect-pay" style={styles.payBtn} onPress={proceedToPayment}
-              accessibilityLabel={t('fc2_pay', { price: usd(priceCents) })}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{t('fc2_pay', { price: usd(priceCents) })}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>{t('x_quick_connect_payments_processed_securely_by')}</Text>
+              accessibilityLabel={free ? t('fc2_show_free') : t('fc2_pay', { price: usd(priceCents) })}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>{free ? t('fc2_show_free') : t('fc2_pay', { price: usd(priceCents) })}</Text>
+              {!free && <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>{t('x_quick_connect_payments_processed_securely_by')}</Text>}
             </TouchableOpacity>
           )}
 
@@ -539,17 +547,17 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                   </Text>
                 </View>
               )}
-              <View style={styles.receiptBlock}>
+              {Number(result.charged_cents) > 0 && <View style={styles.receiptBlock}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>{t('x_family_connect_payment_receipt')}</Text>
                 <View style={styles.receiptRow}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_emergency_connection')}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptAmount}>{usd(Number(result.charged_cents) || priceCents)}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.receiptAmount}>{usd(Number(result.charged_cents))}</Text>
                 </View>
                 <View style={styles.receiptRow}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptLabel}>{t('x_family_connect_connection_id')}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.receiptValue}>#{result.connection_id}</Text>
                 </View>
-              </View>
+              </View>}
             </>
           ) : (
             <View style={styles.errorBlock}>

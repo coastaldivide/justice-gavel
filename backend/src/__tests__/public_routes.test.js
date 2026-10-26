@@ -103,6 +103,18 @@ const PUBLIC = {
   'GET /api/firms/directory': 'public firm directory',
   'GET /api/firms/:id/public-profile': 'public firm page',
   'GET /api/firms/referral/:code': 'referral code lookup',
+  // Case Pass price list (signed in: also the caller's pass)
+  'GET /api/billing/case-pass': 'price list; optionalAuth adds only the caller\'s own pass end date',
+  // Bond Desk signing links: the 32-byte random token in the path (stored as SHA-256) is the credential;
+  // expires 30 days after sending, stops on void / rotation; rate limited; token redacted from logs
+  'GET /api/sign/:token': 'signing link (token credential)',
+  'POST /api/sign/:token/answers': 'signing link (token credential)',
+  'POST /api/sign/:token/uploads': 'signing link (token credential), 10 MB cap, type sniffed',
+  'POST /api/sign/:token/prepare': 'signing link (token credential)',
+  'GET /api/sign/:token/documents/:docId.pdf': 'signing link (token credential); only this signer\'s copies',
+  'POST /api/sign/:token/sign': 'signing link (token credential)',
+  'POST /api/sign/:token/decline': 'signing link (token credential)',
+  'GET /api/sign/:token/signed.pdf': 'signing link (token credential); only this signer\'s signed copies',
 };
 
 describe('item 2 — every route requires auth unless deliberately public', () => {

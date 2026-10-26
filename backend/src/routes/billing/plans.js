@@ -32,6 +32,7 @@ const PRO = [...ADVISOR, FEATURES.VIDEO_CONSULTATION, FEATURES.ARREST_MONITOR];
 
 /** Monthly plan key → features. Annual plans use their monthly plan's list. */
 export const PLAN_FEATURES = Object.freeze({
+  case_pass:   Object.freeze(ADVISOR),   // one-time 90-day pass (CASE_PASS)
   legal_radar: Object.freeze(RADAR),
   advisor:     Object.freeze(ADVISOR),
   legal_pro:   Object.freeze(PRO),
@@ -44,19 +45,22 @@ export const PLAN_FEATURES = Object.freeze({
 //                 yearly charge. trial_days: a card is required to start a trial
 //                 (nothing unlocks before Stripe has confirmed the card).
 export const TIERS = Object.freeze({
+  // Oct 26 2026 pricing (docs/MONETIZATION_PLAN.md, competitor-matched): one consumer plan,
+  // Legal Pro $19.99/mo or $149/yr, plus the one-time Case Pass. Legal Radar and 24 Hour Advisor
+  // are retired (legacy: kept so old rows still resolve, never sold).
   legal_radar: {
-    audience: 'consumer', name: 'Legal Radar', display_price: '$19.99/mo',
+    legacy: true, audience: 'consumer', name: 'Legal Radar', display_price: '$19.99/mo',
     price_env: 'STRIPE_LEGAL_RADAR_ID', price_id: process.env.STRIPE_LEGAL_RADAR_ID || null, monthly_cents: 1999, annual_cents: null,
     billing: 'monthly', tier_rank: 1, trial_days: 7,
   },
   advisor: {
-    audience: 'consumer', name: '24 Hour Advisor', display_price: '$24.99/mo',
+    legacy: true, audience: 'consumer', name: '24 Hour Advisor', display_price: '$24.99/mo',
     price_env: 'STRIPE_ADVISOR_PRICE_ID', price_id: process.env.STRIPE_ADVISOR_PRICE_ID || null, monthly_cents: 2499, annual_cents: null,
     billing: 'monthly', tier_rank: 2, trial_days: 7,
   },
   legal_pro: {
-    audience: 'consumer', name: 'Legal Pro', display_price: '$34.99/mo',
-    price_env: 'STRIPE_LEGAL_PRO_PRICE_ID', price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID || null, monthly_cents: 3499, annual_cents: null,
+    audience: 'consumer', name: 'Legal Pro', display_price: '$19.99/mo',
+    price_env: 'STRIPE_LEGAL_PRO_PRICE_ID', price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID || null, monthly_cents: 1999, annual_cents: null,
     billing: 'monthly', tier_rank: 3, trial_days: 7,
   },
   esquire: {
@@ -65,13 +69,13 @@ export const TIERS = Object.freeze({
     billing: 'monthly', tier_rank: 4, trial_days: 30,
   },
   advisor_annual: {
-    audience: 'consumer', name: '24 Hour Advisor (Annual)', display_price: '$16.58/mo billed $199/yr',
+    legacy: true, audience: 'consumer', name: '24 Hour Advisor (Annual)', display_price: '$16.58/mo billed $199/yr',
     price_env: 'STRIPE_ADVISOR_ANNUAL_ID', price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID || null, monthly_cents: 1658, annual_cents: 19900,
     billing: 'annual', tier_rank: 2, trial_days: 7, matches_monthly: 'advisor',
   },
   pro_annual: {
-    audience: 'consumer', name: 'Legal Pro (Annual)', display_price: '$24.92/mo billed $299/yr',
-    price_env: 'STRIPE_LEGAL_PRO_ANNUAL_ID', price_id: process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || null, monthly_cents: 2492, annual_cents: 29900,
+    audience: 'consumer', name: 'Legal Pro (Annual)', display_price: '$12.42/mo billed $149/yr',
+    price_env: 'STRIPE_LEGAL_PRO_ANNUAL_ID', price_id: process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || null, monthly_cents: 1242, annual_cents: 14900,
     billing: 'annual', tier_rank: 3, trial_days: 7, matches_monthly: 'legal_pro',
   },
   esquire_annual: {
@@ -93,18 +97,43 @@ export const TIERS = Object.freeze({
 // county); services/leadAlerts.js. Browsing the lead list needs no plan, and
 // every lead is bought separately at the flat fee in ./leadFee.js.
 export const ALL_COUNTIES = 999;
+
+/** Texts sent on a bail agent's behalf (check-in / court / payment reminders): 5¢ each, billed monthly. */
+export const AGENT_TEXT_CENTS = 5;
+
+/**
+ * One-time Case Pass: the Legal Pro features for 90 days, no renewal. $19 to extend 90 days.
+ * Sold as a single Stripe PaymentIntent (routes/billing/casePass.js); each payment is a
+ * case_passes row (90 days from the end of the current pass, or now) and grants
+ * PLAN_FEATURES.case_pass until then (services/entitlements.js).
+ */
+export const CASE_PASS = Object.freeze({ cents: 2900, extend_cents: 1900, days: 90, display: '$29 for 90 days', extend_display: '$19 for 90 more days' });
+
+/**
+ * Attorney marketing products, priced to match the market (Avvo Pro $49.95/mo; LegalMatch from
+ * $455/mo). NOT SOLD YET: the profile perks (Pro badge, photo/bio, profile stats) and exclusive
+ * case-match requests are not built. Selling them before they exist would be a deceptive claim
+ * (FTC Act § 5). Flip `on_sale` only when the features ship.
+ */
+export const ATTORNEY_MARKETING = Object.freeze({
+  pro_profile: { name: 'Pro Profile', monthly_cents: 4995, annual_cents: 49900, on_sale: false },
+  case_match:  { name: 'Case Match', monthly_cents: 45500, annual_cents: null, on_sale: false },
+});
 export const BONDSMAN_TIERS = Object.freeze({
+  // Oct 26 2026: matched to eBail's published tiers ($99 / $199 / $349 a month, 20% off annual).
+  // Check-ins, court reminders and the Bond Desk (bonds, paperwork + e-sign, receivables) are
+  // included; texts sent for the agent are metered at AGENT_TEXT_CENTS each (Captira/eBail: 5¢).
   starter: {
-    name: 'Bondsman Starter', monthly_cents: 4900, display: '$49/mo', counties: 1,
-    price_env: 'STRIPE_BONDSMAN_STARTER_ID', price_id: process.env.STRIPE_BONDSMAN_STARTER_ID || null, annual_cents: 49000, annual_price_env: 'STRIPE_BONDSMAN_STARTER_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_STARTER_ANNUAL_ID || null,
+    name: 'Bondsman Starter', monthly_cents: 9900, display: '$99/mo', counties: 1,
+    price_env: 'STRIPE_BONDSMAN_STARTER_ID', price_id: process.env.STRIPE_BONDSMAN_STARTER_ID || null, annual_cents: 95000, annual_price_env: 'STRIPE_BONDSMAN_STARTER_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_STARTER_ANNUAL_ID || null,
   },
   pro: {
-    name: 'Bondsman Pro', monthly_cents: 14900, display: '$149/mo', counties: 3,
-    price_env: 'STRIPE_BONDSMAN_PRO_ID', price_id: process.env.STRIPE_BONDSMAN_PRO_ID || null, annual_cents: 149000, annual_price_env: 'STRIPE_BONDSMAN_PRO_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_PRO_ANNUAL_ID || null,
+    name: 'Bondsman Pro', monthly_cents: 19900, display: '$199/mo', counties: 3,
+    price_env: 'STRIPE_BONDSMAN_PRO_ID', price_id: process.env.STRIPE_BONDSMAN_PRO_ID || null, annual_cents: 191000, annual_price_env: 'STRIPE_BONDSMAN_PRO_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_PRO_ANNUAL_ID || null,
   },
   market: {
     name: 'Bondsman Market', monthly_cents: 34900, display: '$349/mo', counties: ALL_COUNTIES,
-    price_env: 'STRIPE_BONDSMAN_MARKET_ID', price_id: process.env.STRIPE_BONDSMAN_MARKET_ID || null, annual_cents: 349000, annual_price_env: 'STRIPE_BONDSMAN_MARKET_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_MARKET_ANNUAL_ID || null,
+    price_env: 'STRIPE_BONDSMAN_MARKET_ID', price_id: process.env.STRIPE_BONDSMAN_MARKET_ID || null, annual_cents: 335000, annual_price_env: 'STRIPE_BONDSMAN_MARKET_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_MARKET_ANNUAL_ID || null,
   },
 });
 
@@ -117,6 +146,7 @@ export function monthlyKey(tier) {
 
 /** Features a plan unlocks (annual plans: their monthly plan's list). */
 export function planFeatures(tier) {
+  if (tier === 'case_pass') return PLAN_FEATURES.case_pass;
   return PLAN_FEATURES[monthlyKey(tier)] || [];
 }
 

@@ -22,7 +22,7 @@ const { startAllWatchdogs, stopAllWatchdogs } = await import('./monitoring/selfH
 const { startScheduler, stopScheduler } = await import('./services/scheduler.js');
 const { startAIWorkers, stopAIWorkers } = await import('./services/aiQueue.js');
 const { startContentRefreshSchedule } = await import('./services/contentRefresh.js');
-const { runOnce, quarterKey } = await import('./utils/jobLock.js');
+const { runOnce, quarterKey, dayKey } = await import('./utils/jobLock.js');
 
 // ── 1. Database — fail startup when DATABASE_URL is set but unreachable ───────
 try {
@@ -202,6 +202,19 @@ server.on('listening', () => {
   }, 2 * 60 * 1000);
   first.unref();
   timers.push(first);
+
+  // Bond Desk: texts sent for bail agents (5¢ each) go on their plan invoice once a day.
+  const textBillTick = () => import('./services/bondDesk/textBilling.js')
+    .then(async (m) => runOnce('bd-text-billing', dayKey(), async () => m.billAgentTexts(await (await import('./db/index.js')).getDb())))
+    .catch(err => logger.error({ err: err.message }, '[bond-desk] text billing run failed'));
+  const firstBill = setTimeout(() => {
+    textBillTick();
+    const t = setInterval(textBillTick, DAY_MS);
+    t.unref();
+    timers.push(t);
+  }, 5 * 60 * 1000);
+  firstBill.unref();
+  timers.push(firstBill);
 });
 
 server.on('error', (err) => {

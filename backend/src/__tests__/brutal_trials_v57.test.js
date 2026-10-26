@@ -375,7 +375,9 @@ describe('Regression — All v1–v56 Confirmed', () => {
       expect(Number.isInteger(BUSINESS_CONSTANTS[k])).toBe(true);
       expect(BUSINESS_CONSTANTS[k]).toBeGreaterThan(0);
     }
-    expect(BUSINESS_CONSTANTS.ADVISOR_PRICE_CENTS).toBeLessThan(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS);
+    // Oct 26 2026 price list: Legal Radar and 24 Hour Advisor are retired (legacy, not sold);
+    // Legal Pro is the one consumer plan ($19.99), below the attorney Esquire plan.
+    expect(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS).toBe(1999);
     expect(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS).toBeLessThan(BUSINESS_CONSTANTS.ESQUIRE_PRICE_CENTS);
   });
   test('R-08: GAVEL_EMOJI[3]=🏆 trophy (corrected)', () => {

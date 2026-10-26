@@ -8,6 +8,7 @@
  *   My leads  records the agent bought (GET /api/bondsman/leads) with a status and notes.
  *   Clients   the agent's check-in clients (CheckInManager).
  *   Profile   company, license, the states and counties the agent works in.
+ *   Bond Desk the card above the tabs opens BondDeskScreen (bonds, paperwork + e-sign, ledger, powers, reports).
  * The counts at the top are real counts from GET /api/bondsman/dashboard (no estimates).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -180,6 +181,15 @@ function BondsmanDashboardScreen({ navigation, route }: ScreenProps): React.JSX.
         )}
         {notAgent && (
           <View style={s.card} testID="bd-not-agent"><Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bd_not_agent')}</Text></View>
+        )}
+        {profile && (
+          <View style={s.card} testID="bd-bond-desk">
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('bdk_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bdk_dashboard_teaser')}</Text>
+            <TouchableOpacity accessibilityRole="button" testID="bd-open-bond-desk" style={s.primaryBtn} onPress={() => navigation.navigate('BondDesk' as never)}>
+              <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('bdk_open')}</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {tab === 'leads' && profile && (

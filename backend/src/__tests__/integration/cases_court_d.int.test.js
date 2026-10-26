@@ -22,9 +22,8 @@
  *       for counsel, counsel flow (invite → accept → reply); case documents open
  *       for the owner and active counsel only — never for a family follower, a
  *       stranger or revoked counsel
- *   D6  family emergency connection: 503 without Stripe; with Stripe (fake
- *       client) quote → PaymentIntent → contacts only after a verified payment,
- *       booked once, someone else's payment is a 404
+ *   D6  family emergency connection: free since Oct 2026 — contacts at once,
+ *       no Stripe call, no charge, recorded as status 'free'
  *   D7  matter analytics no longer answer for someone else's matter
  */
 import { jest } from '@jest/globals';
@@ -300,36 +299,30 @@ describeIntegration('section D — cases, court dates, check-ins, messages (real
   });
 
   // ── D6 ────────────────────────────────────────────────────────────────────
-  test('D6 family emergency connection: 503 without Stripe; paid flow with a verified payment', async () => {
+  test('D6 family emergency connection is free (Oct 2026): contacts at once, no Stripe, no charge', async () => {
     if (!ctx.app) return;
     const q = await req('get', '/api/billing/family/quote');
-    expect(q.body).toMatchObject({ price_cents: 2899, lawyers: 3, bail_agents: 2 });
+    expect(q.body).toMatchObject({ price_cents: 0, lawyers: 3, bail_agents: 2 });
+    const piBefore = fake.seq;
     delete process.env.STRIPE_SECRET_KEY;
     try {
-      const off = await req('post', '/api/billing/family/connect', owner).send({ family_name: 'Ana', family_phone: '615 555 0100', state: 'TN' });
-      expect(off.status).toBe(503);
-      expect(off.body.error).toBe('payments_unavailable');
+      // Works with payments off: nothing is charged, so nothing needs Stripe.
+      expect((await req('post', '/api/billing/family/connect', owner).send({ family_name: 'Ana', family_phone: '12' })).status).toBe(400);
+      const ok = await req('post', '/api/billing/family/connect', owner).send({ family_name: 'Ana', family_phone: '615 555 0100', state: 'TN' });
+      expect(ok.status).toBe(200);
+      expect(ok.body).toMatchObject({ requires_payment: false, charged_cents: 0 });
+      expect(ok.body.client_secret).toBeUndefined();
+      expect(ok.body.attorneys.length).toBe(3);
+      expect(ok.body.bail_agents.length).toBe(2);
+      expect([...ok.body.attorneys, ...ok.body.bail_agents].every(a => a.phone && a.state === 'TN')).toBe(true);
+      const row = await ctx.db.get('SELECT status, amount_cents, stripe_pi_id FROM family_connections WHERE id = ?', [ok.body.connection_id]);
+      expect(row).toMatchObject({ status: 'free', stripe_pi_id: null });
+      expect(Number(row.amount_cents)).toBe(0);
+      // The old paid confirm route still needs Stripe (it only answers for payments made before the change).
       expect((await req('post', '/api/billing/family/confirm', owner).send({ payment_intent_id: 'pi_x' })).status).toBe(503);
+      await ctx.db.run('DELETE FROM family_connections WHERE id = ?', [ok.body.connection_id]);
     } finally { process.env.STRIPE_SECRET_KEY = STRIPE_KEY; }
-    expect((await req('post', '/api/billing/family/connect', owner).send({ family_name: 'Ana', family_phone: '12' })).status).toBe(400);
-    const pay = await req('post', '/api/billing/family/connect', owner).send({ family_name: 'Ana', family_phone: '615 555 0100', state: 'TN' });
-    expect(pay.status).toBe(200);
-    expect(pay.body).toMatchObject({ requires_payment: true, amount_cents: 2899 });
-    expect(pay.body.attorneys).toBeUndefined();
-    const pi = pay.body.payment_intent_id;
-    expect((await req('post', '/api/billing/family/confirm', owner).send({ payment_intent_id: pi })).status).toBe(402);
-    fake.pis.get(pi).status = 'succeeded';
-    expect((await req('post', '/api/billing/family/confirm', other).send({ payment_intent_id: pi })).status).toBe(404);
-    const ok = await req('post', '/api/billing/family/confirm', owner).send({ payment_intent_id: pi });
-    expect(ok.status).toBe(200);
-    expect(ok.body.attorneys.length).toBe(3);
-    expect(ok.body.bail_agents.length).toBe(2);
-    expect([...ok.body.attorneys, ...ok.body.bail_agents].every(a => a.phone && a.state === 'TN')).toBe(true);
-    await req('post', '/api/billing/family/confirm', owner).send({ payment_intent_id: pi });
-    expect(Number((await ctx.db.get('SELECT COUNT(*) AS n FROM revenue_log WHERE stripe_pi_id = ?', [pi])).n)).toBe(1);
-    expect((await ctx.db.get('SELECT status FROM family_connections WHERE stripe_pi_id = ?', [pi])).status).toBe('paid');
-    await ctx.db.run('DELETE FROM revenue_log WHERE stripe_pi_id = ?', [pi]);
-    await ctx.db.run('DELETE FROM family_connections WHERE stripe_pi_id = ?', [pi]);
+    expect(fake.seq).toBe(piBefore);   // no PaymentIntent was ever created
   });
 
   // ── D7 ────────────────────────────────────────────────────────────────────

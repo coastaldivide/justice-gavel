@@ -186,12 +186,12 @@ export async function ownsResource(dbOrRow, tableOrUserId, id, userId, idCol = '
 export const BUSINESS_CONSTANTS = {
   // Plan prices: read from routes/billing/plans.js (the price list the server
   // charges from) — never a second copy of the amounts.
-  LEGAL_RADAR_CENTS:       TIERS.legal_radar.monthly_cents,   // $19.99/month
-  ADVISOR_PRICE_CENTS:     TIERS.advisor.monthly_cents,       // $24.99/month
-  LEGAL_PRO_PRICE_CENTS:   TIERS.legal_pro.monthly_cents,     // $34.99/month
+  LEGAL_RADAR_CENTS:       TIERS.legal_radar.monthly_cents,   // $19.99/month (retired Oct 2026)
+  ADVISOR_PRICE_CENTS:     TIERS.advisor.monthly_cents,       // $24.99/month (retired Oct 2026)
+  LEGAL_PRO_PRICE_CENTS:   TIERS.legal_pro.monthly_cents,     // $19.99/month
   ESQUIRE_PRICE_CENTS:     TIERS.esquire.monthly_cents,       // $49.00/month
-  ADVISOR_ANNUAL_CENTS:    TIERS.advisor_annual.annual_cents, // $199/year
-  LEGAL_PRO_ANNUAL_CENTS:  TIERS.pro_annual.annual_cents,     // $299/year
+  ADVISOR_ANNUAL_CENTS:    TIERS.advisor_annual.annual_cents, // $199/year (retired Oct 2026)
+  LEGAL_PRO_ANNUAL_CENTS:  TIERS.pro_annual.annual_cents,     // $149/year
   ESQUIRE_ANNUAL_CENTS:    TIERS.esquire_annual.annual_cents, // $410/year
   // (no bondsman "verified badge": that product was removed in section G)
   QUICKCONNECT_PRICE_CENTS: 2000,   // $20 one-time: $10 bondsman contact + $10 lawyer contact

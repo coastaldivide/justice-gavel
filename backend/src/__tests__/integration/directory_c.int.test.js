@@ -347,7 +347,7 @@ describeIntegration('section C — directory, reviews, booking, match (real Post
   it('C9 PI leads: validated, flat fee per type, nothing identifying before a purchase', async () => {
     const fees = await get('/api/billing/pi-lead/fees');
     expect(Object.fromEntries(fees.body.fees.map(f => [f.lead_type, f.fee_display]))).toEqual({
-      personal_injury: '$200', civil_rights: '$200', employment: '$100', medical: '$200', ice_detention: '$75' });
+      personal_injury: '$250', civil_rights: '$200', employment: '$100', medical: '$250', ice_detention: '$75' });
     const submit = (body) => ctx.request().post('/api/billing/pi-lead/submit').set(bob.headers).send(body);
     expect((await submit({ case_type: 'Employment', description: 'short', state: 'TN' })).status).toBe(400);
     expect((await submit({ case_type: 'Employment', description: 'Fired after reporting a safety problem.' })).body.code).toBe('state_required');

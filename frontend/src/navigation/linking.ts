@@ -8,7 +8,8 @@
  *   │   ├─ HomeTab · ChatTab · LawyersTab · BailTab
  *   │   └─ MoreTab (MoreStack: every secondary screen)
  *   ├─ GuestNav  (signed out: AgeGate · Onboarding · Login · Register · …)
- *   └─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
+ *   ├─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
+ *   └─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -115,6 +116,11 @@ export const linking: LinkingOptions<any> = {
               ArrestMonitor:      'arrest-monitor',
               CheckIn:            'checkin',
               CheckInManager:     'checkin/manage',
+              BondDesk:           'bond-desk',
+              BondDetail:         'bond-desk/bond/:bondId',
+              BondForms:          'bond-desk/forms',
+              BondPowers:         'bond-desk/powers',
+              BondReports:        'bond-desk/reports',
               FamilyConnect:      'family',
               Contacts:           'emergency-contacts',
 
@@ -143,8 +149,9 @@ export const linking: LinkingOptions<any> = {
           },
         },
       },
-      // Root level: the password-reset e-mail link (any auth state)
+      // Root level: the password-reset e-mail link and a bail agent's signing link (any auth state)
       ResetPassword: 'reset-password',
+      SignPacket:    'sign/:token',
     },
   },
 };
@@ -160,6 +167,7 @@ export const guestLinking: LinkingOptions<any> = {
   config: {
     screens: {
       ResetPassword: 'reset-password',
+      SignPacket:    'sign/:token',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

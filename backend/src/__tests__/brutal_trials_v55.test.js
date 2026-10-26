@@ -190,7 +190,8 @@ describe('Regression — All v1–v54 Confirmed (with corrections)', () => {
       expect(Number.isInteger(BUSINESS_CONSTANTS[k])).toBe(true);
       expect(BUSINESS_CONSTANTS[k]).toBeGreaterThan(0);
     }
-    expect(BUSINESS_CONSTANTS.ADVISOR_PRICE_CENTS).toBeLessThan(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS);
+    // Oct 26 2026: Advisor retired; Legal Pro is the one consumer plan at $19.99.
+    expect(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS).toBe(1999);
     expect(BUSINESS_CONSTANTS.LEGAL_PRO_PRICE_CENTS).toBeLessThan(BUSINESS_CONSTANTS.ESQUIRE_PRICE_CENTS);
   });
   test('R-08: GAVEL trophy 🏆 at tier 3 (corrected from gold medal assumption)', () => {

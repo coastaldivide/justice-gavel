@@ -53,9 +53,9 @@ describe('lead fee source of truth', () => {
     expect(m && Number(m[1])).toBe(BONDSMAN_LEAD_FEE_CENTS);
   });
 
-  it('attorney lead fees: $200 PI / medical / civil rights, $100 employment, $75 ICE — app table = backend', async () => {
+  it('attorney lead fees: $250 PI / medical, $200 civil rights, $100 employment, $75 ICE — app table = backend', async () => {
     const { attorneyLeadFeeCents } = await import('../routes/billing/attorneyLeadFee.js');
-    const expected = { personal_injury: 20000, medical: 20000, civil_rights: 20000, employment: 10000, ice_detention: 7500 };
+    const expected = { personal_injury: 25000, medical: 25000, civil_rights: 20000, employment: 10000, ice_detention: 7500 };
     for (const [type, cents] of Object.entries(expected)) {
       expect(attorneyLeadFeeCents(type)).toBe(cents);
       expect(attorneyLeadFeeCents(type, 'catastrophic')).toBe(cents);   // never severity-scaled
@@ -120,15 +120,15 @@ describe('every fee quote uses it', () => {
   });
 });
 
-// ── Attorney personal-injury lead fee: flat $200, one source of truth ────────
+// ── Attorney personal-injury lead fee: flat $250, one source of truth ────────
 import { PI_LEAD_FEE_CENTS, attorneyLeadFeeCents } from '../routes/billing/attorneyLeadFee.js';
 
 describe('personal-injury attorney lead fee', () => {
-  it('is a flat $200 for every severity', () => {
-    expect(PI_LEAD_FEE_CENTS).toBe(20000);
+  it('is a flat $250 for every severity', () => {
+    expect(PI_LEAD_FEE_CENTS).toBe(25000);
     for (const sv of ['minor', 'moderate', 'serious', 'catastrophic', undefined]) {
-      expect(attorneyLeadFeeCents('Personal Injury', sv)).toBe(20000);
-      expect(attorneyLeadFeeCents('personal_injury', sv)).toBe(20000);
+      expect(attorneyLeadFeeCents('Personal Injury', sv)).toBe(25000);
+      expect(attorneyLeadFeeCents('personal_injury', sv)).toBe(25000);
     }
   });
 

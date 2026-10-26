@@ -84,7 +84,7 @@ describe('M4 — transactional email templates escape user values', () => {
     expect(html).toContain('Ana O&#39;Neil');
     expect(html).toContain('J. Smith');
     expect(html).toContain('Monday, October 12 · 9:00 AM CDT');
-    expect(html).toContain('until 2 hours before the start');
+    expect(html).toContain('The platform fee is non-refundable');   // all sales final (Oct 26 2026)
     expect(html).not.toMatch(/\{\w+\}/);   // no unfilled placeholder
   });
 });

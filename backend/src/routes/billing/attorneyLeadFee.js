@@ -16,8 +16,9 @@
  * Dependency-free on purpose.
  */
 
-/** Personal injury (incl. medical malpractice): flat $200 per lead. */
-export const PI_LEAD_FEE_CENTS = 20000;
+/** Personal injury (incl. medical malpractice): flat $250 per lead (Oct 2026: market midpoint,
+ *  Google Local Services Ads legal $195–250, PI exclusive leads $250–600). */
+export const PI_LEAD_FEE_CENTS = 25000;
 
 const FEES_BY_TYPE = {
   personal_injury: PI_LEAD_FEE_CENTS,

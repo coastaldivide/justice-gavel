@@ -384,7 +384,8 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
         const hasMutation = /router\.(post|put|patch)\s*\(/.test(src);
         // validation = an explicit 400, or input coerced/whitelisted (safeInt / sanitizeStr /
         // validate() schema). Counting a merely-imported err400 (unused) no longer passes.
-        const validates = /err400\(|status\(400\)|validate\(|safeInt\(|sanitizeStr\(|fail\(res, lang, 400/.test(src);
+        // (Bond Desk / signing: typed BdError / SignError with status 400)
+        const validates = /err400\(|status\(400\)|validate\(|safeInt\(|sanitizeStr\(|fail\(res, lang, 400|(Bd|Sign)Error\(400,/.test(src);
         if (hasMutation && !validates && !WHITELIST_LOOKUP.has(f)) {
           noValidation.push(f);
         }

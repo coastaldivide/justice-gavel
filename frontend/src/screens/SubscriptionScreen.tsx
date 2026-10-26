@@ -36,12 +36,18 @@ export function attorneyPlansFrom(body: unknown): ProviderPlan[] {
   ]);
 }
 
-type BondsmanTier = { key: string; name: string; display: string; annual_cents: number; annual_savings_cents: number; counties: number | 'all' };
+type BondsmanTier = { key: string; name: string; display: string; annual_cents: number; annual_savings_cents: number; counties: number | 'all'; features?: { key: string; cents?: number }[] };
 export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
   return unwrapList<BondsmanTier>(body, 'tiers').filter(x => x && typeof x.display === 'string').map(x => ({
     key: x.key, name: x.name, price: x.display,
     sub: x.annual_cents ? t('plan_bondsman_annual', { price: usd(x.annual_cents), saving: usd(x.annual_savings_cents) }) : null,
-    features: [x.counties === 'all' ? t('plan_feat_lead_alerts_all') : t(Number(x.counties) === 1 ? 'plan_feat_lead_alerts_one' : 'plan_feat_lead_alerts_other', { n: x.counties })],
+    features: [
+      x.counties === 'all' ? t('plan_feat_lead_alerts_all') : t(Number(x.counties) === 1 ? 'plan_feat_lead_alerts_one' : 'plan_feat_lead_alerts_other', { n: x.counties }),
+      // Included in every bail-agent plan (server: billing/bondsman.js features, docs/BOND_DESK.md).
+      ...((x.features || []).some(f => f?.key === 'bond_desk') ? [t('plan_feat_bond_desk')] : []),
+      ...((x.features || []).some(f => f?.key === 'checkins') ? [t('plan_feat_checkins')] : []),
+      ...((x.features || []).filter(f => f?.key === 'texts' && typeof f.cents === 'number').map(f => t('plan_feat_texts', { price: `${f.cents}¢` }))),
+    ],
     trialDays: 0, billing: 'monthly' as const,
   }));
 }

@@ -58,9 +58,9 @@ describe('plans come from the server', () => {
     on('get', '/billing/tiers', TIERS);
     on('get', '/billing/subscription', { subscription: null });
     on('get', '/billing/bondsman/tiers', { tiers: [
-      { key: 'starter', name: 'Bondsman Starter', display: '$49/mo', monthly_cents: 4900, annual_cents: 49000, annual_savings_cents: 9800, counties: 1, features: [{ key: 'lead_alerts', counties: 1 }] },
-      { key: 'pro', name: 'Bondsman Pro', display: '$149/mo', monthly_cents: 14900, annual_cents: 149000, annual_savings_cents: 29800, counties: 3, features: [{ key: 'lead_alerts', counties: 3 }] },
-      { key: 'market', name: 'Bondsman Market', display: '$349/mo', monthly_cents: 34900, annual_cents: 349000, annual_savings_cents: 69800, counties: 'all', features: [{ key: 'lead_alerts', counties: 'all' }] },
+      { key: 'starter', name: 'Bondsman Starter', display: '$99/mo', monthly_cents: 9900, annual_cents: 95000, annual_savings_cents: 23800, counties: 1, features: [{ key: 'lead_alerts', counties: 1 }, { key: 'bond_desk' }, { key: 'checkins' }, { key: 'texts', cents: 5 }] },
+      { key: 'pro', name: 'Bondsman Pro', display: '$199/mo', monthly_cents: 19900, annual_cents: 191000, annual_savings_cents: 47800, counties: 3, features: [{ key: 'lead_alerts', counties: 3 }, { key: 'bond_desk' }, { key: 'checkins' }, { key: 'texts', cents: 5 }] },
+      { key: 'market', name: 'Bondsman Market', display: '$349/mo', monthly_cents: 34900, annual_cents: 335000, annual_savings_cents: 83800, counties: 'all', features: [{ key: 'lead_alerts', counties: 'all' }, { key: 'bond_desk' }, { key: 'checkins' }, { key: 'texts', cents: 5 }] },
     ] });
     on('get', '/billing/bondsman/subscription', { subscription: null });
     wrap(<SubscriptionScreen navigation={makeNavigation()} route={route} />);
@@ -68,10 +68,14 @@ describe('plans come from the server', () => {
     expect(screen.getByText('$49/mo')).toBeTruthy();
     expect(screen.queryByText(/Legal Radar|Legal Pro/)).toBeNull();
     fireEvent.press(screen.getByTestId('provider-type-bail_agent'));
-    expect(await screen.findByText('$149/mo')).toBeTruthy();
+    expect(await screen.findByText('$199/mo')).toBeTruthy();
     expect(screen.getByText('$349/mo')).toBeTruthy();
     expect(screen.getByText(t('plan_feat_lead_alerts_other', { n: 3 }))).toBeTruthy();
     expect(screen.getByText(t('plan_feat_lead_alerts_all'))).toBeTruthy();
+    // every bail-agent plan shows what is included: Bond Desk, check-ins, and the 5¢ texts
+    expect(screen.getAllByText(t('plan_feat_bond_desk'))).toHaveLength(3);
+    expect(screen.getAllByText(t('plan_feat_checkins'))).toHaveLength(3);
+    expect(screen.getAllByText(t('plan_feat_texts', { price: '5¢' }))).toHaveLength(3);
     expect(screen.queryByText(/top placement|verified badge/i)).toBeNull();
   });
 

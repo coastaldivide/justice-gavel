@@ -160,7 +160,7 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
           <Text maxFontSizeMultiplier={1.3} style={styles.heading} accessibilityRole="header">{t('x_check_in_manager_check_manager')}</Text>
           {!!data && (
             <Text maxFontSizeMultiplier={1.4} style={styles.subheading} testID="checkin-manager-summary">
-              {t('ckm_summary', { n: active.length, price: money(data.fee_cents) })}
+              {t('ckm_summary_included', { n: active.length })}
             </Text>
           )}
         </View>
@@ -184,7 +184,7 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
         )}
         {!!data && (
           <View style={styles.note} testID="checkin-manager-billing">
-            <IconLabel icon={ICONS.card} textStyle={styles.noteText} maxFontSizeMultiplier={1.4}>{t(data.billing_active ? 'ckm_billing_on' : 'ckm_billing_off', { price: money(data.fee_cents) })}</IconLabel>
+            <IconLabel icon={ICONS.card} textStyle={styles.noteText} maxFontSizeMultiplier={1.4}>{data.fee_cents > 0 ? t(data.billing_active ? 'ckm_billing_on' : 'ckm_billing_off', { price: money(data.fee_cents) }) : t('ckm_included')}</IconLabel>
           </View>
         )}
         {(phase === 'ok' || phase === 'guest') && active.length === 0 && (

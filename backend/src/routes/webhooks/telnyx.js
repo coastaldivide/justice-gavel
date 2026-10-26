@@ -5,9 +5,10 @@
  * number, but the app still had users.sms_reminders = 1 and would keep trying (and the
  * court-date screen would keep saying "text reminders on"). This keeps the app in step:
  *   message.received with STOP / STOPALL / UNSUBSCRIBE / CANCEL / END / QUIT
- *     → every account with that phone: sms_reminders = 0, sms_opt_out_at = now
- *   message.received with START / UNSTOP → nothing automatic: the person turns texts back on
- *     in the app, which records fresh consent (migration 31).
+ *     → every account with that phone: sms_reminders = 0, sms_opt_out_at = now, and the number
+ *       goes on sms_opt_outs (no more Bond Desk texts sent for bail agents, migration 32)
+ *   message.received with START / UNSTOP → the number leaves sms_opt_outs; app reminders stay
+ *     off until the person turns them on in the app, which records fresh consent (migration 31).
  * Other events are acknowledged and ignored.
  *
  * Security: Telnyx signs each webhook with Ed25519 — headers telnyx-signature-ed25519
@@ -25,6 +26,7 @@ import logger from '../../utils/logger.js';
 const router = Router();
 const MAX_AGE_S = 300;
 const STOP_WORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT']);
+const START_WORDS = new Set(['START', 'UNSTOP']);
 // Ed25519 SubjectPublicKeyInfo prefix for a raw 32-byte key.
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
@@ -62,7 +64,15 @@ router.post('/', async (req, res) => {
         const db = await getDb();
         const r = await db.run(
           'UPDATE users SET sms_reminders = 0, sms_opt_out_at = NOW() WHERE phone = ? AND sms_reminders = 1', [from]);
+        // Also for people without an account (Bond Desk texts sent for a bail agent).
+        await db.run('INSERT INTO sms_opt_outs (phone) VALUES (?) ON CONFLICT (phone) DO UPDATE SET opted_out_at = NOW()', [from]);
         logger.info({ changed: r?.changes ?? null }, '[telnyx] STOP received — text reminders turned off');
+      }
+      if (from && START_WORDS.has(word)) {
+        // The person asked for texts again: agents may text them again. App reminders still
+        // need the person to turn them on in the app (fresh consent, migration 31).
+        const db = await getDb();
+        await db.run('DELETE FROM sms_opt_outs WHERE phone = ?', [from]);
       }
     }
     return res.json({ ok: true });

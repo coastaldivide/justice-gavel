@@ -29,11 +29,17 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
   };
 
   it('every billing POST the app can issue returns 503 payments_unavailable', async () => {
-    await expect503('/api/billing/subscribe', { tier: 'advisor' });
+    await expect503('/api/billing/subscribe', { tier: 'legal_pro' });
     await expect503('/api/billing/cancel');
-    await expect503('/api/billing/consumer/subscribe', { tier: 'advisor' });
+    await expect503('/api/billing/consumer/subscribe', { tier: 'legal_pro' });
+    await expect503('/api/billing/case-pass/buy', {});
     await expect503('/api/billing/quickconnect', { lat: 36.16, lng: -86.78 });
-    await expect503('/api/billing/family/connect', { arrest_id: 1 });
+    // Family Connect is free since Oct 26 2026: it never needs Stripe and never charges.
+    const fc = await ctx.request().post('/api/billing/family/connect').set(user.headers)
+      .send({ family_name: 'Pat Family', family_phone: '615-555-0142', state: 'TN' });
+    expect([200, 404]).toContain(fc.status);
+    if (fc.status === 200) expect(fc.body).toMatchObject({ requires_payment: false, charged_cents: 0 });
+    if (fc.status === 200) ctx.addCleanup(async (db) => { await db.run('DELETE FROM family_connections WHERE id = ?', [fc.body.connection_id]); });
     await expect503('/api/billing/leads/1/accept', {});
     await expect503('/api/billing/bondsman/subscribe', { tier: 'pro' });
     // nothing was activated behind the scenes
@@ -51,7 +57,7 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
     const consumer = await ctx.request().get('/api/billing/consumer/subscription').set(user.headers);
     expect(consumer.status).toBe(200);
     expect(consumer.body.subscription).toBeNull();
-    expect(consumer.body.tiers.map(t => t.key).sort()).toEqual(['advisor', 'advisor_annual', 'legal_pro', 'legal_radar', 'pro_annual']);
+    expect(consumer.body.tiers.map(t => t.key).sort()).toEqual(['legal_pro', 'pro_annual']);   // Oct 2026: one consumer plan (+ the one-time Case Pass)
     expect(consumer.body.tiers.every(t => t.audience === 'consumer')).toBe(true);
 
     const tiers = await ctx.request().get('/api/billing/bondsman/tiers');

@@ -34,6 +34,7 @@ import { initLang, getLang, t, useLang } from './src/i18n';
 import { registerAuthSetter, AuthState, canBrowse, setGuestStart } from './src/services/auth';
 import { signOut, takePendingHome } from './src/services/session';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import SignPacketScreen from './src/screens/SignPacketScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -352,6 +353,8 @@ function AppInner() {
           )}
           {/* The password-reset e-mail link works signed out, browsing or signed in */}
           <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          {/* A bail agent's signing link (defendant / indemnitor) — no account needed */}
+          <RootStack.Screen name="SignPacket" component={SignPacketScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

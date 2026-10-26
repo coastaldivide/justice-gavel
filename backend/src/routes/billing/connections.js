@@ -20,10 +20,15 @@ import { directoryRows } from '../../services/directoryCache.js';
 
 const router = Router();
 
-// ── Family emergency connection — $28.99, one time ──────────────────────────
+// ── Family emergency connection — FREE since Oct 26 2026 ─────────────────────
 // For a family member of someone who was just arrested: 3 criminal-defense
 // lawyers + 2 bail agents with a phone number, near the arrest (or the family
-// member), revealed after a verified payment. Same flow as Quick Connect:
+// member). It was $28.99; it is free now (docs/MONETIZATION_PLAN.md v3: charging a
+// panicked family for publicly listed numbers is low value and high complaint risk —
+// the money is made on the professional side). While FAMILY_CONNECT_PRICE_CENTS is 0,
+// POST /family/connect returns the contacts at once ({ requires_payment: false, … })
+// and never touches Stripe. The paid flow below still works if a price is set again,
+// and /family/confirm still answers for connections paid before the change:
 //
 //   GET  /api/billing/family/quote     { price_cents, payments_live }  (public)
 //   POST /api/billing/family/connect   { arrest_id?, family_name, family_phone, family_email?, lat?, lng?, state? }
@@ -32,7 +37,7 @@ const router = Router();
 //        checks the PaymentIntent with Stripe (this user, this package, succeeded), marks the
 //        connection paid once and returns { arrest, attorneys, bail_agents }. Safe to repeat.
 // Without a Stripe key every POST is 503 payments_unavailable (billing/index.js gate).
-export const FAMILY_CONNECT_PRICE_CENTS = 2899;
+export const FAMILY_CONNECT_PRICE_CENTS = 0;
 const FC_LAWYERS = 3;
 const FC_AGENTS = 2;
 const say = (req, key, params) => msg(resolveLang(req), key, params);
@@ -93,6 +98,14 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
     const arrest = await arrestFor(db, b.arrest_id);
     const { attorneys, bail_agents: agents } = await pickFamilyContacts(db, { lat: b.lat, lng: b.lng, state: arrest?.state || b.state });
     if (!attorneys.length && !agents.length) return res.status(404).json({ error: say(req, 'family.err.none_found'), code: 'none_found' });
+    if (FAMILY_CONNECT_PRICE_CENTS <= 0) {
+      const row = await db.get(
+        `INSERT INTO family_connections (arrest_id, family_name, family_phone, family_email, status, attorneys_sent, agents_sent, stripe_pi_id, amount_cents)
+         VALUES (?, ?, ?, ?, 'free', ?, ?, NULL, 0) RETURNING id`,
+        [arrest?.id || null, familyName, familyPhone, familyEmail, JSON.stringify(attorneys.map(a => a.id)), JSON.stringify(agents.map(a => a.id))]);
+      return res.json({ requires_payment: false, success: true, connection_id: row ? Number(row.id) : null, charged_cents: 0,
+        arrest, attorneys, bail_agents: agents });
+    }
     const customerId = await getOrCreateStripeCustomer(req.user);
     const pi = await stripeClient().paymentIntents.create({
       amount: FAMILY_CONNECT_PRICE_CENTS,

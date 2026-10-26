@@ -215,6 +215,22 @@ export const USER_REFS = {
   // ── never touched ──────────────────────────────────────────────────────
   'firms.owner_id': 'retain',   // handled by transferOrDeleteFirms() first
   'lawyers.user_id': 'retain',  // verified directory rows are never modified (owner rule)
+  // ── Bond Desk (docs/BOND_DESK.md) and the Case Pass ─────────────────────
+  'bd_bonds.agent_id': 'delete',        // the agent's own bond book (indemnitors, ledger, packets cascade)
+  'bd_forms.agent_id': 'delete',
+  'bd_powers.agent_id': 'delete',
+  'bd_counters.agent_id': 'delete',
+  'bd_packets.agent_id': 'delete',
+  'bd_payments.agent_id': 'delete',
+  'bd_collateral.agent_id': 'delete',
+  'bd_charges.created_by': 'nullify',
+  'bd_payments.created_by': 'nullify',
+  'bd_texts.agent_id': 'retain',        // billing record of texts charged at 5¢ (masked number only)
+  'bd_text_batches.agent_id': 'retain', // invoice items already billed in Stripe
+  'bd_uploads.signer_id': 'retain',     // bd_signers.id (a signing link), not a users.id
+  'bd_events.signer_id': 'retain',      // bd_signers.id, not a users.id
+  'bd_documents.signer_id': 'retain',   // bd_signers.id, not a users.id
+  'case_passes.user_id': 'delete',
 };
 
 /** Rows keyed by case_id: what happens to them when one of the user's cases goes. */

@@ -178,7 +178,7 @@ router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
     const db = await getDb();
     const pt = ['consumer', 'lawyer'].includes(req.body?.provider_type) ? req.body.provider_type : null;
     const row = await db.get(
-      `SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? ${pt ? 'AND provider_type = ?' : ''} AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`,
+      `SELECT ${SUB_COLS} FROM subscriptions WHERE user_id = ? ${pt ? 'AND provider_type = ?' : ''} AND status IN (${PAID_SQL}) AND stripe_sub_id IS NOT NULL ORDER BY id DESC LIMIT 1`,
       pt ? [req.user.id, pt] : [req.user.id]);
     if (!row?.stripe_sub_id) throw new BillingError(404, 'no_subscription');
     const sub = await stripeClient().subscriptions.update(row.stripe_sub_id, { cancel_at_period_end: true });

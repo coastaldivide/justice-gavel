@@ -1,0 +1,211 @@
+# Bond Desk — bond paperwork, e-signature and bond records for bail agents
+
+Built October 26, 2026 to match what eBail and Captira include in their $99–$349/month plans
+(Captira's published comparison and its Easy Bail page, read Oct 26 2026):
+
+| Competitor feature | Bond Desk |
+|---|---|
+| Surety forms + custom forms grouped into packets | Agent uploads their own PDF forms (surety-issued or custom) once; picks forms per packet |
+| Form fields filled from the case file ("Customer Care loads your forms") | The agent maps each fillable PDF field to a case-file value once per form; filled on every packet |
+| Question wizard: basic / full / custom question sets | Same three: `basic`, `full`, plus up to 10 custom questions |
+| Intake by link sent by text or email; in-office; agent-driven | Link by text and/or email; the agent can also open the same link on an office tablet |
+| Indemnitors / co-signers sign by link | Every signer (defendant, each indemnitor) gets their own link |
+| Document requests (ID, proof of income) stored on the record | Same, stored encrypted |
+| ID verification: selfie holding a government ID, timestamped | Same (photo upload or camera); timestamp recorded by the server |
+| E-signature, no per-document fee, signed timestamped PDFs to the case file | Typed-name signature (ESIGN Act / UETA), no per-document fee, signed PDF + certificate stored on the bond |
+| Live status: sent, opened, partially completed, signed | Same timeline per signer |
+| Prospect pipeline | Bonds in status `prospect` |
+| Power inventory with liability tracking | Powers by surety and number, limit, status; liability per surety |
+| Surety / DOI reporting | Liability, surety (executed powers), receivables, receipts journal, collateral — on screen and CSV |
+| Forfeiture tracking | Forfeiture date, deadline, outcome; dashboard sorted by days left |
+| Online payments / payment plans | Payment ledger, numbered receipts, payment plans with overdue tracking. **Card payments taken online for the agent are NOT built** (that needs Stripe Connect for each agency) — agents record payments they receive |
+| SMS 5¢ each | 5¢ per text actually delivered to the carrier, billed on the agent's next invoice |
+
+**Not built on purpose:** a drawn ("finger") signature pad. A typed name with intent, consent and
+an audit trail is a valid electronic signature under the federal ESIGN Act (15 U.S.C. § 7001,
+§ 7006(5)) and the UETA; it adds nothing to draw squiggles. **No general-ledger accounting,
+BUF/premium-remittance math or surety commission splits:** no competitor publishes that, and
+surety contracts round and split differently, so any computed remittance could be wrong. The
+ledger only adds and subtracts whole cents the agent entered.
+
+Everything is under `/api/bond-desk` for the agent and `/api/sign` for the people signing.
+
+## Access
+
+A bail agent (a `bondsman_profiles` row) with a bail-agent plan in status `active` or `past_due`,
+or an admin. Otherwise 403 `{ code: 'no_plan' }` (agent without plan) or 403 `{ code: 'not_agent' }`.
+
+`GET /api/bond-desk/access` (sign-in only, never 403) →
+```
+{ allowed: bool, reason: null | 'not_agent' | 'no_plan', plan: 'starter'|'pro'|'market'|null,
+  texts_live: bool, email_live: bool, storage_live: bool, text_cents: 5 }
+```
+`storage_live` false → uploads answer 503 `storage_unavailable`.
+
+## Money, dates
+
+All money is integer cents (`*_cents`). Dates are `YYYY-MM-DD` strings; "today" is the agent's
+local day (users.timezone, else the default zone). Timestamps are ISO strings.
+
+## Bonds
+
+Statuses and allowed moves (`POST /bonds/:id/status`):
+
+| from | to |
+|---|---|
+| prospect | active (needs `date` = posted_on), cancelled |
+| active | forfeited (needs `date` = forfeited_on and `deadline_on`), exonerated (`date`), surrendered (`date`) |
+| forfeited | active (reinstated; `date`), exonerated, surrendered, forfeiture_paid (`date`, `amount_cents`) |
+| exonerated, surrendered, forfeiture_paid, cancelled | — (final) |
+
+Liability = bond amounts of bonds `active` + `forfeited`.
+
+Bond object:
+```
+{ id, status, defendant_name, defendant_dob, defendant_phone, defendant_email, defendant_address,
+  case_number, court_name, county, state, court_date, charges, bond_amount_cents, surety_name,
+  posted_on, forfeited_on, forfeiture_deadline_on, discharged_on, forfeiture_paid_cents,
+  checkin_enrollment_id, notes, created_at, updated_at,
+  power: { id, surety_name, number, limit_cents } | null }
+```
+- `GET /bond-desk/bonds?status=&q=` → `{ bonds: [ bond + { balance_cents, packet_status } ] }` (q matches defendant name / case number)
+- `POST /bond-desk/bonds` body: bond fields (required `defendant_name`, `bond_amount_cents` > 0; `state` 2 letters) → `{ bond }` (status `prospect`)
+- `GET /bond-desk/bonds/:id` →
+```
+{ bond, indemnitors: [indemnitor], charges: [charge], payments: [payment], installments: [installment],
+  collateral: [collateral], packets: [packetSummary],
+  money: { charged_cents, paid_cents, balance_cents, plan_scheduled_cents, plan_in_sync, overdue_cents, next_due: installment|null } }
+```
+- `PATCH /bond-desk/bonds/:id` any bond field except status/dates of status/power → `{ bond }`
+- `POST /bond-desk/bonds/:id/status` `{ status, date, deadline_on?, amount_cents?, note? }` → `{ bond }`; 409 `bad_transition`. A note is appended to the bond's notes with the date and the move. Posting a bond sets its power's executed date to the posted date.
+- `POST /bond-desk/bonds/:id/power` `{ power_id }` executes an available, unexpired power whose limit ≥ bond amount on this bond (one power per bond) → `{ bond }`; 409 `power_unavailable` / `power_limit` / `power_expired` / `bond_has_power`
+
+Indemnitor: `{ id, bond_id, full_name, relationship, phone, email, address, dob, employer, created_at }`
+- `POST /bond-desk/bonds/:id/indemnitors` (required `full_name`) · `PATCH /bond-desk/indemnitors/:id` · `DELETE /bond-desk/indemnitors/:id` (409 `on_packet` once on a sent packet)
+
+## Ledger (premium and fees owed, payments received)
+
+- Charge: `{ id, kind: 'premium'|'fee', amount_cents, description, created_at, voided_at, void_reason }`
+  - `POST /bond-desk/bonds/:id/charges` `{ kind, amount_cents, description }` · `POST /bond-desk/charges/:id/void` `{ reason }` (409 `would_go_negative` if voiding makes payments exceed charges)
+- Payment: `{ id, receipt_no: 'R-000123', amount_cents, method, reference, payer_name, received_on, created_at, voided_at, void_reason }`
+  - methods: `cash`, `check`, `card`, `money_order`, `bank_transfer`, `other`
+  - `POST /bond-desk/bonds/:id/payments` `{ amount_cents, method, payer_name, received_on?, reference? }` → `{ payment }`; 409 `over_balance` when amount > balance; received_on cannot be in the future
+  - `POST /bond-desk/payments/:id/void` `{ reason }` (receipt numbers are never reused)
+  - `GET /bond-desk/payments/:id/receipt.pdf`
+- Receipt numbers are per agency, sequential, assigned in the same database transaction.
+- Payment plan: `PUT /bond-desk/bonds/:id/plan` `{ installments: [{ due_on, amount_cents }] }` replaces the plan; the amounts must add up to the bond's total non-void charges exactly (409 `plan_total`); `[]` removes it.
+  Installment: `{ id, due_on, amount_cents, covered_cents, status: 'paid'|'partial'|'due'|'overdue' }` — payments (non-void, total) cover installments in due-date order.
+  `money.plan_in_sync` is false when charges changed after the plan was saved.
+- `POST /bond-desk/bonds/:id/remind` `{ to: 'defendant'|'indemnitor', indemnitor_id?, channel: 'sms'|'email', consent_confirmed: true }` sends a payment reminder (text is metered 5¢). 409 `opted_out` if the number replied STOP.
+
+## Collateral
+
+`{ id, receipt_no: 'C-000045', kind: 'cash'|'real_estate'|'vehicle'|'jewelry'|'other', description, value_cents, received_from, received_on, returned_on, returned_to, created_at }`
+- `POST /bond-desk/bonds/:id/collateral` · `POST /bond-desk/collateral/:id/return` `{ returned_to, returned_on }` · `GET /bond-desk/collateral/:id/receipt.pdf`
+
+## Powers (power-of-attorney inventory)
+
+`{ id, surety_name, number, limit_cents, received_on, expires_on, status: 'available'|'executed'|'void'|'returned', bond_id, executed_on, void_reason, defendant_name }`
+- `GET /bond-desk/powers?status=&surety=` → `{ powers, sureties: [name] }`
+- `POST /bond-desk/powers` `{ surety_name, prefix, start, end, limit_cents, received_on, expires_on? }` adds powers `prefix + start … prefix + end` (max 500) → `{ created, skipped }` (numbers already on file are skipped)
+- `POST /bond-desk/powers/:id/void` `{ reason }` · `POST /bond-desk/powers/:id/return`
+
+## Forms library
+
+Form: `{ id, name, page_count, roles: ['defendant'|'indemnitor'], fields: [{ name, type: 'text'|'checkbox'|'other' }], field_map: { [fieldName]: dataKey }, archived, created_at }`
+- `GET /bond-desk/forms` → `{ forms, data_keys }` (`data_keys`: the list below)
+- `POST /bond-desk/forms` multipart: `file` (PDF ≤ 10 MB, not password-protected), `name` → `{ form }`; 400 `bad_pdf`
+- `PATCH /bond-desk/forms/:id` `{ name?, roles?, field_map? }` (only `text` fields can be mapped; unknown keys → 400 `bad_field_map`)
+- `POST /bond-desk/forms/:id/archive` · `GET /bond-desk/forms/:id/file` (original) · `GET /bond-desk/forms/:id/preview.pdf?bond_id=` (filled with that bond's data, for checking the mapping)
+
+Data keys (`data_keys` array, in this order):
+`bond.defendant_name, bond.defendant_dob, bond.defendant_address, bond.defendant_phone, bond.defendant_email,
+bond.case_number, bond.court_name, bond.county, bond.state, bond.court_date, bond.charges, bond.bond_amount,
+bond.premium, bond.power_number, bond.surety_name, agent.name, agent.agency, agent.license, agent.phone,
+agent.email, signer.full_name, signer.role, signer.relationship, signer.phone, signer.email, signer.address,
+signer.dob, signer.employer, signer.employer_phone, signer.job_title, signer.monthly_income,
+signer.years_at_address, signer.drivers_license, signer.vehicle, signer.reference_1, signer.reference_2,
+date.today, signature.name, signature.date`
+
+`signature.name` / `signature.date` are filled only on the signed copy ("/s/ Full Name" and the
+signing date). Everything else is filled when the signer's copy is prepared.
+
+## Packets (send forms to sign)
+
+Each signer signs their **own copy** of each form whose `roles` include their role (counterparts).
+
+- `POST /bond-desk/bonds/:id/packets`
+```
+{ form_ids: [id], signers: [{ role: 'defendant' } | { role: 'indemnitor', indemnitor_id }],
+  questions: 'none'|'basic'|'full', custom_questions: [string] (≤ 10, ≤ 200 chars),
+  doc_requests: ['id_front','id_back','selfie_with_id','proof_of_income','proof_of_address'],
+  deliver: 'sms'|'email'|'both'|'none', consent_confirmed: true (needed for sms) }
+```
+→ `{ packet, signers: [{ id, name, role, link, delivery: { sms: 'sent'|'skipped'|'failed'|'opted_out'|null, email: … } }] }`
+`link` is shown only in this response and in the `/link` response (the server keeps a hash).
+- `GET /bond-desk/packets/:id` →
+```
+{ packet: { id, bond_id, status: 'sent'|'in_progress'|'completed'|'voided', questions, custom_questions, doc_requests, created_at, completed_at, voided_at },
+  signers: [{ id, role, name, phone, email, status: 'sent'|'opened'|'in_progress'|'signed'|'declined', sent_at, opened_at, signed_at,
+              declined_reason, answers, events: [{ event, at, ip }] }],
+  documents: [{ id, signer_id, form_id, name, status: 'pending'|'prepared'|'signed', prepared_sha256, signed_sha256 }],
+  uploads: [{ id, signer_id, kind, content_type, size, created_at }] }
+```
+- `POST /bond-desk/packets/:id/signers/:signerId/link` `{ deliver, consent_confirmed }` → `{ id, name, role, link, delivery }`; the old link stops working
+- Signer timeline events: `sent`, `delivery_sms` / `delivery_email` (detail: sent, skipped, failed, opted_out), `opened`,
+  `answers_saved`, `uploaded` (detail: kind), `prepared`, `viewed` (detail: document id), `signed` (detail: language the
+  consent was shown in), `declined`, `link_rotated`; packet-level: `voided`
+- `POST /bond-desk/packets/:id/void` `{ reason }`
+- `GET /bond-desk/documents/:id.pdf` (signed copy if signed, else the prepared copy) · `GET /bond-desk/packets/:id/signed.pdf` (all signed copies merged) · `GET /bond-desk/uploads/:id` (file)
+
+## Signing (public, by link: `https://<app>/sign/<token>`)
+
+Token = 32 random bytes (base64url); valid 30 days from sending; 60 days after signing (download).
+- `GET /api/sign/:token` →
+```
+{ agency: { name, phone, license }, signer: { name, role }, status, defendant_name,
+  questions: [{ key, label_key: 'sgn_q_<key>' | null, label (custom questions) | null, required }], answers,
+  doc_requests: [{ kind, uploaded: bool }], documents: [{ id, name, viewed: bool }] (empty until prepared),
+  prepared: bool, signed_at, lang, consent: { version: 'esign-2026-10', text_key: 'sgn_esign_consent' } }
+```
+404 `link_invalid` · 410 `link_expired` · 410 `packet_voided`. First call records `opened`.
+- `POST /api/sign/:token/answers` `{ answers: { key: value } }` (until prepared)
+- `POST /api/sign/:token/uploads` multipart `file` (JPEG/PNG/HEIC/PDF ≤ 10 MB), `kind`
+- `POST /api/sign/:token/prepare` → fills this signer's copies (needs required answers and requested uploads) → `{ documents }`; answers are then locked
+- `GET /api/sign/:token/documents/:id.pdf` → the copy to review (records `viewed`)
+- `POST /api/sign/:token/sign` `{ typed_name, agree_esign: true, agree_terms: true, lang }` → `{ signed_at }`; 409 `not_viewed` (every document must be opened first), 400 `name_mismatch` (must match the signer's name, ignoring case/spaces)
+- `POST /api/sign/:token/decline` `{ reason }`
+- `GET /api/sign/:token/signed.pdf` → this signer's signed copies (each followed by its signature certificate)
+
+The consent wording printed on the certificate is, word for word, the English text of the page's
+`sgn_esign_consent`, `sgn_agree_esign` and `sgn_agree_terms` (a test keeps them equal); when the signer
+saw it in another language the certificate says which.
+
+The signature certificate page lists: document name, SHA-256 of the copy reviewed and of the signed
+copy, signer name typed, role, how the link reached the signer (only channels that actually delivered it, masked; otherwise "given directly by the agent"), timestamps (UTC) of sent / opened / each
+document viewed / signed, IP address and browser, and the consent wording agreed to.
+
+## Texts (5¢ each)
+
+Every text sent for an agent (signing links, payment reminders) is logged. `GET /bond-desk/texts?month=YYYY-MM`
+→ `{ month, count, cents, rows: [{ at, purpose, to_masked, bond_id }] }`. Once a day, unbilled texts are added
+to the agent's next bail-agent plan invoice as one line (Stripe invoice item), exactly once.
+
+## Reports (`?format=csv` for a CSV file)
+
+- `GET /bond-desk/reports/liability` → `{ by_surety: [{ surety_name, bonds, amount_cents }], bonds: [...] , total_cents }`
+- `GET /bond-desk/reports/surety?surety=&from=&to=` → executed powers in range: `{ rows: [{ power_number, executed_on, defendant_name, case_number, bond_amount_cents, premium_cents, status }], totals }`
+- `GET /bond-desk/reports/receivables` → every bond with a balance (cancelled bonds included): charged, paid, balance, overdue, next due
+- `GET /bond-desk/reports/receipts?from=&to=` → payments (voided shown, excluded from totals), `by_method: [{ method, amount_cents }]`, `total_cents`
+- `GET /bond-desk/reports/collateral` → collateral held (not returned)
+
+## Dashboard
+
+`GET /bond-desk/dashboard` →
+```
+{ counts: { prospect, active, forfeited }, liability_cents, receivable_cents, overdue_cents,
+  overdue: [{ bond_id, defendant_name, due_on, amount_due_cents }],
+  forfeitures: [{ bond_id, defendant_name, deadline_on, days_left }],
+  awaiting_signature: [{ packet_id, bond_id, defendant_name, pending }],
+  texts_this_month: { count, cents } }
+```

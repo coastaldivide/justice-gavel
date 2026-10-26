@@ -188,7 +188,11 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     if (!ctx.app) return;
     const { TIERS, chargeFor } = await import('../../routes/billing/plans.js');
     const list = (await req('get', '/api/billing/tiers')).body.tiers;
-    expect(list.map(t => t.key).sort()).toEqual(['advisor', 'advisor_annual', 'esquire', 'esquire_annual', 'legal_pro', 'legal_radar', 'pro_annual'].sort());
+    // Oct 26 2026 price list: Legal Radar / 24 Hour Advisor are retired — never listed, never sold.
+    expect(list.map(t => t.key).sort()).toEqual(['esquire', 'esquire_annual', 'legal_pro', 'pro_annual'].sort());
+    for (const retired of ['legal_radar', 'advisor', 'advisor_annual']) {
+      expect((await req('post', '/api/billing/subscribe', consumer2).send({ tier: retired })).status).toBe(400);
+    }
     for (const t of list) {
       const c = chargeFor(t.key);
       expect(t.monthly_cents).toBe(TIERS[t.key].monthly_cents);
@@ -223,7 +227,7 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect(monitorBefore.status).toBe(402);
     const start = await req('post', '/api/billing/subscribe', consumer).send({ tier: 'legal_pro' });
     expect(start.status).toBe(200);
-    expect(start.body).toMatchObject({ requires_payment: true, intent_type: 'setup', amount_cents: 3499, trial_days: 7 });
+    expect(start.body).toMatchObject({ requires_payment: true, intent_type: 'setup', amount_cents: 1999, trial_days: 7 });
     const subId = start.body.subscription_id;
     expect((await req('get', '/api/billing/subscription', consumer)).body.subscription).toBeNull();
     expect((await research()).body.has_access).toBe(false);
@@ -240,7 +244,7 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect((await ctx.db.get('SELECT COUNT(*)::int AS n FROM subscriptions WHERE stripe_sub_id = ?', [subId])).n).toBe(1);
     expect((await research()).body.has_access).toBe(true);
     expect((await req('post', '/api/arrests/monitors', consumer).send({ watch_name: 'Sam Watch' })).status).toBe(201);
-    const again = await req('post', '/api/billing/subscribe', consumer).send({ tier: 'advisor' });
+    const again = await req('post', '/api/billing/subscribe', consumer).send({ tier: 'pro_annual' });
     expect(again.status).toBe(409);
     expect(again.body.code).toBe('already_subscribed');
     const over = await req('get', '/api/billing/overview', consumer);
@@ -251,12 +255,12 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
   test('G4 Stripe Checkout in a browser: confirmed by the session id', async () => {
     if (!ctx.app) return;
     const user = await ctx.register({ displayName: 'G web buyer' });
-    const r = await req('post', '/api/billing/subscribe', user).set('Origin', 'http://localhost:8081').send({ tier: 'advisor', ui: 'checkout', return_path: '/plans' });
+    const r = await req('post', '/api/billing/subscribe', user).set('Origin', 'http://localhost:8081').send({ tier: 'legal_pro', ui: 'checkout', return_path: '/plans' });
     expect(r.status).toBe(200);
     expect(r.body.checkout_url).toMatch(/^https:\/\/checkout\.stripe\.test\//);
     const session = fake.sessions.get(r.body.checkout_session_id);
     expect(session.params.success_url).toBe('http://localhost:8081/plans?checkout_session_id={CHECKOUT_SESSION_ID}');
-    expect(session.params.line_items[0].price_data.unit_amount).toBe(2499);
+    expect(session.params.line_items[0].price_data.unit_amount).toBe(1999);
     expect((await req('post', '/api/billing/subscription/confirm', user).send({ checkout_session_id: session.id })).status).toBe(402);
     // Stripe finished the checkout: the subscription exists and the card is on file
     const sub = await (new (await import('stripe')).default('k')).subscriptions.create({
@@ -265,22 +269,23 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     session.status = 'complete'; session.subscription = sub.id;
     const ok = await req('post', '/api/billing/subscription/confirm', user).send({ checkout_session_id: session.id });
     expect(ok.status).toBe(200);
-    expect(ok.body.subscription).toMatchObject({ tier: 'advisor', status: 'trialing' });
+    expect(ok.body.subscription).toMatchObject({ tier: 'legal_pro', status: 'trialing' });
   });
 
   test('G5 plan change is prorated, a declined card keeps the old plan; cancel at period end', async () => {
     if (!ctx.app) return;
     fake.declineNextChange = true;
-    const declined = await req('post', '/api/billing/subscription/change', consumer).send({ tier: 'advisor' });
+    expect((await req('post', '/api/billing/subscription/change', consumer).send({ tier: 'advisor' })).status).toBe(400);   // retired plan
+    const declined = await req('post', '/api/billing/subscription/change', consumer).send({ tier: 'pro_annual' });
     expect(declined.status).toBe(402);
     expect(declined.body.code).toBe('change_not_paid');
     expect((await req('get', '/api/billing/subscription', consumer)).body.subscription.tier).toBe('legal_pro');
     const ok = await req('post', '/api/billing/subscription/change', consumer).send({ tier: 'pro_annual' });
     expect(ok.status).toBe(200);
-    expect(ok.body.subscription).toMatchObject({ tier: 'pro_annual', amount_cents: 29900 });
+    expect(ok.body.subscription).toMatchObject({ tier: 'pro_annual', amount_cents: 14900 });
     const row = await ctx.db.get(`SELECT stripe_sub_id FROM subscriptions WHERE user_id = ? AND tier = 'pro_annual'`, [consumer.user.id]);
     const s = fake.subs.get(row.stripe_sub_id);
-    expect(s.items.data[0].price).toMatchObject({ unit_amount: 29900, recurring: { interval: 'year' } });
+    expect(s.items.data[0].price).toMatchObject({ unit_amount: 14900, recurring: { interval: 'year' } });
     expect(s.metadata.tier).toBe('pro_annual');
     // annual plans unlock their monthly plan's features
     expect((await req('get', '/api/research/status', consumer)).body.has_access).toBe(true);
@@ -303,7 +308,7 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect(await status()).toBe('past_due');
     expect((await req('get', '/api/research/status', consumer)).body.has_access).toBe(true);   // grace while Stripe retries
     const s = fake.subs.get(subId);
-    s.status = 'active'; s.latest_invoice = { id: 'in_p', status: 'paid', amount_paid: 29900 };
+    s.status = 'active'; s.latest_invoice = { id: 'in_p', status: 'paid', amount_paid: 14900 };
     expect((await webhook(event('invoice.paid', { id: 'in_p', status: 'paid', subscription: subId }))).status).toBe(200);
     expect(await status()).toBe('active');
     s.status = 'canceled';
@@ -317,13 +322,13 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     expect(await status()).toBe('canceled');
     // the app paid but never confirmed: the webhook records it
     const user = await ctx.register({ displayName: 'G lost confirm' });
-    const start = await req('post', '/api/billing/subscribe', user).send({ tier: 'legal_radar' });
+    const start = await req('post', '/api/billing/subscribe', user).send({ tier: 'legal_pro' });
     paySub(start.body.subscription_id, 0);
     expect((await webhook(event('customer.subscription.updated', { id: start.body.subscription_id }))).status).toBe(200);
     expect((await ctx.db.get('SELECT status FROM subscriptions WHERE stripe_sub_id = ?', [start.body.subscription_id])).status).toBe('trialing');
     // an unpaid subscription is never promoted by a webhook
     const other = await ctx.register({ displayName: 'G unpaid' });
-    const st2 = await req('post', '/api/billing/subscribe', other).send({ tier: 'legal_radar' });
+    const st2 = await req('post', '/api/billing/subscribe', other).send({ tier: 'legal_pro' });
     await webhook(event('customer.subscription.updated', { id: st2.body.subscription_id }));
     expect((await ctx.db.get('SELECT status FROM subscriptions WHERE stripe_sub_id = ?', [st2.body.subscription_id])).status).toBe('incomplete');
   });
@@ -331,7 +336,7 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
   test('G7 refunds (all sales final, Oct 2026): change of mind → 403 no_refunds; nothing charged → 409; billing error → refunded and the plan ends', async () => {
     if (!ctx.app) return;
     const user = await ctx.register({ displayName: 'G refund' });
-    const start = await req('post', '/api/billing/subscribe', user).send({ tier: 'legal_radar' });
+    const start = await req('post', '/api/billing/subscribe', user).send({ tier: 'legal_pro' });
     paySub(start.body.subscription_id, 0);
     await req('post', '/api/billing/subscription/confirm', user).send({ subscription_id: start.body.subscription_id });
     expect((await req('post', '/api/billing/refund', user).send({ reason: 'nope' })).status).toBe(400);
@@ -411,9 +416,9 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
   test('G9 case leads: flat fee per type, sold once, contact details only for the buyer', async () => {
     if (!ctx.app) return;
     const fees = (await req('get', '/api/billing/pi-lead/fees')).body.fees;
-    expect(Object.fromEntries(fees.map(f => [f.lead_type, f.fee_cents]))).toMatchObject({ personal_injury: 20000, civil_rights: 20000, employment: 10000, ice_detention: 7500 });
+    expect(Object.fromEntries(fees.map(f => [f.lead_type, f.fee_cents]))).toMatchObject({ personal_injury: 25000, civil_rights: 20000, employment: 10000, ice_detention: 7500 });
     const leads = {};
-    for (const [type, cents] of [['personal_injury', 20000], ['civil_rights', 20000], ['employment', 10000], ['ice_detention', 7500]]) {
+    for (const [type, cents] of [['personal_injury', 25000], ['civil_rights', 20000], ['employment', 10000], ['ice_detention', 7500]]) {
       const r = await req('post', '/api/billing/pi-lead/submit', consumer2).send({ case_type: type, description: 'A detailed description of what happened to me.', state: 'TN', city: 'Nashville' });
       expect(r.status).toBe(201);
       leads[type] = r.body.lead_id;
@@ -450,13 +455,13 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
   test('G10 bail-agent plan: verified before it counts; new-arrest alerts for the covered county, once', async () => {
     if (!ctx.app) return;
     const tiers = (await req('get', '/api/billing/bondsman/tiers')).body.tiers;
-    expect(tiers.map(t => [t.key, t.monthly_cents, t.counties])).toEqual([['starter', 4900, 1], ['pro', 14900, 3], ['market', 34900, 'all']]);
+    expect(tiers.map(t => [t.key, t.monthly_cents, t.counties])).toEqual([['starter', 9900, 1], ['pro', 19900, 3], ['market', 34900, 'all']]);
     const start = await req('post', '/api/billing/bondsman/subscribe', agent).send({ tier: 'starter' });
     expect(start.status).toBe(200);
-    expect(fake.created.at(-1).items[0].price_data).toMatchObject({ unit_amount: 4900, recurring: { interval: 'month' } });
+    expect(fake.created.at(-1).items[0].price_data).toMatchObject({ unit_amount: 9900, recurring: { interval: 'month' } });
     expect((await req('get', '/api/billing/bondsman/subscription', agent)).body.active).toBe(false);
     expect((await req('post', '/api/billing/bondsman/subscription/confirm', agent).send({ subscription_id: start.body.subscription_id })).status).toBe(402);
-    paySub(start.body.subscription_id, 4900);
+    paySub(start.body.subscription_id, 9900);
     const ok = await req('post', '/api/billing/bondsman/subscription/confirm', agent).send({ subscription_id: start.body.subscription_id });
     expect(ok.status).toBe(200);
     expect((await req('get', '/api/billing/bondsman/subscription', agent)).body).toMatchObject({ active: true, tier: 'starter', counties_covered: 1 });
@@ -550,17 +555,71 @@ describeIntegration('section G — payments, leads, pro dashboards, admin (real 
     const { planLine, chargeItem, _resetPriceChecks } = await import('../../services/stripeBilling.js');
     const stripe = new (await import('stripe')).default('k');
     _resetPriceChecks();
-    fake.prices.set('price_ok', { id: 'price_ok', active: true, unit_amount: 2499, currency: 'usd', recurring: { interval: 'month' } });
-    fake.prices.set('price_old', { id: 'price_old', active: true, unit_amount: 2999, currency: 'usd', recurring: { interval: 'month' } });   // the old setup script's Advisor price
-    const line = planLine('tier', 'advisor', 'monthly');
+    fake.prices.set('price_ok', { id: 'price_ok', active: true, unit_amount: 1999, currency: 'usd', recurring: { interval: 'month' } });
+    fake.prices.set('price_old', { id: 'price_old', active: true, unit_amount: 3499, currency: 'usd', recurring: { interval: 'month' } });   // Legal Pro's price before Oct 26 2026
+    expect(planLine('tier', 'advisor', 'monthly')).toBeNull();   // a retired plan has no Stripe line
+    const line = planLine('tier', 'legal_pro', 'monthly');
     expect(await chargeItem(stripe, { ...line, priceId: 'price_ok' })).toEqual({ price: 'price_ok' });
     const fallback = await chargeItem(stripe, { ...line, priceId: 'price_old' });
-    expect(fallback.price_data).toMatchObject({ unit_amount: 2499, recurring: { interval: 'month' } });
+    expect(fallback.price_data).toMatchObject({ unit_amount: 1999, recurring: { interval: 'month' } });
     expect(await chargeItem(stripe, { ...line, priceId: 'price_missing' })).toEqual(line.inline);
     // the setup script builds its price list from plans.js (no second copy of the amounts)
     const fs = await import('fs');
     const src = fs.readFileSync(new URL('../../../scripts/setup-stripe-products.js', import.meta.url), 'utf8');
     expect(src).toMatch(/from '\.\.\/src\/routes\/billing\/plans\.js'/);
     expect(src).not.toMatch(/\b(2999|2900|7999|24900|39900)\b/);
+  });
+
+  test('G14 Case Pass: $29 one time for 90 days, $19 adds 90 days after the end, unlocks only after a verified payment, recorded once', async () => {
+    if (!ctx.app) return;
+    const buyer = await ctx.register({ displayName: 'G case pass' });
+    await ctx.acceptDisclaimer(buyer);
+    const quote = await req('get', '/api/billing/case-pass', buyer);
+    expect(quote.body).toMatchObject({ cents: 2900, extend_cents: 1900, days: 90, active_until: null, can_extend: false });
+    expect(quote.body.features).toEqual(expect.arrayContaining(['ai_chat_unlimited', 'legal_research', 'interpreter', 'audio_transcription']));
+    expect(quote.body.features).not.toContain('arrest_monitor');
+    expect((await req('get', '/api/research/status', buyer)).body.has_access).toBe(false);
+
+    const start = await req('post', '/api/billing/case-pass/buy', buyer).send({});
+    expect(start.status).toBe(200);
+    expect(start.body).toMatchObject({ requires_payment: true, amount_cents: 2900, kind: 'new' });
+    const pi = start.body.payment_intent_id;
+    expect(fake.pis.get(pi)).toMatchObject({ amount: 2900, metadata: { package: 'case_pass', kind: 'new', user_id: String(buyer.user.id) } });
+    expect((await req('post', '/api/billing/case-pass/confirm', buyer).send({ payment_intent_id: pi })).status).toBe(402);
+    expect((await req('get', '/api/research/status', buyer)).body.has_access).toBe(false);
+    fake.pis.get(pi).status = 'succeeded';
+    expect((await req('post', '/api/billing/case-pass/confirm', consumer2).send({ payment_intent_id: pi })).status).toBe(404);
+    const t0 = Date.now();
+    const ok = await req('post', '/api/billing/case-pass/confirm', buyer, 'es').send({ payment_intent_id: pi });
+    expect(ok.status).toBe(200);
+    expect(ok.body.message).toMatch(/No se renueva/);
+    const end1 = new Date(ok.body.active_until).getTime();
+    expect(Math.abs(end1 - (t0 + 90 * 86_400_000))).toBeLessThan(60_000);
+    expect((await req('get', '/api/research/status', buyer)).body.has_access).toBe(true);
+    // confirm again + the webhook: still one pass
+    await req('post', '/api/billing/case-pass/confirm', buyer).send({ payment_intent_id: pi });
+    await webhook(event('payment_intent.succeeded', clone(fake.pis.get(pi))));
+    expect((await ctx.db.get('SELECT COUNT(*)::int AS n FROM case_passes WHERE user_id = ?', [buyer.user.id])).n).toBe(1);
+
+    // extension: $19, starts when the current pass ends
+    const q2 = await req('get', '/api/billing/case-pass', buyer);
+    expect(q2.body).toMatchObject({ can_extend: true, active_until: new Date(end1).toISOString() });
+    const ext = await req('post', '/api/billing/case-pass/buy', buyer).send({});
+    expect(ext.body).toMatchObject({ amount_cents: 1900, kind: 'extend' });
+    fake.pis.get(ext.body.payment_intent_id).status = 'succeeded';
+    // the webhook arrives first this time; the app's confirm then changes nothing
+    await webhook(event('payment_intent.succeeded', clone(fake.pis.get(ext.body.payment_intent_id))));
+    const ok2 = await req('post', '/api/billing/case-pass/confirm', buyer).send({ payment_intent_id: ext.body.payment_intent_id });
+    expect(ok2.status).toBe(200);
+    expect(new Date(ok2.body.active_until).getTime()).toBe(end1 + 90 * 86_400_000);
+    expect((await ctx.db.get('SELECT COUNT(*)::int AS n FROM case_passes WHERE user_id = ?', [buyer.user.id])).n).toBe(2);
+
+    // a pass is not a subscription: nothing to cancel, it never blocks buying Legal Pro
+    expect((await req('post', '/api/billing/cancel', buyer).send({})).status).toBe(404);
+    expect((await req('post', '/api/billing/subscribe', buyer).send({ tier: 'legal_pro' })).status).toBe(200);
+    // an expired pass grants nothing
+    await ctx.db.run(`UPDATE case_passes SET starts_at = NOW() - INTERVAL '200 days', ends_at = NOW() - INTERVAL '1 second' WHERE user_id = ?`, [buyer.user.id]);
+    expect((await req('get', '/api/research/status', buyer)).body.has_access).toBe(false);
+    expect((await req('get', '/api/billing/case-pass', buyer)).body).toMatchObject({ active_until: null, can_extend: false });
   });
 });

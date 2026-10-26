@@ -27,7 +27,7 @@ export function leadFeeLabel(lead?: { lead_fee_display?: string | null; lead_fee
  * severity. Source of truth: backend/src/routes/billing/attorneyLeadFee.js
  * (PI_LEAD_FEE_CENTS); lead_fee_consistency.test.js fails if they drift.
  */
-export const PI_LEAD_FEE_CENTS = 20000;
+export const PI_LEAD_FEE_CENTS = 25000;
 
 export const PI_LEAD_FEE_DISPLAY = `$${(PI_LEAD_FEE_CENTS / 100).toFixed(0)}`;
 
@@ -37,8 +37,8 @@ export const PI_LEAD_FEE_DISPLAY = `$${(PI_LEAD_FEE_CENTS / 100).toFixed(0)}`;
  * GET /billing/pi-lead/fees; lead_fee_consistency.test.js fails if they drift).
  */
 export const ATTORNEY_LEAD_FEE_CENTS: Readonly<Record<string, number>> = Object.freeze({
-  personal_injury: 20000,
-  medical:         20000,
+  personal_injury: 25000,
+  medical:         25000,
   civil_rights:    20000,
   employment:      10000,
   ice_detention:    7500,
@@ -47,7 +47,7 @@ export const ATTORNEY_LEAD_FEE_CENTS: Readonly<Record<string, number>> = Object.
 /** 'Personal Injury' / 'civil-rights' → 'personal_injury' / 'civil_rights' (same rule as the backend). */
 export const normalizeLeadType = (type: string): string => String(type || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
-/** "$200" for a lead type (the server's value when given, else the fallback table). */
+/** "$250" for a lead type (the server's value when given, else the fallback table). */
 export function attorneyLeadFeeDisplay(type: string, serverFees?: Record<string, string> | null): string {
   const key = normalizeLeadType(type);
   if (serverFees?.[key]) return serverFees[key];

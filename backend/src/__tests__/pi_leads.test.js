@@ -115,15 +115,15 @@ function buildApp(db) {
 // piLeadFee() — pure function, no DB
 // ══════════════════════════════════════════════════════════════════════════════
 describe('piLeadFee() — flat fee per lead type', () => {
-  test('personal injury is a flat $200 for every severity', () => {
-    expect(PI_LEAD_FEE_CENTS).toBe(20000);
+  test('personal injury is a flat $250 for every severity', () => {
+    expect(PI_LEAD_FEE_CENTS).toBe(25000);
     for (const sv of ['minor', 'moderate', 'serious', 'catastrophic', null, undefined]) {
-      expect(piLeadFee('Personal Injury', sv)).toBe(20000);
+      expect(piLeadFee('Personal Injury', sv)).toBe(25000);
     }
   });
 
   test('medical malpractice uses the personal-injury fee', () => {
-    expect(piLeadFee('Medical', 'catastrophic')).toBe(20000);
+    expect(piLeadFee('Medical', 'catastrophic')).toBe(25000);
   });
 
   test('other lead types are flat and ignore severity', () => {
@@ -135,7 +135,7 @@ describe('piLeadFee() — flat fee per lead type', () => {
   });
 
   test('unknown type falls back to the personal-injury fee', () => {
-    expect(piLeadFee('Something Else', 'minor')).toBe(20000);
+    expect(piLeadFee('Something Else', 'minor')).toBe(25000);
   });
 });
 
@@ -188,13 +188,13 @@ describe('POST /billing/pi-lead/submit', () => {
     expect(r.body.lead).toHaveProperty('id');
   });
 
-  test('personal injury lead gets the flat $200 fee (moderate)', async () => {
+  test('personal injury lead gets the flat $250 fee (moderate)', async () => {
     const r = await request(app)
       .post('/billing/pi-lead/submit')
       .set('Authorization', `Bearer ${tok()}`)
       .send({ case_type: 'Personal Injury', description: 'Car accident', severity: 'moderate' });
     expect(r.status).toBe(201);
-    expect(r.body.lead.lead_fee_cents).toBe(20000);
+    expect(r.body.lead.lead_fee_cents).toBe(25000);
   });
 
   test('Civil Rights lead gets the flat $200 fee', async () => {

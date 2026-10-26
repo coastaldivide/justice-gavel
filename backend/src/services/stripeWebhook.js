@@ -21,7 +21,7 @@
  *   checkout.session.completed (subscription)            sync the new subscription
  *   invoice.paid / invoice.payment_succeeded             plan paid → trialing / active (renewals too)
  *   invoice.payment_failed                               past_due + a push in the person's language
- *   payment_intent.succeeded                             bail / case lead purchases; outbound-bot
+ *   payment_intent.succeeded                             bail / case lead purchases; Case Pass; outbound-bot
  *                                                        payment links; family connections
  *   charge.refunded                                      lead purchases marked refunded
  */
@@ -31,6 +31,7 @@ import { getDb } from '../db/index.js';
 import { stripeClient } from '../routes/billing/_shared.js';
 import { syncFromStripe, setStatusByStripeId } from './subscriptionStore.js';
 import { recordBailLead, recordCaseLead } from './leadPurchases.js';
+import { recordCasePass } from './casePass.js';
 import { sendPushToUser } from './pushDelivery.js';
 import { msg, userLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
@@ -71,6 +72,10 @@ async function onPaymentSucceeded(db, pi) {
   if (md.package === 'case_lead' && Number.isSafeInteger(userId)) {
     const leadId = Number(md.lead_id);
     if (Number.isSafeInteger(leadId)) await recordCaseLead(db, { attorneyId: userId, leadId, pi });
+    return;
+  }
+  if (md.package === 'case_pass' && Number.isSafeInteger(userId)) {
+    await recordCasePass(db, { userId, pi });
     return;
   }
   if (md.package === 'family_connect') {

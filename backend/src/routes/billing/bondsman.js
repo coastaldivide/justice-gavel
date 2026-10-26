@@ -28,7 +28,7 @@ import { visibleArrestSql, realArrestSql, isSampleColumnSql } from '../../utils/
 import { arrestFeedsConfigured } from '../../services/arrest_ingest.js';
 import { normalizeState } from '../../services/rightsContent.js';
 import { billingLimiter, stripeClient, BONDSMAN_TIERS, BONDSMAN_LEAD_FEE_CENTS, formatLeadFee, bondsmanLeadFeeInfo, bondsmanCharge, usd } from './_shared.js';
-import { ALL_COUNTIES } from './plans.js';
+import { ALL_COUNTIES, AGENT_TEXT_CENTS } from './plans.js';
 import { startPayment, verifyPayment, startSubscription, changePlan, returnUrlFor, uiFrom, BillingError, periodEnd } from '../../services/stripeBilling.js';
 import { recordIncomplete } from '../../services/subscriptionStore.js';
 import { recordBailLead } from '../../services/leadPurchases.js';
@@ -225,7 +225,8 @@ router.get('/bondsman/tiers', (req, res) => {
     annual_cents: t.annual_cents, annual_display: `${usd(t.annual_cents)}/yr`,
     annual_savings_cents: t.monthly_cents * 12 - t.annual_cents,
     counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties,
-    features: [{ key: 'lead_alerts', counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties }],
+    features: [{ key: 'lead_alerts', counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties },
+      { key: 'bond_desk' }, { key: 'checkins' }, { key: 'texts', cents: AGENT_TEXT_CENTS }],
   }));
   res.json({ tiers, lead_fee: bondsmanLeadFeeInfo(), payments_live: stripeConfigured() });
 });

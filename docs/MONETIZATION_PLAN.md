@@ -7,9 +7,10 @@ for business needs an attorney's sign-off in each state first.*
 
 ## 0. Competitor price map (v3 — prices copied from the market)
 
-Rule: match the competitor that sells the **same thing**. Where Justice Gavel has less (no bond
-accounting, no citator, no lawyer included), copy the competitor tier that has the same features,
-not the top one. Prices checked October 26, 2026.
+Rule: match the competitor that sells the **same thing**. Where Justice Gavel has less (no citator,
+no lawyer included), copy the competitor tier that has the same features, not the top one. Prices
+checked October 26, 2026. The bond paperwork and bond records eBail and Captira include are now built
+(Bond Desk, docs/BOND_DESK.md); what is in the code is listed in section 7.
 
 | JG product | Closest competitor (published price) | JG price (copied) |
 |---|---|---|
@@ -77,10 +78,13 @@ Every missed court date can cost a bail agent the full bail amount. Check-ins an
 
 | Plan | Price | Includes | Benchmark |
 |---|---|---|---|
-| Agent Starter | **$99/mo** ($950/yr) — v3, matches eBail/Captira | Upgraded listing (photo, hours, languages, license number shown), up to 25 active clients with GPS check-ins and court reminders by text/push | Captira charges $99/mo for full bail software; many agents already pay that, so Starter must sit below it (v2: $99 → $69) |
-| Agent Pro | **$199/mo** ($1,910/yr) — matches eBail | 3 counties, up to 100 active clients, missed-check-in alerts, reports | |
-| Agency | **$349/mo** ($3,350/yr) — matches eBail | All counties, up to 300 active clients, multiple users | |
-| Reminder texts | **5¢ per text** (matches Captira/eBail); client limits removed, as at eBail | | Replaces the planned $9.99/client, which is far above market |
+| Agent Starter | **$99/mo** ($950/yr) — matches eBail/Captira | 1 county of new-arrest alerts; check-ins and court reminders for clients (no per-client fee); **Bond Desk**: bonds and prospects, the agent's own forms filled from the case file, signing links by text/e-mail, typed e-signature with a certificate, ID and document requests, premium ledger with numbered receipts, payment plans, collateral receipts, power inventory, forfeiture deadlines, liability / surety / receivables / receipts / collateral reports | eBail $99 · Captira $99 |
+| Agent Pro | **$199/mo** ($1,910/yr) — matches eBail | Same, 3 counties | eBail $199 |
+| Agency | **$349/mo** ($3,350/yr) — matches eBail | Same, all counties | eBail $349 |
+| Texts sent for the agent | **5¢ per text** (matches Captira/eBail) — signing links and payment reminders; billed on the plan invoice | | Replaces the planned $9.99/client, which is far above market |
+
+Not built, so not sold: card payments taken online for the agent (needs Stripe Connect per agency),
+multiple users per agency, re-arrest monitoring, general-ledger / premium-remittance accounting.
 
 - **Stop:** the "Top placement in all searches" promise (the app doesn't do it, and it would be a
   paid recommendation).
@@ -116,10 +120,10 @@ how Uptrust entered the market — and use the measured appearance rate to sell 
 | Product | Price | Includes |
 |---|---|---|
 | Core path | **Free** | Rights card, lawyer + bail search, court reminders (push, browser, email, text), family followers, 3 AI questions a day |
-| Case Pass | **$29 one time for 90 days**; $19 to extend 90 days | Unlimited AI questions, document scan + translation, interpreter, audio transcription, case file tools. Matches how long a case actually lasts. |
+| Case Pass | **$29 one time for 90 days**; $19 to extend 90 days | Unlimited AI questions, legal research, interpreter, audio transcription, bar-prep questions (the 24 Hour Advisor feature set). No renewal. Matches how long a case actually lasts. |
 | Ongoing Legal Pro (probation, expungement, repeat users) | **$19.99/mo or $149/yr** (v3 — AI legal app tier; Rocket Lawyer's entry annual is $149) | Replaces the three current tiers. Benchmark: LegalShield $39.95–$59.95/mo includes real lawyers; this app can't promise that, so it must price well below. |
 | Video consult booking fee | **$10 / $15 / $25** (15 / 30 / 60 min) — keep | Paid by the person, flat. Never a percentage of the lawyer's fee (fee-splitting). |
-| Family Connect ($28.99 for the 3 nearest lawyers + 2 bail agents) | **Make free** | It charges a panicked family for publicly listed phone numbers. Low value, high complaint and FTC risk. Earn on the professional side instead. |
+| Family Connect (3 nearest lawyers + 2 bail agents) | **Free** (was $28.99) | It charged a panicked family for publicly listed phone numbers. Low value, high complaint and FTC risk. Earn on the professional side instead. |
 
 ### E. Stop, park or spin off
 - **Bar prep:** 548 unreviewed questions against $1,000+ incumbents. Park it, or sell separately at
@@ -203,6 +207,25 @@ before raising prices.
 4. **Weeks 6–12:** offer one Tennessee public defender office a free 90-day reminder pilot and
    measure appearance rates, which become your sales sheet.
 5. **After counsel:** add per-lead pricing state by state.
+
+## 7. What the code charges now (October 26, 2026)
+
+| Item | In the code | Where |
+|---|---|---|
+| Bail-agent plans | $99 / $199 / $349 a month; $950 / $1,910 / $3,350 a year | `routes/billing/plans.js` BONDSMAN_TIERS |
+| Check-ins | Included in every bail-agent plan (no per-defendant fee) | `routes/checkins.js` |
+| Texts sent for agents | 5¢ each, logged when the carrier accepts the text, added once a day to the plan invoice (one Stripe invoice item per batch, never twice) | `AGENT_TEXT_CENTS`, `services/bondDesk/textBilling.js` |
+| Bond Desk | Included in every bail-agent plan | `routes/bondDesk/*`, `routes/sign.js`, docs/BOND_DESK.md |
+| Consumer plan | Legal Pro $19.99/mo or $149/yr; Legal Radar and 24 Hour Advisor retired (old subscribers keep them; never sold again) | `TIERS` (`legacy: true`) |
+| Case Pass | $29 one time for 90 days, $19 adds 90 days after the current pass; no renewal | `CASE_PASS`, `routes/billing/casePass.js` |
+| Family Connect | Free; no Stripe call | `routes/billing/connections.js` |
+| PI / medical lead | $250 flat (civil rights $200, employment $100, ICE $75) | `routes/billing/attorneyLeadFee.js` + app `constants/leadFee.ts` |
+| Attorney Pro Profile $49.95 / Case Match $455 | Priced, **not on sale** until the features exist | `ATTORNEY_MARKETING` (`on_sale: false`) |
+| Refunds | All sales final; only billing errors and duplicate charges are refunded | `routes/billing/subscriptions.js` |
+
+A Stripe price id set in the environment is used only when it equals the price above; otherwise the
+exact amount is sent to Stripe inline (`services/stripeBilling.js` chargeItem). Re-run
+`backend/scripts/setup-stripe-products.js` to create matching Stripe prices.
 
 ## Sources
 - Criminal defense cost per lead: https://www.leadgen-economy.com/blog/criminal-defense-lead-generation-strategies/

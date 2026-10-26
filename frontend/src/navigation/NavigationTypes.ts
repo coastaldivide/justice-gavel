@@ -119,6 +119,12 @@ export type RootStackParamList = {
   // ── Check-In & Monitoring ────────────────────────────────────────────────
   CheckIn:                  { enrollmentId?: number };
   CheckInManager:           undefined;
+  BondDesk:                 undefined;
+  BondDetail:               { bondId: number | string; tab?: 'overview' | 'people' | 'paperwork' | 'money' | 'collateral' };
+  BondForms:                undefined;
+  BondPowers:               undefined;
+  BondReports:              undefined;
+  SignPacket:               { token: string };
   ArrestMonitor:            undefined;
 
   // ── Education & Gamification ─────────────────────────────────────────────

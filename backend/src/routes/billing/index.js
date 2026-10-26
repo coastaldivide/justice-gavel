@@ -10,6 +10,7 @@
  *   connections.js    — /family/connect, /quickconnect
  *   consumer.js       — /consumer/*, /admin/stats
  *   pi_leads.js       — /pi-lead/*, /pi-leads
+ *   casePass.js       — /case-pass (one-time 90-day pass)
  *   POST /webhook     — Stripe webhook (services/stripeWebhook.js; raw body)
  *
  * To add a new billing feature:
@@ -26,9 +27,10 @@ import { authRequired } from '../../middleware/auth.js';
 
 import subscriptionsRouter from './subscriptions.js';
 import bondsmanRouter      from './bondsman.js';
-import connectionsRouter   from './connections.js';
+import connectionsRouter, { FAMILY_CONNECT_PRICE_CENTS } from './connections.js';
 import consumerRouter      from './consumer.js';
 import piLeadsRouter       from './pi_leads.js';
+import casePassRouter      from './casePass.js';
 
 const router = Router();
 
@@ -39,7 +41,9 @@ const router = Router();
 // POSTs that never touch Stripe.
 // Every write here is for a signed-in person, so the sign-in check comes first:
 // a guest gets 401 (sign in), never "payments are not available".
-const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/];
+const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/,
+  // Family Connect is free (no charge, no Stripe call) while its price is 0.
+  ...(FAMILY_CONNECT_PRICE_CENTS <= 0 ? [/^\/family\/connect\/?$/] : [])];
 router.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS' || /^\/webhook\/?$/.test(req.path)) return next();
   return authRequired(req, res, () => {
@@ -54,6 +58,7 @@ router.use('/', bondsmanRouter);
 router.use('/', connectionsRouter);
 router.use('/', consumerRouter);
 router.use('/', piLeadsRouter);
+router.use('/', casePassRouter);
 
 // ── Stripe webhook — raw body (app.js skips the JSON parser for this path) ───
 // Same handler as /api/webhooks/stripe: signature check + replay protection.
