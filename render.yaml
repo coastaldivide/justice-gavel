@@ -54,11 +54,6 @@ services:
         value: "false"
       - key: MEMORY_LIMIT_MB
         value: "512"
-      # glibc keeps one malloc arena per thread; capping it keeps native memory (outside the JS
-      # heap) from ballooning under bursts. Measured Oct 26 2026: route sweep of 30k requests in
-      # 44 s, peak 493 → 471 MB; memory returns to ~170 MB within 20 s (no leak).
-      - key: MALLOC_ARENA_MAX
-        value: "2"
       - key: ATTACHMENTS_STORAGE   # Supabase Storage — the container disk is ephemeral
         value: supabase
       - key: BASE_URL
@@ -169,11 +164,6 @@ services:
         value: "false"
       - key: MEMORY_LIMIT_MB
         value: "512"
-      # glibc keeps one malloc arena per thread; capping it keeps native memory (outside the JS
-      # heap) from ballooning under bursts. Measured Oct 26 2026: route sweep of 30k requests in
-      # 44 s, peak 493 → 471 MB; memory returns to ~170 MB within 20 s (no leak).
-      - key: MALLOC_ARENA_MAX
-        value: "2"
       - key: ATTACHMENTS_STORAGE
         value: supabase
       - key: SENTRY_DSN
