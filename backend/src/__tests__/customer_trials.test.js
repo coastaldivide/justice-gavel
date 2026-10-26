@@ -52,7 +52,7 @@ describe('CUSTOMER TRIAL A — Marcus (misdemeanor, first offense, bail needed)'
   // ── A-1: ToS state ─────────────────────────────────────────────────────────
   test('A-1: ToS version check returns needs_acceptance for new user', () => {
     const user = { tos_version_accepted: null, tos_accepted_at: null };
-    const CURRENT_TOS_VERSION = '2.1';
+    const CURRENT_TOS_VERSION = '2.2';
     const needs_acceptance = user.tos_version_accepted !== CURRENT_TOS_VERSION;
     expect(needs_acceptance).toBe(true);
   });

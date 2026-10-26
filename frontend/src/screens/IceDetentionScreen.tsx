@@ -33,8 +33,14 @@ import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // Text lives in src/i18n (iced_*). The screen shows the app language; the toggle
 // switches this one page to English (or back) — e.g. to show it to someone else.
-const PHONES = ['210-787-3745', '213-639-3900', '212-549-2660', '415-255-9499', '301-587-7993'];
-const URLS = ['https://www.raicestexas.org', 'https://www.nilc.org', 'https://www.aclu.org/know-your-rights/immigrants-rights', 'https://www.ilrc.org', 'https://cliniclegal.org'];
+// Legal accuracy review (Oct 2026): the five call buttons here (RAICES, NILC, ACLU,
+// ILRC, CLINIC) named numbers that could not be confirmed, and four of those groups
+// are policy / training organisations that do not take calls from detained people.
+// Only resources checked against the official EOIR pages remain:
+//   EOIR Automated Case Information 1-800-898-7180 (justice.gov/eoir/contact-eoir)
+//   EOIR List of Pro Bono Legal Service Providers (no phone; the list has the numbers)
+const PHONES: (string | null)[] = ['1-800-898-7180', null];
+const URLS = ['https://acis.eoir.justice.gov/en/', 'https://www.justice.gov/eoir/list-pro-bono-legal-service-providers'];
 // The address ICE itself publishes for its Online Detainee Locator System
 // (ICE ODLS brochure, ice.gov/doclib/news/library/factsheets/pdf/odls-brochure.pdf, checked 2026-10-20).
 const LOCATOR_URL = 'https://www.ice.gov/locator';
@@ -203,15 +209,17 @@ function IceDetentionScreen(): React.JSX.Element {
             : <Text style={[s.resourceName, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{r.name}</Text>}
           <Text style={[s.resourceDesc, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{r.desc}</Text>
           <View style={s.resourceBtns}>
+            {r.phone ? (
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
               style={[s.callBtn, { backgroundColor: r.highlight ? colors.legal : COLORS.navy }]}
-              accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone)}
+              accessibilityLabel={L.callA11y(r.phone)} onPress={() => callNumber(r.phone as string)}
               testID={`ice-call-${i}`}
             >
               <IconLabel icon={ICONS.phone} textStyle={s.callBtnTxt} maxFontSizeMultiplier={1.4}>{formatPhone(r.phone)}</IconLabel>
             </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}

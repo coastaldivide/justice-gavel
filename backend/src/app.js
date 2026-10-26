@@ -55,6 +55,7 @@ import expungementRouter   from './routes/expungement/index.js';
 import immigrationRouter   from './routes/immigration.js';
 import billingRouter    from './routes/billing/index.js';
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
+import telnyxWebhookRouter from './routes/webhooks/telnyx.js';
 import adminQueueRouter from './routes/admin/queue.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -269,6 +270,9 @@ if (process.env.NODE_ENV !== 'test') {
 // Signature verification needs the exact bytes Stripe sent.
 const STRIPE_WEBHOOK_PATHS = ['/webhooks/stripe', '/api/webhooks/stripe'];
 app.use(STRIPE_WEBHOOK_PATHS, express.raw({ type: () => true, limit: '1mb' }), stripeWebhookRouter);
+// Telnyx messaging webhooks (STOP replies) — RAW body for the Ed25519 signature check.
+const TELNYX_WEBHOOK_PATH = '/api/webhooks/telnyx';
+app.use(TELNYX_WEBHOOK_PATH, express.raw({ type: () => true, limit: '256kb' }), telnyxWebhookRouter);
 // Paths whose routers parse their own raw body (never run express.json on them)
 const RAW_BODY_PATHS = new Set([...STRIPE_WEBHOOK_PATHS, '/api/billing/webhook']);
 

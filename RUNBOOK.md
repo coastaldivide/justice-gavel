@@ -503,9 +503,10 @@ lawyers (bail-agent messaging is not built yet). The listing row is never change
 
 **Court reminders.** One set per hearing (`court_dates`, `scheduled_pushes.court_date_id`): 7 d 09:00,
 3 d 09:00, 1 d 18:00, morning-of 06:30 in the user's zone; consented family followers get the same set
-(`follower_court_reminder`). Delivery chain: push → e-mail (needs `RESEND_API_KEY`) → SMS (needs all of
-`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, and the user's opt-in). Each missing
-provider is skipped, never an error. A reminder that reached NO channel is `status = 'undeliverable'`
+(`follower_court_reminder`). Delivery chain: Expo push (needs the EAS project + APNs/FCM credentials) →
+browser push (needs `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`) → e-mail (needs `RESEND_API_KEY`) → SMS via Telnyx (needs `TELNYX_API_KEY`, `TELNYX_FROM_NUMBER` on a
+10DLC-registered campaign, and the user's opt-in). A push whose Expo receipt later fails is handed back to the
+dispatcher and goes to the next channel (`push_receipt:` in `error`). Each missing provider is skipped, never an error. A reminder that reached NO channel is `status = 'undeliverable'`
 (`delivered = 0`, reason in `error`, e.g. `no_push_token; email_not_configured; sms_not_configured`) — never
 "sent". `/metrics` → `reminders.undeliverable_24h` (+ `jg_reminders_undeliverable_24h` in Prometheus format)
 and `jobs['reminders:dispatch']`; the court-date screen asks the person once to turn on notifications or add

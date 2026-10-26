@@ -1,0 +1,410 @@
+[
+ {
+  "state": "AL",
+  "automatic": false,
+  "when": "Age 18 + petition required",
+  "notes": "Misdemeanor adjudications only. Felonies require waiting period.",
+  "when_key": "x_juvenile_justice_age_18_petition_required",
+  "notes_key": "x_juvenile_justice_misdemeanor_adjudications_only_felon"
+ },
+ {
+  "state": "AK",
+  "automatic": false,
+  "when": "Age 18 + 2 years offense-free",
+  "notes": "Petition to court. All charges must be included.",
+  "when_key": "x_juvenile_justice_age_18_2_years",
+  "notes_key": "x_juvenile_justice_petition_court_all_charges"
+ },
+ {
+  "state": "AZ",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Superior court petition. Fee waiver available.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_superior_court_petition_fee"
+ },
+ {
+  "state": "AR",
+  "automatic": false,
+  "when": "Age 21 or 5 years post-disposition",
+  "notes": "Petition required. Violent offenses excluded.",
+  "when_key": "x_juvenile_justice_age_21_5_years",
+  "notes_key": "x_juvenile_justice_petition_required_violent_offenses"
+ },
+ {
+  "state": "CA",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Automatic sealing under AB 1076. Some serious offenses require petition.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_automatic_sealing_under_ab"
+ },
+ {
+  "state": "CO",
+  "automatic": true,
+  "when": "Age 18 or upon completion",
+  "notes": "Broad automatic sealing. Petition available for earlier sealing.",
+  "when_key": "x_juvenile_justice_age_18_upon_completion",
+  "notes_key": "x_juvenile_justice_broad_automatic_sealing_petition"
+ },
+ {
+  "state": "CT",
+  "automatic": true,
+  "when": "Age 18",
+  "notes": "Records erased automatically for most offenses.",
+  "when_key": "x_juvenile_justice_age_18",
+  "notes_key": "x_juvenile_justice_records_erased_automatically_most"
+ },
+ {
+  "state": "DE",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Must be offense-free since adjudication.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_must_be_offense_free"
+ },
+ {
+  "state": "FL",
+  "automatic": false,
+  "when": "Age 21 + petition",
+  "notes": "Petition required. Certain serious offenses ineligible.",
+  "when_key": "x_juvenile_justice_age_21_petition",
+  "notes_key": "x_juvenile_justice_petition_required_certain_serious"
+ },
+ {
+  "state": "GA",
+  "automatic": false,
+  "when": "Age 21 or 4 years post-completion",
+  "notes": "Petition to juvenile court. Fee required.",
+  "when_key": "x_juvenile_justice_age_21_4_years",
+  "notes_key": "x_juvenile_justice_petition_juvenile_court_fee"
+ },
+ {
+  "state": "HI",
+  "automatic": true,
+  "when": "Age 18",
+  "notes": "Records sealed automatically for most misdemeanor-equivalent offenses.",
+  "when_key": "x_juvenile_justice_age_18",
+  "notes_key": "x_juvenile_justice_records_sealed_automatically_most"
+ },
+ {
+  "state": "ID",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Petition to juvenile court. Some offenses excluded.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_petition_juvenile_court_some"
+ },
+ {
+  "state": "IL",
+  "automatic": true,
+  "when": "Age 18 (minor offenses)",
+  "notes": "Automatic expungement for minor offenses. Petition for others.",
+  "when_key": "x_juvenile_justice_age_18_minor_offenses",
+  "notes_key": "x_juvenile_justice_automatic_expungement_minor_offenses"
+ },
+ {
+  "state": "IN",
+  "automatic": false,
+  "when": "Age 18 or 1 year post-case",
+  "notes": "Petition required. Restricted access, not full sealing.",
+  "when_key": "x_juvenile_justice_age_18_1_year",
+  "notes_key": "x_juvenile_justice_petition_required_restricted_access"
+ },
+ {
+  "state": "IA",
+  "automatic": false,
+  "when": "Age 18",
+  "notes": "Records are confidential but not automatically expunged. Petition available.",
+  "when_key": "x_juvenile_justice_age_18",
+  "notes_key": "x_juvenile_justice_records_confidential_but_not"
+ },
+ {
+  "state": "KS",
+  "automatic": false,
+  "when": "Age 18 or 2 years post-discharge",
+  "notes": "Petition to district court.",
+  "when_key": "x_juvenile_justice_age_18_2_years_2",
+  "notes_key": "x_juvenile_justice_petition_district_court"
+ },
+ {
+  "state": "KY",
+  "automatic": false,
+  "when": "Age 18 + 2 years offense-free",
+  "notes": "Petition required. Felony-equivalent offenses may be excluded.",
+  "when_key": "x_juvenile_justice_age_18_2_years",
+  "notes_key": "x_juvenile_justice_petition_required_felony_equivalent"
+ },
+ {
+  "state": "LA",
+  "automatic": false,
+  "when": "Age 17 (in LA, adulthood) + petition",
+  "notes": "Louisiana raised adult age to 18 in 2020. Petition to juvenile court.",
+  "when_key": "x_juvenile_justice_age_17_la_adulthood",
+  "notes_key": "x_juvenile_justice_louisiana_raised_adult_age"
+ },
+ {
+  "state": "ME",
+  "automatic": false,
+  "when": "Age 18 + 3 years",
+  "notes": "Petition to district court. Class A offenses excluded.",
+  "when_key": "x_juvenile_justice_age_18_3_years",
+  "notes_key": "x_juvenile_justice_petition_district_court_class"
+ },
+ {
+  "state": "MD",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Broad automatic expungement. Petition for earlier action.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_broad_automatic_expungement_petition"
+ },
+ {
+  "state": "MA",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Records sealed automatically. Some serious offenses remain.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_records_sealed_automatically_some"
+ },
+ {
+  "state": "MI",
+  "automatic": false,
+  "when": "Age 17 + petition",
+  "notes": "Petition to family court. Good standing required.",
+  "when_key": "x_juvenile_justice_age_17_petition",
+  "notes_key": "x_juvenile_justice_petition_family_court_good"
+ },
+ {
+  "state": "MN",
+  "automatic": true,
+  "when": "Upon completion of sentence",
+  "notes": "One of the most favorable states. Automatic expungement for most offenses.",
+  "when_key": "x_juvenile_justice_upon_completion_sentence",
+  "notes_key": "x_juvenile_justice_one_most_favorable_states"
+ },
+ {
+  "state": "MS",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Petition to youth court. Limited offenses eligible.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_petition_youth_court_limited"
+ },
+ {
+  "state": "MO",
+  "automatic": false,
+  "when": "Age 17 or petition at any time",
+  "notes": "Records confidential. Petition for expungement available.",
+  "when_key": "x_juvenile_justice_age_17_petition_at",
+  "notes_key": "x_juvenile_justice_records_confidential_petition_expung"
+ },
+ {
+  "state": "MT",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Youth court petition. Felony-equivalent excluded.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_youth_court_petition_felony"
+ },
+ {
+  "state": "NE",
+  "automatic": false,
+  "when": "Age 17 or 3 years post-discharge",
+  "notes": "Petition to separate juvenile court system.",
+  "when_key": "x_juvenile_justice_age_17_3_years",
+  "notes_key": "x_juvenile_justice_petition_separate_juvenile_court"
+ },
+ {
+  "state": "NV",
+  "automatic": true,
+  "when": "Age 21 or 3 years post-completion",
+  "notes": "Automatic sealing if no subsequent offenses.",
+  "when_key": "x_juvenile_justice_age_21_3_years",
+  "notes_key": "x_juvenile_justice_automatic_sealing_if_no"
+ },
+ {
+  "state": "NH",
+  "automatic": false,
+  "when": "Age 17 + petition",
+  "notes": "Petition to district court. Annual sealing windows.",
+  "when_key": "x_juvenile_justice_age_17_petition",
+  "notes_key": "x_juvenile_justice_petition_district_court_annual"
+ },
+ {
+  "state": "NJ",
+  "automatic": true,
+  "when": "Age 19 or 5 years post-completion",
+  "notes": "Automatic expungement for most adjudications.",
+  "when_key": "x_juvenile_justice_age_19_5_years",
+  "notes_key": "x_juvenile_justice_automatic_expungement_most_adjudicat"
+ },
+ {
+  "state": "NM",
+  "automatic": false,
+  "when": "Age 18 + 1 year offense-free",
+  "notes": "Children's court petition. Broad eligibility.",
+  "when_key": "x_juvenile_justice_age_18_1_year_2",
+  "notes_key": "x_juvenile_justice_children_s_court_petition"
+ },
+ {
+  "state": "NY",
+  "automatic": true,
+  "when": "Age 18 (eligible youth)",
+  "notes": "Youthful Offender (YO) designation seals records. Apply through attorney.",
+  "when_key": "x_juvenile_justice_age_18_eligible_youth",
+  "notes_key": "x_juvenile_justice_youthful_offender_yo_designation"
+ },
+ {
+  "state": "NC",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "District court petition. Nonviolent misdemeanor-equivalent only.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_district_court_petition_nonviolent"
+ },
+ {
+  "state": "ND",
+  "automatic": false,
+  "when": "Age 18 or 2 years post-completion",
+  "notes": "Petition to juvenile court.",
+  "when_key": "x_juvenile_justice_age_18_2_years_3",
+  "notes_key": "x_juvenile_justice_petition_juvenile_court"
+ },
+ {
+  "state": "OH",
+  "automatic": false,
+  "when": "Age 18 + 2 years offense-free",
+  "notes": "Juvenile court petition. Sealing, not expungement -- still accessible to courts.",
+  "when_key": "x_juvenile_justice_age_18_2_years",
+  "notes_key": "x_juvenile_justice_juvenile_court_petition_sealing"
+ },
+ {
+  "state": "OK",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Juvenile court petition. First offense non-violent recommended.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_juvenile_court_petition_first"
+ },
+ {
+  "state": "OR",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Broad automatic expungement. Measure 11 offenses excluded.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_broad_automatic_expungement_measure"
+ },
+ {
+  "state": "PA",
+  "automatic": false,
+  "when": "Age 18 + petition or age 21",
+  "notes": "Petition to juvenile court. Act 91 (2016) expanded access.",
+  "when_key": "x_juvenile_justice_age_18_petition_age",
+  "notes_key": "x_juvenile_justice_petition_juvenile_court_act"
+ },
+ {
+  "state": "RI",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Automatic expungement. Petition for serious offenses.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_automatic_expungement_petition_serio"
+ },
+ {
+  "state": "SC",
+  "automatic": false,
+  "when": "Age 18 or 5 years post-completion",
+  "notes": "Family court petition. Limited serious offenses excluded.",
+  "when_key": "x_juvenile_justice_age_18_5_years",
+  "notes_key": "x_juvenile_justice_family_court_petition_limited"
+ },
+ {
+  "state": "SD",
+  "automatic": false,
+  "when": "Age 18 + 1 year offense-free",
+  "notes": "Circuit court petition.",
+  "when_key": "x_juvenile_justice_age_18_1_year_2",
+  "notes_key": "x_juvenile_justice_circuit_court_petition"
+ },
+ {
+  "state": "TN",
+  "automatic": false,
+  "when": "Age 17 or petition after completion",
+  "notes": "Juvenile court petition. T.C.A. § 37-1-153. Broad eligibility for first offenses.",
+  "when_key": "x_juvenile_justice_age_17_petition_after",
+  "notes_key": "x_juvenile_justice_juvenile_court_petition_t"
+ },
+ {
+  "state": "TX",
+  "automatic": false,
+  "when": "Age 17 or petition at 21",
+  "notes": "Petition to juvenile court. Fam. Code § 58.003. Determinate sentence offenses excluded.",
+  "when_key": "x_juvenile_justice_age_17_petition_at_2",
+  "notes_key": "x_juvenile_justice_petition_juvenile_court_fam"
+ },
+ {
+  "state": "UT",
+  "automatic": true,
+  "when": "Age 18 or 5 years post-adjudication",
+  "notes": "Automatic expungement for most. Petition for serious offenses.",
+  "when_key": "x_juvenile_justice_age_18_5_years_2",
+  "notes_key": "x_juvenile_justice_automatic_expungement_most_petition"
+ },
+ {
+  "state": "VT",
+  "automatic": true,
+  "when": "Age 18 (most offenses)",
+  "notes": "Records expunged automatically. Strongest protections in New England.",
+  "when_key": "x_juvenile_justice_age_18_most_offenses",
+  "notes_key": "x_juvenile_justice_records_expunged_automatically_stron"
+ },
+ {
+  "state": "VA",
+  "automatic": false,
+  "when": "Age 19 + 5 years offense-free",
+  "notes": "Circuit court petition. § 16.1-306. Good standing required.",
+  "when_key": "x_juvenile_justice_age_19_5_years_2",
+  "notes_key": "x_juvenile_justice_circuit_court_petition_16"
+ },
+ {
+  "state": "WA",
+  "automatic": true,
+  "when": "Upon completion (most offenses)",
+  "notes": "Some of the broadest automatic sealing in the US.",
+  "when_key": "x_juvenile_justice_upon_completion_most_offenses",
+  "notes_key": "x_juvenile_justice_some_broadest_automatic_sealing"
+ },
+ {
+  "state": "WV",
+  "automatic": false,
+  "when": "Age 18 + petition",
+  "notes": "Circuit court petition. First offense most likely to succeed.",
+  "when_key": "x_juvenile_justice_age_18_petition",
+  "notes_key": "x_juvenile_justice_circuit_court_petition_first"
+ },
+ {
+  "state": "WI",
+  "automatic": false,
+  "when": "Age 17 + petition",
+  "notes": "Circuit court petition. Expunged, not sealed -- more complete.",
+  "when_key": "x_juvenile_justice_age_17_petition",
+  "notes_key": "x_juvenile_justice_circuit_court_petition_expunged"
+ },
+ {
+  "state": "WY",
+  "automatic": false,
+  "when": "Age 19 + 2 years offense-free",
+  "notes": "District court petition.",
+  "when_key": "x_juvenile_justice_age_19_2_years",
+  "notes_key": "x_juvenile_justice_district_court_petition"
+ },
+ {
+  "state": "DC",
+  "automatic": true,
+  "when": "Age 21 or 2 years post-completion",
+  "notes": "Broad automatic sealing. Petition for earlier action.",
+  "when_key": "x_juvenile_justice_age_21_2_years",
+  "notes_key": "x_juvenile_justice_broad_automatic_sealing_petition_2"
+ }
+]

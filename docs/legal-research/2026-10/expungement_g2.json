@@ -1,0 +1,524 @@
+{
+  "CT": {
+    "name": "Connecticut",
+    "remedy": "Erasure (automatic Clean Slate erasure under C.G.S. § 54-142a(e); other convictions only by Board of Pardons and Paroles pardon)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 7,
+        "waitFrom": "date of the most recent conviction for any offense (sentence, parole and probation must be finished)",
+        "automatic": true,
+        "note": "Most misdemeanor convictions for offenses on or after Jan. 1, 2000 are erased automatically 7 years after your most recent conviction, once your sentence and probation are done and no charge is pending. Older offenses need a petition, and family-violence, sex and certain listed offenses are excluded.",
+        "citation": "C.G.S. § 54-142a(e)(1)(A)(i), (e)(2), (e)(3) (added by P.A. 21-32, eff. Jan. 1, 2023)",
+        "source_url": "https://cga.ct.gov/current/pub/chap_961a.htm",
+        "status": "corrected",
+        "issue": "App said 3 years and cited first-offender rule; statute sets a 7-year automatic erasure period measured from the most recent conviction.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "date of the most recent conviction for any offense (sentence, parole and probation must be finished)",
+        "automatic": true,
+        "note": "Class D and E felonies (and unclassified felonies with a maximum of 5 years or less) are erased automatically 10 years after your most recent conviction. Class A, B and C felonies are not covered by Clean Slate and can only be erased through a pardon.",
+        "citation": "C.G.S. § 54-142a(e)(1)(A)(ii), (e)(2)",
+        "source_url": "https://cga.ct.gov/current/pub/chap_961a.htm",
+        "status": "corrected",
+        "issue": "App said 5 years and cited § 54-142u; the statute is § 54-142a(e) and the period is 10 years for class D/E felonies only.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "date of the most recent conviction for any offense (sentence must be finished)",
+        "automatic": true,
+        "note": "A DUI conviction under § 14-227a is erased automatically after 10 years, but not if you were convicted of another DUI within 10 years of it. Erasure does not clear the DMV driving record.",
+        "citation": "C.G.S. § 54-142a(e)(1)(A)(ii), (e)(2)(D), (e)(6)",
+        "source_url": "https://codes.findlaw.com/ct/title-54-criminal-procedure/ct-gen-st-sect-54-142a/",
+        "status": "corrected",
+        "issue": "App said DUI is not eligible; § 54-142a(e) expressly places § 14-227a violations in the 10-year automatic tier unless there is a repeat DUI within 10 years.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 1.08,
+        "waitFrom": "13 months after a nolle; for a dismissal or not-guilty verdict, when the appeal period ends",
+        "automatic": true,
+        "note": "Records of a nolled (nolle prosequi) charge are erased automatically 13 months after the nolle. Records of a dismissal or not-guilty verdict are erased automatically as soon as the time to appeal runs out.",
+        "citation": "C.G.S. § 54-142a(a) (dismissal/acquittal), § 54-142a(c)(1) (nolle, 13 months)",
+        "source_url": "https://cga.ct.gov/current/pub/chap_961a.htm",
+        "status": "corrected",
+        "issue": "App had waitYears 0 but a 13-month note; resolved: nolles wait 13 months (1.08 yrs) under (c)(1), while dismissals/acquittals are erased when the appeal period expires under (a).",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Convictions designated as family violence crimes are excluded from automatic erasure. The only route is a pardon from the Board of Pardons and Paroles.",
+        "citation": "C.G.S. § 54-142a(e)(2)(A); § 46b-38a",
+        "source_url": "https://cga.ct.gov/current/pub/chap_961a.htm",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Nonviolent and sexually violent sex offenses (as defined in § 54-250) are excluded from automatic erasure. The only route is a pardon.",
+        "citation": "C.G.S. § 54-142a(e)(2)(B); § 54-250",
+        "source_url": "https://cga.ct.gov/current/pub/chap_961a.htm",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": null,
+      "when": null,
+      "notes": null,
+      "citation": "C.G.S. § 46b-146",
+      "source_url": null,
+      "status": "unverifiable",
+      "issue": "Could not read the current text of § 46b-146 (the official chapter page was not reachable and the web search budget ran out), so whether erasure is automatic, and the timing, are unconfirmed."
+    }
+  },
+  "DE": {
+    "name": "Delaware",
+    "remedy": "Expungement (mandatory and automatic through the State Bureau of Identification; discretionary by petition to Superior Court or Family Court)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "date of conviction",
+        "automatic": true,
+        "note": "Most misdemeanor convictions qualify for mandatory expungement 5 years after the conviction, and since Aug. 1, 2024 the State Bureau of Identification is supposed to expunge them automatically each month. You can still apply yourself if your record hasn't been cleared yet. Listed misdemeanors such as domestic violence or offenses against a child need a court petition after 7 years.",
+        "citation": "11 Del. C. § 4373(a)(2)(a), (b); § 4373A(b); § 4374(a)",
+        "source_url": "https://law.justia.com/codes/delaware/title-11/chapter-43/subchapter-vii/section-4373",
+        "status": "verified",
+        "issue": "Value confirmed. The note should add that relief is now automatic (§ 4373A, from Aug. 1, 2024); a July 2026 report says implementation has been delayed.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 7,
+        "waitFrom": "date of conviction or release from incarceration, whichever is later",
+        "automatic": false,
+        "note": "Most felonies can be expunged by petition to the Superior Court 7 years after conviction or release, if you have no other convictions. Violent felonies listed in § 4201(c) and felonies involving physical or sexual assault are barred. A short list of lower-level felonies, such as some drug and forgery offenses, is expunged automatically after 10 years.",
+        "citation": "11 Del. C. § 4374(a)(3), (b); § 4373(a)(2)(c)",
+        "source_url": "https://codes.findlaw.com/de/title-11-crimes-and-criminal-procedure/de-code-sect-11-4374/",
+        "status": "corrected",
+        "issue": "App limited relief to class G felonies; § 4374 allows a discretionary petition for any felony not excluded under subsection (b).",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Title 21 motor vehicle offenses, including DUI, cannot be expunged. The only Title 21 offenses allowed are driving after judgment prohibited, reckless driving and operating a vehicle causing death.",
+        "citation": "11 Del. C. § 4372(f); § 4374(i)",
+        "source_url": "https://law.justia.com/codes/delaware/title-11/chapter-43/subchapter-vii/section-4372",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "when the case ends in your favor",
+        "automatic": true,
+        "note": "Cases that end in your favor (dismissal, nolle prosequi or acquittal) qualify for mandatory expungement with no waiting period and are expunged automatically. Charges 7 or more years old with no recorded outcome are treated as dismissed.",
+        "citation": "11 Del. C. § 4373(a)(1)(a), (a)(3); § 4373A",
+        "source_url": "https://law.justia.com/codes/delaware/title-11/chapter-43/subchapter-vii/section-4373a",
+        "status": "verified",
+        "issue": "Value confirmed. The note should add that relief is now automatic and cite § 4373 rather than § 4374.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 7,
+        "waitFrom": "date of conviction or release from incarceration, whichever is later",
+        "automatic": false,
+        "note": "Domestic violence misdemeanors are excluded from mandatory and automatic expungement, but you can petition the court 7 years after conviction or release if you have no other convictions. Felonies involving physical assault are barred.",
+        "citation": "11 Del. C. § 4373(b)(1); § 4374(a)(2), (b)",
+        "source_url": "https://codes.findlaw.com/de/title-11-crimes-and-criminal-procedure/de-code-sect-11-4374/",
+        "status": "corrected",
+        "issue": "App said domestic violence is never eligible; § 4373(b) only removes it from mandatory expungement, and § 4374(a)(2) allows a discretionary petition after 7 years.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 7,
+        "waitFrom": "date of conviction or release from incarceration, whichever is later",
+        "automatic": false,
+        "note": "Felony sexual assault crimes, incest and third-degree unlawful sexual contact can never be expunged. A few listed misdemeanors, such as lewdness, can be considered by court petition after 7 years.",
+        "citation": "11 Del. C. § 4372(f); § 4373(b)(4)-(5); § 4374(a)(2), (b); 31 Del. C. § 309",
+        "source_url": "https://law.justia.com/codes/delaware/title-11/chapter-43/subchapter-vii/section-4372",
+        "status": "corrected",
+        "issue": "App had a flat ban; the statute bars felony and listed sex offenses but leaves listed misdemeanors like lewdness open to a discretionary petition.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "No wait if the case ended in the child's favor; 3 years after a single adjudication",
+      "notes": "Since Aug. 1, 2024, the State Bureau of Identification is supposed to expunge cases eligible for mandatory expungement automatically each month: cases ended in the child's favor, and a single adjudication after 3 years. Violent felonies and felony or misdemeanor sex offenses are excluded, and other cases need a petition to Family Court.",
+      "citation": "10 Del. C. § 1017(a); § 1017A (automatic, from Aug. 1, 2024)",
+      "source_url": "https://law.justia.com/codes/delaware/title-10/chapter-9/subchapter-iii/section-1017a/",
+      "status": "corrected",
+      "issue": "App said 'Age 18 + petition'; the statute has no age requirement and now provides automatic expungement for mandatory-eligible cases."
+    }
+  },
+  "DC": {
+    "name": "District of Columbia",
+    "remedy": "Sealing (by motion, and automatic for non-convictions and most misdemeanors); expungement only for actual innocence or decriminalized offenses",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "You can file a motion to seal a misdemeanor conviction 5 years after your sentence ends, and the court grants it if sealing is in the interests of justice. Most misdemeanors are also sealed automatically 10 years after the sentence ends, with the backlog to be cleared by Oct. 1, 2027.",
+        "citation": "D.C. Code § 16-806(a)(3)(A)(i), (B) (applicable Mar. 1, 2025); § 16-805(a)(2), (c)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-806",
+        "status": "corrected",
+        "issue": "The 5-year period is right, but the Second Chance Amendment Act motion provisions became applicable Mar. 1, 2025 (D.C. Law 25-217), not 'February 2025'. The app also left out 10-year automatic sealing.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 8,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "Most felonies can be sealed by motion 8 years after your sentence ends, if the court finds it is in the interests of justice. Felonies in Offense Severity Groups 1-3 (the most serious) can never be sealed.",
+        "citation": "D.C. Code § 16-806(a)(3)(A)(ii)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-806",
+        "status": "verified",
+        "issue": "Value confirmed. 'Non-violent' is not the test: the bar is Offense Severity Groups 1-3.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "A DUI conviction is excluded from automatic sealing, but you can file a motion to seal it 5 years after your sentence ends (8 years if it was a felony).",
+        "citation": "D.C. Code § 16-805(b) (excluded from automatic sealing); § 16-806(a)(3)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-806",
+        "status": "corrected",
+        "issue": "App said DUI is not eligible; under the Second Chance Amendment Act, DUI is excluded only from automatic sealing, and § 16-806(a)(3) does not exclude it from motion sealing.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "termination of the case",
+        "automatic": true,
+        "note": "Arrests and charges that ended without a conviction are sealed automatically within 90 days of the case ending, with older cases to be sealed by Oct. 1, 2027. You can also file a motion to seal right away.",
+        "citation": "D.C. Code § 16-805(a)(1), (c); § 16-806(a)(1)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-805",
+        "status": "verified",
+        "issue": "Value confirmed. The note should add automatic sealing and the cite should be §§ 16-805/16-806, not § 16-803.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "Intrafamily offenses are never sealed automatically, but you can file a motion to seal a misdemeanor conviction 5 years after the sentence ends (8 years for an eligible felony).",
+        "citation": "D.C. Code § 16-805(b); § 16-806(a)(3)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-806",
+        "status": "corrected",
+        "issue": "App said intrafamily offenses are not eligible; they are excluded only from automatic sealing.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 8,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "Sex offenses are never sealed automatically. A misdemeanor (5 years) or a felony outside Offense Severity Groups 1-3 (8 years) can be sealed by motion, but the most serious sexual abuse felonies are in those groups and can never be sealed.",
+        "citation": "D.C. Code § 16-805(b); § 16-806(a)(3)(A)",
+        "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-806",
+        "status": "corrected",
+        "issue": "App had a flat ban; § 16-806 bars only Severity Group 1-3 felonies from motion sealing. Which sex felonies fall in those groups depends on the Sentencing Commission grid.",
+        "varies": true
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "Age of majority, or 2 years after final discharge",
+      "notes": "The Family Court may seal juvenile records on the person's motion or its own, once they reach adulthood or 2 years after discharge from supervision, if there has been no later conviction or adjudication. A later conviction undoes the seal. The 2022 Second Chance Act did not change juvenile sealing.",
+      "citation": "D.C. Code § 16-2335",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/district-of-columbia-restoration-of-rights-pardon-expungement-sealing-2/",
+      "status": "corrected",
+      "issue": "App said sealing is automatic at 21; per CCRC, § 16-2335 sealing is by motion or on the court's own motion. I could not read the statute text directly."
+    }
+  },
+  "FL": {
+    "name": "Florida",
+    "remedy": "Sealing (§ 943.059) or expunction (§ 943.0585), court-ordered, one time only; automatic sealing for some acquittals and dismissals (§ 943.0595)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "after the case and any sentence are complete",
+        "automatic": false,
+        "note": "You can ask a court to seal a misdemeanor only if the judge withheld adjudication, you have never been adjudicated guilty of any crime, and you have never sealed or expunged a record before. A sealed record can later be expunged after 10 years.",
+        "citation": "Fla. Stat. §§ 943.059, 943.0584, 943.0585(1)(d), (1)(g)-(h)",
+        "source_url": "https://m.flsenate.gov/Statutes/943.0585",
+        "status": "corrected",
+        "issue": "App gave a 10-year wait for sealing; there is no waiting period to seal. The 10 years is how long a record must stay sealed before it can be expunged.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "after the case and any sentence are complete",
+        "automatic": false,
+        "note": "A felony can be sealed only if adjudication was withheld, the offense is not on the § 943.0584 list (violent and sex offenses, drug trafficking, burglary of a dwelling and others), and you have never been adjudicated guilty or sealed a record before. A felony with a formal conviction (adjudication of guilt) cannot be sealed.",
+        "citation": "Fla. Stat. §§ 943.059, 943.0584(2), 943.0585(1)(h)",
+        "source_url": "https://www.flsenate.gov/Laws/Statutes/2024/943.0584",
+        "status": "corrected",
+        "issue": "App said expungement requires 10+ years after sealing but implied a 10-year wait before sealing; no waiting period applies to sealing.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI is not on the disqualifying-offense list, but Florida judges cannot withhold adjudication for DUI, and sealing or expunction requires a withheld adjudication. A DUI conviction therefore cannot be sealed; a DUI charge that was dismissed or reduced may be.",
+        "citation": "Fla. Stat. § 943.0585(1)(d)-(e); § 943.059; § 316.656(1)",
+        "source_url": "https://m.flsenate.gov/Statutes/943.0585",
+        "status": "verified",
+        "issue": "The outcome is supported by the no-adjudication requirement. The § 316.656 bar on withholding adjudication for DUI was not re-read for this check.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal, nolle prosequi, no-file or acquittal",
+        "automatic": false,
+        "note": "If charges were never filed, were dismissed or nolle prossed, or you were acquitted, you can petition for expunction right away, as long as you have never been adjudicated guilty of a crime. Some acquittals and pre-trial dismissals are also sealed automatically under § 943.0595.",
+        "citation": "Fla. Stat. § 943.0585(1)(a)-(b), (d), (h); § 943.0595",
+        "source_url": "https://m.flsenate.gov/Statutes/943.0585",
+        "status": "verified",
+        "issue": "Value confirmed. The note should say a prior adjudication of guilt disqualifies the person, and the § 943.0595 automatic-sealing text was not read directly.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Assault or battery of a family or household member, and domestic battery by strangulation, cannot be sealed or expunged even if adjudication was withheld.",
+        "citation": "Fla. Stat. § 943.0584(2)(f), (h)",
+        "source_url": "https://www.flsenate.gov/Laws/Statutes/2024/943.0584",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Chapter 794 sexual battery, lewd offenses against children, voyeurism and any offense that is a predicate for sex-offender registration cannot be sealed or expunged.",
+        "citation": "Fla. Stat. § 943.0584(2)(a), (m), (o), (r), (hh)",
+        "source_url": "https://www.flsenate.gov/Laws/Statutes/2024/943.0584",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Age 21 (age 26 for serious/habitual offenders); early by application at 18-21",
+      "notes": "FDLE automatically expunges juvenile records at 21, or at 26 for serious or habitual offenders and those committed to maximum-risk facilities. People 18-20 can apply early if they have no offense in the past 5 years. Records are merged into the adult record instead if the person is later charged with or convicted of a forcible felony as an adult.",
+      "citation": "Fla. Stat. § 943.0515",
+      "source_url": "https://m.flsenate.gov/Statutes/943.0515",
+      "status": "corrected",
+      "issue": "App said 'Age 21 + petition' and not automatic; the statute makes expunction automatic at 21 or 26, with optional early application at 18."
+    }
+  },
+  "GA": {
+    "name": "Georgia",
+    "remedy": "Record restriction (O.C.G.A. § 35-3-37) plus court-record sealing; first offender discharge (§ 42-8-60 et seq.)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": 4,
+        "waitFrom": "your most recent conviction (no conviction in the 4 years before filing; sentence complete)",
+        "automatic": false,
+        "note": "You can petition the court to restrict and seal up to 2 misdemeanor convictions in your lifetime, if you have finished the sentence, have no pending charges and have not been convicted of anything in the past 4 years. Sex offenses, child-related offenses, most theft and DUI/serious traffic offenses are excluded.",
+        "citation": "O.C.G.A. § 35-3-37(j)(4) (as amended by SB 288, 2020)",
+        "source_url": "https://www.gjp.org/wp-content/uploads/2026/04/Full-Motion-Pro-se-Misd.-RS-wQR-2026.pdf",
+        "status": "verified",
+        "issue": "Value confirmed: 4 years, petition, 2-conviction lifetime cap. The note should say relief applies to any adult, not only first offenders.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": null,
+        "waitFrom": "after a pardon, or on discharge under the First Offender Act",
+        "automatic": false,
+        "note": "A felony conviction can be restricted only after a pardon (serious violent felonies and sex offenses excluded), by petition with no new convictions. A first offender who completes the sentence is discharged without a conviction and the record is sealed.",
+        "citation": "O.C.G.A. § 35-3-37(j)(6) (pardoned felonies); §§ 42-8-60, 42-8-62",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/georgia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "App gave a 5-year wait under § 42-8-62; no fixed waiting period applies, and conviction relief requires a pardon or First Offender discharge.",
+        "varies": true
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI convictions cannot be restricted because serious traffic offenses under Article 15 of Chapter 6 of Title 40 are excluded. A DUI charge that was dismissed may be restricted.",
+        "citation": "O.C.G.A. § 35-3-37(j)(4)(B) (serious traffic offenses, Title 40 Ch. 6 Art. 15, incl. § 40-6-391)",
+        "source_url": "https://syfert.com/georgia/code/35-3-37.html",
+        "status": "verified",
+        "issue": "Confirmed from the 2019 code text. The 2020 SB 288 version was not read verbatim, but CCRC and GJP describe the exclusions as carried forward.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal, nolle prosequi or acquittal",
+        "automatic": true,
+        "note": "For arrests on or after July 1, 2013, dismissed, nolle prossed and acquitted charges are restricted automatically once the disposition is reported. Older arrests need an application to the arresting agency, and sealing the court file takes a separate petition.",
+        "citation": "O.C.G.A. § 35-3-37(h), (m)",
+        "source_url": "https://sgsecondchance.claytoncountyga.gov/wp-content/uploads/2025/04/FAQs-Georgia-Criminal-Record.pdf",
+        "status": "verified",
+        "issue": "Value confirmed. The note should say restriction is automatic for post-July 2013 arrests and cite subsection (h). Arrests never referred for prosecution are restricted after 2 years (misdemeanor), 4 years (felony) or 7 years (serious violent).",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 4,
+        "waitFrom": "your most recent conviction",
+        "automatic": false,
+        "note": "Family-violence misdemeanor convictions can be restricted only if you were under 21 (a youthful offender) when convicted. Adults convicted of family violence cannot use misdemeanor restriction.",
+        "citation": "O.C.G.A. § 35-3-37(j)(4)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/georgia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "App had a flat ban; per CCRC, youthful offenders may seek restriction for some family-violence offenses. The current statutory text was not read verbatim.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sexual offenses, child molestation, enticing a child and sexual battery cannot be restricted, including after a pardon.",
+        "citation": "O.C.G.A. § 35-3-37(j)(4)(B), (j)(6)",
+        "source_url": "https://syfert.com/georgia/code/35-3-37.html",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "On petition, 2 years after discharge",
+      "notes": "Juvenile records can be sealed by petition to the juvenile court after a 2-year waiting period, if the court finds the person has been rehabilitated. Trafficking survivors may also petition to seal related offenses.",
+      "citation": "O.C.G.A. § 15-11-701",
+      "source_url": "https://ccresourcecenter.org/text-blocks/georgia-record-relief",
+      "status": "corrected",
+      "issue": "App said 'Age 21 or 4 years post-completion'; CCRC (updated July 2026) says a petition after a 2-year wait. The statute text was not read directly."
+    }
+  },
+  "HI": {
+    "name": "Hawaii",
+    "remedy": "Expungement of arrest records only (HRS § 831-3.2); no general statutory relief for adult convictions (pardon does not seal)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Hawaii law does not allow adult misdemeanor convictions to be expunged or sealed. If you got a deferred acceptance of a guilty or no-contest plea (DAG/DANC) and completed it, the charge is dismissed and can be expunged 1 year after discharge.",
+        "citation": "HRS § 831-3.2(a)(5); HRS § 853-1",
+        "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+        "status": "corrected",
+        "issue": "App said misdemeanors are eligible after 5 years under § 831-3.2; that section covers only arrests that did not end in conviction.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Adult felony convictions cannot be expunged or sealed in Hawaii, and a pardon does not seal the record. Narrow exceptions exist for first-time drug possession committed before age 20, and for prostitution convictions of trafficking victims.",
+        "citation": "HRS § 831-3.2 (non-conviction only)",
+        "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+        "status": "corrected",
+        "issue": "App said class C felonies are eligible after 10 years; there is no such statute.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI (OVUII) convictions cannot be expunged in Hawaii because no adult conviction can be.",
+        "citation": "HRS § 831-3.2 (non-conviction only)",
+        "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "when the case ends without a conviction",
+        "automatic": false,
+        "note": "If you were arrested or charged but not convicted, you can apply to the Attorney General for an expungement order. A completed DAG/DANC plea waits 1 year after discharge, and charges dropped because you forfeited bail or left the state are not eligible.",
+        "citation": "HRS § 831-3.2(a)(1)-(5)",
+        "source_url": "https://data.capitol.hawaii.gov/hrscurrent/Vol14_Ch0701-0853/HRS0831/HRS_0831-0003_0002.htm",
+        "status": "verified",
+        "issue": "Value confirmed. The note should say relief requires an application (it is not automatic). Per Barker v. Young (Haw. 2023), an arrest that ended in only a 'violation' conviction also qualifies.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Abuse of a family or household member convictions cannot be expunged, because Hawaii has no expungement for adult convictions.",
+        "citation": "HRS § 831-3.2 (non-conviction only)",
+        "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offense convictions cannot be expunged in Hawaii. Lifetime registrants may petition to end registration only after 40 years.",
+        "citation": "HRS § 831-3.2; HRS § 846E-10(e)",
+        "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "On application, if no charges were filed or the youth was found not responsible",
+      "notes": "Juvenile records in Hawaii are confidential, but expungement is not automatic. A court may expunge the record if no charges were filed or the youth was found not responsible.",
+      "citation": "HRS § 571-88 (juvenile arrest-record expungement); HRS § 571-84 (confidentiality)",
+      "source_url": "https://ccresourcecenter.org/text-blocks/hawaii-record-relief",
+      "status": "corrected",
+      "issue": "App said records are sealed automatically at 18; CCRC describes confidential records and expungement on application only. The statute text was not read directly."
+    }
+  }
+}

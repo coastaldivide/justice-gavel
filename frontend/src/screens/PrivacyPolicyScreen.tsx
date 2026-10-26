@@ -201,13 +201,9 @@ function PrivacyPolicyScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.3} style={styles.headerMeta}>
           {t('x_privacy_policy_effective', { EFFECTIVE_DATE: effectiveDate() })}
         </Text>
-        <View style={styles.headerBadges}>
-          {['GDPR', 'CCPA', 'Apple', 'Google Play'].map(badge => (
-            <View key={badge} style={styles.badge}>
-              <Text style={styles.badgeText}>✓ {badge}</Text>
-            </View>
-          ))}
-        </View>
+        {/* No compliance badges: "GDPR / CCPA / Apple / Google Play" checkmarks implied a
+            certification nobody has issued (FTC Act § 5 deceptive-claims risk). Removed in
+            the Oct 2026 legal accuracy review. */}
       </View>
 
       {/* ── Quick summary ────────────────────────────────────────── */}

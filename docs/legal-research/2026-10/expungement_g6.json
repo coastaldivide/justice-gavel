@@ -1,0 +1,524 @@
+{
+ "NJ": {
+  "name": "New Jersey",
+  "remedy": "Expungement (petition to Superior Court; automatic only for dismissals/acquittals and certain marijuana offenses)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "latest of the most recent conviction, payment of fines/fees, end of probation or parole, or release from prison",
+    "automatic": false,
+    "note": "Disorderly persons offenses can be expunged by petition 5 years after the conviction or end of sentence, whichever is later (up to 5 offenses, no indictable convictions). A judge may allow filing after 3 years for compelling circumstances.",
+    "citation": "N.J.S.A. 2C:52-3",
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2c/section-2c-52-3",
+    "status": "verified",
+    "issue": "Waiting period confirmed; old note's citation and 5-year wait were correct but it omitted the 3-year early pathway and the start date.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "latest of the most recent conviction, payment of fines/fees, end of probation or parole, or release from prison",
+    "automatic": false,
+    "note": "Most third- and fourth-degree crimes can be expunged by petition 5 years after conviction or end of sentence (4 years with compelling circumstances); usually only one indictable conviction per lifetime, and serious violent, sex and most drug-sale crimes are barred. A 10-year 'clean slate' petition covers people with multiple convictions.",
+    "citation": "N.J.S.A. 2C:52-2(a)-(c); 2C:52-5.3",
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2c/section-2c-52-2",
+    "status": "corrected",
+    "issue": "App said 6 years; the wait was cut to 5 years in 2019 (early pathway 4 years).",
+    "varies": false
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DWI is a Title 39 motor-vehicle offense in New Jersey, and the expungement law does not apply to motor-vehicle offenses, so a DWI cannot be expunged.",
+    "citation": "N.J.S.A. 2C:52-28; N.J.S.A. 39:4-50",
+    "source_url": "https://law.justia.com/codes/new-jersey/2018/title-2c/chapter-52/section-2c-52-28/",
+    "status": "verified",
+    "issue": "Value correct; added the reason (DWI is a traffic offense, not a crime).",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": true,
+    "note": "Since June 15, 2020 the court must order expungement automatically when a charge is dismissed or you are acquitted. Older dismissals need a petition, and diversion dismissals (PTI, conditional discharge) require a 6-month wait.",
+    "citation": "N.J.S.A. 2C:52-6 (as amended by P.L. 2019, c. 269)",
+    "source_url": "https://www.njcourts.gov/sites/default/files/notices/2020/06/n200629a.pdf",
+    "status": "corrected",
+    "issue": "App did not say relief is automatic at disposition for cases after June 15, 2020.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "latest of the most recent conviction, payment of fines/fees, end of probation or parole, or release from prison",
+    "automatic": false,
+    "note": "New Jersey's expungement law has no domestic-violence exclusion; a domestic-violence-related conviction (e.g., simple assault) is expungeable on the same timeline as the underlying offense, unless the offense itself is on the barred list.",
+    "citation": "N.J.S.A. 2C:52-2(b), 2C:52-3",
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2c/section-2c-52-2",
+    "status": "corrected",
+    "issue": "App said domestic violence is barred; the statute's exclusion list contains no domestic-violence bar.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "latest of the most recent conviction, payment of fines/fees, end of probation or parole, or release from prison",
+    "automatic": false,
+    "note": "Sexual assault, aggravated criminal sexual contact, criminal sexual contact with a minor, child-endangerment by sexual conduct and child sexual abuse material offenses can never be expunged; lesser sex-related offenses not on the list (e.g., criminal sexual contact with an adult) follow the normal 5-year rule.",
+    "citation": "N.J.S.A. 2C:52-2(b)",
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2c/section-2c-52-2",
+    "status": "corrected",
+    "issue": "App said all sex offenses are barred; only the offenses listed in 2C:52-2(b) are barred.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "3 years after discharge from custody/supervision",
+   "notes": "A juvenile adjudication can be expunged by petition after 3 years with no new offenses, unless the act would be a non-expungeable crime for an adult. Charges dismissed or diverted are expunged automatically at disposition under 2C:52-6.",
+   "citation": "N.J.S.A. 2C:52-4.1; 2C:52-6",
+   "source_url": "https://law.justia.com/codes/new-jersey/title-2c/section-2c-52-4-1",
+   "status": "corrected",
+   "issue": "App said automatic at age 19 or 5 years; statute requires a petition and the wait has been 3 years since 2017."
+  }
+ },
+ "NM": {
+  "name": "New Mexico",
+  "remedy": "Expungement (petition under the Criminal Record Expungement Act, effective Jan. 1, 2020)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 2,
+    "waitFrom": "completion of the last sentence (no new convictions during the wait; fines and restitution paid)",
+    "automatic": false,
+    "note": "Most misdemeanors can be expunged by petition 2 years after you finish your sentence, if the judge finds justice will be served.",
+    "citation": "NMSA 1978, \u00a7 29-3A-5(C)(4)(a)",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-5",
+    "status": "corrected",
+    "issue": "App said 1 year and cited a nonexistent '\u00a7 28-A-4'; the wait is 2 years under \u00a7 29-3A-5.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 4,
+    "waitFrom": "completion of the last sentence (no new convictions during the wait; fines and restitution paid)",
+    "automatic": false,
+    "note": "Fourth-degree felonies can be expunged by petition 4 years after the sentence ends; third-degree 6 years, second-degree 8 years, first-degree 10 years. Offenses against a child, causing great bodily harm or death, sex offenses, embezzlement and DWI are excluded.",
+    "citation": "NMSA 1978, \u00a7 29-3A-5(C)(4), (G)",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-5",
+    "status": "verified",
+    "issue": "Value correct; citation corrected from '\u00a7 28-A-4' to \u00a7 29-3A-5.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DWI convictions cannot be expunged in New Mexico.",
+    "citation": "NMSA 1978, \u00a7 29-3A-5(G)",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-5",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "final disposition of the case",
+    "automatic": false,
+    "note": "If you were not convicted (acquittal, dismissal, nolle prosequi, diversion, conditional discharge), you can petition 1 year after the case ended; the court grants it if no other charges are pending.",
+    "citation": "NMSA 1978, \u00a7 29-3A-4",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-4",
+    "status": "corrected",
+    "issue": "App said eligible immediately; statute requires a 1-year wait and a petition.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 10,
+    "waitFrom": "completion of the last sentence (no new convictions during the wait; fines and restitution paid)",
+    "automatic": false,
+    "note": "Offenses under the Crimes Against Household Members Act can be expunged by petition after a 10-year wait, unless the victim was a child or the offense caused great bodily harm.",
+    "citation": "NMSA 1978, \u00a7 29-3A-5(C)(4)(e), (G)",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-5",
+    "status": "corrected",
+    "issue": "App said domestic violence is barred; the statute makes household-member offenses eligible after 10 years.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex offenses (as defined in the sex offender registration law) cannot be expunged in New Mexico.",
+    "citation": "NMSA 1978, \u00a7 29-3A-5(G); \u00a7 29-11A-3",
+    "source_url": "https://law.justia.com/codes/new-mexico/chapter-29/article-3a/section-29-3a-5",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Age 18 + 2 years after release from supervision",
+   "notes": "A former juvenile can move to seal 2 years after release from custody or supervision (or judgment) with no new felony or moral-turpitude offenses; the court may act before 18 for good cause. The Children, Youth and Families Department seals its own files at 18, but court records require a motion.",
+   "citation": "NMSA 1978, \u00a7 32A-2-26",
+   "source_url": "https://law.justia.com/codes/new-mexico/chapter-32a/article-2/section-32a-2-26",
+   "status": "corrected",
+   "issue": "App said 1 year offense-free; statute requires 2 years."
+  }
+ },
+ "NY": {
+  "name": "New York",
+  "remedy": "Sealing (automatic under the Clean Slate Act, CPL 160.57, effective Nov. 16, 2024; petition under CPL 160.59)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "sentencing, or release from incarceration if later (no new convictions; supervision completed)",
+    "automatic": true,
+    "note": "Under the Clean Slate Act (in effect since November 16, 2024), most misdemeanor convictions are sealed automatically 3 years after sentencing or release, if there are no new convictions or pending charges. Courts have until November 2027 to finish sealing older records.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7 160.57",
+    "source_url": "https://legislation.nysenate.gov/pdf/bills/2023/S7551A",
+    "status": "corrected",
+    "issue": "App cited petition sealing under CPL 160.59 (10-year wait); the 3-year rule is automatic Clean Slate sealing under CPL 160.57.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 8,
+    "waitFrom": "sentencing, or release from incarceration if later (no new convictions; supervision completed)",
+    "automatic": true,
+    "note": "Most felony convictions are sealed automatically 8 years after sentencing or release under the Clean Slate Act; non-drug Class A felonies and registrable sex offenses are excluded. Separately, you may petition after 10 years to seal up to 2 convictions (only 1 felony) under CPL 160.59.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7\u00a7 160.57, 160.59",
+    "source_url": "https://legislation.nysenate.gov/pdf/bills/2023/S7551A",
+    "status": "corrected",
+    "issue": "App said conditional with a 10-year petition; Clean Slate now seals most felonies automatically after 8 years.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "sentencing, or release from incarceration if later (no new convictions; supervision completed)",
+    "automatic": true,
+    "note": "A misdemeanor DWI is a crime under New York law and is sealed automatically after 3 years under Clean Slate (felony DWI after 8 years); a DWAI infraction under VTL 1192(1) is sealed after 3 years. The DMV can still use the record for licensing.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7 160.57; Veh. & Traf. Law \u00a7 1192",
+    "source_url": "https://legislation.nysenate.gov/pdf/bills/2023/S7551A",
+    "status": "corrected",
+    "issue": "App said DWI is not eligible; Clean Slate covers any crime under state law except sex offenses and non-drug Class A felonies, and expressly includes VTL 1192(1).",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "favorable termination of the case",
+    "automatic": true,
+    "note": "When a case ends in your favor (dismissal or acquittal), the record is sealed automatically, unless the court finds the interests of justice require otherwise.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7 160.50",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/new-york-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "sentencing, or release from incarceration if later (no new convictions; supervision completed)",
+    "automatic": true,
+    "note": "There is no domestic-violence exclusion in the Clean Slate Act, so a domestic-violence misdemeanor is sealed automatically after 3 years (8 years if a felony). Violent felonies cannot be sealed by petition under CPL 160.59, but are covered by Clean Slate.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7 160.57",
+    "source_url": "https://legislation.nysenate.gov/pdf/bills/2023/S7551A",
+    "status": "corrected",
+    "issue": "App said domestic violence is barred; neither CPL 160.57 nor 160.59 has a domestic-violence exclusion.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Registrable sex offenses and sexually violent offenses cannot be sealed under Clean Slate, and Penal Law article 130 sex offenses cannot be sealed by petition.",
+    "citation": "N.Y. Crim. Proc. Law \u00a7\u00a7 160.57(1)(b), 160.59(1)(a)",
+    "source_url": "https://legislation.nysenate.gov/pdf/bills/2023/S7551A",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Immediately if case ends in youth's favor; otherwise by motion",
+   "notes": "Family Court must seal delinquency records immediately when the case ends in the youth's favor; other delinquency findings (except designated felony acts) can be sealed on motion. Youthful offender records in criminal court are sealed automatically when YO status is granted.",
+   "citation": "N.Y. Fam. Ct. Act \u00a7\u00a7 375.1, 375.2; N.Y. Crim. Proc. Law \u00a7 720.35(2)",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/new-york-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App said records are sealed automatically at age 18; New York has no age-based automatic sealing for delinquency adjudications."
+  }
+ },
+ "NC": {
+  "name": "North Carolina",
+  "remedy": "Expunction (petition; automatic for dismissals and acquittals since Dec. 1, 2021)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence, including probation",
+    "automatic": false,
+    "note": "One nonviolent misdemeanor can be expunged by petition 5 years after you finish your sentence; more than one nonviolent misdemeanor requires 7 years. Class A1 misdemeanors are excluded.",
+    "citation": "N.C. Gen. Stat. \u00a7 15A-145.5",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Value correct; note should not say 'first-time' only, since multiple misdemeanors became eligible under the 2020 Second Chance Act.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "completion of sentence, including probation and post-release supervision",
+    "automatic": false,
+    "note": "One nonviolent Class H or I felony can be expunged by petition 10 years after the sentence ends (2\u20133 felonies after 20 years); Class A\u2013G felonies are excluded and the judge may deny.",
+    "citation": "N.C. Gen. Stat. \u00a7 15A-145.5",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Impaired-driving (DWI) convictions are excluded from expunction in North Carolina.",
+    "citation": "N.C. Gen. Stat. \u00a7 15A-145.5",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or not-guilty verdict",
+    "automatic": true,
+    "note": "Charges dismissed or ending in a not-guilty verdict on or after December 1, 2021 are expunged automatically, without a petition; older cases and felonies dismissed under a plea deal require a petition.",
+    "citation": "N.C. Gen. Stat. \u00a7 15A-146",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App did not reflect the automatic expunction of dismissals and acquittals under the 2020 Second Chance Act (effective Dec. 1, 2021).",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": null,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": null,
+    "note": null,
+    "citation": "N.C. Gen. Stat. \u00a7 15A-145.5(a)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "unverifiable",
+    "issue": "The sources reached (CCRC profile) do not state whether domestic-violence convictions are excluded from 'nonviolent' offenses under \u00a7 15A-145.5; the statute text could not be fetched in this session. The app's 'not eligible' may be right because offenses with assault as an element are reportedly excluded, but this was not confirmed.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": null,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": null,
+    "note": null,
+    "citation": "N.C. Gen. Stat. \u00a7 15A-145.5(a)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "unverifiable",
+    "issue": "The sources reached do not list the sex-offense exclusions in \u00a7 15A-145.5; the statute text could not be fetched in this session.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Age 18 + 18 months after adjudication",
+   "notes": "A delinquency adjudication can be expunged by petition once you are 18 and 18 months have passed, with good behavior and no new adjudications or convictions; certain serious felony classes are excluded. Undisciplined adjudications can be expunged at 18.",
+   "citation": "N.C. Gen. Stat. \u00a7 7B-3200",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-carolina-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App said only misdemeanor-equivalent nonviolent acts are eligible; most adjudications, including many felony-level ones, are eligible after 18 months."
+  }
+ },
+ "ND": {
+  "name": "North Dakota",
+  "remedy": "Sealing (petition under N.D.C.C. ch. 12-60.1; automatic closure of non-conviction records since Aug. 1, 2025)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "conviction (plea or finding of guilt), with sentence completed and restitution paid",
+    "automatic": false,
+    "note": "You can petition to seal a misdemeanor 3 years after conviction with no new convictions, once the sentence is complete and restitution is paid; the court must find by clear and convincing evidence that you have reformed.",
+    "citation": "N.D. Cent. Code \u00a7\u00a7 12-60.1-02, 12-60.1-04",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Citation corrected from \u00a7 12.1-32-07.2 to ch. 12-60.1; wait applies to all misdemeanors, not just Class B.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "conviction (plea or finding of guilt), with sentence completed and restitution paid",
+    "automatic": false,
+    "note": "You can petition to seal a felony 5 years after conviction with no new convictions; a felony involving violence or intimidation cannot be sealed during the 10-year firearm-ban period.",
+    "citation": "N.D. Cent. Code \u00a7\u00a7 12-60.1-02, 12-60.1-04",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App marked felonies 'conditional' with a wrong citation; most felonies are eligible after 5 years under ch. 12-60.1.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "conviction (plea or finding of guilt), with sentence completed and restitution paid",
+    "automatic": false,
+    "note": "A misdemeanor DUI is not on the list of exclusions, so it can be sealed by petition 3 years after conviction on the same terms as other misdemeanors.",
+    "citation": "N.D. Cent. Code \u00a7 12-60.1-02",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said DUI is barred; the exclusions described for ch. 12-60.1 (violent felonies during the firearm ban, sex offender registrants) do not include DUI. Confirm against statute text, which could not be fetched in this session.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal order",
+    "automatic": true,
+    "note": "For dismissals and acquittals entered on or after August 1, 2025, the court closes the record automatically after 61 days; for older cases you file a petition and the court must close the record within 10 days, with no fee.",
+    "citation": "N.D. Cent. Code \u00a7 12-60.1-05 (HB 1166, 2025)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said eligible immediately but did not reflect the 2025 automatic closure or petition rules.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "conviction (plea or finding of guilt), with sentence completed and restitution paid",
+    "automatic": false,
+    "note": "Misdemeanor domestic violence is not excluded and can be sealed by petition 3 years after conviction; a felony domestic-violence offense involving violence cannot be sealed during the 10-year firearm-ban period.",
+    "citation": "N.D. Cent. Code \u00a7 12-60.1-02",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said domestic violence is barred; the only violence-related exclusion is for felonies during the firearm ban. Confirm against statute text, which could not be fetched in this session.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "People required to register as sex offenders cannot seal their records; a sex-related conviction that does not require registration follows the normal 3- or 5-year rule.",
+    "citation": "N.D. Cent. Code \u00a7 12-60.1-02",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said all sex offenses are barred; the exclusion is tied to the registration requirement.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "Later of age 18 or 10 years after final order",
+   "notes": "Juvenile adjudication records are destroyed automatically 10 years after the final order is satisfied or at age 18, whichever is later; you can petition for earlier destruction for good cause if no charges are pending.",
+   "citation": "N.D. Cent. Code \u00a7 27-20.2-25; N.D. R. Juv. P. 19(d)",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/north-dakota-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App described a petition at 18 or 2 years; the law provides automatic destruction on the court retention schedule plus petition for good cause."
+  }
+ },
+ "OH": {
+  "name": "Ohio",
+  "remedy": "Sealing or expungement (petition under R.C. 2953.32, as amended by SB 288 in 2023)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "final discharge (sentence, probation, fines and restitution completed)",
+    "automatic": false,
+    "note": "Most misdemeanors can be sealed or expunged by application 1 year after final discharge (6 months for minor misdemeanors); there is no first-offender limit.",
+    "citation": "Ohio Rev. Code \u00a7 2953.32",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App limited relief to first-offense misdemeanors; SB 288 removed the 'eligible offender' limits.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "final discharge (sentence, probation, fines and restitution completed)",
+    "automatic": false,
+    "note": "Fourth- and fifth-degree felonies can be sealed 1 year after final discharge with no limit on number, and expunged 10 years after they become eligible for sealing; first- and second-degree felonies and violent or sex offenses are excluded.",
+    "citation": "Ohio Rev. Code \u00a7 2953.32",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said 3 years and 'first-time' only; SB 288 set 1 year for F4/F5 (3 years applies to F3).",
+    "varies": false
+   },
+   "dui": {
+    "eligible": null,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": null,
+    "note": null,
+    "citation": "Ohio Rev. Code \u00a7 2953.32; \u00a7 4511.19",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "unverifiable",
+    "issue": "Ohio OVI (R.C. 4511.19) convictions are widely reported as ineligible for sealing, but neither the CCRC profile nor the statute text could be read in this session to confirm.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "final disposition (2 years after a grand jury no-bill)",
+    "automatic": false,
+    "note": "Dismissed charges and acquittals can be sealed or expunged by application any time after the case ends; for a grand jury no-bill you wait 2 years, and charges dismissed without prejudice wait until the statute of limitations runs.",
+    "citation": "Ohio Rev. Code \u00a7 2953.33",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App cited R.C. 2953.52, which SB 288 renumbered to 2953.33; no-bill wait added.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 1,
+    "waitFrom": "final discharge (sentence, probation, fines and restitution completed)",
+    "automatic": false,
+    "note": "Only fourth-degree misdemeanor domestic violence (and protection-order violations) can be sealed, 1 year after final discharge, and these cannot be expunged; higher-level domestic violence is an excluded offense of violence.",
+    "citation": "Ohio Rev. Code \u00a7 2953.32",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said domestic violence is never eligible; 4th-degree misdemeanor DV can be sealed.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "end of the sex-offender registration duty",
+    "automatic": false,
+    "note": "Most sex offenses are excluded, but nonviolent sex offenses not involving a victim under 13 can be sealed 5 years after any registration requirement ends.",
+    "citation": "Ohio Rev. Code \u00a7 2953.32",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said all sex offenses are barred; SB 288 allows sealing of some nonviolent sex offenses.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Motion 6 months after discharge; auto-expunged at 23",
+   "notes": "You can ask the juvenile court to seal records 6 months after the case ends (not for aggravated murder, murder or rape); sealed records are then expunged automatically at age 23 or 5 years after sealing, whichever comes first.",
+   "citation": "Ohio Rev. Code \u00a7\u00a7 2151.356, 2151.358",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/ohio-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App said age 18 + 2 years offense-free; the wait is 6 months after discharge, and sealed records are automatically expunged."
+  }
+ }
+}

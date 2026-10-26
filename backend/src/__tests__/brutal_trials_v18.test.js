@@ -331,8 +331,8 @@ describe('4. recovery_agents.js — Fugitive Recovery State Laws', () => {
   test('4-03: some states require licenses (ARS §13-3885 Arizona)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/recovery_agents.js', 'utf8');
-    expect(src).toContain('License required');
-    expect(src).toContain('ARS §13-3885');
+    expect(src).toContain('license: true');
+    expect(src).toMatch(/OR: \{ allowed: false/);   // Oregon bans commercial bail (Oct 2026 review)
   });
 
   test('4-04: has /recovery-agents and /recovery-agents/laws/:state routes', async () => {

@@ -1,0 +1,524 @@
+{
+  "AL": {
+    "name": "Alabama",
+    "remedy": "expungement",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": 3,
+        "waitFrom": "date of conviction (and all probation, fines, costs and restitution completed)",
+        "automatic": false,
+        "note": "Misdemeanor, violation and municipal-ordinance convictions can be expunged by petition 3 years after conviction if the sentence is fully completed and paid. Violent, sex, moral-turpitude and serious traffic offenses are excluded, and a person may expunge at most two misdemeanor convictions this way.",
+        "citation": "Ala. Code § 15-27-1(b); § 15-27-2.1 (as amended by Act 2021-286, SB 117, the REDEEMER Act)",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "corrected",
+        "issue": "Old record said 5 years and 'first-time' only; the statute sets 3 years from conviction and does not require a first offense.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 0.5,
+        "waitFrom": "180 days after a full pardon with restoration of civil and political rights",
+        "automatic": false,
+        "note": "A felony conviction can be expunged only after the person receives a pardon with restoration of rights, and then only after 180 days. Violent, sex, moral-turpitude and serious traffic felonies are excluded, and only one felony expungement is allowed.",
+        "citation": "Ala. Code § 15-27-2(c); § 15-27-2.1",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "corrected",
+        "issue": "Old record said certain Class C felonies qualify after 5 years; Alabama allows felony conviction expungement only after a pardon.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI convictions cannot be expunged in Alabama because the statute excludes 'serious traffic offenses' (Title 32, Chapter 5A, Article 9, which includes DUI). A DUI charge that was dismissed or acquitted can still be expunged as a non-conviction record.",
+        "citation": "Ala. Code § 15-27-1(b) (exclusion of serious traffic offenses under Ala. Code Title 32, Ch. 5A, Art. 9, incl. § 32-5A-191)",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0.25,
+        "waitFrom": "90 days after dismissal with prejudice, no-bill, acquittal or unconditional nolle prosequi",
+        "automatic": false,
+        "note": "Charges dismissed with prejudice, no-billed, nolle prossed without conditions, or ending in acquittal can be expunged by petition after 90 days. Dismissals without prejudice wait longer (5 years for felonies; at least 1 year for misdemeanors), and a $300 administrative fee applies unless waived for indigency.",
+        "citation": "Ala. Code §§ 15-27-1(a), 15-27-2(a), 15-27-4 (as amended by Act 2021-286)",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "corrected",
+        "issue": "Old record said dismissed charges are eligible immediately; the statute requires at least 90 days, and longer for dismissals without prejudice.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic violence convictions cannot be expunged because they are classed as violent offenses. The only exception is domestic violence third degree for a person who proves the offense resulted from being a human trafficking victim.",
+        "citation": "Ala. Code §§ 15-27-1(b), 15-27-2(b); § 12-25-32 (violent offense list)",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offense convictions (as defined in Ala. Code § 15-20A-5) cannot be expunged, and expungement of any record never ends a sex offender registration duty.",
+        "citation": "Ala. Code §§ 15-27-1(b), 15-27-2(c); § 15-20A-5",
+        "source_url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2021RS/PrintFiles/SB117-Enr.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "By motion, 2 years after final discharge; destruction at age 24 (5 years after jurisdiction ends)",
+      "notes": "A person must file a motion to seal juvenile records 2 years after final discharge, with no later adjudication or conviction and no pending charges. Adjudications involving sex offenses, drugs, weapons or violence are excluded.",
+      "citation": "Ala. Code §§ 12-15-136, 12-15-137",
+      "source_url": "https://juvenilerecords.jlc.org/juvenilerecords/documents/publications/factsheet-AL.pdf",
+      "status": "corrected",
+      "issue": "Old record said age 18 and misdemeanors only; the statute sets 2 years after discharge with exclusions by offense type, not age 18."
+    }
+  },
+  "AK": {
+    "name": "Alaska",
+    "remedy": "set-aside (after suspended imposition of sentence); no sealing or expungement of convictions",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "successful completion of probation under a suspended imposition of sentence (SIS)",
+        "automatic": false,
+        "note": "Alaska has no expungement or sealing of convictions. A conviction can be set aside only if the judge gave a suspended imposition of sentence (SIS) at sentencing and probation is completed; the set-aside conviction stays in the public record.",
+        "citation": "AS 12.55.085(a), (e), (f)",
+        "source_url": "https://COURTS.ALASKA.GOV/media/docs/bp-sis-faq.pdf",
+        "status": "corrected",
+        "issue": "Old record said misdemeanors are eligible after 5 years; set-aside is only available after an SIS, has no fixed waiting period, and does not remove the record.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "successful completion of probation under a suspended imposition of sentence (SIS)",
+        "automatic": false,
+        "note": "A felony can be set aside only if the judge gave an SIS and probation is completed. SIS is not available for listed violent and sex offenses, offenses using a firearm, or people with a prior felony; the conviction stays public.",
+        "citation": "AS 12.55.085(e), (f)",
+        "source_url": "https://law.justia.com/codes/alaska/title-12/chapter-55/section-12-55-085/",
+        "status": "corrected",
+        "issue": "Old record said non-violent felonies are eligible after 10 years; there is no time-based remedy, only set-aside after an SIS.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI convictions cannot receive a suspended imposition of sentence, so they cannot be set aside, and Alaska has no sealing of convictions.",
+        "citation": "AS 12.55.085; Alaska Court System SIS FAQ",
+        "source_url": "https://COURTS.ALASKA.GOV/media/docs/bp-sis-faq.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0.16,
+        "waitFrom": "60 days after acquittal or dismissal (removal from public court website)",
+        "automatic": true,
+        "note": "Courts must remove acquitted or dismissed cases from the public court website once 60 days have passed. This is not sealing: the records still exist and law enforcement can see them.",
+        "citation": "AS 22.35.030",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/alaska-expungment-pardon-sealing/",
+        "status": "corrected",
+        "issue": "Old record implied sealing of dismissed charges; Alaska only removes them from the public website after 60 days, automatically. Sealing under AS 12.62.180 is limited to mistaken identity or false accusation.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "successful completion of probation under a suspended imposition of sentence (SIS)",
+        "automatic": false,
+        "note": "A misdemeanor domestic violence assault (4th degree) can receive an SIS and later a set-aside if the person has no prior assault-type or felony conviction; more serious assaults are excluded. The record still stays public.",
+        "citation": "AS 12.55.085(f)(1), (f)(3)",
+        "source_url": "https://law.justia.com/codes/alaska/title-12/chapter-55/section-12-55-085/",
+        "status": "corrected",
+        "issue": "Old record said domestic violence is never eligible; AS 12.55.085(f) bars SIS for 11.41.100-.220 assaults but allows it for 4th-degree assault (11.41.230) when there is no qualifying prior conviction.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offenses under AS 11.41.410-11.41.530 cannot receive a suspended imposition of sentence, so they cannot be set aside.",
+        "citation": "AS 12.55.085(f)(1)",
+        "source_url": "https://law.justia.com/codes/alaska/title-12/chapter-55/section-12-55-085/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Within 30 days after age 18, or after court jurisdiction ends if later",
+      "notes": "The court must seal most juvenile delinquency records automatically. Traffic offenses are excluded, and youths tried as adults for certain serious felonies follow different rules.",
+      "citation": "AS 47.12.300(d); AS 47.12.030",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/alaska-expungment-pardon-sealing/",
+      "status": "corrected",
+      "issue": "Old record said a petition is required at 18 plus 2 years; the statute requires automatic sealing within 30 days of the 18th birthday."
+    }
+  },
+  "AZ": {
+    "name": "Arizona",
+    "remedy": "sealing (A.R.S. § 13-911) and set-aside (A.R.S. § 13-905)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "completion of all non-monetary sentence terms and court discharge (fines and restitution must also be paid)",
+        "automatic": false,
+        "note": "A class 1 misdemeanor can be sealed by petition 3 years after the sentence is completed (2 years for class 2 or 3 misdemeanors; petty offenses immediately under a 2026 amendment). A set-aside can be requested as soon as the sentence is completed.",
+        "citation": "A.R.S. § 13-911(E); § 13-905(A) (as amended by Laws 2026, ch. 86, HB 2198)",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "verified",
+        "issue": "Old record cited A.R.S. § 13-907, which now covers civil-rights restoration; set-aside is § 13-905 and sealing is § 13-911.",
+        "varies": true
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of all non-monetary sentence terms and court discharge",
+        "automatic": false,
+        "note": "A class 4, 5 or 6 felony can be sealed by petition 5 years after the sentence is completed (10 years for class 2 or 3). Dangerous offenses, serious or violent offenses, crimes against children, and class 2-5 sex offenses cannot be sealed.",
+        "citation": "A.R.S. § 13-911(E), (O)",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "verified",
+        "issue": "Old record cited § 13-907 and called the remedy set-aside; sealing under § 13-911 is the remedy that limits access to the record.",
+        "varies": true
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "completion of all non-monetary sentence terms and court discharge",
+        "automatic": false,
+        "note": "DUI is not excluded: a misdemeanor DUI can be sealed 3 years after the sentence is completed, and an aggravated (felony) DUI after 5 years. A sealed DUI can still be used to increase the penalty for a later DUI.",
+        "citation": "A.R.S. § 13-911(E), (O); § 13-905",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "corrected",
+        "issue": "Old record said DUI is not eligible; DUI is not listed among the excluded offenses in § 13-911(O) or § 13-905.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal, acquittal, or arrest without charges",
+        "automatic": false,
+        "note": "Dismissed charges, acquittals and arrests that never led to charges can be sealed by petition right away, and the state background-check fee is waived. Sealing is not automatic.",
+        "citation": "A.R.S. § 13-911(A), (C)(2)-(3), (H)",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "verified",
+        "issue": "Old record cited § 13-907; the correct statute is § 13-911.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 3,
+        "waitFrom": "completion of all non-monetary sentence terms and court discharge",
+        "automatic": false,
+        "note": "Domestic violence offenses are not excluded by name, so a misdemeanor domestic violence offense can be sealed 3 years after the sentence is completed. Domestic violence offenses involving a deadly weapon, serious physical injury, or that count as dangerous or serious offenses cannot be sealed.",
+        "citation": "A.R.S. § 13-911(E), (O); § 13-3601",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "corrected",
+        "issue": "Old record said domestic violence is not eligible; § 13-911 excludes offenses by element (weapon, serious injury, dangerous/serious offense), not by domestic violence designation.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 3,
+        "waitFrom": "completion of all non-monetary sentence terms and court discharge",
+        "automatic": false,
+        "note": "Class 2-5 felony sex offenses, sex trafficking and dangerous crimes against children cannot be sealed, and offenses requiring registration cannot be set aside. Some misdemeanor sex offenses can be sealed after the normal waiting period.",
+        "citation": "A.R.S. § 13-911(O); § 13-905 (exclusions for registrable offenses)",
+        "source_url": "https://azleg.gov/ars/13/00911.htm",
+        "status": "corrected",
+        "issue": "Old record said all sex offenses are barred; § 13-911(O) bars only class 2-5 felonies in Title 13 chapters 14 and 35.1 plus other listed offenses.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "By application at age 18 (most offenses) or age 25 (others)",
+      "notes": "A person 18 or older can apply to have juvenile records destroyed if probation is finished, restitution is paid and there is no felony conviction. Serious offenses listed in § 13-501(A)-(B), DUI and registrable sex offenses must wait until age 25. Referrals that never led to an adjudication are destroyed within 90 days after age 18.",
+      "citation": "A.R.S. §§ 8-348, 8-349",
+      "source_url": "https://www.azleg.gov/ars/8/00349.htm",
+      "status": "corrected",
+      "issue": "Old record described a superior-court petition at 18 only; the statute also allows destruction at age 25 for excluded offenses and no filing fee may be charged."
+    }
+  },
+  "AR": {
+    "name": "Arkansas",
+    "remedy": "sealing",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "completion of sentence, including payment of fines, fees and costs",
+        "automatic": false,
+        "note": "Most misdemeanors can be sealed by petition as soon as the sentence is completed and fines are paid, and there is no filing fee. A short list of more serious misdemeanors must wait 5 years after the sentence is completed.",
+        "citation": "Ark. Code Ann. § 16-90-1405",
+        "source_url": "https://nationalreentryresourcecenter.org/node/1979",
+        "status": "corrected",
+        "issue": "Old record said a 5-year wait for first offenses; most misdemeanors can be sealed immediately after the sentence, and prior convictions do not disqualify. The old claim of automatic non-conviction sealing since 2023 is not supported.",
+        "varies": true
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "completion of sentence, including payment of court costs",
+        "automatic": false,
+        "note": "Non-violent Class C and D felonies can be sealed by petition once the sentence is completed; violent Class C and D felonies wait an extra 5 years. Class A, B and Y felonies (except drug felonies), sex felonies, and anyone with more than one prior felony cannot use this route.",
+        "citation": "Ark. Code Ann. §§ 16-90-1406, 16-90-1408, 16-90-1415(b)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/arkansas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record said a 5-year wait for first offenders; 2019 HB 1831 removed that waiting period for non-violent felonies.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 10,
+        "waitFrom": "date of the DWI conviction (the § 5-65-111 lookback period)",
+        "automatic": false,
+        "note": "A DWI can be sealed by petition once more than 10 years have passed since the conviction, the sentence is completed, and any license reinstatement requirements are met.",
+        "citation": "Ark. Code Ann. § 16-90-1405; § 5-65-111",
+        "source_url": "https://media.ark.org/dps/Order-to-Seal-DWI-BWI-Form-July2021.pdf",
+        "status": "corrected",
+        "issue": "Old record said DWI is not eligible; Arkansas allows sealing of a DWI after the 10-year lookback period.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Dismissed charges and acquittals can be sealed by petition, and the court must grant it unless it finds a public safety risk. Sealing is not automatic.",
+        "citation": "Ark. Code Ann. § 16-90-1415(d); §§ 16-90-1409 to 16-90-1410",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/arkansas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "Old record said 'immediately'; the waiting period for nolle prosequi and dismissal without prejudice could not be confirmed from the statute text.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Could not confirm from the statute whether a domestic battering conviction can be sealed. Third-degree (misdemeanor) domestic battering appears to be sealable after a 5-year wait, but violent felony battering is restricted.",
+        "citation": "Ark. Code Ann. §§ 16-90-1405(b), 16-90-1406(b), 16-90-1408",
+        "source_url": "https://nationalreentryresourcecenter.org/node/1979",
+        "status": "unverifiable",
+        "issue": "The list of 5-year misdemeanors in § 16-90-1405(b) could not be read from an official source; the old 'not eligible' value appears too broad.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "Sex felonies cannot be sealed. Some misdemeanor sex offenses can be sealed 5 years after the sentence is completed.",
+        "citation": "Ark. Code Ann. §§ 16-90-1405(b), 16-90-1408",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/arkansas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record said all sex offenses are barred; § 16-90-1408 bars sex felonies, while § 16-90-1405(b) gives certain misdemeanors a 5-year wait. Which sexual misdemeanors are on that list was not confirmed from the statute text.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Age 21 (most cases)",
+      "notes": "The court must expunge most juvenile records when the person turns 21. Adjudications for offenses that could have been tried in adult court, and extended juvenile jurisdiction cases, stay available to law enforcement for 10 years after the last adjudication or adult conviction.",
+      "citation": "Ark. Code Ann. § 9-27-309",
+      "source_url": "https://www.ncsl.org/civil-and-criminal-justice/automatic-expungement-of-juvenile-records",
+      "status": "corrected",
+      "issue": "Old record said a petition is required; the statute requires expungement at age 21 for most cases."
+    }
+  },
+  "CA": {
+    "name": "California",
+    "remedy": "dismissal (\"expungement\", Penal Code § 1203.4), automatic conviction relief (§ 1203.425), arrest record sealing (§§ 851.91, 851.93)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 1,
+        "waitFrom": "date of judgment if no probation was given; otherwise on completion of probation",
+        "automatic": true,
+        "note": "After probation is completed, a misdemeanor conviction can be dismissed under Penal Code § 1203.4; if there was no probation, the wait is 1 year after judgment. Many eligible convictions also get this relief automatically under the Clean Slate law (§ 1203.425).",
+        "citation": "Cal. Penal Code §§ 1203.4, 1203.4a, 1203.425",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "Old note cited AB 1793 (cannabis); the general relief is §§ 1203.4/1203.4a with automatic relief under § 1203.425.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "completion of probation (felony jail sentences: 1-2 years after sentence; prison sentences: 4 years conviction-free after sentence)",
+        "automatic": true,
+        "note": "A felony with probation can be dismissed once probation is completed, and relief is automatic if probation ended without revocation. A felony jail sentence can be cleared 1-2 years after the sentence, and most other felonies after 4 years without a new conviction; registrable sex offenses are excluded.",
+        "citation": "Cal. Penal Code §§ 1203.4, 1203.41, 1203.425 (as amended by SB 731, 2022)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record said a 3-year wait; the timing depends on the sentence type, and SB 731 extended relief to most felonies.",
+        "varies": true
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "completion of probation",
+        "automatic": true,
+        "note": "DUI convictions can be dismissed under § 1203.4 after probation is completed, and may receive automatic relief under § 1203.425. A dismissed DUI still counts as a prior for a later DUI.",
+        "citation": "Cal. Penal Code §§ 1203.4, 1203.425",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record marked DUI 'conditional' with a 1-year wait; DUI is not an excluded offense, and relief follows completion of probation.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal or acquittal (automatic relief: misdemeanor arrests after 1 year with no charges; felony arrests after 3 years)",
+        "automatic": true,
+        "note": "Arrests since 2021 that ended in dismissal, acquittal or no charges are sealed automatically under § 851.93. Older arrests can be sealed by petition under § 851.91.",
+        "citation": "Cal. Penal Code §§ 851.91, 851.93",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record listed only petition sealing under § 851.91 and missed automatic arrest relief under § 851.93.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "completion of probation",
+        "automatic": true,
+        "note": "Domestic violence convictions can be dismissed under § 1203.4 after probation is completed; they are not on the excluded list. A conviction that led to a state prison sentence follows the felony rules.",
+        "citation": "Cal. Penal Code § 1203.4",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record said domestic violence is not eligible; after SB 731 only offenses requiring sex offender registration are excluded from § 1203.4 relief.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 0,
+        "waitFrom": "completion of probation",
+        "automatic": false,
+        "note": "Offenses that require sex offender registration cannot be dismissed or automatically cleared. Sex-related offenses that do not require registration can be dismissed under § 1203.4.",
+        "citation": "Cal. Penal Code §§ 1203.4(b), 1203.41(b), 1203.425; § 290",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/california-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old record said 'not eligible'; only registrable sex offenses and the specific offenses in § 1203.4(b) are excluded.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "On satisfactory completion of probation or informal supervision",
+      "notes": "When a youth satisfactorily completes probation or informal supervision, the court must dismiss the case and seal the records automatically. Other cases can be sealed by petition under Welf. & Inst. Code § 781.",
+      "citation": "Cal. Welf. & Inst. Code §§ 781, 786, 786.5",
+      "source_url": "https://www.ncsl.org/civil-and-criminal-justice/automatic-expungement-of-juvenile-records",
+      "status": "corrected",
+      "issue": "Old record tied automatic sealing to age 18 and cited AB 1076, an adult Clean Slate law; juvenile automatic sealing is under WIC § 786 on completion of probation."
+    }
+  },
+  "CO": {
+    "name": "Colorado",
+    "remedy": "sealing",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 2,
+        "waitFrom": "later of final disposition or release from supervision",
+        "automatic": true,
+        "note": "A class 2 misdemeanor can be sealed by petition 2 years after the case ends or supervision ends (petty offenses 1 year, class 1 misdemeanors 3 years). Eligible misdemeanors are also sealed automatically 7 years after final disposition if there is no new conviction.",
+        "citation": "C.R.S. § 24-72-706(1)(b); § 13-3-117 (automatic sealing, SB 22-099)",
+        "source_url": "https://colorado.public.law/statutes/crs_24-72-706",
+        "status": "corrected",
+        "issue": "Old record said 3 years for all misdemeanors; the wait is 1-3 years by class, and automatic sealing began in 2024.",
+        "varies": true
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 3,
+        "waitFrom": "later of final disposition or release from supervision",
+        "automatic": true,
+        "note": "Class 4, 5 and 6 felonies can be sealed by petition 3 years after the case or supervision ends, and eligible felonies are sealed automatically after 10 years. Class 1-3 felonies, crimes of violence and Victim Rights Act felonies cannot be sealed.",
+        "citation": "C.R.S. § 24-72-706(1)(b)(III), (2)(a); § 13-3-117",
+        "source_url": "https://colorado.public.law/statutes/crs_24-72-706",
+        "status": "corrected",
+        "issue": "Old record said 7 years; the statute sets 3 years for class 4-6 felonies.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI and DWAI convictions cannot be sealed in Colorado.",
+        "citation": "C.R.S. § 24-72-706(2)(a) (excluding § 42-4-1301(1), (2))",
+        "source_url": "https://colorado.public.law/statutes/crs_24-72-706",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal or acquittal",
+        "automatic": true,
+        "note": "When a case is dismissed or ends in acquittal, the court seals the record automatically. Completed deferred judgments and diversion are also sealed automatically since July 2025.",
+        "citation": "C.R.S. § 24-72-705 (as amended by HB 24-1133)",
+        "source_url": "https://cl.cobar.org/features/automatic-record-sealing-in-colorado/",
+        "status": "corrected",
+        "issue": "Old record described petition sealing; non-conviction sealing is automatic at dismissal.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic violence convictions are excluded from sealing. A misdemeanor domestic violence conviction can be sealed only if the district attorney agrees or the court finds a significant need by clear and convincing evidence.",
+        "citation": "C.R.S. § 24-72-706(2)(a), (2)(b)",
+        "source_url": "https://colorado.public.law/statutes/crs_24-72-706",
+        "status": "corrected",
+        "issue": "Old record said never eligible; § 24-72-706(2)(b) allows sealing of otherwise ineligible misdemeanors with DA consent or a heightened court finding.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Convictions involving unlawful sexual behavior or sexual offenses cannot be sealed in Colorado.",
+        "citation": "C.R.S. § 24-72-706(2)(a)",
+        "source_url": "https://colorado.public.law/statutes/crs_24-72-706",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "On completion of sentence (petty offenses and lower misdemeanors); 42 days after dismissal or acquittal",
+      "notes": "Records are expunged automatically after a dismissal or acquittal, and for petty offenses and lower-level misdemeanors once the sentence is finished. Other adjudications require a petition.",
+      "citation": "C.R.S. § 19-1-306",
+      "source_url": "https://www.ncsl.org/civil-and-criminal-justice/automatic-expungement-of-juvenile-records",
+      "status": "corrected",
+      "issue": "Old record said sealing happens at age 18; Colorado ties automatic expungement to offense level and case outcome, not age, and serious adjudications need a petition."
+    }
+  }
+}

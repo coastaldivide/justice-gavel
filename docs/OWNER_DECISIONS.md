@@ -51,7 +51,7 @@ decision, a lawyer, an account key, or a real phone.
 
 ## 3. Keys and accounts (each feature is off, with a clear message, until its key is set)
 
-Stripe (all payments), Resend (e-mail, password reset), Twilio (SMS and SOS texts), Daily.co
+Stripe (all payments), Resend (e-mail, password reset), Telnyx (SMS reminders and SOS texts; 10DLC registration), Daily.co
 (video), Expo and web-push keys (notifications), plus the Render secrets in
 `DEPLOY_ENV_SETUP.md`. Keep the existing `ENCRYPTION_KEY` and JWT secrets.
 

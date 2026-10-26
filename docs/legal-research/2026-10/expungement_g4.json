@@ -1,0 +1,524 @@
+{
+  "LA": {
+    "name": "Louisiana",
+    "remedy": "Expungement (motion in district court; record removed from public access but kept for law enforcement)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence, deferred adjudication, probation or parole",
+        "automatic": false,
+        "note": "You can file a motion to expunge a misdemeanor conviction 5 years after finishing your sentence if you had no felony conviction in that time and no felony charge is pending. If the court set aside your conviction under Article 894, you can file right away.",
+        "citation": "La. C.Cr.P. art. 977(A); art. 894(B); art. 985.2",
+        "source_url": "https://www.legis.la.gov/LEGIS/Law.aspx?d=919669",
+        "status": "verified",
+        "issue": "Old note omitted the 894 set-aside route and the requirement of no felony conviction in the 5 years. A request-based automated process (art. 985.2) exists on paper from January 1, 2025 but is contingent on legislative funding.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "completion of sentence, deferred adjudication, probation or parole",
+        "automatic": false,
+        "note": "Most non-violent felonies can be expunged 10 years after you finish your sentence with no new conviction and no pending charge, or right away if the court set the conviction aside under Article 893. Crimes of violence, sex offenses, domestic abuse battery and most drug distribution offenses cannot be expunged.",
+        "citation": "La. C.Cr.P. art. 978(A), (B), (E)",
+        "source_url": "https://legis.la.gov/legis/law.aspx?d=919670",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence or probation",
+        "automatic": false,
+        "note": "A misdemeanor DWI conviction can be expunged on the same terms as other misdemeanors (5 years after the sentence ends), or after an Article 894 set-aside, which a person can receive for DWI only once in a 10-year period. DWI pretrial diversion requires a 5-year wait from arrest.",
+        "citation": "La. C.Cr.P. art. 977(A); art. 894(B)(2); art. 976(B)",
+        "source_url": "https://legis.la.gov/LEGIS/Law.aspx?d=112888",
+        "status": "corrected",
+        "issue": "Old data said DWI is not eligible; art. 977 contains no DWI exclusion and art. 894 expressly allows a DWI set-aside once per 10 years.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "final dismissal, acquittal or decision not to prosecute",
+        "automatic": false,
+        "note": "If your case was dismissed, the DA declined to prosecute, or you were acquitted, you can file a motion to expunge the arrest right away. Exception: a DWI arrest resolved by pretrial diversion requires a 5-year wait from arrest.",
+        "citation": "La. C.Cr.P. art. 976",
+        "source_url": "https://www.legis.la.gov/LEGIS/Law.aspx?d=919667",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic abuse battery convictions cannot be expunged, whether misdemeanor or felony. Misdemeanor stalking is also barred.",
+        "citation": "La. C.Cr.P. art. 977(C)(2)-(3); art. 978(B)",
+        "source_url": "https://www.legis.la.gov/LEGIS/Law.aspx?d=919669",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offense convictions (as defined in R.S. 15:541) cannot be expunged. Only an 'interim expungement' of the arrest record for a misdemeanor sex offense charge is available under Article 985.1.",
+        "citation": "La. C.Cr.P. art. 977(C)(1); art. 978(B)",
+        "source_url": "https://www.legis.la.gov/LEGIS/Law.aspx?d=919669",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "By motion; most adjudications after juvenile court jurisdiction ends",
+      "notes": "Juvenile records are expunged only on motion: cases with no adjudication (and a few minor offenses) at any time, most adjudications once the juvenile court's jurisdiction ends, and murder, manslaughter, registrable sex offenses, kidnapping or armed robbery only 5 years after the disposition is satisfied, with no adult felony conviction. For acts on or after April 19, 2024, all 17-year-olds are adults again (Raise the Age, in force for under-18s from July 1, 2020, was fully reversed), so their records must be cleared under the adult rules (C.Cr.P. arts. 976-978).",
+      "citation": "La. Ch.C. arts. 917-918, 313; La. Ch.C. art. 804(1)(a)-(c) as amended by Acts 2024, 2nd E.S., No. 13 (eff. Apr. 19, 2024)",
+      "source_url": "https://legis.la.gov/legis/LawPrint.aspx?d=125537",
+      "status": "corrected",
+      "issue": "Old row was self-contradictory: Raise the Age covered 17-year-olds from March 1, 2019 (non-violent) and July 1, 2020 (all offenses), but Acts 2024, 2nd E.S., No. 13 reset the juvenile age limit to under 17 for all offenses (not only violent ones) for acts on or after April 19, 2024."
+    }
+  },
+  "ME": {
+    "name": "Maine",
+    "remedy": "Sealing (motion to seal criminal history; Maine has no expungement) and gubernatorial pardon",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": 4,
+        "waitFrom": "full satisfaction of the sentence (jail, probation, fines, restitution, license suspension)",
+        "automatic": false,
+        "note": "Only Class E crimes (the lowest class, except sexual assault) and certain pre-2017 marijuana convictions can be sealed, by motion, 4 years after the sentence is fully completed with no new conviction and no pending charges. Class D crimes, which include most assaults and OUI, cannot be sealed.",
+        "citation": "15 M.R.S. §§ 2261(6), 2262, 2264",
+        "source_url": "https://legislature.maine.gov/statutes/15/title15sec2262.html",
+        "status": "corrected",
+        "issue": "Old data said Class D and E crimes after 3 years under § 2264-A; the law covers Class E only (plus pre-2017 marijuana D/E), the wait is 4 years from completing the sentence, and § 2264-A is not the governing section.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Maine has no sealing for Class A, B or C crimes; the only relief is a governor's pardon (petitions considered 5 years after sentence completion). The 2026 Clean Slate bill (LD 1911) was vetoed and the veto was sustained on April 29, 2026.",
+        "citation": "15 M.R.S. § 2261(6); Me. Const. art. V, pt. 1, § 11",
+        "source_url": "https://courts.maine.gov/help/criminal/sealing.html",
+        "status": "corrected",
+        "issue": "Old data said Class C felonies were eligible after 5 years under 'Maine Clean Slate'; no such law is in force (LD 1911 was vetoed and covered misdemeanors only).",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "OUI is a Class D crime or higher, so it cannot be sealed. The pardon board also does not consider OUI pardon petitions.",
+        "citation": "15 M.R.S. § 2261(6); 29-A M.R.S. § 2411",
+        "source_url": "https://courts.maine.gov/help/criminal/sealing.html",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal with prejudice or acquittal",
+        "automatic": true,
+        "note": "Records held by police and other criminal justice agencies showing a dismissal with prejudice, a final dismissal by the prosecutor (not as part of a plea deal), or an acquittal are confidential by law without a petition. This does not cover court records.",
+        "citation": "16 M.R.S. §§ 703(2)(G)-(H), 705",
+        "source_url": "https://autodiscover.legislature.maine.gov/statutes/16/title16sec703.html",
+        "status": "corrected",
+        "issue": "Old note cited 15 M.R.S. § 2264-A; non-conviction confidentiality comes from the Criminal History Record Information Act and applies only to agency records, not court files.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic violence crimes are Class D or higher, so they cannot be sealed in Maine.",
+        "citation": "15 M.R.S. § 2261(6); 17-A M.R.S. § 207-A",
+        "source_url": "https://courts.maine.gov/help/criminal/sealing.html",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sexual assault crimes are expressly excluded from sealing, even at the Class E level. Survivors of sex trafficking or sexual exploitation can seek sealing of convictions that resulted from that exploitation, with no waiting period (since January 2026).",
+        "citation": "15 M.R.S. §§ 2261(6), 2262-B",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maine-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": null,
+      "notes": "Juvenile case records in Maine are confidential, except that murder and Class A, B or C adjudication orders are public. Sealing requires a petition and has not been automatic; prior law allowed it 3 years after discharge from the disposition with no new adjudication or conviction.",
+      "citation": "15 M.R.S. §§ 3010, 3308-C",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maine-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "unverifiable",
+      "issue": "Could not read the current text of 15 M.R.S. § 3308-C (in force since Jan. 1, 2022); the timing in the old row ('Age 18 + 3 years') does not match any source read — prior law ran 3 years from discharge, not from age 18."
+    }
+  },
+  "MD": {
+    "name": "Maryland",
+    "remedy": "Expungement (petition; automatic for most non-convictions) and shielding for 12 minor misdemeanors",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence, including probation, parole or supervision",
+        "automatic": false,
+        "note": "More than 100 listed misdemeanors (e.g., theft, drug possession, disorderly conduct) can be expunged by petition 5 years after the whole sentence is completed. Since 2025, an unsatisfactory end to probation no longer bars relief; 12 minor misdemeanors can instead be shielded after 3 years.",
+        "citation": "Md. Code, Crim. Proc. §§ 10-110(a), (c), (d); § 10-301 et seq. (shielding); SB 432 (2025)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said 3 years; the expungement wait for most misdemeanors is 5 years (reduced from 10 by the 2023 REDEEM Act); 3 years applies only to shielding of 12 offenses.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 7,
+        "waitFrom": "completion of sentence, including probation, parole or supervision",
+        "automatic": false,
+        "note": "Only listed felonies (theft, burglary, drug possession with intent to distribute and a few others) can be expunged by petition, 7 years after the sentence is completed (10 years for burglary and theft). Other felonies cannot be expunged.",
+        "citation": "Md. Code, Crim. Proc. § 10-110(a)(2), (d)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old note attributed felony relief to a 'Clean Slate Act' at § 10-301.3; Maryland has no conviction Clean Slate law (bills SB 483/HB 360 were pending in 2026) — felony relief is petition-based under § 10-110.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI and DWI convictions are not on the list of offenses that can be expunged in Maryland.",
+        "citation": "Md. Code, Crim. Proc. § 10-110(a); Md. Code, Transp. § 21-902",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "Confirmed from the absence of Transp. § 21-902 from the § 10-110 eligible list as described by CCRC; the official statute page was not reachable in this session.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "final disposition (dismissal, acquittal or nolle prosequi)",
+        "automatic": true,
+        "note": "Dismissals, acquittals and most nolle prosequis are expunged automatically 3 years after the case ends. You can petition sooner if you sign a release of any legal claims arising from the arrest; treatment-conditioned nolle pros and probation before judgment still need a petition.",
+        "citation": "Md. Code, Crim. Proc. §§ 10-105, 10-105.1",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said eligible immediately under § 10-105; without a signed tort-claim release the wait is 3 years, after which expungement is automatic under § 10-105.1 (2021).",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 15,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "A domestically related conviction for an otherwise listed misdemeanor (such as second-degree assault) can be expunged by petition after 15 years. Domestically related crimes cannot be shielded.",
+        "citation": "Md. Code, Crim. Proc. §§ 10-110(c), 6-233, 10-302(a)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said domestic violence is not eligible; § 10-110 allows it with a 15-year wait.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offense convictions are not on Maryland's list of expungeable offenses (prostitution is the main exception).",
+        "citation": "Md. Code, Crim. Proc. § 10-110(a)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "Confirmed from the eligible-offense list as summarized by CCRC; official statute page not reachable in this session.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "Any time for good cause; must be sealed on motion at age 21",
+      "notes": "Juvenile court and police records are confidential. A court may seal them at any time for good cause and must seal them when the person turns 21 and files a motion or petition.",
+      "citation": "Md. Code, Cts. & Jud. Proc. § 3-8A-27",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/maryland-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old row said records are expunged automatically at 18; sealing requires a motion and is mandatory only at age 21."
+    }
+  },
+  "MA": {
+    "name": "Massachusetts",
+    "remedy": "Sealing (administrative petition to the Commissioner of Probation, or court sealing); expungement only for offenses before age 21",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "the later of disposition, probation or release from incarceration",
+        "automatic": false,
+        "note": "You can ask the Commissioner of Probation to seal a misdemeanor record 3 years after the case and any custody or probation ended, with no new conviction or incarceration in those 3 years. If eligible, probation must seal it; the petition is free.",
+        "citation": "M.G.L. c. 276, § 100A",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "felony": {
+        "eligible": true,
+        "waitYears": 7,
+        "waitFrom": "the later of disposition, probation or release from incarceration",
+        "automatic": false,
+        "note": "Felony records can be sealed 7 years after the case and any custody or supervision ended, with no new conviction or incarceration in those 7 years. Firearms offenses, crimes by public officials and crimes against public justice (e.g., perjury) can never be sealed.",
+        "citation": "M.G.L. c. 276, § 100A",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "the later of disposition, probation or release from incarceration",
+        "automatic": false,
+        "note": "An OUI is a misdemeanor and is not on the excluded list, so it can be sealed after 3 years like other misdemeanors. A sealed OUI still counts as a prior offense if you are charged with OUI again.",
+        "citation": "M.G.L. c. 276, § 100A; c. 90, § 24",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said OUI is not eligible; § 100A excludes only firearms, public-official, public-justice and certain sex offenses.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "disposition",
+        "automatic": false,
+        "note": "Acquittals, no-bills and no-probable-cause findings are sealed automatically. Dismissed or nolle prossed charges can be sealed right away if a judge finds good cause after a hearing.",
+        "citation": "M.G.L. c. 276, § 100C; Commonwealth v. Pon, 469 Mass. 296 (2014)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data implied all dismissed charges seal immediately; only acquittals, no-bills and no-probable-cause findings are automatic — dismissals and nolle prosequis need a court good-cause finding.",
+        "varies": true
+      },
+      "domestic": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "the later of disposition, probation or release from incarceration",
+        "automatic": false,
+        "note": "Domestic assault and battery is not on the list of offenses barred from sealing, so a misdemeanor conviction can be sealed after 3 years (7 if charged as a felony).",
+        "citation": "M.G.L. c. 276, § 100A; c. 265, § 13M",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said domestic assault and battery is not eligible; § 100A contains no domestic violence exclusion.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 15,
+        "waitFrom": "end of all supervision (probation, parole, custody)",
+        "automatic": false,
+        "note": "Sex offense records can be sealed 15 years after all supervision ends, but not while you are still required to register or if you were ever classified as a Level 2 or Level 3 sex offender.",
+        "citation": "M.G.L. c. 276, § 100A",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said sex offenses are not eligible; § 100A allows sealing after 15 years except for current registrants and anyone ever classified Level 2 or 3.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "On request, 3 years after last court appearance or disposition",
+      "notes": "Juvenile records are sealed on request to the Commissioner of Probation if 3 years have passed since the last court appearance or disposition (including commitment or probation) with no new adjudication, conviction or commitment. Separately, up to two juvenile or under-21 records can be expunged by petition (3 years after a misdemeanor, 7 after a felony), excluding violent and sex offenses.",
+      "citation": "M.G.L. c. 276, §§ 100B, 100F-100J",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/massachusetts-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old row said juvenile records are sealed automatically at 18; § 100B sealing requires a request after a 3-year waiting period."
+    }
+  },
+  "MI": {
+    "name": "Michigan",
+    "remedy": "Set-aside (Michigan's expungement): by application to the court, or automatic under Clean Slate",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "the latest of sentencing, completion of probation, or release from incarceration",
+        "automatic": true,
+        "note": "You can apply to set aside an ordinary misdemeanor 3 years after sentencing or release, whichever is later (5 years for serious or assaultive misdemeanors). Up to four misdemeanors are also set aside automatically after 7 years with no new conviction.",
+        "citation": "MCL 780.621(1), 780.621d(1), 780.621g",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said 5 years under 'Clean Slate'; by application the wait is 3 years for ordinary misdemeanors, and automatic set-aside (7 years) is a separate track (MCL 780.621g) now in operation.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "the latest of sentencing, completion of probation/parole, or release from incarceration",
+        "automatic": true,
+        "note": "One felony can be set aside by application after 5 years (7 years if you have more than one; up to three felonies total). Up to two non-assaultive felonies with a maximum under 10 years are set aside automatically after 10 years. Life-maximum felonies cannot be set aside.",
+        "citation": "MCL 780.621(1), 780.621c, 780.621d(1), 780.621g",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said 'conditional' after 7 years; a single low-level felony is eligible after 5 years by application, and 10 years for automatic set-aside.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "the latest of sentencing, completion of probation, or release from incarceration",
+        "automatic": false,
+        "note": "Since 2022, a first-offense OWI can be set aside by application after 5 years. Second or later OWIs and OWIs causing death or serious injury are barred, and OWI is never set aside automatically.",
+        "citation": "MCL 780.621(1), 780.621c, 780.621d (as amended by 2021 HB 4219-4220 and SB 400)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said OWI is not eligible; a first OWI has been eligible by application since the 2021 amendments.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal or acquittal",
+        "automatic": false,
+        "note": "After an acquittal, fingerprints and arrest records must be destroyed. After a pretrial dismissal, the State Police remove the arrest record on a court order if the prosecutor does not object within 60 days.",
+        "citation": "MCL 28.243(8)-(10); MCL 764.26a",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old note cited MCL 780.621 (the conviction set-aside law); non-conviction records are handled under MCL 28.243.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "the latest of sentencing, completion of probation, or release from incarceration",
+        "automatic": false,
+        "note": "A misdemeanor domestic violence conviction can be set aside by application after 5 years because it is an assaultive or serious misdemeanor, but never automatically. A felony domestic violence conviction is barred if you also have a misdemeanor domestic violence conviction, and only two assaultive crimes can be set aside in a lifetime.",
+        "citation": "MCL 780.621(1), 780.621c, 780.621d(1), 780.621g",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said domestic violence is not eligible; it is eligible by application with limits.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "the latest of sentencing, completion of probation, or release from incarceration",
+        "automatic": false,
+        "note": "Serious sex offenses, including first-, second- and third-degree criminal sexual conduct, cannot be set aside; some lower-level sex offenses can be set aside by application. A set-aside does not end any duty to register.",
+        "citation": "MCL 780.621c, 780.623",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said no sex offense is eligible; the statute bars only specified sex offenses. The exact excluded list could not be read from the official MCL page in this session.",
+        "varies": true
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Automatic set-aside after a waiting period; petition available from age 18",
+      "notes": "Most juvenile adjudications are now set aside and sealed automatically (in operation since 2023), and a person can also petition 1 year after adjudication or release, or at 18, whichever is later. Life-maximum felonies, designated violent offenses and traffic offenses are excluded from petition relief.",
+      "citation": "MCL 712A.18t (automatic); MCL 712A.18e (petition)",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/michigan-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old row said petition only at age 17; Michigan has automatic juvenile set-aside under MCL 712A.18t (2021 law). The exact automatic waiting period and exclusions could not be confirmed from the statute text in this session."
+    }
+  },
+  "MN": {
+    "name": "Minnesota",
+    "remedy": "Expungement (sealing order) by petition, plus automatic expungement (Clean Slate) since January 1, 2025",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 2,
+        "waitFrom": "discharge of the sentence",
+        "automatic": true,
+        "note": "A misdemeanor can be expunged by petition after 2 years without a new conviction; since January 1, 2025, most misdemeanors are expunged automatically after the same period. Gross misdemeanors wait 3 years.",
+        "citation": "Minn. Stat. §§ 609A.02, subd. 3; 609A.015",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 4,
+        "waitFrom": "discharge of the sentence",
+        "automatic": true,
+        "note": "About 50 listed lower-level felonies (mostly theft, fraud and drug offenses) can be expunged after 4 years without a new conviction, by petition or automatically since 2025. Felonies not on the list cannot be expunged except by pardon.",
+        "citation": "Minn. Stat. §§ 609A.02, subd. 3(b); 609A.015",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data said 5 years; the 2023 Clean Slate law reduced it to 4 years.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Minn. Stat. §§ 609A.02, subd. 3; 609A.015",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Old data said DWI is not eligible, which conflicts with the general rule that any misdemeanor or gross misdemeanor can be expunged by petition after 2-3 years; the DWI-specific treatment (including exclusion from automatic expungement) could not be confirmed from the statute text in this session.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "dismissal or acquittal",
+        "automatic": true,
+        "note": "Since January 1, 2025, dismissed charges and acquittals are expunged automatically. Cases dismissed after diversion or a stay of adjudication are expunged after 1 year with no new charge.",
+        "citation": "Minn. Stat. § 609A.015, subds. 1-2; § 609A.02, subd. 3(a)(1)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old data showed petition-based relief only; non-conviction records have been expunged automatically since January 1, 2025.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Minn. Stat. §§ 609A.02, subd. 3; 609A.015",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Old data said domestic assault is not eligible; misdemeanor domestic assault appears to be petition-eligible under the general misdemeanor rule, but its exact treatment (and any exclusion from automatic expungement) could not be confirmed from the statute text in this session.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "A conviction that requires sex offender registration cannot be expunged.",
+        "citation": "Minn. Stat. § 609A.02, subd. 4",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "By petition; court balances benefit vs. public safety",
+      "notes": "A juvenile court may expunge delinquency records by petition after weighing factors such as the person's age at the time, the seriousness of the offense and its effect on victims. Unless expunged, records stay available to certain agencies until age 28 (longer after an adult felony).",
+      "citation": "Minn. Stat. §§ 260B.198, subd. 6; 260B.171, subd. 1",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/minnesota-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old row said juvenile records are expunged automatically on completion of sentence; juvenile expungement is discretionary by petition, and no automatic juvenile process was found."
+    }
+  }
+}

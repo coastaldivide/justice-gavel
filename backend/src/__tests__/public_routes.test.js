@@ -25,6 +25,7 @@ const PUBLIC = {
   // signed webhooks
   'POST /webhooks/stripe': 'Stripe signature verified',
   'POST /api/webhooks/stripe': 'Stripe signature verified',
+  'POST /api/webhooks/telnyx': 'Telnyx Ed25519 signature verified (STOP replies); 503 without TELNYX_PUBLIC_KEY',
   'POST /api/billing/webhook': 'Stripe signature verified',
   // SSO / OAuth flows (signed assertions / state)
   'POST /api/sso/acs': 'SAML assertion signature verified (H8)',
@@ -71,6 +72,7 @@ const PUBLIC = {
   'GET /api/immigration/relief-options': 'static guidance',
   'GET /api/interrogation/recording-law': 'static guidance',
   'GET /api/expungement/check': 'eligibility rules (rate limited)',
+  'GET /api/expungement/juvenile': 'juvenile sealing rules, verified rows only (rate limited)',
   'GET /api/expungement/attorneys': 'directory',
   'GET /api/hague-contacts/member-states': 'stored public contact data with sources (rate limited)',
   'GET /api/hague-contacts/central-authority/:countryCode': 'stored public contact data with sources (rate limited)',

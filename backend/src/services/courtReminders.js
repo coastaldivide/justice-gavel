@@ -30,7 +30,7 @@
  *   the case list, share link and offline cache keep working.
  *
  *   Court reminders are free for every account and are delivered by
- *   services/reminderDispatcher.js (push → email → SMS). The dispatcher
+ *   services/reminderDispatcher.js (push → browser push → email → SMS via Telnyx). The dispatcher
  *   re-checks the hearing at send time, so a deleted/moved hearing or a
  *   closed case never produces a stale reminder.
  */

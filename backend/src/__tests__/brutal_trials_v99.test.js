@@ -176,7 +176,7 @@ describe('UX2. UX Final Audit — All Screens', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
+    expect(large.length).toBeGreaterThanOrEqual(33);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G); 33: JuvenileJustice's hand-written sealing table moved to the server (Oct 2026)
     // Large screens are feature-rich — not code bloat
   });
 });

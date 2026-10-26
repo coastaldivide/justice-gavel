@@ -29,7 +29,7 @@ interface DuiRow {
   first_license_days: number | null; implied_consent: number | null; ignition_interlock: string | null;
   notes: string | null; source: string | null; source_url: string | null; created_at: string | null;
 }
-interface Meta { disclaimer?: string; recorded_at?: string | null; reviewed?: boolean }
+interface Meta { disclaimer?: string; recorded_at?: string | null; reviewed?: boolean; withheld?: number }
 
 const OFFENSES = ['possession', 'distribution', 'trafficking', 'delivery', 'manufacture', 'cultivation', 'sale'];
 const offenseLabel = (o: string) => (OFFENSES.includes(o) ? t(`pen_offense_${o}`) : o);
@@ -118,7 +118,9 @@ function LegalPenaltiesScreen({ route }: ScreenProps) {
               </TouchableOpacity>
             </View>
           ) : rows.length === 0 ? (
-            <Text maxFontSizeMultiplier={1.4} style={styles.emptyText} testID="penalties-empty">{t('pen_none', { state: stateName(state) })}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emptyText} testID="penalties-empty">
+              {Number(meta.withheld) > 0 ? t('legal_unverified_withheld', { state: stateName(state) }) : t('pen_none', { state: stateName(state) })}
+            </Text>
           ) : tab === 'drug' ? (rows as DrugRow[]).map(r => (
             <View key={r.id} style={styles.card} testID="penalties-row">
               <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle}>

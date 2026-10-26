@@ -570,7 +570,7 @@ router.post('/logout', authRequired, async (req, res) => {
 // ─── CURRENT TOS VERSION — update this when ToS changes ──────────────────────
 // Format: MAJOR.MINOR — increment MAJOR for material changes (user must re-accept),
 // MINOR for typo fixes / clarifications (no re-accept required).
-export const CURRENT_TOS_VERSION = '2.1';
+export const CURRENT_TOS_VERSION = '2.2'; // must equal TOS_VERSION in frontend/src/constants/terms.ts (2.2: Oct 2026 legal accuracy review)
 
 // ─── GET /api/auth/tos-status ─────────────────────────────────────────────────
 // Returns whether the authenticated user needs to accept the ToS (or a new version).

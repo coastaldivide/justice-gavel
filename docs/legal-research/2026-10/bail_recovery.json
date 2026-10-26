@@ -1,0 +1,1463 @@
+{
+ "_meta": {
+  "generated": "2026-10-25",
+  "method": "WebSearch budget was exhausted after 2 searches, and official legislature/court sites were blocked by the session allowlist. Bail-law citations come from NCSL 50-state tables (legal presumptions, financial conditions, forfeiture, detention, 2025 recap) and an R Street 2024 50-state study (AL-NC only). Recovery-agent law comes from USLegal per-state statute summaries (secondary). Nothing here was read on an official code site; re-verify before publishing."
+ },
+ "bail_law": {
+  "AL": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Ala. Code § 15-13-108; Ala. Const. art. I, § 16; Ala. R. Crim. P. 4.3 (bond schedule)",
+   "statewide_schedule": "statewide schedule listed in source (URL not retrieved)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bail is used. R Street lists a bond schedule under Ala. R. Crim. P. 4.3, and Alabama voters approved a constitutional amendment (S118) in May 2026 that lets judges deny bail for attempted murder, conspiracy to murder, and solicitation of murder.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "AK": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Alaska Stat. § 12.30.011; Alaska R. Crim. P. 41 (limited bail schedule)",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set release conditions under § 12.30.011 and must consider assets available to meet a money condition; only a limited bail schedule exists (Alaska R. Crim. P. 41).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "AZ": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "A.R.S. § 13-3967; Ariz. Const. art. II, § 22; Ariz. R. Crim. P. 7",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bail amounts are set by the judicial officer, who must consider financial resources (§ 13-3967); there is no statewide dollar schedule.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "additional_sources": [],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "AR": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Ark. R. Crim. P. 9.2; Ark. Code Ann. § 16-84-115",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bail may be used only to secure court appearance (Ark. R. Crim. P. 9.2), and the court considers the defendant's financial condition.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "CA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Cal. Penal Code §§ 1269b, 1270, 1271, 1320.10; Cal. Const. art. I, § 12",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Each county's superior court adopts its own bail schedule under Penal Code § 1269b; misdemeanor defendants are presumed eligible for own-recognizance release (§ 1270).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "CO": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "C.R.S. §§ 16-4-101 to 16-4-113; HB19-1225",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bond is barred for most traffic and petty offenses (HB19-1225), and courts must consider the person's financial condition (§ 16-4-103). Bond schedules are set locally.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "CT": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "Conn. Gen. Stat. §§ 54-63b to 54-63c, 54-64a; Public Act 17-145 (HB 7044)",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "Most misdemeanor defendants must be released without a money bond unless family violence or a specific risk applies (§ 54-63c).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "DE": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "11 Del. C. §§ 2101-2116 (incl. § 2105); Del. Const. art. I, § 12",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bail is used; the General Assembly completed second passage in 2025 of a constitutional amendment restoring detention for murder charges.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "DC": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "D.C. Code §§ 23-1321 to 23-1333",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "D.C. releases most defendants without money bail; a judge may order detention only after a hearing under § 23-1322. Bonding businesses must be authorized by court order (D.C. Code § 23-1108) but are rarely used.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention",
+    "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/district-of-columbia/"
+   ],
+   "status": "verified",
+   "issue": "The rule that a financial condition may not cause detention (§ 23-1321(c)(3)) was not read in this session."
+  },
+  "FL": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Fla. Stat. §§ 903.011, 907.041; Fla. R. Crim. P. 3.131",
+   "statewide_schedule": "statewide schedule listed in source (URL not retrieved)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bail is used; Fla. Stat. § 903.011 governs bond schedules. In 2025, S4 created a presumption of detention for certain non-citizen defendants.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "Whether § 903.011 now mandates a single uniform statewide schedule (2023 HB 1627) was not confirmed from the statute text. Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "GA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "O.C.G.A. §§ 17-6-1, 17-6-13; Ga. Const. art. I, § 1, ¶ XVII",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bail schedules are set locally under O.C.G.A. § 17-6-1, and only misdemeanor defendants have bail as of right (Constantino v. Warren, 285 Ga. 851 (2009)).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention"
+   ],
+   "status": "verified",
+   "issue": "2024 SB 63 (more offenses requiring cash/secured bail) was not confirmed from the statute text. Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "HI": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Haw. Rev. Stat. §§ 804-3, 804-4, 804-9, 353-10",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bail and must consider the defendant's ability to afford it (§ 804-9).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "ID": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Idaho Code §§ 19-2902, 19-2903; Idaho Crim. R. 46; Idaho Misd. Crim. R. 13 (misdemeanor schedule)",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "A bail schedule applies to misdemeanors only (Idaho Misdemeanor Criminal Rule 13); felony bail is set by a judge.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "IL": {
+   "commercial_bail_legal": false,
+   "cash_bail_status": "abolished",
+   "citation": "725 ILCS 5/110-1 et seq. (Pretrial Fairness Act, eff. Sept. 18, 2023); 725 ILCS 5/110-1.5, 5/110-2, 5/103-9",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "Illinois ended monetary bail on Sept. 18, 2023: people are released with conditions or held after a detention hearing. Commercial bail bonding and bounty hunting are prohibited (725 ILCS 5/103-9).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture",
+    "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+    "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/illinois/"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "IN": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Ind. Code §§ 35-33-8-2, 35-33-8-3.2; Ind. Crim. Rule 26",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Courts presume release on recognizance unless a preponderance of evidence shows flight or safety risk (§ 35-33-8-3.2). Bail schedules are set by county courts.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "IA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Iowa Code §§ 811.1, 811.2, 804.21",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Courts presume release on recognizance or unsecured bond (§ 811.2); scheduled bail or bail guidelines apply only in limited cases (§ 804.21).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "KS": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "K.S.A. §§ 22-2801 to 22-2815 (incl. § 22-2802)",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bond, and many judicial districts use local bond schedules.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "KY": {
+   "commercial_bail_legal": false,
+   "cash_bail_status": "in_use",
+   "citation": "KRS §§ 431.510, 431.520, 431.525, 431.540, 431.066; Ky. RCr 4.04, 4.20",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Cash bail is still used, but for-profit bail bonding is illegal (KRS 431.510). Bail must take the defendant's ability to pay into account (KRS 431.525).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+    "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+    "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/kentucky/"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "LA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "La. C.Cr.P. arts. 311-342 (incl. arts. 312, 315)",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Commercial bail is common; judicial districts may adopt bail schedules (La. C.Cr.P. art. 315).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "ME": {
+   "commercial_bail_legal": null,
+   "cash_bail_status": "in_use",
+   "citation": "15 M.R.S. §§ 1001-1112 (Maine Bail Code; incl. §§ 1003, 1026)",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bail is set by judges or bail commissioners, and release on recognizance is presumed for low-level nonviolent offenses (15 M.R.S. § 1026).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations"
+   ],
+   "status": "verified",
+   "issue": "Whether commercial surety bail is legal in Maine is unconfirmed: one secondary source says it is prohibited, and NCSL does not list Maine as banning it."
+  },
+  "MD": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "Md. Rules 4-216, 4-216.1; Md. Code, Crim. Proc. §§ 5-101, 5-202",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "A money condition may be used only to secure appearance, and predetermined bail schedules based on the charge are not allowed (Md. Rule 4-216.1).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [],
+   "status": "verified",
+   "issue": null
+  },
+  "MA": {
+   "commercial_bail_legal": false,
+   "cash_bail_status": "in_use",
+   "citation": "Mass. Gen. Laws ch. 276, §§ 57, 58, 58A",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Cash bail is used, but it may not exceed what is needed to assure appearance, and the court must consider ability to pay (ch. 276, § 58). NCSL reports there are no commercial bondsmen in Massachusetts.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "The statute that bars commercial bondsmen was not identified; commercial_bail_legal=false rests on NCSL's table."
+  },
+  "MI": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "MCL § 765.6; MCR 6.106",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bail and must consider employment and financial history as they relate to ability to post money bail (MCR 6.106).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "MN": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Minn. R. Crim. P. 6.02; Minn. Stat. §§ 629.53, 629.715",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bail and must consider the defendant's financial resources (Minn. R. Crim. P. 6.02).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "MS": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Miss. Code Ann. §§ 99-3-18, 99-5-1 et seq.; Miss. R. Crim. P. 3.2, 8",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bond schedules are used (Miss. Code § 99-3-18; MRCrP 3.2). Under a 2023 law, bail may not be set solely to keep a defendant detained.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "MO": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Mo. Sup. Ct. R. 33.01; RSMo § 544.455",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Since 2019, Rule 33.01 requires courts to consider ability to pay and to impose the least restrictive conditions.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "MT": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Mont. Code Ann. §§ 46-9-102, 46-9-108, 46-9-301, 46-9-302",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bail must take into account the defendant's financial ability (§ 46-9-301); only a limited schedule exists (§ 46-9-302). 2025 HB 726 tightened commercial surety licensing.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "NE": {
+   "commercial_bail_legal": null,
+   "cash_bail_status": "in_use",
+   "citation": "Neb. Rev. Stat. § 29-901 et seq.; Neb. Ct. R. § 6-1416",
+   "statewide_schedule": "limited statewide schedule (certain offenses only); URL not retrieved",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Nebraska relies on a court deposit (often 10%) rather than commercial bondsmen, and the judge must consider ability to pay (§ 29-901).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Whether commercial surety bail is legally barred or only unused in Nebraska is unconfirmed; R Street lists no commercial bond option. Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "NV": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "NRS §§ 178.484, 178.4851, 178.498",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "Courts presume release on recognizance unless clear and convincing evidence shows a money condition is needed (NRS 178.4851).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "NH": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "RSA 597:1 et seq. (incl. 597:2); SB 556 (2018)",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "A court may not impose a financial condition that results in detention solely because the person cannot pay (RSA 597:2).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Any 2025-2026 changes to New Hampshire bail commissioner rules were not checked."
+  },
+  "NJ": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "N.J.S.A. 2A:162-15 to -26 (Criminal Justice Reform Act, eff. Jan. 1, 2017); N.J. Ct. R. 3:26",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "Since 2017, New Jersey releases most defendants on non-monetary conditions or holds them after a detention hearing; money bail is a last resort and is rarely used.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "NM": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "N.M. Const. art. II, § 13; Rules 5-401, 5-408 NMRA",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "No one may be held only because they cannot afford a bond, and secured bond may not be set from a predetermined charge-based schedule (Rule 5-401).",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "NY": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "restricted",
+   "citation": "N.Y. CPL §§ 510.10, 510.30, 530.20",
+   "statewide_schedule": "no charge-based money schedule (release decided individually)",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": false,
+   "note": "For most misdemeanors and nonviolent felonies, a court must release the person and may not set money bail (CPL 510.10); when bail is allowed, the court must consider ability to pay.",
+   "source_url": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "NC": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "N.C. Gen. Stat. §§ 15A-531 to 15A-547 (incl. § 15A-534)",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Magistrates and judges set bond under § 15A-534 using bail policies adopted by each judicial district.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "That bail policies are set by each district (§ 15A-535) was not read in this session. Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "ND": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "N.D. R. Crim. P. 46; N.D.C.C. ch. 29-08",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set release conditions and consider employment and financial resources (Rule 46).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "OH": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Ohio Crim. R. 46; R.C. §§ 2937.011, 2937.22 et seq.",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Courts set bail by local rule and schedule and consider financial resources (R.C. 2937.011).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "additional_sources": [],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "OK": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "22 O.S. § 1101 et seq.",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bail and many counties use bond schedules. In 2025, S981 allowed detention on DUI charges for people with two prior felony DUI convictions.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "OR": {
+   "commercial_bail_legal": false,
+   "cash_bail_status": "in_use",
+   "citation": "ORS 135.230-135.290 (incl. 135.245, 135.255); Or. Const. art. I, §§ 14, 43",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Oregon courts use release agreements and security deposited with the court; commercial bail bondsmen do not operate in Oregon.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+    "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/oregon/"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "PA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Pa.R.Crim.P. 520-529 (incl. 523); 42 Pa.C.S. § 5701",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Magisterial district judges set bail and consider employment and financial condition (Pa.R.Crim.P. 523).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "RI": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "R.I. Gen. Laws §§ 12-13-1, 12-13-1.3; R.I. Super. R. Crim. P. 46",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set bail and must consider financial ability (Super. R. Crim. P. 46).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "SC": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "S.C. Code Ann. § 17-15-10 et seq.",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Magistrates set bond under § 17-15-10; commercial bondsmen are licensed by the Department of Insurance (S.C. Code § 38-53-10 et seq.).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "SD": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "SDCL §§ 23A-43-2 to 23A-43-4",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges set release conditions and consider financial resources (SDCL 23A-43-4).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "TN": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Tenn. Code Ann. §§ 40-11-102, 40-11-115, 40-11-116, 40-11-118",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Judges and magistrates set bail and consider financial resources (§ 40-11-115). Voters were to decide a constitutional amendment (SJR 25) in 2026 expanding when bail may be denied.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "The result of the 2026 vote on SJR 25 was not confirmed. Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "TX": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Tex. Code Crim. Proc. arts. 17.01-17.53 (incl. arts. 17.03, 17.15); Tex. Const. art. I, §§ 11, 11a",
+   "statewide_schedule": "no single statewide schedule; amounts set by judges and county/district schedules",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Money bail is used and the court must consider ability to pay (art. 17.15). Voters approved SJR 5 (2025), which requires judges to deny bail for certain violent or sexual felonies after a hearing.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-legislation-2025-end-of-year-recap"
+   ],
+   "status": "verified",
+   "issue": "Official schedule URLs could not be retrieved in this session (official court and legislature sites were not reachable), so statewide_schedule_url and county_schedule_examples are left empty rather than guessed."
+  },
+  "UT": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Utah Code §§ 77-20-101 et seq. (incl. § 77-20-205)",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "If a financial condition is set, the court must consider ability to pay when setting the amount (§ 77-20-205).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "VT": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "13 V.S.A. §§ 7551-7556 (incl. § 7554)",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "The court must consider financial means before requiring a secured, surety, or cash bond (13 V.S.A. § 7554).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "VA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Va. Code §§ 19.2-119 to 19.2-134 (incl. §§ 19.2-120, 19.2-121)",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Magistrates and judges set bail and consider financial resources and ability to pay (§ 19.2-121).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "WA": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "CrR 3.2; CrRLJ 3.2; RCW 10.21.050",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Court rules presume release on personal recognizance (CrR 3.2), and courts must weigh financial resources (RCW 10.21.050).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "WV": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "W. Va. Code §§ 62-1C-1, 62-1C-1a",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Bail must be reasonable and must consider the arrested person's ability to give bail (§ 62-1C-1a).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  },
+  "WI": {
+   "commercial_bail_legal": false,
+   "cash_bail_status": "in_use",
+   "citation": "Wis. Stat. §§ 969.01-969.14 (incl. § 969.12(2)); Wis. Const. art. I, § 8",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Cash bail is used, but sureties may not be paid (Wis. Stat. § 969.12), so commercial bail bonding does not exist in Wisconsin.",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-detention",
+    "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/wisconsin/"
+   ],
+   "status": "verified",
+   "issue": "The April 2023 constitutional amendment on conditions of release was not confirmed in this session."
+  },
+  "WY": {
+   "commercial_bail_legal": true,
+   "cash_bail_status": "in_use",
+   "citation": "Wyo. Stat. §§ 7-10-101, 7-10-102; W.R.Cr.P. 46.1",
+   "statewide_schedule": "not determined from sources read",
+   "statewide_schedule_url": null,
+   "county_schedule_examples": [],
+   "varies": true,
+   "note": "Release on recognizance or unsecured bond is presumed, with the least restrictive conditions (W.R.Cr.P. 46.1).",
+   "source_url": "https://www.ncsl.org/civil-and-criminal-justice/legal-presumptions-to-guide-courts-making-pretrial-determinations",
+   "additional_sources": [
+    "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release"
+   ],
+   "status": "verified",
+   "issue": null
+  }
+ },
+ "dollar_row_sample": [
+  {
+   "id": 85,
+   "row": "TN DUI First Offense — Nashville $1,500-$7,500",
+   "supported": false,
+   "official_source": null,
+   "note": "The row cites a 'Davidson County standard schedule' with no URL. No official Davidson County schedule could be retrieved, and Tennessee bail is set per case under Tenn. Code Ann. § 40-11-115/-118, so the range should not be shown as official."
+  },
+  {
+   "id": 86,
+   "row": "TN DUI First Offense — Memphis $1,000-$5,000",
+   "supported": false,
+   "official_source": null,
+   "note": "The row cites a 'Shelby County standard' with no URL; no official source was found to support it."
+  },
+  {
+   "id": 95,
+   "row": "CA DUI First Offense — LA County $5,000-$10,000",
+   "supported": false,
+   "official_source": null,
+   "note": "The LA County Superior Court publishes a countywide schedule under Penal Code § 1269b, but it could not be retrieved, so the figure is unverified. Under Penal Code § 1270, misdemeanor DUI defendants are presumed eligible for own-recognizance release."
+  },
+  {
+   "id": 96,
+   "row": "CA DUI First Offense — San Diego $2,500-$7,500",
+   "supported": false,
+   "official_source": null,
+   "note": "This is unverified; the San Diego Superior Court schedule could not be retrieved."
+  },
+  {
+   "id": 105,
+   "row": "TX DUI/DWI First — Harris County $500-$1,500",
+   "supported": false,
+   "official_source": null,
+   "note": "This is unverified. Misdemeanor bail in Harris County is set under local court rules (ODonnell consent decree) that require personal bonds for many misdemeanors, so a cash range may mislead."
+  },
+  {
+   "id": 106,
+   "row": "TX DUI/DWI First — Travis County $1,000-$3,000",
+   "supported": false,
+   "official_source": null,
+   "note": "This is unverified; no official Travis County schedule was retrieved."
+  },
+  {
+   "id": 136,
+   "row": "IL Aggravated DUI $5,000-$25,000",
+   "supported": false,
+   "official_source": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "note": "This is contradicted by law. Illinois abolished monetary bail effective Sept. 18, 2023 (Pretrial Fairness Act, 725 ILCS 5/110-1.5), so no dollar bail exists for any Illinois charge."
+  },
+  {
+   "id": 139,
+   "row": "IL Aggravated Battery $10,000-$50,000",
+   "supported": false,
+   "official_source": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "note": "This is contradicted by law: Illinois has had no monetary bail since Sept. 18, 2023. Release or detention is decided at a hearing. All 10 IL rows (135-144) should be replaced with a no-cash-bail explanation."
+  },
+  {
+   "id": 141,
+   "row": "IL Armed Robbery $75,000+",
+   "supported": false,
+   "official_source": "https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-financial-conditions-of-release",
+   "note": "This is contradicted by law. With no monetary bail in Illinois, the alternative is a detention hearing under 725 ILCS 5/110-6.1, not a $75,000 bond."
+  },
+  {
+   "id": 127,
+   "row": "NY Drug Possession 7th $0-$1,000",
+   "supported": false,
+   "official_source": "https://www.rstreet.org/wp-content/uploads/2024/03/FINAL-r-street-policy-study-no-300-Mar-2024.pdf",
+   "note": "This is partly wrong. Criminal possession of a controlled substance in the 7th degree is a misdemeanor, and under CPL 510.10 courts must release on most misdemeanors without money bail, so the $1,000 upper bound is not supported."
+  }
+ ],
+ "recovery": {
+  "AL": {
+   "allowed": true,
+   "license": null,
+   "agency": null,
+   "law": "Ala. Code §§ 15-13-62, 15-13-124; Ala. R. Crim. P. 7.1A",
+   "notes": "A professional bondsman or surety may arrest the defendant anywhere in Alabama on a certified copy of the bond or a bondsman's process from the clerk.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/alabama/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "No source could confirm whether Alabama requires a separate recovery-agent license (old value: no license); the license field is left null."
+  },
+  "AK": {
+   "allowed": true,
+   "license": false,
+   "agency": "Alaska Division of Insurance (bail bond limited producers only)",
+   "law": "Alaska Stat. §§ 12.25.030, 09.40.200, 21.27.150",
+   "notes": "Alaska has no bounty-hunter statute. Sureties and their agents act under general private-arrest law, and bail bond producers are licensed by the Division of Insurance.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/alaska/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "AZ": {
+   "allowed": true,
+   "license": false,
+   "agency": "Arizona Department of Insurance (notice and fingerprints, not a license)",
+   "law": "A.R.S. §§ 13-3885, 20-282, 20-340.04",
+   "notes": "A recovery agent must have written authorization from an Arizona-licensed bail bond agent, and the bail agent must notify the Department of Insurance within 24 hours of hiring them. Agents may not enter an occupied home without the occupants' consent, may not wear insignia implying government employment, and may not have felony, theft, or weapons convictions. Violations are a class 5 felony.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/arizona/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said a license and firearm permit are required; Arizona instead requires bail-agent authorization plus Department of Insurance notice and a fingerprint check."
+  },
+  "AR": {
+   "allowed": true,
+   "license": true,
+   "agency": "Arkansas private investigator license, or bondsman license from the state where the bond was issued",
+   "law": "Ark. Code Ann. § 16-84-114",
+   "notes": "Only licensed private investigators (or people they supervise), licensed bondsmen from the state where the bond was written, or peace officers may arrest a bail fugitive. They must be at least 21 with no felony record, and no one may call themselves a 'bounty hunter' or 'bail enforcement agent'.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/arkansas/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old note said 'licensed bail enforcement agent'. Arkansas has no such license and bars that title; the citation was also missing."
+  },
+  "CA": {
+   "allowed": true,
+   "license": null,
+   "agency": "California Department of Insurance (licenses bail agents)",
+   "law": "Cal. Penal Code §§ 1301, 847, 847.5 (former §§ 1299-1299.16, the Bail Fugitive Recovery Persons Act, repealed Jan. 1, 2010)",
+   "notes": "A bail agent, surety, or person they authorize in writing may arrest the defendant, and must deliver them to the court or jail within 48 hours of the arrest (§ 1301). Taking a person out of state requires extradition procedures (§ 847.5).",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/california/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data cited PC § 1299 and a '48-hr notice to police'. The 48 hours is a delivery deadline, not a notice rule, and the source says the § 1299 Act was repealed in 2010; any later re-enactment was not checked."
+  },
+  "CO": {
+   "allowed": true,
+   "license": false,
+   "agency": "No license; Colorado Bureau of Investigation does the background check",
+   "law": "C.R.S. § 12-7-105.5 (pre-2019 numbering)",
+   "notes": "Recovery agents must be appointed by a licensed bail bonding agent, pass a CBI/FBI fingerprint check (no felony in 15 years), and hold a bail-fugitive-apprehension training certificate.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/colorado/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said a license is required. The source describes appointment, background-check, and training rules instead. Colorado recodified Title 12 in 2019, so the current section number needs confirming. Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "CT": {
+   "allowed": true,
+   "license": true,
+   "agency": "Connecticut Department of Emergency Services and Public Protection (DESPP)",
+   "law": "Conn. Gen. Stat. §§ 29-152e to 29-152n",
+   "notes": "Bail enforcement agents need a DESPP license (20 hours of training; no felony or misdemeanor convictions) and a special permit to carry a firearm. They may not wear police-style insignia, and violations are a class D felony.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/connecticut/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "The old note's 'written notice to local police' requirement could not be tied to a specific section."
+  },
+  "DE": {
+   "allowed": true,
+   "license": true,
+   "agency": "Delaware Board of Examiners of Bail Enforcement Agents",
+   "law": "24 Del. C. §§ 5501-5515",
+   "notes": "Bail enforcement agents, resident or nonresident, must be licensed by the Board, be at least 21, and not work in law enforcement. Unlicensed work can draw civil penalties.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/delaware/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said no license or statute; Delaware licenses agents under 24 Del. C. ch. 55."
+  },
+  "DC": {
+   "allowed": null,
+   "license": false,
+   "agency": "D.C. Superior Court / U.S. District Court (authorize bondsmen)",
+   "law": "D.C. Code §§ 23-1101, 23-1108",
+   "notes": "D.C. has no bounty-hunter statute. Bonding businesses need court authorization but are rarely used, because most defendants are released without money bail.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/district-of-columbia/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The old data said commercial bail is not used and recovery is not allowed. Commercial bonding is in fact authorized by court order, but no source settles whether private recovery is permitted."
+  },
+  "FL": {
+   "allowed": true,
+   "license": true,
+   "agency": "Florida Department of Financial Services",
+   "law": "Fla. Stat. § 648.30",
+   "notes": "Florida does not allow independent bounty hunters. Only licensed and appointed bail bond agents (or certified police) may arrest a defendant, and no one may use the titles 'bounty hunter', 'bail enforcement agent' or 'fugitive recovery agent'.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/florida/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old note's 'cannot break and enter without notice' has no support in § 648.30; the main rule is the ban on unlicensed recovery and on bounty-hunter titles."
+  },
+  "GA": {
+   "allowed": true,
+   "license": true,
+   "agency": "Registration with the county sheriff by the professional bondsman",
+   "law": "O.C.G.A. §§ 17-6-56, 17-6-56.1, 17-6-57, 17-6-58",
+   "notes": "Bail recovery agents must be at least 25, U.S. citizens, and registered with the sheriff. Before acting, they must notify the local sheriff and police chief. Out-of-state agents must show their home-state qualification and a certified copy of the bond, and wearing government-looking insignia is a felony.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/georgia/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old note mentioned only a power of attorney; it left out registration, age 25, and the notice-to-police rule (§ 17-6-57). Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "HI": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "Haw. Rev. Stat. § 804-14",
+   "notes": "Hawaii has no bounty-hunter statute. A surety may surrender the defendant to any sheriff or chief of police.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/hawaii/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "ID": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "Idaho Code § 41-1045",
+   "notes": "Idaho does not license recovery agents. The bail agent is legally responsible for the conduct of agents it uses.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/idaho/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "IL": {
+   "allowed": false,
+   "license": false,
+   "agency": null,
+   "law": "725 ILCS 5/103-9",
+   "notes": "Bounty hunting is banned: no bail bondsman from any state may seize or transport anyone found in Illinois, and commercial bail does not exist there.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/illinois/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation (725 ILCS 5/110-7) was wrong; the ban is in 725 ILCS 5/103-9."
+  },
+  "IN": {
+   "allowed": true,
+   "license": true,
+   "agency": "Indiana Department of Insurance (Commissioner)",
+   "law": "Ind. Code §§ 27-10-1-9, 27-10-3-5, 27-10-3-6, 27-10-3-14, 27-10-3-17",
+   "notes": "Recovery agents need a state license (12 hours of instruction, written exam, background check) and must register it with the county sheriff and circuit court clerk within 15 days before working.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/indiana/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "IA": {
+   "allowed": true,
+   "license": true,
+   "agency": "Iowa Department of Public Safety",
+   "law": "Iowa Code ch. 80A (§§ 80A.3, 80A.4, 80A.7, 80A.16A)",
+   "notes": "Bail enforcement businesses need a state license and every employee needs an ID card; felony or weapons convictions disqualify. Injured third parties can sue the agent and the business.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/iowa/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said no license or statute; Iowa Code ch. 80A requires a license."
+  },
+  "KS": {
+   "allowed": true,
+   "license": null,
+   "agency": null,
+   "law": "K.S.A. §§ 22-2809, 22-2809a",
+   "notes": "Before an apprehension, the surety or agent must inform the city or county law enforcement and show a certified bond copy, photo ID, and written appointment. A person felony in the past 10 years disqualifies.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/kansas/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The source says Kansas has no license, which conflicts with the old K.S.A. 75-7e01 citation; the license field is left null until the official code is checked."
+  },
+  "KY": {
+   "allowed": false,
+   "license": false,
+   "agency": null,
+   "law": "KRS §§ 431.510, 440.270",
+   "notes": "Kentucky bans commercial bail bonding, and no bail bondsman or agent may arrest anyone without an arrest warrant.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/kentucky/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": null
+  },
+  "LA": {
+   "allowed": true,
+   "license": true,
+   "agency": "Louisiana Department of Insurance",
+   "law": "La. Admin. Code tit. 37, pt. XIII, ch. 49 (§§ 4901-4913)",
+   "notes": "Only licensed bail bond agents or solicitors may apprehend defendants, with 8 hours of pre-license and 12 hours of continuing training. They must notify local police before an apprehension in a private home. Out-of-state agents must work with a Louisiana-licensed agent.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/louisiana/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "The statutory (La. R.S. Title 22) cite was not confirmed; the source cites the administrative code."
+  },
+  "ME": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Maine has no bounty-hunter or bail-recovery licensing law.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/maine/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Whether commercial surety bail operates in Maine at all is disputed between sources. Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "MD": {
+   "allowed": null,
+   "license": null,
+   "agency": null,
+   "law": null,
+   "notes": "No statute could be confirmed.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/maryland/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The old data said a license and notice are required, but the only source read says Maryland has no bounty-hunter law; it needs the official Maryland Code."
+  },
+  "MA": {
+   "allowed": false,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Massachusetts has no commercial bail bondsmen and no bounty-hunter law.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/massachusetts/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said a PI or bail-agent license is required; NCSL reports no commercial bondsmen in Massachusetts. https://www.ncsl.org/civil-and-criminal-justice/pretrial-release-violations-bail-forfeiture"
+  },
+  "MI": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Michigan has no bounty-hunter license.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/michigan/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation MCL 750.199 is the jail-breaking statute, not a recovery-agent law, and the source says there is no license requirement. Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "MN": {
+   "allowed": true,
+   "license": null,
+   "agency": null,
+   "law": "Minn. Stat. §§ 629.63, 626.88",
+   "notes": "A surety may arrest a defendant it believes will flee and must take them before the judge. Agents may not use police-style vehicle colors or uniforms (§ 626.88).",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/minnesota/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The source says there is no license, but the old data claimed a license plus notice; the license field is left null pending the official statute check."
+  },
+  "MS": {
+   "allowed": null,
+   "license": null,
+   "agency": null,
+   "law": null,
+   "notes": "No source could be retrieved in this session.",
+   "source_url": null,
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The USLegal index has no Mississippi page, and official code sites could not be reached."
+  },
+  "MO": {
+   "allowed": true,
+   "license": true,
+   "agency": "Missouri Department of Commerce and Insurance",
+   "law": "RSMo §§ 374.700, 374.783-374.789",
+   "notes": "Surety recovery agents need a 2-year state license; licensed bail bond agents may also do recovery. Working unlicensed is a class D felony, and unlawful apprehension or assault creates civil liability, including punitive damages.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/missouri/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said no license and no statute; RSMo 374.783-.789 require one."
+  },
+  "MT": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "Mont. Code Ann. § 46-9-510",
+   "notes": "Sureties may arrest fugitives and must follow general state law. In 2025, HB 726 tightened licensing for commercial sureties but did not create a recovery-agent license.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/montana/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "NE": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "Neb. Rev. Stat. § 29-906",
+   "notes": "Nebraska has no bounty-hunter law. A surety may seize the defendant before judgment and deliver them to the sheriff, but commercial bonding is essentially absent there.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/nebraska/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "NV": {
+   "allowed": true,
+   "license": true,
+   "agency": "Nevada Division of Insurance",
+   "law": "NRS §§ 697.055, 697.173, 697.177, 697.325",
+   "notes": "Bail enforcement agents need a state license (age 21+, training, no felony). They must notify local police without undue delay after an apprehension, and before forcibly entering an inhabited home.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/nevada/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said there is a '24-hr notice' and cited NRS 697.300; the source shows the notice rule in NRS 697.325, with no 24-hour advance requirement."
+  },
+  "NH": {
+   "allowed": true,
+   "license": true,
+   "agency": "New Hampshire Secretary of State (annual registration)",
+   "law": "RSA 597:7-b",
+   "notes": "Recovery agents must be certified through approved training, carry $300,000 of liability insurance, and register each year. They must notify the town's chief law enforcement officer before searching there. Violations are a class A misdemeanor.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/new-hampshire/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said there is no statute; RSA 597:7-b regulates recovery agents."
+  },
+  "NJ": {
+   "allowed": true,
+   "license": true,
+   "agency": "Superintendent of the New Jersey State Police",
+   "law": "N.J.S.A. 45:19-29 to 45:19-42",
+   "notes": "Bounty hunters need a State Police license (age 25+, 5 years of law-enforcement experience). Entering a home without privilege or using unlawful force is a fourth-degree crime. Money bail is rare in New Jersey since 2017, so the work is uncommon.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/new-jersey/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation N.J.S.A. 17:31-1 is the bail insurance law; licensing is in N.J.S.A. 45:19-29 et seq."
+  },
+  "NM": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "N.M. Stat. Ann. § 31-3-3",
+   "notes": "A surety may arrest the accused and deliver them to the sheriff; New Mexico has no bounty-hunter licensing law.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/new-mexico/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data claimed a license and a notice rule; the source shows neither. Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "NY": {
+   "allowed": true,
+   "license": true,
+   "agency": "New York Department of State",
+   "law": "N.Y. Gen. Bus. Law §§ 70-84 (Art. 7); N.Y. CPL § 530.80",
+   "notes": "Bail enforcement agents need a Department of State license (qualifying experience or an approved course) and may take a principal into custody anywhere in New York with the surety's written authority. Unlawful acts against people or property are prohibited.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/new-york/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old note said 'must be licensed PI'; New York has a separate bail enforcement agent license under GBL Art. 7."
+  },
+  "NC": {
+   "allowed": true,
+   "license": true,
+   "agency": "North Carolina Department of Insurance",
+   "law": "N.C. Gen. Stat. §§ 58-71-1, 58-71-40, 58-71-50, 58-71-65, 58-71-95",
+   "notes": "Only licensed bail bondsmen and their licensed runners may arrest. Runners need 12 hours of education, an exam, and a background check, and may not impersonate police.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/north-carolina/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "ND": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "N.D. Cent. Code §§ 26.1-26.6-01, 26.1-26.6-03",
+   "notes": "North Dakota has no bounty-hunter law. Bail bond agents are licensed by the Insurance Commissioner, and police, jailers, and judges may not act as bounty hunters.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/north-dakota/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "OH": {
+   "allowed": true,
+   "license": true,
+   "agency": "Ohio Department of Insurance",
+   "law": "R.C. §§ 3905.84-3905.85, 3905.841; R.C. § 2927.27",
+   "notes": "People who apprehend skipped defendants must hold an Ohio surety bail bond agent license and carry a photo ID card. Police, court staff, and attorneys may not act as agents.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/ohio/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "The source mixes up R.C. 2927.27 and 3905.85; check both against the official code."
+  },
+  "OK": {
+   "allowed": null,
+   "license": null,
+   "agency": null,
+   "law": null,
+   "notes": "No statute could be confirmed.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/oklahoma/",
+   "source_tier": "secondary",
+   "status": "unverifiable",
+   "issue": "The source says Oklahoma has no bounty-hunter law, which conflicts with the old 'licensed recovery agent' entry; the official Oklahoma Statutes (Title 59) need checking."
+  },
+  "OR": {
+   "allowed": false,
+   "license": false,
+   "agency": null,
+   "law": "ORS 131.890; State v. Epps, 36 Or. App. 519 (1978)",
+   "notes": "Oregon has no commercial bail. Under State v. Epps, taking someone across state lines must follow the Uniform Criminal Extradition Act.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/oregon/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said recovery is allowed with a license and cited ORS 133.395, but Oregon has no commercial bondsmen."
+  },
+  "PA": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Pennsylvania has no bounty-hunter licensing or training requirement; agents must follow general criminal law.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/pennsylvania/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data claimed a license and notice rule; the source says neither exists. Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "RI": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Rhode Island has no bounty-hunter law or license, and no statute grants bounty hunters arrest power.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/rhode-island/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "SC": {
+   "allowed": true,
+   "license": true,
+   "agency": "South Carolina Department of Insurance",
+   "law": "S.C. Code Ann. §§ 38-53-10(10), 38-53-80, 38-53-85, 38-53-90, 38-53-120",
+   "notes": "Only licensed runners employed by one bail bondsman may apprehend defendants. Runners need 20 hours of education and must be South Carolina residents with no felony in 10 years.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/south-carolina/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation 38-53-70 and the 'bail enforcement agent' label were wrong; the license is a 'runner' license (§ 38-53-80)."
+  },
+  "SD": {
+   "allowed": true,
+   "license": true,
+   "agency": "South Dakota Division of Insurance",
+   "law": "SDCL §§ 58-22-1, 58-22-3, 58-22-4, 58-22-12, 58-22-16",
+   "notes": "Only licensed runners employed by a bail bondsman may help apprehend defendants (age 21+, 1-year South Dakota residency, exam). Unlicensed work is a Class 6 felony.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/south-dakota/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said no license and no statute."
+  },
+  "TN": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": "Tenn. Code Ann. §§ 40-11-318, 40-11-133; § 39-17-1351",
+   "notes": "Before taking anyone into custody, an agent must present the warrant, bond copy, proof of agency from a bondsman, and an annual training card to local police. Convicted felons may not serve, and a handgun carry permit is required to be armed.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/tennessee/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation 40-11-132 was wrong; the rule is § 40-11-318, which requires bondsman credentials plus training rather than a separate state license."
+  },
+  "TX": {
+   "allowed": true,
+   "license": true,
+   "agency": "Texas Department of Public Safety, Private Security Program (PI or security officer license)",
+   "law": "Tex. Occ. Code §§ 1702.3863, 1702.3867; Tex. Code Crim. Proc. art. 17.19",
+   "notes": "Only peace officers, licensed private investigators, or commissioned security officers of a licensed guard company may be hired to arrest a bail jumper. They may not enter a home without the occupants' consent, act without the surety's written authorization, wear government insignia, or use deadly force.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/texas/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old citation (Occ. Code ch. 1704) covers bail bond sureties, not recovery agents, and no '24-hr written notice to police' rule appears in the source."
+  },
+  "UT": {
+   "allowed": true,
+   "license": true,
+   "agency": "Utah Bail Bond Recovery Licensure Board",
+   "law": "Utah Code §§ 53-11-102, 53-11-108, 53-11-109, 53-11-122, 53-11-124",
+   "notes": "Bail enforcement agents need a state license (age 21+, 16 hours of training, 2,000 hours of experience) and a firearms course to carry. They must identify themselves and follow the statute's notice rules.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/utah/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "VT": {
+   "allowed": true,
+   "license": false,
+   "agency": "Vermont Department of Financial Regulation (bail bond agents only)",
+   "law": "8 V.S.A. § 3301",
+   "notes": "Vermont has no bounty-hunter law; commercial bail agents are licensed as insurance agents.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/vermont/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  },
+  "VA": {
+   "allowed": true,
+   "license": true,
+   "agency": "Virginia Department of Criminal Justice Services (DCJS)",
+   "law": "Va. Code §§ 9.1-186 to 9.1-186.14 (incl. § 9.1-186.12)",
+   "notes": "Agents need a DCJS license. Absent an emergency, they must give local police or state police at least 24 hours' notice before an apprehension and report a capture within 60 minutes. They must verbally notify occupants before entering a home.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/virginia/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": null
+  },
+  "WA": {
+   "allowed": true,
+   "license": true,
+   "agency": "Washington Department of Licensing",
+   "law": "RCW 18.185.010, .250, .260, .280, .300",
+   "notes": "Bail bond recovery agents need a state license. Before a planned forced entry they must notify local police in writing with specified details, and they need a firearms certificate plus a concealed pistol license to carry a gun.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/washington/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": null
+  },
+  "WV": {
+   "allowed": true,
+   "license": true,
+   "agency": "West Virginia State Police (registration)",
+   "law": "W. Va. Code §§ 51-10A-1 to 51-10A-5",
+   "notes": "Bail bond enforcers, including out-of-state agents, must register with the State Police and carry written authorization from a bondsman. They may not enter an occupied home without consent, and violations carry fines of $500 to $10,000.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/west-virginia/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said no license and no statute; W. Va. Code ch. 51, art. 10A requires registration."
+  },
+  "WI": {
+   "allowed": false,
+   "license": false,
+   "agency": null,
+   "law": "Wis. Stat. §§ 969.12, 818.21",
+   "notes": "Wisconsin bars paid sureties, so commercial bail bonding and bounty hunting for profit do not exist there.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/wisconsin/",
+   "source_tier": "secondary",
+   "status": "corrected",
+   "issue": "The old data said recovery is allowed; it is not, because compensated sureties are prohibited (Wis. Stat. § 969.12)."
+  },
+  "WY": {
+   "allowed": true,
+   "license": false,
+   "agency": null,
+   "law": null,
+   "notes": "Wyoming has no bounty-hunter law; agents must follow general state law.",
+   "source_url": "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/wyoming/",
+   "source_tier": "secondary",
+   "status": "verified",
+   "issue": "Source is a USLegal statute summary; the official code text was not reachable in this session, so confirm that the law is current before publishing."
+  }
+ }
+}

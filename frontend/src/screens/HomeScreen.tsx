@@ -56,7 +56,6 @@ const TILES = perLang((): Tile[] => {
   { key: 'FirmAcq',       icon: ICONS.firm, label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: c.bgCard, color: c.textBrand,   primary: false, roles: ATTORNEY_ROLES },
   { key: 'HousingRts',    icon: ICONS.housing, label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'Immigration',   icon: ICONS.immigration, label: t('home_tile_Immigration'),nav: 'More:ImmigrationConsequences',bg: c.bgCard, color: c.textBrand,  primary: false },
-  { key: 'Insurance',     icon: ICONS.shield, label: t('home_tile_Insurance'),        nav: 'More:Insurance',             bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'Interrogation', icon: ICONS.record, label: t('home_tile_Interrogation'),   nav: 'More:InterrogationRecorder', bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'JuvenileJ',     icon: ICONS.juvenile, label: t('home_tile_JuvenileJ'),       nav: 'More:JuvenileJustice',       bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'MentalHealth',  icon: ICONS.mentalHealth, label: t('home_tile_MentalHealth'), nav: 'More:MentalHealthDiversion', bg: c.bgCard, color: c.textBrand,  primary: false },

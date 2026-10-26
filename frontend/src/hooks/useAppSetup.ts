@@ -23,6 +23,10 @@ function easProjectId(): string | null {
 export async function registerForPushNotificationsAsync(): Promise<string | null | undefined> {
   try {
     const Notifications = await import('expo-notifications');
+    // Android: create the 'court_reminders' / 'default' channels the server's
+    // pushes name — without them Android drops court reminders silently.
+    const { ensureNotificationChannels } = await import('../services/push');
+    await ensureNotificationChannels();
     // Never prompt here (app start / foreground): permission is asked in
     // context with a reason (services/permissions.ts). Only sync the token
     // when the user has already allowed notifications.

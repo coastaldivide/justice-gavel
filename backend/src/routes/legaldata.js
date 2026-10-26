@@ -62,6 +62,26 @@ const TABLE_MAP = {
   "courthouses":   { table: "courthouses",              stateCol: "state" },
 };
 
+/**
+ * Legal-rule tables: a row is served ONLY when it names the official page it was
+ * checked against (source_url) and who checked it (verified_by). Before the Oct 2026
+ * legal accuracy review none of these rows had either, and research found most of the
+ * checked rows wrong (penalty ranges, deadlines, award caps, invented court details).
+ * Unchecked rows are withheld, never shown as fact; meta.withheld counts them so the
+ * screen can say "not verified yet for this state" instead of "nothing found".
+ * Directory tables (courts, clinics, probation offices, bar-complaint offices) are contact listings, not
+ * statements of law, and are not gated here.
+ */
+export const VERIFIED_ONLY = new Set(['bail', 'dui', 'drugs', 'sol', 'victim-comp', 'specialty-courts']);
+// Accepted verifiers: this review's marker ("Source-checked YYYY-MM-DD …", migration 30 and
+// later research passes) or a lawyer ("Attorney: name, bar no."). The single seeded row marked
+// "Legal audit May 2026" (TN DUI) had no recorded method and the Oct 2026 research could not
+// confirm it (minimum jail stored as 48 "days" is 48 hours), so free-text claims don't count.
+const ACCEPTED_VERIFIER = /^(Source-checked \d{4}-\d{2}-\d{2}|Attorney:)/;
+export const isVerifiedRow = (r) =>
+  !!r && typeof r.source_url === 'string' && /^https?:\/\//i.test(r.source_url.trim())
+      && typeof r.verified_by === 'string' && ACCEPTED_VERIFIER.test(r.verified_by.trim());
+
 router.get("/:type", apiLimiter, async (req, res) => {
   const lang = resolveLang(req);
   try {
@@ -84,6 +104,12 @@ router.get("/:type", apiLimiter, async (req, res) => {
     sql += " ORDER BY id ASC LIMIT 500";
 
     let rows = await db.all(sql, params);
+    let withheld = 0;
+    if (VERIFIED_ONLY.has(type)) {
+      const before = rows.length;
+      rows = rows.filter(isVerifiedRow);
+      withheld = before - rows.length;
+    }
     // Free-text filter across the row's text columns (tables have different schemas)
     if (q) {
       const needle = String(q).trim().toLowerCase().slice(0, 100);
@@ -117,6 +143,8 @@ router.get("/:type", apiLimiter, async (req, res) => {
         recorded_at: latest('created_at'),
         last_verified: lastVerified,
         reviewed: !!lastVerified,
+        verified_only: VERIFIED_ONLY.has(type),
+        withheld,
         not_legal_advice: true,
       },
     });

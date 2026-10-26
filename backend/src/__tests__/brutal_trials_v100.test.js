@@ -68,7 +68,7 @@ describe('DISC32. S0 Threshold Fixes — 5 items', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
+    expect(large.length).toBeGreaterThanOrEqual(33);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G); 33: JuvenileJustice's hand-written sealing table moved to the server (Oct 2026)
   });
 });
 
@@ -120,7 +120,7 @@ describe('WHS. webhooks/stripe.js — Stripe Payment Event Handler', () => {
 
 
 
-describe('WHT — Twilio SMS Intent', () => {
+describe('WHT — SMS Intent', () => {
 
 // ── ASY. Async Safety — 5 Handlers Without Try/Catch ─────────────────────
 describe('ASY. Async Safety — Handlers Reviewed for Error Handling', () => {

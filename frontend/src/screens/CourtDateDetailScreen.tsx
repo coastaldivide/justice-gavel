@@ -259,6 +259,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
                 <TextInput accessibilityLabel={t('cdd_mobile_a11y')} style={styles.inputFull} value={phone} onChangeText={setPhone}
                   placeholder={t('cdd_mobile')} placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
               )}
+              {!sms.sms_reminders && <Text maxFontSizeMultiplier={1.4} style={styles.source} testID="court-date-sms-consent">{t('cdd_sms_consent')}</Text>}
               <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: sms.sms_reminders }} testID="court-date-sms" style={styles.secondaryBtn} onPress={() => saveSms(!sms.sms_reminders)}>
                 <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{sms.sms_reminders ? `✓ ${t('cdd_sms_on_btn')}` : t('cdd_sms_off_btn')}</Text>
               </TouchableOpacity>

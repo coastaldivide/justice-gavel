@@ -1,0 +1,366 @@
+{
+  "WA": {
+    "name": "Washington",
+    "remedy": "Vacation of conviction (court petition); deletion of non-conviction data (request to the record-holding agency)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "completion of all sentence terms",
+        "automatic": false,
+        "note": "You can ask the court to vacate most misdemeanor and gross misdemeanor convictions 3 years after finishing your sentence, if you have no pending charges and no new conviction in those 3 years. Violent, DUI and sex-offense misdemeanors are excluded; misdemeanor marijuana offenses committed at 21 or older can be vacated with no wait.",
+        "citation": "RCW 9.96.060(2)(g), (2)(h), (5)",
+        "source_url": "https://www.codepublishing.com/WA/RCW/9.96.060",
+        "status": "corrected",
+        "issue": "The 3-year wait was right, but the old note cited the felony statute (RCW 9.94A.640); misdemeanors are governed by RCW 9.96.060.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "the latest of release from community custody, release from confinement, or sentencing",
+        "automatic": false,
+        "note": "Class C felonies can be vacated 5 years and Class B felonies 10 years after release or sentencing, with no new conviction during that time. Class A felonies, felony DUI, and violent or crimes-against-persons offenses are barred, except second-degree assault, third-degree assault (not against an officer) and second-degree robbery without a weapon or sexual-motivation enhancement.",
+        "citation": "RCW 9.94A.640(1)-(2) (as amended by 2025 c 169 s 2)",
+        "source_url": "https://lawfilesext.leg.wa.gov/Law/RCW/RCW%20%20%209%20%20TITLE/RCW%20%20%209%20.%2094A%20CHAPTER/RCW%20%20%209%20.%2094A.640.htm",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI and physical-control convictions cannot be vacated, whether misdemeanor or felony. A reduced charge that counts as a DUI 'prior offense' also cannot be vacated if there was a later alcohol or drug driving violation within 10 years, or if fewer than 10 years have passed.",
+        "citation": "RCW 9.96.060(2)(d); RCW 9.94A.640(2)(g)",
+        "source_url": "https://www.codepublishing.com/WA/RCW/9.96.060",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 2,
+        "waitFrom": "the favorable disposition (dismissal or acquittal); 3 years from arrest if no disposition is recorded",
+        "automatic": false,
+        "note": "Two years after a dismissal or acquittal, you can ask the State Patrol or other agency to delete the arrest and charge record, and the agency must agree if you have no prior felony or gross misdemeanor conviction and no pending charges. Court files stay public unless a judge seals them under court rule GR 15.",
+        "citation": "RCW 10.97.060; RCW 10.97.030; Wash. GR 15",
+        "source_url": "https://nationalreentryresourcecenter.org/cleanslate/states/washington",
+        "status": "corrected",
+        "issue": "The old record said dismissed charges qualify immediately under RCW 9.96.060, but that statute covers convictions; deletion of non-conviction data is under RCW 10.97.060 and has a 2-year wait.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of the sentence, including financial obligations and required treatment",
+        "automatic": false,
+        "note": "A misdemeanor domestic violence conviction can be vacated 5 years after you finish your sentence, if you notify the prosecutor, have no other DV conviction from a different incident, and are not under a protection or no-contact order. A vacated DV conviction can still be used in some later DV and stalking prosecutions.",
+        "citation": "RCW 9.96.060(2)(f), (2)(i), (8); RCW 9.94A.640(2)(b)",
+        "source_url": "https://www.codepublishing.com/WA/RCW/9.96.060",
+        "status": "corrected",
+        "issue": "The app said DV convictions are never eligible; Washington allows misdemeanor DV vacation after 5 years with conditions, and DV felonies that are not violent or crimes against persons follow the normal felony rules.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Misdemeanor sex offenses cannot be vacated, except failure to register. Most felony sex offenses are barred because they are classed as violent offenses or crimes against persons.",
+        "citation": "RCW 9.96.060(2)(e); RCW 9.94A.640(2)(b)",
+        "source_url": "https://www.codepublishing.com/WA/RCW/9.96.060",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "At 18 or end of supervision, if restitution is paid",
+      "notes": "At disposition the court schedules an administrative sealing hearing, and sealing is mandatory without a hearing once the person is off supervision and has paid restitution. Serious violent offenses, sex offenses and most felony drug offenses are excluded and can only be sealed by motion, 2 years after the case ends (5 years for Class A).",
+      "citation": "RCW 13.50.260(1), (4); RCW 13.40.127(10)",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/washington-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "verified",
+      "issue": "The automatic flag was right, but 'upon completion (most offenses)' left out the restitution requirement and the excluded offense types.",
+      "varies": false
+    }
+  },
+  "WV": {
+    "name": "West Virginia",
+    "remedy": "Expungement (circuit court petition; records sealed)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 1,
+        "waitFrom": "the latest of conviction, release from incarceration, or end of supervision",
+        "automatic": false,
+        "note": "You can petition to expunge one misdemeanor after 1 year, or multiple misdemeanors 2 years after the last one. The wait drops to 90 days if you complete an approved treatment or job-readiness program, and DUI, domestic battery and the other listed offenses are excluded.",
+        "citation": "W. Va. Code \u00a7 61-11-26(b), (c); \u00a7 61-11-26a",
+        "source_url": "https://code.wvlegislature.gov/61-11-26/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "the latest of conviction, release from incarceration, or end of supervision",
+        "automatic": false,
+        "note": "Nonviolent felonies can be expunged by petition after 5 years (3 years with an approved treatment or job program). Violent felonies, felonies with a minor victim, sex offenses, residential burglary and felonies involving a deadly weapon are excluded.",
+        "citation": "W. Va. Code \u00a7 61-11-26(b)-(c); \u00a7 61-11-26a",
+        "source_url": "https://code.wvlegislature.gov/61-11-26/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "No DUI conviction can be expunged in West Virginia. A DUI that is at least 5 years old does not stop you from expunging a separate, eligible felony.",
+        "citation": "W. Va. Code \u00a7 61-11-26(c)",
+        "source_url": "https://code.wvlegislature.gov/61-11-26/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0.16,
+        "waitFrom": "60 days after the order of acquittal or dismissal",
+        "automatic": false,
+        "note": "You can petition to expunge an acquittal or dismissal (including one after diversion or deferred adjudication) starting 60 days after the order, with no filing fee. A prior felony conviction bars relief, and so does a dismissal in exchange for a guilty plea to another charge.",
+        "citation": "W. Va. Code \u00a7 61-11-25",
+        "source_url": "https://code.wvlegislature.gov/61-11-25/",
+        "status": "corrected",
+        "issue": "The app said dismissed charges qualify immediately; the statute requires waiting 60 days and bars anyone with a prior felony conviction.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic assault and battery convictions, and assault or battery against a spouse, co-parent or former cohabitant, cannot be expunged. DV charges dismissed after deferred adjudication also cannot be expunged when the victim is a family or household member.",
+        "citation": "W. Va. Code \u00a7 61-11-26(c); \u00a7 61-11-25",
+        "source_url": "https://code.wvlegislature.gov/61-11-26/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offenses under W. Va. Code chapter 61, article 8B, and any offense the judge found sexually motivated, cannot be expunged.",
+        "citation": "W. Va. Code \u00a7 61-11-26(c)",
+        "source_url": "https://code.wvlegislature.gov/61-11-26/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "1 year after age 18 or end of jurisdiction, whichever is later",
+      "notes": "Juvenile records are sealed by the court without a petition, and sealing treats the offense as if it never occurred. The exception is a juvenile convicted in adult criminal court after transfer, whose records are not sealed.",
+      "citation": "W. Va. Code \u00a7 49-5-104(a), (e); W. Va. R. Juv. P. 50",
+      "source_url": "https://code.wvlegislature.gov/49-5-104/",
+      "status": "corrected",
+      "issue": "The app said sealing needs a petition at 18; sealing happens automatically at the later of age 19 or one year after juvenile jurisdiction ends (NRRC lists it as automatic).",
+      "varies": false
+    }
+  },
+  "WI": {
+    "name": "Wisconsin",
+    "remedy": "Expungement, ordered by the judge at sentencing (offender under 25); removal of arrest record by the state DOJ for non-convictions",
+    "categories": {
+      "misdemeanor": {
+        "eligible": "conditional",
+        "waitYears": null,
+        "waitFrom": "must be ordered at sentencing; takes effect on successful completion of the sentence",
+        "automatic": false,
+        "note": "Only if you were under 25 when the offense happened and the judge ordered expungement at sentencing. The record is then expunged automatically when you finish the sentence with no new conviction and no probation revocation, and you cannot petition for it later.",
+        "citation": "Wis. Stat. \u00a7 973.015(1m)(a)1, (1m)(b); State v. Arberry, 2018 WI 7",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wisconsin-restoration-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "The substance was right, but waitYears 0 was misleading because there is no petition after sentencing; it is now null with the timing in waitFrom.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": null,
+        "waitFrom": "must be ordered at sentencing; takes effect on successful completion of the sentence",
+        "automatic": false,
+        "note": "Only felonies with a maximum prison term of 6 years or less (Class H and I) committed before age 25, and only if the judge orders it at sentencing. Offenses listed in \u00a7 973.015(1m)(a)3 are excluded, including violent felonies and felonies by people with a prior felony.",
+        "citation": "Wis. Stat. \u00a7 973.015(1m)(a)1, 3",
+        "source_url": "https://nationalreentryresourcecenter.org/cleanslate/compare-records-clearance-policies?page=130",
+        "status": "verified",
+        "issue": "I could not open the statute text of the \u00a7 973.015(1m)(a)3 exclusion list (the official site was not reachable); the exclusions named in the note come from secondary summaries.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Wis. Stat. \u00a7 973.015; Wis. Stat. \u00a7 346.65",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wisconsin-restoration-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Could not read the \u00a7 973.015 exclusion list. A first OWI is a civil forfeiture and is not a crime that \u00a7 973.015 covers, but a criminal 2nd or 3rd OWI by someone under 25 may qualify if not excluded, and DOT driving records are not erased in any case; the app's flat 'not eligible' is unconfirmed.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": "on request after dismissal or acquittal (uncharged arrests after 2 years without prosecution)",
+        "automatic": false,
+        "note": "If you were released without charges or cleared in court, you can ask the state DOJ to return your fingerprints and remove the arrest from your state criminal history. This does not remove the court case record, and Wisconsin has no statute to expunge court records of dismissed cases.",
+        "citation": "Wis. Stat. \u00a7 165.84(1); Hall v. Wis. DOJ, 2020 WI App 12",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wisconsin-restoration-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "The app cited \u00a7 973.015 for dismissed charges; that statute covers convictions only. Non-conviction relief is DOJ removal of the arrest record under \u00a7 165.84(1), and court records are not covered.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Wis. Stat. \u00a7 973.015(1m)(a)3; Wis. Stat. \u00a7 968.075",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wisconsin-restoration-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Could not read the \u00a7 973.015 exclusion list. Wisconsin charges DV as underlying offenses such as disorderly conduct or battery with a DV modifier, which may qualify for under-25 expungement at sentencing; the app's flat 'not eligible' is unconfirmed.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Wis. Stat. \u00a7 973.015(1m)(a)2-3",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wisconsin-restoration-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Could not read the \u00a7 973.015 exclusion list. The statute requires expungement for under-18 invasion-of-privacy (peeping) convictions, and some misdemeanor sex offenses may qualify, so a flat 'not eligible' is at least partly wrong; most felony sex offenses exceed the 6-year cap or are excluded.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "Petition at age 17 or older",
+      "notes": "After turning 17, a person adjudicated delinquent can petition to expunge the record if they complied with the dispositional order and the court finds they will benefit and society will not be harmed. A first adjudication for certain invasion-of-privacy offenses must be expunged once its conditions are met.",
+      "citation": "Wis. Stat. \u00a7 938.355(4m)(a)-(b)",
+      "source_url": "https://nationalreentryresourcecenter.org/cleanslate/compare-records-clearance-policies?page=130",
+      "status": "verified",
+      "issue": null,
+      "varies": false
+    }
+  },
+  "WY": {
+    "name": "Wyoming",
+    "remedy": "Expungement (district court petition)",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "You can petition to expunge a misdemeanor 5 years after completing your sentence (1 year for a status offense). Misdemeanors involving a firearm are excluded, and a hearing is held only if the prosecutor or victim objects.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1501(a)",
+        "source_url": "https://nationalreentryresourcecenter.org/cleanslate/compare-records-clearance-policies?page=131",
+        "status": "corrected",
+        "issue": "The 5-year wait was right but the citation was wrong: \u00a7 7-13-1401 covers non-conviction records, and misdemeanor convictions fall under \u00a7 7-13-1501. The CCRC profile still describes \u00a7 7-13-1501 as limited to assault, battery, DV, reckless endangerment and breach of peace, while NRRC lists all non-status misdemeanors, so the current statute text should be checked.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "expiration of the sentence, including probation",
+        "automatic": false,
+        "note": "One nonviolent felony episode can be expunged by petition 10 years after the sentence ends, if restitution is paid in full and you have no other felony conviction. Violent felonies, felonies involving a firearm, most sex crimes, felony DUI, drug distribution, child endangerment, bribery and perjury are excluded.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1502",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wyomingrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "The app said 5 years and cited \u00a7 7-13-1401; felony expungement is under \u00a7 7-13-1502 with a 10-year wait.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "Felony DUI cannot be expunged. Misdemeanor DUI is not on the misdemeanor exclusion list, so it appears eligible after 5 years like other misdemeanors.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1501(a); \u00a7 7-13-1502",
+        "source_url": "https://nationalreentryresourcecenter.org/cleanslate/compare-records-clearance-policies?page=131",
+        "status": "corrected",
+        "issue": "The app said DUI is never eligible; only felony DUI is expressly excluded. Misdemeanor DUI eligibility is inferred from the NRRC exclusion list and should be confirmed against the statute text, which I could not open.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0.5,
+        "waitFrom": "180 days after arrest (no charges filed) or after dismissal or acquittal",
+        "automatic": false,
+        "note": "You can petition to expunge an arrest or charge that did not lead to a conviction 180 days after the arrest or dismissal, if no charges are pending. Cases resolved by deferred sentencing under the first-offender statute (\u00a7 7-13-301) do not qualify under this section.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1401",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wyomingrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "The app implied dismissed charges are eligible immediately; the statute requires waiting 180 days.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of sentence",
+        "automatic": false,
+        "note": "A misdemeanor domestic violence conviction can be expunged once, 5 years after completing the sentence, if no firearm was involved. Felony DV offenses are violent felonies and cannot be expunged.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1501; \u00a7 7-13-1502",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wyomingrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "The app said domestic battery is not eligible; CCRC states that \u00a7 7-13-1501 expressly covers misdemeanor domestic violence.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sexual battery (\u00a7 6-2-313) is excluded from misdemeanor expungement, and most felony sex crimes are excluded from felony expungement.",
+        "citation": "Wyo. Stat. \u00a7 7-13-1501(a); \u00a7 7-13-1502",
+        "source_url": "https://nationalreentryresourcecenter.org/cleanslate/compare-records-clearance-policies?page=131",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "Petition at age 18",
+      "notes": "At 18, a person who shows rehabilitation can petition to expunge juvenile records if they have no later felony conviction or pending criminal case. Violent felonies are excluded, the prosecutor has 20 days to object, and there is no filing fee.",
+      "citation": "Wyo. Stat. \u00a7 14-6-241",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/wyomingrestoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "The app said 'age 19 + 2 years offense-free'; the statute allows a petition at 18 with no 2-year offense-free period.",
+      "varies": false
+    }
+  },
+  "AZ_domestic": {
+    "eligible": "conditional",
+    "waitYears": 3,
+    "waitFrom": "completion of the sentence's non-monetary terms and discharge by the court (sealing); set-aside has no wait beyond discharge",
+    "automatic": false,
+    "note": "Arizona does not bar domestic violence convictions from set-aside (\u00a7 13-905) or sealing (\u00a7 13-911). A DV misdemeanor can be set aside once the sentence is discharged and sealed after 3 years (Class 1) or 2 years (Class 2-3); aggravated DV (Class 5 felony) can be sealed after 5 years. DV offenses are excluded if they were dangerous offenses or involved a deadly weapon or serious physical injury, and set-aside is also barred for a felony with a victim under 15.",
+    "citation": "A.R.S. \u00a7 13-905(A), (P); A.R.S. \u00a7 13-911(E), (O)",
+    "source_url": "https://azleg.gov/ars/13/00911.htm",
+    "status": "corrected",
+    "issue": "The app marks AZ DV as not eligible, but neither \u00a7 13-905 nor \u00a7 13-911 mentions domestic violence as an exclusion; only the general exclusions (dangerous offense, deadly weapon, serious physical injury, victim under 15, sex registration or sexual motivation) apply. Since 2023 (SB 1582), set-aside or sealing does not affect a lifetime victim injunction under \u00a7 13-719. Set-aside text was read via codes.findlaw.com/az/title-13-criminal-code/az-rev-st-sect-13-905/ (current as of Jan. 1, 2025).",
+    "varies": false
+  }
+}

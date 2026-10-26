@@ -58,7 +58,7 @@ const OPTIONAL_FEATURES = {
   STRIPE_SECRET_KEY:     'Payments disabled (billing endpoints return 503 payments_unavailable; everyone is on the free tier)',
   STRIPE_WEBHOOK_SECRET: 'Stripe webhooks cannot be verified (webhook returns 400)',
   RESEND_API_KEY:        'Email disabled — emails are logged instead of sent',
-  TWILIO_ACCOUNT_SID:    'Text-message court reminders disabled (push and e-mail still go out)',
+  TELNYX_API_KEY:        'Text-message court reminders and SOS texts disabled (push, browser push and e-mail still go out)',
   REDIS_URL:             'BullMQ queue disabled — AI jobs run in-process',
   SENTRY_DSN:            'Error tracking disabled',
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled',
@@ -289,11 +289,13 @@ export const ALL_ENV_VARS = {
   EXPO_PUSH_API_URL:        process.env.EXPO_PUSH_API_URL          || '',    // default https://exp.host/--/api/v2 (services/expoPush.js)
   REMINDERS_ENABLED:        process.env.REMINDERS_ENABLED          || 'true', // 'false' stops reminder delivery in this process
 
-  // ── SMS court reminders (optional; services/sms.js) ──────────────────────
-  TWILIO_ACCOUNT_SID:       process.env.TWILIO_ACCOUNT_SID         || '',    // all three set → SMS is the last step of push → email → SMS
-  TWILIO_AUTH_TOKEN:        process.env.TWILIO_AUTH_TOKEN          || '',
-  TWILIO_FROM_NUMBER:       process.env.TWILIO_FROM_NUMBER         || '',    // E.164 sender, e.g. +16155550123
-  TWILIO_API_BASE:          process.env.TWILIO_API_BASE            || '',    // default https://api.twilio.com (tests / regional edge)
+  // ── SMS court reminders + SOS texts (optional; Telnyx — services/sms.js) ──
+  TELNYX_API_KEY:           process.env.TELNYX_API_KEY             || '',    // Telnyx API v2 key; with TELNYX_FROM_NUMBER → texts on
+  TELNYX_FROM_NUMBER:       process.env.TELNYX_FROM_NUMBER         || '',    // E.164 sender on a 10DLC-registered campaign, e.g. +16155550123
+  TELNYX_MESSAGING_PROFILE_ID: process.env.TELNYX_MESSAGING_PROFILE_ID || '', // optional: messaging profile (number pool / opt-out handling)
+  TELNYX_API_BASE:          process.env.TELNYX_API_BASE            || '',    // default https://api.telnyx.com/v2 (tests / mock)
+  TELNYX_PUBLIC_KEY:        process.env.TELNYX_PUBLIC_KEY          || '',    // base64 Ed25519 key: verifies POST /api/webhooks/telnyx (STOP replies)
+
   TRUST_PROXY:              process.env.TRUST_PROXY                || '',    // Express 'trust proxy': hop count (default 1) or CIDR list, e.g. 100.0.0.0/8 (RUNBOOK)
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',
   VAPID_PRIVATE_KEY:        process.env.VAPID_PRIVATE_KEY          || '',

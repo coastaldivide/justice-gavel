@@ -60,7 +60,7 @@ describe('1. auth.js — Forgot/Reset Password', () => {
   test('1-05: CURRENT_TOS_VERSION is 2.1', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8');
-    expect(src).toContain("CURRENT_TOS_VERSION = '2.1'");
+    expect(src).toContain("CURRENT_TOS_VERSION = '2.2'");
   });
 });
 

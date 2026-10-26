@@ -1,0 +1,437 @@
+{
+  "TN": {
+    "name": "Tennessee",
+    "remedy": "Expunction (expungement) by petition",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 5,
+        "waitFrom": "completion of the full sentence (incl. probation/parole), with all fines, costs and restitution paid",
+        "automatic": false,
+        "note": "Most misdemeanors can be expunged by petition 5 years after the sentence is finished, if it is your only conviction (or one of two eligible convictions). Listed misdemeanors such as DUI, domestic assault, stalking and several sex offenses can never be expunged; it is a one-time remedy.",
+        "citation": "Tenn. Code Ann. § 40-32-107(a)-(b) (formerly § 40-32-101(g), (k))",
+        "source_url": "https://ccc.nashville.gov/wp-content/uploads/2025/07/Expungement-Petition-a.pdf",
+        "status": "corrected",
+        "issue": "Old note cited § 40-32-101 and said only Class A/B; the conviction-expunction provision was recodified to § 40-32-107 in 2025. Tennessee reorganized its expunction statute in 2025: conviction expunction now cited as Tenn. Code Ann. § 40-32-107 (Nashville court petition forms dated July 2025; UT CTAS) and dismissed-charge expunction as § 40-32-106 (CTAS). The public chapter number and the new section text were not read directly.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 5,
+        "waitFrom": "completion of the full sentence, with all fines, costs and restitution paid",
+        "automatic": false,
+        "note": "Only felonies on the statute's eligible lists can be expunged: listed Class E felonies (e.g., theft, forgery, vandalism) after 5 years, and listed Class D and Class C felonies after 10 years from finishing the sentence. Class A and B felonies and unlisted felonies are never eligible; up to two eligible convictions (one felony plus one misdemeanor) can be cleared, once in a lifetime.",
+        "citation": "Tenn. Code Ann. § 40-32-107(a)-(b) (formerly § 40-32-101(g), (k))",
+        "source_url": "https://ccc.nashville.gov/wp-content/uploads/2025/07/Expungement-Petition-a.pdf",
+        "status": "corrected",
+        "issue": "Old note said only first-time Class E felonies; listed Class C and D felonies are also eligible (10-year wait), and two convictions can be cleared. Tennessee reorganized its expunction statute in 2025: conviction expunction now cited as Tenn. Code Ann. § 40-32-107 (Nashville court petition forms dated July 2025; UT CTAS) and dismissed-charge expunction as § 40-32-106 (CTAS). The public chapter number and the new section text were not read directly.",
+        "varies": true
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "A DUI conviction (Tenn. Code Ann. § 55-10-401) is on Tennessee's list of offenses that can never be expunged.",
+        "citation": "Tenn. Code Ann. § 40-32-107(a) exclusion list (formerly § 40-32-101(g)); § 55-10-401",
+        "source_url": "https://ccc.nashville.gov/wp-content/uploads/2025/07/Expungement-Petition-a.pdf",
+        "status": "corrected",
+        "issue": "Old value said first-offense DUI may be eligible after 5 years; DUI is expressly excluded from expunction.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "If your charge was dismissed, not prosecuted (nolle), returned no true bill, or ended in acquittal, you can petition the court to expunge it right away; there is no automatic statewide expungement.",
+        "citation": "Tenn. Code Ann. § 40-32-106 (formerly § 40-32-101(a)(1))",
+        "source_url": "https://www.ctas.tennessee.edu/eli/expunging-court-records",
+        "status": "verified",
+        "issue": "Citation updated: dismissed-charge provisions moved from § 40-32-101 to § 40-32-106 in 2025 (per CTAS); new section text not read directly. A 2025 bill for clerk-run automatic expungement (SB1177/HB0689) died.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic assault (Tenn. Code Ann. § 39-13-111) and related offenses such as violating an order of protection are on the list of offenses that can never be expunged.",
+        "citation": "Tenn. Code Ann. § 40-32-107(a) exclusion list (formerly § 40-32-101(g)); § 39-13-111",
+        "source_url": "https://ccc.nashville.gov/wp-content/uploads/2025/07/Expungement-Petition-a.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Offenses that require sex-offender registration, sexual offenses involving a minor, and listed misdemeanor sex offenses (e.g., indecent exposure, public indecency) cannot be expunged.",
+        "citation": "Tenn. Code Ann. § 40-32-107(a) (formerly § 40-32-101(g)); Title 40, ch. 39, part 2",
+        "source_url": "https://ccc.nashville.gov/wp-content/uploads/2025/07/Expungement-Petition-b.pdf",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": null,
+      "when": null,
+      "notes": null,
+      "citation": "Tenn. Code Ann. § 37-1-153",
+      "source_url": null,
+      "status": "unverifiable",
+      "issue": "Could not read § 37-1-153 or any official page describing Tennessee juvenile expunction (CCRC profile's record-relief section did not load; web search budget exhausted); old value 'Age 17 or petition after completion' is unconfirmed and should not be shown until verified."
+    }
+  },
+  "TX": {
+    "name": "Texas",
+    "remedy": "Expunction (non-convictions); order of nondisclosure (sealing from the public) for eligible convictions and deferred adjudication",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 2,
+        "waitFrom": "completion of the sentence (no wait if fine-only)",
+        "automatic": false,
+        "note": "A first-time misdemeanor conviction cannot be expunged, but you can ask the court for an order of nondisclosure, which hides it from the public: right away if the sentence was fine-only, otherwise 2 years after the sentence ends. A $28 fee applies; family-violence, sex, and certain violent offenses are excluded, and any prior conviction or deferred adjudication (other than fine-only traffic) bars relief.",
+        "citation": "Tex. Gov't Code §§ 411.073, 411.0735, 411.074",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old entry described Class C deferred expunction under art. 55.01; the relief for a completed misdemeanor conviction is nondisclosure under Gov't Code ch. 411, subch. E-1 (statute text not read directly; CCRC profile updated June 24, 2026).",
+        "varies": false
+      },
+      "felony": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "A felony conviction cannot be expunged or sealed in Texas except through a pardon. If you got deferred adjudication instead of a conviction, you can petition for nondisclosure 5 years after discharge and dismissal.",
+        "citation": "Tex. Code Crim. Proc. ch. 55A; Tex. Gov't Code § 411.0725",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "Old note implied deferred adjudication leads to expunction under art. 55.01; it leads to nondisclosure (Gov't Code § 411.0725), and art. 55.01 was recodified as ch. 55A effective Jan. 1, 2025.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": "conditional",
+        "waitYears": 2,
+        "waitFrom": "completion of the sentence",
+        "automatic": false,
+        "note": "A first-offense DWI can be sealed by an order of nondisclosure only if your blood alcohol was below 0.15 and no crash involved another person. You must wait 2 to 5 years after finishing your sentence; the shorter wait applies if your sentence restricted your driving (e.g., ignition interlock) for at least 6 months.",
+        "citation": "Tex. Gov't Code §§ 411.0731, 411.0736",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said DWI not eligible; first-offense DWI is eligible for nondisclosure under §§ 411.0731/411.0736 with conditions.",
+        "varies": true
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 1,
+        "waitFrom": "date of arrest (Class A/B misdemeanor); acquittal has no wait",
+        "automatic": false,
+        "note": "An acquittal can be expunged immediately. If the charge was never filed or was dismissed, you can seek expunction after a wait counted from your arrest: 180 days for a Class C misdemeanor, 1 year for a Class A or B misdemeanor, and 3 years for a felony (or sooner if the prosecutor certifies the records are no longer needed, or once the statute of limitations has run).",
+        "citation": "Tex. Code Crim. Proc. arts. 55A.002, 55A.051-55A.053 (formerly art. 55.01, recodified eff. Jan. 1, 2025 by HB 4504)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old entry had waitYears 0 with a note about the statute of limitations; the main waits are 180 days / 1 year / 3 years from arrest under ch. 55A, which replaced art. 55.01 on Jan. 1, 2025. Case-specific rules (dismissal after community supervision bars expunction except Class C) apply; ch. 55A text not read directly.",
+        "varies": true
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "A family-violence conviction cannot be expunged, and offenses involving family violence are barred from orders of nondisclosure.",
+        "citation": "Tex. Gov't Code § 411.074(b); Tex. Fam. Code § 71.004",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Convictions or deferred adjudications for offenses requiring sex-offender registration cannot be expunged or sealed by nondisclosure.",
+        "citation": "Tex. Gov't Code § 411.074(b); Tex. Code Crim. Proc. ch. 62",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Age 19 (misdemeanor-level records); petition from age 17 otherwise",
+      "notes": "Juvenile records are sealed automatically at 19 if there was no felony-level adjudication, no transfer to adult court, and no adult felony or jail-eligible misdemeanor conviction or pending charge. Others can petition at 17 or one year after discharge; the court can deny for determinate-sentence offenses or current sex-offender registration.",
+      "citation": "Tex. Fam. Code §§ 58.253, 58.255, 58.256",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/texas-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old value said not automatic and cited § 58.003 (repealed/recodified); automatic sealing at 19 applies under § 58.253."
+    }
+  },
+  "UT": {
+    "name": "Utah",
+    "remedy": "Expungement (by petition with BCI certificate of eligibility, or automatic 'clean slate')",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 4,
+        "waitFrom": "later of conviction or release from probation/incarceration/parole",
+        "automatic": false,
+        "note": "A Class B misdemeanor can be expunged by petition 4 years after your sentence ends (3 years for Class C, 5 for Class A) once all court debt is paid. Many Class B and C misdemeanors are expunged automatically after 6 and 5 years if you stay conviction-free.",
+        "citation": "Utah Code §§ 77-40a-303, 77-40a-205",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said 3 years for Class B and C and cited § 77-40a-301; Class B waits 4 years by petition (Class C 3 years) under § 77-40a-303, with automatic expungement after 5-6 years.",
+        "varies": true
+      },
+      "felony": {
+        "eligible": true,
+        "waitYears": 7,
+        "waitFrom": "later of conviction or release from probation/incarceration/parole",
+        "automatic": false,
+        "note": "A third-degree felony can be expunged by petition 7 years after your sentence ends, if you have no more than two felony convictions and all court debt is paid. Felonies are never expunged automatically, and certain serious violent and sex offenses are barred.",
+        "citation": "Utah Code § 77-40a-303",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old entry marked felonies 'conditional' under the Clean Slate Act and § 77-40a-301; felony expungement is by petition under § 77-40a-303, not clean slate.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": true,
+        "waitYears": 10,
+        "waitFrom": "later of conviction or release from probation/incarceration/parole",
+        "automatic": false,
+        "note": "A DUI conviction can be expunged by petition, but only after a 10-year wait; DUI cases are excluded from automatic expungement.",
+        "citation": "Utah Code §§ 77-40a-303, 77-40a-205",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said DUI not eligible; CCRC (updated Aug. 25, 2026) lists a 10-year petition waiting period for DUI. Statute text not read directly.",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": null,
+        "automatic": true,
+        "note": "Acquittals and dismissals with prejudice are expunged automatically. For an arrest with no charges you can petition after 30 days, and for a dismissal without prejudice after 180 days (or sooner with the prosecutor's written consent).",
+        "citation": "Utah Code §§ 77-40a-204, 77-40a-206, 77-40a-302",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old entry said dismissed charges are eligible immediately by petition; acquittals/dismissals with prejudice are automatic, while dismissals without prejudice require 180 days or prosecutor consent.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": null,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": null,
+        "citation": "Utah Code § 77-40a-303(2)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "unverifiable",
+        "issue": "Domestic-violence convictions are excluded from automatic expungement (§ 77-40a-205), but no source read confirms whether they are barred from petition expungement; the old value 'not eligible' is unconfirmed.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Registrable sex offenses cannot be expunged in Utah, and sex offenses are excluded from automatic expungement.",
+        "citation": "Utah Code §§ 77-40a-303(2), 77-40a-205",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "CCRC says 'certain serious violent and sexual offenses are not eligible' without listing them; the exact exclusion list in § 77-40a-303(2) was not read, and some lesser non-registrable sex misdemeanors may be eligible.",
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": false,
+      "when": "Petition at 18, one year after juvenile court jurisdiction ends",
+      "notes": "Juvenile adjudications are expunged by petition at age 18 after a one-year wait (murder and aggravated murder are excluded). Completed nonjudicial adjustments are expunged automatically, except DUI, reckless endangerment, negligent homicide, sexual battery and weapons offenses.",
+      "citation": "Utah Code §§ 80-6-1004.1, 80-6-1004.5",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/utah-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old value said automatic expungement for most at 18 or 5 years; only nonjudicial adjustments are automatic and adjudications require a petition."
+    }
+  },
+  "VT": {
+    "name": "Vermont",
+    "remedy": "Sealing (and expungement) of 'qualifying crimes' by petition; automatic sealing of dismissed charges",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 3,
+        "waitFrom": "completion of the sentence (per prior statute text; confirm against 2025 amendment)",
+        "automatic": false,
+        "note": "Most misdemeanors can be sealed by petition 3 years after the sentence, if restitution and court costs are paid; the court must grant it if the prosecutor does not object. Misdemeanors that are 'listed crimes' (violent or sexual offenses) are excluded.",
+        "citation": "13 V.S.A. §§ 7601(4), 7602 (as amended by 2025 S.12)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said 5 years under § 7602; the 2025 overhaul (S.12) cut the misdemeanor wait to 3 years. Whether the wait runs from sentence completion was not confirmed in the 2025 text.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 7,
+        "waitFrom": "completion of the sentence (per prior statute text; confirm against 2025 amendment)",
+        "automatic": false,
+        "note": "Only listed non-violent felonies (such as certain property crimes, unoccupied-dwelling burglary, drug offenses, forgery and fraud) can be sealed, by petition 7 years after the sentence.",
+        "citation": "13 V.S.A. §§ 7601(4), 7602 (as amended by 2025 S.12)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said 10 years; the 2025 law sets 7 years for qualifying felonies.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "completion of the sentence",
+        "automatic": false,
+        "note": "A misdemeanor DUI can be sealed (not expunged) by petition after a 10-year wait.",
+        "citation": "13 V.S.A. § 7602 (as amended by 2025 S.12)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old value said DUI not eligible; misdemeanor DUI became eligible for sealing after 10 years (2019, retained in 2025).",
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": null,
+        "automatic": true,
+        "note": "If your charge is dismissed or you are acquitted, the court seals the record automatically within about 60 days unless a party objects in the interest of justice; charges dismissed before July 1, 2018 need a petition.",
+        "citation": "13 V.S.A. § 7603",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old note implied a petition; non-conviction records dismissed after July 1, 2018 are sealed automatically after 60 days absent objection.",
+        "varies": false
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic assault is a 'listed crime' and cannot be sealed or expunged under Vermont's qualifying-crime law.",
+        "citation": "13 V.S.A. §§ 7601(4), 5301",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": "CCRC confirms listed violent crimes and predicate offenses like domestic assault are excluded; the 2025 text of § 7601 was not read directly.",
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex offenses that are 'listed crimes' (including sexual assault and lewd and lascivious conduct) cannot be sealed or expunged.",
+        "citation": "13 V.S.A. §§ 7601(4), 5301",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "2 years after final discharge",
+      "notes": "Juvenile adjudication records are sealed two years after discharge from the case unless the prosecutor shows new charges are pending and rehabilitation has not been attained. Offenses committed at ages 18-25 can be sealed on application two years after discharge.",
+      "citation": "33 V.S.A. § 5119(a)(1), (g)",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/vermontrestoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old value said 'Age 18 (most offenses)' and 'expunged'; sealing occurs two years after final discharge, not at a set age."
+    }
+  },
+  "VA": {
+    "name": "Virginia",
+    "remedy": "Sealing (automatic or by petition), effective July 1, 2026; expungement for non-conviction charges",
+    "categories": {
+      "misdemeanor": {
+        "eligible": true,
+        "waitYears": 7,
+        "waitFrom": "later of conviction or release from incarceration, with no new conviction during the period",
+        "automatic": false,
+        "note": "Since July 1, 2026, nearly all misdemeanors except DUI and domestic assault can be sealed by petition after 7 conviction-free years; a few (e.g., petit larceny, trespass, disorderly conduct) are sealed automatically after 7 years. A lifetime limit of two sealing events applies.",
+        "citation": "Va. Code §§ 19.2-392.12, 19.2-392.6",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old note said automatic sealing of dismissed charges began July 1, 2025 and asserted a probation-violation change; all sealing provisions were delayed to July 1, 2026, and the probation claim was not found.",
+        "varies": false
+      },
+      "felony": {
+        "eligible": "conditional",
+        "waitYears": 10,
+        "waitFrom": "later of conviction or release from incarceration, with no new conviction during the period",
+        "automatic": false,
+        "note": "Class 5 and Class 6 felonies and felony larceny can be sealed by petition after 10 conviction-free years; other felonies cannot. A lifetime limit of two sealing events applies.",
+        "citation": "Va. Code § 19.2-392.12",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old citation was § 19.2-392.6 (automatic sealing); felony sealing is by petition under § 19.2-392.12, effective July 1, 2026, not the '2021 Clean Slate Act' date.",
+        "varies": false
+      },
+      "dui": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "DUI convictions are excluded from Virginia's sealing law.",
+        "citation": "Va. Code § 19.2-392.12",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "dismissed": {
+        "eligible": true,
+        "waitYears": 0,
+        "waitFrom": null,
+        "automatic": true,
+        "note": "Misdemeanor acquittals and dismissals with prejudice are sealed automatically at the end of the case unless you object (from July 1, 2026). Nolle prosequi and felony non-convictions need a petition, and you can also petition anytime to expunge a dismissed or acquitted charge.",
+        "citation": "Va. Code §§ 19.2-392.8, 19.2-392.2",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "corrected",
+        "issue": "Old entry cited only § 19.2-392.2 expungement; automatic sealing for misdemeanor acquittals/dismissals took effect July 1, 2026, and 2025 amendments moved nolle prosequi cases to the petition process.",
+        "varies": true
+      },
+      "domestic": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Domestic assault convictions are excluded from Virginia's sealing law.",
+        "citation": "Va. Code § 19.2-392.12",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      },
+      "sexual": {
+        "eligible": false,
+        "waitYears": null,
+        "waitFrom": null,
+        "automatic": false,
+        "note": "Sex crimes are excluded from Virginia's sealing law under the 2025 amendments.",
+        "citation": "Va. Code § 19.2-392.12 (as amended 2025, SB1466/HB2723)",
+        "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+        "status": "verified",
+        "issue": null,
+        "varies": false
+      }
+    },
+    "juvenile": {
+      "automatic": true,
+      "when": "Age 19 and 5 years since last juvenile hearing",
+      "notes": "Juvenile court records are destroyed automatically each year once you are at least 19 and five years have passed since your last juvenile hearing. Most offenses that would be felonies if committed by an adult are excluded from automatic destruction.",
+      "citation": "Va. Code §§ 16.1-306(A), 16.1-307",
+      "source_url": "https://ccresourcecenter.org/state-restoration-profiles/virginia-restoration-of-rights-pardon-expungement-sealing/",
+      "status": "corrected",
+      "issue": "Old value said not automatic and required a circuit-court petition; destruction under § 16.1-306(A) is automatic for eligible records."
+    }
+  }
+}

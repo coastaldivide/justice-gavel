@@ -2,7 +2,7 @@
  * i18n_core_path.int.test.js — the core-path endpoints answer in the language
  * the app asks for (?lang= / Accept-Language), and reminders / follower
  * notices / invite messages go out in each person's saved language
- * (users.preferred_language). Real Postgres, mocked Expo push + Twilio.
+ * (users.preferred_language). Real Postgres, mocked Expo push + Telnyx.
  *
  *   1 rights card / states / legacy card: es, pt, vi; `language` honest; Vary
  *   2 guidance, help (notes, PD note, report reasons, report reply, errors), bail fee note
@@ -17,7 +17,7 @@ import { describeIntegration, initSuite } from './_harness.js';
 import { CATALOGS } from '../../i18n/index.js';
 
 const expo = { server: null, received: [] };
-const twilio = { server: null, received: [] };
+const twilio = { server: null, received: [] };   // Telnyx mock (name kept)
 const dayPlus = (days) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 const M = (l, k) => CATALOGS[l][k];
 
@@ -35,13 +35,15 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     });
     await new Promise(r => expo.server.listen(0, '127.0.0.1', r));
     process.env.EXPO_PUSH_API_URL = `http://127.0.0.1:${expo.server.address().port}/--/api/v2`;
+    // Telnyx Messaging API v2 mock: records { To, Body } for the assertions below
     twilio.server = http.createServer((req, res) => {
       let data = '';
       req.on('data', c => { data += c; });
       req.on('end', () => {
-        twilio.received.push(Object.fromEntries(new URLSearchParams(data)));
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ sid: `SM${twilio.received.length}` }));
+        let j = {}; try { j = JSON.parse(data); } catch { /* keep {} */ }
+        twilio.received.push({ To: j.to, From: j.from, Body: j.text, auth: req.headers.authorization, url: req.url });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ data: { id: `msg-${twilio.received.length}` } }));
       });
     });
     await new Promise(r => twilio.server.listen(0, '127.0.0.1', r));
@@ -60,7 +62,7 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
   });
 
   afterAll(async () => {
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
     await new Promise(r => expo.server.close(r));
     await new Promise(r => twilio.server.close(r));
   });
@@ -197,8 +199,8 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
 
     // Bao (Vietnamese) has no device but opted into texts: the SMS is in Vietnamese.
     Object.assign(process.env, {
-      TWILIO_ACCOUNT_SID: 'ACjgi18n', TWILIO_AUTH_TOKEN: 'secret', TWILIO_FROM_NUMBER: '+16155550000',
-      TWILIO_API_BASE: `http://127.0.0.1:${twilio.server.address().port}`,
+      TELNYX_API_KEY: 'KEYjgi18n', TELNYX_FROM_NUMBER: '+16155550000',
+      TELNYX_API_BASE: `http://127.0.0.1:${twilio.server.address().port}`,
     });
     await ctx.request().post('/api/push/language').set(bao.headers).send({ language: 'vi' });
     await ctx.request().put('/api/court-dates/preferences').set(bao.headers).send({ sms_reminders: true, phone: '(615) 555-0177' });
@@ -209,9 +211,10 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     const sms = twilio.received.at(-1);
     expect(sms.To).toBe('+16155550177');
     expect(sms.Body).toContain('Còn 3 ngày đến ngày ra tòa');
-    expect(sms.Body).toContain('Trả lời STOP để ngừng nhận tin.');
+    expect(sms.Body).toContain('Trả lời STOP để ngừng nhận tin');
+    expect(sms.Body.startsWith('Justice Gavel: ')).toBe(true);
     expect(sms.Body).not.toMatch(/Court date|Reply STOP/);
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
   });
 
   // ── 5 ─────────────────────────────────────────────────────────────────────

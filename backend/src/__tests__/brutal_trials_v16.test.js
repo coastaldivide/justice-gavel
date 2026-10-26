@@ -389,7 +389,7 @@ describe('11. JuvenileJustice + MentalHealthDiversion', () => {
     expect(src).toContain('Juvenile');
     expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
     expect(src).toContain('PROCESS_STEPS');
-    expect(src).toContain('SEALING_DATA');
+    expect(src).toContain('/expungement/juvenile');   // sealing rules come from the server, verified only (Oct 2026)
   });
 
 

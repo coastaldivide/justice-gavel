@@ -50,7 +50,7 @@ or legal sign-off · ✅ = built (filled in as work lands).
 | Improvement | Why it matters | Status |
 |---|---|---|
 | Reminders at 7 days, 3 days, 1 day and the morning of | Matches proven court-reminder programs | ✅ per hearing, user's zone |
-| Fallback chain: push → email → SMS (SMS only when Twilio is configured) | Push alone gets missed | ✅ each step skipped cleanly when not configured; SMS opt-in · ⏸ Owner: `TWILIO_*`, `RESEND_API_KEY` |
+| Fallback chain: push → browser push → email → SMS (SMS via Telnyx, when configured) | Push alone gets missed | ✅ each step skipped cleanly when not configured; SMS opt-in · ⏸ Owner: `TWILIO_*`, `RESEND_API_KEY` |
 | Add to phone calendar (.ics) | Survives app deletion | ✅ all-day or timed (TZID + VTIMEZONE) |
 | Court date shows courthouse name, address, phone, directions | People get lost on the day | ✅ |
 | "What to bring / what to wear" checklist on the court date | Reduces no-shows and bad first impressions | ✅ from existing app content, sourced · ⏸ Owner: lawyer review |
@@ -65,7 +65,7 @@ or legal sign-off · ✅ = built (filled in as work lands).
 2. ✅ Combined lawyer + bail results with filters, open-now, report-a-listing.
 3. ✅ Court-date reminder schedule, .ics, courthouse details, missed-date guidance.
 4. ✅ Family sharing and follower reminders.
-5. Owner items: lawyer review of rights content, Twilio/Resend keys, listing-claim outreach.
+5. Owner items: lawyer review of rights content, Resend / VAPID / EAS push credentials / Telnyx account + 10DLC, listing-claim outreach.
 
 Each step is tested on the Real-World Test Script before the next begins.
 

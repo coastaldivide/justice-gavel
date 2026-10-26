@@ -74,7 +74,12 @@ export const REMINDER_REASON = perLang(() => t('x_permissions_turn_notifications
 
 /** Ask for notifications in context; registers the push token when granted. */
 export async function requestNotificationsInContext(reason: string = REMINDER_REASON()): Promise<PermissionAnswer> {
-  if (Platform.OS === 'web') return 'declined';     // e-mail reminders cover web
+  if (Platform.OS === 'web') {
+    // Browser push (services/webPush.ts); e-mail still covers browsers without it.
+    const { subscribeWebPush } = await import('./webPush');
+    const r = await subscribeWebPush({ ask: true });
+    return r === 'granted' ? 'granted' : r === 'denied' ? 'denied' : 'declined';
+  }
   const cur = await Notifications.getPermissionsAsync().catch(() => null);
   let granted = cur?.status === 'granted';
   if (!granted) {

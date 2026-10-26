@@ -80,7 +80,7 @@ async function deliverAlert(contact, text, subject) {
 
 // POST /api/alerts — text / e-mail the person's emergency contacts.
 // The answer says, per contact, whether the alert actually went out: with no
-// SMS provider (Twilio) or e-mail provider (Resend) configured nothing is sent,
+// SMS provider (Telnyx — services/sms.js) or e-mail provider (Resend) configured nothing is sent,
 // and the app then opens the phone's own messages app with `message`.
 // Location is optional (permission denied must never block an SOS).
 router.post('/', authRequired, alertsLimiter, async (req, res) => {

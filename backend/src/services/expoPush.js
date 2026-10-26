@@ -122,6 +122,7 @@ export async function checkPushReceipts({ db: dbArg, minAgeMinutes = 15, limit =
       WHERE checked_at IS NULL AND created_at < NOW() - (? * INTERVAL '1 minute')
       ORDER BY created_at ASC LIMIT ?`, [minAgeMinutes, limit]);
   let checked = 0; let removed = 0;
+  const failedTickets = [];
   for (let i = 0; i < rows.length; i += RECEIPT_CHUNK) {
     const chunk = rows.slice(i, i + RECEIPT_CHUNK);
     let receipts;
@@ -137,8 +138,16 @@ export async function checkPushReceipts({ db: dbArg, minAgeMinutes = 15, limit =
       if (dead) { await forgetPushToken(db, row.token); removed++; }
       await db.run('UPDATE push_tickets SET checked_at = NOW(), receipt_status = ?, receipt_error = ? WHERE ticket_id = ?',
         [rc.status || null, rc.details?.error || null, row.ticket_id]);
+      if (rc.status === 'error') failedTickets.push({ ticket_id: row.ticket_id, error: rc.details?.error || rc.message || 'push_receipt_error' });
       checked++;
     }
+  }
+  // A reminder counted as 'sent' on an accepted ticket whose receipt then failed
+  // (APNs/FCM credentials missing, device gone, rate limit) never reached the
+  // person: hand it back to the dispatcher for the next channel (e-mail).
+  if (failedTickets.length) {
+    const { requeueAfterPushReceiptFailure } = await import('./reminderDispatcher.js');
+    await requeueAfterPushReceiptFailure(db, failedTickets).catch(e => logger.warn({ err: e.message }, '[expoPush] reminder requeue failed'));
   }
   await db.run(`DELETE FROM push_tickets WHERE created_at < NOW() - INTERVAL '2 days'`).catch(e => logger.warn({ err: e.message }, '[expoPush] ticket purge failed'));
   if (checked || removed) logger.info({ checked, removed }, '[expoPush] receipts checked');

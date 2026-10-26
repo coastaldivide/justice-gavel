@@ -1,0 +1,524 @@
+{
+ "ID": {
+  "name": "Idaho",
+  "remedy": "Shielding from public disclosure (Idaho Code \u00a7 67-3004(11)); set-aside/dismissal after withheld judgment or probation (\u00a7 19-2604); non-conviction record expungement (\u00a7 67-3004(10)). Idaho has no general conviction expungement.",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence, including probation, fines and restitution",
+    "automatic": false,
+    "note": "Most non-violent misdemeanors can be shielded from public view by court petition 5 years after the whole sentence ends, with no new convictions; only one shielding is allowed per lifetime. A judge may also set aside a conviction once probation is completed without a violation, but the record stays public.",
+    "citation": "Idaho Code \u00a7 67-3004(11); \u00a7 19-2604(1)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title67/T67CH30/SECT67-3004/",
+    "status": "corrected",
+    "issue": "App called this expungement of first-offense misdemeanors; Idaho's remedy is one-time 'shielding' (public access only), and it is not limited to first offenses.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence, including probation/parole, fines and restitution",
+    "automatic": false,
+    "note": "Only felony drug possession can be shielded (5 years after the sentence ends, once per lifetime). Other felonies can only be set aside and dismissed, or reduced to a misdemeanor, by a judge after probation is completed, and that record stays public.",
+    "citation": "Idaho Code \u00a7 67-3004(11)(a); \u00a7 19-2604(1), (3)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title67/T67CH30/SECT67-3004/",
+    "status": "corrected",
+    "issue": "App said non-violent felonies are eligible after 5 years; shielding covers only felony drug possession under \u00a7 37-2732(a), (c) or (e).",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "An ordinary misdemeanor DUI can be shielded 5 years after the sentence ends; excessive DUI (BAC 0.20+) is excluded. A set-aside DUI still counts as a prior for repeat-DUI penalties.",
+    "citation": "Idaho Code \u00a7 67-3004(11)(b) (excludes only \u00a7 18-8004C excessive DUI)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title67/T67CH30/SECT67-3004/",
+    "status": "corrected",
+    "issue": "App said DUI is not eligible; only excessive DUI (\u00a7 18-8004C) is on the shielding exclusion list.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal (or 1 year after arrest if never charged)",
+    "automatic": false,
+    "note": "If all charges were dismissed, you were acquitted, or you were not charged within one year of arrest, you can ask the Idaho State Police in writing to expunge the arrest record and ask the court to seal the file. Dismissals after a withheld judgment do not qualify.",
+    "citation": "Idaho Code \u00a7 67-3004(10)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title67/T67CH30/SECT67-3004/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "domestic": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Domestic battery and domestic assault cannot be shielded. A judge may still set aside the conviction after probation, but the record stays public.",
+    "citation": "Idaho Code \u00a7 67-3004(11)(b); \u00a7 19-2604(1)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title67/T67CH30/SECT67-3004/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sexual battery and indecent exposure cannot be shielded, and offenses requiring sex-offender registration cannot be dismissed or reduced under the set-aside law.",
+    "citation": "Idaho Code \u00a7 67-3004(11)(b); \u00a7 19-2604(4)",
+    "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title19/T19CH26/SECT19-2604",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Petition: age 18 + 1 yr (misd.) or 3 yrs (felony) after case ends",
+   "notes": "Juvenile records are not cleared automatically; you petition the court once you are 18 and 1 year (misdemeanor/status) or 3 years (felony or commitment) has passed since court jurisdiction or release ended. Serious violent offenses such as murder, rape, kidnapping and armed robbery cannot be expunged.",
+   "citation": "Idaho Code \u00a7 20-525A",
+   "source_url": "https://legislature.idaho.gov/statutesrules/idstat/Title20/T20CH5/SECT20-525A",
+   "status": "corrected",
+   "issue": "App omitted the 1-year/3-year waiting periods after jurisdiction ends."
+  }
+ },
+ "IL": {
+  "name": "Illinois",
+  "remedy": "Expungement (non-convictions and completed supervision/qualified probation) and sealing (convictions), 20 ILCS 2630/5.2; automatic Clean Slate sealing begins January 1, 2029.",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 2,
+    "waitFrom": "end of your last sentence in any case",
+    "automatic": false,
+    "note": "Most misdemeanor convictions can be sealed by petition 2 years after your most recent sentence ends (3 years before June 1, 2026). Automatic sealing under the Clean Slate Act is scheduled to start in 2029.",
+    "citation": "20 ILCS 2630/5.2(c)(2)(D), (c)(3), as amended by P.A. 104-459 (HB 1836), eff. June 1, 2026",
+    "source_url": "https://www.illinoislegalaid.org/index%2Ephp/node/190196",
+    "status": "corrected",
+    "issue": "App said 3 years; P.A. 104-459 cut the misdemeanor sealing wait to 2 years effective June 1, 2026. Illinois seals (not expunges) convictions.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "end of your last sentence in any case",
+    "automatic": false,
+    "note": "Most felony convictions, not just Class 3 and 4, can be sealed by petition 3 years after your last sentence ends, or 2 years if the sentence was completed without jail/prison time or revoked probation. The wait can be waived if you earned a diploma, GED or degree while serving the sentence.",
+    "citation": "20 ILCS 2630/5.2(c)(2)(F), (c)(3), as amended by P.A. 104-459",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/illinois-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said only Class 3-4 felonies after 4 years; most felonies are sealable after 3 years (2 for non-incarceration sentences from June 1, 2026).",
+    "varies": true
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DUI convictions and DUI supervision cannot be sealed or expunged in Illinois; dismissed or acquitted DUI charges can still be expunged.",
+    "citation": "20 ILCS 2630/5.2(a)(3)(A)",
+    "source_url": "https://ilga.gov/Documents/legislation/ilcs/documents/002026300K5.2.htm",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": false,
+    "note": "Arrests and charges that ended in dismissal, acquittal or release without charges can be expunged by petition right away, and you can ask the judge to seal them at the final hearing. From 2029 the court will seal them automatically.",
+    "citation": "20 ILCS 2630/5.2(b)(1), (b)(2)(A), (g)",
+    "source_url": "https://ilga.gov/Documents/legislation/ilcs/documents/002026300K5.2.htm",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "domestic": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Domestic battery convictions and supervision, and violations of protective or no-contact orders, cannot be sealed.",
+    "citation": "20 ILCS 2630/5.2(a)(3)(C)(iii)",
+    "source_url": "https://ilga.gov/Documents/legislation/ilcs/documents/002026300K5.2.htm",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex offense convictions under Article 11 of the Criminal Code cannot be sealed, except prostitution-related and misdemeanor public indecency offenses.",
+    "citation": "20 ILCS 2630/5.2(a)(3)(C)(i), (v)",
+    "source_url": "https://ilga.gov/Documents/legislation/ilcs/documents/002026300K5.2.htm",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "Automatic: at case end for minor cases; 2 years after closure for most others",
+   "notes": "Courts automatically expunge dismissed cases, completed supervision and Class B/C misdemeanor adjudications, and most other adjudications 2 years after the case closes if there are no new charges or convictions; police contacts with no charges are wiped yearly. Listed serious ('disqualified') offenses need a petition after 2 years, and first-degree murder and registrable sex offenses cannot be expunged.",
+   "citation": "705 ILCS 405/5-915(0.1), (0.2), (0.3), (2)",
+   "source_url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/070504050K5-915.htm",
+   "status": "corrected",
+   "issue": "App tied automatic expungement to age 18 and minor offenses only; it is not age-based and covers most adjudications after 2 years."
+  }
+ },
+ "IN": {
+  "name": "Indiana",
+  "remedy": "Expungement (records sealed for non-convictions, misdemeanors and Level 6 felonies; higher felonies stay public but are marked 'expunged'), IC 35-38-9.",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "date of conviction",
+    "automatic": false,
+    "note": "Misdemeanor convictions can be expunged by petition 5 years after conviction (sooner if the prosecutor agrees in writing); the record is sealed. You only get one expungement petition per lifetime, so include all eligible convictions.",
+    "citation": "IC 35-38-9-2",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 8,
+    "waitFrom": "date of conviction",
+    "automatic": false,
+    "note": "Level 6 (formerly Class D) felonies that did not cause bodily injury can be expunged 8 years after conviction and sealed. Higher felonies need 8-10 years and stay public but marked 'expunged'.",
+    "citation": "IC 35-38-9-3 (Level 6); IC 35-38-9-4, -5 (higher felonies)",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "corrected",
+    "issue": "App cited IC 35-38-9-4 and marked it conditional; Level 6 felonies fall under IC 35-38-9-3 and are eligible unless an exclusion applies.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "date of conviction",
+    "automatic": false,
+    "note": "A misdemeanor OWI can be expunged like any other misdemeanor 5 years after conviction; a felony OWI follows the felony waiting periods.",
+    "citation": "IC 35-38-9-2",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "corrected",
+    "issue": "App said OWI is not eligible; IC 35-38-9 has no OWI exclusion.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": true,
+    "note": "Since July 1, 2022 courts must automatically expunge cases that end in dismissal of all charges, acquittal or a vacated conviction (usually effective 60 days later). If you were arrested but never charged, you can petition after 1 year, with no filing fee.",
+    "citation": "IC 35-38-9-1",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "corrected",
+    "issue": "App described this as petition-only 'restricted access'; dismissals and acquittals are now expunged automatically.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "date of conviction",
+    "automatic": false,
+    "note": "A misdemeanor domestic battery conviction can be expunged 5 years after conviction, but expungement does not restore your firearm rights.",
+    "citation": "IC 35-38-9-2",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "corrected",
+    "issue": "App said domestic battery is not eligible; the statute does not exclude it.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "People who are sex or violent offenders under Indiana law and anyone with a felony sex crime cannot get expungement; only a non-registrable misdemeanor sex-related offense can be expunged under the 5-year misdemeanor rule.",
+    "citation": "IC 35-38-9-2(b), -3(b), -4(b), -5(b)",
+    "source_url": "https://www.in.gov/judiciary/iocs/files/pubs-trial-court-courtmgmt-expungement-detailed.pdf",
+    "status": "corrected",
+    "issue": "App said all sex offenses are barred; the misdemeanor bar applies only to sex or violent offenders, so a narrow set of misdemeanors remains eligible.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Petition any time",
+   "notes": "You can petition the juvenile court at any time to expunge delinquency records; the judge weighs factors such as your age, the offense and time without new contact. Juvenile cases with no disposition after one year and no active prosecution are expunged automatically.",
+   "citation": "IC 31-39-8-2, -3; IC 35-38-9-1",
+   "source_url": "https://WWW.IN.GOV/ipdc/files/TITLE31_AR39_ch8.pdf",
+   "status": "corrected",
+   "issue": "App said age 18 or 1 year post-case; Indiana sets no minimum age or wait for a juvenile expungement petition."
+  }
+ },
+ "IA": {
+  "name": "Iowa",
+  "remedy": "Expungement of non-conviction records (Iowa Code \u00a7 901C.2), of a single misdemeanor conviction (\u00a7 901C.3) and of a completed deferred judgment (\u00a7 907.9); felony convictions only by governor's pardon.",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 8,
+    "waitFrom": "date of conviction",
+    "automatic": false,
+    "note": "You can apply to expunge one misdemeanor conviction (or several from the same incident) once in your lifetime, more than 8 years after conviction, if all fines and costs are paid and no charges are pending. Many offenses, including OWI, domestic abuse assault, harassment and weapons offenses, are excluded.",
+    "citation": "Iowa Code \u00a7 901C.3",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "corrected",
+    "issue": "App cited \u00a7 901C.2 (non-conviction records); misdemeanor expungement is \u00a7 901C.3, limited to one per lifetime.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Iowa has no expungement for felony convictions; the only routes are a governor's pardon or, if you received a deferred judgment, expungement after successfully finishing probation.",
+    "citation": "Iowa Code ch. 901C (no felony conviction provision); \u00a7 907.9(4)",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "corrected",
+    "issue": "App said Class D felonies are eligible after 8 years; no Iowa statute authorizes expunging a felony conviction.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "OWI convictions cannot be expunged under Iowa's misdemeanor expungement law.",
+    "citation": "Iowa Code \u00a7 901C.3(1)(d)",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0.5,
+    "waitFrom": "acquittal or dismissal",
+    "automatic": false,
+    "note": "If you were acquitted or all charges were dismissed, the court must expunge the record on application 180 days after the case ends, once that case's court costs and fees are paid. Dismissals after a deferred judgment follow \u00a7 907.9 instead.",
+    "citation": "Iowa Code \u00a7 901C.2",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "corrected",
+    "issue": "App said no waiting period; \u00a7 901C.2 requires 180 days (waivable for good cause) and payment of court debt.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Domestic abuse assault convictions cannot be expunged under Iowa's misdemeanor expungement law.",
+    "citation": "Iowa Code \u00a7 901C.3(1)(h)",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex offenses (as defined in the sex-offender registry law) cannot be expunged, and Iowa has no felony expungement.",
+    "citation": "Iowa Code \u00a7 901C.3(1)(e); \u00a7 692A.101",
+    "source_url": "https://www.legis.iowa.gov/docs/code/2026/901C.html",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Court-set hearing at age 18 or 2 yrs after last action (later)",
+   "notes": "For delinquency adjudications the court schedules a sealing hearing on its own (no petition needed) at the later of age 18 or 2 years after the last official action, and seals the record if there are no later serious offenses. OWI adjudications and youthful-offender cases are excluded, and felonies and aggravated misdemeanors are sealed only if the court finds it in the public's best interest.",
+   "citation": "Iowa Code \u00a7 232.150",
+   "source_url": "https://www.legis.iowa.gov/docs/code/2026/232.150.pdf",
+   "status": "corrected",
+   "issue": "App said records are only confidential with a petition; the court must set a sealing hearing on its own motion for adjudications."
+  }
+ },
+ "KS": {
+  "name": "Kansas",
+  "remedy": "Expungement of convictions and diversions (K.S.A. 21-6614) and of arrest records (K.S.A. 22-2410).",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "completion of sentence or discharge from probation/parole",
+    "automatic": false,
+    "note": "Most misdemeanors can be expunged by petition 3 years after you finish your sentence or are discharged from probation, if you have no felony conviction in the past 2 years and no pending charges.",
+    "citation": "K.S.A. 21-6614(a), (h)",
+    "source_url": "https://kslegislature.gov/li/s/statute/021_000_0000_chapter/021_066_0000_article/021_066_0014_section/021_066_0014_k.pdf",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "completion of sentence or discharge from probation/parole/postrelease",
+    "automatic": false,
+    "note": "Lower-level felonies (nondrug severity levels 6-10, drug level 5) can be expunged by petition 3 years after you finish your sentence; more serious felonies wait 5 years.",
+    "citation": "K.S.A. 21-6614(a), (c)",
+    "source_url": "https://kjc.ks.gov/home/showpublisheddocument/1654/638624746527670000",
+    "status": "corrected",
+    "issue": "App said only non-person, non-drug felonies after 5 years; low-level felonies wait 3 years and person/drug felonies are not categorically barred.",
+    "varies": true
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence or discharge from probation",
+    "automatic": false,
+    "note": "A first DUI conviction or diversion can be expunged 5 years after the sentence ends; a second or later DUI waits 10 years (7 for offenses committed July 2014-June 2015). Commercial-vehicle DUI cannot be expunged.",
+    "citation": "K.S.A. 21-6614(d), (e)",
+    "source_url": "https://kslegislature.gov/li/s/statute/021_000_0000_chapter/021_066_0000_article/021_066_0014_section/021_066_0014_k.pdf",
+    "status": "corrected",
+    "issue": "App said DUI is not eligible; Kansas allows DUI expungement after 5 or 10 years.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": false,
+    "note": "The court must expunge an arrest record on petition if you were found not guilty, no probable cause was found, it was mistaken identity, or charges were dismissed and expungement serves justice. A completed diversion can also be expunged.",
+    "citation": "K.S.A. 22-2410",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/kansas-restoration-of-rights-pardon-expungement-sealing",
+    "status": "corrected",
+    "issue": "App cited K.S.A. 21-6614; arrest and dismissal expungement is under K.S.A. 22-2410.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "completion of sentence or discharge from probation",
+    "automatic": false,
+    "note": "Domestic battery is not on Kansas's list of non-expungeable crimes, so a misdemeanor domestic battery follows the 3-year misdemeanor rule. Expungement does not remove federal firearm restrictions for domestic violence.",
+    "citation": "K.S.A. 21-6614(a), (e)",
+    "source_url": "https://kslegislature.gov/li/s/statute/021_000_0000_chapter/021_066_0000_article/021_066_0014_section/021_066_0014_k.pdf",
+    "status": "corrected",
+    "issue": "App said domestic battery is not eligible; it is absent from the \u00a7 21-6614(e) exclusion list.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Rape, sodomy, indecent liberties, child sex crimes and aggravated sexual battery can never be expunged, and no conviction can be expunged while you must register as an offender. Other sex-related offenses may qualify after registration ends.",
+    "citation": "K.S.A. 21-6614(e), (f)",
+    "source_url": "https://kslegislature.gov/li/s/statute/021_000_0000_chapter/021_066_0000_article/021_066_0014_section/021_066_0014_k.pdf",
+    "status": "corrected",
+    "issue": "App said all sex offenses are barred; the bar covers listed offenses and current registrants only.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Petition; granted at age 23 or 2 yrs after discharge",
+   "notes": "Juvenile records are not expunged automatically; you (or a parent while you are a minor) petition the court, which grants it if you are 23 or 2 years have passed since discharge, with no later convictions or pending charges. Certain serious violent and sex offenses are excluded.",
+   "citation": "K.S.A. 38-2312",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/kansas-restoration-of-rights-pardon-expungement-sealing",
+   "status": "corrected",
+   "issue": "App said age 18 or 2 years post-discharge; the statute uses age 23 or 2 years after final discharge (confirmed via CCRC profile, not the statute text)."
+  }
+ },
+ "KY": {
+  "name": "Kentucky",
+  "remedy": "Expungement (conviction vacated and records expunged) under KRS 431.073 (felonies) and 431.078 (misdemeanors); automatic expungement of acquittals and dismissals with prejudice under KRS 431.076.",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence or probation, whichever is later",
+    "automatic": false,
+    "note": "Misdemeanors and violations can be expunged by petition 5 years after the sentence or probation ends, if you have no convictions in those 5 years, no pending charges, and the enhancement period for the offense has passed. Sex offenses and offenses against a child are excluded.",
+    "citation": "KRS 431.078",
+    "source_url": "https://kycourts.gov/Legal-Forms/Legal Forms/496.2.pdf",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "felony": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of sentence, probation or parole, whichever is later",
+    "automatic": false,
+    "note": "Most Class D felonies can be vacated and expunged by petition 5 years after the sentence, probation or parole ends, with no convictions in the past 5 years. Higher felonies (Class A-C) are eligible only with a full pardon.",
+    "citation": "KRS 431.073(1), (2), (5)",
+    "source_url": "https://apps.legislature.ky.gov/LAW/STATUTES/statute.aspx?id=53904",
+    "status": "corrected",
+    "issue": "App marked this conditional; any Class D felony is eligible unless on the exclusion list (DUI, sex offenses, offenses against a child, serious injury).",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "date of offense (enhancement look-back) and at least 5 years after sentence",
+    "automatic": false,
+    "note": "A misdemeanor DUI can be expunged only after its 10-year look-back period for repeat-offense enhancement has passed and 5 years after the sentence ends. Felony DUI cannot be expunged.",
+    "citation": "KRS 431.078; KRS 431.073(1)(d); KRS 189A.010",
+    "source_url": "https://kycourts.gov/Legal-Forms/Legal Forms/496.2.pdf",
+    "status": "corrected",
+    "issue": "App said DUI is never eligible; only felony DUI is excluded, and misdemeanor DUI qualifies once the enhancement period expires.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "acquittal or dismissal with prejudice",
+    "automatic": true,
+    "note": "Charges that end in acquittal or dismissal with prejudice (after March 27, 2020) are expunged automatically, unless dismissed in exchange for a guilty plea to another charge. Dismissals without prejudice can be expunged by petition after 1 year (misdemeanor) or 3 years (felony).",
+    "citation": "KRS 431.076",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/kentucky-restoration-of-rights-pardon-expungement-sealing-2/",
+    "status": "corrected",
+    "issue": "App said eligible by petition; relief has been automatic since HB 327 (2020) for acquittals and dismissals with prejudice.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence or probation",
+    "automatic": false,
+    "note": "A misdemeanor domestic violence assault can be expunged like other misdemeanors once 5 years have passed and its enhancement period has expired, unless the victim was a child. Felony domestic assault (KRS 508.032) cannot be expunged.",
+    "citation": "KRS 431.078; KRS 431.073(1)(d)",
+    "source_url": "https://apps.legislature.ky.gov/LAW/STATUTES/statute.aspx?id=53904",
+    "status": "corrected",
+    "issue": "App said domestic violence is never eligible; only felony domestic assault under KRS 508.032 and offenses against a child are excluded.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex offenses cannot be expunged in Kentucky, whether misdemeanor or felony.",
+    "citation": "KRS 431.078; KRS 431.073(1)(d)",
+    "source_url": "https://apps.legislature.ky.gov/LAW/STATUTES/statute.aspx?id=53904",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Petition 2 yrs after court jurisdiction ends",
+   "notes": "You can petition to expunge juvenile records 2 years after the court's jurisdiction ends or you are released from commitment; dismissed cases and 'not delinquent' findings are expunged automatically. Sex offenses and violent offenses are excluded, and only one felony (or one incident) can be expunged.",
+   "citation": "KRS 610.330",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/kentucky-restoration-of-rights-pardon-expungement-sealing-2/",
+   "status": "corrected",
+   "issue": "App required age 18; the statute runs the 2-year wait from end of jurisdiction (confirmed via CCRC profile last updated 2021, not the statute text)."
+  }
+ }
+}

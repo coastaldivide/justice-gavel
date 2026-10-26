@@ -1,0 +1,524 @@
+{
+ "OK": {
+  "name": "Oklahoma",
+  "remedy": "Expungement (sealing of records); Clean Slate automatic expungement for some records",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "conviction",
+    "automatic": true,
+    "note": "A misdemeanor conviction can be expunged 5 years after conviction if you have no felony record, no pending charges and court costs are paid (no wait if you only got a fine under $501). Under Oklahoma's Clean Slate law (HB 3316, effective Nov. 1, 2022; automatic processing began 2025) eligible misdemeanor records are expunged automatically unless a prosecutor or agency objects.",
+    "citation": "22 O.S. \u00a7 18(A)(10)-(11), (C); 22 O.S. \u00a7 19",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Old note did not mention Clean Slate automatic expungement or the no-wait rule for fine-only cases.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "One nonviolent felony can be expunged by petition 5 years after the sentence is completed if you have no other felony and no misdemeanor in the past 7 years; up to two felonies (not violent, not sex-offender registrable) after 10 years.",
+    "citation": "22 O.S. \u00a7 18(A)(12)-(13); 22 O.S. \u00a7 19",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Wait runs from completion of sentence, not conviction; the 10-year two-felony route was missing.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "conviction",
+    "automatic": false,
+    "note": "A misdemeanor DUI is treated like other misdemeanor convictions: it can be expunged 5 years after conviction if you have no felony and no pending charges. A felony DUI must meet the felony rules.",
+    "citation": "22 O.S. \u00a7 18(A)(10)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said DUI is not eligible; \u00a7 18 has no DUI exclusion for misdemeanor convictions (CCRC lists no DUI exclusion).",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": true,
+    "note": "Acquittals, reversed convictions and uncharged arrests can be expunged, and dismissed charges qualify once you have no felony conviction and the charge cannot be refiled; dismissals after a deferred sentence wait 1 year (misdemeanor) or 10 years (felony). Many of these records are now expunged automatically under Clean Slate.",
+    "citation": "22 O.S. \u00a7 18(A)(1)-(3), (5)-(9), (C)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Old note omitted the Clean Slate automatic process and the deferred-sentence waiting periods.",
+    "varies": true
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "conviction",
+    "automatic": false,
+    "note": "A misdemeanor domestic assault conviction falls under the general misdemeanor rule (5 years after conviction). Felony domestic violence counts as a violent offense and is excluded from the nonviolent-felony routes.",
+    "citation": "22 O.S. \u00a7 18(A)(10), (12)-(13)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said domestic offenses are barred; \u00a7 18 has no domestic-violence exclusion for misdemeanor convictions.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Convictions that require sex-offender registration are excluded from Oklahoma's felony and deferred-felony expungement routes. A conviction that has been pardoned may be expunged.",
+    "citation": "22 O.S. \u00a7 18(A)(7), (13)-(14)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said fully barred; registrable offenses are excluded from felony routes but the pardon route remains.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Age 18+ after completing the case",
+   "notes": "Juvenile records are confidential; a court may seal them 1 year after the case ends, and a person 18 or older who finished all requirements and has no adult arrests may apply (orally while the case is open) for expungement. No automatic expungement.",
+   "citation": "10A O.S. \u00a7\u00a7 2-6-108(B), 2-6-109",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/oklahoma-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "verified",
+   "issue": "Age was lowered from 21 to 18 in 2021 (HB 1799); no first-offense or nonviolent requirement in statute."
+  }
+ },
+ "OR": {
+  "name": "Oregon",
+  "remedy": "Set-aside (record sealing) under ORS 137.225",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "conviction or release from jail, whichever is later",
+    "automatic": false,
+    "note": "A Class A misdemeanor can be set aside 3 years after conviction or release; Class B and C misdemeanors after 1 year. You must finish your sentence and have no new conviction during the wait; you file a motion with the court.",
+    "citation": "ORS 137.225(1)(b)-(d), (5)",
+    "source_url": "https://www.courts.oregon.gov/courts/marion/help/Pages/setaside.aspx",
+    "status": "verified",
+    "issue": null,
+    "varies": true
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "conviction or release from prison, whichever is later",
+    "automatic": false,
+    "note": "A Class C felony can be set aside after 5 years; a Class B felony after 7 years unless it is a crime against a person. Class A felonies cannot be set aside.",
+    "citation": "ORS 137.225(1)(b), (5)",
+    "source_url": "https://www.courts.oregon.gov/courts/marion/help/Pages/setaside.aspx",
+    "status": "verified",
+    "issue": "Added that Class B non-person felonies qualify after 7 years and Class A felonies are not eligible.",
+    "varies": true
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DUII convictions cannot be set aside in Oregon because traffic offenses are excluded; this applies even when a DUII diversion ended in dismissal.",
+    "citation": "ORS 137.225(7)(a), (8)(a)",
+    "source_url": "https://www.courts.oregon.gov/courts/marion/help/Pages/setaside.aspx",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": false,
+    "note": "Acquittals and dismissed charges can be set aside at any time; an arrest or citation with no charges filed can be set aside 60 days after the prosecutor declines. You file a motion; Oregon does not seal these automatically for adults.",
+    "citation": "ORS 137.225(1)(a)",
+    "source_url": "https://www.courts.oregon.gov/courts/marion/help/Pages/setaside.aspx",
+    "status": "verified",
+    "issue": "No adult automatic set-aside was confirmed; the Oregon Judicial Department self-help page says a motion is required.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "conviction or release, whichever is later",
+    "automatic": false,
+    "note": "Domestic violence convictions are not excluded as a group: a misdemeanor such as Assault IV can be set aside after 3 years. Some child- and elder-abuse offenses are excluded, and victims receive notice of the motion.",
+    "citation": "ORS 137.225(1), (6), (8)(d), (13)(b)",
+    "source_url": "https://apps.oregonlegislature.gov/liz/2024R1/Downloads/MeasureDocument/HB4097",
+    "status": "corrected",
+    "issue": "App said domestic violence offenses are not eligible; ORS 137.225 has no general domestic-violence exclusion.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex crimes cannot be set aside unless they fall within narrow statutory exceptions (for example, certain lower-level offenses where the person has been relieved of registration).",
+    "citation": "ORS 137.225(6)(f), (13)(d)",
+    "source_url": "https://apps.oregonlegislature.gov/liz/2024R1/Downloads/MeasureDocument/HB4097",
+    "status": "corrected",
+    "issue": "App said fully barred; the statute bars sex crimes 'unless' listed exceptions apply.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "Juvenile dept files for violation/misdemeanor-level cases; others by application after 4 years",
+   "notes": "Since SB 519 (2023, effective Jan. 1, 2024) county juvenile departments apply for expunction for youth whose cases involved conduct that would be a violation or misdemeanor for an adult (with exceptions); others may apply after a 4-year wait (cut from 5). Contacts that never led to juvenile court jurisdiction are expunged automatically.",
+   "citation": "ORS 419A.260-419A.262 (as amended by Or. Laws 2023, ch. 182 (SB 519))",
+   "source_url": "https://apps.oregonlegislature.gov/liz/2023R1/Downloads/MeasureAnalysisDocument/76694",
+   "status": "corrected",
+   "issue": "App described broad automatic expunction at 18 with only Measure 11 excluded; automatic process is limited to violation/misdemeanor-level cases and the age-18 trigger was not confirmed."
+  }
+ },
+ "PA": {
+  "name": "Pennsylvania",
+  "remedy": "Limited access (sealing), automatic under Clean Slate; expungement for non-convictions, summary offenses and age 70+",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 7,
+    "waitFrom": "last conviction (7 conviction-free years)",
+    "automatic": true,
+    "note": "Second- and third-degree and ungraded misdemeanors are sealed automatically after 7 years with no new felony or misdemeanor conviction, if restitution is paid (Clean Slate 3.0, Act 36 of 2023, effective Feb. 12, 2024; auto-sealing began June 11, 2024). You can also petition for sealing after 7 years.",
+    "citation": "18 Pa.C.S. \u00a7\u00a7 9122.1(a), 9122.2",
+    "source_url": "https://clsphila.org/wp-content/uploads/2024/10/Clean-Slate-3.0-FAQ-Updated-10.15.24.pdf",
+    "status": "corrected",
+    "issue": "App said 10-year wait and 'conditional'; Act 36 of 2023 cut the wait to 7 years and sealing is automatic.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "last conviction (10 conviction-free years)",
+    "automatic": false,
+    "note": "Lower-level drug felonies are sealed automatically after 10 conviction-free years; third-degree or ungraded felonies for theft, forgery/fraud, criminal mischief, trespass and welfare fraud can be sealed by petition after 10 years.",
+    "citation": "18 Pa.C.S. \u00a7\u00a7 9122.1(a.1), 9122.2",
+    "source_url": "https://www.legis.state.pa.us/WU01/LI/LI/CT/HTM/18/00.091.022.001..HTM",
+    "status": "corrected",
+    "issue": "App said felonies are not eligible; Act 36 of 2023 made certain felonies eligible for sealing.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": true,
+    "waitYears": 7,
+    "waitFrom": "last conviction (7 conviction-free years)",
+    "automatic": true,
+    "note": "A DUI that is a misdemeanor (a first-offense DUI is an ungraded misdemeanor) is not excluded and can be sealed automatically after 7 conviction-free years. A DUI resolved through ARD can be expunged.",
+    "citation": "18 Pa.C.S. \u00a7\u00a7 9122(b), 9122.1(a), 9122.2",
+    "source_url": "https://www.cleanslateinitiative.org/clean-slate-pennsylvania",
+    "status": "corrected",
+    "issue": "App said DUI is not eligible; Clean Slate Initiative lists DUI among offenses eligible for automatic sealing and \u00a7 9122.1 has no DUI exclusion.",
+    "varies": true
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "disposition",
+    "automatic": true,
+    "note": "Charges that end in dismissal, withdrawal, nolle pros or acquittal are sealed automatically within 30 days, and you can also petition the court to expunge them.",
+    "citation": "18 Pa.C.S. \u00a7\u00a7 9122(a), 9122.2",
+    "source_url": "https://www.cleanslateinitiative.org/clean-slate-pennsylvania",
+    "status": "verified",
+    "issue": "Old note omitted the automatic 30-day sealing.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 7,
+    "waitFrom": "last conviction",
+    "automatic": false,
+    "note": "Offenses against the family (Article D) and assault-type offenses punishable by more than 2 years cannot be sealed. A second-degree misdemeanor such as simple assault is not caught by that bar and may be sealed by petition after 7 years.",
+    "citation": "18 Pa.C.S. \u00a7 9122.1(a), (b)(1)",
+    "source_url": "https://www.legis.state.pa.us/WU01/LI/LI/CT/HTM/18/00.091.022.001..HTM",
+    "status": "corrected",
+    "issue": "App said fully barred; the exclusion applies only to Article D offenses and Article B offenses punishable by more than two years.",
+    "varies": true
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sexual offenses and offenses requiring registration cannot be sealed, and indecent exposure within 15 years blocks sealing. A pardon is the only route.",
+    "citation": "18 Pa.C.S. \u00a7 9122.1(b)(1)(iv), (b)(2)(ii)",
+    "source_url": "https://www.legis.state.pa.us/WU01/LI/LI/CT/HTM/18/00.091.022.001..HTM",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "6 months after consent decree; 2 yrs (misd.) or 5 yrs (felony) after discharge",
+   "notes": "A court orders expungement on motion: 6 months after informal adjustment or consent decree, 2 years after discharge for a misdemeanor adjudication (Act 108 of 2024) or 5 years for a felony, if no new offense. Youth 14 or older adjudicated for rape, IDSI or aggravated indecent assault are excluded.",
+   "citation": "18 Pa.C.S. \u00a7 9123(a), (a.1)",
+   "source_url": "https://www.legis.state.pa.us/WU01/LI/LI/CT/HTM/18/00.091.023.000..HTM",
+   "status": "corrected",
+   "issue": "App said 'age 18 + petition or age 21'; the age-21 provision applies to dependency records, and Act 108 of 2024 added a 2-year misdemeanor track."
+  }
+ },
+ "RI": {
+  "name": "Rhode Island",
+  "remedy": "Expungement (sealing) of convictions; sealing of non-conviction records",
+  "categories": {
+   "misdemeanor": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A first-time offender can petition to expunge one misdemeanor 5 years after finishing the sentence with no new arrests; people with 2 to 6 misdemeanors and no felony can apply after 10 years.",
+    "citation": "R.I. Gen. Laws \u00a7\u00a7 12-1.3-2, 12-1.3-3",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said 'true' with wait from offense; relief is limited to first offenders (or up to 6 misdemeanors after 10 years) and runs from completion of sentence.",
+    "varies": true
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A first-time offender can petition to expunge one non-violent felony 10 arrest-free years after finishing the sentence. Crimes of violence are never eligible.",
+    "citation": "R.I. Gen. Laws \u00a7\u00a7 12-1.3-2, 12-1.3-3",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said 5 years; the felony wait is 10 years after completion of sentence.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "DUI cannot be expunged under the multiple-misdemeanor route. A first offender with a single misdemeanor DUI may qualify under the general first-offender rule after 5 years.",
+    "citation": "R.I. Gen. Laws \u00a7 12-1.3-2",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said DUI is barred; the statutory DUI bar applies to the multiple-misdemeanor route. First-offender eligibility for DUI was not confirmed from statute text.",
+    "varies": true
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal",
+    "automatic": true,
+    "note": "Cases dismissed by the State on or after Jan. 1, 2023 are sealed automatically within 20 days; people acquitted or exonerated can petition for sealing. Domestic cases must wait 3 years from filing.",
+    "citation": "R.I. Gen. Laws \u00a7 12-1-12.1",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "Old note omitted automatic sealing of dismissals (2023).",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "Domestic violence convictions cannot be expunged under the multiple-misdemeanor route, and domestic cases that were filed or dismissed wait 3 years. A first offender with one domestic misdemeanor may petition after 5 years if it is not a crime of violence.",
+    "citation": "R.I. Gen. Laws \u00a7\u00a7 12-1.3-2, 12-1-12.1, 12-10-12",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said fully barred; the statutory DV bar applies to the multiple-misdemeanor route.",
+    "varies": true
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Serious sex offenses such as sexual assault and child molestation are crimes of violence and can never be expunged.",
+    "citation": "R.I. Gen. Laws \u00a7\u00a7 12-1.3-1, 12-1.3-2",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/rhode-island-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "CCRC does not separately discuss misdemeanor sex offenses; this entry rests on the crime-of-violence exclusion.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "At final disposition of the case",
+   "notes": "Juvenile records are sealed automatically when the case ends (dismissal, not-guilty finding or completed sentence), with limited exceptions. Felony adjudications can still be used at sentencing in adult court.",
+   "citation": "R.I. Gen. Laws \u00a7\u00a7 14-1-6.1, 14-1-64(b), 14-1-40(b)",
+   "source_url": "https://ncsl.org/civil-and-criminal-justice/automatic-expungement-of-juvenile-records",
+   "status": "corrected",
+   "issue": "App said automatic expungement at age 18; the statute seals records at final disposition, not at a set age."
+  }
+ },
+ "SC": {
+  "name": "South Carolina",
+  "remedy": "Expungement",
+  "categories": {
+   "misdemeanor": {
+    "eligible": "conditional",
+    "waitYears": 3,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "Minor offenses punishable by no more than 30 days or a $1,000 fine can be expunged 3 years after the sentence is completed with no other conviction; this can be used only once and traffic offenses are excluded.",
+    "citation": "S.C. Code Ann. \u00a7 22-5-910",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "First-offender limit was repealed in 2018; wait runs from completion of sentence.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Most felonies cannot be expunged. Exceptions: first-offense drug possession (3 years), possession with intent to distribute (20 years), Youthful Offender Act sentences (5 years after completion), and trafficking survivors.",
+    "citation": "S.C. Code Ann. \u00a7\u00a7 22-5-920, 22-5-930, 16-3-2020(F)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said felonies are never eligible; drug, youthful-offender and trafficking-survivor routes exist.",
+    "varies": true
+   },
+   "dui": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DUI convictions cannot be expunged in South Carolina because traffic offenses are excluded from expungement.",
+    "citation": "S.C. Code Ann. \u00a7 22-5-910",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "dismissal or acquittal",
+    "automatic": true,
+    "note": "Dismissed, nolle prossed and acquitted charges can be expunged at no cost; in magistrate and municipal courts this happens automatically, and in General Sessions you apply through the solicitor's office.",
+    "citation": "S.C. Code Ann. \u00a7 17-22-950",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App cited \u00a7 17-1-40; the operative statute is \u00a7 17-22-950, and summary-court expungement is automatic.",
+    "varies": true
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A first-time domestic violence 3rd-degree (or former first-offense CDV) conviction can be expunged 5 years after completing the sentence with no other conviction, once in a lifetime.",
+    "citation": "S.C. Code Ann. \u00a7 22-5-910",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said domestic violence is barred; \u00a7 22-5-910 allows it after 5 years.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Sex offense convictions carry more than 30 days' imprisonment, so no South Carolina expungement statute covers them.",
+    "citation": "S.C. Code Ann. \u00a7 22-5-910",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "verified",
+    "issue": "CCRC does not separately address sex offenses; this follows from the 30-day/$1,000 limit in \u00a7 22-5-910.",
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "Petition at age 18",
+   "notes": "At 18, a person may petition family court to expunge status or nonviolent offense adjudications if the sentence is complete and there is no later conviction or adjudication. Violent crimes and offenses carrying a 5-year adult sentence (if a prior) are excluded.",
+   "citation": "S.C. Code Ann. \u00a7 63-19-2050",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-carolina-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App suggested '5 years post-completion' alternative; the CCRC profile describes eligibility at age 18 with no such alternative."
+  }
+ },
+ "SD": {
+  "name": "South Dakota",
+  "remedy": "Expungement (non-convictions); sealing after suspended imposition of sentence; automatic removal from public record for minor offenses; pardon",
+  "categories": {
+   "misdemeanor": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "conviction (5 years with no new conviction)",
+    "automatic": true,
+    "note": "Class 2 misdemeanors and petty offenses are removed from the public record automatically after 5 years if you met the court's conditions and have no new conviction. First offenders who receive a suspended imposition of sentence have the record sealed when they finish probation.",
+    "citation": "SDCL \u00a7\u00a7 23A-3-34, 23A-27-13, 23A-27-17",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App cited SDCL \u00a7 23A-3-56 (not a relief statute) and a 10-year wait; the real rule is automatic removal after 5 years for Class 2 misdemeanors.",
+    "varies": true
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": "discharge from probation",
+    "automatic": true,
+    "note": "A first offender who receives a suspended imposition of sentence is discharged without a conviction and the court must seal the record. Other felonies can be sealed only by a pardon from the Board of Pardons (generally 5 years after release for first-time felons).",
+    "citation": "SDCL \u00a7\u00a7 23A-27-13, 23A-27-17, 24-14-11",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said felonies are not eligible; suspended imposition of sentence sealing and pardon sealing exist.",
+    "varies": true
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "offense",
+    "automatic": false,
+    "note": "A first DUI is a Class 1 misdemeanor, which is not covered by automatic removal. Relief is through a pardon (expedited for Class 1 misdemeanors after 10 years), which seals the record.",
+    "citation": "SDCL \u00a7 24-14-11",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said not eligible; the pardon route is available. Whether suspended imposition of sentence is allowed for DUI was not confirmed.",
+    "varies": true
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "dismissal (acquittal: any time)",
+    "automatic": false,
+    "note": "You can ask the court to expunge an arrest 1 year after no charges are filed or after the case is dismissed, and at any time after an acquittal; the prosecutor may object. Completed diversion is expunged automatically.",
+    "citation": "SDCL \u00a7\u00a7 23A-3-27, 23A-3-30, 23A-3-37",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said 0-year wait and cited \u00a7 23A-3-56; dismissals wait 1 year under \u00a7 23A-3-27.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "offense",
+    "automatic": false,
+    "note": "Domestic assault is usually a Class 1 misdemeanor, which is not covered by automatic removal; the main route is a pardon (expedited for Class 1 misdemeanors after 10 years). A first offender who gets a suspended imposition of sentence may have the record sealed.",
+    "citation": "SDCL \u00a7\u00a7 23A-27-13, 24-14-11",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said barred; pardon and suspended-imposition routes are not excluded by statute as summarized by CCRC.",
+    "varies": true
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Rape is excluded from suspended imposition of sentence, so sex offense convictions generally can be sealed only through a pardon, which is rarely granted.",
+    "citation": "SDCL \u00a7\u00a7 23A-27-13, 24-14-11",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "App said fully barred; a pardon (which seals records) remains legally available.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "1 year after release from court jurisdiction, by petition",
+   "notes": "Sealing is not automatic: a person may petition 1 year after release from court jurisdiction or DOC discharge, and the court must find no later adjudications, no pending serious charges and rehabilitation. Trafficking survivors may seek vacatur and expungement.",
+   "citation": "SDCL \u00a7\u00a7 26-7A-115, 26-7A-115.1",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/south-dakota-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "App said 'age 18 + 1 year offense-free'; the statute measures 1 year from release from jurisdiction or discharge, with no age-18 trigger."
+  }
+ }
+}

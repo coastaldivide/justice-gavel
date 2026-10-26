@@ -12,7 +12,7 @@
  *                   scheduled, same date, case open and not deleted) — or, for
  *                   legacy rows without court_date_id, against the case;
  *                   respects users.notif_court_reminders.
- *                   Push → email → SMS (each skipped when not configured).
+ *                   Push → browser push → email → SMS via Telnyx (each skipped when not configured; SMS only for users who opted in).
  *   follower_court_reminder  the same check plus: the family follow is still
  *                   active (consented, not revoked) with reminders on.
  *   checkin_reminder  a post-release check-in is due (services/checkinReminders.js):
@@ -47,6 +47,7 @@ import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtReminders.js';
 import { sendSms, smsLive } from './sms.js';
+import { sendWebPushToUser } from './webPush.js';
 import { guardJob } from '../utils/cronGuard.js';
 import { msg, formatDay, normalizeLang } from '../i18n/index.js';
 import { checkinReminderStale, planCheckinReminder, backfillCheckinReminders } from './checkinReminders.js';
@@ -56,6 +57,7 @@ const STALE_CLAIM_MINUTES = 10;
 const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder']);
 const SMS_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
 const COURT_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
+const WEB_PUSH_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder', 'checkin_reminder']);
 const DISABLED_ACCOUNT = new Set(['suspended', 'deleted', 'disabled', 'banned']);
 
 // Per-process delivery counters for /metrics (job health).
@@ -169,8 +171,10 @@ async function deliverOne(db, row, now) {
   }
 
   // ── Push ────────────────────────────────────────────────────────────────
-  const tokens = await userPushTokens(db, row.user_id, user);
-  let pushError = tokens.length ? null : 'no_push_token';
+  // data.skip_push: Expo accepted an earlier push but its receipt failed
+  // (requeueAfterPushReceiptFailure) — go straight to the next channel.
+  const tokens = data.skip_push ? [] : await userPushTokens(db, row.user_id, user);
+  let pushError = data.skip_push ? `push_receipt: ${data.push_receipt_error || 'error'}` : (tokens.length ? null : 'no_push_token');
   if (tokens.length) {
     const payload = { ...data, type, case_id: row.case_id ?? data.case_id ?? null, push_id: Number(row.id) };
     const tickets = await sendExpoPush(tokens.map(to => ({
@@ -189,7 +193,21 @@ async function deliverOne(db, row, now) {
     pushError = tickets.map(t => t?.message || t?.details?.error).filter(Boolean)[0] || 'push_failed';
   }
 
-  // ── Fallback chain: email (when Resend is configured) → SMS (when Twilio
+  // ── Web push (browser / PWA subscriptions; VAPID keys) ──────────────────
+  if (WEB_PUSH_TYPES.has(type)) {
+    const wp = await sendWebPushToUser(db, row.user_id, {
+      title: row.title, body: row.body || '', url: COURT_TYPES.has(type) ? '/cases' : '/',
+      tag: row.court_date_id ? `court-${row.court_date_id}` : `reminder-${row.id}`,
+      data: { type, case_id: row.case_id ?? null, push_id: Number(row.id) },
+    }).catch(e => ({ enabled: true, sent: 0, error: e.message }));
+    if (wp.sent > 0) {
+      await finish(db, row.id, { status: 'sent', channel: 'web_push', delivered: 1, sent_at: now.toISOString(), error: pushError });
+      return 'sent';
+    }
+    if (wp.enabled && wp.total) pushError = `${pushError}; ${wp.error}`;
+  }
+
+  // ── Fallback chain: email (when Resend is configured) → SMS (when Telnyx
   //    is configured and the user opted in). Nothing worked → 'undeliverable'.
   const canEmail = EMAIL_FALLBACK_TYPES.has(type) && looksLikeEmail(user.email);
   const { emailLive } = await import('./email.js');
@@ -219,7 +237,7 @@ async function deliverOne(db, row, now) {
   // ── Retry transient push failures, otherwise: undeliverable ─────────────
   const retries = Number(row.retry_count || 0);
   const max = Number(row.max_retries ?? 3);
-  if (pushError !== 'no_push_token' && retries < max) {
+  if (pushError !== 'no_push_token' && !data.skip_push && retries < max) {
     const next = new Date(now.getTime() + 5 * 60_000 * 2 ** retries);
     await finish(db, row.id, { status: 'pending', retry_count: retries + 1, deliver_at: next.toISOString(), error: pushError, claimed_at: null });
     return 'retry';
@@ -229,6 +247,39 @@ async function deliverOne(db, row, now) {
   if (SMS_FALLBACK_TYPES.has(type)) reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in' : 'sms_failed');
   await finish(db, row.id, { status: 'undeliverable', delivered: 0, channel: null, error: [...new Set(reasons)].join('; ').slice(0, 300) });
   return 'undeliverable';
+}
+
+/**
+ * Push receipts that came back as errors (services/expoPush.js checkPushReceipts):
+ * every reminder that was marked sent on one of those tickets is set back to
+ * pending, due now, with data.skip_push so the dispatcher uses the next channel.
+ * Only reminders that have an e-mail / other fallback are requeued; for the rest
+ * the row is corrected to 'undeliverable' so it is never reported as delivered.
+ * Returns the number of rows changed.
+ */
+export async function requeueAfterPushReceiptFailure(db, failed) {
+  let n = 0;
+  for (const f of failed || []) {
+    if (!f?.ticket_id) continue;
+    const rows = await db.all(
+      `SELECT id, notification_type, data FROM scheduled_pushes
+        WHERE expo_ticket_id = ? AND status = 'sent' AND channel = 'push' LIMIT 5`, [f.ticket_id]).catch(() => []);
+    for (const r of rows) {
+      const data = parseData(r.data);
+      if (data.skip_push) continue;   // already handled once
+      data.skip_push = true;
+      data.push_receipt_error = String(f.error || 'error').slice(0, 80);
+      if (EMAIL_FALLBACK_TYPES.has(r.notification_type) || SMS_FALLBACK_TYPES.has(r.notification_type)) {
+        await finish(db, r.id, { status: 'pending', delivered: 0, channel: null, deliver_at: new Date().toISOString(),
+          claimed_at: null, data: JSON.stringify(data), error: `push_receipt: ${data.push_receipt_error}` });
+      } else {
+        await finish(db, r.id, { status: 'undeliverable', delivered: 0, data: JSON.stringify(data), error: `push_receipt: ${data.push_receipt_error}` });
+      }
+      n++;
+    }
+  }
+  if (n) logger.warn({ n }, '[reminders] push receipts failed — reminders handed to the next channel');
+  return n;
 }
 
 /**

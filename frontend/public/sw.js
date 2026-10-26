@@ -84,3 +84,33 @@ self.addEventListener('sync', (event) => {
     // App-level offline sync is handled by offlineSync.ts
   }
 });
+
+// ── Web push (court reminders and other notifications) ───────────────────────
+// The server sends { title, body, url, icon, tag } (backend/src/services/webPush.js).
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'Justice Gavel', body: event.data ? event.data.text() : '' }; }
+  const title = d.title || 'Justice Gavel';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: d.body || '',
+    icon: d.icon || '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: d.tag || undefined,
+    renotify: !!d.tag,
+    requireInteraction: true,
+    data: { url: d.url || '/', ...(d.data || {}) },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if (w.url.startsWith(self.location.origin) && 'focus' in w) { w.navigate(url).catch(() => {}); return w.focus(); }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

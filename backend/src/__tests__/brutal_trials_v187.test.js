@@ -116,10 +116,11 @@ describe('INPUT. Form Input Quality', () => {
   test('INPUT-03: expungement/rules.js is a pure data module — 50 US states', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules.js','utf8');
+    const data = fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules_data.js','utf8');   // generated (Oct 2026)
     expect(src).toContain('STATE_RULES');
     // Has all major states
     for(const state of ['TN','CA','TX','NY','FL','IL'])
-      expect(src).toContain(state+':');
+      expect(data).toContain(`"${state}":`);
     // Data module — no Express router
     expect(src).not.toContain("Router()");
   });

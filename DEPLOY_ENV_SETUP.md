@@ -131,10 +131,15 @@ SUPABASE_URL + SUPABASE_SERVICE_KEY      Supabase Storage (attachments) + RAG he
 EXPO_ACCESS_TOKEN=<...>                  Expo push notifications
 EXPO_PUSH_API_URL=<url>                  Expo push endpoint override (default https://exp.host/--/api/v2;
                                           point at a mock for staging/tests)
-TWILIO_ACCOUNT_SID=<AC...>               SMS court reminders (optional; needs all three Twilio vars;
-TWILIO_AUTH_TOKEN=<...>                   unset → texts skipped, push + e-mail still sent)
-TWILIO_FROM_NUMBER=<+1...>               Twilio sender number, E.164
-TWILIO_API_BASE=<url>                    Twilio API host override (default https://api.twilio.com)
+TELNYX_API_KEY=<KEY...>                  Telnyx API v2 key: text-message court reminders (last step after push,
+                                          browser push and e-mail) and SOS texts. Needs TELNYX_FROM_NUMBER too.
+TELNYX_FROM_NUMBER=<+1...>               Telnyx sender, E.164, on a 10DLC-registered campaign (US carriers block
+                                          unregistered application-to-person texts)
+TELNYX_MESSAGING_PROFILE_ID=<uuid>       optional: Telnyx messaging profile (opt-out / STOP handling, number pool)
+TELNYX_API_BASE=<url>                    Telnyx API base override (default https://api.telnyx.com/v2; tests / mock only)
+TELNYX_PUBLIC_KEY=<base64>               Telnyx webhook public key (Ed25519). Point the messaging profile's webhook at
+                                          https://<api host>/api/webhooks/telnyx so STOP replies turn text reminders off.
+                                          Unset → the webhook refuses every request (503).
 TRUST_PROXY=<hops|CIDRs>                 Express "trust proxy" (default 1). Decides which X-Forwarded-For entry is the
                                          client IP for rate limits / guest report keys — see RUNBOOK "Client IP".
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     web push (npx web-push generate-vapid-keys)

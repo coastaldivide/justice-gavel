@@ -34,8 +34,9 @@ import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
 import { t, perLang, useLang } from '../i18n';
 import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
+import { TOS_VERSION, tosEffectiveDate } from '../constants/terms';
 
-const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
+// TOS_VERSION must match CURRENT_TOS_VERSION in auth.js — single source: constants/terms.ts.
 
 /** Distance from the end (px) that still counts as "read to the bottom". */
 const BOTTOM_SLACK = 30;
@@ -282,7 +283,7 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
             }
           </TouchableOpacity>
 
-          <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>{t('x_terms_acceptance_modal_terms_service_v_effective', { TOS_VERSION })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>{t('x_terms_acceptance_modal_terms_service_v_effective', { TOS_VERSION, EFFECTIVE_DATE: tosEffectiveDate() })}</Text>
           {onDecline && (
             <TouchableOpacity accessibilityRole="button" testID="tos-decline-button"
               accessibilityLabel={t('x_terms_acceptance_modal_decline_sign_out')} onPress={onDecline}

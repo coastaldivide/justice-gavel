@@ -1,0 +1,524 @@
+{
+ "MS": {
+  "name": "Mississippi",
+  "remedy": "Expunction (by petition)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "A first offender convicted of a non-traffic misdemeanor can ask the court that convicted them to expunge it. The statute sets no waiting period.",
+    "citation": "Miss. Code Ann. \u00a7 99-19-71(1)",
+    "source_url": "https://legiscan.com/MS/text/SB2228/2026",
+    "status": "corrected",
+    "issue": "The app said there was a 5-year wait. \u00a7 99-19-71(1) has no waiting period and requires first-offender status. Text was read from the current-law portion of SB 2228 (2026), which died.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "successful completion of all terms of the sentence",
+    "automatic": false,
+    "note": "You can expunge one felony 5 years after you finish your sentence and pay all fines and court costs. Crimes of violence, first-degree arson, drug trafficking, 3rd+ DUI, felon in possession, failure to register as a sex offender, voyeurism, witness intimidation, vulnerable-person abuse and embezzlement are excluded.",
+    "citation": "Miss. Code Ann. \u00a7 99-19-71(2)(a)",
+    "source_url": "https://legiscan.com/MS/text/SB2228/2026",
+    "status": "corrected",
+    "issue": "The app said felonies are never eligible. \u00a7 99-19-71(2)(a) allows one felony expunction after 5 years unless the offense is on the exclusion list. A 2026 bill (SB 2228) to cut the wait to 3 years died.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A first-offense DUI conviction can be expunged by petition 5 years after you finish the sentence, unless you held a commercial driver's license or permit at the time. Third and later DUIs are felonies that cannot be expunged.",
+    "citation": "Miss. Code Ann. \u00a7 63-11-30; \u00a7 99-19-71(2)(a)(iv)",
+    "source_url": "https://nationalreentryresourcecenter.org/node/2415",
+    "status": "corrected",
+    "issue": "The app said DUI is not eligible. The first-offense DUI expunction rule comes from the CSG Justice Center (NRRC) summary of \u00a7 63-11-30. The text of \u00a7 63-11-30 itself was not read.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "If you were arrested and the case was dismissed, the charges were dropped, there was no disposition, or you were found not guilty, the court must expunge the record when you file a petition. There is no waiting period.",
+    "citation": "Miss. Code Ann. \u00a7 99-19-71(4)",
+    "source_url": "https://legiscan.com/MS/text/SB2228/2026",
+    "status": "corrected",
+    "issue": "Eligibility was right, but the app cited \u00a7 99-15-59. The provision is \u00a7 99-19-71(4), and it requires a petition.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "A first-offense misdemeanor simple domestic violence conviction is not on any exclusion list, so it appears to qualify as a first-offender misdemeanor. Aggravated domestic violence (a felony) is a 'crime of violence' and cannot be expunged.",
+    "citation": "Miss. Code Ann. \u00a7 99-19-71(1), (2)(a)(i); \u00a7 97-3-2(1); \u00a7 97-3-7(3), (4)(a)",
+    "source_url": "https://codes.findlaw.com/ms/title-97-crimes/ms-code-sect-97-3-2/",
+    "status": "corrected",
+    "issue": "The app said domestic violence is never eligible. No statute read bars expunging misdemeanor simple domestic violence. Felony aggravated DV (\u00a7 97-3-7(4)(a)) is excluded as a crime of violence. No court decision on misdemeanor DV was found, so confirm with an attorney.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Rape, sexual battery, statutory rape, child exploitation and gratification of lust are 'crimes of violence' that cannot be expunged. Voyeurism and failure to register as a sex offender are also excluded.",
+    "citation": "Miss. Code Ann. \u00a7 99-19-71(2)(a)(i), (vi), (vii); \u00a7 97-3-2(1)",
+    "source_url": "https://codes.findlaw.com/ms/title-97-crimes/ms-code-sect-97-3-2/",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": null,
+   "when": null,
+   "notes": null,
+   "citation": "Miss. Code Ann. \u00a7\u00a7 43-21-263, 43-21-265 (not read)",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "The CCRC Mississippi profile was blocked and the web-search budget ran out before the youth court statutes could be found. The app's 'Age 18 + petition' is unconfirmed."
+  }
+ },
+ "MO": {
+  "name": "Missouri",
+  "remedy": "Expungement (by petition); automatic closed records for non-convictions",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "completion of the sentence (any authorized disposition)",
+    "automatic": false,
+    "note": "Most misdemeanors can be expunged by petition 1 year after you finish your sentence, if you have no new convictions, have paid all fines and restitution, and have no pending charges. Lifetime limit: 3 misdemeanors and 2 felonies.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.140.6(1), .13",
+    "source_url": "https://senate.mo.gov/25info/pdf-bill/intro/SB692.pdf",
+    "status": "corrected",
+    "issue": "The app said 3 years. 2021 amendments cut it to 1 year from completion of sentence (current law effective 1/1/2025).",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 3,
+    "waitFrom": "completion of the sentence",
+    "automatic": false,
+    "note": "Felonies that are not excluded can be expunged by petition 3 years after you finish your sentence. Class A felonies, dangerous felonies, felony assault and about 85 other listed offenses are excluded.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.140.3, .6(1)",
+    "source_url": "https://senate.mo.gov/25info/pdf-bill/intro/SB692.pdf",
+    "status": "corrected",
+    "issue": "The app said a 7-year wait limited to class C-E felonies. The wait is 3 years, and eligibility depends on the exclusion list, not the felony class (class B is not excluded as a class).",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "conviction",
+    "automatic": false,
+    "note": "Intoxication-related traffic offenses cannot be expunged under the general law. A first alcohol-related driving misdemeanor can be expunged once under a separate law 10 years later if there were no further alcohol offenses. It is not available to commercial driver's license holders.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.140.3; \u00a7 610.130",
+    "source_url": "https://nationalreentryresourcecenter.org/node/2393",
+    "status": "corrected",
+    "issue": "The app said DWI is never eligible. \u00a7 610.130 allows a one-time expungement of a first alcohol-related misdemeanor after 10 years. The \u00a7 610.130 text was not read directly; this comes from the CSG Justice Center (NRRC) summary.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": true,
+    "note": "When a case is dismissed, nolle prossed or ends in acquittal, the records are automatically 'closed' to the public. To fully expunge an arrest record, you can petition 18 months after the arrest if you have not been charged or convicted of anything since.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.105; \u00a7 610.140.7",
+    "source_url": "https://senate.mo.gov/25info/pdf-bill/intro/SB692.pdf",
+    "status": "verified",
+    "issue": "Partly a correction: the app said 'immediately eligible.' Closure under \u00a7 610.105 is automatic, but a \u00a7 610.140 arrest expungement petition has an 18-month wait.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Misdemeanor or felony 'domestic assault' cannot be expunged in Missouri. Some related offenses, such as harassment or stalking, are not on the exclusion list.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.140.3",
+    "source_url": "https://senate.mo.gov/25info/pdf-bill/intro/SB692.pdf",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Offenses that require sex offender registration, and all chapter 566 sexual offenses, cannot be expunged.",
+    "citation": "Mo. Rev. Stat. \u00a7 610.140.3",
+    "source_url": "https://senate.mo.gov/25info/pdf-bill/intro/SB692.pdf",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": false,
+   "when": "After age 17, on court's motion or petition",
+   "notes": "Juvenile court records are closed to the public, except for class A felony or murder charges. They are not automatically sealed or destroyed: the court may destroy or seal them after the child turns 17 (or after the case closes if jurisdiction runs longer), on its own motion or on application.",
+   "citation": "Mo. Rev. Stat. \u00a7 211.321",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/missouri-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "verified",
+   "issue": "Confirmed from the CCRC profile; the statute text was not read."
+  }
+ },
+ "NV": {
+  "name": "Nevada",
+  "remedy": "Record sealing (by petition)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 1,
+    "waitFrom": "release from custody or end of suspended sentence, whichever is later",
+    "automatic": false,
+    "note": "Most misdemeanors can be sealed by petition 1 year after you are released or your suspended sentence ends. Misdemeanor battery, harassment, stalking and protection-order violations wait 2 years. The law presumes sealing should be granted.",
+    "citation": "NRS 179.245(1)(f)-(g); NRS 179.2445",
+    "source_url": "https://nevada.public.law/statutes/nrs_179.245",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 2,
+    "waitFrom": "release from custody or discharge from parole/probation, whichever is later",
+    "automatic": false,
+    "note": "Category E felonies (the lowest level) can be sealed 2 years after release or discharge. Category B, C and D felonies wait 5 years, and Category A felonies, crimes of violence and burglary wait 10 years.",
+    "citation": "NRS 179.245(1)(a)-(c)",
+    "source_url": "https://nevada.public.law/statutes/nrs_179.245",
+    "status": "corrected",
+    "issue": "The app said Category E waits 5 years and Category D waits 7. Since 2017 the waits are 2 years (E), 5 years (B-D) and 10 years (A, crimes of violence, burglary).",
+    "varies": true
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 7,
+    "waitFrom": "release from custody or end of suspended sentence, whichever is later",
+    "automatic": false,
+    "note": "A non-felony (1st or 2nd) DUI can be sealed 7 years after release or the end of the suspended sentence. Felony DUI, DUI causing death or serious injury, and DUI homicide can never be sealed.",
+    "citation": "NRS 179.245(1)(e), (6)(c)-(e)",
+    "source_url": "https://nevada.public.law/statutes/nrs_179.245",
+    "status": "corrected",
+    "issue": "The app said DUI is not eligible. Non-felony DUI under NRS 484C.110/.120 is sealable after 7 years; only felony DUI and DUI causing death or injury are barred.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "If charges were dismissed or you were acquitted, you can petition to seal at any time after that. If the prosecutor declined to file, you can petition after the statute of limitations runs, 8 years after arrest, or sooner if the parties agree.",
+    "citation": "NRS 179.255(1)",
+    "source_url": "https://archive.leg.state.nv.us/Session/82nd2023/Bills/AB/AB160.pdf",
+    "status": "verified",
+    "issue": "Verified from the existing-law text shown in AB 160 (2023). AB 160's automatic sealing was vetoed, so relief is still by petition.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 7,
+    "waitFrom": "release from custody or end of suspended sentence, whichever is later",
+    "automatic": false,
+    "note": "A misdemeanor domestic violence battery can be sealed 7 years after release or the end of the suspended sentence. Felony domestic battery follows the felony waits (5 years for Category B-D).",
+    "citation": "NRS 179.245(1)(e)",
+    "source_url": "https://nevada.public.law/statutes/nrs_179.245",
+    "status": "corrected",
+    "issue": "The app said 'not eligible' while its note said 'extended waiting periods.' The statute allows sealing of non-felony DV battery (NRS 33.018) after 7 years and does not bar DV.",
+    "varies": true
+   },
+   "sexual": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Convictions for a sexual offense (as defined in the statute) or any crime against a child can never be sealed in Nevada.",
+    "citation": "NRS 179.245(6)(a)-(b), (8)",
+    "source_url": "https://nevada.public.law/statutes/nrs_179.245",
+    "status": "verified",
+    "issue": null,
+    "varies": false
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "Within 60 days after turning 18",
+   "notes": "Most juvenile records are sealed automatically when the person turns 18 (lowered from 21 in 2021). Certain serious violent and sexual offenses are excluded and can be sealed only by petition later. A person under 21 can also petition early if they have had no referrals in the past 3 years.",
+   "citation": "NRS 62H.140; NRS 62H.150",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nevada-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "The app said 'Age 21 or 3 years post-completion.' AB 251 (2021) lowered automatic sealing to age 18. Confirmed from the CCRC profile; the statute text was not read."
+  }
+ },
+ "MT": {
+  "name": "Montana",
+  "remedy": "Misdemeanor expungement (once per lifetime, by petition); felonies only by pardon or deferred-sentence dismissal",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 5,
+    "waitFrom": "completion of all sentence terms, including payment of fines and court-ordered treatment",
+    "automatic": false,
+    "note": "You can get one expungement order in your lifetime, and it can cover all of your misdemeanors. Expungement is presumed if you have had no new convictions for 5 years after finishing your sentence (there is an exception for military applicants).",
+    "citation": "MCA \u00a7\u00a7 46-18-1104, 46-18-1107",
+    "source_url": "https://mca.legmt.gov/bills/2024/mca/title_0460/chapter_0180/part_0110/section_0070/0460-0180-0110-0070.html",
+    "status": "verified",
+    "issue": "Citation corrected: the app cited \u00a7 46-18-1102, which is only the short title.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": false,
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "Montana has no expungement for felony convictions. Your options are a pardon, or dismissal and confidential records if the judge gave you a deferred sentence and you completed it.",
+    "citation": "MCA \u00a7 46-18-1104; \u00a7 46-18-204",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/montana-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said non-violent felonies are eligible after 5 years. Expungement covers misdemeanors only. HB 795 (2025), which would have added felonies, failed.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A misdemeanor DUI can be included in an expungement petition, but it is not presumed. The court holds a hearing and weighs your age, the time elapsed, rehabilitation and risk of reoffending.",
+    "citation": "MCA \u00a7 46-18-1108",
+    "source_url": "https://mca.legmt.gov/bills/2024/mca/title_0460/chapter_0180/part_0110/section_0080/0460-0180-0110-0080.html",
+    "status": "corrected",
+    "issue": "The app said DUI is not eligible. \u00a7 46-18-1108 removes only the presumption; it does not bar expungement.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": true,
+    "note": "Fingerprints and photos must be returned or destroyed when charges do not lead to a conviction, and the state repository removes non-conviction arrest data automatically. No statute seals the local court file, but a completed deferred sentence makes records confidential.",
+    "citation": "MCA \u00a7 44-5-202(8); \u00a7 46-18-204",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/montana-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said dismissed charges are eligible under \u00a7 46-18-1102. That part covers convictions only; non-conviction relief comes from \u00a7 44-5-202 and does not reach court records.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A misdemeanor partner or family member assault (PFMA) can be included in an expungement petition but is not presumed, so a judge decides after a hearing. Felony PFMA cannot be expunged.",
+    "citation": "MCA \u00a7 46-18-1108(1)",
+    "source_url": "https://mca.legmt.gov/bills/2024/mca/title_0460/chapter_0180/part_0110/section_0080/0460-0180-0110-0080.html",
+    "status": "corrected",
+    "issue": "The app said PFMA is not eligible. \u00a7 46-18-1108 lists PFMA as 'not presumed', not barred.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "Misdemeanor sexual assault (\u00a7 45-5-502) can be included in a petition but is not presumed, so the judge decides after a hearing. Felony sex offenses cannot be expunged.",
+    "citation": "MCA \u00a7 46-18-1108(1)",
+    "source_url": "https://mca.legmt.gov/bills/2024/mca/title_0460/chapter_0180/part_0110/section_0080/0460-0180-0110-0080.html",
+    "status": "corrected",
+    "issue": "The app said sex offenses are never eligible. Misdemeanor sexual assault is 'not presumed', not barred; felony sex offenses are outside the misdemeanor-only law.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "At age 18 or end of youth court jurisdiction",
+   "notes": "Youth court, law enforcement and agency records are sealed automatically at age 18, or when youth court jurisdiction ends if later. Agencies other than the Department of Corrections must then destroy them, and sealed records can be opened only by youth court order for good cause.",
+   "citation": "MCA \u00a7\u00a7 41-5-215, 41-5-216",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/montana-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "The app said 'Age 18 + petition' and 'felony-equivalent excluded.' Sealing is automatic, and the CCRC profile lists no felony exclusion. The statute text was not read, so verify any exclusions."
+  }
+ },
+ "NE": {
+  "name": "Nebraska",
+  "remedy": "Set-aside (by petition, nullifies conviction but does not seal); automatic sealing of non-conviction records",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "completion of sentence (probation, fine, or jail of 1 year or less)",
+    "automatic": false,
+    "note": "You can ask the court to set aside a conviction once you finish a sentence of probation, a fine, community service, or jail of 1 year or less. There is no waiting period. Set-aside 'nullifies' the conviction but does not seal or erase the record, which can still be used for sentence enhancement.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-2264(2)-(5)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said a 3-year wait. \u00a7 29-2264 has no waiting period after the sentence; the only time bar is 2 years after a denial. The statute page could not be loaded, so this was confirmed via CCRC.",
+    "varies": false
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A felony can be set aside only if you were sentenced to probation, a fine, or 1 year or less of jail. Prison sentences over 1 year do not qualify, and the violent/non-violent split does not apply. Set-aside 'nullifies' the conviction but does not seal or erase the record, which can still be used for sentence enhancement.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-2264(2)-(3)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said 3 years for non-violent felonies. Eligibility depends on the sentence type, not violence, and there is no waiting period.",
+    "varies": false
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "A DUI with a probation, fine or short-jail sentence can be set aside; motor vehicle homicide cannot. The DUI still counts as a prior for enhancing a later DUI.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-2264(3)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said DUI is not eligible. The set-aside statute, as described by CCRC, excludes only registrants and motor vehicle homicide under the jail route, not DUI. The statute text was not read.",
+    "varies": true
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": null,
+    "automatic": true,
+    "note": "Records of dismissed charges or acquittals are removed from the public record automatically when the case ends. If no charges are filed, the arrest record is sealed after 1 year, or 2 years after completing pretrial diversion.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-3523",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app cited \u00a7 29-2264, which covers convictions only. Non-conviction sealing is automatic under \u00a7 29-3523.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "Domestic assault is not excluded from set-aside if the sentence was probation, a fine or 1 year or less of jail. A set-aside does not by itself restore firearm rights. Set-aside 'nullifies' the conviction but does not seal or erase the record, which can still be used for sentence enhancement.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-2264",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said domestic assault is not eligible. CCRC lists no DV exclusion in \u00a7 29-2264; DV is excluded only from deferred judgments (\u00a7 29-2292). The statute text was not read.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": 0,
+    "waitFrom": "completion of sentence",
+    "automatic": false,
+    "note": "Registrants cannot use the short-jail route. A probation sentence can be set aside, but set-aside never ends sex offender registration.",
+    "citation": "Neb. Rev. Stat. \u00a7 29-2264(3)",
+    "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+    "status": "corrected",
+    "issue": "The app said never eligible. Only the subsection (3) route excludes registrants, and set-aside does not end registration. The statute text was not read.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "Immediately on completing diversion or sentence; else petition at 18 or 6 months after case closes",
+   "notes": "Records are sealed automatically when no petition is filed, diversion is completed, charges are dismissed, or probation or the sentence is completed. Otherwise you can move to seal at 18 or 6 months after the case closes, whichever is sooner, and the court must grant the motion if the prosecutor does not object.",
+   "citation": "Neb. Rev. Stat. \u00a7\u00a7 43-2,108.01 to 43-2,108.05",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/nebraska-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "The app said not automatic ('Age 17 or 3 years post-discharge'). LB 354 (2019) made sealing automatic on successful completion. Confirmed via CCRC; the statute text was not read."
+  }
+ },
+ "NH": {
+  "name": "New Hampshire",
+  "remedy": "Annulment (by petition)",
+  "categories": {
+   "misdemeanor": {
+    "eligible": true,
+    "waitYears": 3,
+    "waitFrom": "completion of all terms and conditions of the sentence",
+    "automatic": false,
+    "note": "Class B misdemeanors can be annulled 2 years after you complete your sentence, and Class A misdemeanors after 3 years, if you have no new convictions. Violations wait 1 year.",
+    "citation": "RSA 651:5, III(a)-(c)",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "verified",
+    "issue": "Partly a correction: the app said Class A and B both wait 3 years. Class B waits 2 years.",
+    "varies": true
+   },
+   "felony": {
+    "eligible": "conditional",
+    "waitYears": 5,
+    "waitFrom": "completion of all terms and conditions of the sentence",
+    "automatic": false,
+    "note": "Class B felonies can be annulled 5 years after you complete your sentence, and Class A felonies after 10 years. Violent crimes, felony obstruction of justice and extended-term sentences can never be annulled.",
+    "citation": "RSA 651:5, III(d)-(e), V, XIII",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "corrected",
+    "issue": "The app said only first-time non-violent Class B felonies qualify. There is no first-offense requirement, and Class A felonies are eligible after 10 years unless they are violent crimes.",
+    "varies": true
+   },
+   "dui": {
+    "eligible": "conditional",
+    "waitYears": null,
+    "waitFrom": null,
+    "automatic": false,
+    "note": "DWI convictions can be annulled, but RSA 651:5 sends them to a separate DWI-specific rule (RSA 265-A:21) with its own waiting period. That rule could not be confirmed.",
+    "citation": "RSA 651:5, III; RSA 265-A:21",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "unverifiable",
+    "issue": "The app said DWI is not eligible, but RSA 651:5 III makes DWI annulment subject to RSA 265-A:21, so it is not barred. The waiting period in RSA 265-A:21 could not be read.",
+    "varies": false
+   },
+   "dismissed": {
+    "eligible": true,
+    "waitYears": 0,
+    "waitFrom": "30 days after dismissal or not-guilty finding (cases disposed of on or after 1/1/2019)",
+    "automatic": false,
+    "note": "For cases ending after 2018 in dismissal, nol pros or acquittal, the court must annul the arrest and court records on your petition, starting 30 days after the case ends. Older cases can be annulled by petition at any time. From January 1, 2027 there is no filing fee.",
+    "citation": "RSA 651:5, II, II-a",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "verified",
+    "issue": "Annulment is mandatory, but the State Police say a petition is still needed.",
+    "varies": false
+   },
+   "domestic": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "completion of all terms and conditions of the sentence",
+    "automatic": false,
+    "note": "A misdemeanor domestic violence conviction (RSA 631:2-b) can be annulled 10 years after you complete your sentence. A later DV conviction delays annulment of the earlier one.",
+    "citation": "RSA 651:5, III(h)",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "corrected",
+    "issue": "The app said domestic violence is not eligible. RSA 651:5 III(h) allows annulment of misdemeanor DV after 10 years.",
+    "varies": false
+   },
+   "sexual": {
+    "eligible": "conditional",
+    "waitYears": 10,
+    "waitFrom": "completion of all terms and conditions of the sentence",
+    "automatic": false,
+    "note": "Misdemeanor sexual assault and felony indecent exposure or lewdness can be annulled after 10 years. Aggravated felonious and felonious sexual assault are 'violent crimes' that can never be annulled.",
+    "citation": "RSA 651:5, III(f)-(g), V, XIII(c)",
+    "source_url": "https://gc.nh.gov/rsa/html/LXII/651/651-5.htm",
+    "status": "corrected",
+    "issue": "The app said sex offenses are never eligible. Some sex offenses are annullable after 10 years; felony sexual assaults are barred.",
+    "varies": true
+   }
+  },
+  "juvenile": {
+   "automatic": true,
+   "when": "At age 21",
+   "notes": "Juvenile delinquency records are confidential. When the person turns 21, court, institutional and police records are closed and placed in an inactive file automatically, but law enforcement can still access them for investigations and prosecutions.",
+   "citation": "RSA 169-B:35",
+   "source_url": "https://ccresourcecenter.org/state-restoration-profiles/new-hampshire-restoration-of-rights-pardon-expungement-sealing/",
+   "status": "corrected",
+   "issue": "The app said 'Age 17 + petition, annual sealing windows.' CCRC describes automatic closure at 21. Confirmed via CCRC; RSA 169-B:35 and :35-a were not read directly."
+  }
+ }
+}

@@ -16,6 +16,7 @@
  *   double tap returns the existing one).
  */
 import { createHash } from 'node:crypto';
+import { isVerifiedRow } from './legaldata.js';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { getDb } from '../db/index.js';
@@ -285,11 +286,15 @@ router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
   try {
     const db = await getDb();
     let rows = await db.all(
-      `SELECT id, state, charge, charge_type, severity, bail_min, bail_max, bail_note, source, source_url, last_reviewed_at
+      `SELECT id, state, charge, charge_type, severity, bail_min, bail_max, bail_note, source, source_url, last_reviewed_at, verified_by
          FROM bail_schedules WHERE UPPER(state) = ? OR (? <> 'ALL' AND state = 'ALL')
         ORDER BY CASE WHEN UPPER(state) = ? THEN 0 ELSE 1 END, charge_type, charge LIMIT 300`,
       [state, state, state]);
     if (charge) rows = rows.filter(r => String(r.charge || '').toLowerCase().includes(charge));
+    // Legal accuracy review (Oct 2026): only rows checked against an official schedule.
+    const before = rows.length;
+    rows = rows.filter(isVerifiedRow);
+    const withheld = before - rows.length;
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('Vary', 'Accept-Language');
     res.json({
@@ -298,7 +303,7 @@ router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
         last_reviewed: r.last_reviewed_at ? String(r.last_reviewed_at instanceof Date ? r.last_reviewed_at.toISOString() : r.last_reviewed_at).slice(0, 10) : null,
       })),
       meta: {
-        state, count: rows.length,
+        state, count: rows.length, verified_only: true, withheld,
         fee_estimate_available: false,
         fee_note: msg(lang, 'bail.fee_note'),
         disclaimer: msg(lang, 'bail.disclaimer'),

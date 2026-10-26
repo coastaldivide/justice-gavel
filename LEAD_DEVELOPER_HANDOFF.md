@@ -149,7 +149,7 @@ idempotent, and the code never drops columns.
 |---|---|---|
 | AI chat, research, translation | `ANTHROPIC_API_KEY`, optional `CLAUDE_MODEL` | code complete; tested against a mock |
 | E-mail (password reset, booking, alerts) | `RESEND_API_KEY` | complete; never sent for real |
-| SMS (SOS alerts, reminders) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | complete; never sent for real; without it the app opens the phone's own Messages app |
+| SMS (court reminders, SOS) | `TELNYX_API_KEY`, `TELNYX_FROM_NUMBER` (+ optional `TELNYX_MESSAGING_PROFILE_ID`) | Telnyx (owner choice Oct 26, 2026; Twilio is not used). **Owner: create the account + 10DLC registration.** Without it SOS opens the phone's own Messages app |
 | Push (Expo) / web push | `EXPO_ACCESS_TOKEN`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` | complete; one device per user for now |
 | Video consultations | `DAILY_API_KEY` | complete; tested against a fake Daily server |
 | Payments | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price ids (`node backend/scripts/setup-stripe-products.js` builds them from `plans.js`) | **owner: not set up yet** |

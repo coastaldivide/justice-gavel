@@ -46,7 +46,7 @@ describe('DISC33. S0 Threshold Fixes — 6 items to ≥5', () => {
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
-    expect(large.length).toBeGreaterThanOrEqual(34);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G)
+    expect(large.length).toBeGreaterThanOrEqual(33);   // 34: Payments / Bondsman / Firm screens were rewritten smaller (section G); 33: JuvenileJustice's hand-written sealing table moved to the server (Oct 2026)
   });
   test('DISC33-06: CENTENNIAL — 100th pass confirmed [≥4]', async () => {
     const fs  = await import('fs');

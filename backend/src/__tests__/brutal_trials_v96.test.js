@@ -238,7 +238,8 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
     expect(src).toContain('hague.steps.non_contracting.');
     expect(src).toContain('legal_notice');
     expect(en).toContain('Article 11');      // recorded wording, flagged for lawyer review (section F)
-    expect(en).toContain('6 weeks');
+    expect(en).toContain('six weeks');                    // Art. 11 (Oct 2026 legal review: courts, statement of reasons)
+    expect(en).toContain('statement of the reasons');
     expect(en).toContain('U.S. embassy');
     expect(en).toContain('bilateral treaty');
   });

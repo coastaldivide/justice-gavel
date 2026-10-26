@@ -42,10 +42,11 @@ type Agent = {
 };
 
 type StateLaw = {
-  allowed: boolean;
-  license: boolean;
-  law?: string;
+  allowed: boolean | null;
+  license: boolean | null;
+  law?: string | null;
   notes: string;
+  checked?: 'secondary' | 'unverified';
 };
 
 const US_STATES = [
@@ -320,9 +321,11 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             color: stateLaw.allowed ? colors.legalDark : colors.emergencyDark,
           }]}>
             {selectedState} -- {
-              stateLaw.allowed
-                ? stateLaw.license ? t('x_recovery_agents_license_required') : t('x_recovery_agents_no_license_requirement')
-                : t('x_recovery_agents_commercial_bail_restricted')
+              stateLaw.allowed == null
+                ? t('legal_unverified_withheld', { state: selectedState })
+                : stateLaw.allowed
+                  ? stateLaw.license ? t('x_recovery_agents_license_required') : t('x_recovery_agents_no_license_requirement')
+                  : t('x_recovery_agents_commercial_bail_restricted')
             }
           </IconLabel>
           {stateLaw.law ? (
@@ -335,6 +338,9 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             { color: colors.textSecond }]}>
             {stateLaw.notes}
           </Text>
+          {stateLaw.checked === 'secondary' ? (
+            <Text maxFontSizeMultiplier={1.3} style={[styles.lawCode, { color: colors.textMuted }]}>{t('x_recovery_agents_secondary_source')}</Text>
+          ) : null}
         </View>
       )}
 

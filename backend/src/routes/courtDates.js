@@ -12,7 +12,7 @@
  * DELETE /api/court-dates/:id             — remove it (reminders cancelled)
  * GET    /api/court-dates/:id/ics         — text/calendar file for the phone calendar
  * GET    /api/court-dates/:id/reminders   — the planned reminder rows
- * PUT    /api/court-dates/preferences     — { sms_reminders: bool, phone? } (texts only when Twilio is configured)
+ * PUT    /api/court-dates/preferences     — { sms_reminders: bool, phone? } (texts only when Telnyx is configured — services/sms.js)
  *
  * Text (errors, guidance, time labels, .ics) is in the request's language
  * (?lang= / Accept-Language: en, es, pt, vi); the person's language is saved
@@ -36,6 +36,9 @@ import { buildCourtDateIcs } from '../services/ics.js';
 import { courtDayGuidance } from '../services/courtDayGuidance.js';
 import { normalizeState } from '../services/rightsContent.js';
 import { smsLive, toE164 } from '../services/sms.js';
+
+/** Version of the opt-in wording shown at consent (frontend i18n cdd_sms_consent). Bump when it changes. */
+export const SMS_CONSENT_TEXT_VERSION = 'cdd_sms_consent@2026-10-26';
 import { todayInZone, stateTimeZone } from '../utils/timezone.js';
 import { notifyFollowersCourtDateChanged } from '../services/followers.js';
 import { isExpoPushToken } from '../services/expoPush.js';
@@ -148,6 +151,15 @@ router.put('/preferences', authRequired, writeLimiter, async (req, res) => {
     }
     if (phone) await db.run('UPDATE users SET sms_reminders = ?, phone = ? WHERE id = ?', [b.sms_reminders ? 1 : 0, phone, req.user.id]);
     else await db.run('UPDATE users SET sms_reminders = ? WHERE id = ?', [b.sms_reminders ? 1 : 0, req.user.id]);
+    // Consent record (migration 31): when, which number, which wording, which language.
+    if (b.sms_reminders) {
+      const u = await db.get('SELECT phone FROM users WHERE id = ?', [req.user.id]).catch(() => null);
+      await db.run(
+        `UPDATE users SET sms_consent_at = NOW(), sms_consent_phone = ?, sms_consent_text_v = ?, sms_consent_lang = ?, sms_opt_out_at = NULL WHERE id = ?`,
+        [toE164(u?.phone), SMS_CONSENT_TEXT_VERSION, lang, req.user.id]).catch(e => logger.warn({ err: e.message }, '[court-dates] consent record failed'));
+    } else {
+      await db.run('UPDATE users SET sms_opt_out_at = NOW() WHERE id = ?', [req.user.id]).catch(logIgnored('routes/courtDates'));
+    }
     res.json({ ok: true, sms_reminders: b.sms_reminders, sms_available: smsLive(),
       note: smsLive() ? null : msg(lang, 'cd.sms_not_configured') });
   } catch (e) {
@@ -181,14 +193,18 @@ async function reminderDelivery(db, userId, upcomingCount, lang = 'en') {
       WHERE user_id = ? AND status = 'undeliverable' AND notification_type IN ('court_reminder', 'follower_court_reminder')
         AND deliver_at > NOW() - INTERVAL '30 days'`, [userId]).catch(() => null);
   const { emailLive } = await import('../services/email.js');
+  const { webPushLive } = await import('../services/webPush.js');
+  const web = webPushLive()
+    ? await db.get('SELECT COUNT(*) AS n FROM web_push_subscriptions WHERE user_id = ?', [userId]).catch(() => null) : null;
   const channels = {
     push: [...toks.map(t => t.token), u?.push_token].some(isExpoPushToken),
+    web_push: Number(web?.n || 0) > 0,
     email: emailLive() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(u?.email || '')),
     sms: smsLive() && Number(u?.sms_reminders) === 1 && !!toE164(u?.phone),
   };
   const undeliverable = Number(und?.n || 0);
   const lastAt = und?.last_at ? new Date(und.last_at).toISOString() : null;
-  const noChannel = !channels.push && !channels.email && !channels.sms;
+  const noChannel = !channels.push && !channels.web_push && !channels.email && !channels.sms;
   return {
     undeliverable, last_undeliverable_at: lastAt, channels,
     needs_attention: undeliverable > 0 || (noChannel && upcomingCount > 0),

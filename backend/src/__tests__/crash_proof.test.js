@@ -117,7 +117,7 @@ describe('CRASH PROOF — Legal Engine', () => {
           const result = getEligibility(state, charge);
           expect(typeof result).toBe('object');
           expect(result).not.toBeNull();
-          expect(['boolean','string']).toContain(typeof result.eligible); // 'conditional' is valid for some states
+          expect(result.eligible === null || ['boolean','string'].includes(typeof result.eligible)).toBe(true); // 'conditional' for some states; null = not verified yet (no verdict)
         }
       }
     });

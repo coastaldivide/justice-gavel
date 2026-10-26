@@ -143,7 +143,7 @@ describe('EXR. expungement/rules.js — State Expungement Rules Data', () => {
     expect(src).toContain('State expungement eligibility rules data');
     expect(src).toContain('Data-only module');
     // 46KB means rich state-by-state data
-    expect(src.length).toBeGreaterThan(40000);
+    expect(src.length + fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules_data.js', 'utf8').length).toBeGreaterThan(40000); // data moved to rules_data.js (Oct 2026)
   });
   test('EXR-02: rules include eligibility criteria, waiting periods, offense exclusions', async () => {
     const fs = await import('fs');
@@ -151,7 +151,7 @@ describe('EXR. expungement/rules.js — State Expungement Rules Data', () => {
     // expungement rules data has state-specific eligibility info
     expect(src).toContain('state');
     expect(src).toContain('offense');
-    expect(src.length).toBeGreaterThan(40000);
+    expect(src.length + fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules_data.js', 'utf8').length).toBeGreaterThan(40000); // data moved to rules_data.js (Oct 2026)
   });
 });
 
@@ -256,7 +256,7 @@ describe('S12. UX — Final Route Depth (Never-Read Files)', () => {
   test('S12-01: expungement/rules.js 46KB = most data-dense file in codebase', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules.js', 'utf8');
-    expect(src.length).toBeGreaterThan(40000);
+    expect(src.length + fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules_data.js', 'utf8').length).toBeGreaterThan(40000); // data moved to rules_data.js (Oct 2026)
     expect(src).toContain('state');
   });
   test('S12-02: transcribe.js /note = Whisper STT for voice notes on cases', async () => {

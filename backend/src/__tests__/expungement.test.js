@@ -250,7 +250,9 @@ describe('getEligibility() — state rule lookup', () => {
     const r = getEligibility('TN', 'misdemeanor', 'Closed');
     expect(r.eligible).toBe(true);
     expect(r.waitYears).toBe(5);
-    expect(r.note).toMatch(/T\.C\.A\./);
+    // Oct 2026 legal accuracy review: the citation is its own field (renumbered to § 40-32-107)
+    expect(r.citation).toMatch(/Tenn\. Code Ann\. § 40-32-1\d\d/);
+    expect(r.source_url).toMatch(/^https?:\/\//);
   });
 
   test('TN dismissed — immediately eligible', () => {
@@ -269,11 +271,11 @@ describe('getEligibility() — state rule lookup', () => {
     expect(r.eligible).toBe(false);
   });
 
-  test('WI — conditional (sentencing-time only)', () => {
+  test('WI — conditional (sentencing-time only, under 25)', () => {
     const r = getEligibility('WI', 'misdemeanor', 'Closed');
     expect(r.eligible).toBe('conditional');
-    expect(r.note).toMatch(/CRITICAL/);  // CRITICAL warning must be present
     expect(r.note).toMatch(/sentencing/i);
+    expect(r.note).toMatch(/under 25/);
   });
 
   test('FL DUI — not eligible', () => {
@@ -281,9 +283,10 @@ describe('getEligibility() — state rule lookup', () => {
     expect(r.eligible).toBe(false);
   });
 
-  test('CA DUI — conditional (PC 1203.4)', () => {
+  test('CA DUI — dismissal under PC 1203.4 is available (researched Oct 2026)', () => {
     const r = getEligibility('CA', 'dui', 'Closed');
-    expect(r.eligible).toBe('conditional');
+    expect([true, 'conditional']).toContain(r.eligible);
+    expect(r.citation).toMatch(/1203\.4/);
   });
 
   test('status=Dismissed overrides chargeType', () => {
@@ -293,9 +296,10 @@ describe('getEligibility() — state rule lookup', () => {
     expect(r.waitYears).toBe(0);
   });
 
-  test('unknown state falls back to DEFAULT_RULES', () => {
+  test('unknown state falls back to DEFAULT_RULES — which never give a verdict', () => {
     const r = getEligibility('XX', 'misdemeanor', 'Closed');
-    expect(r.eligible).toBe('conditional');
+    expect(r.eligible).toBeNull();
+    expect(r.status).toBe('unverified');
     expect(r.note).toBeTruthy();
   });
 
@@ -308,10 +312,10 @@ describe('getEligibility() — state rule lookup', () => {
   });
 
   // States with legally significant edge cases
-  test('IA felony — requires zero prior convictions (note must warn)', () => {
+  test('IA felony — Iowa has no felony expungement (pardon / deferred judgment only)', () => {
     const r = getEligibility('IA', 'felony', 'Closed');
-    expect(r.eligible).toBe('conditional');
-    expect(r.note.toLowerCase()).toMatch(/convict|prior/i);
+    expect(r.eligible).toBe(false);
+    expect(r.note.toLowerCase()).toMatch(/pardon|deferred/);
   });
 
   test('DC — 5 year wait from completion of sentence (2025 change)', () => {
@@ -319,10 +323,10 @@ describe('getEligibility() — state rule lookup', () => {
     expect(r.waitYears).toBe(5);
   });
 
-  test('MD — 3 year wait from completion of sentence (2025 reform)', () => {
+  test('MD misdemeanor — the researched wait (CCRC profile; statute re-read pending, LEGAL_ACCURACY_REVIEW L2)', () => {
     const r = getEligibility('MD', 'misdemeanor', 'Closed');
-    expect(r.waitYears).toBe(3);
-    expect(r.note).toMatch(/2025/);
+    expect(r.waitYears).toBe(5);
+    expect(r.source_url).toMatch(/^https?:\/\//);
   });
 
   test('VA — July 2026 Clean Slate law noted', () => {
@@ -361,10 +365,10 @@ describe('GET /expungement/check', () => {
     expect(r.body.state).toBe('TN');
   });
 
-  test('unknown state returns conditional default', async () => {
+  test('unknown state never gets a verdict', async () => {
     const r = await request(app).get('/expungement/check?state=ZZ&charges=misdemeanor%20assault');
-    expect(r.status).toBe(200);
-    expect(r.body.eligibility.conditional).toBe(true);
+    if (r.status === 200) expect(r.body.eligibility.conditional).toBe(false);
+    else expect(r.status).toBe(400);
   });
 
   test('dismissed charge → immediately eligible', async () => {
@@ -387,10 +391,10 @@ describe('GET /expungement/check', () => {
     expect(r.body.chargeType).toBe('unknown'); // empty charges → unknown (no false eligibility)
   });
 
-  test('WI misdemeanor note contains CRITICAL warning', async () => {
+  test('WI misdemeanor note says relief is decided at sentencing', async () => {
     const r = await request(app).get('/expungement/check?state=WI&charges=misdemeanor+theft');
     expect(r.status).toBe(200);
-    expect(r.body.eligibility.note).toMatch(/CRITICAL/);
+    expect(r.body.eligibility.note).toMatch(/sentencing/i);
   });
 
   test('disclaimer field is always present and non-empty', async () => {

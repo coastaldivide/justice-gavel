@@ -25,6 +25,7 @@ backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             AES-256-GCM encryption for messages/case notes at rest
             AI: Anthropic Claude (CLAUDE_MODEL, default claude-sonnet-5-5)
             Email: Resend (emails are logged, not sent, until RESEND_API_KEY is set)
+            SMS: Telnyx (court reminders + SOS; off until TELNYX_API_KEY + TELNYX_FROM_NUMBER)
             Queue: BullMQ when REDIS_URL is set, in-process otherwise
 
 supabase/migrations/   PostgreSQL schema — plain-SQL files (00…28), applied
@@ -171,6 +172,8 @@ hides or deletes a lawyer / bail-agent row. Each run is logged in
 | [EXTERNAL_SERVICES_SETUP.md](./EXTERNAL_SERVICES_SETUP.md) | Per-service signup/config walkthroughs |
 | [UPTIME_MONITORING.md](./UPTIME_MONITORING.md) | `/health` contract + uptime monitor setup |
 | [FACT_CHECK_RUNBOOK.md](./FACT_CHECK_RUNBOOK.md) | Verifying legal reference data against official sources |
+| [docs/LEGAL_ACCURACY_REVIEW.md](./docs/LEGAL_ACCURACY_REVIEW.md) | Oct 2026 source check of every legal rule: what was wrong, what was fixed, what is withheld until checked |
+| [docs/COURT_REMINDERS_PLAN.md](./docs/COURT_REMINDERS_PLAN.md) | Court-date reminders: channels (push → browser push → e-mail → Telnyx text), fixes, owner setup steps |
 | [docs/LEGAL_ACTION_ITEMS.md](./docs/LEGAL_ACTION_ITEMS.md) | Open legal/compliance items, incl. the lawyer review still required |
 | [PHASE_2_ROADMAP.md](./PHASE_2_ROADMAP.md) | Deferred feature territory (decision record) |
 | `backend/scripts/go-live-checklist.md` | Step-by-step go-live checklist (Render) |

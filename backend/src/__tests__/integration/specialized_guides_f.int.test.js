@@ -69,18 +69,22 @@ describeIntegration('section F: specialized legal guides (real Postgres)', () =>
     }
   });
 
-  it('a verdict comes with the statute the rule names; a rule naming none gives no verdict', async () => {
+  it('a verdict comes with the checked citation; a rule that could not be checked gives no verdict (Oct 2026 review)', async () => {
     const tn = await check('state=TN&status=Convicted&type=misdemeanor');
     expect(tn.body.eligibility.result).toBe('eligible');
-    expect(tn.body.source.citation).toBe('T.C.A. § 40-32-101');
+    expect(tn.body.source.citation).toMatch(/^Tenn\. Code Ann\. § 40-32-107/);   // renumbered from § 40-32-101
     expect(tn.body.source.reviewed).toBe(false);
     expect(tn.body.eligibility.waitYears).toBe(5);
-    const dv = await check('state=TN&status=Convicted&type=domestic');
-    expect(dv.body.eligibility.result).toBe('unsourced');
+    const dv = await check('state=TN&status=Convicted&type=domestic');   // domestic assault is on the never-eligible list
+    expect(dv.body.eligibility.result).toBe('not_eligible');
     expect(dv.body.eligibility.waitYears).toBeNull();
-    expect(dv.body.eligibility.note).toMatch(/Tennessee/);           // shown as recorded, labelled on the screen
-    const tx = await check('state=TX&status=Dismissed');               // waitYears 0 vs "after the statute of limitations"
-    expect(tx.body.eligibility.result).toBe('needs_review');
+    expect(dv.body.source.citation).toMatch(/39-13-111/);
+    const tx = await check('state=TX&status=Dismissed');               // ch. 55A: wait from arrest (was a contradiction)
+    expect(tx.body.eligibility.result).toBe('eligible');
+    expect(tx.body.eligibility.waitYears).toBe(1);
+    const wi = await check('state=WI&status=Convicted&type=dui');      // could not be checked → no verdict
+    expect(wi.body.eligibility.result).toBe('unsourced');
+    expect(wi.body.eligibility.waitYears).toBeNull();
   });
 
   it('answers for all 50 states + DC × every status and charge type, in English and Spanish', async () => {
@@ -95,7 +99,7 @@ describeIntegration('section F: specialized legal guides (real Postgres)', () =>
         if (e.waitYears != null) expect(r.body.source.citation).toBeTruthy();
       }
     }
-    expect([...seen].sort()).toEqual(['case_open', 'conditional', 'eligible', 'needs_review', 'not_eligible', 'unknown', 'unsourced']);
+    expect([...seen].sort()).toEqual(['case_open', 'conditional', 'eligible', 'not_eligible', 'unknown', 'unsourced']);   // no contradictions left (Oct 2026)
   }, 60000);
 
   it('attorneys are listings from the asked state only (CA used to match "Chicago" by city LIKE)', async () => {
@@ -129,7 +133,7 @@ describeIntegration('section F: specialized legal guides (real Postgres)', () =>
     expect(gb.status).toBe(200);
     expect(gb.body.central_authority.website).toMatch(/^https:\/\//);
     expect(gb.body.note).toMatch(/Convenção/);
-    expect(gb.body.source.last_verified_at).toBeNull();
+    expect(gb.body.source.last_verified_at).toBe('2026-10-26');   // checked against HCCH in the Oct 2026 review
     const us = await get('/api/hague-contacts/us-resources');
     expect(us.body.central_authority.central_authority.emergency_phone).toBe('+1-888-407-4747');
     expect(us.body.resources.map(r => r.key)).toEqual(['oci_application', 'ncmec', 'fbi', 'interpol']);
@@ -163,6 +167,11 @@ describeIntegration('section F: specialized legal guides (real Postgres)', () =>
 
   // ── legaldata translations ────────────────────────────────────────────────
   it('specialty courts: translated while the English is unchanged, English (labelled) after an edit', async () => {
+    // Oct 2026 review: unverified specialty-court rows are withheld by default; mark row 1 checked for this test.
+    await ctx.db.run(`UPDATE specialty_courts SET source_url = 'https://www.nashville.gov/departments/courts', verified_by = 'Source-checked 2026-10-26 (test)' WHERE id = 1`);
+    const withheld = await get('/api/legaldata/specialty-courts?state=CA');
+    expect(withheld.body.data).toEqual([]);
+    expect(withheld.body.meta.withheld).toBeGreaterThan(0);
     const vi = await get('/api/legaldata/specialty-courts?state=TN').set('Accept-Language', 'vi');
     const row = vi.body.data.find(r => r.id === 1);
     expect(row.text_lang).toBe('vi');

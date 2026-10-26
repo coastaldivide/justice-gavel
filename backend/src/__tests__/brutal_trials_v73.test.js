@@ -212,7 +212,7 @@ describe('EXI. expungement/ — Module Entry + Stateless Check + Attorney Search
     expect(src).toContain('Public (guests reach it from Home)');
     expect(src).toContain('no database reads');
     expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
-    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
+    expect(src).toContain('citationOf(rule)');                       // verdict only with a checked citation + source (Oct 2026)
   });
   test('EXI-02: attorneys.js GET /attorneys finds expungement attorneys by state', async () => {
     const fs = await import('fs');
@@ -277,7 +277,7 @@ describe('S12. UX — Final Coverage: Encryption + Migrations + Stateless Check'
     expect(src).toContain('Public (guests reach it from Home)');
     expect(src).toContain('no database reads');
     expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
-    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
+    expect(src).toContain('citationOf(rule)');                       // verdict only with a checked citation + source (Oct 2026)
   });
   test('S12-04: refresh.js only runs with LIVE_REFRESH=true (safe default)', () => {
     expect(CONFIG.LIVE_REFRESH).toBe(false);

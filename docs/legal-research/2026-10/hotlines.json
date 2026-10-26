@@ -1,0 +1,2095 @@
+{
+ "crisis_constants": [
+  {
+   "key": "suicidePrevention",
+   "name": "988 Suicide & Crisis Lifeline",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "number": "988",
+    "sms": "TEXT 988"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge, 988 (call or text) and 988lifeline.org chat are the correct values; do NOT null this in the app."
+  },
+  {
+   "key": "crisisText",
+   "name": "Crisis Text Line",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "sms": "TEXT HOME to 741741"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge, 'Text HOME to 741741' (US) is correct; do NOT null this in the app."
+  },
+  {
+   "key": "domesticViolence",
+   "name": "National Domestic Violence Hotline",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "number": "1-800-799-7233",
+    "sms": "TEXT START to 88788"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge, 1-800-799-7233 (SAFE), TTY 1-800-787-3224, text START to 88788 and thehotline.org are correct; do NOT null this in the app."
+  },
+  {
+   "key": "immigrationHelp",
+   "name": "National Immigration Legal Svcs",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "number": "1-800-354-0365"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Couldn't identify an organization called 'National Immigration Legal Services' with a national hotline, and couldn't confirm who answers 1-800-354-0365 (search budget used up). Treat this as a likely fabricated entry: REMOVE it, or replace it with the EOIR Automated Case Information line 1-800-898-7180 (verified, see ice_recommended_additions). That line gives case status only, not legal help."
+  },
+  {
+   "key": "substanceAbuse",
+   "name": "SAMHSA National Helpline",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "number": "1-800-662-4357"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge, 1-800-662-HELP (4357) is correct and also appears in the app's own resources_core id 3; do NOT null this in the app."
+  },
+  {
+   "key": "legalAidFinder",
+   "name": "LawHelp.org",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "url": "https://lawhelp.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. LawHelp.org is a legal-aid directory with no hotline; the canonical address is https://www.lawhelp.org. It's not a crisis line, so it doesn't belong in the 'emergency line' fallback map."
+  },
+  {
+   "key": "eatingDisorders",
+   "name": "National Alliance for Eating Disorders Helpline",
+   "number": null,
+   "sms": null,
+   "url": null,
+   "app_value": {
+    "number": "1-866-662-1235"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge the number is right, but this is a weekday therapist-staffed helpline, NOT a 24/7 crisis line. The app should add '(not a crisis line; in crisis call or text 988)'."
+  }
+ ],
+ "ice_resources": [
+  {
+   "index": 1,
+   "org": "RAICES (Refugee and Immigrant Center for Education and Legal Services)",
+   "phone": null,
+   "url": "https://www.raicestexas.org",
+   "takes_individual_calls": null,
+   "recommended_desc": "Texas nonprofit giving legal services to immigrants, mainly in Texas.",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. The app labels 210-787-3745 an 'Emergency Line'. Couldn't confirm that number; RAICES' published main office line (from prior knowledge, not re-read) is 210-226-7722. RAICES serves Texas only, so it isn't a national emergency line. Don't show the 'Emergency' label until this is confirmed."
+  },
+  {
+   "index": 2,
+   "org": "National Immigration Law Center (NILC)",
+   "phone": null,
+   "url": "https://www.nilc.org",
+   "takes_individual_calls": false,
+   "recommended_desc": "Policy and litigation organization; publishes know-your-rights guides. Does not give individual legal help.",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "The description 'Free legal help for low-income immigrants' is wrong: NILC is a policy and impact-litigation group and, from prior knowledge, says publicly that it does not provide individual legal help. Couldn't re-read its site. 213-639-3900 matches its Los Angeles office from prior knowledge, but calling it won't get a detained person help. Remove it from the call list or relabel it as information only."
+  },
+  {
+   "index": 3,
+   "org": "ACLU Immigrants' Rights Project",
+   "phone": null,
+   "url": "https://www.aclu.org/know-your-rights/immigrants-rights",
+   "takes_individual_calls": false,
+   "recommended_desc": "Know-your-rights information. For individual help, contact your state ACLU affiliate's intake.",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Couldn't confirm 212-549-2660. The ACLU national office's main number (from prior knowledge) is 212-549-2500. The national Immigrants' Rights Project does impact litigation and doesn't take individual cases by phone; individual intake goes through state affiliates. Drop the phone and keep the KYR link."
+  },
+  {
+   "index": 4,
+   "org": "Immigrant Legal Resource Center (ILRC)",
+   "phone": null,
+   "url": "https://www.ilrc.org",
+   "takes_individual_calls": false,
+   "recommended_desc": "Training and know-your-rights materials (e.g., red cards) for immigrants and advocates. Does not represent individuals.",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "415-255-9499 matches ILRC's San Francisco office from prior knowledge, but it wasn't re-read. ILRC is a technical-assistance and training organization and doesn't give individual legal aid or referrals by phone, so the 'legal aid referrals' description is misleading. Keep the link and drop the call button."
+  },
+  {
+   "index": 5,
+   "org": "Catholic Legal Immigration Network (CLINIC)",
+   "phone": null,
+   "url": "https://cliniclegal.org",
+   "takes_individual_calls": false,
+   "recommended_desc": "Network of nonprofit immigration legal programs. Use its online affiliate directory to find a local provider.",
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Couldn't confirm 301-587-7993. CLINIC's national office number (from prior knowledge) is 301-565-4800. CLINIC supports member agencies and doesn't take calls from detained individuals. Point users to its 'Find Legal Help' affiliate directory instead of a phone number."
+  }
+ ],
+ "ice_recommended_additions": [
+  {
+   "name": "EOIR Automated Case Information (hotline and online portal)",
+   "phone": "1-800-898-7180 (alt. 304-625-2050; TDD 800-828-1120)",
+   "url": "https://acis.eoir.justice.gov/en/",
+   "what_it_does": "Official US immigration court system. Enter the person's A-number to see the next hearing date, the court, and decision status; works for detained cases too. For bond hearing details, call the immigration court hearing the case.",
+   "source_url": "https://www.justice.gov/eoir/contact-eoir ; https://www.justice.gov/eoir/eoir-case-information"
+  },
+  {
+   "name": "ICE Online Detainee Locator System",
+   "phone": null,
+   "url": "https://www.ice.gov/locator",
+   "what_it_does": "Official ICE search for a person in ICE custody, by A-number plus country of birth, or by name plus country of birth. Gives the detention facility and its contact information.",
+   "source_url": "App comment cites ICE ODLS brochure (checked 2026-10-20); not re-read in this session"
+  },
+  {
+   "name": "EOIR List of Pro Bono Legal Service Providers",
+   "phone": null,
+   "url": "https://www.justice.gov/eoir/list-pro-bono-legal-service-providers",
+   "what_it_does": "Official list, by state and immigration court, of nonprofit organizations and attorneys who may give free legal services in immigration proceedings. Many entries say whether they take detained cases.",
+   "source_url": "https://www.justice.gov/eoir/policy-manual-eoir/part-I/chapter-2-3"
+  },
+  {
+   "name": "National Immigration Legal Services Directory (Immigration Advocates Network)",
+   "phone": null,
+   "url": "https://www.immigrationadvocates.org/legaldirectory/",
+   "what_it_does": "Searchable national directory of about 1,000+ nonprofit immigration legal services providers; filter by detention and by state.",
+   "source_url": null,
+   "note": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn."
+  },
+  {
+   "name": "National Immigration Detention Hotline (Freedom for Immigrants)",
+   "phone": null,
+   "url": "https://www.freedomforimmigrants.org",
+   "what_it_does": "Free hotline for people in immigration detention and their families: referrals, visitation, and abuse reporting.",
+   "source_url": null,
+   "note": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. From prior knowledge the hotline is (209) 757-3733, reached from detention phones via a speed-dial code; confirm before publishing."
+  }
+ ],
+ "resources": [
+  {
+   "id": 1,
+   "category": "CRISIS_LINE",
+   "title": "988 Suicide & Crisis Lifeline",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "988",
+    "url": "https://988lifeline.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified.",
+   "fields_changed": []
+  },
+  {
+   "id": 2,
+   "category": "CRISIS_LINE",
+   "title": "National Domestic Violence Hotline",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "1-800-799-7233",
+    "url": "https://thehotline.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified.",
+   "fields_changed": []
+  },
+  {
+   "id": 3,
+   "category": "CRISIS_LINE",
+   "title": "SAMHSA National Helpline",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "1-800-662-4357",
+    "url": "https://www.samhsa.gov/find-help/national-helpline"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified.",
+   "fields_changed": []
+  },
+  {
+   "id": 4,
+   "category": "CRISIS_LINE",
+   "title": "National Sexual Assault Hotline (RAINN)",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "1-800-656-4673",
+    "url": "https://www.rainn.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified.",
+   "fields_changed": []
+  },
+  {
+   "id": 5,
+   "category": "CRISIS_LINE",
+   "title": "Crisis Text Line",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "Text HOME to 741741",
+    "url": "https://www.crisistextline.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified.",
+   "fields_changed": []
+  },
+  {
+   "id": 6,
+   "category": "CRISIS_LINE",
+   "title": "Veterans Crisis Line",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "988 then press 1",
+    "url": "https://www.veteranscrisisline.net"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified. The Veterans Crisis Line also takes texts at 838255.",
+   "fields_changed": []
+  },
+  {
+   "id": 7,
+   "category": "CRISIS_LINE",
+   "title": "National Alliance for Eating Disorders Helpline",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "1-866-662-1235",
+    "url": "https://www.allianceforeatingdisorders.com"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified. Not a 24/7 crisis line; add '(in crisis call or text 988)'.",
+   "fields_changed": []
+  },
+  {
+   "id": 8,
+   "category": "CRISIS_LINE",
+   "title": "National Child Abuse Hotline",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "1-800-422-4453",
+    "url": "https://www.childhelp.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Prior-knowledge assessment: this number is the known published one; keep it in the app until re-verified. Childhelp's hotline site is childhelphotline.org.",
+   "fields_changed": []
+  },
+  {
+   "id": 360,
+   "category": "EXPUNGEMENT",
+   "title": "Clean Slate Clearinghouse (National)",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(202) 783-5140",
+    "url": "https://cleanslateclearinghouse.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Check that cleanslateclearinghouse.org is still live and that the phone belongs to it.",
+   "fields_changed": []
+  },
+  {
+   "id": 361,
+   "category": "EXPUNGEMENT",
+   "title": "RecordClear.org",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": null,
+    "url": "https://recordclear.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: No phone listed; check that recordclear.org is a real, current service.",
+   "fields_changed": []
+  },
+  {
+   "id": 362,
+   "category": "EXPUNGEMENT",
+   "title": "Tennessee Legal Community Expungement Clinic",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(615) 383-7421",
+    "url": "https://www.tba.org/expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 363,
+   "category": "EXPUNGEMENT",
+   "title": "Tennessee Restoration of Rights Project",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(615) 322-4973",
+    "url": "https://law.vanderbilt.edu/clinics/tennessee-restoration-of-rights-project/"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 364,
+   "category": "EXPUNGEMENT",
+   "title": "Texas Expungement Project",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(512) 374-2700",
+    "url": "https://www.tlsc.org/page/expunction-nondisclosure"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 365,
+   "category": "EXPUNGEMENT",
+   "title": "Florida Expungement Assistance",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(850) 561-5600",
+    "url": "https://www.floridabar.org/public/consumer/expungement/"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Title invents an entity ('Florida Expungement Assistance'); Florida sealing/expunction applications go through FDLE.",
+   "fields_changed": []
+  },
+  {
+   "id": 366,
+   "category": "EXPUNGEMENT",
+   "title": "California Record Clearance Project",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(323) 254-3500",
+    "url": "https://recordclearanceproject.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 367,
+   "category": "EXPUNGEMENT",
+   "title": "East Bay Community Law Center Expungement",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(510) 548-4040",
+    "url": "https://ebclc.org/record-clearing"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 368,
+   "category": "EXPUNGEMENT",
+   "title": "Illinois Legal Aid Online Expungement",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(312) 341-9925",
+    "url": "https://www.illinoislegalaid.org/legal-information/expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 369,
+   "category": "EXPUNGEMENT",
+   "title": "New York Clean Slate Act",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(212) 416-8090",
+    "url": "https://ag.ny.gov/bureau/criminal-justice"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: The NY Attorney General's Criminal Justice Bureau doesn't process Clean Slate sealing; automatic sealing runs through the courts and DCJS. The phone and URL look mismatched with the title.",
+   "fields_changed": []
+  },
+  {
+   "id": 370,
+   "category": "EXPUNGEMENT",
+   "title": "Pennsylvania Expungement Network",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(717) 232-0581",
+    "url": "https://www.palegalaid.net/expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 371,
+   "category": "EXPUNGEMENT",
+   "title": "Ohio Sealing and Expungement",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(800) 686-1526",
+    "url": "https://www.ohiolegalhelp.org/topic/expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 372,
+   "category": "EXPUNGEMENT",
+   "title": "Georgia Justice Project Expungement",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(404) 827-0027",
+    "url": "https://gjp.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 373,
+   "category": "EXPUNGEMENT",
+   "title": "Washington State Clean Slate",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(800) 442-5022",
+    "url": "https://www.washingtonlawhelp.org/resource/clearing-your-criminal-record"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 374,
+   "category": "EXPUNGEMENT",
+   "title": "Colorado Expungement and Sealing",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(303) 864-8000",
+    "url": "https://coexpungement.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 375,
+   "category": "EXPUNGEMENT",
+   "title": "Michigan Clean Slate Expungement",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(844) 342-5678",
+    "url": "https://www.michiganlegalhelp.org/self-help-tools/crime-and-expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 376,
+   "category": "EXPUNGEMENT",
+   "title": "Minnesota Expungement Project",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(612) 332-1441",
+    "url": "https://www.lawhelpmn.org/self-help-library/fact-sheet/expungement"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 153,
+   "category": "IMMIGRATION_COURT",
+   "title": "Oakdale Immigration Court",
+   "phone": "(318) 335-0365",
+   "url": "https://www.justice.gov/eoir/oakdale-immigration-court",
+   "address": "1900 E. Whatley Road, Oakdale, LA 71463",
+   "state": "LA",
+   "source_url": "https://www.justice.gov/eoir/oakdale-immigration-court",
+   "status": "corrected",
+   "issue": "State was 'AL' (the court is in Louisiana); phone and street address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "state",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 154,
+   "category": "IMMIGRATION_COURT",
+   "title": "Phoenix Immigration Court",
+   "phone": "(602) 640-2747",
+   "url": "https://www.justice.gov/eoir/phoenix-immigration-court",
+   "address": "250 N. Seventh Ave., Suite 300, Phoenix, AZ 85007",
+   "state": "AZ",
+   "source_url": "https://www.justice.gov/eoir/phoenix-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 155,
+   "category": "IMMIGRATION_COURT",
+   "title": "Tucson Immigration Court",
+   "phone": "(520) 670-5212",
+   "url": "https://www.justice.gov/eoir/tucson-immigration-court",
+   "address": "300 West Congress Street, Suite 300, Tucson, AZ 85701",
+   "state": "AZ",
+   "source_url": "https://www.justice.gov/eoir/tucson-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong; the court is at 300 W. Congress. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 156,
+   "category": "IMMIGRATION_COURT",
+   "title": "Eloy Immigration Court",
+   "phone": "(520) 466-3671",
+   "url": "https://www.justice.gov/eoir/eloy-immigration-court",
+   "address": "1705 E. Hanna Road, Suite 366, Eloy, AZ 85131",
+   "state": "AZ",
+   "source_url": "https://www.justice.gov/eoir/eloy-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 157,
+   "category": "IMMIGRATION_COURT",
+   "title": "Los Angeles - West Los Angeles Immigration Court",
+   "phone": "(310) 335-2100",
+   "url": "https://www.justice.gov/eoir/los-angeles-west-los-angeles-immigration-court",
+   "address": "5245 Pacific Concourse Drive, Suite 100, Los Angeles, CA 90045",
+   "state": "CA",
+   "source_url": "https://www.justice.gov/eoir/los-angeles-west-los-angeles-immigration-court",
+   "status": "corrected",
+   "issue": "The Olive Street court listed in the app closed in April 2024 (EOIR notice); its cases went to the West LA, North Los Angeles Street, and Van Nuys courts. Three LA courts are now open, so the app should list all three or link to the EOIR court finder. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 158,
+   "category": "IMMIGRATION_COURT",
+   "title": "Concord Immigration Court",
+   "phone": "(925) 680-9015",
+   "url": "https://www.justice.gov/eoir/concord-immigration-court",
+   "address": "1855 Gateway Boulevard, Suite 850, Concord, CA 94520",
+   "state": "CA",
+   "source_url": "https://www.justice.gov/eoir/concord-immigration-court",
+   "status": "corrected",
+   "issue": "EOIR's current court list has no 'San Francisco Immigration Court'. The Bay Area court is Concord (EOIR lists it with the San Francisco DHS district office). The 100 Montgomery St address and phone were outdated. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 159,
+   "category": "IMMIGRATION_COURT",
+   "title": "San Diego Immigration Court",
+   "phone": "(619) 510-4500",
+   "url": "https://www.justice.gov/eoir/san-diego-immigration-court",
+   "address": "880 Front Street, Suite 4240, San Diego, CA 92101",
+   "state": "CA",
+   "source_url": "https://www.justice.gov/eoir/san-diego-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and suite were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 160,
+   "category": "IMMIGRATION_COURT",
+   "title": "Sacramento Immigration Court",
+   "phone": "(916) 447-9301",
+   "url": "https://www.justice.gov/eoir/sacramento-immigration-court",
+   "address": "John Moss Federal Building, 650 Capitol Mall, Suite 4-200, Sacramento, CA 95814",
+   "state": "CA",
+   "source_url": "https://www.justice.gov/eoir/sacramento-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and street number/suite were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 161,
+   "category": "IMMIGRATION_COURT",
+   "title": "Imperial Immigration Court",
+   "phone": "(760) 370-5200",
+   "url": "https://www.justice.gov/eoir/imperial-immigration-court",
+   "address": "2409 La Brucherie Road, Imperial, CA 92251",
+   "state": "CA",
+   "source_url": "https://www.justice.gov/eoir/imperial-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address (old El Centro address) were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 162,
+   "category": "IMMIGRATION_COURT",
+   "title": "Denver Immigration Court",
+   "phone": "(303) 844-5815",
+   "url": "https://www.justice.gov/eoir/denver-immigration-court",
+   "address": "1961 Stout Street, Suite 3101, Denver, CO 80294",
+   "state": "CO",
+   "source_url": "https://www.justice.gov/eoir/denver-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and suite were wrong. Detained cases are heard at the separate Aurora court. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 163,
+   "category": "IMMIGRATION_COURT",
+   "title": "Hartford Immigration Court",
+   "phone": "(860) 240-3881",
+   "url": "https://www.justice.gov/eoir/hartford-immigration-court",
+   "address": "AA Ribicoff Federal Building, 450 Main Street, Suite 628, Hartford, CT 06103-3015",
+   "state": "CT",
+   "source_url": "https://www.justice.gov/eoir/hartford-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and room were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 164,
+   "category": "IMMIGRATION_COURT",
+   "title": "Miami Immigration Court",
+   "phone": "(305) 789-4221",
+   "url": "https://www.justice.gov/eoir/miami-immigration-court",
+   "address": "One Riverview Square, 333 S. Miami Avenue, Suite 700, Miami, FL 33130",
+   "state": "FL",
+   "source_url": "https://www.justice.gov/eoir/miami-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 165,
+   "category": "IMMIGRATION_COURT",
+   "title": "Orlando Immigration Court",
+   "phone": "(407) 244-8900",
+   "url": "https://www.justice.gov/eoir/orlando-immigration-court",
+   "address": "500 N. Orange Ave, Suite 1100, Orlando, FL 32801",
+   "state": "FL",
+   "source_url": "https://www.justice.gov/eoir/orlando-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 166,
+   "category": "IMMIGRATION_COURT",
+   "title": "Miami Krome Immigration Court (detained)",
+   "phone": "(786) 422-8700",
+   "url": "https://www.justice.gov/eoir/miami-krome-immigration-court",
+   "address": "Krome North Processing Center, 18201 SW 12th Street, Miami, FL 33194",
+   "state": "FL",
+   "source_url": "https://www.justice.gov/eoir/miami-krome-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 167,
+   "category": "IMMIGRATION_COURT",
+   "title": "Atlanta - Ted Turner Drive Immigration Court",
+   "phone": "(404) 653-2140",
+   "url": "https://www.justice.gov/eoir/atlanta-ted-turner-drive",
+   "address": "180 Ted Turner Drive SW, Suite 241, Atlanta, GA 30303",
+   "state": "GA",
+   "source_url": "https://www.justice.gov/eoir/atlanta-ted-turner-drive",
+   "status": "corrected",
+   "issue": "Phone and suite were wrong. Atlanta has a second court: W. Peachtree Street, 401 W. Peachtree St, Suite 2600, Atlanta, GA 30308, (404) 554-9400 (https://www.justice.gov/eoir/atlanta-w-peachtree-street). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 168,
+   "category": "IMMIGRATION_COURT",
+   "title": "Stewart Immigration Court (detained)",
+   "phone": "(229) 838-1324",
+   "url": "https://www.justice.gov/eoir/lumpkin-immigration-court",
+   "address": "146 CCA Road, PO Box 248, Lumpkin, GA 31815",
+   "state": "GA",
+   "source_url": "https://www.justice.gov/eoir/lumpkin-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 169,
+   "category": "IMMIGRATION_COURT",
+   "title": "Honolulu Immigration Court",
+   "phone": "(808) 541-1870",
+   "url": "https://www.justice.gov/eoir/honolulu-immigration-court",
+   "address": "PJKK Federal Building, 300 Ala Moana Blvd., Rm. 8-112, Honolulu, HI 96850",
+   "state": "HI",
+   "source_url": "https://www.justice.gov/eoir/honolulu-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and room were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 170,
+   "category": "IMMIGRATION_COURT",
+   "title": "Chicago Immigration Court",
+   "phone": "(312) 220-0965",
+   "url": "https://www.justice.gov/eoir/chicago-immigration-court",
+   "address": "55 E. Monroe St., Suite 1500, Chicago, IL 60603",
+   "state": "IL",
+   "source_url": "https://www.justice.gov/eoir/chicago-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong; the court moved to 55 E. Monroe (EOIR also lists a Clark Street location). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 171,
+   "category": "IMMIGRATION_COURT",
+   "title": "New Orleans Immigration Court",
+   "phone": "(504) 589-3992",
+   "url": "https://www.justice.gov/eoir/new-orleans-immigration-court",
+   "address": "One Canal Place, 365 Canal Street, Suite 500, New Orleans, LA 70130",
+   "state": "LA",
+   "source_url": "https://www.justice.gov/eoir/new-orleans-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 172,
+   "category": "IMMIGRATION_COURT",
+   "title": "Boston Immigration Court",
+   "phone": "(617) 565-3080",
+   "url": "https://www.justice.gov/eoir/boston-immigration-court",
+   "address": "JFK Federal Building, 15 New Sudbury Street, Room 320, Boston, MA 02203",
+   "state": "MA",
+   "source_url": "https://www.justice.gov/eoir/boston-immigration-court",
+   "status": "verified",
+   "issue": "Values match the EOIR court page. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "url"
+   ]
+  },
+  {
+   "id": 173,
+   "category": "IMMIGRATION_COURT",
+   "title": "Baltimore Immigration Court",
+   "phone": "(410) 962-3092",
+   "url": "https://www.justice.gov/eoir/baltimore-immigration-court",
+   "address": "George Fallon Federal Building, 31 Hopkins Plaza, Rm. 440, Baltimore, MD 21201",
+   "state": "MD",
+   "source_url": "https://www.justice.gov/eoir/baltimore-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and room were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 174,
+   "category": "IMMIGRATION_COURT",
+   "title": "Detroit Immigration Court",
+   "phone": "(313) 226-2603",
+   "url": "https://www.justice.gov/eoir/detroit-immigration-court",
+   "address": "477 Michigan Avenue, Suite 440, Detroit, MI 48226",
+   "state": "MI",
+   "source_url": "https://www.justice.gov/eoir/detroit-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 175,
+   "category": "IMMIGRATION_COURT",
+   "title": "Fort Snelling Immigration Court",
+   "phone": "(612) 725-3765",
+   "url": "https://www.justice.gov/eoir/fort-snelling-immigration-court",
+   "address": "Bishop Henry Whipple Federal Building, 1 Federal Drive, Suite 1850, Fort Snelling, MN 55111",
+   "state": "MN",
+   "source_url": "https://www.justice.gov/eoir/fort-snelling-immigration-court",
+   "status": "corrected",
+   "issue": "EOIR has no 'Bloomington' court; Minnesota's court is Fort Snelling. Name, phone, and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 176,
+   "category": "IMMIGRATION_COURT",
+   "title": "Kansas City Immigration Court",
+   "phone": "(816) 581-5000",
+   "url": "https://www.justice.gov/eoir/kansas-city-immigration-court",
+   "address": "2345 Grand Boulevard, Suite 525, Kansas City, MO 64108",
+   "state": "MO",
+   "source_url": "https://www.justice.gov/eoir/kansas-city-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and suite were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 177,
+   "category": "IMMIGRATION_COURT",
+   "title": "Newark Immigration Court",
+   "phone": "(973) 645-3524",
+   "url": "https://www.justice.gov/eoir/newark-immigration-court",
+   "address": "970 Broad Street, Room 1200, Newark, NJ 07102",
+   "state": "NJ",
+   "source_url": "https://www.justice.gov/eoir/newark-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and room were wrong. Detained NJ cases go to the separate Elizabeth court. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 178,
+   "category": "IMMIGRATION_COURT",
+   "title": "Otero Immigration Court (detained)",
+   "phone": "(575) 824-8900",
+   "url": "https://www.justice.gov/eoir/otero-immigration-court",
+   "address": "26 McGregor Range Road, Door #1, Chaparral, NM 88081",
+   "state": "NM",
+   "source_url": "https://www.justice.gov/eoir/otero-immigration-court",
+   "status": "corrected",
+   "issue": "The app's 'El Paso Immigration Court (NM docket)' row is invented and duplicates row 189. Otero is the only EOIR court located in New Mexico, and it hears detained cases. Which court has a non-detained NM case can't be set statewide; tell users to check ACIS (1-800-898-7180). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 179,
+   "category": "IMMIGRATION_COURT",
+   "title": "New York - Federal Plaza Immigration Court",
+   "phone": "(212) 602-6500",
+   "url": "https://www.justice.gov/eoir/new-york-federal-plaza-immigration-court",
+   "address": "26 Federal Plaza, 12th Floor, Room 1237, New York, NY 10278",
+   "state": "NY",
+   "source_url": "https://www.justice.gov/eoir/new-york-federal-plaza-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. NYC also has the Broadway (290 Broadway) and Varick Street (201 Varick) courts. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 180,
+   "category": "IMMIGRATION_COURT",
+   "title": "Buffalo Immigration Court",
+   "phone": "(716) 551-3442",
+   "url": "https://www.justice.gov/eoir/buffalo-immigration-court",
+   "address": "130 Delaware Avenue, Suite 300, Buffalo, NY 14202",
+   "state": "NY",
+   "source_url": "https://www.justice.gov/eoir/buffalo-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. EOIR lists the Batavia court as closed July 24, 2026. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 181,
+   "category": "IMMIGRATION_COURT",
+   "title": "Charlotte Immigration Court",
+   "phone": "(704) 817-6140",
+   "url": "https://www.justice.gov/eoir/charlotte-immigration-court",
+   "address": "5701 Executive Center Drive, Suite 400, Charlotte, NC 28212",
+   "state": "NC",
+   "source_url": "https://www.justice.gov/eoir/charlotte-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 182,
+   "category": "IMMIGRATION_COURT",
+   "title": "Cleveland Immigration Court",
+   "phone": "(216) 802-1100",
+   "url": "https://www.justice.gov/eoir/cleveland-immigration-court",
+   "address": "801 W. Superior Avenue, Suite 13-100, Cleveland, OH 44113",
+   "state": "OH",
+   "source_url": "https://www.justice.gov/eoir/cleveland-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 183,
+   "category": "IMMIGRATION_COURT",
+   "title": "Portland Immigration Court",
+   "phone": "(503) 326-6341",
+   "url": "https://www.justice.gov/eoir/portland-immigration-court",
+   "address": "1220 SW 3rd Avenue, Suite 500, Portland, OR 97204",
+   "state": "OR",
+   "source_url": "https://www.justice.gov/eoir/portland-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 184,
+   "category": "IMMIGRATION_COURT",
+   "title": "Philadelphia Immigration Court",
+   "phone": "(215) 656-7000",
+   "url": "https://www.justice.gov/eoir/philadelphia-pa",
+   "address": "Robert Nix Federal Building, 900 Market Street, Suite 504, Philadelphia, PA 19107",
+   "state": "PA",
+   "source_url": "https://www.justice.gov/eoir/philadelphia-pa",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 185,
+   "category": "IMMIGRATION_COURT",
+   "title": "Memphis Immigration Court",
+   "phone": "(901) 528-5883",
+   "url": "https://www.justice.gov/eoir/memphis-immigration-court",
+   "address": "80 Monroe Avenue, Lower Level Suite G-10, Memphis, TN 38103",
+   "state": "TN",
+   "source_url": "https://www.justice.gov/eoir/memphis-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. The Memphis court also runs a Louisville, KY hearing location. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 186,
+   "category": "IMMIGRATION_COURT",
+   "title": "Dallas Immigration Court",
+   "phone": "(214) 767-1814",
+   "url": "https://www.justice.gov/eoir/dallas-immigration-court",
+   "address": "1100 Commerce Street, Suite 1060, Dallas, TX 75242",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/dallas-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 187,
+   "category": "IMMIGRATION_COURT",
+   "title": "Houston - Jefferson Street Immigration Court",
+   "phone": "(713) 286-4300",
+   "url": "https://www.justice.gov/eoir/houston-jefferson-street-immigration-court",
+   "address": "500 Jefferson Street, Suite 300, Houston, TX 77002",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/houston-jefferson-street-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address (old Northpoint Dr) were wrong. Houston also has Greenspoint Park, S. Gessner Road, and Conroe/Houston SPC courts (phones not checked). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 188,
+   "category": "IMMIGRATION_COURT",
+   "title": "San Antonio Immigration Court",
+   "phone": "(210) 472-6637",
+   "url": "https://www.justice.gov/eoir/san-antonio-immigration-court",
+   "address": "800 Dolorosa, Suite 300, San Antonio, TX 78207",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/san-antonio-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 189,
+   "category": "IMMIGRATION_COURT",
+   "title": "El Paso Immigration Court",
+   "phone": "(915) 534-6020",
+   "url": "https://www.justice.gov/eoir/el-paso-immigration-courts",
+   "address": "700 E. San Antonio Avenue, Suite 750, El Paso, TX 79901",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/el-paso-immigration-courts",
+   "status": "corrected",
+   "issue": "Phone and suite were wrong. There is also a separate El Paso SPC court (detained). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 190,
+   "category": "IMMIGRATION_COURT",
+   "title": "Laredo Immigration Court",
+   "phone": "(956) 523-6200",
+   "url": "https://www.justice.gov/eoir/laredo-immigration-court",
+   "address": "1406 Jacaman Road, Suite B, Laredo, TX 78041",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/laredo-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 191,
+   "category": "IMMIGRATION_COURT",
+   "title": "Harlingen Immigration Court",
+   "phone": "(956) 427-8580",
+   "url": "https://www.justice.gov/eoir/harlingen-immigration-court",
+   "address": "2009 West Jefferson Avenue, Suite 300, Harlingen, TX 78550",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/harlingen-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 192,
+   "category": "IMMIGRATION_COURT",
+   "title": "Pearsall Immigration Court (detained)",
+   "phone": "(210) 368-5700",
+   "url": "https://www.justice.gov/eoir/pearsall-immigration-court",
+   "address": "566 Veterans Drive, Pearsall, TX 78061",
+   "state": "TX",
+   "source_url": "https://www.justice.gov/eoir/pearsall-immigration-court",
+   "status": "corrected",
+   "issue": "Phone was wrong. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 193,
+   "category": "IMMIGRATION_COURT",
+   "title": "Salt Lake City Immigration Court",
+   "phone": "(801) 524-3000",
+   "url": "https://www.justice.gov/eoir/salt-lake-city-immigration-court",
+   "address": "2975 South Decker Lake Drive, #200, West Valley City, UT 84119-6094",
+   "state": "UT",
+   "source_url": "https://www.justice.gov/eoir/salt-lake-city-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong; the court is in West Valley City. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 194,
+   "category": "IMMIGRATION_COURT",
+   "title": "Annandale Immigration Court",
+   "phone": "(703) 343-4000",
+   "url": "https://www.justice.gov/eoir/annandale-immigration-court",
+   "address": "7619 Little River Turnpike, Suite 400, Annandale, VA 22003",
+   "state": "VA",
+   "source_url": "https://www.justice.gov/eoir/annandale-immigration-court",
+   "status": "corrected",
+   "issue": "EOIR's current list has no Arlington court. Virginia's courts are Annandale and Sterling (21400 Ridgetop Circle, Suite 200, Sterling, VA 20166, (703) 674-4600, https://www.justice.gov/eoir/sterling-immigration-court). URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "title",
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 195,
+   "category": "IMMIGRATION_COURT",
+   "title": "Seattle Immigration Court",
+   "phone": "(206) 342-7200",
+   "url": "https://www.justice.gov/eoir/seattle-immigration-court",
+   "address": "915 2nd Ave., Suite 613, Seattle, WA 98174",
+   "state": "WA",
+   "source_url": "https://www.justice.gov/eoir/seattle-immigration-court",
+   "status": "corrected",
+   "issue": "Phone and address were wrong. Detained WA cases go to the Tacoma court. URL changed from the generic listing (which isn't reachable) to the court's own EOIR page.",
+   "fields_changed": [
+    "phone",
+    "address",
+    "url"
+   ]
+  },
+  {
+   "id": 196,
+   "category": "IMMIGRATION_COURT",
+   "title": "Milwaukee Immigration Court",
+   "phone": null,
+   "url": null,
+   "address": null,
+   "state": "WI",
+   "source_url": "https://www.justice.gov/eoir/immigration-court-operational-status",
+   "status": "corrected",
+   "issue": "EOIR's operational-status list has no immigration court in Wisconsin, so the 'Milwaukee Immigration Court' row is fabricated. Remove it; Wisconsin cases are heard elsewhere (the Chicago court is nearest). Tell users to check ACIS.",
+   "fields_changed": [
+    "remove_row"
+   ],
+   "action": "remove"
+  },
+  {
+   "id": 40,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Alabama Office of Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(334) 353-1650",
+    "url": "https://publicdefender.alabama.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 41,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Alaska Public Defender Agency",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(907) 334-4400",
+    "url": "https://publicdefender.alaska.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 42,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Maricopa County Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(602) 506-7711",
+    "url": "https://publicdefender.maricopa.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 43,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Arkansas Public Defender Commission",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(501) 682-9070",
+    "url": "https://www.arlegalpublicdefender.com"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 44,
+   "category": "PUBLIC_DEFENDER",
+   "title": "California Public Defenders Association",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(916) 446-2064",
+    "url": "https://cpda.net"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Name shows this is a trade association (CPDA), not a public defender office; California public defense is run by each county.",
+   "fields_changed": []
+  },
+  {
+   "id": 45,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Los Angeles County Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(213) 974-2811",
+    "url": "https://pd.lacounty.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 46,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Colorado State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(303) 764-1400",
+    "url": "https://www.coloradospd.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 47,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Connecticut Office of the Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(860) 509-6400",
+    "url": "https://www.opd.ct.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 48,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Delaware Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(302) 577-5200",
+    "url": "https://publicdefender.delaware.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 49,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Florida Public Defender Association",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(850) 488-2810",
+    "url": "https://www.fpda.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Name shows this is an association; Florida public defenders are elected per judicial circuit, so users need their circuit's office.",
+   "fields_changed": []
+  },
+  {
+   "id": 50,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Georgia Public Defenders Council",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(404) 232-7020",
+    "url": "https://www.gapubdef.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 51,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Office of the Public Defender Hawaii",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(808) 586-2690",
+    "url": "https://pubdef.hawaii.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 52,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Idaho State Appellate Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(208) 334-2712",
+    "url": "https://sapd.idaho.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Appellate office only (handles appeals, not arrests or trials); Idaho trial-level public defense is run by the State Public Defender.",
+   "fields_changed": []
+  },
+  {
+   "id": 53,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Illinois Office of the State Appellate Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(312) 814-5472",
+    "url": "https://www.osad.state.il.us"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Appellate office only (OSAD); trial public defenders are county offices (e.g., Cook County Law Office of the Public Defender).",
+   "fields_changed": []
+  },
+  {
+   "id": 54,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Indiana Public Defender Council",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(317) 232-2542",
+    "url": "https://www.in.gov/ipdc"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 55,
+   "category": "PUBLIC_DEFENDER",
+   "title": "State Public Defender Iowa",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(515) 242-6158",
+    "url": "https://spd.iowa.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 56,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Kansas State Board of Indigents Defense Services",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(785) 296-3103",
+    "url": "https://www.sbids.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 57,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Department of Public Advocacy Kentucky",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(502) 564-8006",
+    "url": "https://dpa.ky.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 58,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Louisiana Public Defender Board",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(225) 219-9500",
+    "url": "https://lpdb.la.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 59,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Maine Commission on Indigent Legal Services",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(207) 287-6671",
+    "url": "https://www.maine.gov/mcils"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 60,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Maryland Office of the Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(410) 539-5880",
+    "url": "https://www.opd.state.md.us"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 61,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Committee for Public Counsel Services Massachusetts",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(617) 482-6212",
+    "url": "https://www.publiccounsel.net"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 62,
+   "category": "PUBLIC_DEFENDER",
+   "title": "State Appellate Defender Office Michigan",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(313) 256-9833",
+    "url": "https://sado.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Appellate office only (SADO); trial public defense is run by county or the MIDC.",
+   "fields_changed": []
+  },
+  {
+   "id": 63,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Board of Public Defense Minnesota",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(651) 201-8600",
+    "url": "https://pd.mn.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 64,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Mississippi Public Defender Task Force",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(601) 576-4290",
+    "url": "https://www.courts.ms.gov/research/links/publicdefender.php"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: URL is a court research links page, not a public defender office.",
+   "fields_changed": []
+  },
+  {
+   "id": 65,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Missouri State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(573) 751-3431",
+    "url": "https://publicdefender.mo.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 66,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Office of the State Public Defender Montana",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(406) 444-2028",
+    "url": "https://www.publicdefender.mt.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 67,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Nebraska Commission on Public Advocacy",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(402) 471-2819",
+    "url": "https://www.supremecourt.ne.gov/administrative-offices/commission-public-advocacy"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 68,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Nevada State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(775) 684-1100",
+    "url": "https://publicdefender.nv.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 69,
+   "category": "PUBLIC_DEFENDER",
+   "title": "New Hampshire Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(603) 224-1236",
+    "url": "https://www.nhpd.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 70,
+   "category": "PUBLIC_DEFENDER",
+   "title": "New Jersey Office of the Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(609) 292-7087",
+    "url": "https://www.njpublicdefender.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 71,
+   "category": "PUBLIC_DEFENDER",
+   "title": "New Mexico Law Offices of the Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(505) 827-3931",
+    "url": "https://www.nmlegis.gov/entity/lopd"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: URL points to the legislature (nmlegis.gov), not the Law Offices of the Public Defender's own site.",
+   "fields_changed": []
+  },
+  {
+   "id": 72,
+   "category": "PUBLIC_DEFENDER",
+   "title": "North Carolina Office of Indigent Defense Services",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(919) 354-7200",
+    "url": "https://www.ncids.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 73,
+   "category": "PUBLIC_DEFENDER",
+   "title": "North Dakota Commission on Legal Counsel for Indigents",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(701) 328-3249",
+    "url": "https://www.ndcji.com"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: URL ndcji.com doesn't look like the ND Commission on Legal Counsel for Indigents' official .gov site; check it.",
+   "fields_changed": []
+  },
+  {
+   "id": 74,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Ohio Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(614) 466-5394",
+    "url": "https://opd.ohio.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 75,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Oklahoma Indigent Defense System",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(405) 521-6444",
+    "url": "https://www.oids.ok.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 76,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Oregon Office of Public Defense Services",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(503) 378-3349",
+    "url": "https://www.oregonopds.com"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 77,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Pennsylvania Public Defender Association",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(717) 731-7011",
+    "url": "https://www.papublicdefender.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Name shows this is an association; Pennsylvania public defenders are county offices.",
+   "fields_changed": []
+  },
+  {
+   "id": 78,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Rhode Island Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(401) 222-3445",
+    "url": "https://www.ripd.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 79,
+   "category": "PUBLIC_DEFENDER",
+   "title": "South Carolina Commission on Indigent Defense",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(803) 734-1343",
+    "url": "https://www.scid.sc.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 80,
+   "category": "PUBLIC_DEFENDER",
+   "title": "South Dakota Public Advocate",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(605) 773-6190",
+    "url": "https://sdlegislature.gov/Agencies"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: URL is a generic legislature agencies page, not a public defender site.",
+   "fields_changed": []
+  },
+  {
+   "id": 81,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Tennessee District Public Defenders Conference",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(615) 741-1175",
+    "url": "https://publicdefenders.us"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: URL publicdefenders.us doesn't look official; check it.",
+   "fields_changed": []
+  },
+  {
+   "id": 82,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Texas Fair Defense Project",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(512) 637-5220",
+    "url": "https://fairdefense.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Texas Fair Defense Project is a nonprofit advocacy and litigation group, not a public defender. Texas indigent defense is county-based (Texas Indigent Defense Commission oversees it).",
+   "fields_changed": []
+  },
+  {
+   "id": 83,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Utah State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(801) 265-4700",
+    "url": "https://legaldefenders.com"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn. Red flag visible in the app's own row: Title says 'Utah State Public Defender' but the URL legaldefenders.com is the Salt Lake Legal Defender Association (county-level). Utah's state agency is the Indigent Defense Commission.",
+   "fields_changed": []
+  },
+  {
+   "id": 84,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Vermont Defender General",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(802) 828-3168",
+    "url": "https://defgen.vermont.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 85,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Virginia Indigent Defense Commission",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(804) 662-7249",
+    "url": "https://www.vaids.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 86,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Washington State Office of Public Defense",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(360) 586-3164",
+    "url": "https://www.opd.wa.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 87,
+   "category": "PUBLIC_DEFENDER",
+   "title": "West Virginia Public Defender Services",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(304) 558-3905",
+    "url": "https://www.wvpds.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 88,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Wisconsin State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(608) 266-0087",
+    "url": "https://www.wispd.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 89,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Wyoming State Public Defender",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(307) 777-7011",
+    "url": "https://publicdefender.wyo.gov"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  },
+  {
+   "id": 90,
+   "category": "PUBLIC_DEFENDER",
+   "title": "Public Defender Service for DC",
+   "phone": null,
+   "url": null,
+   "app_value": {
+    "phone": "(202) 628-1200",
+    "url": "https://www.pdsdc.org"
+   },
+   "source_url": null,
+   "status": "unverifiable",
+   "issue": "Not checked against a source: in this session the official site wasn't on the fetch allowlist and the shared web-search budget ran out. Re-verify in a follow-up turn.",
+   "fields_changed": []
+  }
+ ],
+ "_meta": {
+  "note": "Rows marked 'unverifiable' have phone/url set to null as the brief requires, and app_value holds the current app value. For CRISIS lines, do NOT apply the nulls; re-verify in a follow-up turn. Immigration courts were all checked against EOIR court pages on 2026-10-25."
+ }
+}

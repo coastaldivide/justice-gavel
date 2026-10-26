@@ -6,7 +6,7 @@
  *      no SMS / e-mail provider → sent 0 with a reason (it used to report
  *      success while the SMS sender was a stub); all three saved contacts
  *      are tried (the third was dropped); no location still sends (it was a
- *      400); text in the request's language; with Twilio configured the text
+ *      400); text in the request's language; with Telnyx configured the text
  *      goes out and is counted
  *   2  GET /api/interrogation/recording-law: full state names (the iOS
  *      geocoder) resolve — "California" is all-party consent, not the
@@ -20,26 +20,28 @@
 import http from 'http';
 import { describeIntegration, initSuite } from './_harness.js';
 
-const twilio = { server: null, received: [] };
+const twilio = { server: null, received: [] };   // Telnyx mock (name kept)
 
 describeIntegration('section A: SOS, recording law, monitors, Quick Connect (real Postgres)', () => {
   beforeAll(async () => {
+    // Telnyx Messaging API v2 mock: records { To, Body } for the assertions below
     twilio.server = http.createServer((req, res) => {
       let data = '';
       req.on('data', c => { data += c; });
       req.on('end', () => {
-        twilio.received.push(Object.fromEntries(new URLSearchParams(data)));
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ sid: `SM${twilio.received.length}` }));
+        let j = {}; try { j = JSON.parse(data); } catch { /* keep {} */ }
+        twilio.received.push({ To: j.to, From: j.from, Body: j.text, auth: req.headers.authorization, url: req.url });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ data: { id: `msg-${twilio.received.length}` } }));
       });
     });
     await new Promise(r => twilio.server.listen(0, '127.0.0.1', r));
     delete process.env.RESEND_API_KEY;
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
   });
   afterAll(async () => {
     if (ctx.db) await ctx.db.run('DELETE FROM alerts WHERE user_name = ?', [`Alice ${ctx.tag}`]).catch(() => {});
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
     await new Promise(r => twilio.server.close(r));
   });
 
@@ -74,11 +76,10 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
     expect(logged.map(x => x.status).sort()).toEqual(['email_not_configured', 'sms_not_configured', 'sms_not_configured']);
   });
 
-  test('1c with Twilio configured the texts go out (with the map link) and are counted; bad numbers are not', async () => {
-    process.env.TWILIO_ACCOUNT_SID = 'ACtest';
-    process.env.TWILIO_AUTH_TOKEN = 'secret';
-    process.env.TWILIO_FROM_NUMBER = '+16155550000';
-    process.env.TWILIO_API_BASE = `http://127.0.0.1:${twilio.server.address().port}`;
+  test('1c with Telnyx configured the texts go out (with the map link) and are counted; bad numbers are not', async () => {
+    process.env.TELNYX_API_KEY = 'KEYtest';
+    process.env.TELNYX_FROM_NUMBER = '+16155550000';
+    process.env.TELNYX_API_BASE = `http://127.0.0.1:${twilio.server.address().port}`;
     twilio.received.length = 0;
     const r = await ctx.request().post('/api/alerts').set(bob.headers)
       .send({ userName: '', contacts: ['6155550101', '12'], lat: 36.16, lng: -86.78 });
@@ -91,18 +92,23 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
   });
 
   // ── 2 recording law ────────────────────────────────────────────────────
-  test('2 recording-consent law: full state names resolve; note in the language; unknown → one-party', async () => {
+  test('2 recording-consent law (Oct 2026 research): names resolve; translated summary; mixed states; unknown → warn', async () => {
     const ca = await ctx.request().get('/api/interrogation/recording-law?state=California');
-    expect(ca.body).toMatchObject({ state: 'CA', consent: 'two-party', warn: true, law: 'California Penal Code § 632' });
-    expect(ca.body.note).toMatch(/^California requires ALL parties/);
+    expect(ca.body).toMatchObject({ state: 'CA', consent: 'two-party', warn: true, verified: true });
+    expect(ca.body.law).toMatch(/Cal\. Penal Code §§ 632/);
+    expect(ca.body.note).toMatch(/^California requires all parties' consent/);
     const nh = await ctx.request().get('/api/interrogation/recording-law?state=new%20hampshire&lang=vi');
     expect(nh.body).toMatchObject({ state: 'NH', consent: 'two-party' });
-    expect(nh.body.note).toBe('New Hampshire yêu cầu sự đồng ý của tất cả các bên.');
+    expect(nh.body.note).toMatch(/mọi người trong cuộc trò chuyện riêng tư phải đồng ý/);
     const tn = await ctx.request().get('/api/interrogation/recording-law?state=Tennessee').set('Accept-Language', 'pt-BR');
     expect(tn.body).toMatchObject({ state: 'TN', consent: 'one-party', warn: false });
-    expect(tn.body.note).toMatch(/^No seu estado, basta que uma das partes/);
+    expect(tn.body.note).toMatch(/você pode gravar uma conversa da qual participa/);
+    const wi = await ctx.request().get('/api/interrogation/recording-law?state=WI');
+    expect(wi.body).toMatchObject({ state: 'WI', consent: 'one-party' });       // was wrongly all-party
+    const nv = await ctx.request().get('/api/interrogation/recording-law?state=Nevada');
+    expect(nv.body).toMatchObject({ state: 'NV', consent: 'mixed', warn: true });
     const none = await ctx.request().get('/api/interrogation/recording-law?state=Narnia');
-    expect(none.body).toMatchObject({ state: null, consent: 'one-party' });
+    expect(none.body).toMatchObject({ state: null, consent: 'unknown', warn: true });
   });
 
   // ── 3 arrest monitors ──────────────────────────────────────────────────

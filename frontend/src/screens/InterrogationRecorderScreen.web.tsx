@@ -19,7 +19,7 @@ import { getUserState } from '../utils/userState';
 import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
-interface RecordingLaw { state: string | null; consent: 'one-party' | 'two-party'; law: string; warn: boolean; note: string }
+interface RecordingLaw { state: string | null; consent: 'one-party' | 'two-party' | 'mixed' | 'unknown'; law: string | null; warn: boolean; note: string }
 interface DialogueLine { timestamp?: string; speaker?: string; text?: string }
 
 /** Give the browser a file to save (the recording, the PDF). */
@@ -94,7 +94,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   }, []);
 
   const startRecording = async () => {
-    if (law?.consent === 'two-party') {
+    if (law?.warn || law?.consent === 'two-party') {
       const ok = await confirm(t('x_interrogation_recorder_two_party_consent_warning'),
         t('x_interrogation_recorder_custodial_interrogation_note_likely', { value: law.note }),
         { confirmLabel: t('x_interrogation_recorder_i_understand_start_recording') });
@@ -184,7 +184,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       {law && (
         <View testID="recorder-law" style={[card, { borderLeftWidth: 5, borderLeftColor: law.warn ? colors.warn : colors.legal, backgroundColor: law.warn ? colors.warnBg : colors.legalBg }]}>
           <IconLabel icon={law.warn ? ICONS.statusWarn : ICONS.statusOk} maxFontSizeMultiplier={1.3} textStyle={{ fontSize: 14, fontWeight: '800', color: law.warn ? colors.warnDark : colors.legalDark }}>
-            {law.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
+            {law.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : law.consent === 'mixed' ? t('x_interrogation_recorder_mixed_consent_state') : law.consent === 'one-party' ? t('x_interrogation_recorder_one_party_consent_state') : t('x_interrogation_recorder_state_may_require_all')}
           </IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, lineHeight: 19, color: colors.textPrimary }}>{law.note}</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, fontStyle: 'italic', color: colors.textMuted }}>{law.law}</Text>

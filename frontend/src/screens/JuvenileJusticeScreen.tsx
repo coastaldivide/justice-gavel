@@ -19,10 +19,12 @@ import type { ScreenProps } from '../types/navigation';
 import { getUserState } from '../utils/userState';
 import { StatePicker } from '../components/StatePicker';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
-import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation, ActivityIndicator } from 'react-native';
 import { useTheme, RADIUS, themeColors } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
-import { t, perLang, useLang } from '../i18n';
+import { t, perLang, useLang, getLang } from '../i18n';
+import api from '../services/api';
+import { stateName } from '../utils/userState';
 import { ICONS } from '../components/AppIcon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -133,60 +135,13 @@ const RIGHTS_SECTIONS = perLang(() => [
 ]);
 
 // ── Sealing data ──────────────────────────────────────────────────────────────
-type SealingEntry = { state: string; automatic: boolean; when: string; notes: string };
-const SEALING_DATA = perLang((): SealingEntry[] => [
-  { state:'AL', automatic:false, when:t('x_juvenile_justice_age_18_petition_required'),    notes:t('x_juvenile_justice_misdemeanor_adjudications_only_felon') },
-  { state:'AK', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_petition_court_all_charges') },
-  { state:'AZ', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_superior_court_petition_fee') },
-  { state:'AR', automatic:false, when:t('x_juvenile_justice_age_21_5_years'), notes:t('x_juvenile_justice_petition_required_violent_offenses') },
-  { state:'CA', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_automatic_sealing_under_ab') },
-  { state:'CO', automatic:true,  when:t('x_juvenile_justice_age_18_upon_completion'),     notes:t('x_juvenile_justice_broad_automatic_sealing_petition') },
-  { state:'CT', automatic:true,  when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_erased_automatically_most') },
-  { state:'DE', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_must_be_offense_free') },
-  { state:'FL', automatic:false, when:t('x_juvenile_justice_age_21_petition'),             notes:t('x_juvenile_justice_petition_required_certain_serious') },
-  { state:'GA', automatic:false, when:t('x_juvenile_justice_age_21_4_years'), notes:t('x_juvenile_justice_petition_juvenile_court_fee') },
-  { state:'HI', automatic:true,  when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_sealed_automatically_most') },
-  { state:'ID', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_petition_juvenile_court_some') },
-  { state:'IL', automatic:true,  when:t('x_juvenile_justice_age_18_minor_offenses'),       notes:t('x_juvenile_justice_automatic_expungement_minor_offenses') },
-  { state:'IN', automatic:false, when:t('x_juvenile_justice_age_18_1_year'),    notes:t('x_juvenile_justice_petition_required_restricted_access') },
-  { state:'IA', automatic:false, when:t('x_juvenile_justice_age_18'),                        notes:t('x_juvenile_justice_records_confidential_but_not') },
-  { state:'KS', automatic:false, when:t('x_juvenile_justice_age_18_2_years_2'), notes:t('x_juvenile_justice_petition_district_court') },
-  { state:'KY', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_petition_required_felony_equivalent') },
-  { state:'LA', automatic:false, when:t('x_juvenile_justice_age_17_la_adulthood'), notes:t('x_juvenile_justice_louisiana_raised_adult_age') },
-  { state:'ME', automatic:false, when:t('x_juvenile_justice_age_18_3_years'),              notes:t('x_juvenile_justice_petition_district_court_class') },
-  { state:'MD', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_broad_automatic_expungement_petition') },
-  { state:'MA', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_records_sealed_automatically_some') },
-  { state:'MI', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_petition_family_court_good') },
-  { state:'MN', automatic:true,  when:t('x_juvenile_justice_upon_completion_sentence'),   notes:t('x_juvenile_justice_one_most_favorable_states') },
-  { state:'MS', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_petition_youth_court_limited') },
-  { state:'MO', automatic:false, when:t('x_juvenile_justice_age_17_petition_at'), notes:t('x_juvenile_justice_records_confidential_petition_expung') },
-  { state:'MT', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_youth_court_petition_felony') },
-  { state:'NE', automatic:false, when:t('x_juvenile_justice_age_17_3_years'), notes:t('x_juvenile_justice_petition_separate_juvenile_court') },
-  { state:'NV', automatic:true,  when:t('x_juvenile_justice_age_21_3_years'), notes:t('x_juvenile_justice_automatic_sealing_if_no') },
-  { state:'NH', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_petition_district_court_annual') },
-  { state:'NJ', automatic:true,  when:t('x_juvenile_justice_age_19_5_years'), notes:t('x_juvenile_justice_automatic_expungement_most_adjudicat') },
-  { state:'NM', automatic:false, when:t('x_juvenile_justice_age_18_1_year_2'),  notes:t('x_juvenile_justice_children_s_court_petition') },
-  { state:'NY', automatic:true,  when:t('x_juvenile_justice_age_18_eligible_youth'),       notes:t('x_juvenile_justice_youthful_offender_yo_designation') },
-  { state:'NC', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_district_court_petition_nonviolent') },
-  { state:'ND', automatic:false, when:t('x_juvenile_justice_age_18_2_years_3'), notes:t('x_juvenile_justice_petition_juvenile_court') },
-  { state:'OH', automatic:false, when:t('x_juvenile_justice_age_18_2_years'), notes:t('x_juvenile_justice_juvenile_court_petition_sealing') },
-  { state:'OK', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_juvenile_court_petition_first') },
-  { state:'OR', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_broad_automatic_expungement_measure') },
-  { state:'PA', automatic:false, when:t('x_juvenile_justice_age_18_petition_age'),   notes:t('x_juvenile_justice_petition_juvenile_court_act') },
-  { state:'RI', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_automatic_expungement_petition_serio') },
-  { state:'SC', automatic:false, when:t('x_juvenile_justice_age_18_5_years'), notes:t('x_juvenile_justice_family_court_petition_limited') },
-  { state:'SD', automatic:false, when:t('x_juvenile_justice_age_18_1_year_2'),  notes:t('x_juvenile_justice_circuit_court_petition') },
-  { state:'TN', automatic:false, when:t('x_juvenile_justice_age_17_petition_after'), notes:t('x_juvenile_justice_juvenile_court_petition_t') },
-  { state:'TX', automatic:false, when:t('x_juvenile_justice_age_17_petition_at_2'),      notes:t('x_juvenile_justice_petition_juvenile_court_fam') },
-  { state:'UT', automatic:true,  when:t('x_juvenile_justice_age_18_5_years_2'), notes:t('x_juvenile_justice_automatic_expungement_most_petition') },
-  { state:'VT', automatic:true,  when:t('x_juvenile_justice_age_18_most_offenses'),        notes:t('x_juvenile_justice_records_expunged_automatically_stron') },
-  { state:'VA', automatic:false, when:t('x_juvenile_justice_age_19_5_years_2'), notes:t('x_juvenile_justice_circuit_court_petition_16') },
-  { state:'WA', automatic:true,  when:t('x_juvenile_justice_upon_completion_most_offenses'), notes:t('x_juvenile_justice_some_broadest_automatic_sealing') },
-  { state:'WV', automatic:false, when:t('x_juvenile_justice_age_18_petition'),             notes:t('x_juvenile_justice_circuit_court_petition_first') },
-  { state:'WI', automatic:false, when:t('x_juvenile_justice_age_17_petition'),             notes:t('x_juvenile_justice_circuit_court_petition_expunged') },
-  { state:'WY', automatic:false, when:t('x_juvenile_justice_age_19_2_years'), notes:t('x_juvenile_justice_district_court_petition') },
-  { state:'DC', automatic:true,  when:t('x_juvenile_justice_age_21_2_years'), notes:t('x_juvenile_justice_broad_automatic_sealing_petition_2') },
-]);
+// Served by GET /api/expungement/juvenile (backend expungement/rules_data.js,
+// researched against statutes in the Oct 2026 legal accuracy review). The table
+// that used to live here was hand-written and wrong for most states (automatic vs
+// petition, ages, Louisiana's 17-year-olds). A row that was not verified comes back
+// with verified: false and is shown as "not verified yet" — never as a rule.
+type SealingEntry = { state: string; verified: boolean; automatic: boolean | null; when: string | null; notes: string | null; citation: string | null; source_url: string | null };
+
 
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
@@ -206,7 +161,20 @@ function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
   // Sealing table: the person's state first (all states when none is saved).
   const [sealState, setSealState] = React.useState('');
   React.useEffect(() => { getUserState().then(u => { if (u?.code) setSealState(prev => prev || u.code); }).catch(() => {}); }, []);
-  const sealingRows = SEALING_DATA().filter(r => !sealState || r.state === sealState);
+  const [sealing, setSealing] = React.useState<SealingEntry[]>([]);
+  const [sealingError, setSealingError] = React.useState(false);
+  const [sealingLoading, setSealingLoading] = React.useState(false);
+  React.useEffect(() => {
+    if (tab !== 'sealing') return;
+    let cancel = false;
+    setSealingLoading(true);
+    api.get('/expungement/juvenile', { params: sealState ? { state: sealState } : {} })
+      .then(r => { if (!cancel) { setSealing(Array.isArray(r.data?.data) ? r.data.data : []); setSealingError(false); } })
+      .catch(() => { if (!cancel) setSealingError(true); })
+      .finally(() => { if (!cancel) setSealingLoading(false); });
+    return () => { cancel = true; };
+  }, [tab, sealState]);
+  const sealingRows = sealing.filter(r => !sealState || r.state === sealState);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -276,22 +244,35 @@ function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
           <StatePicker value={sealState} onChange={setSealState} allowAll testID="juvenile-state" />
         </View>
       )}
+      {tab === 'sealing' && sealingLoading && <ActivityIndicator style={{ marginVertical: 20 }} color={colors.textBrand} testID="juvenile-loading" />}
+      {tab === 'sealing' && sealingError && (
+        <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted, padding: 16 }]} testID="juvenile-error">{t('pen_load_error')}</Text>
+      )}
       {tab === 'sealing' && sealingRows.map(row => (
         <View key={row.state} style={[styles.sealingRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={[styles.stateBadge, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.textBrand }]}>{row.state}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <View style={styles.sealingRowTop}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.sealingWhen, { color: colors.textPrimary }]}>{row.when}</Text>
-              <View style={[styles.autoChip, { backgroundColor: row.automatic ? colors.legalBg : colors.bgSubtle }]}>
-                <Text maxFontSizeMultiplier={1.2} style={[styles.autoChipText, { color: row.automatic ? colors.legalDark : colors.textMuted }]}>
-                  {row.automatic ? t('x_juvenile_justice_automatic') : t('x_juvenile_justice_petition')}
-                </Text>
-              </View>
-            </View>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted }]}>{row.notes}</Text>
-            <SourceLine testID="juvenile-row-source" />
+            {row.verified ? (
+              <>
+                <View style={styles.sealingRowTop}>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.sealingWhen, { color: colors.textPrimary }]}>{row.when}</Text>
+                  <View style={[styles.autoChip, { backgroundColor: row.automatic ? colors.legalBg : colors.bgSubtle }]}>
+                    <Text maxFontSizeMultiplier={1.2} style={[styles.autoChipText, { color: row.automatic ? colors.legalDark : colors.textMuted }]}>
+                      {row.automatic ? t('x_juvenile_justice_automatic') : t('x_juvenile_justice_petition')}
+                    </Text>
+                  </View>
+                </View>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted }]}>{row.notes}</Text>
+                {getLang() !== 'en' && <Text maxFontSizeMultiplier={1.3} style={[styles.sealingNotes, { color: colors.textMuted }]}>{t('pen_notes_english')}</Text>}
+                <SourceLine source={row.citation} recorded="2026-10-26" testID="juvenile-row-source" />
+              </>
+            ) : (
+              <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted }]} testID="juvenile-unverified">
+                {t('legal_unverified_withheld', { state: stateName(row.state) })}
+              </Text>
+            )}
           </View>
         </View>
       ))}

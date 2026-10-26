@@ -33,8 +33,8 @@ crash, freeze or English text in another language.
     local times (`expo-notifications`). Tapping one opens that court date.
 
 ## C. Safety features
-11. SOS: tap SOS → confirm → each emergency contact gets a text (Twilio on staging). Then
-    remove the Twilio keys: the app says the text didn't go out and opens Messages pre-filled
+11. SOS: tap SOS → confirm → each emergency contact gets a text (Telnyx on staging). Then
+    remove the Telnyx keys: the app says the text didn't go out and opens Messages pre-filled
     for all contacts (on iOS, check the multi-recipient link).
 12. Call 911 / Crisis 988 buttons open the dialer with the right number. The Veterans line
     dials 988 and the screen says to press 1; the Crisis Text Line opens Messages to 741741.

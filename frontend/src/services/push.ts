@@ -21,6 +21,34 @@ Notifications.setNotificationHandler({
 });
 
 /**
+ * Android notification channels. The server sends court reminders with
+ * channelId 'court_reminders' (services/reminderDispatcher.js) and everything
+ * else on 'default'. On Android 8+ a push whose channel does not exist on the
+ * device is not displayed, and nothing in the app created these channels before
+ * the Oct 2026 reminder review — so court reminders could reach an Android phone
+ * and never appear. Creating a channel that exists is a no-op, so this is safe on
+ * every start.
+ */
+export async function ensureNotificationChannels(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Notifications.setNotificationChannelAsync('court_reminders', {
+      name: 'Court date reminders',
+      importance: Notifications.AndroidImportance.MAX,
+      sound: 'default',
+      vibrationPattern: [0, 250, 250, 250],
+    });
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'General',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: 'default',
+    });
+  } catch (e) {
+    if (__DEV__) console.warn('[push] could not create notification channels', e);
+  }
+}
+
+/**
  * syncPushToken — when notifications are ALREADY allowed, gets the Expo push
  * token and POSTs it to /api/push/token. Never shows a permission prompt:
  * asking happens in context (services/permissions.ts

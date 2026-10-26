@@ -10824,6 +10824,31 @@
         }
       }
     },
+    "/api/expungement/juvenile": {
+      "get": {
+        "operationId": "get_api_expungement_juvenile",
+        "summary": "GET /api/expungement/juvenile",
+        "tags": [
+          "expungement"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/expungement/log-visit": {
       "post": {
         "operationId": "post_api_expungement_log-visit",
@@ -22383,6 +22408,34 @@
       "post": {
         "operationId": "post_api_webhooks_stripe",
         "summary": "POST /api/webhooks/stripe",
+        "tags": [
+          "webhooks"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/webhooks/telnyx": {
+      "post": {
+        "operationId": "post_api_webhooks_telnyx",
+        "summary": "POST /api/webhooks/telnyx",
         "tags": [
           "webhooks"
         ],

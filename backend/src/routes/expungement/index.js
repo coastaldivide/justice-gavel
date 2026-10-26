@@ -51,18 +51,19 @@ router.post('/eligibility', authRequired, (req, res) => {
     const given = String(obj.charge_type || '').toLowerCase();
     const type = known.includes(given) ? given : classifyCharge(desc);
     const rule = type === 'unknown' ? null : getEligibility(state, type, b.dismissed ? 'Dismissed' : undefined);
-    const sourced = !!rule && !!citationOf(rule.note) && !REVIEW_FLAGS[`${state}.${type}`];
+    const sourced = !!rule && !!citationOf(rule) && !REVIEW_FLAGS[`${state}.${type}`];
     const out = {
       charge: desc.slice(0, 200) || type,
       charge_type: type,
       eligible: sourced ? rule.eligible : null,
       sourced,
-      citation: rule ? citationOf(rule.note) : null,
+      citation: rule ? citationOf(rule) : null,
       note: rule?.note || null,
       wait_years: sourced && rule.eligible !== false && Number.isFinite(rule.waitYears) ? rule.waitYears : null,
     };
     if (out.wait_years != null && base) {
-      const until = new Date(Date.UTC(base.y + out.wait_years, base.m - 1, base.d));
+      // waits can be fractions of a year (0.25 = 3 months, 1.08 = 13 months): count whole months
+      const until = new Date(Date.UTC(base.y, base.m - 1 + Math.round(out.wait_years * 12), base.d));
       out.wait_until_date = until.toISOString().slice(0, 10);
       out.wait_days_remaining = Math.max(0, Math.ceil((until - Date.now()) / 86400000));
       out.eligible_now = out.wait_days_remaining === 0;

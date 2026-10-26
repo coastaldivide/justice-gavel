@@ -218,7 +218,7 @@ function assertFirmTrial(t) {
   }
 
   // Eligibility result shape
-  expect(t.elig).toBeDefined(); expect(['boolean','string']).toContain(typeof t.elig.eligible);
+  expect(t.elig).toBeDefined(); expect(t.elig.eligible === null || ['boolean','string'].includes(typeof t.elig.eligible)).toBe(true); // null = rule not verified yet (Oct 2026) → no verdict
 }
 
 function assertIndTrial(t) {
@@ -242,7 +242,7 @@ function assertIndTrial(t) {
   expect(['unknown','felony','misdemeanor','civil','other','dui','sexual','domestic','dismissed','infraction','traffic','child_abuse','juvenile','immigration','housing','employment','consumer']).toContain(t.ct);
 
   // Eligibility shape
-  expect(t.elig).toBeDefined(); expect(['boolean','string']).toContain(typeof t.elig.eligible);
+  expect(t.elig).toBeDefined(); expect(t.elig.eligible === null || ['boolean','string'].includes(typeof t.elig.eligible)).toBe(true); // null = rule not verified yet (Oct 2026) → no verdict
 
   // Pro-se flag
   if(t.legalAid) expect(t.proSe).toBe(false);

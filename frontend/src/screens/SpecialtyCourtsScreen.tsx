@@ -45,6 +45,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
   const [stateReady, setStateReady] = useState(!!params.state);
   const [type, setType] = useState<string>(TYPES.some(x => x.key === params.type) ? String(params.type) : 'ALL');
   const [rows, setRows] = useState<SpecialtyCourt[]>([]);
+  const [withheld, setWithheld] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +63,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
       if (state) query.state = state;
       const res = await api.get('/legaldata/specialty-courts', { params: query });
       setRows(unwrapList<SpecialtyCourt>(res.data).filter(r => !state || r.state === state));
+      setWithheld(Number((res.data as { meta?: { withheld?: number } })?.meta?.withheld) || 0);
     } catch (e) {
       setError(apiErrorMessage(e, t('x_specialty_courts_could_not_load_specialty')));
     } finally { setLoading(false); }
@@ -147,7 +149,7 @@ function SpecialtyCourtsScreen({ route }: ScreenProps): React.JSX.Element {
             );
           }}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={s.empty} testID="specialty-empty">{t('sc_none', { where: state ? stateName(state) : t('src_all_states') })}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.empty} testID="specialty-empty">{withheld > 0 ? t('legal_unverified_withheld', { state: state ? stateName(state) : t('src_all_states') }) : t('sc_none', { where: state ? stateName(state) : t('src_all_states') })}</Text>
           }
         />
       )}

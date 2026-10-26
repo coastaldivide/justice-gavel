@@ -558,12 +558,13 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('11. InterrogationRecorderScreen — Police Encounter Recorder', () => {
 
-  test('11-01: TWO_PARTY_STATES is a Set with 13 states', async () => {
+  test('11-01: TWO_PARTY_STATES fallback lists all-party + mixed states (Oct 2026 research; WI is one-party)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('TWO_PARTY_STATES');
     expect(src).toContain('new Set(');
-    const TWO_PARTY = ['CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI'];
+    expect(src).not.toMatch(/'CA','DE'[^\]]*'WI'/);
+    const TWO_PARTY = ['CA','DE','FL','IL','MA','MD','MT','NH','PA','WA','CT','HI','ME','MI','MO','NV','OR'];
     for (const st of TWO_PARTY) {
       expect(src).toContain(`'${st}'`);
     }

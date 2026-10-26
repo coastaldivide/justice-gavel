@@ -70,22 +70,24 @@ router.post('/test', authRequired, pushLimiter, async (req, res) => {
 });
 // ── Legal tip of the day ───────────────────────────────────────────────────────
 // GET /api/push/tip — returns today's legal tip (changes daily)
+// Legal accuracy review (Oct 2026): 10 of 15 tips overstated the law (e.g. checkpoints "must
+// be announced", "one phone call", Miranda "only after arrest"). Text is in i18n tip.N (4 languages).
 export const LEGAL_TIPS = [
-  { tip: "You have the right to remain silent. Use it. Anything you say CAN be used against you.",                     category: "Criminal",      lesson_query: "rights" },
-  { tip: "You can legally record police in public in all 50 states as long as you don't interfere.",                   category: "Constitutional",lesson_query: "police" },
-  { tip: "A DUI checkpoint must be publicly announced in advance in most US states.",                                  category: "Criminal",      lesson_query: "DUI" },
-  { tip: "You have 30 days to request a court date after most traffic citations.",                                     category: "General",       lesson_query: "traffic" },
-  { tip: "Police need a warrant to search your home. You can say 'I do not consent to a search.'",                    category: "Constitutional",lesson_query: "search" },
-  { tip: "After arrest, you have the right to one phone call. Use it to contact a lawyer.",                            category: "Criminal",      lesson_query: "arrest" },
-  { tip: "An expungement can seal your arrest record — even if you were never convicted.",                             category: "Criminal",      lesson_query: "expungement" },
-  { tip: "You cannot be fired for serving on a jury. Federal law protects you.",                                       category: "General",       lesson_query: "jury" },
-  { tip: "Bail can be reduced. Ask your attorney to file a motion to reduce bail at arraignment.",                     category: "Criminal",      lesson_query: "bail" },
-  { tip: "Miranda rights only apply after arrest — police can ask questions before arresting you.",                    category: "Constitutional",lesson_query: "miranda" },
-  { tip: "You can refuse a field sobriety test in most states. Breathalyzer refusal has separate consequences.",       category: "Criminal",      lesson_query: "DUI" },
-  { tip: "A public defender is free. You have the right to one if you cannot afford an attorney.",                     category: "Criminal",      lesson_query: "lawyer" },
-  { tip: "Probation violation can result in jail time. Report every scheduled check-in without exception.",            category: "Criminal",      lesson_query: "probation" },
-  { tip: "Your employer cannot ask about arrests that didn't result in conviction in many states.",                    category: "General",       lesson_query: "employment" },
-  { tip: "Possession of marijuana may be a misdemeanor or felony depending on weight — know your state's law.",        category: "Criminal",      lesson_query: "drug" },
+  { tip: "You have the right to remain silent: say out loud \"I am using my right to remain silent,\" because anything you say can be used against you.", category: "Criminal", lesson_query: "rights" },
+  { tip: "Federal appeals courts covering most states recognize a right to openly record police doing their jobs in public, but officers can set reasonable distance limits and some states restrict secret audio recording.", category: "Constitutional", lesson_query: "police" },
+  { tip: "Sobriety checkpoints are allowed under the U.S. Constitution, but about a dozen states do not use them, and advance-notice rules differ from state to state.", category: "Criminal", lesson_query: "DUI" },
+  { tip: "Your traffic ticket shows the deadline to pay or contest it, and that deadline varies by state and court, so act before the date printed on the ticket.", category: "General", lesson_query: "traffic" },
+  { tip: "Police usually need a warrant to enter or search your home unless you consent or an emergency exception applies, so you can calmly say \"I do not consent to a search.\"", category: "Constitutional", lesson_query: "search" },
+  { tip: "There is no nationwide constitutional right to a phone call after arrest, though some states give one by law, so ask for a lawyer and do not discuss your case on jail phones, which are recorded.", category: "Criminal", lesson_query: "arrest" },
+  { tip: "In most states you can ask to seal or expunge an arrest that did not lead to a conviction, though eligibility and waiting periods depend on your state.", category: "Criminal", lesson_query: "expungement" },
+  { tip: "Federal law protects your job when you serve on a federal jury, and most states have their own laws protecting state jurors, so check your state's rule.", category: "General", lesson_query: "jury" },
+  { tip: "If bail is set, your lawyer can ask the court to lower it at a bail hearing or by motion; some states, such as Illinois, no longer use cash bail at all.", category: "Criminal", lesson_query: "bail" },
+  { tip: "Police must give Miranda warnings only before questioning someone in custody, which can happen before a formal arrest, and you can choose to stay silent at any time.", category: "Constitutional", lesson_query: "miranda" },
+  { tip: "In most states roadside field sobriety tests are voluntary, but refusing a breath or chemical test after a DUI arrest usually triggers license suspension under implied-consent laws.", category: "Criminal", lesson_query: "DUI" },
+  { tip: "If you cannot afford a lawyer and you face possible jail time, you have the right to a court-appointed lawyer, though some states may charge you a fee for it later.", category: "Criminal", lesson_query: "lawyer" },
+  { tip: "A probation violation can lead to jail time, so attend every scheduled check-in.", category: "Criminal", lesson_query: "probation" },
+  { tip: "Many states bar employers from asking about arrests that did not lead to a conviction.", category: "General", lesson_query: "employment" },
+  { tip: "Marijuana laws vary widely: adult possession is legal in many states, can be a misdemeanor or felony in others depending on the amount, and remains illegal under federal law.", category: "Criminal", lesson_query: "drug" },
 ];
 
 router.get('/tip', (req, res) =>{

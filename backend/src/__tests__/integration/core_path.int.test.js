@@ -8,7 +8,7 @@
  *      "report a listing" queues a report and NEVER changes a provider row
  *   3  court dates: sign-in required, many per case, past archived, 7d/3d/1d/
  *      morning-of reminders per hearing (court_date_id), courthouse details,
- *      .ics content, missed-date guidance, IDOR matrix, push → email → SMS chain
+ *      .ics content, missed-date guidance, IDOR matrix, push → web push → email → SMS (Telnyx) chain
  *   4  family followers: owner consent required, code accept, follower sees
  *      court dates but never notes/charges, gets reminders, revocable (both
  *      sides), strangers locked out
@@ -17,7 +17,7 @@ import http from 'http';
 import { describeIntegration, initSuite, providerChecksum } from './_harness.js';
 
 const expo = { server: null, received: [], ticket: 'ok' };
-const twilio = { server: null, received: [] };
+const telnyx = { server: null, received: [] };
 
 const NASHVILLE = { lat: 36.1627, lng: -86.7816 };
 const dayPlus = (days) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
@@ -39,16 +39,18 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     await new Promise(r => expo.server.listen(0, '127.0.0.1', r));
     process.env.EXPO_PUSH_API_URL = `http://127.0.0.1:${expo.server.address().port}/--/api/v2`;
 
-    twilio.server = http.createServer((req, res) => {
+    // Telnyx Messaging API v2 mock (POST /messages, Bearer key, JSON body)
+    telnyx.server = http.createServer((req, res) => {
       let data = '';
       req.on('data', c => { data += c; });
       req.on('end', () => {
-        twilio.received.push({ url: req.url, auth: req.headers.authorization, form: Object.fromEntries(new URLSearchParams(data)) });
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ sid: `SM${twilio.received.length}` }));
+        let json = null; try { json = JSON.parse(data); } catch { /* keep null */ }
+        telnyx.received.push({ url: req.url, auth: req.headers.authorization, json });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ data: { id: `msg-${telnyx.received.length}`, record_type: 'message' } }));
       });
     });
-    await new Promise(r => twilio.server.listen(0, '127.0.0.1', r));
+    await new Promise(r => telnyx.server.listen(0, '127.0.0.1', r));
     delete process.env.RESEND_API_KEY;
     process.env.ADMIN_KEY = 'core-path-admin-key-0123456789';
   });
@@ -82,9 +84,9 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
   });
 
   afterAll(async () => {
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
     if (expo.server) await new Promise(r => expo.server.close(r));
-    if (twilio.server) await new Promise(r => twilio.server.close(r));
+    if (telnyx.server) await new Promise(r => telnyx.server.close(r));
   });
 
   // ── 1. Know your rights ───────────────────────────────────────────────────
@@ -246,11 +248,13 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(await providerMd5()).toBe(md5Before);
   });
 
-  it('2: bail ranges are public with their sources — and no invented agent-fee estimate', async () => {
+  it('2: bail ranges are served only when checked against an official schedule — unverified rows are withheld; no invented agent-fee estimate', async () => {
     const r = await ctx.request().get('/api/help/bail-schedule').query({ state: 'TN', charge: 'dui' });
     expect(r.status).toBe(200);
-    expect(r.body.data.length).toBeGreaterThan(0);
-    expect(r.body.data.every(x => /dui/i.test(x.charge) && typeof x.source === 'string')).toBe(true);
+    // Legal accuracy review (Oct 2026): no seeded bail row names an official schedule, so none is shown as fact.
+    expect(r.body.meta.verified_only).toBe(true);
+    expect(r.body.data.every(x => /^https?:\/\//.test(x.source_url || '') && x.verified_by)).toBe(true);
+    expect(r.body.data.length + r.body.meta.withheld).toBeGreaterThan(0);
     expect(r.body.meta.fee_estimate_available).toBe(false);
     expect(JSON.stringify(r.body)).not.toMatch(/10\s?%/);
     expect((await ctx.request().get('/api/help/bail-schedule').query({ state: 'ZZ' })).status).toBe(400);
@@ -369,6 +373,29 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(del.status).toBe(200);
   });
 
+  it('3: a push Expo accepted but whose receipt failed is handed back and goes to the next channel (never counted as delivered)', async () => {
+    const { requeueAfterPushReceiptFailure } = await import('../../services/reminderDispatcher.js');
+    const rem = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [cd1.id]);
+    const sent = await deliverNow(rem.id);
+    expect(sent).toEqual(expect.objectContaining({ status: 'sent', channel: 'push' }));
+    const { expo_ticket_id: ticket } = await ctx.db.get('SELECT expo_ticket_id FROM scheduled_pushes WHERE id = ?', [rem.id]);
+    expect(ticket).toBeTruthy();
+    // e.g. APNs/FCM credentials missing in EAS → receipt { status: 'error', details: { error: 'InvalidCredentials' } }
+    expect(await requeueAfterPushReceiptFailure(ctx.db, [{ ticket_id: ticket, error: 'InvalidCredentials' }])).toBe(1);
+    const back = await ctx.db.get('SELECT status, delivered, data FROM scheduled_pushes WHERE id = ?', [rem.id]);
+    expect(back.status).toBe('pending');
+    expect(Number(back.delivered)).toBe(0);
+    expect(JSON.parse(back.data)).toEqual(expect.objectContaining({ skip_push: true, push_receipt_error: 'InvalidCredentials' }));
+    // No e-mail provider and no texts in this test → undeliverable with the real reason (not retried by push)
+    expo.received.length = 0;
+    const after = await deliverNow(rem.id);
+    expect(after.status).toBe('undeliverable');
+    expect(after.error).toMatch(/push_receipt: InvalidCredentials/);
+    expect(expo.received).toHaveLength(0);
+    // handled once: a second receipt for the same ticket changes nothing
+    expect(await requeueAfterPushReceiptFailure(ctx.db, [{ ticket_id: ticket, error: 'InvalidCredentials' }])).toBe(0);
+  });
+
   it('3: IDOR — another user cannot read, change, export or add to my court dates', async () => {
     const s = bob.headers;
     expect((await ctx.request().get(`/api/court-dates/${cd1.id}`).set(s)).status).toBe(404);
@@ -383,33 +410,38 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(mine).toEqual({ status: 'scheduled', deleted_at: null });
   });
 
-  it('3: fallback chain — no device → SMS when Twilio is configured and the user opted in; otherwise undeliverable', async () => {
+  it('3: fallback chain — no device → SMS when Telnyx is configured and the user opted in; otherwise undeliverable', async () => {
     const r = await ctx.request().post('/api/court-dates').set(dave.headers).send({ case_title: 'Dave case', court_date: dayPlus(6) });
     const pick = async () => (await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [r.body.id])).id;
-    // Twilio not configured → texts are skipped cleanly; no e-mail provider → undeliverable (never "sent")
+    // Telnyx not configured → texts are skipped cleanly; no e-mail provider → undeliverable (never "sent")
     const noSms = await deliverNow(await pick());
     expect(noSms).toEqual(expect.objectContaining({ status: 'undeliverable', channel: null }));
     expect(noSms.error).toMatch(/sms_not_configured/);
     // configured, opted in
     Object.assign(process.env, {
-      TWILIO_ACCOUNT_SID: 'ACjgtest', TWILIO_AUTH_TOKEN: 'secret', TWILIO_FROM_NUMBER: '+16155550000',
-      TWILIO_API_BASE: `http://127.0.0.1:${twilio.server.address().port}`,
+      TELNYX_API_KEY: 'KEYjgtest', TELNYX_FROM_NUMBER: '+16155550000',
+      TELNYX_API_BASE: `http://127.0.0.1:${telnyx.server.address().port}`,
     });
     expect((await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true })).status).toBe(400); // no phone yet
     const pref = await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true, phone: '(615) 555-0142' });
     expect(pref.body).toEqual(expect.objectContaining({ ok: true, sms_available: true }));
     const viaSms = await deliverNow(await pick());
     expect(viaSms).toEqual(expect.objectContaining({ status: 'sent', channel: 'sms' }));
-    const msg = twilio.received.at(-1);
-    expect(msg.url).toBe('/2010-04-01/Accounts/ACjgtest/Messages.json');
-    expect(msg.form).toEqual(expect.objectContaining({ To: '+16155550142', From: '+16155550000' }));
-    expect(msg.form.Body).toMatch(/Court date/);
+    const msg = telnyx.received.at(-1);
+    expect(msg.url).toBe('/messages');
+    expect(msg.auth).toBe('Bearer KEYjgtest');
+    expect(msg.json).toEqual(expect.objectContaining({ to: '+16155550142', from: '+16155550000' }));
+    expect(msg.json.text).toMatch(/^Justice Gavel: .*Court date.*Reply STOP/);
+    // consent was recorded (migration 31)
+    const consent = await ctx.db.get('SELECT sms_consent_at, sms_consent_phone, sms_consent_text_v FROM users WHERE id = ?', [dave.user?.id ?? dave.id]);
+    expect(consent.sms_consent_at).toBeTruthy();
+    expect(consent.sms_consent_phone).toBe('+16155550142');
     // opted out → back to e-mail
     await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: false });
     const optedOut = await deliverNow(await pick());
     expect(optedOut.status).toBe('undeliverable');
     expect(optedOut.error).toMatch(/sms_not_opted_in/);
-    for (const k of ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
   });
 
   // ── 4. Family followers ───────────────────────────────────────────────────

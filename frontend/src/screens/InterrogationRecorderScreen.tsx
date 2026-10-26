@@ -47,13 +47,18 @@ type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'erro
 // Populated with both 2-letter codes (Android) and full names (iOS)
 // because Location.reverseGeocodeAsync returns different formats per platform.
 // Wrong warning in a two-party state = potential felony for the user.
+// Offline fallback only — the server (recordingLaws_data.js) is the source. All-party
+// states plus mixed-rule states (warned conservatively). Oct 2026 review: WI removed
+// (one-party); DE, NV, HI, ME, MO added.
 const TWO_PARTY_STATE_CODES = new Set([
-  'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI',
+  'CA','DE','FL','IL','MA','MD','MT','NH','PA','WA',   // all-party
+  'CT','HI','ME','MI','MO','NV','OR',                  // mixed
 ]);
 // Region names as the device geocoder reports them (English) — matched, not shown.
 const TWO_PARTY_STATE_NAMES = new Set([ // i18n-exempt: matched against geocoder output
-  'California','Connecticut','Florida','Illinois','Maryland','Massachusetts', // i18n-exempt: geocoder names
-  'Michigan','Montana','New Hampshire','Oregon','Pennsylvania','Washington','Wisconsin', // i18n-exempt: geocoder names
+  'California','Delaware','Florida','Illinois','Massachusetts','Maryland','Montana', // i18n-exempt: geocoder names
+  'New Hampshire','Pennsylvania','Washington','Connecticut','Hawaii','Maine','Michigan', // i18n-exempt: geocoder names
+  'Missouri','Nevada','Oregon', // i18n-exempt: geocoder names
 ]);
 // Normalize any region string to abbreviation for consistent checking
 const normalizeStateCode = (region: string): string => {
@@ -62,10 +67,10 @@ const normalizeStateCode = (region: string): string => {
   if (upper.length === 2) return upper;
   // Full name → abbreviation map for two-party states
   const NAME_TO_CODE: Record<string, string> = {
-    'CALIFORNIA':'CA','CONNECTICUT':'CT','FLORIDA':'FL','ILLINOIS':'IL',
-    'MARYLAND':'MD','MASSACHUSETTS':'MA','MICHIGAN':'MI','MONTANA':'MT',
-    'NEW HAMPSHIRE':'NH','OREGON':'OR','PENNSYLVANIA':'PA',
-    'WASHINGTON':'WA','WISCONSIN':'WI',
+    'CALIFORNIA':'CA','DELAWARE':'DE','FLORIDA':'FL','ILLINOIS':'IL',
+    'MASSACHUSETTS':'MA','MARYLAND':'MD','MONTANA':'MT','NEW HAMPSHIRE':'NH',
+    'PENNSYLVANIA':'PA','WASHINGTON':'WA','CONNECTICUT':'CT','HAWAII':'HI',
+    'MAINE':'ME','MICHIGAN':'MI','MISSOURI':'MO','NEVADA':'NV','OREGON':'OR',
   };
   return NAME_TO_CODE[upper] || upper;
 };
@@ -184,7 +189,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
   const startRecording = async () => {
     // Two-party consent warning
-    if (TWO_PARTY_STATES.has(userState) || recordingLaw?.consent === 'two-party') {
+    if (TWO_PARTY_STATES.has(userState) || recordingLaw?.consent === 'two-party' || recordingLaw?.consent === 'mixed' || recordingLaw?.consent === 'unknown') {
       confirm(t('x_interrogation_recorder_two_party_consent_warning'), t('x_interrogation_recorder_custodial_interrogation_note_likely', { value: (recordingLaw?.note || t('x_interrogation_recorder_state_may_require_all')) }),
       { confirmLabel: t('x_interrogation_recorder_i_understand_start_recording') }).then(ok => { if (ok) doStartRecording(); });
       return;
@@ -371,7 +376,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         }]}>
           <IconLabel icon={recordingLaw.warn ? ICONS.statusWarn : ICONS.statusOk} iconColor={recordingLaw.warn ? colors.warnDark : colors.legal} maxFontSizeMultiplier={1.3} textStyle={[styles.lawTitle,
             { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
-            {recordingLaw.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : t('x_interrogation_recorder_one_party_consent_state')}
+            {recordingLaw.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : recordingLaw.consent === 'mixed' ? t('x_interrogation_recorder_mixed_consent_state') : recordingLaw.consent === 'one-party' ? t('x_interrogation_recorder_one_party_consent_state') : t('x_interrogation_recorder_state_may_require_all')}
           </IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawNote, { color: recordingLaw.warn ? colors.textMuted : colors.legal }]}>
             {recordingLaw.note}

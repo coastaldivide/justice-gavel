@@ -36,24 +36,14 @@ import { STATE_NAMES } from '../services/rightsContent.js';
 const router = express.Router();
 
 // ── Recording consent law by state ───────────────────────────────────────────
-// Statute citations stay as written; the plain-language notes are in the
-// server catalogs (i18n/messages/*.js, keys reclaw.note.<STATE>) so the app
-// shows them in the person's language.
-const TWO_PARTY_LAWS = {
-  CA: 'California Penal Code § 632',
-  CT: 'Conn. Gen. Stat. § 52-570d',
-  FL: 'Fla. Stat. § 934.03',
-  IL: '720 ILCS 5/14-2',
-  MD: 'Md. Code Ann., Cts. & Jud. Proc. § 10-402',
-  MA: 'Mass. Gen. Laws ch. 272, § 99',
-  MI: 'MCL § 750.539c',
-  MT: 'Mont. Code Ann. § 45-8-213',
-  NH: 'RSA § 570-A:2',
-  OR: 'ORS § 165.540',
-  PA: '18 Pa. Cons. Stat. § 5703',
-  WA: 'RCW § 9.73.030',
-  WI: 'Wis. Stat. § 968.31',
-};
+// Oct 2026 legal accuracy review: the old 13-state "two-party" list was wrong —
+// Wisconsin is one-party; Delaware is all-party in practice; Nevada, Oregon,
+// Connecticut, Michigan, Hawaii, Maine and Missouri have mixed rules; the Illinois note
+// cited a case that does not exist. Data: recordingLaws_data.js (checked per state).
+import { RECORDING_LAWS } from './recordingLaws_data.js';
+/** Back-compat: states where every party must consent to record a private conversation. */
+export const TWO_PARTY_LAWS = Object.fromEntries(
+  Object.entries(RECORDING_LAWS).filter(([, v]) => v.consent === 'all-party').map(([k, v]) => [k, v.citation]));
 
 /**
  * 'CA' / 'ca' / 'California' (the iOS geocoder reports full names) → 'CA';
@@ -71,15 +61,22 @@ export function recordingStateCode(state) {
 
 export function getRecordingLaw(state, lang = 'en') {
   const code = recordingStateCode(state);
-  if (code && TWO_PARTY_LAWS[code]) {
-    return { state: code, consent: 'two-party', law: TWO_PARTY_LAWS[code], warn: true, note: msg(lang, `reclaw.note.${code}`) };
+  const r = code ? RECORDING_LAWS[code] : null;
+  if (!r) {
+    return { state: code, consent: 'unknown', law: null, warn: true, note: msg(lang, 'reclaw.note.unknown'), source_url: null, verified: false };
   }
+  // API value 'two-party' kept for all-party states (the app's existing contract).
+  const consent = r.consent === 'all-party' ? 'two-party' : r.consent;
+  const verified = ['verified', 'corrected'].includes(r.status) && !!r.source_url;
+  // English: the researched note (state-specific). Other languages: a translated summary of
+  // the same rule (consent type + statute); the English detail is in note_detail_en.
+  const detail = [r.note, r.police_in_public].filter(Boolean).join(' ');
+  const generic = msg(lang, `reclaw.generic.${r.consent === 'all-party' ? 'all' : r.consent === 'mixed' ? 'mixed' : 'one'}`,
+    { state: STATE_NAMES[code] || code, law: r.citation });
   return {
-    state: code,
-    consent: 'one-party',
-    law: msg(lang, 'reclaw.one_party_law'),
-    warn: false,
-    note: msg(lang, 'reclaw.note.one_party'),
+    state: code, consent, law: r.citation, warn: consent !== 'one-party',
+    note: lang === 'en' ? detail : generic,
+    note_detail_en: detail, source_url: r.source_url || null, verified,
   };
 }
 

@@ -50,7 +50,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
   const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
   const [filter, setFilter] = useState(params.chargeType || '');
-  const [meta, setMeta] = useState<{ fee_note?: string; language?: string } | null>(null);
+  const [meta, setMeta] = useState<{ fee_note?: string; language?: string; withheld?: number } | null>(null);
   const feeNote = meta?.fee_note && (meta.language || 'en') === lang ? meta.fee_note : t('bc_fee_note');
 
   const bg   = colors.bg;
@@ -145,7 +145,9 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         )}
         {!loading && !fetchError && schedules.length === 0 && (
           <Text testID="bail-no-schedules" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginVertical: 16 }}>
-            {t('bc_no_schedules', { place: state === 'ALL' ? t('bc_national_lower') : state })}
+            {Number(meta?.withheld) > 0
+              ? t('legal_unverified_withheld', { state: state === 'ALL' ? t('bc_national_lower') : state })
+              : t('bc_no_schedules', { place: state === 'ALL' ? t('bc_national_lower') : state })}
           </Text>
         )}
         {fetchError && !loading && !schedules.length && (

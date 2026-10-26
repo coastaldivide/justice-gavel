@@ -212,7 +212,7 @@ describe('EXP. expungement/check.js — Record Expungement Eligibility', () => {
     expect(src).toContain('Public (guests reach it from Home)');
     expect(src).toContain('no database reads');
     expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
-    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
+    expect(src).toContain('citationOf(rule)');                       // verdict only with a checked citation + source (Oct 2026)
   });
   test('EXP-02: no auth required — pure computation from state rules + charge type', async () => {
     const fs = await import('fs');
@@ -221,7 +221,7 @@ describe('EXP. expungement/check.js — Record Expungement Eligibility', () => {
     expect(src).toContain('Public (guests reach it from Home)');
     expect(src).toContain('no database reads');
     expect(src).toContain("return bad(res, lang, 'invalid_state')");  // section F: no silent Tennessee default
-    expect(src).toContain('citationOf(rule.note)');                  // verdict only with a named statute
+    expect(src).toContain('citationOf(rule)');                       // verdict only with a checked citation + source (Oct 2026)
   });
   test('EXP-03: query params: state (2-letter) + charges description', async () => {
     const fs = await import('fs');

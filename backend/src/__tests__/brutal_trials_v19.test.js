@@ -391,7 +391,7 @@ describe('8. storage / location / auth TOS / recovery 51 states', () => {
   test('8-04: CURRENT_TOS_VERSION is "2.1" + /tos-status exists', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/auth.js', 'utf8');
-    expect(src).toContain("CURRENT_TOS_VERSION = '2.1'");
+    expect(src).toContain("CURRENT_TOS_VERSION = '2.2'");
     expect(src).toContain('/tos-status');
     expect(src).toContain('needs_acceptance');
   });
@@ -408,7 +408,8 @@ describe('8. storage / location / auth TOS / recovery 51 states', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('allowed:');
     expect(src).toContain('license:');
-    expect(src).toContain("law: 'ARS §13-3885'");
+    expect(src).toContain('law:');
+    expect(src).toContain("checked: 'secondary'");   // Oct 2026: rows checked against 50-state summaries
   });
 });
 

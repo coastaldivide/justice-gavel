@@ -133,7 +133,8 @@ describe('HAG. hague_contacts.js — Hague Convention Support (13,920 chars)', (
 describe('EXP. expungement/* — State Rules + Petition + Attorney Referral', () => {
   test('EXP-01: rules.js — 46,279 chars with all 50-state eligibility rules', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules.js','utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules.js','utf8')
+      + fs.readFileSync(__REPO + '/backend/src/routes/expungement/rules_data.js','utf8');   // data moved (Oct 2026)
     expect(src.length).toBeGreaterThan(40000);
     expect(src).toContain('expungement');
     // Largest data file: waiting periods, eligible offenses, disqualifiers per state

@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { apiLimiter } from '../middleware/rateLimiters.js';
+import { isVerifiedRow } from './legaldata.js';
 
 const router = Router();
 
@@ -19,7 +20,11 @@ router.get('/', async (req, res) => {
              : 'SELECT * FROM bail_schedules WHERE state=\'ALL\' ORDER BY charge ASC LIMIT 50',
       state ? [state] : []
     ).catch(() => []);
-    res.json({ data: rows });
+    // Only rows checked against an official schedule are served (see legaldata.js
+    // VERIFIED_ONLY): the seeded dollar ranges named no schedule and most states have
+    // no statewide bail schedule at all — amounts are set by a judge or a county.
+    const verified = rows.filter(isVerifiedRow);
+    res.json({ data: verified, meta: { verified_only: true, withheld: rows.length - verified.length } });
   } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 

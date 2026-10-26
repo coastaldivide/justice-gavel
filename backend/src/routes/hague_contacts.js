@@ -29,7 +29,10 @@ const intakeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req
 
 const HCCH_LIST = 'https://www.hcch.net/en/states/authorities';
 const AUTH_COLS = `country_code, country_name, authority_name, website, phone, emergency_phone, email, hours_note,
-  contracting, source, source_url, recorded_at, last_verified_at`;
+  contracting, us_partner, source, source_url, recorded_at, last_verified_at`;
+
+/** Convention in force with the U.S.? Joining (contracting) is not enough — Art. 38 needs U.S. acceptance (e.g. Russia). */
+const usPartner = (r) => (r?.us_partner == null ? !!r?.contracting : !!r.us_partner);
 
 const day = (v) => (v ? new Date(v).toISOString().slice(0, 10) : null);
 const sourceOf = (r) => ({ label: r.source, url: r.source_url || null, recorded_at: day(r.recorded_at), last_verified_at: day(r.last_verified_at), reviewed: false });
@@ -40,7 +43,8 @@ function authorityOut(r, lang) {
     country_name: r.country_name,
     found: true,
     contracting_state: !!r.contracting,
-    note: msg(lang, r.contracting ? 'hague.note.contracting' : 'hague.note.non_contracting'),
+    us_partner: usPartner(r),
+    note: msg(lang, usPartner(r) ? 'hague.note.contracting' : r.contracting ? 'hague.note.not_partner' : 'hague.note.non_contracting'),
     central_authority: {
       name: r.authority_name,
       website: r.website || null,
@@ -160,10 +164,14 @@ router.post('/report-intake', authRequired, intakeLimiter, async (req, res) => {
          VALUES (?,?,?,?,?,?,?,?,NOW())`, [...vals, String(caseId), req.user.id]);
     }
 
+    // emergency_phone = 1-888-407-4747 (from the U.S. and Canada, any time for an abduction in
+    // progress); phone = +1-202-501-4444 (from abroad). Source: travel.state.gov (Oct 2026 review).
     const oci = us?.emergency_phone || us?.phone || '';
-    const steps = country.contracting
+    const steps = usPartner(country)
       ? [1, 2, 3, 4, 5].map(n => msg(lang, `hague.steps.contracting.${n}`, { phone: oci }))
-      : [1, 2, 3, 4].map(n => msg(lang, `hague.steps.non_contracting.${n}`, { phone: '1-800-843-5678' }));
+      : [1, 2, 3, 4].map(n => (n === 1 && country.contracting
+        ? msg(lang, 'hague.steps.not_partner.1')
+        : msg(lang, `hague.steps.non_contracting.${n}`, { phone: '1-800-843-5678' })));
     return res.json({
       success: true,
       intake_recorded: true,

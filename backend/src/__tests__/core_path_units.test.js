@@ -223,8 +223,8 @@ describe('.ics court date', () => {
   });
 });
 
-describe('SMS (Twilio) — optional', () => {
-  const keys = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER', 'TWILIO_API_BASE'];
+describe('SMS (Telnyx) — optional', () => {
+  const keys = ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_MESSAGING_PROFILE_ID', 'TELNYX_API_BASE'];
   afterEach(() => keys.forEach(k => delete process.env[k]));
 
   it('not configured → skipped cleanly (no throw, no request)', async () => {
@@ -240,22 +240,26 @@ describe('SMS (Twilio) — optional', () => {
     expect(toE164('12345')).toBeNull();
   });
 
-  it('configured → one POST to Twilio with basic auth; a refusal is reported, not thrown', async () => {
+  it('configured → one POST /messages with Bearer key and JSON body; a refusal is reported, not thrown', async () => {
     const got = [];
-    let status = 201;
+    let status = 200;
     const srv = http.createServer((req, res) => {
       let d = ''; req.on('data', c => { d += c; });
-      req.on('end', () => { got.push({ url: req.url, auth: req.headers.authorization, form: new URLSearchParams(d) }); res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(status === 201 ? { sid: 'SM1' } : { code: 21211 })); });
+      req.on('end', () => {
+        got.push({ url: req.url, method: req.method, auth: req.headers.authorization, type: req.headers['content-type'], json: JSON.parse(d || '{}') });
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(status === 200 ? { data: { id: 'msg-1' } } : { errors: [{ code: '40310', title: 'Invalid to number' }] }));
+      });
     });
     await new Promise(r => srv.listen(0, '127.0.0.1', r));
-    Object.assign(process.env, { TWILIO_ACCOUNT_SID: 'AC1', TWILIO_AUTH_TOKEN: 'tok', TWILIO_FROM_NUMBER: '+16155550000', TWILIO_API_BASE: `http://127.0.0.1:${srv.address().port}` });
+    Object.assign(process.env, { TELNYX_API_KEY: 'KEY1', TELNYX_FROM_NUMBER: '(615) 555-0000', TELNYX_MESSAGING_PROFILE_ID: 'mp-1', TELNYX_API_BASE: `http://127.0.0.1:${srv.address().port}` });
     try {
-      await expect(sendSms({ to: '615 555 0142', body: 'Court tomorrow' })).resolves.toEqual({ ok: true, sid: 'SM1' });
-      expect(got[0].url).toBe('/2010-04-01/Accounts/AC1/Messages.json');
-      expect(got[0].auth).toBe(`Basic ${Buffer.from('AC1:tok').toString('base64')}`);
-      expect(got[0].form.get('To')).toBe('+16155550142');
-      status = 400;
-      await expect(sendSms({ to: '615 555 0142', body: 'x' })).resolves.toEqual({ ok: false, error: 'twilio_400' });
+      expect(smsLive()).toBe(true);
+      await expect(sendSms({ to: '615 555 0142', body: 'Court tomorrow' })).resolves.toEqual({ ok: true, id: 'msg-1' });
+      expect(got[0]).toMatchObject({ url: '/messages', method: 'POST', auth: 'Bearer KEY1', type: 'application/json' });
+      expect(got[0].json).toEqual({ from: '+16155550000', to: '+16155550142', text: 'Court tomorrow', messaging_profile_id: 'mp-1' });
+      status = 422;
+      await expect(sendSms({ to: '615 555 0142', body: 'x' })).resolves.toEqual({ ok: false, error: 'telnyx_422_40310' });
       await expect(sendSms({ to: 'nope', body: 'x' })).resolves.toEqual({ skipped: true, reason: 'no_valid_number' });
     } finally { await new Promise(r => srv.close(r)); }
   });

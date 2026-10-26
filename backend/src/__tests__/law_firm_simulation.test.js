@@ -783,8 +783,11 @@ describe('FIRM 1 — Harrington Voss & Slate LLP (Criminal Defense)', () => {
       expect(t.elig).toHaveProperty('eligible');
       expect(typeof t.elig.note).toBe('string');
       expect(t.elig.note.length).toBeGreaterThan(0);
-      if (t.stat==='Dismissed')                      expect(t.elig.eligible).toBe(true);
-      if (t.ct==='sexual'&&t.stat==='Convicted')     expect(t.elig.eligible).toBe(false);
+      // Oct 2026 legal accuracy review: researched law, not a blanket rule. A dismissal is
+      // clearable everywhere but not always at once (e.g. CT 13 months, TX 180 days–3 years,
+      // MT by petition); a few states allow narrow relief for some sex offenses.
+      if (t.stat==='Dismissed')                      expect([true, 'conditional']).toContain(t.elig.eligible);
+      if (t.ct==='sexual'&&t.stat==='Convicted')     expect([false, 'conditional', null]).toContain(t.elig.eligible);
       expect(t.elig.waitYears??0).toBeGreaterThanOrEqual(0);
     }));
   });
@@ -1225,8 +1228,8 @@ describe('Cross-Firm Aggregate (3,000 trials)', () => {
   });
 
   test('F1: dismissed→eligible=true, convicted sexual→eligible=false', () => {
-    F1T.filter(t=>t.stat==='Dismissed').forEach(t=>{ expect(t.elig.eligible).toBe(true); expect(t.elig.waitYears).toBe(0); });
-    F1T.filter(t=>t.ct==='sexual'&&t.stat==='Convicted').forEach(t=>expect(t.elig.eligible).toBe(false));
+    F1T.filter(t=>t.stat==='Dismissed').forEach(t=>{ expect([true, 'conditional']).toContain(t.elig.eligible); if (t.elig.waitYears !== undefined) expect(t.elig.waitYears).toBeGreaterThanOrEqual(0); });
+    F1T.filter(t=>t.ct==='sexual'&&t.stat==='Convicted').forEach(t=>expect([false, 'conditional', null]).toContain(t.elig.eligible));
   });
 
   test('F2: punitive multipliers only 3, 5, or 9', () => {

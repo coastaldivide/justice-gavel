@@ -180,7 +180,7 @@ describeIntegration('review follow-ups: legal content + privacy (real Postgres)'
     const cd = await ctx.request().post('/api/court-dates').set(u.headers).send({ case_title: `${ctx.tag} nochan`, court_date: dayPlus(8) });
     const before = await ctx.request().get('/api/court-dates').set(u.headers);
     expect(before.body.reminder_delivery).toEqual(expect.objectContaining({
-      undeliverable: 0, needs_attention: true, channels: { push: false, email: false, sms: false },
+      undeliverable: 0, needs_attention: true, channels: { push: false, web_push: false, email: false, sms: false },
     }));
     const row = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [cd.body.id]);
     await ctx.db.run(`UPDATE scheduled_pushes SET deliver_at = NOW() - INTERVAL '1 minute' WHERE id = ?`, [row.id]);

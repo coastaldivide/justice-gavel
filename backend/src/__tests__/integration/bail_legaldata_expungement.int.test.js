@@ -23,21 +23,26 @@ describeIntegration('bail calculator, legaldata, expungement (real Postgres)', (
     expect(JSON.stringify(res.body)).not.toMatch(/recommended/);
   });
 
-  it('GET /bail?state=TN returns schedule rows from the DB', async () => {
+  it('GET /bail?state=TN serves only schedule rows checked against an official schedule (Oct 2026)', async () => {
     const res = await ctx.request().get('/api/bail?state=TN');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBeGreaterThan(0);
-    for (const r of res.body.data) expect(['TN', 'ALL']).toContain(r.state);
+    expect(res.body.meta).toMatchObject({ verified_only: true });
+    expect(res.body.data.length + res.body.meta.withheld).toBeGreaterThan(0);
+    for (const r of res.body.data) { expect(['TN', 'ALL']).toContain(r.state); expect(r.source_url).toMatch(/^https?:\/\//); }
   });
 
   // ── legaldata ───────────────────────────────────────────────────────────────
   it('GET /legaldata/:type returns state-filtered rows with the meta envelope', async () => {
-    const res = await ctx.request().get('/api/legaldata/dui?state=TN').set(user.headers);
+    const res = await ctx.request().get('/api/legaldata/sol?state=TN').set(user.headers);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBeGreaterThan(0);
-    expect(res.body.meta).toMatchObject({ type: 'dui', state: 'TN', not_legal_advice: true });
+    expect(res.body.data.length).toBeGreaterThan(0);               // TN limitations were checked (migration 30)
+    expect(res.body.meta).toMatchObject({ type: 'sol', state: 'TN', not_legal_advice: true, verified_only: true });
+    for (const row of res.body.data) { expect(row.source_url).toMatch(/^https?:\/\//); expect(row.verified_by).toBeTruthy(); }
+    const dui = await ctx.request().get('/api/legaldata/dui?state=TN');   // not checked yet → withheld, never shown as fact
+    expect(dui.body.data).toEqual([]);
+    expect(dui.body.meta.withheld).toBeGreaterThan(0);
     expect(typeof res.body.meta.disclaimer).toBe('string');
     for (const row of res.body.data) expect(['TN', 'ALL', 'FED']).toContain(String(row.state).toUpperCase());
   });
