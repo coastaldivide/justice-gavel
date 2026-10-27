@@ -307,6 +307,12 @@ export const ALL_ENV_VARS = {
   TELNYX_MESSAGING_PROFILE_ID: process.env.TELNYX_MESSAGING_PROFILE_ID || '', // optional: messaging profile (number pool / opt-out handling)
   TELNYX_API_BASE:          process.env.TELNYX_API_BASE            || '',    // default https://api.telnyx.com/v2 (tests / mock)
   TELNYX_PUBLIC_KEY:        process.env.TELNYX_PUBLIC_KEY          || '',    // base64 Ed25519 key: verifies POST /api/webhooks/telnyx (STOP replies)
+  TELNYX_VOICE_ENABLED:     process.env.TELNYX_VOICE_ENABLED       || '',    // 'true' → the court-date phone line answers calls (A10)
+  TELNYX_VOICE_NUMBER:      process.env.TELNYX_VOICE_NUMBER        || '',    // the phone line's number (E.164)
+  TELNYX_VOICE_EN:          process.env.TELNYX_VOICE_EN            || '',    // TTS voice, English (default Polly.Joanna)
+  TELNYX_VOICE_ES:          process.env.TELNYX_VOICE_ES            || '',    // TTS voice, Spanish (default Polly.Lupe)
+  PHONE_LINE_TIME_ZONE:     process.env.PHONE_LINE_TIME_ZONE       || '',    // "today" for the phone line (default America/Chicago)
+  PHONE_CODE_SECRET:        process.env.PHONE_CODE_SECRET          || '',    // HMAC secret for phone codes / caller hashes (default JWT_SECRET)
 
   TRUST_PROXY:              process.env.TRUST_PROXY                || '',    // Express 'trust proxy': hop count (default 1) or CIDR list, e.g. 100.0.0.0/8 (RUNBOOK)
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',

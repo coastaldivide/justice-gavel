@@ -62,9 +62,12 @@ import immigrationRouter   from './routes/immigration.js';
 import billingRouter    from './routes/billing/index.js';
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import telnyxWebhookRouter from './routes/webhooks/telnyx.js';
+import telnyxVoiceWebhookRouter from './routes/webhooks/telnyxVoice.js';
 import adminQueueRouter from './routes/admin/queue.js';
 import adminBdSetupRouter from './routes/admin/bdSetup.js';
 import adminPdOfficesRouter from './routes/admin/pdOffices.js';
+import adminResultsRouter from './routes/admin/results.js';
+import resultsRouter from './routes/results.js';
 import bdPayRouter from './routes/bdPay.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -287,6 +290,9 @@ app.use(STRIPE_WEBHOOK_PATHS, express.raw({ type: () => true, limit: '1mb' }), s
 // Telnyx messaging webhooks (STOP replies) — RAW body for the Ed25519 signature check.
 const TELNYX_WEBHOOK_PATH = '/api/webhooks/telnyx';
 app.use(TELNYX_WEBHOOK_PATH, express.raw({ type: () => true, limit: '256kb' }), telnyxWebhookRouter);
+// Telnyx Call Control webhooks for the court-date phone line (A10) — RAW body, same signature check.
+const TELNYX_VOICE_WEBHOOK_PATH = '/api/webhooks/telnyx-voice';
+app.use(TELNYX_VOICE_WEBHOOK_PATH, express.raw({ type: () => true, limit: '256kb' }), telnyxVoiceWebhookRouter);
 // Paths whose routers parse their own raw body (never run express.json on them)
 const RAW_BODY_PATHS = new Set([...STRIPE_WEBHOOK_PATHS, '/api/billing/webhook']);
 
@@ -507,6 +513,8 @@ app.use('/api/admin/ai-costs', aiCostsRouter);
 app.use('/api/admin/queue',    adminQueueRouter);   // in-app review screen (admin role, no ops key)
 app.use('/api/admin/pd-offices', adminPdOfficesRouter); // public defender offices + annual invoices (admin role, ⚖)
 app.use('/api/admin/bd-setup', adminBdSetupRouter); // Bond Desk "set up my forms" queue (admin role, no ops key)
+app.use('/api/admin/results', adminResultsRouter);  // B11 published results: preview / publish (admin role, no ops key)
+app.use('/api/results', resultsRouter);              // B11 the latest published results snapshot (public)
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
 app.use('/api/consultations', consultationsRouter);

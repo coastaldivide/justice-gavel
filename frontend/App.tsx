@@ -40,6 +40,7 @@ import CheckInLinkScreen from './src/screens/CheckInLinkScreen';
 import RecoveryInviteScreen from './src/screens/RecoveryInviteScreen';
 import AutopayLinkScreen from './src/screens/AutopayLinkScreen';
 import AgencyPayScreen from './src/screens/AgencyPayScreen';
+import ResultsScreen from './src/screens/ResultsScreen';
 import StaffJoinScreen from './src/screens/StaffJoinScreen';
 import PdJoinScreen from './src/screens/PdJoinScreen';
 import { getToken } from './src/utils/secureStorage';
@@ -375,6 +376,8 @@ function AppInner() {
           <RootStack.Screen name="StaffJoin" component={StaffJoinScreen} />
           {/* An invitation into a public defender office (pd/join/<token>) — any auth state */}
           <RootStack.Screen name="PdJoin" component={PdJoinScreen} />
+          {/* The published results page (B11) — shows only what an admin published; any auth state */}
+          <RootStack.Screen name="Results" component={ResultsScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

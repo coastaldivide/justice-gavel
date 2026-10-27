@@ -147,6 +147,15 @@ TELNYX_PUBLIC_KEY=<base64>               Telnyx webhook public key (Ed25519). Po
                                           https://<api host>/api/webhooks/telnyx so STOP replies turn text reminders off
                                           and replies 1 / 2 / 3 to "Did you make it to court?" are recorded.
                                           Unset → the webhook refuses every request (503).
+TELNYX_VOICE_ENABLED=true|false          court-date phone line (A10, docs/PHONE_LINE.md): answer calls on
+                                          TELNYX_VOICE_NUMBER through Telnyx Call Control; webhook
+                                          https://<api host>/api/webhooks/telnyx-voice (same TELNYX_PUBLIC_KEY check;
+                                          unsigned requests refused). Default off: the webhook answers 503.
+TELNYX_VOICE_NUMBER=<+1800...>           the phone line's (toll-free) number, E.164; shown in the app when the line is on
+TELNYX_VOICE_EN / TELNYX_VOICE_ES        optional text-to-speech voices (default Polly.Joanna / Polly.Lupe)
+PHONE_LINE_TIME_ZONE=<IANA zone>         optional: "today" for the phone line's next-court-date lookup (default America/Chicago)
+PHONE_CODE_SECRET=<random>               optional HMAC secret for phone-verification codes (only an HMAC is stored) and the
+                                          phone line's caller hashes; default JWT_SECRET
 TRUST_PROXY=<hops|CIDRs>                 Express "trust proxy" (default 1). Decides which X-Forwarded-For entry is the
                                          client IP for rate limits / guest report keys — see RUNBOOK "Client IP".
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     web push (npx web-push generate-vapid-keys)

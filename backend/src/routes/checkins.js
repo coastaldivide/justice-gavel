@@ -17,7 +17,7 @@
  *   GET  /api/checkins/link/:token            agency name + phone, first name, today's status
  *   POST /api/checkins/link/:token            { lat?, lng?, note? } — check in (location only when shared, each time)
  * Defendant:
- *   GET  /api/checkins/mine                   my enrollments (an enrollment whose phone / e-mail matches my account
+ *   GET  /api/checkins/mine                   my enrollments (an enrollment whose phone matches my VERIFIED phone
  *                                             is linked to me the first time I look) with today's status
  *   GET  /api/checkins/status/:id             one enrollment's status (defendant, its bail agent, or staff)
  *   GET  /api/checkins/my/:id                 my check-in history for one enrollment
@@ -46,7 +46,9 @@ import { isStaff } from '../utils/staff.js';
 import { safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { AGENT_TEXT_CENTS } from './billing/plans.js';
 import { toE164 } from '../services/sms.js';
-import { rememberTimeZone } from '../services/courtReminders.js';
+import { verifiedPhone } from '../services/phoneVerification.js';
+import { helpLinksForCourtName } from '../services/courtDayHelp.js';
+import { rememberTimeZone, dateOnly } from '../services/courtReminders.js';
 import { safeCourtDate } from './cases.js';
 import { resolveLang, msg, rememberLanguage, requestedLang, normalizeLang } from '../i18n/index.js';
 import {
@@ -104,19 +106,25 @@ async function agentName(db, bondsmanId) {
   return String(r?.company || r?.display_name || r?.name || '').trim() || null;
 }
 
-/** Link not-yet-linked enrollments whose contact matches the signed-in account. */
+/**
+ * Link enrollments whose defendant phone matches the signed-in account's VERIFIED phone.
+ *
+ * Only a phone number the account VERIFIED by texted code counts (services/phoneVerification.js,
+ * migration 40). E-mail is never used: the app does not verify e-mail addresses. An enrollment
+ * held by another account whose own verification of that number is gone (the number moved on,
+ * or the link predates verification and was held by migration 40) moves to the verified account.
+ */
 export async function claimMatching(db, userId) {
-  const me = await db.get('SELECT email, phone FROM users WHERE id = ?', [userId]);
-  const email = me?.email ? String(me.email).trim().toLowerCase() : null;
-  const phone = digits10(me?.phone);
-  const conds = []; const args = [];
-  if (email) { conds.push('LOWER(TRIM(defendant_email)) = ?'); args.push(email); }
-  if (phone.length === 10) { conds.push(`RIGHT(regexp_replace(COALESCE(defendant_phone, ''), '[^0-9]', '', 'g'), 10) = ?`); args.push(phone); }
-  if (!conds.length) return [];
+  const phone = digits10(await verifiedPhone(db, userId));
+  if (phone.length !== 10) return [];
   const rows = await db.all(
-    `UPDATE checkin_enrollments SET user_id = ?, updated_at = NOW()
-      WHERE user_id IS NULL AND active = 1 AND bondsman_id <> ? AND (${conds.join(' OR ')})
-      RETURNING id`, [userId, userId, ...args]);
+    `UPDATE checkin_enrollments e SET user_id = ?, held_user_id = NULL, held_at = NULL, updated_at = NOW()
+      WHERE e.active = 1 AND e.bondsman_id <> ?
+        AND RIGHT(regexp_replace(COALESCE(e.defendant_phone, ''), '[^0-9]', '', 'g'), 10) = ?
+        AND (e.user_id IS NULL OR (e.user_id <> ? AND NOT EXISTS (
+              SELECT 1 FROM users u WHERE u.id = e.user_id AND u.phone_verified_at IS NOT NULL
+                 AND RIGHT(regexp_replace(COALESCE(u.phone_verified_phone, ''), '[^0-9]', '', 'g'), 10) = ?)))
+      RETURNING id`, [userId, userId, phone, userId, phone]);
   return rows.map(r => Number(r.id));
 }
 
@@ -632,9 +640,30 @@ function linkFail(req, res, err) {
   logger.error({ err: err?.message }, '[checkins/link-page]');
   return fail(req, res, 500, 'checkin.err.server');
 }
+/**
+ * The next court date the link page shows with "Help getting to court" (A8): the Bond Desk bond's
+ * next hearing when the agent attached a bond (court name, room, county), else the enrollment's
+ * court date. Date, court name and room only — nothing else about the case.
+ */
+async function linkCourt(db, e, today) {
+  const b = await db.get(
+    `SELECT cd.court_date, cd.court_time, COALESCE(cd.court_name, b.court_name) AS court_name, cd.room, b.county, b.state
+       FROM bd_bonds b JOIN bd_court_dates cd ON cd.bond_id = b.id AND cd.deleted_at IS NULL AND cd.status = 'scheduled'
+      WHERE b.checkin_enrollment_id = ? AND b.agent_id = ? AND cd.court_date >= CAST(? AS date)
+      ORDER BY cd.court_date, cd.court_time NULLS FIRST LIMIT 1`, [e.id, e.bondsman_id, today]);
+  if (b) {
+    return { date: dateOnly(b.court_date),
+      time: b.court_time ? String(b.court_time).slice(0, 5) : null, court_name: b.court_name || null, room: b.room || null,
+      help: helpLinksForCourtName(b) };
+  }
+  const d = e.court_date ? dateOnly(e.court_date) : null;
+  if (!d || d < today) return null;
+  return { date: d, time: null, court_name: null, room: null, help: helpLinksForCourtName({}) };
+}
 async function linkView(db, e, st) {
   const a = await agencyFor(db, e.bondsman_id);
   return {
+    court: await linkCourt(db, e, st.today),
     agency: { name: String(a.agency || a.agent_name || '').trim() || null, phone: a.phone || null },
     first_name: firstName(e.defendant_name), frequency: e.check_in_freq,
     checked_in_today: st.last_day === st.today, done_for_period: st.done, next_due: st.next_due,

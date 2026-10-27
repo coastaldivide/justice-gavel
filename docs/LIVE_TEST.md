@@ -156,6 +156,40 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] G2 Download the artifact and decrypt it with the passphrase (command in the workflow file header) → it opens.
 - [ ] G3 Delete the consumer account from phone A → it is gone; data export before deleting downloads a file.
 
+## H. Court day, phone verification, phone line, results (migration 40, 25 min)
+- [ ] H1 **Verify phone** (phone A): Settings → Verify your phone → enter the phone's number → a text with a 6-digit
+  code arrives → a wrong code says "not right, 4 tries left" → the right code → "verified". Change the phone in the
+  profile → Settings shows it unverified again.
+- [ ] H2 **Nothing by unverified contact**: a bail agent enrolls the number of phone B → on a second account that typed
+  phone B's number (never verified) Home shows no "Your bail agent" card → verify on phone B's own account → the card
+  appears with the agency and court date.
+- [ ] H3 **Plan your court day** (phone A, a court date at a Davidson County courthouse): the court date shows the
+  checklist, "Call 211", "Buses and routes: WeGo Public Transit" with "Web address checked …", and "Directions to the
+  court". Tick two items, add a note, Save, reopen → kept. A court date in a county with no listed agency shows 211
+  and directions only.
+- [ ] H4 **Reminder link**: the next court-reminder text ends with `https://justicegavel.app/court-dates/<id>` before
+  "Reply STOP"; tapping it opens that court date.
+- [ ] H5 **Offer a ride**: share the court date with phone B's account (with reminders) → on phone B, Court dates →
+  family section → "Offer a ride" → phone A gets the push "<name> offered a ride to court on <day>" → Accept → phone B
+  gets "<name> accepted your ride…". A follower invited without reminders sees no "Offer a ride".
+- [ ] H6 **Check-in link page** (a text-link enrollment with a Bond Desk court date): the page shows the court date,
+  court and room, 211, the county's transit agency where listed, and directions; no charges or case number.
+- [ ] H7 **Phone line** (EXTERNAL_SERVICES_SETUP.md 8b done, `TELNYX_VOICE_ENABLED=true`): call the toll-free number
+  from phone B (its number is a Bond Desk defendant's) → "press 1 for English, para español oprima 2" → 2 → Spanish
+  menu → 1 → the next court date, time, court and room are read, nothing else → 2 → a text with the date arrives →
+  3 → the missed-court guidance. Call from a number not on file → 1 → enter phone B's number on the keypad → the date
+  is read. Call 7 times in an hour → the 7th is told to call later. Telnyx → the call shows no recording.
+  `TELNYX_VOICE_ENABLED=false` → calls are not answered. A `curl -X POST …/api/webhooks/telnyx-voice` with no
+  signature → 401.
+- [ ] H8 **Ameelio**: Family Connect shows "Write, send photos or video-call someone in jail or prison — free through
+  Ameelio (a nonprofit)…" and the link opens ameelio.org. Custody alerts (with a followed booking) shows the same card.
+- [ ] H9 **Results**: open `https://justicegavel.app/results` → "No results have been published yet." Admin account →
+  Admin review → Publish results → preview of the last 90 days; with fewer than 100 answered court dates Publish is
+  disabled. On a period with ≥ 100 → Publish → the public page shows the numbers, the period and the methods note.
+  The snapshot cannot be edited (psql `UPDATE results_snapshots …` fails).
+- [ ] H10 **Menu entries**: with `CUSTODY_ALERTS_ENABLED=true` Home shows "Custody alerts"; with
+  `BOND_RECOVERY_SHARING_ENABLED=true` and a bond shared with this account, "Bonds shared with me"; off → neither.
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

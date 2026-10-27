@@ -26,6 +26,7 @@ const PUBLIC = {
   'POST /webhooks/stripe': 'Stripe signature verified',
   'POST /api/webhooks/stripe': 'Stripe signature verified',
   'POST /api/webhooks/telnyx': 'Telnyx Ed25519 signature verified (STOP replies); 503 without TELNYX_PUBLIC_KEY',
+  'POST /api/webhooks/telnyx-voice': 'Telnyx Ed25519 signature verified (court-date phone line, A10); 503 without TELNYX_PUBLIC_KEY or when TELNYX_VOICE_ENABLED is off',
   'POST /api/billing/webhook': 'Stripe signature verified',
   // SSO / OAuth flows (signed assertions / state)
   'POST /api/sso/acs': 'SAML assertion signature verified (H8)',
@@ -58,6 +59,7 @@ const PUBLIC = {
   'GET /api/help/nearby': 'combined lawyer + bail-agent search (guest core path)',
   'POST /api/help/reports': 'report a wrong listing (guest core path, rate limited, never edits the listing)',
   'GET /api/help/report-reasons': 'static list of report reasons',
+  'GET /api/results': 'the latest results snapshot an admin published (B11; aggregate counts only)',
   'GET /api/help/bail-schedule': 'typical bail ranges with sources (guest core path)',
   'GET /api/court-dates/guidance': 'static court-day checklist and missed-date guidance',
   'GET /api/courthouses': 'courthouse lookup by state / city / name (guest core path, no user data)',

@@ -95,6 +95,10 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
             <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('pd_adm_entry_line')}</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity accessibilityRole="button" testID="adm-results" style={s.card} onPress={() => navigation.navigate('AdminResults' as never)}>
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('ares_title')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('ares_line')}</Text>
+        </TouchableOpacity>
         {!!notice && <View testID="adm-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
         {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
         {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}

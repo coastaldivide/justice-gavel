@@ -3,14 +3,22 @@
  *
  *   GET /api/me/bail-agent   the "Your bail agent" card (B6): for each active check-in enrollment
  *                            linked to this account (routes/checkins.js links an enrollment whose
- *                            phone / e-mail matches the account the first time the person looks),
+ *                            VERIFIED phone matches the account the first time the person looks),
  *                            the agency name and phone, the next court date, the next check-in due,
  *                            and — when the agent attached a Bond Desk bond to that enrollment — the
  *                            bond's outstanding balance (read-only, from the bond's ledger).
  *
- * Only the person's own enrollments are read (enrollment.user_id = the caller). A bond is shown
- * only through an enrollment linked to the caller and owned by the same agent: the app has no
- * verified e-mail or phone, so a bond is never matched to an account by contact details alone.
+ *                            Also `phone_verified` and `verify_prompt` (true when links made before
+ *                            phone verification are held for this account until it verifies its
+ *                            phone: "Verify your phone to see your bail agent's details").
+ *   GET  /api/me/phone            { phone, phone_verified, verified_at, sms_available, pending }
+ *   POST /api/me/phone/verify     { phone } — text a 6-digit code (services/phoneVerification.js)
+ *   POST /api/me/phone/confirm    { code } — verify; links matching enrollments
+ *
+ * Only the person's own enrollments are read (enrollment.user_id = the caller). An enrollment is
+ * linked only through the account's VERIFIED phone (routes/checkins.js claimMatching; the app does
+ * not verify e-mail, so e-mail never links). A bond is shown only through an enrollment linked to
+ * the caller and owned by the same agent — never matched to an account by contact details alone.
  */
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
@@ -21,6 +29,8 @@ import { claimMatching } from './checkins.js';
 import { checkinState, planCheckinReminder } from '../services/checkinReminders.js';
 import { agencyFor } from '../services/bondDesk/core.js';
 import { bondMoney } from '../services/bondDesk/money.js';
+import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
+import { phoneStatus, startVerification, confirmVerification, verifiedPhone, VerifyError } from '../services/phoneVerification.js';
 
 const router = Router();
 const OPEN_BONDS = ['prospect', 'active', 'forfeited'];
@@ -66,12 +76,50 @@ router.get('/bail-agent', authRequired, async (req, res) => {
         bond: bond ? { status: bond.status, ...balance } : null,
       });
     }
+    const verified = !!(await verifiedPhone(db, req.user.id));
+    const held = verified ? null : await db.get(
+      'SELECT COUNT(*)::int AS n FROM checkin_enrollments WHERE held_user_id = ? AND user_id IS NULL AND active = 1', [req.user.id]);
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ agents });
+    res.json({ agents, phone_verified: verified, verify_prompt: !verified && Number(held?.n || 0) > 0 });
   } catch (e) {
     logger.error({ err: e.message }, '[me/bail-agent]');
     res.status(500).json({ error: msg(resolveLang(req), 'checkin.err.server'), code: 'server_error' });
   }
+});
+
+// ── Phone verification (security fix, migration 40) ──────────────────────────
+const phoneLimiter = makeUserLimiter({ windowMs: 15 * 60_000, max: 20, message: (req) => msg(resolveLang(req), 'phone.err.too_many_codes') });
+function phoneFail(req, res, e, where) {
+  const lang = resolveLang(req);
+  if (e instanceof VerifyError) return res.status(e.status).json({ error: msg(lang, `phone.err.${e.code}`, e.params), code: e.code, ...(e.params || {}) });
+  logger.error({ err: e.message }, `[me/phone${where}]`);
+  return res.status(500).json({ error: msg(lang, 'phone.err.server'), code: 'server_error' });
+}
+
+router.get('/phone', authRequired, async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(await phoneStatus(await getDb(), req.user.id));
+  } catch (e) { phoneFail(req, res, e, ''); }
+});
+
+router.post('/phone/verify', authRequired, phoneLimiter, async (req, res) => {
+  if (typeof req.body?.phone !== 'string') return res.status(400).json({ error: msg(resolveLang(req), 'phone.err.bad_phone'), code: 'bad_phone' });
+  try {
+    const db = await getDb();
+    const lang = resolveLang(req);
+    res.json(await startVerification(db, req.user.id, req.body?.phone, { lang }));
+  } catch (e) { phoneFail(req, res, e, '/verify'); }
+});
+
+router.post('/phone/confirm', authRequired, phoneLimiter, async (req, res) => {
+  if (!['string', 'number'].includes(typeof req.body?.code)) return res.status(400).json({ error: msg(resolveLang(req), 'phone.err.bad_code_format'), code: 'bad_code_format' });
+  try {
+    const db = await getDb();
+    const r = await confirmVerification(db, req.user.id, req.body?.code, { claim: claimMatching });
+    for (const id of r.linked) await planCheckinReminder(db, id).catch(() => null);
+    res.json({ verified: true, phone: r.phone, linked: r.linked.length, message: msg(resolveLang(req), 'phone.verified') });
+  } catch (e) { phoneFail(req, res, e, '/confirm'); }
 });
 
 export default router;

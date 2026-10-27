@@ -135,6 +135,9 @@ export type RootStackParamList = {
   PdStaff:                  undefined;
   PdJoin:                   { token: string };
   AdminPdOffices:           undefined;
+  AdminResults:             undefined;
+  VerifyPhone:              undefined;
+  Results:                  undefined;
   SignPacket:               { token: string };
   AutopayLink:              { token: string; saved?: string; paid?: string };
   AgencyPay:                { slug: string; paid?: string };

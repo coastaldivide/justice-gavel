@@ -331,6 +331,17 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     finally { if (mounted.current) setFollowingBusy(false); }
   };
 
+  const rideOffer = async (f: FollowedCase, courtDateId: number, offer: boolean) => {
+    try {
+      const path = `/following/${f.follow_id}/court-dates/${courtDateId}/ride-offer`;
+      const r = offer ? await api.post<{ status: string }>(path) : await api.delete<{ status: string }>(path);
+      const status = r.data?.status === 'withdrawn' ? null : (r.data?.status || null);
+      setFollowing(list => list.map(x => (x.follow_id !== f.follow_id ? x : {
+        ...x, court_dates: x.court_dates.map(cd => (cd.id === courtDateId ? { ...cd, ride_offer: status as any } : cd)),
+      })));
+      showToast(offer ? t('cd_ride_offered', { name: f.owner_first_name || '' }) : t('cd_ride_withdrawn'), 'success');
+    } catch (e) { showToast(apiErrorMessage(e, t('cd_ride_failed')), 'error'); }
+  };
   const unfollow = async (f: FollowedCase) => {
     const ok = await confirm(t('cd_unfollow_q', { title: f.case_title }), t('cd_unfollow_body'), { confirmLabel: t('cd_unfollow'), destructive: true });
     if (!ok) return;
@@ -488,9 +499,23 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
               <View key={f.follow_id} style={styles.row} testID="following-case">
                 <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{f.owner_first_name ? `${f.owner_first_name}: ` : ''}{f.case_title}</Text>
                 {f.court_dates.filter(d => !d.is_past).map(d => (
-                  <IconLabel key={d.id} icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate} testID="following-court-date">
-                    {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
-                  </IconLabel>
+                  <View key={d.id}>
+                    <IconLabel icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate} testID="following-court-date">
+                      {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
+                    </IconLabel>
+                    {/* "Offer a ride" (A8): followers who get reminders; the owner is notified and answers */}
+                    {phase === 'ok' && d.ride_offer && (
+                      <Text maxFontSizeMultiplier={1.4} style={styles.rowSub} testID="ride-offer-status">{t(`cd_ride_status_${d.ride_offer}`, { name: f.owner_first_name || '' })}</Text>
+                    )}
+                    {phase === 'ok' && d.can_offer_ride && (
+                      <TouchableOpacity accessibilityRole="button" testID="offer-ride" style={[styles.secondaryBtn, { minHeight: 44, paddingVertical: 8 }]}
+                        onPress={() => rideOffer(f, d.id, !d.ride_offer)}>
+                        <IconLabel center icon={ICONS.car} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>
+                          {d.ride_offer ? t('cd_ride_withdraw') : t('cd_offer_ride')}
+                        </IconLabel>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 ))}
                 {f.court_dates.filter(d => !d.is_past).length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{t('cd_follow_no_dates')}</Text>}
                 {phase === 'ok' && (

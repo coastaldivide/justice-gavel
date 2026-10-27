@@ -190,18 +190,21 @@ describeIntegration('section D — cases, court dates, check-ins, messages (real
   });
 
   // ── D4 ────────────────────────────────────────────────────────────────────
-  test('D4 check-ins: agents only, found by e-mail, the defendant\'s day, one per day, agent notified', async () => {
+  test('D4 check-ins: agents only, found by verified phone (never by e-mail), the defendant\'s day, one per day, agent notified', async () => {
     if (!ctx.app) return;
     expect((await req('post', '/api/checkins/enroll', owner).send({ defendant_name: 'X Y', defendant_email: defendant.email })).status).toBe(403);
     const noContact = await req('post', '/api/checkins/enroll', agent, 'es').send({ defendant_name: 'X Y' });
     expect(noContact.status).toBe(400);
     expect(noContact.body.error).toMatch(/teléfono o el correo/);
-    const en = await req('post', '/api/checkins/enroll', agent).send({ defendant_name: 'Dana Defendant', defendant_email: defendant.email.toUpperCase(), check_in_freq: 'daily' });
+    const en = await req('post', '/api/checkins/enroll', agent).send({ defendant_name: 'Dana Defendant', defendant_email: defendant.email.toUpperCase(), defendant_phone: '615-555-0144', check_in_freq: 'daily' });
     expect(en.status).toBe(201);
     expect(en.body.checkin_link).toMatch(/\/checkin\?enrollmentId=\d+$/);
     expect(en.body.enrollment.stripe_sub_id ?? null).toBeNull();
     const eid = en.body.enrollment.id;
     expect((await req('get', `/api/checkins/status/${eid}`, other)).status).toBe(404);
+    // the same e-mail links nothing (e-mail is not verified); the verified phone does (migration 40)
+    expect((await req('get', '/api/checkins/mine', defendant)).body.enrollments).toEqual([]);
+    await ctx.db.run(`UPDATE users SET phone = '+16155550144', phone_verified_phone = '+16155550144', phone_verified_at = NOW() WHERE id = ?`, [defendant.user.id]);
     const mine = await req('get', '/api/checkins/mine', defendant).set('X-Timezone', 'America/Chicago').set('Accept-Language', 'vi');
     expect(mine.body.enrollments.map(e => e.id)).toEqual([eid]);
     expect(mine.body.enrollments[0].agent_name).toBe('D Agent');

@@ -18,6 +18,8 @@
  *   ├─ AgencyPay (pay/<slug> — a bail agency's public pay page; any auth state)
  *   └─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
  *   └─ PdJoin (pd/join/<token> — an invitation into a public defender office; sign-in asked on the page)
+ *   ├─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
+ *   └─ Results (results — the published results page, B11; any auth state)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -167,6 +169,7 @@ export const linking: LinkingOptions<any> = {
               ConflictCheck:      'conflict-check',
               FirmAcquisition:    'firm-trial',
               AdminVerification:  'admin-review',
+              VerifyPhone:        'verify-phone',
               MatterIntelligence: 'matter-intelligence/:matterId?',
               Matter:             'matters/:matterId',
             },
@@ -183,6 +186,7 @@ export const linking: LinkingOptions<any> = {
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
       PdJoin:        'pd/join/:token',
+      Results:       'results',
     },
   },
 };
@@ -206,6 +210,7 @@ export const guestLinking: LinkingOptions<any> = {
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
       PdJoin:        'pd/join/:token',
+      Results:       'results',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

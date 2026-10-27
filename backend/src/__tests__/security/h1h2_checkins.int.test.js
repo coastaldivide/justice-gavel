@@ -62,7 +62,9 @@ describeIntegration('H1/H2 — check-in routes', () => {
     expect(row.supervisor_note).toBeNull();
   });
 
-  it('H2 LEGIT: the defendant (matched by account email) sees their own status and checks in', async () => {
+  it('H2 LEGIT: the defendant (matched by their VERIFIED phone, never by e-mail) sees their own status and checks in', async () => {
+    expect((await ctx.request().get(`/api/checkins/status/${enrollmentId}`).set(defendant.headers)).status).toBe(404);   // e-mail alone: nothing
+    await ctx.db.run(`UPDATE users SET phone = '+16155550199', phone_verified_phone = '+16155550199', phone_verified_at = NOW() WHERE id = ?`, [defendant.id]);
     const s = await ctx.request().get(`/api/checkins/status/${enrollmentId}`).set(defendant.headers);
     expect(s.status).toBe(200);
     expect(s.body.enrollment.defendant_name).toBe('Dee Fendant');
