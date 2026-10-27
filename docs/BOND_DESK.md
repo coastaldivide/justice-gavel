@@ -231,8 +231,9 @@ Every row in `bd_reminders` is unique per hearing + court day + number + step, s
 re-checks the bond, hearing, number and confirmation before each text. Closing the bond (exonerated, surrendered,
 forfeiture paid, cancelled) or a forfeiture cancels pending texts; reinstating re-plans them.
 
-**Wording (English; es / pt / vi in `i18n/messages`).** Texts stay within 2 segments: they are sent in the GSM-7
-alphabet (Spanish, Portuguese and Vietnamese without the accents GSM-7 lacks) and long names / court names are shortened.
+**Wording (English; es / pt / vi in `i18n/messages`).** English texts stay within 2 segments (GSM-7).
+Spanish, Portuguese and Vietnamese keep their accents (owner decision, October 27 2026), so they are sent as
+Unicode and may use up to 6 segments (about 5–6 for a reminder); long names / court names are shortened only beyond that.
 Defendant: "{agency}: {first name}, court is in 7 days, Wed, Sep 30 at 10:30 AM at {court}, room {room}. If you miss it, a
 warrant can be issued and your bond can be forfeited. Expect security; bring ID and court papers. How will you get there?
 Make a plan now. Reply STOP to opt out." Indemnitor: "{agency}: You co-signed {name}'s bail bond. Court is …".

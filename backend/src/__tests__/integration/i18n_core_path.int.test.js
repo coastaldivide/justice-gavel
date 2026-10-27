@@ -210,9 +210,9 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     await dispatch({ now: new Date() });
     const sms = twilio.received.at(-1);
     expect(sms.To).toBe('+16155550177');
-    // texts are sent in the GSM-7 alphabet (services/smsText.js): Vietnamese without most accents
-    expect(sms.Body).toContain('Neu vang mat, tòa co the ra lenh bat');
-    expect(sms.Body).toContain('Tra loi STOP de ngung nhan tin');
+    // texts keep their accents (owner decision Oct 27 2026; services/smsText.js)
+    expect(sms.Body).toContain('Nếu vắng mặt, tòa có thể ra lệnh bắt');
+    expect(sms.Body).toContain('Trả lời STOP để ngừng nhận tin');
     expect(sms.Body.startsWith('Justice Gavel: ')).toBe(true);
     expect(sms.Body).not.toMatch(/Court date|Reply STOP/);
     for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];

@@ -8,7 +8,7 @@
  *     statistic;
  *   - replies 1 / 2 / 3 are parsed strictly; zones follow the bond's county; the plan's times.
  */
-import { smsSegments, toGsm, fitSms } from '../services/smsText.js';
+import { smsSegments, toGsm, fitSms, MAX_UNICODE_SEGMENTS, plainPunctuation } from '../services/smsText.js';
 import { bondCourtText, bondReplyText, parseCourtReply, bondTimeZone } from '../services/bondDesk/courtDates.js';
 import { courtSmsText } from '../services/reminderDispatcher.js';
 import { bodyFor, followerBodyFor, planSteps, missedCourtLink } from '../services/courtReminders.js';
@@ -16,16 +16,17 @@ import { countyTimeZone } from '../utils/timezone.js';
 import { CATALOGS, msg } from '../i18n/index.js';
 
 const LANGS = ['en', 'es', 'pt', 'vi'];
-const STOP = { en: 'Reply STOP to opt out.', es: 'Responda STOP para cancelar.', pt: 'Responda STOP para cancelar.', vi: 'Tra loi STOP de ngung nhan tin.' };
+const STOP = { en: 'Reply STOP to opt out.', es: 'Responda STOP para cancelar.', pt: 'Responda STOP para cancelar.', vi: 'Trả lời STOP để ngừng nhận tin.' };
+const MAXSEEN = [0];
+afterAll(() => { if (process.env.SHOW_SEGMENTS) console.log('max UCS-2 segments', MAXSEEN[0]); });
 const fits = (t) => {
   const s = smsSegments(t);
-  expect(s.segments).toBeLessThanOrEqual(2);
-  if (s.encoding === 'UCS-2') expect(s.units).toBeLessThanOrEqual(134);
-  else expect(s.units).toBeLessThanOrEqual(306);
+  if (s.encoding === 'UCS-2') { expect(s.segments).toBeLessThanOrEqual(MAX_UNICODE_SEGMENTS); MAXSEEN[0] = Math.max(MAXSEEN[0], s.segments); }
+  else { expect(s.segments).toBeLessThanOrEqual(2); expect(s.units).toBeLessThanOrEqual(306); }
   return s;
 };
 
-describe('segments and the GSM-7 alphabet', () => {
+describe('segments, the GSM-7 alphabet and accents kept', () => {
   test('segment arithmetic', () => {
     expect(smsSegments('a'.repeat(160))).toEqual({ encoding: 'GSM-7', units: 160, segments: 1 });
     expect(smsSegments('a'.repeat(161)).segments).toBe(2);

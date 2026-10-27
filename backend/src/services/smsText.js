@@ -5,17 +5,23 @@
  * (153 each when the text is split); a single character outside GSM-7 (é is in it; á, ã,
  * ơ, ư, "—", curly quotes are not) switches the whole text to UCS-2: 70 characters (67 when
  * split). Court reminders, the "Did you make it?" question and the morning-after text must
- * stay within 2 segments.
+ * stay within 2 segments in GSM-7 (English) and within MAX_UNICODE_SEGMENTS when the language
+ * needs accents (Spanish, Portuguese, Vietnamese are sent with their accents — owner decision,
+ * October 27 2026: correct spelling over the cheapest text).
  *
  *   toGsm(text)         the text in GSM-7: dashes, quotes and spaces made plain, letters
  *                       outside GSM-7 written without their accent (á→a, ã→a, ơ→o, đ→d).
- *                       Spanish, Portuguese and Vietnamese texts are therefore sent without
- *                       accents (common practice for texts; the app and e-mails keep them).
+ *                       Kept for callers that need pure GSM-7; reminder texts do not use it.
+ *   plainPunctuation(text)  only dashes, quotes, spaces and ellipses made plain (accents kept),
+ *                       so an English text stays GSM-7.
  *   smsSegments(text)   { encoding: 'GSM-7'|'UCS-2', units, segments }
- *   fitSms(build, fields, shrink, { maxSegments })
+ *   fitSms(build, fields, shrink, { maxSegments, maxUnicodeSegments })
  *                       builds the text from `fields`, then shortens the named fields
  *                       (longest first, never below their minimum) until it fits.
  */
+
+/** Most segments a text with accents (UCS-2) may use. */
+export const MAX_UNICODE_SEGMENTS = 6;
 
 // GSM 03.38 basic set (Ç left out: carriers disagree whether 0x09 is Ç or ç) and extension table.
 const BASIC = new Set(
@@ -29,6 +35,15 @@ const PLAIN = [
 ];
 
 export const isGsmChar = (c) => BASIC.has(c) || EXT.has(c);
+
+const PUNCT = PLAIN.slice(0, 7);
+
+/** Dashes, quotes, spaces made plain; letters (and their accents) untouched. */
+export function plainPunctuation(text) {
+  let s = String(text ?? '').normalize('NFC');
+  for (const [re, to] of PUNCT) s = s.replace(re, to);
+  return s.replace(/ {2,}/g, ' ').trim();
+}
 
 /** The text in the GSM-7 alphabet (see header). */
 export function toGsm(text) {
@@ -69,24 +84,27 @@ const cut = (v, n) => {
 /**
  * build(fields) → text. `shrink` = [[field, min], …]: the fields that may be shortened, in
  * order (the first is shortened down to its minimum before the next is touched).
- * Returns the GSM-7 text within `maxSegments`. Only when every field is already at its minimum
- * and the text is still too long is it cut at the segment limit (the wording tests make sure
- * that never happens with real values).
+ * Returns the text (accents kept) within `maxSegments` (GSM-7) or `maxUnicodeSegments`
+ * (UCS-2). Only when every field is already at its minimum and the text is still too long is
+ * it cut at the segment limit (the wording tests make sure that never happens with real values).
  */
-export function fitSms(build, fields, shrink = [], { maxSegments = 2 } = {}) {
+export function fitSms(build, fields, shrink = [], { maxSegments = 2, maxUnicodeSegments = MAX_UNICODE_SEGMENTS } = {}) {
   const f = { ...fields };
   for (const [k] of shrink) f[k] = f[k] == null ? '' : String(f[k]);
-  let text = toGsm(build(f));
+  const limitFor = (t) => (smsSegments(t).encoding === 'GSM-7' ? maxSegments : maxUnicodeSegments);
+  let text = plainPunctuation(build(f));
   let guard = 0;
-  while (smsSegments(text).segments > maxSegments && guard++ < 200) {
+  while (smsSegments(text).segments > limitFor(text) && guard++ < 200) {
     const next = shrink.find(([k, min]) => f[k].length > min);
     if (!next) break;
     const [k, min] = next;
     f[k] = cut(f[k], Math.max(min, f[k].length - 8));
-    text = toGsm(build(f));
+    text = plainPunctuation(build(f));
   }
-  if (smsSegments(text).segments > maxSegments) {
-    const limit = maxSegments === 1 ? 160 : 153 * maxSegments;
+  const max = limitFor(text);
+  if (smsSegments(text).segments > max) {
+    const gsm = smsSegments(text).encoding === 'GSM-7';
+    const limit = gsm ? (max === 1 ? 160 : 153 * max) : (max === 1 ? 70 : 67 * max);
     text = text.slice(0, limit);
   }
   return text;
