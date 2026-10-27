@@ -25,3 +25,6 @@ These are built and tested, but stay **off in production** until the counsel que
 | Variable | Counsel question | Unset means |
 |---|---|---|
 | `CHECKIN_LOCATION_ALERTS_ENABLED` | 2.4 location privacy (check-in location alerts) | off in production, on elsewhere |
+| `BOND_REARREST_ALERTS_ENABLED` | 1.2 re-arrest alerts for an agent's own defendants (Bond Desk) | off in production, on elsewhere |
+| `CUSTODY_ALERTS_ENABLED` | 6.3 release / transfer alerts for families who follow a booking | off in production, on elsewhere |
+| `BOND_RECOVERY_SHARING_ENABLED` | state recovery-agent rules (sharing a forfeited bond with a recovery agent) | off in production, on elsewhere |

@@ -63,5 +63,12 @@ export function envReport(env, { launch = false } = {}) {
   if (appEnv === 'production' && /^(true|1)$/i.test(String(env.CHECKIN_LOCATION_ALERTS_ENABLED || '').trim())) {
     warnings.push('CHECKIN_LOCATION_ALERTS_ENABLED is on — check-in location alerts need counsel question 2.4 answered first');
   }
+  for (const [k, why] of [
+    ['BOND_REARREST_ALERTS_ENABLED', 're-arrest alerts need counsel question 1.2 answered first'],
+    ['CUSTODY_ALERTS_ENABLED', 'release / transfer alerts need counsel question 6.3 answered first'],
+    ['BOND_RECOVERY_SHARING_ENABLED', 'recovery-agent sharing needs counsel review of the state recovery-agent rules first'],
+  ]) {
+    if (appEnv === 'production' && /^(true|1)$/i.test(String(env[k] || '').trim())) warnings.push(`${k} is on — ${why}`);
+  }
   return { appEnv, errors, warnings, features };
 }

@@ -132,7 +132,7 @@ export async function mergePdfs(buffers) {
 
 // ── Pages Bond Desk writes (pdfkit) ───────────────────────────────────────────
 
-function kit(title) {
+export function kit(title) {
   const doc = new PDFKit({ size: 'LETTER', margin: 54, info: { Title: title, Producer: 'Justice Gavel Bond Desk' } });
   doc.registerFont('R', FONT_REGULAR);
   doc.registerFont('B', FONT_BOLD);
@@ -143,7 +143,7 @@ function kit(title) {
   return { doc, done };
 }
 
-const row = (doc, label, value) => {
+export const row = (doc, label, value) => {
   doc.font('B').fontSize(9).fillColor('#444').text(label, { continued: false });
   doc.font('R').fontSize(10).fillColor('#000').text(value == null || value === '' ? '—' : String(value), { paragraphGap: 6 });
 };

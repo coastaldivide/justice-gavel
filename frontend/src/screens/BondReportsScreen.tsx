@@ -3,7 +3,9 @@
  * Department of Insurance: liability by surety, executed powers per surety
  * (date range), receivables, the receipts journal (date range) and collateral
  * held, and court appearance ("Did you make it to court?" counts per county and month for the
- * agent's own bonds). Each is shown on screen and can be exported as CSV (?format=csv).
+ * agent's own bonds), and the Tennessee quarterly report to the Department of Revenue (bonds issued
+ * and liability per county; the server cites the law and the date it was checked — CSV and PDF).
+ * Each is shown on screen and can be exported as CSV (?format=csv).
  *
  * The numbers are the server's sums of the agent's own entries — this screen
  * does not compute any money; it only formats cents and dates for display.
@@ -20,7 +22,16 @@ import { Btn, Card, Chips, Field, Line, Notice, Row } from '../components/bondDe
 import { AccessGate } from './BondDeskScreen';
 import { type Access, fmtDay, isIsoDate, money, tOr, todayIso } from '../services/bondDesk';
 
-export const REPORTS = ['liability', 'surety', 'receivables', 'receipts', 'collateral', 'appearance'] as const;
+export const REPORTS = ['liability', 'surety', 'receivables', 'receipts', 'collateral', 'appearance', 'tn_quarterly'] as const;
+const PATH: Partial<Record<string, string>> = { tn_quarterly: 'tn-quarterly' };
+const path = (r: string) => PATH[r] || r;
+
+/** The calendar quarter before the one `day` (YYYY-MM-DD) falls in: '2026-Q3' for an October day. */
+export function previousQuarter(day: string): string {
+  const y = Number(day.slice(0, 4)); const n = Math.floor((Number(day.slice(5, 7)) - 1) / 3) + 1;
+  return n === 1 ? `${y - 1}-Q4` : `${y}-Q${n - 1}`;
+}
+export const isQuarter = (q: string) => /^\d{4}-Q[1-4]$/.test(q.trim());
 type Report = typeof REPORTS[number];
 const RANGED: Report[] = ['surety', 'receipts', 'appearance'];
 
@@ -50,11 +61,13 @@ function BondReportsScreen({ navigation }: ScreenProps) {
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(todayIso());
   const [surety, setSurety] = useState('');
+  const [quarter, setQuarter] = useState(previousQuarter(todayIso()));
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const params = (r: Report): Record<string, string> | null => {
+    if (r === 'tn_quarterly') return isQuarter(quarter) ? { quarter: quarter.trim() } : null;
     if (!RANGED.includes(r)) return {};
     if (!isIsoDate(from) || !isIsoDate(to) || from > to) return null;
     return { from, to, ...(r === 'surety' && surety.trim() ? { surety: surety.trim() } : {}) };
@@ -62,7 +75,7 @@ function BondReportsScreen({ navigation }: ScreenProps) {
 
   const run = async (r: Report = report) => {
     const p = params(r);
-    if (!p) { setError(t('bdk_err_range_dates')); return; }
+    if (!p) { setError(t(r === 'tn_quarterly' ? 'bdk_err_quarter' : 'bdk_err_range_dates')); return; }
     setBusy(true); setError('');
     try {
       if (!access) {
@@ -71,20 +84,22 @@ function BondReportsScreen({ navigation }: ScreenProps) {
         setAccess(a.data);
         if (!a.data?.allowed) return;
       }
-      const res = await api.get<Record<string, unknown>>(`/bond-desk/reports/${r}`, { params: p });
+      const res = await api.get<Record<string, unknown>>(`/bond-desk/reports/${path(r)}`, { params: p });
       if (mounted.current) setData(res.data || {});
     } catch (e) { if (mounted.current) setError(apiErrorMessage(e, t('bdk_load_failed'))); }
     finally { if (mounted.current) setBusy(false); }
   };
   useEffect(() => { run('liability'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const exportCsv = async () => {
+  const exportFile = async (format: 'csv' | 'pdf') => {
     const p = params(report);
-    if (!p) { setError(t('bdk_err_range_dates')); return; }
-    const qs = new URLSearchParams({ ...p, format: 'csv' }).toString();
-    try { await fetchFile(`/bond-desk/reports/${report}?${qs}`, `${report}-${todayIso()}.csv`, 'text/csv'); }
+    if (!p) { setError(t(report === 'tn_quarterly' ? 'bdk_err_quarter' : 'bdk_err_range_dates')); return; }
+    const qs = new URLSearchParams({ ...p, format }).toString();
+    const name = report === 'tn_quarterly' ? `tennessee-quarterly-${quarter.trim()}` : `${report}-${todayIso()}`;
+    try { await fetchFile(`/bond-desk/reports/${path(report)}?${qs}`, `${name}.${format}`, format === 'pdf' ? 'application/pdf' : 'text/csv'); }
     catch (e) { showToast(apiErrorMessage(e, t('bdk_download_failed')), 'error'); }
   };
+  const exportCsv = () => exportFile('csv');
 
   if (access && !access.allowed) {
     return <ScrollView style={{ backgroundColor: colors.bg }} testID="bond-reports-screen"><AccessGate access={access} onPlans={() => navigation.navigate('Subscription' as never)} /></ScrollView>;
@@ -114,7 +129,14 @@ function BondReportsScreen({ navigation }: ScreenProps) {
             <Btn label={t('bdk_run_report')} onPress={() => run()} busy={busy} testID="report-run" />
           </>
         )}
+        {report === 'tn_quarterly' && (
+          <>
+            <Field label={t('bdk_quarter')} value={quarter} onChangeText={setQuarter} testID="report-quarter" placeholder={t('bdk_quarter_ph')} maxLength={7} autoCapitalize="characters" />
+            <Btn label={t('bdk_run_report')} onPress={() => run()} busy={busy} testID="report-run-tn" />
+          </>
+        )}
         <Btn kind="ghost" label={t('bdk_export_csv')} onPress={exportCsv} testID="report-csv" />
+        {report === 'tn_quarterly' && <Btn kind="ghost" label={t('bdk_export_pdf')} onPress={() => exportFile('pdf')} testID="report-pdf" />}
       </Card>
       {!!error && <Notice text={error} tone="error" testID="report-error" />}
       {busy && !data && <ActivityIndicator style={{ marginTop: 20 }} color={colors.textBrand} />}

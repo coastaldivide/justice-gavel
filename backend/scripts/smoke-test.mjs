@@ -540,6 +540,20 @@ async function main() {
     assert(r.status === 503 && r.json?.error === 'payments_unavailable', `expected 503 payments_unavailable, got ${brief(r)}`);
   });
 
+  await check('⚖ custody alerts and recovery sharing: private, and 503 feature_unavailable while their setting is off', async () => {
+    const anon = await call('GET', '/api/custody/status');
+    assert(anon.status === 401, `expected 401 without sign-in, got ${brief(anon)}`);
+    const st = await call('GET', '/api/custody/status', { token });
+    assert(st.status === 200 && typeof st.json?.enabled === 'boolean', `expected { enabled }, got ${brief(st)}`);
+    const f = await call('GET', '/api/custody/follows', { token });
+    if (st.json.enabled) assert(f.status === 200 && Array.isArray(f.json?.follows), `expected a follow list, got ${brief(f)}`);
+    else assert(f.status === 503 && f.json?.code === 'feature_unavailable', `expected 503 feature_unavailable, got ${brief(f)}`);
+    const r = await call('GET', '/api/recovery-shares', { token });
+    assert((r.status === 200 && Array.isArray(r.json?.shares)) || (r.status === 503 && r.json?.code === 'feature_unavailable'), `expected shares or 503, got ${brief(r)}`);
+    const bad = await call('POST', '/api/recovery-shares/accept', { token, body: { token: 'x' } });
+    assert(bad.status === 404 || (bad.status === 503 && bad.json?.code === 'feature_unavailable'), `expected 404 share_invalid or 503, got ${brief(bad)}`);
+  });
+
   await check('check-ins by text link: unknown link → 404 link_invalid; "Your bail agent" card is private', async () => {
     const bad = await call('GET', `/api/checkins/link/${'Z'.repeat(43)}`);
     assert(bad.status === 404 && bad.json?.code === 'link_invalid', `expected 404 link_invalid, got ${brief(bad)}`);

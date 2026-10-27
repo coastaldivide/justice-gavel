@@ -5,6 +5,8 @@ import impactRouter from './routes/impact.js';
 import legalAidRouter from './routes/legalAid.js';
 import bondsmanCRMRouter from './routes/bondsmanCRM.js';
 import bondDeskRouter from './routes/bondDesk/index.js';
+import recoverySharesRouter from './routes/recoveryShares.js';
+import custodyRouter from './routes/custody.js';
 import signRouter from './routes/sign.js';
 import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
@@ -545,6 +547,8 @@ app.use('/api/cases', caseLifecycleRouter);
 app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
 app.use('/api/bondsman', bondsmanCRMRouter);
 app.use('/api/bond-desk', bondDeskRouter);   // bond paperwork, e-sign, ledger, powers (docs/BOND_DESK.md)
+app.use('/api/recovery-shares', recoverySharesRouter);   // a recovery agent's read-only view of a shared forfeited bond (⚖)
+app.use('/api/custody', custodyRouter);       // release / transfer alerts for a followed booking (⚖)
 app.use('/api/sign', signRouter);            // public signing links (no account)
 app.use('/api/legal-aid', legalAidRouter);
 app.use('/api/impact', impactRouter);

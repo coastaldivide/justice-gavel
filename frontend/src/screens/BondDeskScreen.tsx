@@ -154,6 +154,18 @@ function BondDeskScreen({ navigation }: ScreenProps) {
                 ))}
               </Card>
             )}
+            {!!dash?.rearrests?.length && (
+              <Card title={t('bdw_dash_title')} testID="bond-desk-rearrests">
+                {dash.rearrests.map(r => (
+                  <TouchableOpacity key={r.id} accessibilityRole="button" style={s.item} onPress={() => go('BondDetail', { bondId: r.bond_id, tab: 'alerts' })} testID={`dash-rearrest-${r.id}`}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.itemTitle}>{r.defendant_name}</Text>
+                    <Line tone={r.status === 'pending' ? 'warn' : 'danger'}>
+                      {t(r.status === 'pending' ? 'bdw_dash_possible' : 'bdw_dash_strong', { date: fmtDay(r.booking.booking_date), where: [r.booking.county, r.booking.state].filter(Boolean).join(', ') || '—' })}
+                    </Line>
+                  </TouchableOpacity>
+                ))}
+              </Card>
+            )}
             {!!dash?.missed_checkins?.length && (
               <Card title={t('bdk_missed_checkins')} testID="bond-desk-missed-checkins">
                 {dash.missed_checkins.map(m => (

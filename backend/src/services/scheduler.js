@@ -65,6 +65,7 @@ let tokenCleanupTask = null;
 let bdCourtTask = null;
 let checkinTextsTask = null;
 let checkinMissedTask = null;
+let arrestFeedsTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
 // runRefresh is re-exported for the admin console and existing callers.
@@ -411,6 +412,18 @@ export function startScheduler() {
   }), { timezone: tz });
   logger.info('[scheduler] Link expiry: every 2 hours');
 
+  // Roster feeds between nightly runs (ARREST_FEED_URLS): a booking seen again is updated, not
+  // re-inserted, so followed bookings get release / transfer alerts within ~2 hours
+  // (CUSTODY_ALERTS_ENABLED) and new bookings are matched to Bond Desk bonds
+  // (BOND_REARREST_ALERTS_ENABLED). Nothing runs without a configured feed.
+  arrestFeedsTask = scheduleGuarded('20 1-23/2 * * *', 'arrest-feeds', (ctx) => runScheduled('arrest-feeds', ctx, async () => {
+    const { arrestFeedsConfigured, runIngestion } = await import('./arrest_ingest.js');
+    if (!arrestFeedsConfigured()) return { skipped: 'no_feeds' };
+    const r = await runIngestion({ dryRun: false });
+    logger.info(`[scheduler] arrest feeds: ${r.inserted} new, ${r.updated ?? 0} seen again, ${r.custody_events ?? 0} custody events`);
+    return r;
+  }), { timezone: tz });
+
   // Health scan — every 12 hours (6 AM and 6 PM Central)
   // Monitors: precedent currency, asylum bar risk, signal invariants,
   // bias audit, database health, tracker deadlines, escalation SLA
@@ -421,8 +434,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = null;
   stopHealthScanScheduler();
 }
 

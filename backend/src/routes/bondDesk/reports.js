@@ -4,6 +4,10 @@
  */
 import { Router } from 'express';
 import { BdError, handle, date, sendFile } from './_common.js';
+import { agencyFor } from '../../services/bondDesk/core.js';
+import { rearrestAlertsEnabled } from '../../utils/counselFlags.js';
+import { agentRearrests } from '../../services/bondDesk/rearrest.js';
+import { TN_REPORT, previousQuarter, quarterRange, tnCsvRows, tnQuarterlyReport, tnReportPdf } from '../../services/bondDesk/tnReport.js';
 import { bondMoney } from '../../services/bondDesk/money.js';
 import { agentToday } from '../../services/bondDesk/core.js';
 import { daysBetween } from '../../utils/timezone.js';
@@ -87,6 +91,8 @@ router.get('/dashboard', handle(async (req, res, db) => {
     awaiting_signature: awaiting.map((a) => ({ packet_id: Number(a.id), bond_id: Number(a.bond_id), defendant_name: a.defendant_name, pending: a.pending })),
     texts_this_month: { count: texts.n, cents: Number(texts.c) },
     missed_checkins: missed.map((m) => ({ bond_id: Number(m.bond_id), enrollment_id: Number(m.enrollment_id), defendant_name: m.defendant_name, day: m.local_day })),
+    // re-arrest matches of the last 30 days (A4; empty while BOND_REARREST_ALERTS_ENABLED is off)
+    rearrests: rearrestAlertsEnabled() ? await agentRearrests(db, me) : [],
     today,
   });
 }));
@@ -209,6 +215,26 @@ router.get('/reports/appearance', handle(async (req, res, db) => {
       rows.map((r) => [r.region, r.month, r.asked, r.attended, r.rescheduled, r.missed, r.no_answer]));
   }
   res.json({ rows: rows.map((r) => ({ region: r.region, month: r.month, asked: r.asked, attended: r.attended, rescheduled: r.rescheduled, missed: r.missed, no_answer: r.no_answer })), totals, from, to });
+}));
+
+// Tennessee quarterly report to the Department of Revenue (B5; services/bondDesk/tnReport.js has
+// the law, the sources and the date they were checked). ?quarter=YYYY-Qn (default: the last full
+// quarter) &format=csv|pdf.
+router.get('/reports/tn-quarterly', handle(async (req, res, db) => {
+  const today = await agentToday(db, req.agentId);
+  const q = typeof req.query.quarter === 'string' && req.query.quarter ? req.query.quarter : previousQuarter(today);
+  const range = quarterRange(q);
+  if (!range) throw new BdError(400, 'invalid', { field: 'quarter' });
+  if (range.from > today) throw new BdError(400, 'future_date', { field: 'quarter' });
+  const r = await tnQuarterlyReport(db, req.agentId, range);
+  const name = `tennessee-quarterly-${range.quarter}`;
+  if (wantsCsv(req) || req.query.format === 'pdf') {
+    const agency = await agencyFor(db, req.agentId);
+    if (req.query.format === 'pdf') return sendFile(res, await tnReportPdf(r, agency), { type: 'application/pdf', name: `${name}.pdf` });
+    const rows = tnCsvRows(r, agency);
+    return csv(res, `${name}.csv`, rows[0], rows.slice(1));
+  }
+  res.json({ ...r, source_url: TN_REPORT.sources[0] });
 }));
 
 export default router;

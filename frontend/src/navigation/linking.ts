@@ -12,6 +12,7 @@
  *   ├─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
  *   └─ MissedCourt (missed-court[/es|pt|vi] — the morning-after text's link; any auth state)
  *   └─ CheckInLink (c/<token> — a bail agent's check-in text link; any auth state)
+ *   └─ RecoveryInvite (recovery/<token> — a bail agent's "shared a forfeited bond" e-mail; any auth state)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -127,6 +128,8 @@ export const linking: LinkingOptions<any> = {
               BondForms:          'bond-desk/forms',
               BondPowers:         'bond-desk/powers',
               BondReports:        'bond-desk/reports',
+              CustodyAlerts:      'custody-alerts',
+              RecoveryShares:     'recovery-shares/:shareId?',
               FamilyConnect:      'family',
               Contacts:           'emergency-contacts',
 
@@ -160,6 +163,7 @@ export const linking: LinkingOptions<any> = {
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
+      RecoveryInvite: 'recovery/:token',
     },
   },
 };
@@ -178,6 +182,7 @@ export const guestLinking: LinkingOptions<any> = {
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
+      RecoveryInvite: 'recovery/:token',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

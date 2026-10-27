@@ -76,7 +76,9 @@ export interface FormField { name: string; type: 'text' | 'checkbox' | 'other' }
 export interface BondForm { id: number; name: string; page_count: number; roles: ('defendant' | 'indemnitor')[]; fields: FormField[];
   field_map: Record<string, string>; archived: boolean; created_at: string }
 
-export interface Access { allowed: boolean; reason: null | 'not_agent' | 'no_plan'; plan: string | null; texts_live: boolean; email_live: boolean; storage_live: boolean; text_cents: number }
+export interface Access { allowed: boolean; reason: null | 'not_agent' | 'no_plan'; plan: string | null; texts_live: boolean; email_live: boolean; storage_live: boolean; text_cents: number;
+  /** ⚖ features behind a server setting (absent on older servers = off) */
+  features?: { rearrest_alerts: boolean; recovery_sharing: boolean } }
 export interface Dashboard {
   counts: { prospect: number; active: number; forfeited: number }; liability_cents: number; receivable_cents: number; overdue_cents: number;
   overdue: { bond_id: number; defendant_name: string; due_on: string; amount_due_cents: number }[];
@@ -85,7 +87,26 @@ export interface Dashboard {
   texts_this_month: { count: number; cents: number };
   /** missed check-ins (last 7 days) of bonds linked to a check-in enrollment; absent on older servers */
   missed_checkins?: { bond_id: number; enrollment_id: number; defendant_name: string; day: string }[];
+  /** re-arrest matches of the last 30 days (empty while the setting is off) */
+  rearrests?: (Rearrest & { defendant_name: string })[];
 }
+
+// ── Re-arrest alerts, timeline, recovery-agent sharing (routes/bondDesk/watch.js) ──
+export interface Rearrest { id: number; bond_id: number; arrest_id: number; match: 'strong' | 'possible'; status: 'alerted' | 'pending' | 'confirmed' | 'dismissed';
+  created_at: string; decided_at: string | null;
+  booking: { name: string; booking_date: string | null; county: string | null; state: string | null; facility: string | null; charges: string | null; dob_on_roster: boolean };
+  alerts: { push: string | null; email: string | null; text: string | null } }
+export interface RearrestView { coverage: { feeds_configured: boolean; counties: { county: string; state: string | null }[] }; watching: boolean;
+  dob_on_file: boolean; matches: Rearrest[]; settings: { rearrest_text: boolean; alert_phone: string | null }; text_cents: number }
+export interface BondEvent { id: number; kind: string; detail: Record<string, unknown>; at: string }
+export interface StateRule { state: string; allowed: boolean | null; license: boolean | null; agency: string | null; law: string | null; notes: string | null;
+  source_url: string | null; checked: 'secondary' | 'unverified' | string }
+export interface RecoveryShare { id: number; invite_email: string; share_locations: boolean; created_at: string; accepted_at: string | null; account_name: string | null;
+  status: 'invited' | 'active' | 'invite_expired' | 'ended'; ended_at: string | null; ended_reason: string | null; views: { what: 'details' | 'photo'; at: string }[] }
+export interface RecoveryView { bond_status: BondStatus; state: string | null; state_rule: StateRule | null; shares: RecoveryShare[] }
+
+/** "Davidson, TN · Shelby, TN" for the coverage line. */
+export const coverageText = (c: RearrestView['coverage']) => c.counties.map(x => (x.state ? `${x.county}, ${x.state}` : x.county)).join(' · ');
 
 // ── Court dates and the texts about them (routes/bondDesk/courtDates.js) ─────
 export type CourtStatus = 'scheduled' | 'attended' | 'missed' | 'rescheduled' | 'cancelled';

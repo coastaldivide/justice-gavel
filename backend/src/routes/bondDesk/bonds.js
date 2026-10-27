@@ -11,6 +11,7 @@ import { receiptPdf } from '../../services/bondDesk/pdf.js';
 import { normalizeLang } from '../../i18n/index.js';
 import logger from '../../utils/logger.js';
 import { planBond, syncBondCourtDate, mirrorBondFormCourtDate } from '../../services/bondDesk/courtDates.js';
+import { syncSharesWithStatus } from '../../services/bondDesk/recoveryShares.js';
 
 const router = Router();
 
@@ -216,6 +217,7 @@ router.post('/bonds/:id/status', handle(async (req, res, db) => {
     if (set.posted_on) await tx.run(`UPDATE bd_powers SET executed_on = ? WHERE bond_id = ? AND status = 'executed'`, [set.posted_on, bondId]);
   });
   await planBond(db, bondId);   // court texts start when the bond is posted, stop when it is closed or forfeited
+  await syncSharesWithStatus(db, bondId, to);   // a recovery agent's access ends when the bond is no longer forfeited
   res.json({ bond: await loadBond(db, req.agentId, bondId) });
 }));
 

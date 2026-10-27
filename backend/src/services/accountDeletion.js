@@ -226,6 +226,12 @@ export const USER_REFS = {
   'bd_collateral.agent_id': 'delete',
   'bd_charges.created_by': 'nullify',
   'bd_payments.created_by': 'nullify',
+  'bd_rearrests.agent_id': 'delete',         // re-arrest matches on the agent's own bonds (A4)
+  'bd_alert_settings.agent_id': 'delete',    // the agent's own "text me about re-arrests" choice
+  'bd_recovery_shares.agent_id': 'delete',   // the agent's shares of a forfeited bond (B4; views cascade)
+  'bd_recovery_shares.recovery_user_id': 'nullify',   // the recovery agent's account: the share stops working, the agent's log stays
+  'bd_recovery_views.viewer_user_id': 'nullify',      // the bail agent's view log, anonymised
+  'booking_follows.user_id': 'delete',       // bookings the person followed (A9; their alerts cascade)
   'bd_texts.agent_id': 'retain',        // billing record of texts charged at 5¢ (masked number only)
   'bd_text_batches.agent_id': 'retain', // invoice items already billed in Stripe
   'bd_uploads.signer_id': 'retain',     // bd_signers.id (a signing link), not a users.id
@@ -238,6 +244,7 @@ export const USER_REFS = {
 /** Rows keyed by case_id: what happens to them when one of the user's cases goes. */
 export const CASE_CHILDREN = {
   ability_to_pay: 'delete',
+  booking_follows: 'nullify',   // a followed booking linked to the case keeps following, unlinked
   case_assignments: 'delete',
   case_events: 'delete',
   case_family_access: 'delete',

@@ -4,7 +4,8 @@
  * agents on a bail-agent plan (or admins).
  *
  *   GET /access   (signed in; never 403) whether the caller can use Bond Desk and why not
- *   everything else: bail agent with a plan → bonds.js, paperwork.js, reports.js, courtDates.js
+ *   everything else: bail agent with a plan → bonds.js, paperwork.js, reports.js, courtDates.js,
+ *   watch.js (re-arrest alerts, timeline, recovery-agent sharing — ⚖ settings, see features)
  */
 import { Router } from 'express';
 import { authRequired } from '../../middleware/auth.js';
@@ -19,6 +20,8 @@ import bonds from './bonds.js';
 import paperwork from './paperwork.js';
 import reports from './reports.js';
 import courtDates from './courtDates.js';
+import watch from './watch.js';
+import { rearrestAlertsEnabled, recoverySharingEnabled } from '../../utils/counselFlags.js';
 import { resolveLang, msg } from '../../i18n/index.js';
 
 const router = Router();
@@ -30,7 +33,9 @@ router.use(authRequired, limiter);
 router.get('/access', handle(async (req, res, db) => {
   const a = await agentAccess(db, req.user);
   res.json({ allowed: a.allowed, reason: a.reason, plan: a.plan, texts_live: smsLive(), email_live: emailLive(),
-    storage_live: !!(await getAttachmentStorage().catch(() => null)), text_cents: AGENT_TEXT_CENTS });
+    storage_live: !!(await getAttachmentStorage().catch(() => null)), text_cents: AGENT_TEXT_CENTS,
+    // ⚖ features behind a setting until counsel answers (utils/counselFlags.js); the app hides them when false
+    features: { rearrest_alerts: rearrestAlertsEnabled(), recovery_sharing: recoverySharingEnabled() } });
 }));
 
 router.use(requireBondDesk);
@@ -38,5 +43,6 @@ router.use(bonds);
 router.use(paperwork);
 router.use(reports);
 router.use(courtDates);
+router.use(watch);
 
 export default router;

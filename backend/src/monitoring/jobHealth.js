@@ -18,6 +18,7 @@
  */
 import { CONFIG } from '../config.js';
 import { remindersEnabled as remindersOn } from '../services/reminderDispatcher.js';
+import { arrestFeedsConfigured } from '../services/arrest_ingest.js';
 
 const H = 3600_000;
 /** job → { everyMs, when() } — `when` false = the job is not expected to run now. */
@@ -31,6 +32,7 @@ export const EXPECTED = Object.freeze({
   'checkin-missed': { everyMs: 1 * H, when: () => remindersOn() },
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
+  'arrest-feeds': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH && arrestFeedsConfigured() },
 });
 const GRACE = 0.5;   // an interval and a half before "stale"
 

@@ -244,7 +244,8 @@ Every text sent for an agent (signing links, payment reminders, court reminders,
 "act today" text and reply confirmations — purposes `signing_link`, `payment_reminder`, `court_reminder`, `court_ask`,
 `court_missed`, `court_reply`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
 Every text sent for an agent (signing links, payment reminders, and check-in texts — link, reminder,
-missed-check-in text to the defendant, missed-check-in alert to the agent; docs/CHECKINS.md) is logged. `GET /bond-desk/texts?month=YYYY-MM`
+missed-check-in text to the defendant, missed-check-in alert to the agent; docs/CHECKINS.md; re-arrest alerts
+`rearrest_alert`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
 → `{ month, count, cents, rows: [{ at, purpose, to_masked, bond_id }] }`. Once a day, unbilled texts are added
 to the agent's next bail-agent plan invoice as one line (Stripe invoice item), exactly once.
 
@@ -255,6 +256,7 @@ to the agent's next bail-agent plan invoice as one line (Stripe invoice item), e
 - `GET /bond-desk/reports/receivables` → every bond with a balance (cancelled bonds included): charged, paid, balance, overdue, next due
 - `GET /bond-desk/reports/receipts?from=&to=` → payments (voided shown, excluded from totals), `by_method: [{ method, amount_cents }]`, `total_cents`
 - `GET /bond-desk/reports/collateral` → collateral held (not returned)
+- `GET /bond-desk/reports/tn-quarterly?quarter=YYYY-Qn` → the Tennessee quarterly report (CSV or PDF too) — see below
 - `GET /bond-desk/reports/appearance?from=&to=` → the agent's own hearings by county (or state) and month of the hearing:
   `{ rows: [{ region, month, asked, attended, rescheduled, missed, no_answer }], totals }` (counts only; `no_answer` = asked
   and still scheduled). Admins see the same for every agent and for app users: `GET /api/admin/metrics/appearance?from=YYYY-MM&to=YYYY-MM`.
@@ -268,5 +270,82 @@ to the agent's next bail-agent plan invoice as one line (Stripe invoice item), e
   forfeitures: [{ bond_id, defendant_name, deadline_on, days_left }],
   awaiting_signature: [{ packet_id, bond_id, defendant_name, pending }],
   texts_this_month: { count, cents },
-  missed_checkins: [{ bond_id, enrollment_id, defendant_name, day }] }   // last 7 days, bonds linked to a check-in enrollment
+  missed_checkins: [{ bond_id, enrollment_id, defendant_name, day }],   // last 7 days, bonds linked to a check-in enrollment
+  rearrests: [{ id, bond_id, defendant_name, match, status, booking: {...} }] }   // last 30 days (⚖ setting on), possible matches first
 ```
+
+## Re-arrest alerts (⚖ counsel question 1.2 — `BOND_REARREST_ALERTS_ENABLED`, off in production)
+
+After every roster import (`services/arrest_ingest.js`: nightly and every two hours with `LIVE_REFRESH`), the
+NEW bookings are compared with the defendants of the agent's **active and forfeited** bonds
+(`services/bondDesk/rearrest.js`):
+
+- **Match** ("strong"): normalized first name + last name (case, accents, commas, initials, suffixes and
+  name particles ignored) **and** date of birth. The date of birth comes from the bond (`defendant_dob`, on the
+  bond form) or from the defendant's answer in a Bond Desk questionnaire. A booking whose date of birth differs
+  from every one on file is not the defendant and is not shown at all.
+- **Possible match**: the same first and last name when the roster or the bond has no date of birth (and the
+  same state when both have one). The agent **confirms** or **dismisses** it.
+- `bd_rearrests` is unique on (bond, booking): an agent is never alerted twice for one booking.
+- Never matched: sample / seed rows, records taken down (`suppressed`), and rows whose roster status says
+  sealed or expunged (`utils/arrestVisibility.js`). A record taken down later disappears from the bond.
+- The agent who wrote the bond is told by **push** and **e-mail**, and by **text** when they turned "Text me too"
+  on (strong matches only; 5¢, purpose `rearrest_alert`). The match is added to the bond timeline and the dashboard.
+- **Coverage is shown honestly** on the bond: "Watching the jail rosters we import for: <counties>" (from
+  `ARREST_FEED_URLS`; a feed without a county lists the counties it sent in the last 30 days). Never "nationwide".
+- **Price**: included on every bail-agent plan for now (no extra charge); the agent needs a plan. Only texts cost 5¢.
+
+Routes: `GET /bond-desk/bonds/:id/rearrests` → `{ coverage: { feeds_configured, counties: [{ county, state }] },
+watching, dob_on_file, matches: [...], settings, text_cents }`; `POST /bond-desk/rearrests/:id/confirm|dismiss`;
+`GET|PUT /bond-desk/rearrest-settings` `{ rearrest_text, alert_phone? }` (the agency phone when empty);
+`GET /bond-desk/bonds/:id/timeline` → `{ events: [{ kind, detail, at }] }`. Setting off → 503 `feature_unavailable`;
+`GET /bond-desk/access` returns `features: { rearrest_alerts, recovery_sharing }` and the app hides what is off.
+
+## Recovery-agent sharing (⚖ state recovery-agent rules — `BOND_RECOVERY_SHARING_ENABLED`, off in production)
+
+A bail agent shares ONE **forfeited** bond with a recovery agent (`services/bondDesk/recoveryShares.js`):
+
+- The share screen shows the bond state's recovery-agent rule from `routes/recovery_agents.js` (law, notes,
+  source) with how it was checked — "checked against secondary summaries, not the statute" or "not verified".
+  The agent must tick that they read it. Where that data says recovery is not allowed (IL, KY, MA, OR, WI)
+  sharing is refused.
+- **Invite by e-mail**: a personal link `https://<app>/recovery/<token>` (32 random bytes, only the SHA-256 is
+  stored, 14 days). The recovery agent signs in or creates an account **with the invited address** and accepts;
+  the share is then bound to that account. The agent also sees the link to send it another way.
+- **Read only**: defendant name and date of birth, photo if one was uploaded with the paperwork (selfie with ID,
+  else ID front), the last known addresses and phones from the bond and the questionnaire, employer, references
+  and vehicle answers, the last 10 check-ins (locations only when the defendant shared them **and** the agent ticked
+  "include check-in locations"), re-arrest matches, the forfeiture deadline and the agent's contact details.
+- **Access ends** when the bond is reinstated, exonerated, surrendered or the forfeiture is paid (checked on every
+  read and on every status change) and when the agent stops sharing.
+- **Every view is logged** (`bd_recovery_views`: details or photo, time) and listed under the share for the agent.
+
+Routes (agent): `GET /bond-desk/bonds/:id/recovery` → `{ bond_status, state, state_rule, shares: [{ id, invite_email,
+status: invited|active|invite_expired|ended, ended_reason, views: [{ what, at }] }] }`;
+`POST /bond-desk/bonds/:id/recovery/shares { email, share_locations, rule_acknowledged: true }` → 201 `{ share, link, email_status }`;
+`POST /bond-desk/recovery/shares/:id/revoke`. Recovery agent (any signed-in account):
+`POST /api/recovery-shares/accept { token }`, `GET /api/recovery-shares`, `GET /api/recovery-shares/:id`,
+`GET /api/recovery-shares/:id/photo`.
+
+## Tennessee quarterly report (Department of Revenue)
+
+**What the law requires** (checked **October 27, 2026**): Public Chapter 396 (2025) — HB 785 / SB 1237, effective
+July 1, 2025, cited by the Tennessee Department of Revenue as **T.C.A. § 40-11-314** — requires every professional
+bondsman licensed in Tennessee to file a **quarterly report with the Department of Revenue** stating (1) the total
+number of bonds issued in the preceding quarter, (2) the number of bonds issued in each county in which the
+bondsman operated, and (3) the total amount of the bondsman's liability in each county. Due **January 25, April 25,
+July 25 and October 25** (first report October 25, 2025), as a new schedule of the Bail Bond Tax Return (Form PRV413).
+Sources:
+- Tennessee Department of Revenue, Important Notice #25-08 (May 2025):
+  https://www.tn.gov/content/dam/tn/revenue/documents/notices/bailbond/bailbondsmen2025.pdf
+- Department of Revenue news item: https://www.tn.gov/revenue/news/2025/5/8/-important-notice--bail-bondsmen-court-clerk-quarterly-reports.html
+- Bill history (HB 785 "Comp. became Pub. Ch. 396"): https://fastdemocracy.com/bill/tn/114/bills/TNB00055355
+
+`GET /bond-desk/reports/tn-quarterly?quarter=YYYY-Qn` (default: the last full quarter; `&format=csv` or `&format=pdf`)
+→ `{ quarter, period_from, period_to, due_on, citation, checked_on, totals, counties: [{ county, bonds_issued,
+liability_issued_cents, open_bonds_at_end, liability_open_at_end_cents }], needs_county: [...] }`. Counted: the agent's
+bonds with state TN posted in the quarter (prospects and cancelled bonds were never issued). The notice does not
+define "liability in each county", so both readings are given, labelled: bonds issued in the quarter, and bonds still
+open at the end of the quarter — confirm with the Department which one its schedule asks for. Bonds posted in the
+quarter without a state or Tennessee county are listed so the agent can fix them. The CSV and PDF headers cite the law,
+the date it was checked and the sources. The report is prepared from Bond Desk entries; it is not a filing.

@@ -42,7 +42,7 @@ const router = express.Router();
 // WV, PA, NM, MI. Rows below come from that research. IMPORTANT: they were checked against
 // secondary 50-state summaries (NCSL; USLegal), not each statute — `checked: 'secondary'`.
 // Rows the research could not confirm have checked: 'unverified' and no legal claims.
-const RECOVERY_LAWS = {
+export const RECOVERY_LAWS = {
   AK: { allowed: true, license: false, agency: "Alaska Division of Insurance (bail bond limited producers only)", law: "Alaska Stat. \u00a7\u00a7 12.25.030, 09.40.200, 21.27.150", notes: "Alaska has no bounty-hunter statute. Sureties and their agents act under general private-arrest law, and bail bond producers are licensed by the Division of Insurance.", source_url: "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/alaska/", checked: 'secondary' },
   AL: { allowed: null, license: null, law: null, notes: "Not verified yet \u2014 ask your state Department of Insurance before any apprehension.", checked: 'unverified' },
   AR: { allowed: true, license: true, agency: "Arkansas private investigator license, or bondsman license from the state where the bond was issued", law: "Ark. Code Ann. \u00a7 16-84-114", notes: "Only licensed private investigators (or people they supervise), licensed bondsmen from the state where the bond was written, or peace officers may arrest a bail fugitive. They must be at least 21 with no felony record, and no one may call themselves a 'bounty hunter' or 'bail enforcement agent'.", source_url: "https://bountyhunters.uslegal.com/licensing-and-arrest-authority-of-bounty-hunters/arkansas/", checked: 'secondary' },

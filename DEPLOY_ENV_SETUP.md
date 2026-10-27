@@ -209,6 +209,17 @@ CHECKIN_LOCATION_ALERTS_ENABLED=false    ⚖ counsel question 2.4 (location priv
                                           Off: the home-point routes answer 503 feature_unavailable
                                           and the app hides the feature. Leave off in production
                                           until counsel answers 2.4.
+BOND_REARREST_ALERTS_ENABLED=false       ⚖ counsel question 1.2. After each roster import, new
+                                          bookings are matched against Bond Desk defendants (name +
+                                          date of birth = match; name only = "possible", the agent
+                                          confirms). Same rule: unset → OFF in production. Off: the
+                                          re-arrest routes answer 503 and the app hides them.
+CUSTODY_ALERTS_ENABLED=false             ⚖ counsel question 6.3. Families follow a booking and are
+                                          alerted when the roster shows a new status / facility or
+                                          stops listing it. Unset → OFF in production.
+BOND_RECOVERY_SHARING_ENABLED=false      ⚖ state recovery-agent rules. A bail agent shares one
+                                          forfeited bond with a recovery agent (read only, every view
+                                          logged). Unset → OFF in production.
 REFRESH_CRON=0 3 * * *                   nightly refresh schedule   (REFRESH_TZ=America/Chicago)
 HEALTH_SCAN_CRON=0 2 * * *               nightly health-scan schedule (SCAN_QUIET=true to hush)
 ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients
@@ -288,8 +299,15 @@ ARREST_FEED_URLS=[...]                   JSON array of public arrest feeds to in
                                           "state":"TN","county":"Davidson"}]. Each url must be https and
                                           return a JSON array (or {records:[...]}) of
                                           {name, booking_date, charges, bail_amount, court_date, county,
-                                          state, jail_location, has_attorney, case_number}. Rows are
-                                          validated/sanitized and stored with source=feed_<id>.
+                                          state, jail_location, has_attorney, case_number} plus, when the
+                                          roster has them, booking_id (the jail's booking number), dob
+                                          (YYYY-MM-DD), status and jail_phone. A feed may set
+                                          "jail_phone" for all its rows (custody alerts say "call … to
+                                          confirm"). Rows are validated/sanitized and stored with
+                                          source=feed_<id>; a booking seen again (same booking_id, or the
+                                          same name + booking date) is updated, never inserted twice.
+                                          With LIVE_REFRESH=true the feeds are read nightly and every two
+                                          hours ('arrest-feeds' job, 1:20, 3:20 … in REFRESH_TZ).
                                           UNSET (default) = no arrest coverage: POST /api/arrests/ingest
                                           ingests nothing and the app shows "no public arrest feeds
                                           configured" empty states. Never point this at a non-public or
