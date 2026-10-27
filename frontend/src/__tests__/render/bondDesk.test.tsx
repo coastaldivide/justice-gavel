@@ -236,6 +236,69 @@ describe('bond detail', () => {
   });
 });
 
+describe('bond court dates', () => {
+  const LISTING = {
+    court_dates: [{ id: 31, court_date: '2026-12-01', court_time: '09:30', court_name: 'Davidson General Sessions', room: '4A', status: 'scheduled',
+      status_source: null, status_at: null, asked_at: null, is_past: false }],
+    reminders_on: true, text_lang: 'en', time_zone: 'America/Chicago', today: '2026-10-27', texts_live: true, bond_status: 'active',
+    recipients: [
+      { to: 'defendant', indemnitor_id: null, name: 'Ana Lopez', phone: '+16155550100', phone_masked: '•••-•••-0100', consent: false, consent_at: null, opted_out: false },
+      { to: 'indemnitor', indemnitor_id: 3, name: 'Luis Lopez', phone: '+16155550101', phone_masked: '•••-•••-0101', consent: true, consent_at: '2026-10-20T10:00:00Z', opted_out: true },
+    ],
+  };
+  const TEXTS = { reminders: [
+    { id: 90, court_date_id: 31, court_day: '2026-12-01', step: 'd7', signer_type: 'indemnitor', name: 'Luis Lopez', to_masked: '•••-•••-0101',
+      send_at: '2026-11-24T15:00:00Z', status: 'sent', reason: null, sent_at: '2026-11-24T15:00:03Z', delivery_status: 'delivered', error_code: null },
+    { id: 91, court_date_id: 31, court_day: '2026-12-01', step: 'd3', signer_type: 'indemnitor', name: 'Luis Lopez', to_masked: '•••-•••-0101',
+      send_at: '2026-11-28T15:00:00Z', status: 'skipped', reason: 'opted_out', sent_at: null, delivery_status: null, error_code: null },
+  ] };
+  const open = async () => {
+    on('get', '/bond-desk/access', ACCESS);
+    on('get', '/bond-desk/bonds/7', detail());
+    on('get', '/bond-desk/bonds/7/court-dates', LISTING);
+    on('get', '/bond-desk/bonds/7/reminders', TEXTS);
+    on('put', '/bond-desk/bonds/7/text-consent', LISTING);
+    on('put', '/bond-desk/bonds/7/reminders', LISTING);
+    on('post', '/bond-desk/bonds/7/court-dates', LISTING);
+    on('patch', '/bond-desk/bonds/7/court-dates/31', LISTING);
+    wrap(<BondDetailScreen navigation={makeNavigation()} route={{ params: { bondId: 7, tab: 'court' } } as never} />);
+    await screen.findByTestId('court-hearings');
+  };
+
+  it('shows hearings, who gets texts (STOP shown), and each text with its delivery status', async () => {
+    await open();
+    expect(screen.getByTestId('court-date-31')).toHaveTextContent(/Davidson General Sessions/);
+    expect(screen.getByTestId('court-recipient-indemnitor-3')).toHaveTextContent(has(t('bdk_cd_stopped')));
+    expect(screen.getByTestId('court-text-90')).toHaveTextContent(has(t('bdk_cd_dl_delivered')));
+    expect(screen.getByTestId('court-text-91')).toHaveTextContent(has(t('bdk_cd_reason_opted_out')));
+    expect(screen.getByTestId('court-switch-state')).toHaveTextContent(has(t('bdk_cd_on')));
+  });
+
+  it('the confirmation per number, the switch, marking a hearing and adding one (validated first)', async () => {
+    await open();
+    fireEvent.press(screen.getByTestId('court-consent-defendant-0'));
+    await waitFor(() => expect(calls.find(c => c.method === 'put' && c.url === '/bond-desk/bonds/7/text-consent')?.data).toEqual({ to: 'defendant', indemnitor_id: undefined, consent_confirmed: true }));
+    fireEvent.press(screen.getByTestId('court-mark-31-attended'));
+    await waitFor(() => expect(calls.find(c => c.method === 'patch' && c.url === '/bond-desk/bonds/7/court-dates/31')?.data).toEqual({ status: 'attended' }));
+    fireEvent.press(screen.getByTestId('court-switch'));
+    await waitFor(() => expect(calls.find(c => c.method === 'put' && c.url === '/bond-desk/bonds/7/reminders')?.data).toEqual({ on: false }));
+    fireEvent.press(await screen.findByTestId('court-add'));
+    fireEvent.changeText(screen.getByTestId('court-f-date'), '2026-13-01');
+    fireEvent.press(screen.getByTestId('court-save'));
+    expect(await screen.findByTestId('court-form-error')).toHaveTextContent(has(t('bdk_cd_err_date')));
+    fireEvent.changeText(screen.getByTestId('court-f-date'), '2026-12-15');
+    fireEvent.changeText(screen.getByTestId('court-f-time'), '9:30');
+    fireEvent.press(screen.getByTestId('court-save'));
+    expect(await screen.findByTestId('court-form-error')).toHaveTextContent(has(t('bdk_cd_err_time')));
+    expect(calls.some(c => c.method === 'post' && c.url === '/bond-desk/bonds/7/court-dates')).toBe(false);
+    fireEvent.changeText(screen.getByTestId('court-f-time'), '09:30');
+    fireEvent.changeText(screen.getByTestId('court-f-room'), '4A');
+    fireEvent.press(screen.getByTestId('court-save'));
+    await waitFor(() => expect(calls.find(c => c.method === 'post' && c.url === '/bond-desk/bonds/7/court-dates')?.data)
+      .toEqual({ court_date: '2026-12-15', court_time: '09:30', court_name: 'Davidson General Sessions', room: '4A' }));
+  });
+});
+
 describe('forms, powers, reports', () => {
   it('maps a PDF text field to a case-file value and saves it', async () => {
     on('get', '/bond-desk/access', ACCESS);

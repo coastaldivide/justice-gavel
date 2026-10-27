@@ -7,6 +7,7 @@ import { BdError, handle, date, sendFile } from './_common.js';
 import { bondMoney } from '../../services/bondDesk/money.js';
 import { agentToday } from '../../services/bondDesk/core.js';
 import { daysBetween } from '../../utils/timezone.js';
+import { bondDeskAppearance } from '../../services/appearanceMetrics.js';
 
 const router = Router();
 const OPEN = `('active','forfeited')`;
@@ -188,6 +189,18 @@ router.get('/reports/collateral', handle(async (req, res, db) => {
       out.map((r) => [r.receipt_no, r.received_on, r.received_from, r.kind, r.description, dollars(r.value_cents), r.defendant_name, r.case_number, r.bond_status]));
   }
   res.json({ rows: out, total_value_cents: out.reduce((s, r) => s + r.value_cents, 0) });
+}));
+
+// "Did you make it to court?" for the agent's own bonds: per county and month of the hearing.
+router.get('/reports/appearance', handle(async (req, res, db) => {
+  const { from, to } = range(req);
+  const rows = await bondDeskAppearance(db, { agentId: req.agentId, from: from ? from.slice(0, 7) : null, to: to ? to.slice(0, 7) : null });
+  const totals = ['asked', 'attended', 'rescheduled', 'missed', 'no_answer'].reduce((t, k) => ({ ...t, [k]: rows.reduce((s, r) => s + r[k], 0) }), {});
+  if (wantsCsv(req)) {
+    return csv(res, 'court-appearance.csv', ['County / state', 'Month', 'Asked', 'Attended', 'Rescheduled', 'Missed', 'No answer'],
+      rows.map((r) => [r.region, r.month, r.asked, r.attended, r.rescheduled, r.missed, r.no_answer]));
+  }
+  res.json({ rows: rows.map((r) => ({ region: r.region, month: r.month, asked: r.asked, attended: r.attended, rescheduled: r.rescheduled, missed: r.missed, no_answer: r.no_answer })), totals, from, to });
 }));
 
 export default router;

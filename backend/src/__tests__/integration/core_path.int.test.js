@@ -284,9 +284,15 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(at[3]).toBe(`${minus(court, 3)}, 09:00`);
     expect(at[1]).toBe(`${minus(court, 1)}, 18:00`);
     expect(at[0]).toBe(`${court}, 06:30`);
-    const rows = await ctx.db.all(`SELECT court_date_id, notification_type FROM scheduled_pushes WHERE case_id = ? AND status = 'pending'`, [caseId]);
-    expect(rows).toHaveLength(4);
-    expect(rows.every(x => Number(x.court_date_id) === cd1.id && x.notification_type === 'court_reminder')).toBe(true);
+    const rows = await ctx.db.all(`SELECT court_date_id, notification_type, deliver_at FROM scheduled_pushes WHERE case_id = ? AND status = 'pending'`, [caseId]);
+    expect(rows).toHaveLength(6);
+    expect(rows.every(x => Number(x.court_date_id) === cd1.id)).toBe(true);
+    expect(rows.filter(x => x.notification_type === 'court_reminder')).toHaveLength(4);
+    // A7: "Did you make it to court?" at 15:00 on the day; A6: the morning-after message at 09:00 the next day
+    const ask = rows.find(x => x.notification_type === 'court_checkin');
+    const fu = rows.find(x => x.notification_type === 'court_missed_followup');
+    expect(fmt(ask.deliver_at)).toBe(`${court}, 15:00`);
+    expect(fmt(fu.deliver_at)).toBe(`${minus(court, -1)}, 09:00`);
     const c = await ctx.db.get('SELECT next_court_date, title FROM cases WHERE id = ?', [caseId]);
     expect(c).toEqual({ next_court_date: court, title: 'DUI — Davidson County' });
   });
@@ -342,7 +348,7 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(moved.body.reminders).toHaveLength(4);
     const old = await ctx.db.all(`SELECT status FROM scheduled_pushes WHERE id IN (${before.map(() => '?').join(',')})`, before.map(r => r.id));
     expect(old.every(r => r.status === 'cancelled')).toBe(true);
-    expect((await ctx.db.all(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending'`, [cd1.id]))).toHaveLength(4);
+    expect((await ctx.db.all(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending'`, [cd1.id]))).toHaveLength(6);
     await ctx.db.run(`UPDATE scheduled_pushes SET status = 'pending', error = NULL WHERE id = ?`, [before[0].id]);
     expo.received.length = 0;
     const stale = await deliverNow(before[0].id);
@@ -431,7 +437,7 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(msg.url).toBe('/messages');
     expect(msg.auth).toBe('Bearer KEYjgtest');
     expect(msg.json).toEqual(expect.objectContaining({ to: '+16155550142', from: '+16155550000' }));
-    expect(msg.json.text).toMatch(/^Justice Gavel: .*Court date.*Reply STOP/);
+    expect(msg.json.text).toMatch(/^Justice Gavel: .*court is tomorrow.*a warrant can be issued.*Reply STOP to opt out\.$/);
     // consent was recorded (migration 31)
     const consent = await ctx.db.get('SELECT sms_consent_at, sms_consent_phone, sms_consent_text_v FROM users WHERE id = ?', [dave.user?.id ?? dave.id]);
     expect(consent.sms_consent_at).toBeTruthy();

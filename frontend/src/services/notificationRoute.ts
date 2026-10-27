@@ -23,6 +23,7 @@ const num = (v: unknown): number | undefined => {
 /** Older pushes: type → screen. */
 const BY_TYPE: Record<string, string> = {
   court_reminder: 'Cases', follower_court_reminder: 'CourtDates', follower_court_update: 'CourtDates', // i18n-exempt: screen names
+  court_checkin: 'CourtDateDetail', court_missed_followup: 'CourtDates', bd_court_alert: 'BondDetail', // i18n-exempt: screen names
   checkin_reminder: 'CheckIn', checkin_submitted: 'CheckInManager',
   message: 'Messages', case_update: 'Cases', arrest_alert: 'ArrestMonitor', expungement_eligible: 'Expungement', // i18n-exempt: screen names
   expungement: 'Expungement', lead_accepted: 'AttorneyDashboard', new_lead: 'AttorneyDashboard', cle_reminder: 'AttorneyDashboard', // i18n-exempt: screen names
@@ -52,7 +53,14 @@ export function notificationTarget(data: Record<string, unknown> | null | undefi
     const enrollmentId = num(data.enrollment_id ?? data.enrollmentId);
     return { screen, params: enrollmentId ? { enrollmentId } : undefined };
   }
-  if (screen === 'CourtDateDetail') return courtDateId ? { screen, params: { id: courtDateId } } : { screen: 'CourtDates' };
+  // "Did you make it to court today?" opens the hearing with the one-tap answer
+  if (screen === 'CourtDateDetail') return courtDateId ? { screen, params: { id: courtDateId, ...(type === 'court_checkin' ? { ask: 1 } : {}) } } : { screen: 'CourtDates' };
+  // the morning-after message opens the missed-court guidance
+  if (screen === 'CourtDates' && data.guidance === 'missed') return { screen, params: { guidance: 'missed' } };
+  if (screen === 'BondDetail') {
+    const bondId = num(data.bond_id);
+    return bondId ? { screen, params: { bondId, tab: 'court' } } : { screen: 'BondDesk' }; // i18n-exempt: screen names
+  }
   if (screen === 'VideoConsultation') {
     const room = typeof data.room === 'string' && /^jg-\d+-\d+$/.test(data.room) ? data.room : undefined;
     return { screen, params: room ? { room } : undefined };

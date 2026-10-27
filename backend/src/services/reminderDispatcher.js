@@ -45,7 +45,11 @@ import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 import { escapeHtml } from '../utils/sanitize.js';
-import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtReminders.js';
+import {
+  CLOSED_CASE_STATUSES, dateOnly, timeOnly, backfillCourtReminders, bodyFor, followerBodyFor, placeFor, courthousePlaceFor,
+  ownerFirstName, missedCourtLink, ATTENDANCE_TEXTS_CONSENT_SINCE,
+} from './courtReminders.js';
+import { fitSms } from './smsText.js';
 import { sendSms, smsLive } from './sms.js';
 import { sendWebPushToUser } from './webPush.js';
 import { guardJob } from '../utils/cronGuard.js';
@@ -54,10 +58,12 @@ import { checkinReminderStale, planCheckinReminder, backfillCheckinReminders } f
 
 const BATCH = 50;
 const STALE_CLAIM_MINUTES = 10;
-const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder']);
+const EMAIL_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder', 'court_checkin', 'court_missed_followup']);
 const SMS_FALLBACK_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
-const COURT_TYPES = new Set(['court_reminder', 'follower_court_reminder']);
-const WEB_PUSH_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder', 'checkin_reminder']);
+// "Did you make it?" and the morning-after message: push AND (when the person opted in) a text.
+const PUSH_AND_SMS_TYPES = new Set(['court_checkin', 'court_missed_followup']);
+const COURT_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'court_checkin', 'court_missed_followup']);
+const WEB_PUSH_TYPES = new Set(['court_reminder', 'follower_court_reminder', 'reminder', 'checkin_reminder', 'court_checkin', 'court_missed_followup']);
 const DISABLED_ACCOUNT = new Set(['suspended', 'deleted', 'disabled', 'banned']);
 
 // Per-process delivery counters for /metrics (job health).
@@ -89,7 +95,11 @@ async function courtReminderStale(db, row, data) {
     if (cd.deleted_at) return 'court_date_deleted';
     if (cd.case_deleted) return 'case_deleted';
     if (CLOSED_CASE_STATUSES.has(cd.case_status)) return 'case_closed';
-    if (cd.status !== 'scheduled') return 'court_date_not_scheduled';
+    // the morning-after message also goes out for a hearing marked missed — never once it is
+    // marked attended / rescheduled / cancelled
+    if (row.notification_type === 'court_missed_followup' ? !['scheduled', 'missed'].includes(cd.status) : cd.status !== 'scheduled') {
+      return 'court_date_not_scheduled';
+    }
     if (data.court_date && dateOnly(cd.court_date) !== data.court_date) return 'court_date_changed';
     if (!follower) return Number(cd.user_id) === Number(row.user_id) ? null : 'case_missing';
     const f = await db.get(
@@ -147,13 +157,76 @@ async function sendReminderEmail(user, row, data) {
   return emailLive() && !result?.mock ? 'email' : 'email_log_only';
 }
 
+/** May this user get a text now? (opted in, has a number, number not on the STOP list) */
+async function smsAllowed(db, user) {
+  if (!smsLive() || Number(user.sms_reminders) !== 1 || !user.phone) return false;
+  const { toE164 } = await import('./sms.js');
+  const to = toE164(user.phone);
+  if (!to) return false;
+  const out = await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [to]).catch(() => null);
+  return !out;
+}
+
+/**
+ * The text for a court reminder, the "Did you make it?" question or the morning-after message,
+ * built from the hearing as it is now and kept within 2 segments (services/smsText.js).
+ */
+export async function courtSmsText(db, row, data, lang) {
+  const type = row.notification_type;
+  const cd = row.court_date_id ? await db.get(
+    `SELECT cd.id, cd.court_date, cd.court_time, cd.courthouse_id, cd.location, c.title, c.user_id
+       FROM court_dates cd JOIN cases c ON c.id = cd.case_id WHERE cd.id = ?`, [row.court_date_id]).catch(() => null) : null;
+  if (!cd) return fitSms((f) => msg(lang, 'reminder.sms', { body: f.body }), { body: row.body || row.title || '' }, [['body', 40]]);
+  const date = dateOnly(cd.court_date);
+  const caseTitle = String(cd.title || msg(lang, 'reminder.default_case'));
+  if (type === 'court_checkin') {
+    return fitSms((f) => msg(lang, 'reminder.ask.sms', { case: f.case }), { case: caseTitle }, [['case', 10]]);
+  }
+  if (type === 'court_missed_followup') {
+    return fitSms((f) => msg(lang, 'reminder.missed.sms', { case: f.case, day: formatDay(date, lang), link: missedCourtLink(lang) }),
+      { case: caseTitle }, [['case', 10]]);
+  }
+  const days = Number.isFinite(Number(data.days_before)) ? Number(data.days_before) : 0;
+  const time = timeOnly(cd.court_time);
+  if (type === 'follower_court_reminder') {
+    const who = await ownerFirstName(db, Number(cd.user_id));
+    const place = await courthousePlaceFor(db, cd);
+    return fitSms((f) => msg(lang, 'reminder.sms', { body: followerBodyFor(f.who, date, days, { time, place: f.place || null }, lang) }),
+      { who: who || '', place: place || '' }, [['place', 0], ['who', 8]]);
+  }
+  const place = await placeFor(db, cd);
+  return fitSms((f) => msg(lang, 'reminder.sms', { body: bodyFor(f.case, date, days, { time, place: f.place || null }, lang) }),
+    { case: caseTitle, place: place || '' }, [['place', 0], ['case', 12]]);
+}
+
+/**
+ * Text for a PUSH_AND_SMS type when the person may get texts — and agreed to the opt-in wording
+ * that names these texts (ATTENDANCE_TEXTS_CONSENT_SINCE; earlier opt-ins get them by push only).
+ * → { ok, to } | { ok: false, error } | null
+ */
+async function sendCourtText(db, row, data, user) {
+  if (String(user.sms_consent_text_v || '') < ATTENDANCE_TEXTS_CONSENT_SINCE) return null;
+  if (!(await smsAllowed(db, user))) return null;
+  const { toE164 } = await import('./sms.js');
+  const to = toE164(user.phone);
+  const r = await sendSms({ to, body: await courtSmsText(db, row, data, reminderLang(user, data)) });
+  return r?.ok ? { ok: true, to } : { ok: false, error: r?.error || r?.reason || 'sms_failed' };
+}
+
+/** "Did you make it?" went out: remember when (metrics) and, when it was a text, to which number (replies 1/2/3). */
+async function afterCourtDelivery(db, row, now, text) {
+  if (row.notification_type !== 'court_checkin' || !row.court_date_id) return;
+  await db.run('UPDATE court_dates SET asked_at = ?, asked_phone = COALESCE(?, asked_phone) WHERE id = ?',
+    [now.toISOString(), text?.ok ? text.to : null, row.court_date_id]).catch(logIgnored('services/reminderDispatcher'));
+}
+
 async function deliverOne(db, row, now) {
   const data = parseData(row.data);
   const type = row.notification_type || 'reminder';
 
   const user = await db.get(
     `SELECT id, email, phone, sms_reminders, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing,
-            notif_checkin_reminders, preferred_language
+            notif_checkin_reminders, preferred_language, sms_consent_text_v
        FROM users WHERE id = ?`, [row.user_id]);
   if (!user || DISABLED_ACCOUNT.has(String(user.account_status || '').toLowerCase())) {
     return finish(db, row.id, { status: 'cancelled', error: 'user_unavailable' }).then(() => 'cancelled');
@@ -183,10 +256,12 @@ async function deliverOne(db, row, now) {
     })));
     const ok = tickets.find(t => t?.status === 'ok');
     if (ok) {
+      const alsoText = PUSH_AND_SMS_TYPES.has(type) ? await sendCourtText(db, row, data, user) : null;
       await finish(db, row.id, {
-        status: 'sent', channel: 'push', delivered: 1, sent_at: now.toISOString(),
+        status: 'sent', channel: alsoText?.ok ? 'push+sms' : 'push', delivered: 1, sent_at: now.toISOString(),
         expo_ticket_id: ok.id || null, error: null,
       });
+      await afterCourtDelivery(db, row, now, alsoText);
       return 'sent';
     }
     // (sendExpoPush removes tokens Expo reports as dead, so they are not retried forever.)
@@ -201,7 +276,9 @@ async function deliverOne(db, row, now) {
       data: { type, case_id: row.case_id ?? null, push_id: Number(row.id) },
     }).catch(e => ({ enabled: true, sent: 0, error: e.message }));
     if (wp.sent > 0) {
-      await finish(db, row.id, { status: 'sent', channel: 'web_push', delivered: 1, sent_at: now.toISOString(), error: pushError });
+      const alsoText = PUSH_AND_SMS_TYPES.has(type) ? await sendCourtText(db, row, data, user) : null;
+      await finish(db, row.id, { status: 'sent', channel: alsoText?.ok ? 'web_push+sms' : 'web_push', delivered: 1, sent_at: now.toISOString(), error: pushError });
+      await afterCourtDelivery(db, row, now, alsoText);
       return 'sent';
     }
     if (wp.enabled && wp.total) pushError = `${pushError}; ${wp.error}`;
@@ -209,19 +286,31 @@ async function deliverOne(db, row, now) {
 
   // ── Fallback chain: email (when Resend is configured) → SMS (when Telnyx
   //    is configured and the user opted in). Nothing worked → 'undeliverable'.
+  // No push reached the person: the text (when they opted in) for "Did you make it?" and the
+  // morning-after message, then e-mail.
+  if (PUSH_AND_SMS_TYPES.has(type)) {
+    const r = await sendCourtText(db, row, data, user);
+    if (r?.ok) {
+      await finish(db, row.id, { status: 'sent', channel: 'sms', delivered: 1, sent_at: now.toISOString(), error: pushError });
+      await afterCourtDelivery(db, row, now, r);
+      return 'sent';
+    }
+    if (r?.error) pushError = `${pushError}; sms: ${r.error}`;
+  }
   const canEmail = EMAIL_FALLBACK_TYPES.has(type) && looksLikeEmail(user.email);
   const { emailLive } = await import('./email.js');
   if (canEmail && emailLive()) {
     try {
       const channel = await sendReminderEmail(user, row, data);
       await finish(db, row.id, { status: 'sent', channel, delivered: 1, sent_at: now.toISOString(), error: pushError });
+      await afterCourtDelivery(db, row, now, null);
       return 'sent';
     } catch (e) {
       pushError = `${pushError}; email: ${e.message}`;
     }
   }
   if (SMS_FALLBACK_TYPES.has(type) && smsLive() && Number(user.sms_reminders) === 1 && user.phone) {
-    const r = await sendSms({ to: user.phone, body: msg(reminderLang(user, data), 'reminder.sms', { title: row.title, body: row.body || '' }) });
+    const r = await sendSms({ to: user.phone, body: await courtSmsText(db, row, data, reminderLang(user, data)) });
     if (r.ok) {
       await finish(db, row.id, { status: 'sent', channel: 'sms', delivered: 1, sent_at: now.toISOString(), error: pushError });
       return 'sent';
@@ -244,7 +333,7 @@ async function deliverOne(db, row, now) {
   }
   const reasons = [pushError];
   if (EMAIL_FALLBACK_TYPES.has(type)) reasons.push(!looksLikeEmail(user.email) ? 'no_email' : emailLive() ? 'email_failed' : 'email_not_configured');
-  if (SMS_FALLBACK_TYPES.has(type)) reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in' : 'sms_failed');
+  if (SMS_FALLBACK_TYPES.has(type) || PUSH_AND_SMS_TYPES.has(type)) reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in' : 'sms_failed');
   await finish(db, row.id, { status: 'undeliverable', delivered: 0, channel: null, error: [...new Set(reasons)].join('; ').slice(0, 300) });
   return 'undeliverable';
 }
@@ -286,21 +375,24 @@ export async function requeueAfterPushReceiptFailure(db, failed) {
  * Deliver every due reminder (deliver_at <= now). `now` is injectable for tests.
  * Returns counts { claimed, sent, failed, cancelled, skipped, retry }.
  */
-export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit = BATCH } = {}) {
+export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit = BATCH, courtDateId = null } = {}) {
   const db = dbArg || await getDb();
   const nowIso = now.toISOString();
   const staleIso = new Date(now.getTime() - STALE_CLAIM_MINUTES * 60_000).toISOString();
+  // courtDateId: deliver now only what is due for that hearing (a text reply "3" sends the
+  // morning-after message right away).
+  const only = courtDateId ? 'AND court_date_id = ?' : '';
   const claimed = await db.all(
     `UPDATE scheduled_pushes SET status = 'sending', claimed_at = ?
       WHERE id IN (
         SELECT id FROM scheduled_pushes
-         WHERE (status = 'pending' AND deliver_at <= ?)
-            OR (status = 'sending' AND claimed_at < ?)
+         WHERE ((status = 'pending' AND deliver_at <= ?)
+            OR (status = 'sending' AND claimed_at < ?)) ${only}
          ORDER BY deliver_at ASC
          LIMIT ?
          FOR UPDATE SKIP LOCKED)
       RETURNING id, user_id, title, body, data, deliver_at, notification_type, case_id, court_date_id, retry_count, max_retries`,
-    [nowIso, nowIso, staleIso, limit]
+    courtDateId ? [nowIso, nowIso, staleIso, courtDateId, limit] : [nowIso, nowIso, staleIso, limit]
   );
   const counts = { claimed: claimed.length, sent: 0, undeliverable: 0, failed: 0, cancelled: 0, skipped: 0, retry: 0 };
   for (const row of claimed) {

@@ -66,6 +66,24 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E15 Collateral: add "2015 Honda Civic" → receipt **C-000001** PDF. Return it → shows returned.
 - [ ] E16 Forfeit the bond with a deadline in 30 days → dashboard lists it with 30 days left; reinstate it.
 - [ ] E17 Reports: each opens and downloads as CSV; totals match the screens.
+- [ ] E17a **Court dates** tab on the bond (status Active): add a hearing **8 days out** at 10:30 with a court name and room. Tick the
+  confirmation for the defendant (your phone) and the indemnitor (second phone). The texts list shows, for both numbers, 7 days
+  before 9:00 AM, 3 days 9:00 AM, evening before 6:00 PM, morning of 6:30 AM (court's time zone), and for the defendant only
+  "Did you make it?" 3:00 PM on the day and "If you missed court" 9:00 AM the next day.
+- [ ] E17b Over the next 8 days both phones get all four reminders (the indemnitor's says "You co-signed …"); each shows
+  "Sent · Delivered" in the list, and Texts this month counts them at 5¢ each.
+- [ ] E17c Add a hearing for **tomorrow** in the evening → a text arrives within a minute on both phones. Delete it → its other texts show Cancelled.
+- [ ] E17d On a court day at 3:00 PM the defendant phone gets "Did you make it to court today? Reply 1 …". Reply **3** → within a
+  minute: an "act today" text with the missed-court link (it opens the guidance page, no account needed), the hearing shows
+  Missed · answered by text, and you get a push / e-mail. Reply **1** → "marked as attended". Reply "hello" → nothing happens.
+- [ ] E17e A hearing left Scheduled: the next morning at 9:00 the defendant gets the "act today" text and you get an alert.
+  A hearing marked Attended before then gets neither.
+- [ ] E17f Turn texts off for the bond → planned texts show Cancelled; on again → planned again. Change the indemnitor's phone →
+  that person needs the box ticked again.
+- [ ] E17g Reports → Court appearance → this month shows the county with asked / attended / rescheduled / missed / no answer; CSV downloads.
+- [ ] E17h App user (phone A, texts on in Court dates): add a court date for today → mark it via the push "Did you make it?" or the
+  card on the hearing (I went / It was rescheduled / I missed it). "I missed it" shows the guidance and a text "If you missed court
+  …" arrives. Admin: `GET /api/admin/metrics/appearance` (admin account + X-Admin-Key) shows both app users and Bond Desk counts.
 - [ ] E18 **Next day**: Stripe → the agent's subscription → upcoming invoice has a line "Texts sent for you: N × 5¢" matching Bond Desk → Texts this month. Running the billing job again adds nothing.
 
 ## F. Webhooks and recovery (10 min)

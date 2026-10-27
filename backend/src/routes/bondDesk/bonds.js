@@ -10,6 +10,7 @@ import { agencyFor, agentToday, sendAgentText, sendAgentEmail, reminderMessage }
 import { receiptPdf } from '../../services/bondDesk/pdf.js';
 import { normalizeLang } from '../../i18n/index.js';
 import logger from '../../utils/logger.js';
+import { planBond, syncBondCourtDate, mirrorBondFormCourtDate } from '../../services/bondDesk/courtDates.js';
 
 const router = Router();
 
@@ -130,6 +131,11 @@ router.post('/bonds', handle(async (req, res, db) => {
   const row = await db.get(
     `INSERT INTO bd_bonds (agent_id, ${cols.join(', ')}) VALUES (?, ${cols.map(() => '?').join(', ')}) RETURNING id`,
     [req.agentId, ...cols.map((c) => f[c])]);
+  // the form's court date becomes the bond's first hearing (routes/bondDesk/courtDates.js)
+  if (f.court_date) {
+    await mirrorBondFormCourtDate(db, { bondId: Number(row.id), oldDate: null, newDate: f.court_date, courtName: f.court_name });
+    await syncBondCourtDate(db, Number(row.id));
+  }
   res.status(201).json({ bond: await loadBond(db, req.agentId, Number(row.id)) });
 }));
 
@@ -160,14 +166,21 @@ router.get('/bonds/:id', handle(async (req, res, db) => {
 router.patch('/bonds/:id', handle(async (req, res, db) => {
   const bondId = id(req.params.id);
   const f = await bondFields(db, req.agentId, body(req), { partial: true });
-  await db.transaction(async (tx) => {
+  const before = await db.transaction(async (tx) => {
     const bond = await loadBond(tx, req.agentId, bondId, { lock: true });
     if (f.bond_amount_cents && bond.power && f.bond_amount_cents > bond.power.limit_cents) throw new BdError(409, 'power_limit');
     const cols = Object.keys(f);
-    if (!cols.length) return;
+    if (!cols.length) return bond;
     await tx.run(`UPDATE bd_bonds SET ${cols.map((c) => `${c} = ?`).join(', ')}, updated_at = NOW() WHERE id = ? AND agent_id = ?`,
       [...cols.map((c) => f[c]), bondId, req.agentId]);
+    return bond;
   });
+  // the form's single court date moves / adds a hearing; texts follow the number, place and zone
+  if (Object.keys(f).length) {
+    if (f.court_date) await mirrorBondFormCourtDate(db, { bondId, oldDate: before.court_date, newDate: f.court_date, courtName: f.court_name ?? before.court_name });
+    if (['court_date', 'defendant_phone', 'state', 'county'].some((k) => k in f)) await planBond(db, bondId);
+    await syncBondCourtDate(db, bondId);
+  }
   res.json({ bond: await loadBond(db, req.agentId, bondId) });
 }));
 
@@ -202,6 +215,7 @@ router.post('/bonds/:id/status', handle(async (req, res, db) => {
     // a power assigned while the bond was a prospect is executed the day the bond is posted
     if (set.posted_on) await tx.run(`UPDATE bd_powers SET executed_on = ? WHERE bond_id = ? AND status = 'executed'`, [set.posted_on, bondId]);
   });
+  await planBond(db, bondId);   // court texts start when the bond is posted, stop when it is closed or forfeited
   res.json({ bond: await loadBond(db, req.agentId, bondId) });
 }));
 
@@ -262,6 +276,7 @@ router.patch('/indemnitors/:id', handle(async (req, res, db) => {
   const f = indemnitorFields(body(req), { partial: true });
   const cols = Object.keys(f);
   if (cols.length) await db.run(`UPDATE bd_indemnitors SET ${cols.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`, [...cols.map((c) => f[c]), i.id]);
+  if ('phone' in f) await planBond(db, Number(i.bond_id));   // a new number needs a new confirmation
   const row = await db.get(`SELECT ${IND_COLS} FROM bd_indemnitors WHERE id = ?`, [i.id]);
   res.json({ indemnitor: pubInd(row) });
 }));
@@ -271,6 +286,7 @@ router.delete('/indemnitors/:id', handle(async (req, res, db) => {
   const used = await db.get('SELECT 1 FROM bd_signers WHERE indemnitor_id = ? LIMIT 1', [i.id]);
   if (used) throw new BdError(409, 'on_packet');
   await db.run('DELETE FROM bd_indemnitors WHERE id = ?', [i.id]);
+  await planBond(db, Number(i.bond_id));
   res.json({ ok: true });
 }));
 

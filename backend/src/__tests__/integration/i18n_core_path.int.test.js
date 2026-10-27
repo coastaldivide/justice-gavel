@@ -147,11 +147,11 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     expect(r.body.hearing_label).toBe(M('es', 'hearing.arraignment'));
     expect(r.body.court_time_label).toMatch(/^9:30 a\.\s?m\.$/);
     expect((await ctx.db.get('SELECT preferred_language FROM users WHERE id = ?', [ana.user.id])).preferred_language).toBe('es');
-    const rows = await ctx.db.all(`SELECT title, body, data FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at`, [anaDate]);
+    const rows = await ctx.db.all(`SELECT title, body, data FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' AND notification_type = 'court_reminder' ORDER BY deliver_at`, [anaDate]);
     expect(rows.map(x => x.title)).toEqual([
       M('es', 'reminder.title.in_days').replace('{days}', 7), M('es', 'reminder.title.in_3_days').replace('{days}', 3),
       M('es', 'reminder.title.tomorrow'), M('es', 'reminder.title.today')]);
-    expect(rows[0].body).toMatch(/^DUI 2026 — corte el .+ a las 9:30 a\.\s?m\. Revise su caso/);
+    expect(rows[0].body).toMatch(/^DUI 2026: corte el .+ a las 9:30 a\.\s?m\. Si falta, pueden emitir una orden de arresto\./);
     expect(JSON.parse(rows[0].data).lang).toBe('es');
 
     // Switching the app to Portuguese re-plans the pending reminders in Portuguese.
@@ -160,7 +160,7 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     const pt = await ctx.db.all(`SELECT title FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at`, [anaDate]);
     expect(pt.map(x => x.title)).toEqual([
       M('pt', 'reminder.title.in_days').replace('{days}', 7), M('pt', 'reminder.title.in_3_days').replace('{days}', 3),
-      M('pt', 'reminder.title.tomorrow'), M('pt', 'reminder.title.today')]);
+      M('pt', 'reminder.title.tomorrow'), M('pt', 'reminder.title.today'), M('pt', 'reminder.ask.title'), M('pt', 'reminder.missed.title')]);
     expect((await ctx.request().post('/api/push/language').set(ana.headers).send({ language: 'fr' })).status).toBe(400);
     // back to Spanish for the rest of the suite
     await ctx.request().post('/api/push/language').set(ana.headers).send({ language: 'es' });
@@ -210,8 +210,9 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
     await dispatch({ now: new Date() });
     const sms = twilio.received.at(-1);
     expect(sms.To).toBe('+16155550177');
-    expect(sms.Body).toContain('Còn 3 ngày đến ngày ra tòa');
-    expect(sms.Body).toContain('Trả lời STOP để ngừng nhận tin');
+    // texts are sent in the GSM-7 alphabet (services/smsText.js): Vietnamese without most accents
+    expect(sms.Body).toContain('Neu vang mat, tòa co the ra lenh bat');
+    expect(sms.Body).toContain('Tra loi STOP de ngung nhan tin');
     expect(sms.Body.startsWith('Justice Gavel: ')).toBe(true);
     expect(sms.Body).not.toMatch(/Court date|Reply STOP/);
     for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];

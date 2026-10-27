@@ -32,7 +32,8 @@ import { runScheduled, purgeJobRuns } from '../utils/jobLock.js';
  * User-facing delivery is not a data refresh and runs in every API process
  * regardless of LIVE_REFRESH (REMINDERS_ENABLED=false switches it off per
  * process): reminder delivery (services/reminderDispatcher.js), the 24-hour
- * consultation reminder (hourly), Expo receipt checks (every 30 minutes), and
+ * consultation reminder (hourly), Expo receipt checks (every 30 minutes), Bond Desk court
+ * texts (every 5 minutes, 'bd-court-reminders'), and
  * the daily clean-up of expired sign-in tokens, idempotency keys and job
  * records.
  *
@@ -61,6 +62,7 @@ let linkExpiryTask = null;
 let consultReminderTask = null;
 let receiptsTask = null;
 let tokenCleanupTask = null;
+let bdCourtTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
 // runRefresh is re-exported for the admin console and existing callers.
@@ -364,6 +366,13 @@ export function startScheduler() {
       (ctx) => runScheduled('consultation-reminders', ctx, async () => runConsultationReminderSweep(await getDb())));
     receiptsTask = scheduleGuarded('*/30 * * * *', 'push-receipts',
       (ctx) => runScheduled('push-receipts', ctx, () => checkPushReceipts()));
+    // Bond Desk court texts: reminders, "Did you make it?", the morning-after text and agent
+    // alerts (services/bondDesk/courtDates.js). One instance per fire; rows are claimed SKIP LOCKED.
+    bdCourtTask = scheduleGuarded('*/5 * * * *', 'bd-court-reminders',
+      (ctx) => runScheduled('bd-court-reminders', ctx, async () => {
+        const { runBondCourtReminders } = await import('./bondDesk/courtDates.js');
+        return runBondCourtReminders(await getDb());
+      }));
   }
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
@@ -403,8 +412,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = null;
   stopHealthScanScheduler();
 }
 

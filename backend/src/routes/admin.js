@@ -23,6 +23,8 @@ import { safeJson, err400, escapeLike, err401, err404, safeInt, safeTable, safeA
  * GET    /api/admin/log                  — update audit log (paginated)
  * GET    /api/admin/log/:table/:id       — update log for one record
  * GET    /api/admin/stats                — DB summary stats
+ * GET    /api/admin/metrics/appearance   — "Did you make it to court?" counts per county / month
+ *                                          (?from=YYYY-MM&to=YYYY-MM), app users and Bond Desk
  * GET    /api/admin/diagnostics/client-ip — how the app sees the caller's IP (req.ip, req.ips,
  *                                          X-Forwarded-For, trust proxy, per-hop candidates) —
  *                                          used to set TRUST_PROXY after a deploy (RUNBOOK)
@@ -402,6 +404,24 @@ router.get('/diagnostics/jobs', async (req, res) => {
   } catch (e) {
     logger.error({ msg: '[admin/diagnostics/jobs]', error: e?.message });
     res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Metrics: "Did you make it to court?" (services/appearanceMetrics.js) ─────
+// GET /api/admin/metrics/appearance?from=YYYY-MM&to=YYYY-MM — counts per county (or state) and
+// month, app users and Bond Desk separately.
+router.get('/metrics/appearance', async (req, res) => {
+  try {
+    const { monthRange, appAppearance, bondDeskAppearance } = await import('../services/appearanceMetrics.js');
+    const range = monthRange(req.query);
+    if (range.error) return res.status(400).json({ error: 'from / to must be months written YYYY-MM, from before to.', code: 'bad_month' });
+    const db = await getDb();
+    const [consumer, bondDesk] = await Promise.all([appAppearance(db, range), bondDeskAppearance(db, range)]);
+    res.set('Cache-Control', 'no-store');
+    res.json({ from: range.from, to: range.to, consumer, bond_desk: bondDesk });
+  } catch (e) {
+    logger.error({ msg: '[admin/metrics/appearance]', error: e?.message });
+    res.status(500).json({ error: 'Server error. Please try again.', code: 'server_error' });
   }
 });
 

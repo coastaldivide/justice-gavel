@@ -1,7 +1,8 @@
 /**
  * BondDetailScreen — one bond in the Bond Desk: case file and status,
  * indemnitors, paperwork (send to sign, follow signatures), money (charges,
- * payments with receipts, payment plan, reminders) and collateral.
+ * payments with receipts, payment plan, reminders), collateral and court dates (hearings,
+ * attended / missed / rescheduled, the reminder texts and their delivery).
  * Data: GET /api/bond-desk/bonds/:id (docs/BOND_DESK.md); every change reloads it.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,10 +17,11 @@ import { IndemnitorsSection } from '../components/bondDesk/IndemnitorsSection';
 import { PaperworkSection } from '../components/bondDesk/PaperworkSection';
 import { MoneySection } from '../components/bondDesk/MoneySection';
 import { CollateralSection } from '../components/bondDesk/CollateralSection';
+import { CourtSection } from '../components/bondDesk/CourtSection';
 import { AccessGate } from './BondDeskScreen';
 import { type Access, type BondDetail, money } from '../services/bondDesk';
 
-export const BOND_TABS = ['overview', 'people', 'paperwork', 'money', 'collateral'] as const;
+export const BOND_TABS = ['overview', 'court', 'people', 'paperwork', 'money', 'collateral'] as const;
 export type BondTab = typeof BOND_TABS[number];
 
 function BondDetailScreen({ navigation, route }: ScreenProps) {
@@ -94,6 +96,7 @@ function BondDetailScreen({ navigation, route }: ScreenProps) {
       {tab === 'paperwork' && <PaperworkSection detail={detail} reload={reload} access={access} />}
       {tab === 'money' && <MoneySection detail={detail} reload={reload} access={access} />}
       {tab === 'collateral' && <CollateralSection detail={detail} reload={reload} />}
+      {tab === 'court' && <CourtSection detail={detail} reload={reload} access={access} />}
     </ScrollView>
   );
 }

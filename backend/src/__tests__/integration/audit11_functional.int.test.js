@@ -170,14 +170,15 @@ describeIntegration('audit11 functional fixes (real Postgres)', () => {
 
   it('H11: changing the date re-plans; closing or deleting the case cancels; stale rows never go out', async () => {
     const c = await ctx.request().post('/api/cases').set(alice.headers).send({ title: 'Assault — re-set', next_court_date: dayPlus(9) });
+    // 4 reminders + "Did you make it?" + the morning-after message (A6 / A7)
     const first = await ctx.db.all(`SELECT id FROM scheduled_pushes WHERE case_id = ? AND status = 'pending'`, [c.body.id]);
-    expect(first.length).toBe(4);
+    expect(first.length).toBe(6);
     const upd = await ctx.request().put(`/api/cases/${c.body.id}`).set(alice.headers).send({ next_court_date: dayPlus(12) });
     expect(upd.status).toBe(200);
     const oldRows = await ctx.db.all(`SELECT status FROM scheduled_pushes WHERE id IN (${first.map(() => '?').join(',')})`, first.map(r => r.id));
     expect(oldRows.every(r => r.status === 'cancelled')).toBe(true);
     const fresh = await ctx.db.all(`SELECT id, data FROM scheduled_pushes WHERE case_id = ? AND status = 'pending'`, [c.body.id]);
-    expect(fresh).toHaveLength(4);
+    expect(fresh).toHaveLength(6);
     expect(fresh.every(r => JSON.parse(r.data).court_date === dayPlus(12))).toBe(true);
 
     // a reminder row whose date no longer matches the case is cancelled at send time
@@ -188,7 +189,7 @@ describeIntegration('audit11 functional fixes (real Postgres)', () => {
     expect(expo.received).toHaveLength(0);
 
     await ctx.request().put(`/api/cases/${c.body.id}`).set(alice.headers).send({ status: 'Closed' });
-    const after = await ctx.db.get(`SELECT COUNT(*) AS n FROM scheduled_pushes WHERE case_id = ? AND notification_type = 'court_reminder' AND status = 'pending'`, [c.body.id]);
+    const after = await ctx.db.get(`SELECT COUNT(*) AS n FROM scheduled_pushes WHERE case_id = ? AND notification_type IN ('court_reminder', 'court_checkin', 'court_missed_followup') AND status = 'pending'`, [c.body.id]);
     expect(Number(after.n)).toBe(0);
   });
 

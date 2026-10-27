@@ -82,6 +82,14 @@ export function formatDay(dateStr, lang = 'en', { year = false } = {}) {
   }).replace(NBSP, ' ');
 }
 
+/** 'YYYY-MM-DD' → 'Wed, Sep 30' / 'mié, 30 sept' … — the short day used in texts. */
+export function formatDayShort(dateStr, lang = 'en') {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr ?? ''));
+  if (!m) return String(dateStr ?? '');
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
+  return d.toLocaleDateString(LOCALES[normalizeLang(lang) || 'en'], { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).replace(NBSP, ' ');
+}
+
 /** '09:30' → '9:30 AM' (en) / '9:30 a. m.' (es) / '09:30' (pt, vi); null when no time. */
 export function formatTime(t, lang = 'en') {
   const m = /^(\d{2}):(\d{2})/.exec(String(t ?? ''));

@@ -9,7 +9,8 @@
  *   │   └─ MoreTab (MoreStack: every secondary screen)
  *   ├─ GuestNav  (signed out: AgeGate · Onboarding · Login · Register · …)
  *   ├─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
- *   └─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
+ *   ├─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
+ *   └─ MissedCourt (missed-court[/es|pt|vi] — the morning-after text's link; any auth state)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -156,6 +157,7 @@ export const linking: LinkingOptions<any> = {
       // Root level: the password-reset e-mail link and a bail agent's signing link (any auth state)
       ResetPassword: 'reset-password',
       SignPacket:    'sign/:token',
+      MissedCourt:   'missed-court/:lang?',
     },
   },
 };
@@ -172,6 +174,7 @@ export const guestLinking: LinkingOptions<any> = {
     screens: {
       ResetPassword: 'reset-password',
       SignPacket:    'sign/:token',
+      MissedCourt:   'missed-court/:lang?',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

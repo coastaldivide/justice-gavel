@@ -38,7 +38,8 @@ import { normalizeState } from '../services/rightsContent.js';
 import { smsLive, toE164 } from '../services/sms.js';
 
 /** Version of the opt-in wording shown at consent (frontend i18n cdd_sms_consent). Bump when it changes. */
-export const SMS_CONSENT_TEXT_VERSION = 'cdd_sms_consent@2026-10-26';
+export { SMS_CONSENT_TEXT_VERSION } from '../services/courtReminders.js';
+import { SMS_CONSENT_TEXT_VERSION } from '../services/courtReminders.js';
 import { todayInZone, stateTimeZone } from '../utils/timezone.js';
 import { notifyFollowersCourtDateChanged } from '../services/followers.js';
 import { isExpoPushToken } from '../services/expoPush.js';

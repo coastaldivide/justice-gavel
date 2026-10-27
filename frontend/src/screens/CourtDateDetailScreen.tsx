@@ -5,7 +5,10 @@
  * guidance (ends with "Call your lawyer or the court clerk"), "Change date or
  * time" (a continuance moves the hearing; its reminders are re-planned and
  * family followers are told), text-message
- * reminders (when available) and family sharing.
+ * reminders (when available) and family sharing. On the court day and after, while the
+ * hearing is still "scheduled", it asks "Did you make it to court?" with one tap each for
+ * I went / It was rescheduled / I missed it (the push sent at 3 PM on the day opens it here).
+ * "I missed it" shows the missed-court guidance and the server sends the "act today" message.
  *
  * Family sharing needs the owner's explicit consent (a checkbox), creates a
  * one-time invite code, and can be stopped at any time. The follower sees
@@ -38,6 +41,10 @@ function whenLabel(iso: string, tz?: string): string {
       .replace(/[\u00a0\u202f]/g, ' ');
   } catch { return iso; }
 }
+/** Today on this device, YYYY-MM-DD (the court day is a date-only value). */
+function localToday(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
 const daysLabel = (n: number | null) => (n === 0 ? t('cdd_morning_of') : n === 1 ? t('cdd_1_day') : n == null ? t('cdd_reminder') : t('cdd_n_days', { n }));
 const followerStatus = (status: string) => (status === 'pending' ? t('cdd_invite_unused') : status === 'active' ? t('cdd_follow_active') : status === 'expired' ? t('cdd_follow_expired') : status);
 
@@ -48,6 +55,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const id = Number((route?.params as { id?: number | string } | undefined)?.id);
+  const asked = !!(route?.params as { ask?: unknown } | undefined)?.ask;
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
@@ -134,6 +142,10 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
     } finally { if (mounted.current) setBusy(false); }
   };
 
+  const markRescheduled = async () => {
+    await patch({ status: 'rescheduled' }, t('cdd_marked_rescheduled'));
+  };
+
   const markMissed = async () => {
     setMissedOpen(true);
     if (d?.status !== 'missed') await patch({ status: 'missed' }, t('cdd_marked_missed'));
@@ -211,6 +223,28 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
       <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
         {[d.hearing_type ? hearingLabel(d.hearing_type) : null, d.location, d.status !== 'scheduled' ? t('cdd_status', { status: statusLabel(d.status) }) : null].filter(Boolean).join(' · ')}
       </Text>
+
+      {phase === 'ok' && d.status === 'scheduled' && (d.is_past || d.court_date <= localToday() || asked) && (
+        <View style={[styles.box, { borderColor: colors.legalDark }]} testID="court-date-made-it">
+          <IconLabel icon={ICONS.help} color={colors.textPrimary} textStyle={styles.boxTitle}>{t('cdd_made_it_q')}</IconLabel>
+          <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_made_it_body')}</Text>
+          <TouchableOpacity accessibilityRole="button" testID="court-date-went" style={styles.primaryBtn} disabled={busy} onPress={() => patch({ status: 'attended' }, t('cdd_marked_attended'))}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('cdd_went')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="court-date-was-rescheduled" style={styles.secondaryBtn} disabled={busy} onPress={markRescheduled}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cdd_was_rescheduled')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="court-date-i-missed" style={styles.secondaryBtn} disabled={busy} onPress={markMissed}>
+            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cdd_i_missed')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {phase === 'ok' && d.status === 'rescheduled' && (
+        <TouchableOpacity accessibilityRole="button" testID="court-date-add-new" style={styles.secondaryBtn}
+          onPress={() => (navigation as any).navigate('CourtDates', { add: true, caseId: d.case_id })}>
+          <IconLabel center icon={ICONS.calendarAdd} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_add_new_date')}</IconLabel>
+        </TouchableOpacity>
+      )}
 
       {ch ? (
         <View style={styles.box} testID="court-date-courthouse">
@@ -297,11 +331,6 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
       {missedOpen ? <GuidanceView g={guidance} which="missed" styles={styles} /> : (
         <TouchableOpacity accessibilityRole="button" testID="court-date-missed" style={styles.secondaryBtn} onPress={markMissed} disabled={phase === 'offline'}>
           <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_missed_btn')}</IconLabel>
-        </TouchableOpacity>
-      )}
-      {phase === 'ok' && d.status === 'scheduled' && d.is_past && (
-        <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => patch({ status: 'attended' }, t('cdd_marked_attended'))}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✓ {t('cdd_attended_btn')}</Text>
         </TouchableOpacity>
       )}
       {phase === 'ok' && (

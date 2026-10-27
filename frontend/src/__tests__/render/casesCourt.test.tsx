@@ -84,6 +84,11 @@ describe('1 push taps', () => {
     expect(notificationTarget({ type: 'arrest_alert' })).toEqual({ screen: 'ArrestMonitor' });
     expect(notificationTarget({ screen: 'NoSuchScreen' })).toBeNull();
     expect(notificationTarget(null)).toBeNull();
+    // "Did you make it to court?" opens the hearing with the one-tap answer; the morning-after
+    // message opens the missed-court guidance; an agent's court alert opens the bond's court tab
+    expect(notificationTarget({ type: 'court_checkin', screen: 'CourtDateDetail', court_date_id: 9, ask: 1 })).toEqual({ screen: 'CourtDateDetail', params: { id: 9, ask: 1 } });
+    expect(notificationTarget({ type: 'court_missed_followup', screen: 'CourtDates', guidance: 'missed', court_date_id: 9 })).toEqual({ screen: 'CourtDates', params: { guidance: 'missed' } });
+    expect(notificationTarget({ type: 'bd_court_alert', screen: 'BondDetail', bond_id: 12, court_date_id: 4 })).toEqual({ screen: 'BondDetail', params: { bondId: 12, tab: 'court' } });
   });
 });
 

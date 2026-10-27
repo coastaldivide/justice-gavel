@@ -120,11 +120,12 @@ export type RootStackParamList = {
   CheckIn:                  { enrollmentId?: number };
   CheckInManager:           undefined;
   BondDesk:                 undefined;
-  BondDetail:               { bondId: number | string; tab?: 'overview' | 'people' | 'paperwork' | 'money' | 'collateral' };
+  BondDetail:               { bondId: number | string; tab?: 'overview' | 'court' | 'people' | 'paperwork' | 'money' | 'collateral' };
   BondForms:                undefined;
   BondPowers:               undefined;
   BondReports:              undefined;
   SignPacket:               { token: string };
+  MissedCourt:              { lang?: string } | undefined;
   ArrestMonitor:            undefined;
 
   // ── Education & Gamification ─────────────────────────────────────────────

@@ -180,7 +180,8 @@ describe('reminder text in every language', () => {
   it('the English text is unchanged (UI pass 2: push titles carry no emoji, the words are the same)', () => {
     expect(titleForDaysLeft(3, 'en', { planned: true })).toBe('Court date in 3 days');
     expect(titleForDaysLeft(2, 'en')).toBe('Court date in 2 days');
-    expect(bodyFor('DUI', '2026-11-05', 1, { time: '09:30' })).toBe('DUI — court is tomorrow, Thursday, November 5 at 9:30 AM. Be on time and bring all documents.');
+    // A6 (Oct 27 2026): what can happen, what to expect and a plan prompt
+    expect(bodyFor('DUI', '2026-11-05', 1, { time: '09:30' })).toBe('DUI: court is tomorrow, Thursday, November 5 at 9:30 AM. If you miss court, a warrant can be issued. Expect a security line; bring ID and your court papers. How will you get there? Make a plan now.');
     expect(followerTitleFor(null, 0, 'en')).toBe('Family: court TODAY');
   });
   it('days and times are written the way each language writes them', () => {

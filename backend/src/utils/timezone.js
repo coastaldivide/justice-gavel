@@ -29,6 +29,36 @@ export const STATE_TIME_ZONES = Object.freeze({
   PR: 'America/Puerto_Rico', GU: 'Pacific/Guam',   VI: 'America/St_Thomas',
 });
 
+/**
+ * Counties of split states whose zone differs from the state's primary zone above (whole
+ * counties only; counties split down the middle keep the state's zone). Used for Bond Desk
+ * court reminders, which follow the court's county.
+ */
+const C = (zone, list) => Object.fromEntries(list.split(',').map((n) => [n.trim().toLowerCase(), zone]));
+export const COUNTY_TIME_ZONES = Object.freeze({
+  TN: C('America/New_York', 'Anderson,Blount,Bradley,Campbell,Carter,Claiborne,Cocke,Grainger,Greene,Hamblen,Hamilton,Hancock,Hawkins,Jefferson,Johnson,Knox,Loudon,McMinn,Meigs,Monroe,Morgan,Polk,Rhea,Roane,Scott,Sevier,Sullivan,Unicoi,Union,Washington'),
+  FL: C('America/Chicago', 'Escambia,Santa Rosa,Okaloosa,Walton,Holmes,Washington,Bay,Jackson,Calhoun'),
+  TX: C('America/Denver', 'El Paso,Hudspeth'),
+  KY: C('America/Chicago', 'Adair,Allen,Ballard,Barren,Breckinridge,Butler,Caldwell,Calloway,Carlisle,Christian,Clinton,Crittenden,Cumberland,Daviess,Edmonson,Fulton,Graves,Grayson,Green,Hancock,Hart,Henderson,Hickman,Hopkins,Livingston,Logan,Lyon,Marshall,McCracken,McLean,Metcalfe,Monroe,Muhlenberg,Ohio,Russell,Simpson,Todd,Trigg,Union,Warren,Webster'),
+  IN: C('America/Chicago', 'Lake,Porter,LaPorte,Jasper,Newton,Starke,Vanderburgh,Posey,Warrick,Spencer,Gibson,Perry'),
+  MI: C('America/Menominee', 'Gogebic,Iron,Dickinson,Menominee'),
+  ID: C('America/Los_Angeles', 'Kootenai,Boundary,Bonner,Benewah,Shoshone,Latah,Clearwater,Nez Perce,Lewis'),
+  OR: C('America/Boise', 'Malheur'),
+  ND: C('America/Denver', 'Adams,Billings,Bowman,Golden Valley,Grant,Hettinger,Slope,Stark'),
+  SD: C('America/Denver', 'Pennington,Meade,Lawrence,Butte,Custer,Fall River,Harding,Perkins'),
+  NE: C('America/Denver', 'Scotts Bluff,Box Butte,Cheyenne,Dawes,Sioux,Kimball,Banner,Morrill,Sheridan,Garden,Deuel,Keith,Perkins,Chase,Dundy'),
+  KS: C('America/Denver', 'Sherman,Wallace,Greeley,Hamilton'),
+});
+
+/** Zone for a county of a state ("Knox County", "knox", "Knox Co."), or null when it is the state's zone / unknown. */
+export function countyTimeZone(state, county) {
+  const st = String(state || '').trim().toUpperCase();
+  const map = COUNTY_TIME_ZONES[st];
+  if (!map || !county) return null;
+  const name = String(county).trim().toLowerCase().replace(/\./g, '').replace(/\s+(county|parish|co)$/i, '').replace(/\s+/g, ' ').trim();
+  return map[name] || null;
+}
+
 const _validCache = new Map();
 
 /** True for a zone name Intl understands (e.g. 'America/New_York', 'UTC'). */

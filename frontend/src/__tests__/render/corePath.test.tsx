@@ -61,6 +61,8 @@ import RightsCardScreen from '../../screens/RightsCardScreen';
 import HelpNowScreen from '../../screens/HelpNowScreen';
 import CourtDatesScreen from '../../screens/CourtDatesScreen';
 import CourtDateDetailScreen from '../../screens/CourtDateDetailScreen';
+import MissedCourtScreen from '../../screens/MissedCourtScreen';
+import { t, getLang, setLang } from '../../i18n';
 import EmergencyShareScreen from '../../screens/EmergencyShareScreen';
 import { apiMock, makeNavigation } from './apiMock';
 const { on, reject, reset, calls } = apiMock();
@@ -471,6 +473,49 @@ describe('CourtDateDetailScreen', () => {
     await waitFor(() => expect(calls.find(c => c.method === 'patch')?.data).toEqual({ status: 'missed' }));
   });
 
+  it('"Did you make it to court?" — one tap each: I went / rescheduled / I missed it', async () => {
+    const past = { ...detail, court_date: '2020-01-06', is_past: true, reminders: [] };
+    on('get', '/court-dates/7', past);
+    on('get', '/cases/3/followers', []);
+    on('patch', '/court-dates/7', (_u: string, { data }: { data?: any }) => Promise.resolve({ data: { ...past, status: data.status, reminders: [] } }));
+    wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
+    expect(await screen.findByTestId('court-date-made-it')).toBeTruthy();
+    expect(screen.getByText(t('cdd_made_it_q'))).toBeTruthy();
+    fireEvent.press(screen.getByTestId('court-date-went'));
+    await waitFor(() => expect(calls.filter(c => c.method === 'patch').at(-1)?.data).toEqual({ status: 'attended' }));
+    await waitFor(() => expect(screen.queryByTestId('court-date-made-it')).toBeNull());
+  });
+
+  it('"It was rescheduled" offers to add the new date; "I missed it" shows what to do today', async () => {
+    const past = { ...detail, court_date: '2020-01-06', is_past: true, reminders: [] };
+    on('get', '/court-dates/7', past);
+    on('get', '/cases/3/followers', []);
+    on('patch', '/court-dates/7', (_u: string, { data }: { data?: any }) => Promise.resolve({ data: { ...past, status: data.status, reminders: [] } }));
+    const nav = makeNavigation();
+    const { unmount } = wrap(<CourtDateDetailScreen navigation={nav} route={route} />);
+    fireEvent.press(await screen.findByTestId('court-date-was-rescheduled'));
+    await waitFor(() => expect(calls.filter(c => c.method === 'patch').at(-1)?.data).toEqual({ status: 'rescheduled' }));
+    fireEvent.press(await screen.findByTestId('court-date-add-new'));
+    expect(nav.navigate).toHaveBeenCalledWith('CourtDates', { add: true, caseId: 3 });
+    unmount();
+    wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
+    fireEvent.press(await screen.findByTestId('court-date-i-missed'));
+    expect(await screen.findByTestId('missed-guidance')).toBeTruthy();
+    await waitFor(() => expect(calls.filter(c => c.method === 'patch').at(-1)?.data).toEqual({ status: 'missed' }));
+  });
+
+  it('a future hearing does not ask — unless the 3 PM push opened it', async () => {
+    const future = { ...detail, court_date: '2099-01-06', is_past: false };
+    on('get', '/court-dates/7', future);
+    on('get', '/cases/3/followers', []);
+    const { unmount } = wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
+    expect(await screen.findByText('Davidson County Courthouse')).toBeTruthy();
+    expect(screen.queryByTestId('court-date-made-it')).toBeNull();
+    unmount();
+    wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={{ params: { id: 7, ask: 1 } } as any} />);
+    expect(await screen.findByTestId('court-date-made-it')).toBeTruthy();
+  });
+
   it('family invite needs explicit consent; the code is shown; sharing can be stopped', async () => {
     on('get', '/court-dates/7', detail);
     on('get', '/cases/3/followers', [{ id: 11, status: 'active', name: 'Mom', email: null, share_reminders: true }]);
@@ -538,5 +583,22 @@ describe('EmergencyShareScreen — arrest details for the family', () => {
     expect(text).toContain('Booking number: B-2026-4411');
     expect(text).toContain('Charges: DUI');
     expect(text).toContain('(615) 555-0199');
+  });
+});
+
+// ── The morning-after text's link ────────────────────────────────────────────
+describe('MissedCourtScreen (justicegavel.app/missed-court)', () => {
+  it('says act today and shows the missed-court guidance, in the link\'s language', async () => {
+    const before = getLang();
+    const { unmount } = wrap(<MissedCourtScreen navigation={makeNavigation()} route={{ params: {} } as any} />);
+    expect(screen.getByTestId('missed-court-act-today')).toHaveTextContent(t('mc_act_today'));
+    expect(screen.getByTestId('missed-guidance')).toBeTruthy();
+    expect(screen.getByText('4. Call your lawyer or the court clerk.')).toBeTruthy();
+    unmount();
+    wrap(<MissedCourtScreen navigation={makeNavigation()} route={{ params: { lang: 'es' } } as any} />);
+    await waitFor(() => expect(getLang()).toBe('es'));
+    expect(await screen.findByText(t('mc_act_today'))).toBeTruthy();
+    expect(t('mc_act_today')).toMatch(/^Si faltó a la corte, actúe hoy/);
+    setLang(before, { persist: false });
   });
 });

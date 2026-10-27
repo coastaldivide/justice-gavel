@@ -140,7 +140,8 @@ TELNYX_FROM_NUMBER=<+1...>               Telnyx sender, E.164, on a 10DLC-regist
 TELNYX_MESSAGING_PROFILE_ID=<uuid>       optional: Telnyx messaging profile (opt-out / STOP handling, number pool)
 TELNYX_API_BASE=<url>                    Telnyx API base override (default https://api.telnyx.com/v2; tests / mock only)
 TELNYX_PUBLIC_KEY=<base64>               Telnyx webhook public key (Ed25519). Point the messaging profile's webhook at
-                                          https://<api host>/api/webhooks/telnyx so STOP replies turn text reminders off.
+                                          https://<api host>/api/webhooks/telnyx so STOP replies turn text reminders off
+                                          and replies 1 / 2 / 3 to "Did you make it to court?" are recorded.
                                           Unset → the webhook refuses every request (503).
 TRUST_PROXY=<hops|CIDRs>                 Express "trust proxy" (default 1). Decides which X-Forwarded-For entry is the
                                          client IP for rate limits / guest report keys — see RUNBOOK "Client IP".
@@ -155,7 +156,8 @@ CORS_ORIGIN / EXTRA_ORIGINS              extra comma-separated browser origins
                                           (justicegavel.app, www.justicegavel.app and the local
                                           Expo/web dev-server origins are always allowed)
 FRONTEND_URL                             additional allowed origin, fallback base for links
-APP_URL=https://justicegavel.app         base URL used in password-reset links
+APP_URL=https://justicegavel.app         base URL used in password-reset links, signing links and the
+                                          missed-court page linked from the morning-after text (/missed-court)
 BASE_URL=https://api.justicegavel.app    this API's public URL (SAML ACS + OAuth redirect URIs)
 APP_SSO_REDIRECT / APP_OAUTH_REDIRECT    where users land after SAML / provider OAuth
 ADMIN_KEY=<openssl rand -hex 32>         X-Admin-Key header: /api/bot/* (key only) and /api/admin/*
@@ -194,8 +196,9 @@ LIVE_REFRESH=true                        enable the nightly scheduler (provider 
                                           Does NOT affect reminder delivery (below).
 REMINDERS_ENABLED=true                   court-date / user reminder delivery: every API process
                                           drains due scheduled_pushes each minute (push → email
-                                          fallback) whatever LIVE_REFRESH says. Set false to turn
-                                          it off in a process. Default true.
+                                          fallback) whatever LIVE_REFRESH says, and runs the Bond Desk
+                                          court-text job every 5 minutes ('bd-court-reminders'). Set
+                                          false to turn both off in a process. Default true.
 REFRESH_CRON=0 3 * * *                   nightly refresh schedule   (REFRESH_TZ=America/Chicago)
 HEALTH_SCAN_CRON=0 2 * * *               nightly health-scan schedule (SCAN_QUIET=true to hush)
 ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients

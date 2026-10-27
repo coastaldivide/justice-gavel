@@ -9,6 +9,8 @@
  *       goes on sms_opt_outs (no more Bond Desk texts sent for bail agents, migration 32)
  *   message.received with START / UNSTOP → the number leaves sms_opt_outs; app reminders stay
  *     off until the person turns them on in the app, which records fresh consent (migration 31).
+ *   message.received with 1 / 2 / 3 from a number asked "Did you make it to court today?" in the
+ *     last 48 hours → that hearing is marked attended / rescheduled / missed (services/courtReplies.js)
  *   message.finalized → the text's final delivery status into sms_delivery (migration 33):
  *     Bond Desk shows it per text; monitoring/smsHealth.js alerts when many texts fail.
  * Other events are acknowledged and ignored.
@@ -23,6 +25,7 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getDb } from '../../db/index.js';
 import { toE164 } from '../../services/sms.js';
+import { handleCourtReplyText } from '../../services/courtReplies.js';
 import logger from '../../utils/logger.js';
 
 const router = Router();
@@ -75,6 +78,12 @@ router.post('/', async (req, res) => {
         // need the person to turn them on in the app (fresh consent, migration 31).
         const db = await getDb();
         await db.run('DELETE FROM sms_opt_outs WHERE phone = ?', [from]);
+      }
+      if (from && !STOP_WORDS.has(word) && !START_WORDS.has(word)) {
+        // "Did you make it to court?" answered 1 / 2 / 3 (services/courtReplies.js). Anything
+        // else, or a number not asked in the last 48 hours, changes nothing.
+        const r = await handleCourtReplyText({ from, text: p.text });
+        if (r.handled) logger.info({ kind: r.kind, status: r.status, applied: r.applied }, '[telnyx] court answer received');
       }
     }
     if (type === 'message.finalized' && p.id) {

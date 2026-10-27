@@ -4,7 +4,7 @@
  * agents on a bail-agent plan (or admins).
  *
  *   GET /access   (signed in; never 403) whether the caller can use Bond Desk and why not
- *   everything else: bail agent with a plan → bonds.js, paperwork.js, reports.js
+ *   everything else: bail agent with a plan → bonds.js, paperwork.js, reports.js, courtDates.js
  */
 import { Router } from 'express';
 import { authRequired } from '../../middleware/auth.js';
@@ -18,6 +18,7 @@ import { getAttachmentStorage } from '../../services/attachmentStorage.js';
 import bonds from './bonds.js';
 import paperwork from './paperwork.js';
 import reports from './reports.js';
+import courtDates from './courtDates.js';
 import { resolveLang, msg } from '../../i18n/index.js';
 
 const router = Router();
@@ -36,5 +37,6 @@ router.use(requireBondDesk);
 router.use(bonds);
 router.use(paperwork);
 router.use(reports);
+router.use(courtDates);
 
 export default router;

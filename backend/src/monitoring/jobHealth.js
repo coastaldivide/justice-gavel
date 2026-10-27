@@ -26,6 +26,7 @@ export const EXPECTED = Object.freeze({
   'bd-text-billing': { everyMs: 24 * H, when: () => true },
   'push-receipts': { everyMs: 0.5 * H, when: () => remindersOn() },
   'consultation-reminders': { everyMs: 1 * H, when: () => remindersOn() },
+  'bd-court-reminders': { everyMs: H / 12, when: () => remindersOn() },
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
 });

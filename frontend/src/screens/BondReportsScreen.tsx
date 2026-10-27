@@ -2,7 +2,8 @@
  * BondReportsScreen — Bond Desk reports for the agency, its sureties and the
  * Department of Insurance: liability by surety, executed powers per surety
  * (date range), receivables, the receipts journal (date range) and collateral
- * held. Each is shown on screen and can be exported as CSV (?format=csv).
+ * held, and court appearance ("Did you make it to court?" counts per county and month for the
+ * agent's own bonds). Each is shown on screen and can be exported as CSV (?format=csv).
  *
  * The numbers are the server's sums of the agent's own entries — this screen
  * does not compute any money; it only formats cents and dates for display.
@@ -19,9 +20,9 @@ import { Btn, Card, Chips, Field, Line, Notice, Row } from '../components/bondDe
 import { AccessGate } from './BondDeskScreen';
 import { type Access, fmtDay, isIsoDate, money, tOr, todayIso } from '../services/bondDesk';
 
-export const REPORTS = ['liability', 'surety', 'receivables', 'receipts', 'collateral'] as const;
+export const REPORTS = ['liability', 'surety', 'receivables', 'receipts', 'collateral', 'appearance'] as const;
 type Report = typeof REPORTS[number];
-const RANGED: Report[] = ['surety', 'receipts'];
+const RANGED: Report[] = ['surety', 'receipts', 'appearance'];
 
 /** Display text for one report cell: cents as money, *_on / *_at as dates. */
 export function cell(key: string, v: unknown): string {

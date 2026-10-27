@@ -13,6 +13,13 @@
  *     1 day before    18:00   "Court date TOMORROW"
  *     the day itself  06:30   "Court date TODAY"
  *
+ *   The owner also gets "Did you make it to court?" at 15:00 on the court day
+ *   ('court_checkin') and, unless the hearing is marked attended / rescheduled /
+ *   cancelled by then, "If you missed court, act today" at 09:00 the next day
+ *   ('court_missed_followup'; sent at once when marked missed). Both go by push and,
+ *   for people who opted in to texts, by text too (services/reminderDispatcher.js);
+ *   replies 1 / 2 / 3 are handled by services/courtReplies.js.
+ *
  *   The text is written in the recipient's saved language (users.preferred_language,
  *   en / es / pt / vi — i18n/messages); the English titles are shown above.
  *   Times are wall-clock times in the USER'S time zone (users.timezone, sent
@@ -157,7 +164,8 @@ export async function cancelCourtReminders(db, userId, caseId, reason = 'case_ch
   await db.run(
     `UPDATE scheduled_pushes SET status = 'cancelled', error = ?
       WHERE case_id = ? AND status = 'pending'
-        AND ((notification_type = 'court_reminder' AND user_id = ?) OR notification_type = 'follower_court_reminder')`,
+        AND ((notification_type IN ('court_reminder', 'court_checkin', 'court_missed_followup') AND user_id = ?)
+             OR notification_type = 'follower_court_reminder')`,
     [reason, caseId, userId]
   );
 }
@@ -167,7 +175,7 @@ export async function cancelCourtDateReminders(db, courtDateId, reason = 'court_
   await db.run(
     `UPDATE scheduled_pushes SET status = 'cancelled', error = ?
       WHERE court_date_id = ? AND status = 'pending'
-        AND notification_type IN ('court_reminder', 'follower_court_reminder')`,
+        AND notification_type IN ('court_reminder', 'follower_court_reminder', 'court_checkin', 'court_missed_followup')`,
     [reason, courtDateId]
   );
 }
@@ -181,21 +189,51 @@ export async function cancelFollowerReminders(db, followerUserId, caseId, reason
   );
 }
 
-/** The steps of the plan still ahead of `now` for a hearing on `date` in `tz`. */
-function plannedSteps(date, tz, now, lang = 'en') {
+/**
+ * The steps of COURT_REMINDER_PLAN still ahead of `now` for a hearing on `date` ('YYYY-MM-DD')
+ * at wall-clock times in `tz`: [{ days, hh, mm, at, immediate? }]. A date added too late for
+ * every step (e.g. the evening before) gets one step right away instead of none; a past date
+ * gets none. Shared with Bond Desk court reminders (services/bondDesk/courtDates.js).
+ */
+export function planSteps(date, tz, now = new Date()) {
   const today = todayInZone(tz, now);
   const daysLeft = daysBetween(today, date);
   if (daysLeft === null || daysLeft < 0) return [];
   const planned = [];
   for (const step of COURT_REMINDER_PLAN) {
     const at = zonedDateTimeToUtc(addDays(date, -step.days), step.hh, step.mm, tz);
-    if (at && at.getTime() > now.getTime()) planned.push({ ...step, title: titleForDaysLeft(step.days, lang, { planned: true }), at });
+    if (at && at.getTime() > now.getTime()) planned.push({ days: step.days, hh: step.hh, mm: step.mm, at });
   }
-  if (!planned.length) {
-    // Date added late (e.g. the evening before): remind right away instead of never.
-    planned.push({ days: daysLeft, at: now, title: titleForDaysLeft(daysLeft, lang), immediate: true });
-  }
+  if (!planned.length) planned.push({ days: daysLeft, at: now, immediate: true });
   return planned;
+}
+
+/**
+ * Version of the text opt-in wording (frontend i18n cdd_sms_consent; recorded in
+ * users.sms_consent_text_v, migration 31). Bump when the wording changes.
+ * 2026-10-27: "up to 6 per court date: reminders, a 'Did you make it to court?' question and,
+ * if needed, a follow-up the next morning" (was "up to 4").
+ */
+export const SMS_CONSENT_TEXT_VERSION = 'cdd_sms_consent@2026-10-27';
+/** The question and the morning-after message go by text only to people who agreed to this wording or later. */
+export const ATTENDANCE_TEXTS_CONSENT_SINCE = 'cdd_sms_consent@2026-10-27';
+
+/** "Did you make it to court?" — 15:00 on the court day, local. */
+export const ASK_AT = Object.freeze({ hh: 15, mm: 0 });
+/** The morning-after message — 09:00 the day after the court day, local. */
+export const FOLLOWUP_AT = Object.freeze({ hh: 9, mm: 0 });
+/** Link to the missed-court guidance page (frontend MissedCourtScreen), in `lang`. */
+export function missedCourtLink(lang = 'en') {
+  const base = String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
+  const l = ['es', 'pt', 'vi'].includes(lang) ? `/${lang}` : '';
+  return `${base}/missed-court${l}`;
+}
+
+/** The steps of the plan still ahead of `now` for a hearing on `date` in `tz`. */
+function plannedSteps(date, tz, now, lang = 'en') {
+  return planSteps(date, tz, now).map((p) => ({
+    ...p, title: p.immediate ? titleForDaysLeft(p.days, lang) : titleForDaysLeft(p.days, lang, { planned: true }),
+  }));
 }
 
 // A re-plan cancels the hearing's *pending* rows first. A row the dispatcher is
@@ -223,7 +261,7 @@ function reminderFollowers(db, caseId) {
       LIMIT 20`, [caseId]).catch(() => []);
 }
 
-async function ownerFirstName(db, userId) {
+export async function ownerFirstName(db, userId) {
   const u = await db.get('SELECT display_name, name FROM users WHERE id = ?', [userId]).catch(() => null);
   const n = String(u?.display_name || u?.name || '').trim();
   return n ? n.split(/\s+/)[0].slice(0, 40) : null;
@@ -276,6 +314,60 @@ async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDat
   return steps.length;
 }
 
+const attendanceKey = (caseId, courtDateId, date, step) => `court:${caseId}:${courtDateId}:${date}:${step}`;
+
+/**
+ * The owner's "Did you make it to court?" (15:00 on the day, notification_type 'court_checkin')
+ * and the morning-after message (09:00 the next day, 'court_missed_followup'), both local.
+ * The dispatcher sends them by push and, when the person opted in to texts, by text too; it
+ * re-checks the hearing at send time (the morning-after one never goes out once the hearing is
+ * marked attended / rescheduled / cancelled).
+ */
+async function planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now }) {
+  const label = String(caseTitle || msg(lang, 'reminder.default_case')).slice(0, 120);
+  const base = { case_id: caseId, court_date_id: courtDateId, court_date: date, time_zone: tz, lang };
+  const ask = zonedDateTimeToUtc(date, ASK_AT.hh, ASK_AT.mm, tz);
+  if (ask && ask.getTime() > now.getTime()) {
+    await insertReminder(db, {
+      userId, type: 'court_checkin', title: msg(lang, 'reminder.ask.title'), body: msg(lang, 'reminder.ask.body', { case: label }),
+      data: { type: 'court_checkin', screen: 'CourtDateDetail', ask: 1, ...base },
+      at: ask, caseId, courtDateId, dedupe: attendanceKey(caseId, courtDateId, date, 'ask'),
+    });
+  }
+  const fu = zonedDateTimeToUtc(addDays(date, 1), FOLLOWUP_AT.hh, FOLLOWUP_AT.mm, tz);
+  if (fu && fu.getTime() > now.getTime()) await insertFollowup(db, { userId, caseId, courtDateId, date, label, lang, tz, at: fu });
+}
+
+function insertFollowup(db, { userId, caseId, courtDateId, date, label, lang, tz, at }) {
+  return insertReminder(db, {
+    userId, type: 'court_missed_followup', title: msg(lang, 'reminder.missed.title'),
+    body: msg(lang, 'reminder.missed.body', { case: label, day: formatDay(date, lang) }),
+    data: { type: 'court_missed_followup', screen: 'CourtDates', guidance: 'missed', case_id: caseId, court_date_id: courtDateId, court_date: date, time_zone: tz, lang },
+    at, caseId, courtDateId, dedupe: attendanceKey(caseId, courtDateId, date, 'missed'),
+  });
+}
+
+/**
+ * The hearing was marked missed (in the app or by a text reply): the morning-after message
+ * goes out now instead of tomorrow morning — once (never when it already went out), and only
+ * for a hearing at most 2 days ago. Returns true when queued.
+ */
+export async function queueMissedFollowupNow(db, { userId, caseId, courtDateId, courtDate, caseTitle, state = null, now = new Date() }) {
+  const date = dateOnly(courtDate);
+  if (!date) return false;
+  const { tz } = await resolveReminderTimeZone(db, userId, state);
+  const today = todayInZone(tz, now);
+  const ago = daysBetween(date, today);
+  if (ago === null || ago < 0 || ago > 2) return false;
+  const key = attendanceKey(caseId, courtDateId, date, 'missed');
+  const done = await db.get(`SELECT id FROM scheduled_pushes WHERE dedupe_key = ? AND status IN ('sent', 'sending') LIMIT 1`, [key]);
+  if (done) return false;
+  await db.run(`UPDATE scheduled_pushes SET status = 'cancelled', error = 'sent_now' WHERE dedupe_key = ? AND status = 'pending'`, [key]);
+  const lang = await userLang(db, userId);
+  await insertFollowup(db, { userId, caseId, courtDateId, date, label: String(caseTitle || msg(lang, 'reminder.default_case')).slice(0, 120), lang, tz, at: now });
+  return true;
+}
+
 /**
  * (Re)write the reminder set for one hearing (or, without courtDateId, the
  * legacy per-case set). Idempotent: pending reminders of the hearing are
@@ -308,6 +400,7 @@ export async function scheduleCourtReminders(db, {
         : `court:${caseId}:${date}:${p.days}${p.immediate ? ':now' : ''}`,
     });
   }
+  if (courtDateId) await planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now });
   if (courtDateId && planned.length) {
     for (const f of await reminderFollowers(db, caseId)) {
       await scheduleFollowerReminders(db, {
@@ -340,7 +433,7 @@ export function timeOnly(v) {
 }
 
 /** Courthouse name for reminder text ("Davidson County Courthouse, 1 Public Sq"), or the free-text location. */
-async function placeFor(db, cd) {
+export async function placeFor(db, cd) {
   if (cd.courthouse_id) {
     const ch = await db.get('SELECT name, address FROM courthouses WHERE id = ?', [cd.courthouse_id]).catch(() => null);
     if (ch) return [ch.name, ch.address].filter(Boolean).join(', ');
@@ -352,7 +445,7 @@ async function placeFor(db, cd) {
  * The place a FOLLOWER's reminder may name: the courthouse from the public
  * directory only — never the owner's free-text location (share rules).
  */
-async function courthousePlaceFor(db, cd) {
+export async function courthousePlaceFor(db, cd) {
   if (!cd.courthouse_id) return null;
   const ch = await db.get('SELECT name, address FROM courthouses WHERE id = ?', [cd.courthouse_id]).catch(() => null);
   return ch ? [ch.name, ch.address].filter(Boolean).join(', ') || null : null;
@@ -371,6 +464,11 @@ async function planForCourtDate(db, courtDateId, now) {
   if (!cd) return { time_zone: DEFAULT_TIME_ZONE, reminders: [] };
   if (cd.deleted_at || cd.case_deleted || cd.status !== 'scheduled' || CLOSED_CASE_STATUSES.has(cd.case_status)) {
     await cancelCourtDateReminders(db, courtDateId, cd.deleted_at ? 'court_date_deleted' : 'court_date_not_scheduled');
+    // marked missed: the morning-after message goes out now (once)
+    if (cd.status === 'missed' && !cd.deleted_at && !cd.case_deleted && !CLOSED_CASE_STATUSES.has(cd.case_status)) {
+      await queueMissedFollowupNow(db, { userId: Number(cd.user_id), caseId: Number(cd.case_id), courtDateId: Number(cd.id),
+        courtDate: cd.court_date, caseTitle: cd.title, state: cd.state, now });
+    }
     const { tz } = await resolveReminderTimeZone(db, Number(cd.user_id), cd.state);
     return { time_zone: tz, reminders: [] };
   }

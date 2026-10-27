@@ -85,6 +85,38 @@ export interface Dashboard {
   texts_this_month: { count: number; cents: number };
 }
 
+// ── Court dates and the texts about them (routes/bondDesk/courtDates.js) ─────
+export type CourtStatus = 'scheduled' | 'attended' | 'missed' | 'rescheduled' | 'cancelled';
+export const COURT_STATUSES: CourtStatus[] = ['scheduled', 'attended', 'missed', 'rescheduled', 'cancelled'];
+export interface BdCourtDate { id: number; court_date: string; court_time: string | null; court_name: string | null; room: string | null;
+  status: CourtStatus; status_source: 'agent' | 'reply' | null; status_at: string | null; asked_at: string | null; is_past: boolean }
+export interface TextRecipient { to: 'defendant' | 'indemnitor'; indemnitor_id: number | null; name: string; phone: string | null;
+  phone_masked: string | null; consent: boolean; consent_at: string | null; opted_out: boolean }
+export interface CourtListing { court_dates: BdCourtDate[]; reminders_on: boolean; text_lang: 'en' | 'es' | 'pt' | 'vi'; time_zone: string;
+  today: string; texts_live: boolean; bond_status: BondStatus; recipients: TextRecipient[] }
+export type ReminderStep = 'd7' | 'd3' | 'd1' | 'd0' | 'now' | 'ask' | 'missed';
+export interface BdReminder { id: number; court_date_id: number; court_day: string; step: ReminderStep; signer_type: 'defendant' | 'indemnitor';
+  name: string | null; to_masked: string; send_at: string; status: 'pending' | 'sending' | 'sent' | 'skipped' | 'cancelled' | 'failed';
+  reason: string | null; sent_at: string | null; delivery_status: string | null; error_code: string | null }
+
+/** A hearing draft → the request body, or the i18n key of the first problem. */
+export function courtDateBody(d: { date: string; time: string; court: string; room: string }): { body?: Record<string, string | null>; error?: string } {
+  const date = d.date.trim(); const time = d.time.trim();
+  if (!isIsoDate(date)) return { error: 'bdk_cd_err_date' };
+  if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return { error: 'bdk_cd_err_time' };
+  return { body: { court_date: date, court_time: time || null, court_name: d.court.trim() || null, room: d.room.trim() || null } };
+}
+
+/** Tone for a text's status on the timeline (delivery status wins once the carrier reports). */
+export function reminderTone(r: Pick<BdReminder, 'status' | 'delivery_status'>): 'ok' | 'warn' | 'danger' | 'muted' {
+  if (r.delivery_status === 'delivered') return 'ok';
+  if (r.delivery_status && r.delivery_status !== 'delivered') return 'danger';
+  if (r.status === 'failed') return 'danger';
+  if (r.status === 'skipped') return 'warn';
+  if (r.status === 'sent') return 'ok';
+  return 'muted';
+}
+
 /** Same order as the server's data_keys (docs/BOND_DESK.md). */
 export const DATA_KEYS = [
   'bond.defendant_name', 'bond.defendant_dob', 'bond.defendant_address', 'bond.defendant_phone', 'bond.defendant_email',

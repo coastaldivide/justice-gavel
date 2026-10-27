@@ -185,9 +185,63 @@ The signature certificate page lists: document name, SHA-256 of the copy reviewe
 copy, signer name typed, role, how the link reached the signer (only channels that actually delivered it, masked; otherwise "given directly by the agent"), timestamps (UTC) of sent / opened / each
 document viewed / signed, IP address and browser, and the consent wording agreed to.
 
+## Court dates and reminder texts
+
+A bond has any number of hearings (`bd_court_dates`, migration 35). `bond.court_date` is kept as the
+next scheduled hearing (or, with none ahead, the latest one not cancelled), so the bond list, forms
+(`bond.court_date`) and reports keep working. Setting the court date on the bond form moves the hearing
+it showed (or adds one); the hearings themselves are managed here:
+
+- `GET /bond-desk/bonds/:id/court-dates` →
+  `{ court_dates: [{ id, court_date, court_time, court_name, room, status, status_source, status_at, asked_at, is_past }],
+     reminders_on, text_lang, time_zone, today, texts_live, bond_status,
+     recipients: [{ to: 'defendant'|'indemnitor', indemnitor_id, name, phone, phone_masked, consent, consent_at, opted_out }] }`
+- `POST /bond-desk/bonds/:id/court-dates` `{ court_date, court_time?: 'HH:MM', court_name?, room? }` → 201 (409 `duplicate`, at most 50)
+- `PATCH /bond-desk/bonds/:id/court-dates/:cdId` — any of those fields and/or `status`:
+  `scheduled | attended | missed | rescheduled | cancelled` (set by the agent: `status_source: 'agent'`)
+- `DELETE /bond-desk/bonds/:id/court-dates/:cdId` — removed; its texts not yet sent are cancelled
+- `GET /bond-desk/bonds/:id/reminders` → `{ reminders: [{ id, court_date_id, court_day, step, signer_type, name, to_masked,
+  send_at, status: pending|sending|sent|skipped|cancelled|failed, reason, sent_at, delivery_status, error_code }] }`
+  (`delivery_status` from Telnyx: delivered / delivery_failed / sending_failed / delivery_unconfirmed; null until reported)
+- `PUT /bond-desk/bonds/:id/reminders` `{ on: bool, lang?: en|es|pt|vi }` — the per-bond switch (on by default) and text language
+- `PUT /bond-desk/bonds/:id/text-consent` `{ to: 'defendant'|'indemnitor', indemnitor_id?, consent_confirmed: bool }` — the agent's
+  "the person gave me this phone number for texts about this bond" for that person's **current** number. A changed number
+  needs a new confirmation; until then nothing is texted to it.
+
+**Who and when.** Texts go only for an **active** bond with the switch on, to the defendant and every indemnitor whose
+number is confirmed and has not replied STOP (one text per number). Times are wall-clock times in the bond's zone: its
+county (split states such as east Tennessee, the Florida panhandle, El Paso), else its state, else the agent's zone:
+
+| step | when | to | text |
+|---|---|---|---|
+| d7, d3 | 7 and 3 days before, 09:00 | defendant + indemnitors | court reminder |
+| d1 | evening before, 18:00 | defendant + indemnitors | court reminder |
+| d0 | morning of, 06:30 | defendant + indemnitors | court reminder |
+| now | at once, when a hearing is added too late for all of the above | defendant + indemnitors | court reminder |
+| ask | 15:00 on the court day | defendant | "Did you make it to court today? Reply 1 = I went, 2 = it was rescheduled, 3 = I missed it" |
+| missed | 09:00 the next day, unless marked attended / rescheduled / cancelled by then; at once when marked missed | defendant | "If you missed court, act today…" + link to `/missed-court` |
+
+The morning after (09:00) a hearing still not marked attended or rescheduled, the agent gets a push and an e-mail.
+A reply **1 / 2 / 3** from the defendant within 48 hours of the question sets the hearing to attended / rescheduled / missed
+(`status_source: 'reply'`; a status the agent set is never overwritten), is confirmed by text, and "missed" sends the
+"act today" text at once and alerts the agent ("rescheduled" alerts the agent too). Any other reply changes nothing.
+
+Every row in `bd_reminders` is unique per hearing + court day + number + step, so a step is never texted twice; the job
+`bd-court-reminders` (every 5 minutes, `services/bondDesk/courtDates.js`, monitored in `/api/admin/diagnostics/jobs`)
+re-checks the bond, hearing, number and confirmation before each text. Closing the bond (exonerated, surrendered,
+forfeiture paid, cancelled) or a forfeiture cancels pending texts; reinstating re-plans them.
+
+**Wording (English; es / pt / vi in `i18n/messages`).** Texts stay within 2 segments: they are sent in the GSM-7
+alphabet (Spanish, Portuguese and Vietnamese without the accents GSM-7 lacks) and long names / court names are shortened.
+Defendant: "{agency}: {first name}, court is in 7 days, Wed, Sep 30 at 10:30 AM at {court}, room {room}. If you miss it, a
+warrant can be issued and your bond can be forfeited. Expect security; bring ID and court papers. How will you get there?
+Make a plan now. Reply STOP to opt out." Indemnitor: "{agency}: You co-signed {name}'s bail bond. Court is …".
+
 ## Texts (5¢ each)
 
-Every text sent for an agent (signing links, payment reminders) is logged. `GET /bond-desk/texts?month=YYYY-MM`
+Every text sent for an agent (signing links, payment reminders, court reminders, "Did you make it?", the
+"act today" text and reply confirmations — purposes `signing_link`, `payment_reminder`, `court_reminder`, `court_ask`,
+`court_missed`, `court_reply`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
 → `{ month, count, cents, rows: [{ at, purpose, to_masked, bond_id }] }`. Once a day, unbilled texts are added
 to the agent's next bail-agent plan invoice as one line (Stripe invoice item), exactly once.
 
@@ -198,6 +252,9 @@ to the agent's next bail-agent plan invoice as one line (Stripe invoice item), e
 - `GET /bond-desk/reports/receivables` → every bond with a balance (cancelled bonds included): charged, paid, balance, overdue, next due
 - `GET /bond-desk/reports/receipts?from=&to=` → payments (voided shown, excluded from totals), `by_method: [{ method, amount_cents }]`, `total_cents`
 - `GET /bond-desk/reports/collateral` → collateral held (not returned)
+- `GET /bond-desk/reports/appearance?from=&to=` → the agent's own hearings by county (or state) and month of the hearing:
+  `{ rows: [{ region, month, asked, attended, rescheduled, missed, no_answer }], totals }` (counts only; `no_answer` = asked
+  and still scheduled). Admins see the same for every agent and for app users: `GET /api/admin/metrics/appearance?from=YYYY-MM&to=YYYY-MM`.
 
 ## Dashboard
 
