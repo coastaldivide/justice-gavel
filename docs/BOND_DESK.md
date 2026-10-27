@@ -242,6 +242,8 @@ Make a plan now. Reply STOP to opt out." Indemnitor: "{agency}: You co-signed {n
 Every text sent for an agent (signing links, payment reminders, court reminders, "Did you make it?", the
 "act today" text and reply confirmations — purposes `signing_link`, `payment_reminder`, `court_reminder`, `court_ask`,
 `court_missed`, `court_reply`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
+Every text sent for an agent (signing links, payment reminders, and check-in texts — link, reminder,
+missed-check-in text to the defendant, missed-check-in alert to the agent; docs/CHECKINS.md) is logged. `GET /bond-desk/texts?month=YYYY-MM`
 → `{ month, count, cents, rows: [{ at, purpose, to_masked, bond_id }] }`. Once a day, unbilled texts are added
 to the agent's next bail-agent plan invoice as one line (Stripe invoice item), exactly once.
 
@@ -264,5 +266,6 @@ to the agent's next bail-agent plan invoice as one line (Stripe invoice item), e
   overdue: [{ bond_id, defendant_name, due_on, amount_due_cents }],
   forfeitures: [{ bond_id, defendant_name, deadline_on, days_left }],
   awaiting_signature: [{ packet_id, bond_id, defendant_name, pending }],
-  texts_this_month: { count, cents } }
+  texts_this_month: { count, cents },
+  missed_checkins: [{ bond_id, enrollment_id, defendant_name, day }] }   // last 7 days, bonds linked to a check-in enrollment
 ```

@@ -3,6 +3,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon, ICONS, type IconName } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
+import BailAgentCard from '../components/BailAgentCard';
 import React, { useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
@@ -110,6 +111,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, []);
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [bailCardKey, setBailCardKey] = useState(0);
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [displayName, setDisplayName] = useState('');
@@ -127,7 +129,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
       getCoreProgress().then(p => { if (mountedRef.current) setCoreStep(p.done.rights || p.done.help || p.current > 1 ? p.current : 1); }).catch(() => {});
     };
     refresh();
-    const unsub = (navigation as any)?.addListener?.('focus', refresh);
+    const unsub = (navigation as any)?.addListener?.('focus', () => { refresh(); setBailCardKey(k => k + 1); });
     return () => { if (typeof unsub === 'function') unsub(); };
   }, [navigation]);
   useEffect(() => {
@@ -277,7 +279,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); loadAll(); }}
+            onRefresh={() => { setRefreshing(true); setBailCardKey(k => k + 1); loadAll(); }}
             tintColor={colors.gold}
             colors={[colors.gold]}
           />
@@ -303,6 +305,10 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             {coreStep > 1 ? `${t('home_core_continue')} — ${t('ja_step_of', { n: coreStep })} →` : `${t('home_core_start')} →`}
           </Text>
         </TouchableOpacity>
+
+        {/* "Your bail agent" — only when a bail agent's check-in enrollment is linked to this account */}
+        <BailAgentCard refreshKey={bailCardKey}
+          onCheckIn={(enrollmentId) => (navigation as any).navigate('MoreTab', { screen: 'CheckIn', params: { enrollmentId } })} />
 
         {/* Emergency banner -- prominent, always first */}
         <TouchableOpacity

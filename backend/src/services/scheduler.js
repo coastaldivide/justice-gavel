@@ -63,6 +63,8 @@ let consultReminderTask = null;
 let receiptsTask = null;
 let tokenCleanupTask = null;
 let bdCourtTask = null;
+let checkinTextsTask = null;
+let checkinMissedTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
 // runRefresh is re-exported for the admin console and existing callers.
@@ -373,6 +375,13 @@ export function startScheduler() {
         const { runBondCourtReminders } = await import('./bondDesk/courtDates.js');
         return runBondCourtReminders(await getDb());
       }));
+    // Check-ins by text link: reminder texts + the gentle missed-check-in text (quiet hours 09–21
+    // in the defendant's zone) and the hourly missed-check-in alert to the agent
+    // (services/checkinTexts.js; one instance per fire via job_runs).
+    checkinTextsTask = scheduleGuarded('*/15 * * * *', 'checkin-texts',
+      (ctx) => runScheduled('checkin-texts', ctx, async () => (await import('./checkinTexts.js')).runCheckinTexts(await getDb())));
+    checkinMissedTask = scheduleGuarded('4 * * * *', 'checkin-missed',
+      (ctx) => runScheduled('checkin-missed', ctx, async () => (await import('./checkinTexts.js')).runMissedCheckins(await getDb())));
   }
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
@@ -412,8 +421,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = null;
   stopHealthScanScheduler();
 }
 

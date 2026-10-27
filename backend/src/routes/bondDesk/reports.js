@@ -59,6 +59,13 @@ router.get('/dashboard', handle(async (req, res, db) => {
             HAVING COUNT(s.id) FILTER (WHERE s.status NOT IN ('signed','declined')) > 0 ORDER BY p.id DESC LIMIT 50`, [me]),
     db.get(`SELECT COUNT(*)::int AS n, COALESCE(SUM(cents), 0)::bigint AS c FROM bd_texts WHERE agent_id = ? AND sent_at >= date_trunc('month', NOW())`, [me]),
   ]);
+  // missed check-ins (routes/checkins.js, job checkin-missed) of bonds linked to a check-in enrollment
+  const missed = await db.all(
+    `SELECT m.local_day, m.enrollment_id, b.id AS bond_id, b.defendant_name
+       FROM checkin_missed m
+       JOIN checkin_enrollments e ON e.id = m.enrollment_id AND e.bondsman_id = ?
+       JOIN bd_bonds b ON b.checkin_enrollment_id = m.enrollment_id AND b.agent_id = ?
+      WHERE m.local_day >= (?::date - 7) ORDER BY m.local_day DESC, b.id LIMIT 50`, [me, me, today]);
   const m = await moneyFor(db, bonds.map((b) => Number(b.id)), today);
   let receivable = 0; let overdueTotal = 0; const overdue = [];
   for (const b of bonds) {
@@ -79,6 +86,7 @@ router.get('/dashboard', handle(async (req, res, db) => {
       days_left: f.forfeiture_deadline_on ? daysBetween(today, f.forfeiture_deadline_on) : null })),
     awaiting_signature: awaiting.map((a) => ({ packet_id: Number(a.id), bond_id: Number(a.bond_id), defendant_name: a.defendant_name, pending: a.pending })),
     texts_this_month: { count: texts.n, cents: Number(texts.c) },
+    missed_checkins: missed.map((m) => ({ bond_id: Number(m.bond_id), enrollment_id: Number(m.enrollment_id), defendant_name: m.defendant_name, day: m.local_day })),
     today,
   });
 }));

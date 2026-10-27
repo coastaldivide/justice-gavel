@@ -133,7 +133,7 @@ The spec's `tags` mirror the mount points. The main groups:
 | **Legal reference** | `/api/legaldata`, `/api/courthouses`, `/api/bail`, `/api/expungement`, `/api/immigration`, `/api/lessons`, `/api/resources`, `/api/hague-contacts` | statutes, bail schedules, courthouses, KYR lessons, expungement rules |
 | **Community** | `/api/forum`, `/api/golden-gavel`, `/api/advocacy`, `/api/impact`, `/api/legal-aid` | forum, recognitions, legal-aid directory |
 | **Bar prep** | `/api/bar-prep`, `/api/admin/bar-prep` | question bank, sessions, spaced repetition, admin import |
-| **Checkins & pretrial** | `/api/checkins`, `/api/pretrial`, `/api/bondsman` | pretrial check-ins, bondsman CRM |
+| **Checkins & pretrial** | `/api/checkins`, `/api/me`, `/api/pretrial`, `/api/bondsman` | pretrial check-ins in the app or by text link (public `/api/checkins/link/:token`), missed-check-in and location alerts, the "Your bail agent" card (`/api/me/bail-agent`), bondsman CRM — docs/CHECKINS.md |
 | **Push & notifications** | `/api/push`, `/api/webpush` | Expo push + web push (VAPID) |
 | **Admin & ops** | `/api/admin`, `/api/bot`, `/api/audit`, `/health`, `/metrics` | staff console (bearer with admin role + admin key) incl. the data-refresh review queue — `GET /api/admin/proposals`, `POST /api/admin/proposals/{id}/apply|reject`, bulk `POST /api/admin/proposals/apply|reject`, `POST /api/admin/refresh`, `GET /api/admin/refresh/runs` (see RUNBOOK.md "Data refresh"); bot console (admin key), health probe (DB round-trip, cached `HEALTH_CACHE_MS`; reports `version`), JSON/Prometheus metrics |
 

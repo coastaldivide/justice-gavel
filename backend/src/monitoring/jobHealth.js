@@ -27,6 +27,8 @@ export const EXPECTED = Object.freeze({
   'push-receipts': { everyMs: 0.5 * H, when: () => remindersOn() },
   'consultation-reminders': { everyMs: 1 * H, when: () => remindersOn() },
   'bd-court-reminders': { everyMs: H / 12, when: () => remindersOn() },
+  'checkin-texts': { everyMs: 0.25 * H, when: () => remindersOn() },
+  'checkin-missed': { everyMs: 1 * H, when: () => remindersOn() },
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
 });

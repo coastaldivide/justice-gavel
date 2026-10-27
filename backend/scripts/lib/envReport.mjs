@@ -59,5 +59,9 @@ export function envReport(env, { launch = false } = {}) {
   if (has(env, 'STRIPE_WEBHOOK_SECRET') && !/^whsec_/.test(env.STRIPE_WEBHOOK_SECRET)) errors.push('STRIPE_WEBHOOK_SECRET must start with whsec_');
   if (has(env, 'APP_URL') && !/^https:\/\//.test(env.APP_URL) && appEnv !== 'development') errors.push('APP_URL must be https:// (signing links and payment returns use it)');
   if (!has(env, 'APP_URL') && appEnv !== 'development') warnings.push('APP_URL not set — signing links default to https://justicegavel.app');
+  // ⚖ settings that wait for counsel: on in production only by an explicit choice
+  if (appEnv === 'production' && /^(true|1)$/i.test(String(env.CHECKIN_LOCATION_ALERTS_ENABLED || '').trim())) {
+    warnings.push('CHECKIN_LOCATION_ALERTS_ENABLED is on — check-in location alerts need counsel question 2.4 answered first');
+  }
   return { appEnv, errors, warnings, features };
 }

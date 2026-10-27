@@ -58,6 +58,10 @@ const ALLOWED = {
   'bondDesk/bonds.js|SELECT id, status, created_at, completed': "one packet's / bond's own children (≤ 6 signers, ≤ 10 forms each) — the agent's record must be complete",
   'bondDesk/bonds.js|SELECT packet_id, id, name, role, status': "one packet's / bond's own children (≤ 6 signers, ≤ 10 forms each) — the agent's record must be complete",
   'bondDesk/bonds.js|SELECT amount_cents, voided_at FROM bd_c': "Bond Desk ledger: one bond's (or the agent's) charges / payments / installments — balances and totals must add every row",
+  // "Your bail agent" card (B6): the balance of the one bond attached to the person's enrollment must add every row
+  'me.js|SELECT amount_cents, voided_at FROM bd_charges': "Bond Desk ledger of one bond (Your bail agent card) — the balance must add every row",
+  'me.js|SELECT amount_cents, voided_at FROM bd_payments': "Bond Desk ledger of one bond (Your bail agent card) — the balance must add every row",
+  'me.js|SELECT id, due_on, amount_cents FROM bd_installm': "Bond Desk ledger of one bond (Your bail agent card) — the next payment needs every installment",
   'bondDesk/bonds.js|SELECT amount_cents, voided_at FROM bd_p': "Bond Desk ledger: one bond's (or the agent's) charges / payments / installments — balances and totals must add every row",
   'bondDesk/bonds.js|SELECT DISTINCT surety_name FROM bd_powe': "distinct surety names in the agent's own power inventory (filter list)",
   'bondDesk/paperwork.js|SELECT ${FORM_COLS} FROM bd_forms WHERE ': "the agent's form library (capped at 100 active forms on upload)",

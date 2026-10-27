@@ -540,6 +540,15 @@ async function main() {
     assert(r.status === 503 && r.json?.error === 'payments_unavailable', `expected 503 payments_unavailable, got ${brief(r)}`);
   });
 
+  await check('check-ins by text link: unknown link → 404 link_invalid; "Your bail agent" card is private', async () => {
+    const bad = await call('GET', `/api/checkins/link/${'Z'.repeat(43)}`);
+    assert(bad.status === 404 && bad.json?.code === 'link_invalid', `expected 404 link_invalid, got ${brief(bad)}`);
+    const anon = await call('GET', '/api/me/bail-agent');
+    assert(anon.status === 401, `expected 401 without sign-in, got ${brief(anon)}`);
+    const mine = await call('GET', '/api/me/bail-agent', { token });
+    assert(mine.status === 200 && Array.isArray(mine.json?.agents) && mine.json.agents.length === 0, `expected an empty card list, got ${brief(mine)}`);
+  });
+
   await check('stripe webhook with bad signature → 400 (not 404)', async () => {
     const raw = JSON.stringify({ id: 'evt_smoke', type: 'invoice.payment_succeeded', data: { object: {} } });
     for (const path of ['/webhooks/stripe', '/api/webhooks/stripe', '/api/billing/webhook']) {

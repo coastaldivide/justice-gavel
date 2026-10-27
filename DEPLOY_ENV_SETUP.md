@@ -199,6 +199,16 @@ REMINDERS_ENABLED=true                   court-date / user reminder delivery: ev
                                           fallback) whatever LIVE_REFRESH says, and runs the Bond Desk
                                           court-text job every 5 minutes ('bd-court-reminders'). Set
                                           false to turn both off in a process. Default true.
+                                          fallback) whatever LIVE_REFRESH says. Set false to turn
+                                          it off in a process. Default true.
+CHECKIN_LOCATION_ALERTS_ENABLED=false    ⚖ counsel question 2.4 (location privacy). Check-in
+                                          location alerts: the agent sets a home point + radius and
+                                          is alerted when a check-in that shared its location is
+                                          outside it. Unset → OFF when NODE_ENV/APP_ENV is
+                                          production, on elsewhere (tests); true/false forces it.
+                                          Off: the home-point routes answer 503 feature_unavailable
+                                          and the app hides the feature. Leave off in production
+                                          until counsel answers 2.4.
 REFRESH_CRON=0 3 * * *                   nightly refresh schedule   (REFRESH_TZ=America/Chicago)
 HEALTH_SCAN_CRON=0 2 * * *               nightly health-scan schedule (SCAN_QUIET=true to hush)
 ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients

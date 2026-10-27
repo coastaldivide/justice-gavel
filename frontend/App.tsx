@@ -36,6 +36,7 @@ import { signOut, takePendingHome } from './src/services/session';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import SignPacketScreen from './src/screens/SignPacketScreen';
 import MissedCourtScreen from './src/screens/MissedCourtScreen';
+import CheckInLinkScreen from './src/screens/CheckInLinkScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -358,6 +359,8 @@ function AppInner() {
           <RootStack.Screen name="SignPacket" component={SignPacketScreen} />
           {/* "If you missed court, act today" — the link in the morning-after text; no account needed */}
           <RootStack.Screen name="MissedCourt" component={MissedCourtScreen} />
+          {/* A bail agent's check-in text link (c/<token>) — no app account needed */}
+          <RootStack.Screen name="CheckInLink" component={CheckInLinkScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

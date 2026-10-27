@@ -10,6 +10,9 @@
  *   daily   one check-in per local day
  *   weekly  one check-in per 7 local days (counted from the last one)
  *
+ * Channel 'app' is reminded here by push; channel 'sms' (text link, no account) is
+ * reminded by text in services/checkinTexts.js.
+ *
  * Reminders: one pending `scheduled_pushes` row per enrollment
  * (notification_type 'checkin_reminder'), at 10:00 local on the day the next
  * check-in is due (18:00 when it is already past 10:00 that day). The text is
@@ -23,11 +26,23 @@ import { msg, userLang } from '../i18n/index.js';
 export const CHECKIN_FREQS = Object.freeze(['daily', 'weekly']);
 export const REMINDER_TIMES = Object.freeze([{ hh: 10, mm: 0 }, { hh: 18, mm: 0 }]);
 
-/** Zone for an enrollment: the defendant's, else the bail agent's, else the default. */
+/**
+ * Zone for an enrollment: the defendant's account zone, else the zone stored on the
+ * enrollment (the agent's choice, or the defendant's browser on the text-link page —
+ * text-link defendants have no account), else the bail agent's, else the default.
+ */
 export async function enrollmentTimeZone(db, e) {
-  for (const uid of [e.user_id, e.bondsman_id]) {
-    if (!uid) continue;
-    const u = await db.get('SELECT timezone FROM users WHERE id = ?', [uid]).catch(() => null);
+  if (e.user_id) {
+    const u = await db.get('SELECT timezone FROM users WHERE id = ?', [e.user_id]).catch(() => null);
+    if (u && isValidTimeZone(u.timezone)) return u.timezone;
+  }
+  let own = e.time_zone;
+  if (own === undefined && e.id) {
+    own = (await db.get('SELECT time_zone FROM checkin_enrollments WHERE id = ?', [e.id]).catch(() => null))?.time_zone;
+  }
+  if (isValidTimeZone(own)) return own;
+  if (e.bondsman_id) {
+    const u = await db.get('SELECT timezone FROM users WHERE id = ?', [e.bondsman_id]).catch(() => null);
     if (u && isValidTimeZone(u.timezone)) return u.timezone;
   }
   return DEFAULT_TIME_ZONE;
@@ -55,7 +70,8 @@ export async function checkinState(db, e, now = new Date()) {
   const tz = await enrollmentTimeZone(db, e);
   const today = todayInZone(tz, now);
   const days = await checkinDays(db, e.id, tz);
-  const totalRow = await db.get('SELECT COUNT(*) AS n FROM checkin_records WHERE enrollment_id = ?', [e.id]);
+  // extra check-ins on a day that was already done (text link) are kept but not counted
+  const totalRow = await db.get('SELECT COUNT(*) AS n FROM checkin_records WHERE enrollment_id = ? AND counted', [e.id]);
   const weekly = e.check_in_freq === 'weekly';
   const last = days[0] || null;
   const sinceLast = last ? daysBetween(last, today) : null;
@@ -116,10 +132,11 @@ export async function cancelCheckinReminders(db, enrollmentId, reason = 'resched
  */
 export async function planCheckinReminder(db, enrollmentId, now = new Date()) {
   const e = await db.get(
-    'SELECT id, bondsman_id, user_id, defendant_name, check_in_freq, active, created_at FROM checkin_enrollments WHERE id = ?',
+    'SELECT id, bondsman_id, user_id, defendant_name, check_in_freq, active, created_at, channel, time_zone FROM checkin_enrollments WHERE id = ?',
     [enrollmentId]);
   await cancelCheckinReminders(db, enrollmentId);
-  if (!e || !Number(e.active) || !e.user_id) return null;
+  // text-link enrollments are reminded by text (services/checkinTexts.js), never by push
+  if (!e || !Number(e.active) || !e.user_id || e.channel === 'sms') return null;
   const u = await db.get('SELECT notif_checkin_reminders FROM users WHERE id = ?', [e.user_id]);
   if (!u || (u.notif_checkin_reminders != null && Number(u.notif_checkin_reminders) !== 1)) return null;
   const st = await checkinState(db, e, now);
@@ -147,10 +164,11 @@ export async function planCheckinReminder(db, enrollmentId, now = new Date()) {
 /** Why a planned check-in reminder must not go out (or null when it should). */
 export async function checkinReminderStale(db, row, data, now = new Date()) {
   const e = await db.get(
-    'SELECT id, bondsman_id, user_id, check_in_freq, active, created_at FROM checkin_enrollments WHERE id = ?',
+    'SELECT id, bondsman_id, user_id, check_in_freq, active, created_at, channel, time_zone FROM checkin_enrollments WHERE id = ?',
     [Number(data.enrollment_id) || 0]);
   if (!e) return 'enrollment_missing';
   if (!Number(e.active)) return 'enrollment_inactive';
+  if (e.channel === 'sms') return 'channel_sms';
   if (Number(e.user_id) !== Number(row.user_id)) return 'enrollment_unlinked';
   const st = await checkinState(db, e, now);
   if (st.done) return 'already_checked_in';
@@ -161,7 +179,7 @@ export async function checkinReminderStale(db, row, data, now = new Date()) {
 export async function backfillCheckinReminders(db, { now = new Date(), limit = 500 } = {}) {
   const rows = await db.all(
     `SELECT e.id FROM checkin_enrollments e
-      WHERE e.active = 1 AND e.user_id IS NOT NULL
+      WHERE e.active = 1 AND e.user_id IS NOT NULL AND e.channel = 'app'
         AND NOT EXISTS (SELECT 1 FROM scheduled_pushes sp
                          WHERE sp.notification_type = 'checkin_reminder' AND sp.status IN ('pending', 'sending')
                            AND sp.data LIKE '%"enrollment_id":' || e.id || ',%')

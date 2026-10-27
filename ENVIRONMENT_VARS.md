@@ -17,3 +17,11 @@ It was retired in favour of the one maintained reference above;
 Court-date texts for Bond Desk and "Did you make it to court?" (October 2026) add no new
 variables: they use the Telnyx settings (`TELNYX_*`), `APP_URL` for the missed-court link and
 `REMINDERS_ENABLED` for the 5-minute job — see DEPLOY_ENV_SETUP.md.
+## Settings that wait for counsel (⚖)
+
+These are built and tested, but stay **off in production** until the counsel question is answered
+(details in DEPLOY_ENV_SETUP.md; `node backend/scripts/check-env.js` warns when one is on in production):
+
+| Variable | Counsel question | Unset means |
+|---|---|---|
+| `CHECKIN_LOCATION_ALERTS_ENABLED` | 2.4 location privacy (check-in location alerts) | off in production, on elsewhere |

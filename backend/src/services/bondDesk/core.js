@@ -194,22 +194,30 @@ export async function sendAgentText(db, args) {
   return (await sendAgentTextRecord(db, args)).status;
 }
 
-/** sendAgentText, also returning the bd_texts row id when sent: → { status, textId, error? } */
+/**
+ * sendAgentText with the records it made: → { status, textId, bdTextId, providerId, error? }
+ * (textId === bdTextId, the bd_texts row; providerId joins sms_delivery for the carrier's status).
+ */
 export async function sendAgentTextRecord(db, { agentId, bondId, purpose, to, body }) {
+  const none = { textId: null, bdTextId: null, providerId: null };
   const dest = toE164(to);
-  if (!dest) return { status: 'skipped', textId: null, error: 'no_valid_number' };
+  if (!dest) return { status: 'skipped', ...none, error: 'no_valid_number' };
   const out = await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [dest]);
-  if (out) return { status: 'opted_out', textId: null };
-  if (!smsLive()) return { status: 'skipped', textId: null, error: 'sms_not_configured' };
+  if (out) return { status: 'opted_out', ...none };
+  if (!smsLive()) return { status: 'skipped', ...none, error: 'sms_not_configured' };
   const r = await sendSms({ to: dest, body });
   if (!r?.ok) {
     logger.warn({ err: r?.error }, '[bond-desk] text not sent');
-    return { status: r?.skipped ? 'skipped' : 'failed', textId: null, error: r?.error || r?.reason || null };
+    return { status: r?.skipped ? 'skipped' : 'failed', ...none, error: r?.error || r?.reason || null };
   }
   const row = await db.get('INSERT INTO bd_texts (agent_id, bond_id, purpose, to_masked, provider_id, cents) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
     [agentId, bondId || null, purpose, maskPhone(dest), r.id || null, AGENT_TEXT_CENTS]);
-  return { status: 'sent', textId: row?.id == null ? null : Number(row.id) };
+  const id = row?.id == null ? null : Number(row.id);
+  return { status: 'sent', textId: id, bdTextId: id, providerId: r.id || null };
 }
+
+/** Same as sendAgentTextRecord (name used by the check-in texts). */
+export const sendAgentTextDetailed = sendAgentTextRecord;
 
 /** E-mail for an agent (free). → 'sent' | 'skipped' | 'failed' */
 export async function sendAgentEmail({ to, subject, text }) {

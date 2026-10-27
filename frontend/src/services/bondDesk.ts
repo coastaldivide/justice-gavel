@@ -83,6 +83,8 @@ export interface Dashboard {
   forfeitures: { bond_id: number; defendant_name: string; deadline_on: string; days_left: number }[];
   awaiting_signature: { packet_id: number; bond_id: number; defendant_name: string; pending: number }[];
   texts_this_month: { count: number; cents: number };
+  /** missed check-ins (last 7 days) of bonds linked to a check-in enrollment; absent on older servers */
+  missed_checkins?: { bond_id: number; enrollment_id: number; defendant_name: string; day: string }[];
 }
 
 // ── Court dates and the texts about them (routes/bondDesk/courtDates.js) ─────

@@ -154,6 +154,16 @@ function BondDeskScreen({ navigation }: ScreenProps) {
                 ))}
               </Card>
             )}
+            {!!dash?.missed_checkins?.length && (
+              <Card title={t('bdk_missed_checkins')} testID="bond-desk-missed-checkins">
+                {dash.missed_checkins.map(m => (
+                  <TouchableOpacity key={`${m.bond_id}-${m.day}`} accessibilityRole="button" style={s.item} onPress={() => go('CheckInManager')} testID={`missed-checkin-${m.bond_id}`}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.itemTitle}>{m.defendant_name}</Text>
+                    <Line tone="danger">{t('bdk_missed_checkin_line', { date: fmtDay(m.day) })}</Line>
+                  </TouchableOpacity>
+                ))}
+              </Card>
+            )}
             {!!dash?.overdue.length && (
               <Card title={t('bdk_overdue')} testID="bond-desk-overdue">
                 {dash.overdue.map(o => (

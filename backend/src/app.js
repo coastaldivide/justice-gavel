@@ -48,6 +48,7 @@ import adminRouter      from './routes/admin.js';
 import savedRouter        from './routes/saved.js';
 import consultationsRouter from './routes/consultations.js';
 import checkinsRouter      from './routes/checkins.js';
+import meRouter from './routes/me.js';
 import familyRouter       from './routes/family.js';
 import rightsRouter       from './routes/rights.js';
 import helpRouter         from './routes/help.js';
@@ -247,8 +248,9 @@ app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
 if (process.env.NODE_ENV !== 'test') {
-  // Signing links carry their credential in the path (/api/sign/<token>/…): never log it.
-  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/)[^/]+/, '$1[link]');
+  // Signing links and check-in text links carry their credential in the path
+  // (/api/sign/<token>/…, /api/checkins/link/<token>): never log it.
+  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/|\/api\/checkins\/link\/)[^/]+/, '$1[link]');
   if (IS_PROD) {
     // One JSON object per line (Render log stream / Datadog-friendly). Logs req.path, never
     // the query string — search params can carry PII (names, emails, counties).
@@ -505,6 +507,7 @@ app.use('/api/help',        helpRouter);        // core path step 2 (public)
 app.use('/api/court-dates', courtDatesRouter);  // core path step 3
 app.use('/api/following',   followingRouter);   // family followers
 app.use('/api/checkins',      checkinsRouter);
+app.use('/api/me',            meRouter);       // the signed-in person's own cards ("Your bail agent")
 app.use('/api/expungement',   expungementRouter);
 app.use('/api/immigration',   immigrationRouter);
 app.use('/api/contracts',     contractsRouter);
