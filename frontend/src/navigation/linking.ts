@@ -17,6 +17,7 @@
  *   ├─ AutopayLink (autopay/<token> — a payer's automatic-payment link; any auth state)
  *   ├─ AgencyPay (pay/<slug> — a bail agency's public pay page; any auth state)
  *   └─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
+ *   └─ PdJoin (pd/join/<token> — an invitation into a public defender office; sign-in asked on the page)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -137,6 +138,13 @@ export const linking: LinkingOptions<any> = {
               BondDeskSettings:   'bond-desk/settings',
               BondImport:         'bond-desk/import',
               AdminFormsSetup:    'admin-forms-setup',
+              PdOffice:           'pd',
+              PdClients:          'pd/clients',
+              PdImport:           'pd/import',
+              PdClient:           'pd/client/:clientId',
+              PdInbox:            'pd/inbox',
+              PdStaff:            'pd/staff',
+              AdminPdOffices:     'admin-pd-offices',
               FamilyConnect:      'family',
               Contacts:           'emergency-contacts',
 
@@ -174,6 +182,7 @@ export const linking: LinkingOptions<any> = {
       AutopayLink:   'autopay/:token',
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
+      PdJoin:        'pd/join/:token',
     },
   },
 };
@@ -196,6 +205,7 @@ export const guestLinking: LinkingOptions<any> = {
       AutopayLink:   'autopay/:token',
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
+      PdJoin:        'pd/join/:token',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

@@ -35,7 +35,7 @@ export const PRO_SCREENS: ReadonlySet<string> = new Set([
   'AttorneyDashboard', 'AttorneyInbox', 'Subscription', 'ConflictCheck', 'Matter', 'MotionLibrary',
   'Discovery', 'LegalResearch', 'DeadlineCalculator',
   'BondsmanDashboard', 'BondDesk', 'BondDetail', 'BondForms', 'BondPowers', 'BondReports', 'CheckInManager',
-  'AdminVerification',
+  'AdminVerification', 'AdminPdOffices',
 ]);
 
 export const isProRole = (role?: string | null): boolean => PRO_ROLES.includes(String(role || ''));

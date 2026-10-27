@@ -342,7 +342,7 @@ describe('5. AppNavigator — Screen Registry & Structure', () => {
     // static imports + React.lazy(() => import('../screens/...'))
     const imports = src.match(/(import\s+\w+\s+from\s+|import\()'\.\.\/screens\//g) || [];
     expect(imports.length).toBeGreaterThanOrEqual(60);
-    expect(imports.length).toBeLessThanOrEqual(100);
+    expect(imports.length).toBeLessThanOrEqual(120);
   });
 
   test('5-02: AppNavigator wraps screens in ErrorBoundary', async () => {

@@ -19,6 +19,7 @@ import { getCoreProgress, consumePendingRoute, prefetchRights, type CourtDatesLi
 import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
 import { isScreenEnabled, tileScreen } from '../constants/features';
+import { PdHomeCard } from '../components/publicDefender/PdParts';
 
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
@@ -348,6 +349,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
           </View>
         </TouchableOpacity>
+
+        {/* Public defender office members: their office (A11; hidden for everyone else and while the ⚖ setting is off) */}
+        <PdHomeCard navigation={navigation as never} />
 
         {/* Court date countdown -- high urgency, daily re-engagement */}
         {upcomingCase && (

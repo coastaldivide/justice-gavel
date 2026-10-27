@@ -127,6 +127,14 @@ export type RootStackParamList = {
   BondDeskSettings:         { connect?: 'return' | 'refresh' } | undefined;
   BondImport:               undefined;
   AdminFormsSetup:          undefined;
+  PdOffice:                 undefined;
+  PdClients:                undefined;
+  PdImport:                 undefined;
+  PdClient:                 { clientId: number | string };
+  PdInbox:                  undefined;
+  PdStaff:                  undefined;
+  PdJoin:                   { token: string };
+  AdminPdOffices:           undefined;
   SignPacket:               { token: string };
   AutopayLink:              { token: string; saved?: string; paid?: string };
   AgencyPay:                { slug: string; paid?: string };

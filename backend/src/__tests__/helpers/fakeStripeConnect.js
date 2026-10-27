@@ -17,7 +17,7 @@ import crypto from 'node:crypto';
 
 export function newFakeState() {
   return { seq: 0, run: crypto.randomBytes(3).toString('hex'), accounts: new Map(), sessions: new Map(), setupIntents: new Map(), pms: new Map(), pis: new Map(), customers: new Map(),
-    idem: new Map(), calls: [], items: [], detached: [], cancelled: [], down: false };
+    idem: new Map(), calls: [], items: [], detached: [], cancelled: [], down: false, invoices: new Map(), failNext: null };
 }
 
 const clone = (o) => (o == null ? o : JSON.parse(JSON.stringify(o)));
@@ -92,7 +92,31 @@ export function fakeStripeClass(fake) {
       this.subscriptions = { retrieve: async (sid) => ({ id: sid, customer: 'cus_plan' }) };
       this.invoiceItems = {
         list: async ({ customer }) => ({ data: fake.items.filter((i) => i.customer === customer), has_more: false }),
-        create: async (p, o) => { const it = { id: id('ii'), ...p, idem: o?.idempotencyKey }; fake.items.push(it); return it; },
+        create: async (p, o) => idem(o, async () => {
+          log('invoiceItems.create', p, o);
+          if (fake.failNext === 'invoiceItems.create') { fake.failNext = null; const e = new Error('api error'); e.type = 'StripeAPIError'; throw e; }
+          const it = { id: id('ii'), ...p, idem: o?.idempotencyKey }; fake.items.push(it); return it;
+        }),
+      };
+      // Stripe invoicing (public defender annual invoices): draft → finalize (open) → send.
+      const invTotal = (inv) => fake.items.filter((i) => i.invoice === inv.id).reduce((n, i) => n + Number(i.amount || 0), 0);
+      this.invoices = {
+        create: async (p, o) => idem(o, async () => {
+          log('invoices.create', p, o);
+          const inv = { id: id('in'), status: 'draft', customer: p.customer, metadata: p.metadata || {}, collection_method: p.collection_method,
+            days_until_due: p.days_until_due, hosted_invoice_url: null, sent: 0, params: clone(p) };
+          fake.invoices.set(inv.id, inv);
+          return clone(inv);
+        }),
+        retrieve: async (iid) => { log('invoices.retrieve', { iid }); const inv = fake.invoices.get(iid); return inv ? clone({ ...inv, amount_due: invTotal(inv) }) : null; },
+        finalizeInvoice: async (iid, _p, o) => idem(o, async () => {
+          log('invoices.finalizeInvoice', { iid }, o);
+          const inv = fake.invoices.get(iid);
+          if (inv.status !== 'draft') { const e = new Error('Invoice is already finalized'); e.type = 'StripeInvalidRequestError'; throw e; }
+          inv.status = 'open'; inv.amount_due = invTotal(inv); inv.hosted_invoice_url = `https://invoice.stripe.test/${iid}`;
+          return clone(inv);
+        }),
+        sendInvoice: async (iid, _p, o) => idem(o, async () => { log('invoices.sendInvoice', { iid }, o); const inv = fake.invoices.get(iid); inv.sent += 1; return clone(inv); }),
       };
       this.webhooks = {
         constructEvent: (raw, sig, secret) => {

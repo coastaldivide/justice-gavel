@@ -554,6 +554,18 @@ async function main() {
     assert(bad.status === 404 || (bad.status === 503 && bad.json?.code === 'feature_unavailable'), `expected 404 share_invalid or 503, got ${brief(bad)}`);
   });
 
+  await check('⚖ public defender channel: private; status never 503; office routes need membership or 503 while off', async () => {
+    const anon = await call('GET', '/api/pd/status');
+    assert(anon.status === 401, `expected 401 without sign-in, got ${brief(anon)}`);
+    const st = await call('GET', '/api/pd/status', { token });
+    assert(st.status === 200 && typeof st.json?.enabled === 'boolean' && st.json.member === null, `expected { enabled, member: null }, got ${brief(st)}`);
+    const c = await call('GET', '/api/pd/clients', { token });
+    if (st.json.enabled) assert(c.status === 403 && c.json?.code === 'not_member', `expected 403 not_member, got ${brief(c)}`);
+    else assert(c.status === 503 && c.json?.code === 'feature_unavailable', `expected 503 feature_unavailable, got ${brief(c)}`);
+    const a = await call('GET', '/api/admin/pd-offices', { token });
+    assert(a.status === 403, `expected 403 for a non-admin, got ${brief(a)}`);
+  });
+
   await check('check-ins by text link: unknown link → 404 link_invalid; "Your bail agent" card is private', async () => {
     const bad = await call('GET', `/api/checkins/link/${'Z'.repeat(43)}`);
     assert(bad.status === 404 && bad.json?.code === 'link_invalid', `expected 404 link_invalid, got ${brief(bad)}`);

@@ -14,6 +14,7 @@ export const COUNSEL_FLAGS = Object.freeze({
   BOND_REARREST_ALERTS_ENABLED: '1.2 re-arrest alerts for an agent\'s own defendants',
   CUSTODY_ALERTS_ENABLED: '6.3 release / transfer alerts for families',
   BOND_RECOVERY_SHARING_ENABLED: 'state recovery-agent rules (sharing a forfeited bond with a recovery agent)',
+  PUBLIC_DEFENDER_CHANNEL_ENABLED: '3.2 and 6.1 public defender offices: reminders and two-way texts to their clients',
 });
 
 /** Explicit true/false wins; unset → off in production, on elsewhere. */
@@ -29,3 +30,4 @@ const pick = (env, name, value) => (env ? env : { [name]: value, APP_ENV: proces
 export const rearrestAlertsEnabled = (env) => counselFlagOn('BOND_REARREST_ALERTS_ENABLED', pick(env, 'BOND_REARREST_ALERTS_ENABLED', process.env.BOND_REARREST_ALERTS_ENABLED));
 export const custodyAlertsEnabled = (env) => counselFlagOn('CUSTODY_ALERTS_ENABLED', pick(env, 'CUSTODY_ALERTS_ENABLED', process.env.CUSTODY_ALERTS_ENABLED));
 export const recoverySharingEnabled = (env) => counselFlagOn('BOND_RECOVERY_SHARING_ENABLED', pick(env, 'BOND_RECOVERY_SHARING_ENABLED', process.env.BOND_RECOVERY_SHARING_ENABLED));
+export const publicDefenderEnabled = (env) => counselFlagOn('PUBLIC_DEFENDER_CHANNEL_ENABLED', pick(env, 'PUBLIC_DEFENDER_CHANNEL_ENABLED', process.env.PUBLIC_DEFENDER_CHANNEL_ENABLED));

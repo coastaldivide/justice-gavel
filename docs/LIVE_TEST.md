@@ -126,6 +126,24 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E17o **Export**: Settings → Export everything → the ZIP opens on the laptop: README.txt, reports/*.csv, records/*.csv,
   receipts/…pdf, signed/…pdf. A fourth export within the hour is refused.
 - [ ] E18 **Next day**: Stripe → the agent's subscription → upcoming invoice has a line "Texts sent for you: N × 5¢" matching Bond Desk → Texts this month. Running the billing job again adds nothing.
+- [ ] E19 **Public defender office** (staging, `PUBLIC_DEFENDER_CHANNEL_ENABLED=true`; docs/PUBLIC_DEFENDER.md): admin account →
+  Admin review → Public defender offices → New office (TN, Davidson, 3 seats, your second e-mail as first office admin) → the
+  invitation e-mail arrives → open it signed in with that e-mail → Accept → Home shows the office card.
+  - [ ] E19a Office → tick the consent statement → "Confirmed by <you> on <time>". Staff → invite a third e-mail as staff → "2 of 3
+    seats" (with the pending invitation); a fourth invitation is refused (seats full).
+  - [ ] E19b Clients → Upload a CSV list → template → 3 rows, one with a bad phone → preview shows that row's error, Import disabled →
+    fix → Import → 3 clients. Upload the same file with one court date changed → "1 updated", the old upcoming date is gone.
+  - [ ] E19c A client with your phone (language es) and a court date 8 days out: the 7-day text arrives in Spanish, starting with the
+    office name; the client screen shows it "sent" then "delivered". On the court day at 15:00 "¿llegó a la corte hoy?" arrives →
+    reply 3 → the "actúe hoy" text arrives at once and the court date shows "Missed (answered by text)".
+  - [ ] E19d Text "Can I get a ride?" from that phone → Inbox shows 1 unread, newest first → open it → reply "Call 211" → it arrives
+    as "<office>: Call 211" → Mark handled → the conversation leaves "Open". Reply STOP → the client shows "Replied STOP" and
+    Send is disabled.
+  - [ ] E19e Office → enter the baseline (your test numbers) → it shows next to "Measured since the pilot started" with the rate
+    definition. Export → the ZIP has clients, court_dates, appearance, messages (every text), opt_outs, baseline CSV files.
+  - [ ] E19f Admin → the office → Preview the invoice for this year → active clients × $2.00 + $20,000 setup (first invoice only) →
+    Create annual invoice → Stripe (test mode) → Invoices shows one open invoice e-mailed to the billing address, due in 30 days.
+    Create again → no second invoice. Production (setting off): no office card, no admin entry, `/api/pd/*` answers 503.
 
 ## F. Webhooks and recovery (10 min)
 - [ ] F1 Stripe → Webhooks → endpoint → recent deliveries all 200.

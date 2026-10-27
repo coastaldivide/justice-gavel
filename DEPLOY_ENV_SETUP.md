@@ -224,6 +224,14 @@ CUSTODY_ALERTS_ENABLED=false             ⚖ counsel question 6.3. Families foll
 BOND_RECOVERY_SHARING_ENABLED=false      ⚖ state recovery-agent rules. A bail agent shares one
                                           forfeited bond with a recovery agent (read only, every view
                                           logged). Unset → OFF in production.
+PUBLIC_DEFENDER_CHANNEL_ENABLED=false    ⚖ counsel questions 3.2 and 6.1. Public defender offices
+                                          upload clients, who get court reminders and "Did you make it?"
+                                          texts under the office's name; replies go to the office's
+                                          shared inbox. Unset → OFF in production. Off: /api/pd and
+                                          /api/admin/pd-offices answer 503 feature_unavailable, the job
+                                          sends nothing, inbound texts are not routed, the app hides it.
+PD_SETUP_FEE_CENTS=2000000               public defender one-time setup fee (first annual invoice only).
+PD_CLIENT_YEAR_CENTS=200                 public defender fee per active client per year (cents).
 BOND_AUTOPAY_ENABLED=false               ⚖ counsel question 3.2 (debt collection). Bond Desk automatic
                                           payment-plan charges (A5): the payer saves a card by link and
                                           the hourly 'bd-autopay' job charges each installment on its

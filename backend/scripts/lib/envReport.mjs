@@ -72,6 +72,7 @@ export function envReport(env, { launch = false } = {}) {
     ['CUSTODY_ALERTS_ENABLED', 'release / transfer alerts need counsel question 6.3 answered first'],
     ['BOND_AUTOPAY_ENABLED', 'automatic payment-plan charges need counsel question 3.2 answered first'],
     ['BOND_RECOVERY_SHARING_ENABLED', 'recovery-agent sharing needs counsel review of the state recovery-agent rules first'],
+    ['PUBLIC_DEFENDER_CHANNEL_ENABLED', 'the public defender channel needs counsel questions 3.2 and 6.1 answered first'],
   ]) {
     if (appEnv === 'production' && /^(true|1)$/i.test(String(env[k] || '').trim())) warnings.push(`${k} is on — ${why}`);
   }

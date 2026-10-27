@@ -104,6 +104,14 @@ const RecoverySharesScreen = withSuspense(React.lazy(() => import('../screens/Re
 const BondDeskSettingsScreen = withSuspense(React.lazy(() => import('../screens/BondDeskSettingsScreen')));
 const BondImportScreen = withSuspense(React.lazy(() => import('../screens/BondImportScreen')));
 const AdminFormsSetupScreen = withSuspense(React.lazy(() => import('../screens/AdminFormsSetupScreen')));
+// Public defender offices (A11, ⚖ — the screens say so when the server setting is off)
+const PdOfficeScreen = withSuspense(React.lazy(() => import('../screens/PdOfficeScreen')));
+const PdClientsScreen = withSuspense(React.lazy(() => import('../screens/PdClientsScreen')));
+const PdImportScreen = withSuspense(React.lazy(() => import('../screens/PdImportScreen')));
+const PdClientScreen = withSuspense(React.lazy(() => import('../screens/PdClientScreen')));
+const PdInboxScreen = withSuspense(React.lazy(() => import('../screens/PdInboxScreen')));
+const PdStaffScreen = withSuspense(React.lazy(() => import('../screens/PdStaffScreen')));
+const AdminPdOfficesScreen = withSuspense(React.lazy(() => import('../screens/AdminPdOfficesScreen')));
 const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
 const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
 const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
@@ -242,6 +250,13 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="BondDeskSettings"      component={BondDeskSettingsScreen}      options={{ title: t('bdk_settings') }} />
       <MoreStack.Screen name="BondImport"            component={BondImportScreen}            options={{ title: t('bdk_import_title') }} />
       <MoreStack.Screen name="AdminFormsSetup"       component={AdminFormsSetupScreen}       options={{ title: t('adm_forms_setup') }} />
+      <MoreStack.Screen name="PdOffice"              component={PdOfficeScreen}              options={{ title: t('pd_nav_office') }} />
+      <MoreStack.Screen name="PdClients"             component={PdClientsScreen}             options={{ title: t('pd_clients') }} />
+      <MoreStack.Screen name="PdImport"              component={PdImportScreen}              options={{ title: t('pd_upload_csv') }} />
+      <MoreStack.Screen name="PdClient"              component={PdClientScreen}              options={{ title: t('pd_nav_client') }} />
+      <MoreStack.Screen name="PdInbox"               component={PdInboxScreen}               options={{ title: t('pd_inbox') }} />
+      <MoreStack.Screen name="PdStaff"               component={PdStaffScreen}               options={{ title: t('pd_staff') }} />
+      <MoreStack.Screen name="AdminPdOffices"        component={AdminPdOfficesScreen}        options={{ title: t('pd_adm_title') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />

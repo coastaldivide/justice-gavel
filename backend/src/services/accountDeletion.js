@@ -233,6 +233,17 @@ export const USER_REFS = {
   'bd_recovery_shares.recovery_user_id': 'nullify',   // the recovery agent's account: the share stops working, the agent's log stays
   'bd_recovery_views.viewer_user_id': 'nullify',      // the bail agent's view log, anonymised
   'booking_follows.user_id': 'delete',       // bookings the person followed (A9; their alerts cascade)
+  'pd_staff.user_id': 'delete',             // membership of a public defender office (the office and its clients stay)
+  'pd_staff.added_by': 'nullify',
+  'pd_offices.created_by': 'nullify',        // the Justice Gavel admin who set the office up
+  'pd_offices.consent_basis_by': 'nullify',  // who ticked the consent basis (the time and text stay)
+  'pd_offices.baseline_set_by': 'nullify',
+  'pd_invites.invited_by': 'nullify',
+  'pd_invites.accepted_user_id': 'nullify',
+  'pd_clients.created_by': 'nullify',        // the office's client list belongs to the office
+  'pd_clients.handled_by': 'nullify',
+  'pd_messages.sent_by': 'nullify',          // the office's message log stays, unattributed
+  'pd_invoices.created_by': 'nullify',       // billing record
   'bd_texts.agent_id': 'retain',        // billing record of texts charged at 5¢ (masked number only)
   'bd_text_batches.agent_id': 'retain', // invoice items already billed in Stripe
   'bd_uploads.signer_id': 'retain',     // bd_signers.id (a signing link), not a users.id
