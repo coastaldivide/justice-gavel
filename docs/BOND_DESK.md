@@ -249,6 +249,19 @@ Unicode and may use up to 6 segments (about 5–6 for a reminder); long names / 
 Defendant: "{agency}: {first name}, court is in 7 days, Wed, Sep 30 at 10:30 AM at {court}, room {room}. If you miss it, a
 warrant can be issued and your bond can be forfeited. Expect security; bring ID and court papers. How will you get there?
 Make a plan now. Reply STOP to opt out." Indemnitor: "{agency}: You co-signed {name}'s bail bond. Court is …".
+These Bond Desk texts carry no plan link: a Bond Desk defendant may have no app account, and their only page is the
+check-in link (below). The app's own reminder texts link to the court date's "Plan your court day" (docs/COURT_DAY_HELP.md).
+
+**Help getting to court on the check-in link page (A8).** When the defendant has a check-in text link, its page
+(`/c/<token>`) shows the bond's next hearing (day, time, court, room — nothing else) with "Call 211", the county's
+transit agency where `backend/src/data/transit_agencies.js` has a cited row for the bond's county, and map directions.
+
+**Court-date phone line (A10).** A defendant whose number is on an open bond can call the toll-free line and hear the
+next hearing's day, time, court and room, or get it by text (docs/PHONE_LINE.md). No case details or balances are read.
+
+**"Your bail agent" card and phone verification.** A defendant's account sees the agency, court date and balance only
+through a check-in enrollment linked by a phone number the account VERIFIED with a texted code (migration 40;
+docs/CHECKINS.md). No bond is ever matched to an account by an unverified phone or by e-mail.
 
 ## Texts (5¢ each)
 

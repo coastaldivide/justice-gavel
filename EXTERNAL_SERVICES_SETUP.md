@@ -273,6 +273,33 @@ No external service — uses the W3C Web Push standard directly.
 
 ---
 
+### 8b. Telnyx — text messages and the court-date phone line
+**What it powers:** court-reminder texts, Bond Desk texts, phone-verification codes, and the toll-free
+court-date phone line (build plan A10). Without Telnyx no text or call goes out; push, browser push and
+e-mail keep working. Never Twilio (owner decision).
+
+**Texts** (already in use): Mission Control → Messaging → a messaging profile with a 10DLC-registered
+brand and campaign → set `TELNYX_API_KEY`, `TELNYX_FROM_NUMBER`, optionally `TELNYX_MESSAGING_PROFILE_ID`;
+the profile's webhook → `https://<api host>/api/webhooks/telnyx`; Keys & Credentials → Public Key →
+`TELNYX_PUBLIC_KEY` (base64). Phone-verification codes use the same sender.
+
+**Court-date phone line** (docs/PHONE_LINE.md):
+1. Mission Control → Numbers → buy a **toll-free** number (voice enabled). Toll-free texting is not needed:
+   the line's texts go from `TELNYX_FROM_NUMBER`.
+2. Voice → **Programmable Voice → Call Control Applications** → Create: name "Court date line",
+   webhook URL `https://<api host>/api/webhooks/telnyx-voice`, API version v2, webhook failover empty.
+   Leave "Enable recording" off — calls are never recorded.
+3. Numbers → the toll-free number → Voice → connection / application = "Court date line".
+4. Set `TELNYX_VOICE_NUMBER=+1800…` (that number) and `TELNYX_VOICE_ENABLED=true`. `TELNYX_API_KEY`
+   and `TELNYX_PUBLIC_KEY` are shared with texts: webhooks are checked with the same Ed25519 signature and
+   unsigned requests are refused (401); with the line off the webhook answers 503 and no call is answered.
+5. Optional voices: `TELNYX_VOICE_EN` / `TELNYX_VOICE_ES` (defaults `Polly.Joanna` / `Polly.Lupe`; any
+   voice Telnyx lists for `speak` / `gather_using_speak`). Calls are billed by Telnyx per minute as a
+   platform cost (not charged to bail agents); watch usage in Mission Control → Reporting.
+6. Test: run docs/LIVE_TEST.md step H.
+
+---
+
 ## 🔵 INTEGRATION — Add when ready (runs in demo mode until then)
 
 All integrations work fully in demo mode before credentials are added.

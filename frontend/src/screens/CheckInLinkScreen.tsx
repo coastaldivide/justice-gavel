@@ -11,6 +11,8 @@
  *     and after every check-in: the location is read once, at the moment of
  *     checking in (browser geolocation on the web), never in the background.
  *   - A second check-in on a day already done is recorded but counted once.
+ *   - "Help getting to court" (A8): the next court date (day, time, court, room) with 211, the
+ *     county's transit agency where the server has a cited source, and map directions.
  *
  * API: GET/POST /api/checkins/link/:token (backend routes/checkins.js).
  */
@@ -22,7 +24,9 @@ import { api, apiErrorMessage } from '../services/api';
 import { FONTS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { Btn, Card, Check, Field, Line, Notice } from '../components/bondDesk/ui';
-import { formatCourtDay } from '../services/corePath';
+import { formatCourtDay, formatCourtTime } from '../services/corePath';
+import { CourtHelpLinks, type HelpLinks } from '../components/CourtDayPlan';
+import { makeStyles as courtStyles } from './CourtDatesScreen';
 
 export interface LinkInfo {
   agency: { name: string | null; phone: string | null };
@@ -34,6 +38,7 @@ export interface LinkInfo {
   today: string;
   time_zone: string;
   location: { optional: boolean; distance_alerts: boolean };
+  court?: { date: string; time: string | null; court_name: string | null; room: string | null; help: HelpLinks } | null;
 }
 interface CheckInResult extends LinkInfo { counted: boolean; location_shared: boolean }
 
@@ -175,6 +180,14 @@ function CheckInLinkScreen({ route }: ScreenProps) {
           <Btn label={t('ckl_check_in_now')} onPress={checkIn} busy={busy} testID="checkin-link-submit" />
           {info.checked_in_today && <Line muted>{t('ckl_again_note')}</Line>}
         </Card>
+        {!!info.court && (
+          <Card title={t('ckl_court_title')} testID="checkin-link-court">
+            <Line strong testID="checkin-link-court-when">
+              {[formatCourtDay(info.court.date), info.court.time ? formatCourtTime(info.court.time) : null, info.court.court_name, info.court.room ? t('ckl_court_room', { room: info.court.room }) : null].filter(Boolean).join(' · ')}
+            </Line>
+            <CourtHelpLinks help={info.court.help} styles={courtStyles(colors)} testID="checkin-link-help" />
+          </Card>
+        )}
       </View>
     </ScrollView>
   );

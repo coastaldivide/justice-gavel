@@ -8,6 +8,7 @@
  * repeats the roster; it never says "released" unless the roster's own status does.
  * API: GET/PATCH/DELETE /api/custody/follows (backend routes/custody.js).
  */
+import AmeelioCard from '../components/AmeelioCard';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
@@ -101,6 +102,8 @@ function CustodyAlertsScreen(_: ScreenProps) {
       {!!error && <Card><Line tone="danger" testID="custody-error">{error}</Line><Btn kind="ghost" label={t('try_again')} onPress={load} /></Card>}
       {!follows && !error && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}
       {follows && !off && !follows.length && <Card testID="custody-empty"><Line muted>{t('cus_empty')}</Line></Card>}
+      {/* B10: free letters, photos and video calls through Ameelio, where the facility works with it */}
+      {!!follows?.length && <View style={{ marginHorizontal: 16 }}><AmeelioCard testID="custody-ameelio" /></View>}
       {follows?.map(f => (
         <Card key={f.id} title={f.booking?.name || t('cus_removed_title')} testID={`custody-follow-${f.id}`}>
           {!f.available || !f.booking ? <Line muted testID={`custody-removed-${f.id}`}>{t('cus_removed')}</Line> : (

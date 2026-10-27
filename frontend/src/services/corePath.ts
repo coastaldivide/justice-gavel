@@ -196,7 +196,11 @@ export async function getCachedCourtDates(): Promise<{ list: CourtDatesList; at:
 export interface FollowedCase {
   follow_id: number; case_id: number; case_title: string; state: string | null; owner_first_name: string | null;
   share_reminders: boolean; next_court_date: string | null;
-  court_dates: Array<Pick<CourtDate, 'id' | 'court_date' | 'court_time' | 'court_time_label' | 'hearing_type' | 'location' | 'status' | 'is_past'> & { courthouse: CourtHouse | null }>;
+  court_dates: Array<Pick<CourtDate, 'id' | 'court_date' | 'court_time' | 'court_time_label' | 'hearing_type' | 'location' | 'status' | 'is_past'> & {
+    courthouse: CourtHouse | null;
+    /** my ride offer for this date (A8), and whether I may offer one (I get reminders, it is upcoming) */
+    ride_offer?: 'offered' | 'accepted' | 'declined' | null; can_offer_ride?: boolean;
+  }>;
 }
 export async function cacheFollowing(list: FollowedCase[]): Promise<void> {
   try { await AsyncStorage.setItem(FOLLOWING_KEY, JSON.stringify({ list, at: new Date().toISOString() })); } catch { /* non-critical */ }

@@ -47,7 +47,7 @@ import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import {
   CLOSED_CASE_STATUSES, dateOnly, timeOnly, backfillCourtReminders, bodyFor, followerBodyFor, placeFor, courthousePlaceFor,
-  ownerFirstName, missedCourtLink, ATTENDANCE_TEXTS_CONSENT_SINCE,
+  ownerFirstName, missedCourtLink, courtPlanLink, ATTENDANCE_TEXTS_CONSENT_SINCE,
 } from './courtReminders.js';
 import { fitSms } from './smsText.js';
 import { sendSms, smsLive } from './sms.js';
@@ -195,7 +195,10 @@ export async function courtSmsText(db, row, data, lang) {
       { who: who || '', place: place || '' }, [['place', 0], ['who', 8]]);
   }
   const place = await placeFor(db, cd);
-  return fitSms((f) => msg(lang, 'reminder.sms', { body: bodyFor(f.case, date, days, { time, place: f.place || null }, lang) }),
+  // A6 plan prompt → the court date's "Plan your court day" (A8). The link fits within the
+  // segment limits with the case title at its minimum (reminder wording tests check it).
+  const plan = courtPlanLink(cd.id);
+  return fitSms((f) => msg(lang, 'reminder.sms', { body: `${bodyFor(f.case, date, days, { time, place: f.place || null }, lang)} ${plan}` }),
     { case: caseTitle, place: place || '' }, [['place', 0], ['case', 12]]);
 }
 

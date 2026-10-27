@@ -414,6 +414,18 @@ function SettingsScreen({ navigation }: any) {
             : <InfoRow icon={ICONS.lawyer} label={t('gg_title')} value={t('x_st_check_eligibility')} />}
         </TouchableOpacity>}
         {!!user.phone && <InfoRow icon={ICONS.mobile} label={t('phone')} value={user.phone} />}
+        {/* Verify the phone with a texted code (links a bail agent's check-in enrollment — migration 40) */}
+        <TouchableOpacity accessibilityRole="button" testID="settings-verify-phone" style={styles.row}
+          onPress={() => navigation.navigate('MoreTab', { screen: 'VerifyPhone' })} accessibilityLabel={t('vp_title')}>
+          <View style={styles.rowLeft}>
+            <AppIcon name={ICONS.lock} size={20} color={colors.textBrand} style={styles.rowIcon} />
+            <View>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>{t('vp_title')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>{t('vp_settings_hint')}</Text>
+            </View>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={styles.rowArrow}>›</Text>
+        </TouchableOpacity>
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity accessibilityRole="button"
           style={styles.row}

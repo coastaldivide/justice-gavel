@@ -15,7 +15,7 @@ on the enrollment (the agent's choice or the defendant's browser on the link pag
 
 | | `app` (default) | `sms` — text link, no app |
 |---|---|---|
-| Who | The defendant signs in to Justice Gavel with the phone / e-mail the agent enrolled | Anyone with a phone that gets texts |
+| Who | The defendant signs in to Justice Gavel and VERIFIES (texted code) the phone the agent enrolled | Anyone with a phone that gets texts |
 | Reminders | Push at 10:00 local on the due day (`scheduled_pushes`) | A text with a personal link, the first run of `checkin-texts` at or after 10:00 local, never before 09:00 or after 21:00 |
 | Cost | Free | 5¢ per text, billed with the other Bond Desk texts (below); check-ins themselves are free |
 | Needs | — | A mobile number, the agent's tick "the person gave me this number for texts" (recorded with the number: `sms_consent_at`, `sms_consent_phone`), and a paid bail-agent plan |
@@ -92,12 +92,17 @@ home-point routes answer 503 `feature_unavailable`, nothing is compared, and the
 
 `GET /api/me/bail-agent` (sign-in required) → `{ agents: [{ enrollment_id, agency: { name, phone },
 next_court_date, check_in: { frequency, next_due, checked_in_today, done_for_period, today, time_zone },
-bond: { status, balance_cents, next_payment } | null }] }`.
+bond: { status, balance_cents, next_payment } | null }], phone_verified, verify_prompt }`.
 
-Only enrollments linked to the caller's account (linked by the phone / e-mail the agent enrolled, the
-first time the person looks — existing behaviour). A bond's balance is shown only for a Bond Desk bond the
-same agent attached to that enrollment (`bd_bonds.checkin_enrollment_id`); a bond is never matched to an
-account by contact details alone, because the app has no verified e-mail or phone. The balance is read
+Only enrollments linked to the caller's account. Since migration 40 (security fix) an enrollment is
+linked ONLY through a phone number the account verified with a texted 6-digit code (Settings → Verify your
+phone; `POST /api/me/phone/verify` + `/confirm`; codes stored as an HMAC, 10 minutes, 5 tries). E-mail never
+links: the app does not verify e-mail addresses. Links made before migration 40 were held
+(`checkin_enrollments.held_user_id`): they come back when that account verifies the enrollment's number, and
+the card says "Verify your phone to see your bail agent's details" until then (`verify_prompt`). An account
+whose verification of a number is gone (the number was verified by another account) loses its link to it.
+A bond's balance is shown only for a Bond Desk bond the same agent attached to that enrollment
+(`bd_bonds.checkin_enrollment_id`); a bond is never matched to an account by contact details alone. The balance is read
 from the bond's ledger; nothing can be paid or changed from the card.
 
 ## Jobs

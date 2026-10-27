@@ -13,6 +13,9 @@
  * Family sharing needs the owner's explicit consent (a checkbox), creates a
  * one-time invite code, and can be stopped at any time. The follower sees
  * court dates only — never case notes.
+ *
+ * "Plan your court day" (A8, components/CourtDayPlan.tsx): a checklist saved on the court date,
+ * 211 / the county's transit agency (cited) / directions, and ride offers from family followers.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -30,9 +33,13 @@ import { getToken } from '../utils/secureStorage';
 import { SignInNeeded } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
 import { IconLabel, ICONS } from '../components/AppIcon';
+import CourtDayPlan, { type PlanItem, type HelpLinks, type RideOffer } from '../components/CourtDayPlan';
 
 interface Reminder { id: number; deliver_at: string; days_before: number | null; title: string }
-interface Detail extends CourtDate { reminders: Reminder[]; time_zone: string; guidance?: Guidance }
+interface Detail extends CourtDate {
+  reminders: Reminder[]; time_zone: string; guidance?: Guidance;
+  plan?: PlanItem[]; help?: HelpLinks | null; ride_offers?: RideOffer[]; phone_line?: { number: string } | null;
+}
 interface Follower { id: number; status: string; name: string | null; email: string | null; share_reminders: boolean }
 
 function whenLabel(iso: string, tz?: string): string {
@@ -268,6 +275,11 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
         </View>
       ) : (
         <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cdd_no_courthouse')}</Text>
+      )}
+
+      {phase === 'ok' && Array.isArray(d.plan) && d.status === 'scheduled' && !d.is_past && (
+        <CourtDayPlan courtDateId={d.id} plan={d.plan} help={d.help || null} offers={d.ride_offers || []} phoneLine={d.phone_line || null}
+          styles={styles} onOffers={(o) => setD(prev => (prev ? { ...prev, ride_offers: o } : prev))} />
       )}
 
       {phase === 'ok' && (

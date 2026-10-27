@@ -229,6 +229,12 @@ export function missedCourtLink(lang = 'en') {
   return `${base}/missed-court${l}`;
 }
 
+/** The court date's page in the app ("Plan your court day", A8) — linked from the reminder texts. */
+export function courtPlanLink(courtDateId) {
+  const base = String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
+  return `${base}/court-dates/${Number(courtDateId)}`;
+}
+
 /** The steps of the plan still ahead of `now` for a hearing on `date` in `tz`. */
 function plannedSteps(date, tz, now, lang = 'en') {
   return planSteps(date, tz, now).map((p) => ({

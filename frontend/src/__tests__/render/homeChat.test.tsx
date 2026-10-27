@@ -86,6 +86,30 @@ describe('HomeScreen', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'CourtDateDetail', params: { id: 41 } });
   });
 
+  it('More menu: Custody alerts and Bonds shared with me appear only when the server features are on (and a bond is shared)', async () => {
+    mockToken = 'jwt';
+    on('get', '/custody/status', { enabled: true });
+    on('get', '/recovery-shares', { shares: [] });
+    const { unmount } = wrap(<HomeScreen navigation={makeNavigation()} />);
+    expect(await screen.findByTestId('tile-CustodyAlerts')).toBeTruthy();
+    expect(screen.queryByTestId('tile-RecoveryShares')).toBeNull();
+    unmount();
+    reset();
+    on('get', '/custody/status', { enabled: false });
+    on('get', '/recovery-shares', { shares: [{ id: 1 }] });
+    wrap(<HomeScreen navigation={makeNavigation()} />);
+    expect(await screen.findByTestId('tile-RecoveryShares')).toBeTruthy();
+    expect(screen.queryByTestId('tile-CustodyAlerts')).toBeNull();
+  });
+
+  it('signed out: neither feature tile is shown', async () => {
+    on('get', '/custody/status', { enabled: true });
+    wrap(<HomeScreen navigation={makeNavigation()} />);
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    expect(screen.queryByTestId('tile-CustodyAlerts')).toBeNull();
+    expect(screen.queryByTestId('tile-RecoveryShares')).toBeNull();
+  });
+
   it('a failing API leaves the static tiles usable (no crash, no tip)', async () => {
     wrap(<HomeScreen navigation={makeNavigation()} />);   // no mocks: everything rejects
     expect(screen.getByTestId('tile-Bail')).toBeTruthy();

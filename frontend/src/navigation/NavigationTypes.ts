@@ -127,6 +127,9 @@ export type RootStackParamList = {
   BondDeskSettings:         { connect?: 'return' | 'refresh' } | undefined;
   BondImport:               undefined;
   AdminFormsSetup:          undefined;
+  AdminResults:             undefined;
+  VerifyPhone:              undefined;
+  Results:                  undefined;
   SignPacket:               { token: string };
   AutopayLink:              { token: string; saved?: string; paid?: string };
   AgencyPay:                { slug: string; paid?: string };

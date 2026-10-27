@@ -265,8 +265,10 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
 
   test('CT6 location alerts: outside the radius is recorded and the agent is pushed; off → 503', async () => {
     if (!ctx.app) return;
-    const r = await enroll({ defendant_name: 'Lou Located', defendant_email: defendant.email, check_in_freq: 'daily' });
+    const r = await enroll({ defendant_name: 'Lou Located', defendant_phone: '615-555-0178', check_in_freq: 'daily' });
     const id = r.body.enrollment.id;
+    // links go only through a verified phone (migration 40)
+    await ctx.db.run(`UPDATE users SET phone = '+16155550178', phone_verified_phone = '+16155550178', phone_verified_at = NOW() WHERE id = ?`, [defendant.user.id]);
     expect((await req('put', `/api/checkins/enrollments/${id}/home`, agent).send({ lat: 36.1627, lng: -86.7816, radius_miles: 0 })).status).toBe(400);
     expect((await req('put', `/api/checkins/enrollments/${id}/home`, stranger).send({ lat: 36.1627, lng: -86.7816, radius_miles: 10 })).status).toBe(404);
     const home = await req('put', `/api/checkins/enrollments/${id}/home`, agent).send({ lat: 36.1627, lng: -86.7816, radius_miles: 10 });
@@ -295,8 +297,14 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
 
   test('CT7 "Your bail agent": agency, court date, balance and next check-in — only for that person', async () => {
     if (!ctx.app) return;
-    const r = await enroll({ defendant_name: 'Dana Linked', defendant_email: defendant.email, court_date: addDays(today(), 20), check_in_freq: 'weekly' });
+    const r = await enroll({ defendant_name: 'Dana Linked', defendant_email: defendant.email, defendant_phone: '(615) 555-0177', court_date: addDays(today(), 20), check_in_freq: 'weekly' });
     const id = r.body.enrollment.id;
+    // the matching e-mail alone links nothing (e-mail is not verified); a verified phone does
+    expect((await req('get', '/api/me/bail-agent', defendant)).body.agents.find((a) => a.enrollment_id === id)).toBeUndefined();
+    expect((await req('post', '/api/me/phone/verify', defendant).send({ phone: '615-555-0177' })).status).toBe(200);
+    const code = (/\b(\d{6})\b/.exec(textsTo('+16155550177').at(-1).text) || [])[1];
+    const ok = await req('post', '/api/me/phone/confirm', defendant).send({ code });
+    expect([ok.status, ok.body.verified]).toEqual([200, true]);
     const bond = await req('post', '/api/bond-desk/bonds', agent).send({
       defendant_name: 'Dana Linked', bond_amount_cents: 1_000_000, state: 'tn', court_date: addDays(today(), 10), checkin_enrollment_id: id,
     });

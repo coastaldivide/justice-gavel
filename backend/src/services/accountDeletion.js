@@ -250,6 +250,12 @@ export const USER_REFS = {
   'bd_staff_invites.accepted_user_id': 'nullify',
   'case_passes.user_id': 'delete',
   'attorney_lead_credits.attorney_id': 'delete', // prepaid lead-credit ledger (payments stay in Stripe)
+  // phone verification, court-day plan, results (migration 40)
+  'phone_verifications.user_id': 'delete',      // texted codes (hashed) for the person's own number
+  'checkin_enrollments.held_user_id': 'nullify', // a pre-verification link held for the account
+  'ride_offers.follower_id': 'delete',          // ride offers the person made as a family follower
+  'ride_offers.owner_id': 'delete',             // ride offers made to the person for their court dates
+  'results_snapshots.published_by': 'retain',   // the admin who published results: a published snapshot is never changed (no FK)
 };
 
 /** Rows keyed by case_id: what happens to them when one of the user's cases goes. */
@@ -264,6 +270,7 @@ export const CASE_CHILDREN = {
   cases_fts: 'delete',
   client_assignments: 'delete',
   codefendant_links: 'delete',
+  ride_offers: 'delete',
   court_dates: 'delete',
   discovery_analyses: 'nullify',
   evidence_score: 'delete',

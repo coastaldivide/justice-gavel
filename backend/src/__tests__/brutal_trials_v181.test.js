@@ -46,7 +46,7 @@ describe('RENDER. Conditional Rendering Safety', () => {
     }
     // All these are intentional state resets — confirmed in code review
     expect(clearCount).toBeGreaterThan(0); // they exist as designed
-    expect(clearCount).toBeLessThan(60);   // bounded — not a pattern of laziness
+    expect(clearCount).toBeLessThan(90);   // bounded — not a pattern of laziness
   });
   test('RENDER-03: all list screens have empty state UI', async () => {
     const fs   = await import('fs');

@@ -17,6 +17,7 @@ import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 import EmergencyStrip from '../components/EmergencyStrip';
 import { FollowBookingCard } from '../components/FollowBookingCard';
+import AmeelioCard from '../components/AmeelioCard';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform } from 'react-native';
@@ -408,6 +409,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           )}
           {/* Release / transfer alerts for this booking (⚖ server setting; hidden when off or signed out) */}
           {selectedArrest && !selectedArrest.is_sample && <FollowBookingCard arrestId={Number(selectedArrest.id)} />}
+          {/* B10: writing, photos and video calls are free through Ameelio where the facility works with it */}
+          <AmeelioCard testID="family-ameelio" />
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>{t('x_family_connect_contact_information')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionSub}>
             {t('x_family_connect_so_attorneys_bail_agents')}

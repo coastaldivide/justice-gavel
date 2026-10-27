@@ -26,7 +26,8 @@ import { isScreenEnabled, tileScreen } from '../constants/features';
 // `label` is the English reference; the tile shows t(`home_tile_${key}`) (es/pt/vi in i18n/*.json).
 // `roles`: shown only to those roles (the attorney dashboard sends everyone else straight back).
 const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
-interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[] }
+// `flag`: shown only when that server feature is on for this person (custody alerts; shared bonds when at least one is shared).
+interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[]; flag?: 'custody' | 'recovery' }
 const TILES = perLang((): Tile[] => {
   const c = themeColors();
   return [
@@ -55,6 +56,8 @@ const TILES = perLang((): Tile[] => {
   { key: 'CheckIn',       icon: ICONS.checkOutline, label: t('home_tile_CheckIn'),       nav: 'More:CheckIn',               bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'Diversion',     icon: ICONS.diversion, label: t('home_tile_Diversion'),     nav: 'More:Diversion',             bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'FamilyConn',    icon: ICONS.family, label: t('home_tile_FamilyConn'),         nav: 'More:FamilyConnect',         bg: c.bgCard, color: c.textBrand,   primary: false },
+  { key: 'CustodyAlerts', icon: ICONS.notification, label: t('home_tile_CustodyAlerts'), nav: 'More:CustodyAlerts',       bg: c.bgCard, color: c.textBrand,   primary: false, flag: 'custody' },
+  { key: 'RecoveryShares',icon: ICONS.briefcase, label: t('home_tile_RecoveryShares'),   nav: 'More:RecoveryShares',        bg: c.bgCard, color: c.textBrand,   primary: false, flag: 'recovery' },
   { key: 'FamilyCourt',   icon: ICONS.courthouse, label: t('home_tile_FamilyCourt'),           nav: 'More:FamilyCourt',           bg: c.bgCard, color: c.textBrand,   primary: false },
   { key: 'FirmAcq',       icon: ICONS.firm, label: t('home_tile_FirmAcq'),       nav: 'More:FirmAcquisition',       bg: c.bgCard, color: c.textBrand,   primary: false, roles: ATTORNEY_ROLES },
   { key: 'HousingRts',    icon: ICONS.housing, label: t('home_tile_HousingRts'),         nav: 'More:HousingRights',         bg: c.bgCard, color: c.textBrand,   primary: false },
@@ -142,6 +145,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [nearbyCounts, setNearbyCounts] = useState<{bail?: number; lawyers?: number}>({});
   const [upcomingCase, setUpcomingCase] = useState<{ id: number; title: string; daysLeft: number } | null>(null);
   const [role, setRole] = useState('');
+  // Server features behind settings (custody alerts ⚖, recovery sharing ⚖): their menu entries
+  // show only when the server says the feature is on — and shared bonds only when one is shared.
+  const [flags, setFlags] = useState<{ custody: boolean; recovery: boolean }>({ custody: false, recovery: false });
 
   // Pull-to-refresh and mount loader
   const loadAll = React.useCallback(async () => {
@@ -164,6 +170,15 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         });
       }).catch(() => {})
     );
+
+    secureStorage.getToken().then(async token => {
+      if (!token) { if (mountedRef.current) setFlags({ custody: false, recovery: false }); return; }
+      const [cus, rec] = await Promise.all([
+        api.get<{ enabled: boolean }>('/custody/status').then(r => r.data?.enabled === true).catch(() => false),
+        api.get<{ shares: unknown[] }>('/recovery-shares').then(r => Array.isArray(r.data?.shares) && r.data.shares.length > 0).catch(() => false),
+      ]);
+      if (mountedRef.current) setFlags({ custody: cus, recovery: rec });
+    }).catch(() => {});
 
     secureStorage.getItem('user').then(u => {
       const user = u ? (() => { try { return JSON.parse(u); } catch { return null; } })() : null;
@@ -308,6 +323,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* "Your bail agent" — only when a bail agent's check-in enrollment is linked to this account */}
         <BailAgentCard refreshKey={bailCardKey}
+          onVerifyPhone={() => (navigation as any).navigate('MoreTab', { screen: 'VerifyPhone' })}
           onCheckIn={(enrollmentId) => (navigation as any).navigate('MoreTab', { screen: 'CheckIn', params: { enrollmentId } })} />
 
         {/* Emergency banner -- prominent, always first */}
@@ -437,7 +453,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES().filter(tile => (!tile.roles || tile.roles.includes(role)) && isScreenEnabled(tileScreen(tile.nav), role))
+          {TILES().filter(tile => (!tile.roles || tile.roles.includes(role)) && (!tile.flag || flags[tile.flag]) && isScreenEnabled(tileScreen(tile.nav), role))
             // the square primary tiles first, then the compact two-column rows
             .sort((a, b) => Number(b.primary) - Number(a.primary)).map(tile => (
             <TouchableOpacity

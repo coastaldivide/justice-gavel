@@ -13,6 +13,9 @@
  * GET    /api/court-dates/:id/ics         — text/calendar file for the phone calendar
  * GET    /api/court-dates/:id/reminders   — the planned reminder rows
  * PUT    /api/court-dates/preferences     — { sms_reminders: bool, phone? } (texts only when Telnyx is configured — services/sms.js)
+ * PUT    /api/court-dates/:id/plan        — "Plan your court day" { items: { ride|time_off|child_care|documents|address_room: { done, note } } }
+ * POST   /api/court-dates/:id/ride-offers/:offerId — { decision: 'accept'|'decline' } a family follower's ride offer
+ *                                           (GET /:id carries `plan`, `help` links and `ride_offers`; services/courtDayHelp.js)
  *
  * Text (errors, guidance, time labels, .ics) is in the request's language
  * (?lang= / Accept-Language: en, es, pt, vi); the person's language is saved
@@ -45,6 +48,8 @@ import { notifyFollowersCourtDateChanged } from '../services/followers.js';
 import { isExpoPushToken } from '../services/expoPush.js';
 import { logIgnored } from '../utils/ignored.js';
 import { resolveLang, msg } from '../i18n/index.js';
+import { phoneLineNumber } from '../services/phoneLine.js';
+import { normalizePlan, planView, helpLinks, rideOffersForOwner, decideRide, HelpError } from '../services/courtDayHelp.js';
 
 const router = Router();
 const writeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req) => msg(resolveLang(req), 'cd.err.too_many_changes') });
@@ -54,7 +59,7 @@ const STATUSES = new Set(['scheduled', 'attended', 'missed', 'rescheduled', 'can
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const COURT_COLS = `cd.id, cd.case_id, cd.court_date, cd.court_time, cd.hearing_type, cd.courthouse_id, cd.location, cd.status,
-  cd.created_at, cd.updated_at, c.title AS case_title, c.state AS case_state,
+  cd.created_at, cd.updated_at, cd.plan, cd.plan_updated_at, c.title AS case_title, c.state AS case_state,
   ch.name AS ch_name, ch.address AS ch_address, ch.phone AS ch_phone, ch.hours AS ch_hours, ch.lat AS ch_lat, ch.lng AS ch_lng,
   ch.url AS ch_url, ch.city AS ch_city, ch.state AS ch_state, ch.county AS ch_county`;
 
@@ -127,11 +132,12 @@ function parseFields(b, { partial }, lang = 'en') {
 
 // ── public guidance ─────────────────────────────────────────────────────────
 router.get('/guidance', (req, res) => {
-  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.setHeader('Vary', 'Accept-Language');
   const g = courtDayGuidance(resolveLang(req));
   res.setHeader('Content-Language', g.language);
-  res.json(g);
+  // the court-date phone line (A10), when it is on: its number, English and Spanish
+  res.json({ ...g, phone_line: phoneLineNumber() ? { number: phoneLineNumber(), languages: ['en', 'es'] } : null });
 });
 
 // ── reminder preferences (SMS opt-in) ───────────────────────────────────────
@@ -312,7 +318,13 @@ router.get('/:id', authRequired, async (req, res) => {
     const { today, tz } = await userToday(db, req.user.id, row.case_state);
     const reminders = (await listPendingCourtReminders(db, req.user.id, null, id)).filter(r => r.type === 'court_reminder');
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ ...serializeCourtDate(row, today, lang), time_zone: tz, language: lang, reminders, guidance: courtDayGuidance(lang) });
+    const cd = serializeCourtDate(row, today, lang);
+    res.json({
+      ...cd, time_zone: tz, language: lang, reminders, guidance: courtDayGuidance(lang),
+      plan: planView(row.plan), plan_updated_at: row.plan_updated_at || null,
+      help: helpLinks(cd.courthouse), ride_offers: await rideOffersForOwner(db, id),
+      phone_line: phoneLineNumber() ? { number: phoneLineNumber() } : null,
+    });
   } catch (e) {
     logger.error({ err: e.message }, '[court-dates/get]');
     res.status(500).json({ error: msg(lang, 'cd.err.load') });
@@ -385,6 +397,42 @@ router.delete('/:id', authRequired, writeLimiter, async (req, res) => {
     logger.error({ err: e.message }, '[court-dates/delete]');
     res.status(500).json({ error: msg(lang, 'cd.err.delete') });
   }
+});
+
+// ── A8 Plan your court day ──────────────────────────────────────────────────
+function helpFail(req, res, e, where) {
+  const lang = resolveLang(req);
+  if (e instanceof HelpError) return res.status(e.status).json({ error: msg(lang, `ride.err.${e.code}`), code: e.code });
+  logger.error({ err: e.message }, `[court-dates${where}]`);
+  return res.status(500).json({ error: msg(lang, 'cd.err.save'), code: 'server_error' });
+}
+
+router.put('/:id/plan', authRequired, writeLimiter, async (req, res) => {
+  const id = idParam(req, res); if (!id) return;
+  try {
+    const plan = normalizePlan(req.body);
+    const db = await getDb();
+    const row = await loadOwned(db, req.user.id, id);
+    if (!row) return res.status(404).json({ error: msg(resolveLang(req), 'cd.err.not_found') });
+    const merged = { ...(row.plan && typeof row.plan === 'object' ? row.plan : {}), ...plan };
+    const up = await db.get(
+      `UPDATE court_dates SET plan = CAST(? AS jsonb), plan_updated_at = NOW() WHERE id = ? AND user_id = ? RETURNING plan, plan_updated_at`,
+      [JSON.stringify(merged), id, req.user.id]);
+    res.json({ plan: planView(up.plan), plan_updated_at: up.plan_updated_at });
+  } catch (e) { helpFail(req, res, e, '/plan'); }
+});
+
+router.post('/:id/ride-offers/:offerId', authRequired, writeLimiter, async (req, res) => {
+  const id = idParam(req, res); if (!id) return;
+  const offerId = Number.parseInt(req.params.offerId, 10);
+  if (!Number.isSafeInteger(offerId) || offerId <= 0) return res.status(400).json({ error: msg(resolveLang(req), 'cd.err.bad_id') });
+  try {
+    const db = await getDb();
+    const row = await loadOwned(db, req.user.id, id);
+    if (!row) return res.status(404).json({ error: msg(resolveLang(req), 'cd.err.not_found') });
+    const r = await decideRide(db, { ownerId: req.user.id, courtDateId: id, offerId, decision: String(req.body?.decision || '') });
+    res.json({ ...r, ride_offers: await rideOffersForOwner(db, id) });
+  } catch (e) { helpFail(req, res, e, '/ride-offers'); }
 });
 
 router.get('/:id/reminders', authRequired, async (req, res) => {

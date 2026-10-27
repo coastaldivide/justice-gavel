@@ -64,6 +64,7 @@ export const AUDIT_ACTIONS = {
   ADMIN_CLAIM_DECIDED:      'admin.listing_claim_decided',
   ADMIN_REPORT_DECIDED:     'admin.listing_report_decided',
   ADMIN_REVIEW_MODERATED:   'admin.review_moderated',
+  ADMIN_RESULTS_PUBLISHED:  'admin.results_published',
 };
 
 /**

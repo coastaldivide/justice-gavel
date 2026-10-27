@@ -17,6 +17,11 @@ It was retired in favour of the one maintained reference above;
 Court-date texts for Bond Desk and "Did you make it to court?" (October 2026) add no new
 variables: they use the Telnyx settings (`TELNYX_*`), `APP_URL` for the missed-court link and
 `REMINDERS_ENABLED` for the 5-minute job — see DEPLOY_ENV_SETUP.md.
+Help getting to court, phone verification and published results (migration 40) add the phone-line
+settings `TELNYX_VOICE_ENABLED` (default off), `TELNYX_VOICE_NUMBER`, the optional voices
+`TELNYX_VOICE_EN` / `TELNYX_VOICE_ES`, `PHONE_LINE_TIME_ZONE`, and the optional `PHONE_CODE_SECRET`
+(phone-verification codes are stored only as an HMAC) — see DEPLOY_ENV_SETUP.md and docs/PHONE_LINE.md.
+
 ## Settings that wait for counsel (⚖)
 
 These are built and tested, but stay **off in production** until the counsel question is answered

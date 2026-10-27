@@ -11,6 +11,9 @@
  *
  * Renders nothing when there is no linked enrollment, when signed out, or when
  * the server cannot be reached — the card never shows placeholder data.
+ * Links are made only through a VERIFIED phone (migration 40). When links made
+ * before verification are held for this account, the card says "Verify your
+ * phone to see your bail agent's details" (onVerifyPhone → VerifyPhone screen).
  * API: GET /api/me/bail-agent.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -39,27 +42,44 @@ export function checkInLine(c: BailAgentInfo['check_in']): string {
   return t(c.frequency === 'weekly' ? 'bac_checkin_due_week' : 'bac_checkin_due_today');
 }
 
-export default function BailAgentCard({ onCheckIn, refreshKey = 0 }: { onCheckIn: (enrollmentId: number) => void; refreshKey?: number }) {
+export default function BailAgentCard({ onCheckIn, onVerifyPhone, refreshKey = 0 }: { onCheckIn: (enrollmentId: number) => void; onVerifyPhone?: () => void; refreshKey?: number }) {
   useLang();
   const { colors } = useTheme();
   const s = makeStyles(colors);
   const [agents, setAgents] = useState<BailAgentInfo[]>([]);
+  const [verifyPrompt, setVerifyPrompt] = useState(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(async () => {
     const token = await secureStorage.getToken().catch(() => null);
-    if (!token) { if (mounted.current) setAgents([]); return; }
+    if (!token) { if (mounted.current) { setAgents([]); setVerifyPrompt(false); } return; }
     try {
-      const r = await api.get<{ agents: BailAgentInfo[] }>('/me/bail-agent');
-      if (mounted.current) setAgents(Array.isArray(r.data?.agents) ? r.data.agents : []);
-    } catch { if (mounted.current) setAgents([]); }
+      const r = await api.get<{ agents: BailAgentInfo[]; verify_prompt?: boolean }>('/me/bail-agent');
+      if (!mounted.current) return;
+      setAgents(Array.isArray(r.data?.agents) ? r.data.agents : []);
+      setVerifyPrompt(r.data?.verify_prompt === true);
+    } catch { if (mounted.current) { setAgents([]); setVerifyPrompt(false); } }
   }, []);
   useEffect(() => { load(); }, [load, refreshKey]);
 
-  if (!agents.length) return null;
+  if (!agents.length && !verifyPrompt) return null;
   return (
     <>
+      {verifyPrompt && (
+        <View style={s.card} testID="bail-agent-verify">
+          <View style={s.titleRow}>
+            <AppIcon name={ICONS.lock} size={22} color={colors.textBrand} />
+            <Text maxFontSizeMultiplier={1.3} style={s.title} accessibilityRole="header">{t('bac_title')}</Text>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('bac_verify_prompt')}</Text>
+          {!!onVerifyPhone && (
+            <TouchableOpacity accessibilityRole="button" style={s.btn} onPress={onVerifyPhone} testID="bail-agent-verify-btn">
+              <Text maxFontSizeMultiplier={1.3} style={s.btnText}>{t('bac_verify_btn')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
       {agents.map(a => {
         const name = a.agency.name || t('bac_your_agent');
         const due = !a.check_in.checked_in_today && !a.check_in.done_for_period;

@@ -104,6 +104,8 @@ const RecoverySharesScreen = withSuspense(React.lazy(() => import('../screens/Re
 const BondDeskSettingsScreen = withSuspense(React.lazy(() => import('../screens/BondDeskSettingsScreen')));
 const BondImportScreen = withSuspense(React.lazy(() => import('../screens/BondImportScreen')));
 const AdminFormsSetupScreen = withSuspense(React.lazy(() => import('../screens/AdminFormsSetupScreen')));
+const AdminResultsScreen = withSuspense(React.lazy(() => import('../screens/AdminResultsScreen')));
+const VerifyPhoneScreen = withSuspense(React.lazy(() => import('../screens/VerifyPhoneScreen')));
 const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
 const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
 const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
@@ -242,6 +244,8 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="BondDeskSettings"      component={BondDeskSettingsScreen}      options={{ title: t('bdk_settings') }} />
       <MoreStack.Screen name="BondImport"            component={BondImportScreen}            options={{ title: t('bdk_import_title') }} />
       <MoreStack.Screen name="AdminFormsSetup"       component={AdminFormsSetupScreen}       options={{ title: t('adm_forms_setup') }} />
+      <MoreStack.Screen name="AdminResults"          component={AdminResultsScreen}          options={{ title: t('ares_title') }} />
+      <MoreStack.Screen name="VerifyPhone"           component={VerifyPhoneScreen}           options={{ title: t('vp_title') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />

@@ -40,6 +40,7 @@ import CheckInLinkScreen from './src/screens/CheckInLinkScreen';
 import RecoveryInviteScreen from './src/screens/RecoveryInviteScreen';
 import AutopayLinkScreen from './src/screens/AutopayLinkScreen';
 import AgencyPayScreen from './src/screens/AgencyPayScreen';
+import ResultsScreen from './src/screens/ResultsScreen';
 import StaffJoinScreen from './src/screens/StaffJoinScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
@@ -372,6 +373,8 @@ function AppInner() {
           <RootStack.Screen name="AgencyPay" component={AgencyPayScreen} />
           {/* An invitation to work in an agency's Bond Desk (sign-in asked on the page) */}
           <RootStack.Screen name="StaffJoin" component={StaffJoinScreen} />
+          {/* The published results page (B11) — shows only what an admin published; any auth state */}
+          <RootStack.Screen name="Results" component={ResultsScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>
