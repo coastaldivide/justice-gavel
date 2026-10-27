@@ -37,7 +37,7 @@ not find it.
 ## 2. What Justice Gavel already does well (found in the code)
 
 - **Free crisis path with no account.** "Just arrested?" opens a state rights card, and the same search returns both lawyers and bail agents.
-- **Court reminders without an account.** Guests get up to four texts per court date, at 7 days, 3 days, the evening before and the morning of. Family followers are added with consent, Family Connect is free, and there is a free in-app guide for a missed court date.
+- **Court reminders without an account.** Guests get up to four reminder notifications on their phone per court date (7 days, 3 days, the evening before and the morning of); texts need an account. Family followers are added with consent, Family Connect is free, and there is a free in-app guide for a missed court date.
 - **Four languages throughout:** English, Spanish, Portuguese and Vietnamese.
 - **Bond Desk matches the market and adds what others lack:**
   - **Pricing:** $99 / $199 / $349 plans, texts at 5¢, no per-client fee for check-ins.
