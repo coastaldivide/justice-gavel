@@ -8,6 +8,7 @@ import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity
 import { FONTS, RADIUS, useTheme } from '../../constants/theme';
 import { AppIcon, ICONS } from '../AppIcon';
 import { t } from '../../i18n';
+import { endAlign } from '../../i18n/direction';
 
 type Colors = ReturnType<typeof useTheme>['colors'];
 
@@ -131,7 +132,7 @@ export const makeStyles = (colors: Colors) => StyleSheet.create({
   strong: { ...FONTS.bold, color: colors.textPrimary },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowLabel: { fontSize: 14, color: colors.textSecond, flexShrink: 1 },
-  rowValue: { fontSize: 14, ...FONTS.bold, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
+  rowValue: { fontSize: 14, ...FONTS.bold, color: colors.textPrimary, flexShrink: 1, textAlign: endAlign() },
   label: { fontSize: 13, ...FONTS.bold, color: colors.textSecond, marginBottom: 4 },
   input: { minHeight: 44, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: colors.inputText, backgroundColor: colors.inputBg },
   btn: { minHeight: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, marginTop: 10 },

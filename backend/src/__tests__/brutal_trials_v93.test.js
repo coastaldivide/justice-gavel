@@ -97,7 +97,8 @@ describe('I18N4. i18n/index.ts — Translation Engine', () => {
     expect(src).toContain('detectLang()');
     // the person's saved choice wins over the device language
     expect(src).toContain("const saved = await AsyncStorage.getItem('lang')");
-    expect(src).toContain('setLang(detectLang(), { persist: false });');
+    expect(src).toContain('const l = isLang(saved) ? saved : detectLang();');
+    expect(src).toContain('setLang(l, { persist: false });');
   });
   test('I18N4-06: Missing translation warn in DEV only — never crashes production', async () => {
     const fs = await import('fs');

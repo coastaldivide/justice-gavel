@@ -195,7 +195,7 @@ export async function markViewed(db, { packet, signer, docId, ip, ua }) {
   if (c.changes) await event(db, { packetId: packet.id, signerId: signer.id, event: 'viewed', detail: String(docId), ip, ua });
 }
 
-const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Portuguese', vi: 'Vietnamese' };
+const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Portuguese', vi: 'Vietnamese', ht: 'Haitian Creole', zh: 'Simplified Chinese', ar: 'Arabic', tl: 'Tagalog' };
 const LABEL = { sent: 'Signing link sent', link_rotated: 'New signing link sent', opened: 'Signing link opened' };
 
 /** completed when every signer signed; otherwise in_progress once anyone started. */

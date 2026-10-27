@@ -101,7 +101,7 @@ export async function startVerification(db, userId, rawPhone, { lang = 'en', now
   const row = await db.get(
     `INSERT INTO phone_verifications (user_id, phone, code_hash, expires_at, created_at)
      VALUES (?, ?, ?, ?, ?) RETURNING id`, [userId, phone, hashCode(userId, phone, code), expires.toISOString(), nowIso]);
-  const body = fitSms(() => msg(lang, 'phone.verify.sms', { code, minutes: CODE_MINUTES }), {}, []);
+  const body = fitSms(() => msg(lang, 'phone.verify.sms', { code, minutes: CODE_MINUTES }), {}, [], { lang });
   const r = await sendSms({ to: phone, body });
   if (!r?.ok) {
     await db.run(`UPDATE phone_verifications SET status = 'not_sent' WHERE id = ?`, [row.id]);

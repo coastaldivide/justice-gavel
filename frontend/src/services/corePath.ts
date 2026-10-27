@@ -13,7 +13,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from './api';
-import { getLang, locale, t } from '../i18n';
+import { getLang, htDay, locale, t } from '../i18n';
 import { stateName } from '../utils/userState';
 
 export type CoreStep = 1 | 2 | 3;
@@ -232,20 +232,22 @@ const NBSP = /[\u00a0\u202f]/g;
 export function formatCourtDay(d: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
   if (!m) return d || '';
+  if (getLang() === 'ht') return htDay(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)));
   return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)).toLocaleDateString(locale(), {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
   }).replace(NBSP, ' ');
 }
 
-/** 'HH:MM' → '9:30 AM' (en) / '9:30 a.m.' (es) / '09:30' (pt, vi); '' when no time. Same as the server's labels. */
+/** 'HH:MM' → '9:30 AM' (en, tl) / '9:30 a.m.' (es) / '09:30' (pt, vi, ht, zh) / '9:30 ص' (ar); '' when no time. Same as the server's labels. */
 export function formatCourtTime(tm: string | null | undefined): string {
   const m = /^(\d{2}):(\d{2})/.exec(String(tm ?? ''));
   if (!m) return '';
   const h = Number(m[1]); const mm = m[2];
   const lang = getLang();
-  if (lang === 'en') return `${((h + 11) % 12) + 1}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+  if (lang === 'en' || lang === 'tl') return `${((h + 11) % 12) + 1}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+  if (lang === 'ht') return `${m[1]}:${mm}`;
   return new Date(Date.UTC(2000, 0, 1, h, Number(mm))).toLocaleTimeString(locale(), {
-    hour: lang === 'es' ? 'numeric' : '2-digit', minute: '2-digit', timeZone: 'UTC',
+    hour: lang === 'es' || lang === 'ar' ? 'numeric' : '2-digit', minute: '2-digit', hourCycle: lang === 'zh' ? 'h23' : undefined, timeZone: 'UTC',
   }).replace(NBSP, ' ');
 }
 
@@ -254,6 +256,10 @@ export function reviewedLabel(d: string | null | undefined): string {
   if (!d) return '';
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(d);
   if (!m) return d;
+  if (getLang() === 'ht') {
+    const day = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 15)));
+    return m[3] ? htDay(day, { weekday: false }) : htDay(day, { weekday: false }).replace(/^\d+ /, '');
+  }
   return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 15))).toLocaleDateString(locale(),
     m[3] ? { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } : { month: 'long', year: 'numeric', timeZone: 'UTC' })
     .replace(NBSP, ' ');

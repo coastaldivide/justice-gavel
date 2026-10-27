@@ -1,6 +1,6 @@
 /**
  * MissedCourtScreen — the page the morning-after text links to
- * (https://justicegavel.app/missed-court[/es|/pt|/vi]): "If you missed court, act today",
+ * (https://justicegavel.app/missed-court[/es|/pt|/vi|/ht|/zh|/ar|/tl]): "If you missed court, act today",
  * then the app's existing missed-court guidance (services/courtDayGuidance.js on the server,
  * bundled here as cg_missed_*), with its sources. Works signed out, browsing or signed in —
  * the person may have only a text from their bail agent, no account.
@@ -10,10 +10,8 @@ import React, { useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import { useTheme } from '../constants/theme';
-import { getLang, setLang, t, useLang } from '../i18n';
+import { getLang, isLang, setLang, t, useLang } from '../i18n';
 import { GuidanceView, makeStyles, pickGuidance } from './CourtDatesScreen';
-
-const LANGS = ['en', 'es', 'pt', 'vi'];
 
 function MissedCourtScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   useLang();
@@ -21,7 +19,7 @@ function MissedCourtScreen({ navigation, route }: ScreenProps): React.JSX.Elemen
   const styles = makeStyles(colors);
   const want = String((route?.params as { lang?: string } | undefined)?.lang || '').toLowerCase();
   useEffect(() => {
-    if (LANGS.includes(want) && want !== getLang()) setLang(want, { persist: false });
+    if (isLang(want) && want !== getLang()) setLang(want, { persist: false });
   }, [want]);
   const g = pickGuidance(null);
   return (

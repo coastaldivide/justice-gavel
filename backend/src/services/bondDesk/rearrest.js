@@ -172,7 +172,7 @@ export function rearrestMessage(lang, { match, defendant, county, state, booking
   return {
     title, body, subject: title,
     sms: fitSms((f) => msg(lang, 'rearrest.sms', { agency: f.agency, name: f.name, roster, link }),
-      { agency, name: defendant }, [['agency', 10], ['name', 12]]),
+      { agency, name: defendant }, [['agency', 10], ['name', 12]], { lang }),
     email: `${body}\n\n${msg(lang, 'rearrest.email_open', { link })}\n\n${msg(lang, 'rearrest.email_note')}`,
   };
 }

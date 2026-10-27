@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger.js';
 import { escapeHtml as e, safeUrl, headerSafe } from '../utils/html.js';
-import { msg } from '../i18n/index.js';
+import { msg, langAttrs } from '../i18n/index.js';
 import { REFUND_CUTOFF_HOURS } from './consultationSlots.js';
 
 // Every value interpolated into the HTML templates below goes through e()
@@ -76,13 +76,13 @@ async function send({ to, subject, html, text }) {
 
 // ── Transactional emails ───────────────────────────────────────────────────────
 
-/** Password reset link, written in `lang` (en / es / pt / vi). */
+/** Password reset link, written in `lang` (en / es / pt / vi / ht / zh / ar / tl). */
 export async function sendPasswordReset(to, resetUrl, lang = 'en') {
   const m = (k) => e(msg(lang, k));
   return await send({
     to, subject: msg(lang, 'email.reset.subject'),
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
         <h2 style="color:#042C53">${m('email.reset.title')}</h2>
         <p>${m('email.reset.body')}</p>
         <a href="${safeUrl(resetUrl)}" style="display:inline-block;background:#042C53;color:#fff;
@@ -106,7 +106,7 @@ export async function sendWelcome(to, displayName, lang = 'en') {
   return await send({
     to, subject: msg(lang, 'email.welcome.subject'),
     html: `
-      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
         <h2 style="color:#042C53">${name ? m('email.welcome.title', { name }) : m('email.welcome.subject')}</h2>
         <p>${m('email.welcome.body')}</p>
         <ul style="line-height:2">
@@ -160,7 +160,7 @@ export async function sendBookingConfirmation({ to, lang = 'en', clientName, att
     to,
     subject: m('email.booking.subject', { lawyer: attorneyName, when }),
     html: `
-      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#0A1628">${e(m('email.booking.title'))}</h2>
         <p>${e(greeting(lang, clientName))}</p>
         <p>${e(m('email.booking.body', { minutes: durationMin, lawyer: attorneyName }))}</p>
@@ -186,7 +186,7 @@ export async function sendAttorneyBookingAlert({ to, lang = 'en', attorneyName, 
     to,
     subject: m('email.atty.subject', { client, when }),
     html: `
-      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#0A1628">${e(m('email.atty.title'))}</h2>
         <p>${e(greeting(lang, attorneyName))}</p>
         <p>${e(m('email.atty.body', { client, minutes: durationMin }))}</p>
@@ -209,7 +209,7 @@ export async function sendConsultationReminder({ to, lang = 'en', clientName, at
     to,
     subject: m('email.reminder.subject', { lawyer: attorneyName, when }),
     html: `
-      <div lang="${e(lang)}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#0A1628">${e(m('email.reminder.title'))}</h2>
         <p>${e(greeting(lang, clientName))}</p>
         <p>${e(m('email.reminder.body', { minutes: durationMin, lawyer: attorneyName, when }))}</p>

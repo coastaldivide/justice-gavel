@@ -314,7 +314,7 @@ describe('CUMULATIVE. Final Coverage Scorecard — 89 Passes', () => {
   });
   test('SCORE-05: S12 — 707/707 i18n keys × 4 languages (en/es/pt/vi)', async () => {
     const fs=await import('fs');
-    for (const lang of ['en','es','pt','vi']) {
+    for (const lang of ['en','es','pt','vi','ht','zh','ar','tl']) {
       const dict=JSON.parse(fs.readFileSync(`${__REPO}/frontend/src/i18n/${lang}.json`,'utf8'));
       expect(Object.keys(dict).length).toBeGreaterThanOrEqual(707);
     }

@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
     backgroundColor: THEME_COLORS.textPrimary,
     borderRadius:   12,
     paddingVertical:12,
-    paddingLeft:    0,
-    paddingRight:   12,
+    paddingStart:    0,
+    paddingEnd:   12,
     shadowColor:    THEME_COLORS.black,
     shadowOffset:   { width: 0, height: 4 },
     shadowOpacity:  0.18,
@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
     alignSelf:      'stretch',
     justifyContent: 'center',
     alignItems:     'center',
-    borderTopLeftRadius:    12,
-    borderBottomLeftRadius: 12,
-    marginRight:    12,
+    borderTopStartRadius:    12,
+    borderBottomStartRadius: 12,
+    marginEnd:    12,
   },
   message: {
     flex:       1,
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
   },
   close: {
     color:      'rgba(255,255,255,0.5)',
-    marginLeft: 8,
+    marginStart: 8,
   },
 });

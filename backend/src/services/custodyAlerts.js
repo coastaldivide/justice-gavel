@@ -96,7 +96,7 @@ export function eventMessage(lang, ev, arrest, tz) {
   const body = msg(l, key, p);
   const title = msg(l, 'custody.title', { name: arrest.name });
   const sms = fitSms((f) => msg(l, 'custody.sms', { body: msg(l, key, { ...p, name: f.name, old: f.old, new: f.new }) }),
-    { name: arrest.name, old: p.old, new: p.new }, [['old', 8], ['new', 12], ['name', 12]]);
+    { name: arrest.name, old: p.old, new: p.new }, [['old', 8], ['new', 12], ['name', 12]], { lang: l });
   return {
     title, body, sms,
     email_subject: title,

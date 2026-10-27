@@ -12,7 +12,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutA
 import { setPendingRoute } from '../services/corePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
-import { t, initLang, setLang, useLang } from '../i18n';
+import { t, initLang, setLang, useLang, langFromLocale } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themed } from '../constants/theme';
 import { detectAndSaveUserState } from '../services/location';
 import JTBLogo from '../components/JTBLogo';
@@ -91,17 +91,10 @@ function OnboardingScreen({ navigation }: ScreenProps) {
           ? NativeModules.SettingsManager?.settings?.AppleLocale ||
             NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] || 'en'
           : NativeModules.I18nManager?.localeIdentifier || 'en';
-        if (locale.startsWith('es') || locale.startsWith('ES')) {
-                    AsyncStorage.getItem('lang').then((stored: string | null) => {
-            if (!stored) { setLang('es'); }
-          });
-        } else if (locale.startsWith('pt') || locale.startsWith('PT')) {
-                    AsyncStorage.getItem('lang').then((stored: string | null) => {
-            if (!stored) { setLang('pt'); }
-          });
-        } else if (locale.startsWith('vi') || locale.startsWith('VI')) {
-                    AsyncStorage.getItem('lang').then((stored: string | null) => {
-            if (!stored) { setLang('vi'); }
+        const fromDevice = langFromLocale(String(locale));
+        if (fromDevice && fromDevice !== 'en') {
+          AsyncStorage.getItem('lang').then((stored: string | null) => {
+            if (!stored) { setLang(fromDevice); }
           });
         }
       } catch (e: any) {

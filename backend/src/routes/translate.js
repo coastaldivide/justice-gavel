@@ -1,6 +1,6 @@
 import { anthropicFetch, aiHttpError, aiErrorCode } from '../services/aiClient.js';
 import { requireAi, aiConfigured, CLAUDE_MODEL } from '../utils/ai.js';
-import { msg, resolveLang } from '../i18n/index.js';
+import { msg, resolveLang, LANG_NAMES } from '../i18n/index.js';
 import { translateLimiter } from '../utils/rateLimiters.js';
 // AI route — general guidance only, not legal advice
 /**
@@ -43,12 +43,6 @@ const router = express.Router();
 const say = (req, key, params) => msg(resolveLang(req), `translate.err.${key}`, params);
 const refuse = (res, req, status, code, params) => res.status(status).json({ error: code, code, message: say(req, code, params) });
 
-const LANG_NAMES = {
-  en: 'English',
-  es: 'Spanish',
-  pt: 'Brazilian Portuguese',
-  vi: 'Vietnamese',
-};
 
 // Tables defined in db/index.js Year 2 block — no per-request DDL needed.
 

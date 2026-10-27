@@ -65,9 +65,13 @@ import en from '../../i18n/en.json';
 import es from '../../i18n/es.json';
 import pt from '../../i18n/pt.json';
 import vi from '../../i18n/vi.json';
+import ht from '../../i18n/ht.json';
+import zh from '../../i18n/zh.json';
+import ar from '../../i18n/ar.json';
+import tl from '../../i18n/tl.json';
 
 const { on, reset } = apiMock();
-const FILES: Record<string, Record<string, string>> = { es, pt, vi };
+const FILES: Record<string, Record<string, string>> = { es, pt, vi, ht, zh, ar, tl };
 const wrap = (node: React.ReactElement) => render(<ThemeProvider><ToastProvider>{node}</ToastProvider></ThemeProvider>);
 
 function englishFragments(lang: string): string[] {
@@ -116,7 +120,7 @@ beforeEach(async () => {
 });
 afterAll(() => setLang('en', { persist: false }));
 
-describe.each(['es', 'pt', 'vi'] as Lang[])('priority screens in %s — no English left', (lang) => {
+describe.each(['es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'] as Lang[])('priority screens in %s — no English left', (lang) => {
   beforeEach(() => { act(() => setLang(lang, { persist: false })); });
 
   it('CaseScreen: case list with a stored English status shown in the language', async () => {

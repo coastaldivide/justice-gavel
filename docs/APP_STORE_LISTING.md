@@ -55,7 +55,7 @@ FOR ATTORNEYS
 • Motion template library
 • AI case strategy partner
 
-Available in English, Spanish, Portuguese, and Vietnamese.
+Available in English, Spanish, Portuguese, Vietnamese, Haitian Creole, Chinese, Arabic and Tagalog.
 
 DISCLAIMER: Justice Gavel provides legal information, not legal advice. The AI assistant is not your attorney. Always consult a licensed attorney for advice specific to your situation.
 

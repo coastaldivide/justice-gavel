@@ -56,7 +56,7 @@ let TEXT_TO_KEY = null;
 function catalogKey(text) {
   if (!TEXT_TO_KEY) {
     TEXT_TO_KEY = new Map();
-    for (const cat of [CATALOGS.vi, CATALOGS.pt, CATALOGS.es, CATALOGS.en]) {   // English last: it wins on a tie
+    for (const cat of [CATALOGS.tl, CATALOGS.ar, CATALOGS.zh, CATALOGS.ht, CATALOGS.vi, CATALOGS.pt, CATALOGS.es, CATALOGS.en]) {   // English last: it wins on a tie
       for (const [k, v] of Object.entries(cat)) if (typeof v === 'string' && !/\{\w+\}/.test(v)) TEXT_TO_KEY.set(v.trim(), k);
     }
   }

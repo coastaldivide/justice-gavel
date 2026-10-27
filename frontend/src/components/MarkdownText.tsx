@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   link: { textDecorationLine: 'underline' },
   heading: { fontWeight: '800', marginTop: 4, marginBottom: 2 },
   headingBig: { fontSize: 16 },
-  li: { flexDirection: 'row', gap: 6, paddingLeft: 2, marginTop: 2 },
+  li: { flexDirection: 'row', gap: 6, paddingStart: 2, marginTop: 2 },
   marker: { minWidth: 16 },
   liText: { flex: 1 },
   gap: { height: 8 },

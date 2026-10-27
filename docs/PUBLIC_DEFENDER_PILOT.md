@@ -64,7 +64,7 @@ agreement. Any published figure states the period, the counts and this method.
 ## 3. What the office provides
 - The office's name, county, phone and billing e-mail. The names and e-mail addresses of the staff who will use it, within
   the agreed seats.
-- The client list as CSV. Columns: name, mobile phone, preferred language (en / es / pt / vi), case number and court dates;
+- The client list as CSV. Columns: name, mobile phone, preferred language (en / es / pt / vi / ht / zh / ar / tl), case number and court dates;
   e-mail and court are optional. Only clients covered by the consent basis (section 4) are listed.
 - Court date changes as they happen: re-upload or edit, and mark the outcome when known.
 - The 90-day baseline numbers and their source, before the pilot starts.

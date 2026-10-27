@@ -49,7 +49,7 @@ name (it must match the name on file) and ticks two boxes. No drawn signature. E
 fingerprint of the copy reviewed, the timeline (sent, opened, each document opened, signed, in UTC),
 IP address, browser, how the link was delivered, and the consent text. Details: docs/BOND_DESK.md.
 
-**Consent text shown before signing (English; also shown in Spanish, Portuguese and Vietnamese):**
+**Consent text shown before signing (English; also shown in Spanish, Portuguese, Vietnamese, Haitian Creole, Chinese, Arabic and Tagalog — the last four translated by Claude, not yet reviewed by a native-speaker legal translator, docs/TRANSLATIONS.md):**
 > Signing electronically: you may ask the agency for paper copies of these documents at no charge, and
 > you may sign on paper instead — to do that, do not sign here and contact the agency (phone above). You
 > can stop at any time before you sign. You need a device that can open PDF files; you will get a copy of

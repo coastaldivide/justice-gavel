@@ -1,20 +1,23 @@
 /**
- * i18nParity.test.js — the four language files must be complete translations.
+ * i18nParity.test.js — the eight language files must be complete translations.
  *
- *   - every key in all four files (none extra, none empty)
+ *   - every key in all eight files (none extra, none empty)
  *   - placeholders ({name}, {{x}}, %s, ${...}) and emoji identical to English
  *   - no value identical to English, except a tiny allowlist of proper nouns /
  *     codes (ALLOW_SAME, each justified below)
  *   - no value much shorter than the English (a cut-down legal sentence is a
  *     wrong translation): ≥ 50 % of the English length for values ≥ 30 chars
+ *     (Chinese writes a word in one or two characters: ≥ 15 % there; Arabic ≥ 40 %)
  *   - cheap "wrong language" guards: Spanish words in Portuguese and vice
- *     versa; a Vietnamese value of 4+ words with no Vietnamese letter (English)
+ *     versa; a Vietnamese value of 4+ words with no Vietnamese letter (English);
+ *     a Chinese / Arabic value of 4+ Latin words with no Chinese / Arabic letter
  */
 const fs = require('fs');
 const path = require('path');
 
 const DIR = path.resolve(__dirname, '../i18n');
-const LANGS = ['es', 'pt', 'vi'];
+const LANGS = ['es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'];
+const MIN_RATIO = { zh: 0.15, ar: 0.4 };   // Arabic leaves out short vowels and joins words: a little shorter
 const files = Object.fromEntries(['en', ...LANGS].map(l => [l, JSON.parse(fs.readFileSync(path.join(DIR, `${l}.json`), 'utf8'))]));
 const en = files.en;
 
@@ -30,12 +33,18 @@ const ALLOW_SAME = {
   x_common_no: ['es'],       // Spanish "No" is the same word
 };
 
+// ht / zh / ar / tl were translated under a brief that keeps brand names (Bond Desk, Case Pass,
+// Justice Gavel) and format codes (YYYY-MM-DD, HH:MM, KB) in English; these keys may stay as-is there.
+const NEWER = ['ht', 'zh', 'ar', 'tl'];
+const KEEP_IN_NEWER = new Set(['bdk_title', 'cp_title', 'x_ch_justice_gavel_ai', 'x_st_justice_gavel_v', 'x_discovery_kb',
+  'cd_date_placeholder', 'hg_date_placeholder', 'bdk_date_ph', 'pd_ph_date', 'bdk_cd_time_ph']);
+
 const PLACEHOLDER = /\{\{?\w+\}?\}|%[sd]|\$\{[^}]*\}/g;
 const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu;
 const sorted = (s, re) => (String(s).match(re) || []).sort();
 const VI_LETTER = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
 
-describe('i18n parity — es / pt / vi are complete translations of en', () => {
+describe('i18n parity — es / pt / vi / ht / zh / ar / tl are complete translations of en', () => {
   it('has a meaningful number of keys', () => {
     expect(Object.keys(en).length).toBeGreaterThan(1000);
   });
@@ -57,7 +66,8 @@ describe('i18n parity — es / pt / vi are complete translations of en', () => {
       });
 
       it('translates every value (only the allowlisted proper nouns / codes may equal English)', () => {
-        const same = Object.keys(en).filter(k => d[k] === en[k] && !(ALLOW_SAME[k] || []).includes(lang));
+        const same = Object.keys(en).filter(k => d[k] === en[k] && !(ALLOW_SAME[k] || []).includes(lang)
+          && !(NEWER.includes(lang) && KEEP_IN_NEWER.has(k)));
         expect(same).toEqual([]);
       });
 
@@ -69,7 +79,7 @@ describe('i18n parity — es / pt / vi are complete translations of en', () => {
       });
 
       it('no translation is much shorter than the English (nothing dropped)', () => {
-        const short = Object.keys(en).filter(k => en[k].length >= 30 && d[k].length < en[k].length * 0.5);
+        const short = Object.keys(en).filter(k => en[k].length >= 30 && d[k].length < en[k].length * (MIN_RATIO[lang] || 0.5));
         expect(short).toEqual([]);
       });
 
@@ -80,6 +90,12 @@ describe('i18n parity — es / pt / vi are complete translations of en', () => {
           const english = Object.keys(d).filter(k => !ALLOW_SAME[k] && (d[k].match(/[A-Za-z]{2,}/g) || []).length >= 4 && !VI_LETTER.test(d[k]));
           expect(english).toEqual([]);
         }
+        const script = { zh: /\p{Script=Han}/u, ar: /\p{Script=Arabic}/u }[lang];
+        if (script) {
+          const latinOnly = Object.keys(d).filter(k => !ALLOW_SAME[k] && (d[k].match(/[A-Za-z]{2,}/g) || []).length >= 4 && !script.test(d[k]));
+          expect(latinOnly).toEqual([]);
+        }
+        if (lang === 'ht') expect(Object.keys(d).filter(k => /\b(vous|nous|avec|être|sont|votre)\b/i.test(d[k]))).toEqual([]);   // French, not Creole
       });
     });
   }

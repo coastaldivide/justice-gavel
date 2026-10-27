@@ -61,13 +61,20 @@ import CourtDateDetailScreen from '../../screens/CourtDateDetailScreen';
 import HomeScreen from '../../screens/HomeScreen';
 import { setLang, t, type Lang } from '../../i18n';
 import { apiMock, makeNavigation } from './apiMock';
+import { STATE_NAMES_I18N } from '../../i18n/stateNames';
 import en from '../../i18n/en.json';
 import es from '../../i18n/es.json';
 import pt from '../../i18n/pt.json';
 import vi from '../../i18n/vi.json';
+import ht from '../../i18n/ht.json';
+import zh from '../../i18n/zh.json';
+import ar from '../../i18n/ar.json';
+import tl from '../../i18n/tl.json';
 
 const { on, reset } = apiMock();
-const FILES: Record<string, Record<string, string>> = { es, pt, vi };
+/** Tennessee as the app writes it in `lang` (Chinese and Arabic have their own names). */
+const tnName = (lang: string) => (STATE_NAMES_I18N as Record<string, Record<string, string>>)[lang]?.TN || 'Tennessee';
+const FILES: Record<string, Record<string, string>> = { es, pt, vi, ht, zh, ar, tl };
 const wrap = (node: React.ReactElement) => render(<ThemeProvider><ToastProvider>{node}</ToastProvider></ThemeProvider>);
 
 /** English sentence fragments (2+ words, 8+ chars) from en.json, minus any that also occur in `lang`'s file (brand names). */
@@ -123,7 +130,7 @@ function serverCard(lang: string) {
   return {
     state: 'TN', state_name: 'Tennessee', state_name_local: 'Tennessee', language: lang, mixed_language: false,
     general: [1, 2, 3, 4, 5, 6, 7, 8].map(sec), state_specific: [], state_specific_available: false,
-    state_notice: tx(lang, 'rc_state_pending', { state: 'Tennessee' }), disclaimer: tx(lang, 'rc_footer'),
+    state_notice: tx(lang, 'rc_state_pending', { state: tnName(lang) }), disclaimer: tx(lang, 'rc_footer'),
     script: {
       say: [1, 2, 3, 4, 5].map(n => ({ key: `rs_say_${n}`, text: tx(lang, `rs_say_${n}`), from: 'rc_1' })),
       dont: [1, 2, 3, 4, 5].map(n => ({ key: `rs_dont_${n}`, text: tx(lang, `rs_dont_${n}`), from: 'rc_2' })),
@@ -147,7 +154,7 @@ beforeEach(async () => {
 });
 afterAll(() => setLang('en', { persist: false }));
 
-describe.each(['es', 'pt', 'vi'] as Lang[])('core path in %s — no English left', (lang) => {
+describe.each(['es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'] as Lang[])('core path in %s — no English left', (lang) => {
   beforeEach(() => { act(() => setLang(lang, { persist: false })); });
 
   it('Just arrested hub: all three steps', async () => {
@@ -170,12 +177,12 @@ describe.each(['es', 'pt', 'vi'] as Lang[])('core path in %s — no English left
   it('Rights card: every section, the script, sources and the state notice', async () => {
     on('get', '/rights/TN', serverCard(lang));
     wrap(<RightsCardScreen navigation={makeNavigation()} route={{} as any} />);
-    expect(await screen.findByText(new RegExp(tx(lang, 'rc_state_pending', { state: 'Tennessee' }).slice(0, 20).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeTruthy();
+    expect((await screen.findAllByText(new RegExp(tx(lang, 'rc_state_pending', { state: tnName(lang) }).slice(0, 20).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('rights-section')).toHaveLength(8);
     const text = expectNoEnglish(lang);
     for (let i = 1; i <= 8; i++) expect(text).toContain(tx(lang, `rc_b${i}`));
     // the review month is written in the language too
-    expect(text).toContain(new Date(Date.UTC(2026, 3, 15)).toLocaleDateString({ es: 'es-US', pt: 'pt-BR', vi: 'vi-VN' }[lang], { month: 'long', year: 'numeric', timeZone: 'UTC' }));
+    expect(text).toContain(lang === 'ht' ? 'avril 2026' : new Date(Date.UTC(2026, 3, 15)).toLocaleDateString({ es: 'es-US', pt: 'pt-BR', vi: 'vi-VN', zh: 'zh-CN', ar: 'ar-u-nu-latn', tl: 'fil-PH' }[lang], { month: 'long', year: 'numeric', timeZone: 'UTC' }));
   });
 
   it('Rights card offline with nothing saved: the bundled card is in the language too', async () => {
@@ -210,7 +217,7 @@ describe.each(['es', 'pt', 'vi'] as Lang[])('core path in %s — no English left
     expect(text).toContain(tx(lang, 'hearing_arraignment'));
     expect(text).toContain(tx(lang, 'cg_missed_4'));
     // the day is written in the language ("jueves" / "quinta-feira" / "Thứ Năm")
-    expect(text).toMatch({ es: /jueves/, pt: /quinta-feira/, vi: /Thứ Năm/ }[lang] as RegExp);
+    expect(text).toMatch({ es: /jueves/, pt: /quinta-feira/, vi: /Thứ Năm/, ht: /jedi/, zh: /星期四/, ar: /الخميس/, tl: /Huwebes/ }[lang] as RegExp);
   });
 
   it('Court date detail: reminder schedule, courthouse, sharing, guidance', async () => {
@@ -241,7 +248,9 @@ describe.each(['es', 'pt', 'vi'] as Lang[])('core path in %s — no English left
     wrap(<HomeScreen navigation={makeNavigation()} route={{} as any} />);
     expect(await screen.findByText(tx(lang, 'rs_say_1'))).toBeTruthy();
     expect(await screen.findByText('Caso 2')).toBeTruthy();
-    expect(screen.getByLabelText(new RegExp(tx(lang, 'home_court_a11y', { n: 'NN' }).split('NN')[0]))).toBeTruthy();
+    // the longest fixed part of the label (Chinese puts the number first)
+    const courtLabel = tx(lang, 'home_court_a11y', { n: 'NN' }).split('NN').sort((a, b) => b.length - a.length)[0];
+    expect(screen.getAllByLabelText(new RegExp(courtLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).length).toBeGreaterThan(0);
     const text = expectNoEnglish(lang);
     for (const k of ['home_tile_Bail', 'home_tile_Rights', 'home_qc_sub', 'home_emergency_title', 'ja_create', 'home_quick_access']) expect(text).toContain(tx(lang, k));
   });

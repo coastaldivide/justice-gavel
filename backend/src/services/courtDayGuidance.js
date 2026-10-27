@@ -7,7 +7,7 @@
  * "Call your lawyer or the court clerk." Not yet reviewed by a lawyer.
  *
  * Text lives in i18n/messages/<lang>.js (guidance.*); courtDayGuidance(lang)
- * returns it in en / es / pt / vi (English for anything else), with the same
+ * returns it in any of the app's eight languages (English for anything else), with the same
  * structure in every language.
  */
 import { msg, normalizeLang } from '../i18n/index.js';

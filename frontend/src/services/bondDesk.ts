@@ -8,7 +8,7 @@
  * the payment-plan total check are exact.
  */
 import { Linking, Platform } from 'react-native';
-import { locale, t, tIn, type TParams } from '../i18n';
+import { locale, t, tIn, type Lang, type TParams } from '../i18n';
 
 export type BondStatus = 'prospect' | 'active' | 'forfeited' | 'exonerated' | 'surrendered' | 'forfeiture_paid' | 'cancelled';
 export const BOND_STATUSES: BondStatus[] = ['prospect', 'active', 'forfeited', 'exonerated', 'surrendered', 'forfeiture_paid', 'cancelled'];
@@ -120,7 +120,7 @@ export interface BdCourtDate { id: number; court_date: string; court_time: strin
   status: CourtStatus; status_source: 'agent' | 'reply' | null; status_at: string | null; asked_at: string | null; is_past: boolean }
 export interface TextRecipient { to: 'defendant' | 'indemnitor'; indemnitor_id: number | null; name: string; phone: string | null;
   phone_masked: string | null; consent: boolean; consent_at: string | null; opted_out: boolean }
-export interface CourtListing { court_dates: BdCourtDate[]; reminders_on: boolean; text_lang: 'en' | 'es' | 'pt' | 'vi'; time_zone: string;
+export interface CourtListing { court_dates: BdCourtDate[]; reminders_on: boolean; text_lang: Lang; time_zone: string;
   today: string; texts_live: boolean; bond_status: BondStatus; recipients: TextRecipient[] }
 export type ReminderStep = 'd7' | 'd3' | 'd1' | 'd0' | 'now' | 'ask' | 'missed';
 export interface BdReminder { id: number; court_date_id: number; court_day: string; step: ReminderStep; signer_type: 'defendant' | 'indemnitor';

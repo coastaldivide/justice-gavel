@@ -204,7 +204,7 @@ export default {
   'hearing.status': 'Status hearing',
   'hearing.other': 'Other hearing',
   'lang.saved': 'Language saved.',
-  'lang.err.bad': 'language must be one of: en, es, pt, vi.',
+  "lang.err.bad": "language must be one of: en, es, pt, vi, ht, zh, ar, tl.",
   'lang.err.save': 'Could not save your language.',
   // ── Legal tip of the day (GET /api/push/tip; English must equal LEGAL_TIPS in routes/push.js) ──
   "alerts.contacts_required": "Add at least one emergency contact (a phone number or e-mail) first.",
@@ -570,7 +570,7 @@ export default {
   "translate.err.subscription_required": "Translation of single messages is part of a paid plan. Interpreter sessions are free.",
   "translate.err.text_required": "Type something to translate.",
   "translate.err.text_too_long": "Please keep each message under {max} characters.",
-  "translate.err.unsupported_language": "That language is not available. Choose English, Spanish, Portuguese or Vietnamese.",
+  "translate.err.unsupported_language": "That language is not available. Choose English, Spanish, Portuguese, Vietnamese, Haitian Creole, Chinese, Arabic or Tagalog.",
   "translate.err.same_language": "Choose two different languages.",
   "translate.err.session_not_found": "Session not found. Check the code — sessions end after 4 hours without messages.",
   "translate.err.session_already_joined": "Someone has already joined this session. Ask for a new code.",

@@ -25,7 +25,7 @@
  * not discharged by then. Bonds posted in the quarter with no state or county are listed so the
  * agent can fix them — they cannot be placed in a county.
  */
-import { kit, row } from './pdf.js';
+import { kit, row, UNICODE_NOTE } from './pdf.js';
 import { money, usDate } from './money.js';
 
 export const TN_REPORT = Object.freeze({
@@ -151,6 +151,7 @@ export async function tnReportPdf(r, agency) {
     doc.moveDown(0.5);
   }
   doc.font('R').fontSize(8.5).fillColor('#444').text('The Department\'s notice does not say whether "liability in each county" means bonds written in the quarter or all bonds open at the end of the quarter; both are shown. Confirm with the Department which figure its schedule asks for. This report is prepared from the bonds entered in Bond Desk; it is not a filing.');
+  if (doc.unicodeReplaced) doc.moveDown(0.3).text(UNICODE_NOTE);
   doc.end();
   return await done;
 }

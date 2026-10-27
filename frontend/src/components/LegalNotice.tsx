@@ -69,7 +69,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     paddingVertical: 10,
   },
   row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
-  icon: { marginRight: 4, marginTop: 1 },
+  icon: { marginEnd: 4, marginTop: 1 },
   notice: {
     flexShrink: 1,
     fontSize: 11,

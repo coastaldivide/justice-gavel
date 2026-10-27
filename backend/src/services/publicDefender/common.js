@@ -4,12 +4,13 @@
  */
 import crypto from 'node:crypto';
 import { DEFAULT_TIME_ZONE, countyTimeZone, stateTimeZone } from '../../utils/timezone.js';
+import { SUPPORTED_LANGS } from '../../i18n/index.js';
 
 export class PdError extends Error {
   constructor(status, code, params) { super(code); this.status = status; this.code = code; this.params = params || {}; }
 }
 
-export const LANGS = Object.freeze(['en', 'es', 'pt', 'vi']);
+export const LANGS = SUPPORTED_LANGS;
 export const ROLES = Object.freeze(['admin', 'staff']);
 export const COURT_STATUSES = Object.freeze(['scheduled', 'attended', 'missed', 'rescheduled', 'cancelled']);
 export const INVITE_DAYS = 14;

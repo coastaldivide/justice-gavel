@@ -13,6 +13,7 @@
  * without one, Monday–Friday morning + afternoon.
  */
 import { stateTimeZone, DEFAULT_TIME_ZONE, zonedDateTimeToUtc, todayInZone, addDays, isValidTimeZone } from '../utils/timezone.js';
+import { LOCALES, normalizeLang, htDay } from '../i18n/index.js';
 
 /** Platform fee (cents) per duration (minutes) — the only prices the app shows or charges. */
 export const FEE_BY_DURATION = Object.freeze({ 15: 1000, 30: 1500, 60: 2500 });
@@ -25,13 +26,19 @@ const MIN_LEAD_MINUTES = 60;
 
 export const usd = (cents) => `$${(cents / 100).toFixed(2)}`;
 
-const SLOT_LOCALES = { en: 'en-US', es: 'es-US', pt: 'pt-BR', vi: 'vi-VN' };
 /** "Monday, May 4 · 9:00 AM CDT" in `lang`, in the zone the booking was made in. */
 export function slotLabel(startsAt, timeZone, lang = 'en') {
   const d = new Date(startsAt);
-  const loc = SLOT_LOCALES[lang] || 'en-US';
+  const l = normalizeLang(lang) || 'en';
+  const loc = LOCALES[l];
   const tz = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
-  return `${d.toLocaleDateString(loc, { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' })} · ${d.toLocaleTimeString(loc, { timeZone: tz, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}`;
+  const time = d.toLocaleTimeString(loc, { timeZone: tz, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  if (l === 'ht') {
+    // ICU has no Haitian Creole: the day in the booking's zone, written by htDay().
+    const [y, m, dd] = d.toLocaleDateString('en-CA', { timeZone: tz }).split('-').map(Number);
+    return `${htDay(new Date(Date.UTC(y, m - 1, dd, 12)))} · ${time}`;
+  }
+  return `${d.toLocaleDateString(loc, { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' })} · ${time}`;
 }
 
 export function pricing() {

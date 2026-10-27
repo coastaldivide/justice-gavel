@@ -2,7 +2,7 @@
  * services/publicDefender/clients.js — an office's client list and their court dates (A11 step 2;
  * docs/PUBLIC_DEFENDER.md "Client list").
  *
- * CSV upload (≤ 5,000 rows, ≤ 2 MB): columns name, phone, language (en / es / pt / vi, or the
+ * CSV upload (≤ 5,000 rows, ≤ 2 MB): columns name, phone, language (en / es / pt / vi / ht / zh / ar / tl, or the
  * language's name), case_number, court_dates (one or more, separated by ";", each YYYY-MM-DD or
  * M/D/YYYY, optionally followed by a 24-hour time "HH:MM"), optional email and court.
  *   1. preview: every row is checked and shown with its own errors, and whether it adds a new
@@ -43,6 +43,10 @@ const LANG_NAMES = {
   es: 'es', spanish: 'es', espanol: 'es', español: 'es',
   pt: 'pt', portuguese: 'pt', portugues: 'pt', português: 'pt',
   vi: 'vi', vietnamese: 'vi', 'tieng viet': 'vi', 'tiếng việt': 'vi',
+  ht: 'ht', haitian: 'ht', 'haitian creole': 'ht', creole: 'ht', kreyol: 'ht', 'kreyòl': 'ht', 'kreyol ayisyen': 'ht', 'kreyòl ayisyen': 'ht',
+  zh: 'zh', chinese: 'zh', mandarin: 'zh', 'simplified chinese': 'zh', '中文': 'zh', '简体中文': 'zh', '普通话': 'zh',
+  ar: 'ar', arabic: 'ar', 'العربية': 'ar', 'عربي': 'ar',
+  tl: 'tl', tagalog: 'tl', filipino: 'tl', fil: 'tl', wikang_tagalog: 'tl',
 };
 
 export const templateCsv = () => `${COLUMNS.join(',')}\r\n`;

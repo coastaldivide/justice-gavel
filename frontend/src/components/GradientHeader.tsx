@@ -111,7 +111,7 @@ export function GradientHeader({
 const s = StyleSheet.create({
   container:    { paddingTop: 52, paddingBottom: 20, paddingHorizontal: 20, position: 'relative' },
   compact:      { paddingTop: 44, paddingBottom: 14 },
-  backBtn:      { position: 'absolute', top: 50, left: 16, padding: 4, zIndex: 10 },
+  backBtn:      { position: 'absolute', top: 50, start: 16, padding: 4, zIndex: 10 },
   content:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconWrap:     { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   textWrap:     { flex: 1 },
@@ -121,7 +121,7 @@ const s = StyleSheet.create({
   subtitle:     { fontSize: 13, color: 'rgba(255,255,255,0.78)', marginTop: 3, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeText:    { fontSize: 11, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
-  rightAction:  { position: 'absolute', right: 16, bottom: 18 },
+  rightAction:  { position: 'absolute', end: 16, bottom: 18 },
   bottomLine:   { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
 });
 

@@ -18,6 +18,10 @@ decision, a lawyer, an account key, or a real phone.
 | 8 | **Privacy Policy badges** ("✓ GDPR ✓ CCPA ✓ Apple ✓ Google Play") have nothing behind them. | Keep or remove. |
 | 9 | **Insurance tile.** Its screen now says there is no insurance product. | Remove the tile, or add a real partner. |
 | 10 | **Push notifications** reach one device per user. | Fine for launch; multi-device push is a later feature. |
+| 11 | **Eight languages (Oct 27 2026).** Haitian Creole, Chinese, Arabic and Tagalog were translated by Claude. | Shipped, labelled in docs/TRANSLATIONS.md as needing a native-speaker legal translator's review before launch. Hire reviewers, or hide those four languages until reviewed. |
+| 12 | **Text length in Haitian Creole and Tagalog.** They are mostly plain GSM-7 but longer than English. | Default chosen: up to 3 GSM-7 segments (459 characters) in any language other than English; English stays at 2; Unicode languages keep the 6-segment limit. |
+| 13 | **Stripe Checkout language.** Stripe has Chinese and Filipino pages but no Haitian Creole or Arabic. | Haitian Creole and Arabic payers see Stripe's English page (our pages around it are in their language). |
+| 14 | **Arabic / Chinese letters in PDFs.** The bundled Inter font has neither, and no font with them is in node_modules. | Default chosen: such text prints as Unicode code points ("[U+738B …]") with a note; the certificate stays English. To print the letters, add Noto Sans Arabic + Noto Sans SC to backend/assets/fonts and a right-to-left shaping step (needs a decision on a new dependency). |
 
 ## 2. Lawyer review (legal content: shown, labelled "not reviewed by a lawyer", never invented)
 

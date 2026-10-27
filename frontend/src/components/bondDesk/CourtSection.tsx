@@ -10,7 +10,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { api, apiErrorMessage } from '../../services/api';
 import { useToast } from '../ToastProvider';
 import { useConfirm } from '../../hooks/useConfirm';
-import { t, useLang } from '../../i18n';
+import { t, useLang, LANGS } from '../../i18n';
 import { useTheme } from '../../constants/theme';
 import { Btn, Card, Check, Chips, Field, Line, Pill, Row } from './ui';
 import {
@@ -21,7 +21,6 @@ import {
 const EMPTY = { date: '', time: '', court: '', room: '' };
 type Draft = typeof EMPTY;
 const MARKS: CourtStatus[] = ['attended', 'rescheduled', 'missed', 'cancelled', 'scheduled'];
-const LANGS = ['en', 'es', 'pt', 'vi'] as const;
 const statusTone = (s: CourtStatus) => (s === 'attended' ? 'ok' : s === 'missed' ? 'danger' : s === 'scheduled' ? 'muted' : 'warn');
 
 export function CourtSection({ detail, reload, access }: { detail: BondDetail; reload: () => Promise<void>; access: Access | null }) {

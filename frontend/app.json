@@ -10,6 +10,7 @@
       "web"
     ],
     "extra": {
+      "supportsRTL": true,
       "apiBase": "https://api.justicegavel.app/api",
       "eas": {
         "projectId": "PENDING_EAS_INIT"

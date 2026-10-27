@@ -1,6 +1,6 @@
 /**
  * court_reminder_wording.test.js — the court texts (build plan A1, A6, A7):
- *   - every text, in en / es / pt / vi, with realistic long values AND the longest values the
+ *   - every text, in en / es / pt / vi / ht / zh / ar / tl, with realistic long values AND the longest values the
  *     forms accept, fits in 2 segments of its encoding (GSM-7: 306 characters; UCS-2: 134)
  *     and still ends with the opt-out line;
  *   - the wording says what can happen (a warrant can be issued; for bonds, the bond can be
@@ -8,21 +8,26 @@
  *     statistic;
  *   - replies 1 / 2 / 3 are parsed strictly; zones follow the bond's county; the plan's times.
  */
-import { smsSegments, toGsm, fitSms, MAX_UNICODE_SEGMENTS, plainPunctuation } from '../services/smsText.js';
+import { smsSegments, toGsm, fitSms, MAX_UNICODE_SEGMENTS, MAX_GSM_SEGMENTS_OTHER, plainPunctuation } from '../services/smsText.js';
 import { bondCourtText, bondReplyText, parseCourtReply, bondTimeZone } from '../services/bondDesk/courtDates.js';
 import { courtSmsText } from '../services/reminderDispatcher.js';
 import { bodyFor, followerBodyFor, planSteps, missedCourtLink } from '../services/courtReminders.js';
 import { countyTimeZone } from '../utils/timezone.js';
-import { CATALOGS, msg } from '../i18n/index.js';
+import { CATALOGS, msg, SUPPORTED_LANGS } from '../i18n/index.js';
 
-const LANGS = ['en', 'es', 'pt', 'vi'];
-const STOP = { en: 'Reply STOP to opt out.', es: 'Responda STOP para cancelar.', pt: 'Responda STOP para cancelar.', vi: 'Trả lời STOP để ngừng nhận tin.' };
+const LANGS = SUPPORTED_LANGS;
+const STOP = { en: 'Reply STOP to opt out.', es: 'Responda STOP para cancelar.', pt: 'Responda STOP para cancelar.', vi: 'Trả lời STOP để ngừng nhận tin.',
+  zh: '回复 STOP 退订。', ar: 'أرسل STOP لإيقاف الرسائل.',
+  ht: 'Reponn STOP pou w pa resevwa tèks ankò.', tl: 'Sumagot ng STOP para huminto.' };
 const MAXSEEN = [0];
 afterAll(() => { if (process.env.SHOW_SEGMENTS) console.log('max UCS-2 segments', MAXSEEN[0]); });
-const fits = (t) => {
+// English GSM-7 texts: 2 segments. Other languages: MAX_GSM_SEGMENTS_OTHER in GSM-7 (Haitian Creole
+// and Tagalog are usually plain GSM-7 but longer), MAX_UNICODE_SEGMENTS in UCS-2.
+const fits = (t, lang = 'en') => {
   const s = smsSegments(t);
   if (s.encoding === 'UCS-2') { expect(s.segments).toBeLessThanOrEqual(MAX_UNICODE_SEGMENTS); MAXSEEN[0] = Math.max(MAXSEEN[0], s.segments); }
-  else { expect(s.segments).toBeLessThanOrEqual(2); expect(s.units).toBeLessThanOrEqual(306); }
+  else if (lang === 'en') { expect(s.segments).toBeLessThanOrEqual(2); expect(s.units).toBeLessThanOrEqual(306); }
+  else { expect(s.segments).toBeLessThanOrEqual(MAX_GSM_SEGMENTS_OTHER); expect(s.units).toBeLessThanOrEqual(153 * MAX_GSM_SEGMENTS_OTHER); }
   return s;
 };
 
@@ -43,6 +48,15 @@ describe('segments, the GSM-7 alphabet and accents kept', () => {
     expect(toGsm('audiência amanhã às 9h, ação')).toBe('audiencia amanha às 9h, acao');
     expect(toGsm('Đã đến tòa, giấy tờ tùy thân')).toBe('Da den tòa, giay to tùy than');
     expect(smsSegments(toGsm('¿Llegó a la corte? Sí, mañana — día 30')).encoding).toBe('GSM-7');
+  });
+  test('fitSms: English GSM-7 texts get 2 segments, other languages 3 (Haitian Creole / Tagalog are GSM-7 but longer)', () => {
+    const build = (f) => `${f.a} ${'y'.repeat(380)} Reply STOP to opt out.`;
+    expect(smsSegments(fitSms(build, { a: 'alpha '.repeat(10) }, [['a', 5]])).segments).toBe(2);
+    expect(smsSegments(fitSms(build, { a: 'alpha '.repeat(10) }, [['a', 5]], { lang: 'en' })).segments).toBe(2);
+    const ht = fitSms(build, { a: 'alpha '.repeat(10) }, [['a', 5]], { lang: 'ht' });
+    expect(smsSegments(ht).segments).toBe(3);
+    expect(ht.endsWith('Reply STOP to opt out.')).toBe(true);
+    expect(MAX_GSM_SEGMENTS_OTHER).toBe(3);
   });
   test('fitSms shortens the named fields in order and never below their minimum', () => {
     const t = fitSms((f) => `${f.a} | ${f.b} | ${'x'.repeat(250)}`, { a: 'alpha '.repeat(20), b: 'beta '.repeat(20) }, [['a', 10], ['b', 12]]);
@@ -66,11 +80,11 @@ describe('Bond Desk texts fit in 2 segments in every language', () => {
           for (const signerType of ['defendant', 'indemnitor']) {
             const daysLeft = { d7: 7, d3: 3, d1: 1 }[step] ?? 0;
             const t = bondCourtText(step, { ...v, lang, signerType, daysLeft });
-            fits(t);
+            fits(t, lang);
             expect(t.endsWith(STOP[lang])).toBe(true);
           }
         }
-        for (const a of ['attended', 'rescheduled', 'missed', 'noted']) fits(bondReplyText(a, { lang, agency: v.agency, defendant: v.defendant, courtDate: v.courtDate }));
+        for (const a of ['attended', 'rescheduled', 'missed', 'noted']) fits(bondReplyText(a, { lang, agency: v.agency, defendant: v.defendant, courtDate: v.courtDate }), lang);
       });
     }
   }
@@ -97,18 +111,18 @@ describe('app users\' texts fit in 2 segments in every language', () => {
         for (const type of ['court_reminder', 'follower_court_reminder']) {
           for (const days of [7, 3, 1, 0]) {
             const t = await courtSmsText(db, { notification_type: type, court_date_id: 1 }, { days_before: days }, lang);
-            fits(t);
+            fits(t, lang);
             expect(t.endsWith(STOP[lang])).toBe(true);
-            expect(t.startsWith('Justice Gavel: ')).toBe(true);
+            expect(t).toMatch(/^Justice Gavel(: |：)/);   // Chinese uses the full-width colon
           }
         }
         for (const type of ['court_checkin', 'court_missed_followup']) {
           const t = await courtSmsText(db, { notification_type: type, court_date_id: 1 }, {}, lang);
-          fits(t);
+          fits(t, lang);
           expect(t.endsWith(STOP[lang])).toBe(true);
         }
         for (const k of ['attended', 'rescheduled', 'missed', 'noted']) {
-          fits(fitSms(() => msg(lang, `reminder.reply.${k}`, { day: 'Wednesday, September 30', link: missedCourtLink(lang) }), {}, []));
+          fits(fitSms(() => msg(lang, `reminder.reply.${k}`, { day: 'Wednesday, September 30', link: missedCourtLink(lang) }), {}, [], { lang }), lang);
         }
       });
     }
@@ -116,16 +130,20 @@ describe('app users\' texts fit in 2 segments in every language', () => {
 });
 
 describe('what the texts say', () => {
-  const WARRANT = { en: 'a warrant can be issued', es: 'pueden emitir una orden de arresto', pt: 'pode ser emitido um mandado de prisão', vi: 'tòa có thể ra lệnh bắt' };
-  const FORFEIT = { en: 'can be forfeited', es: 'puede ser confiscada', pt: 'pode ser perdida', vi: 'có thể bị tịch thu' };
+  const WARRANT = { en: 'a warrant can be issued', es: 'pueden emitir una orden de arresto', pt: 'pode ser emitido um mandado de prisão', vi: 'tòa có thể ra lệnh bắt',
+    zh: '签发逮捕令', ar: 'قد يصدر أمر قبض', ht: 'yo ka bay yon manda arestasyon', tl: 'maaaring maglabas ng warrant' };
+  const FORFEIT = { en: 'can be forfeited', es: 'puede ser confiscada', pt: 'pode ser perdida', vi: 'có thể bị tịch thu',
+    zh: '被没收', ar: 'تُصادر الكفالة', ht: 'konfiske', tl: 'ma-forfeit' };
   const NEW_KEYS = (lang) => Object.entries(CATALOGS[lang]).filter(([k]) => /^(reminder\.(body|follower\.body|sms|ask|missed|reply)|bd\.sms\.(court|reply|when|at_court|room|agent_phone|your_agent)|bd\.alert\.)/.test(k));
 
   test.each(LANGS)('%s: reminders give the consequence, what to expect and a plan prompt', (lang) => {
     for (const days of [7, 1, 0]) {
       const b = bodyFor('Case', '2026-09-30', days, { time: '09:30', place: 'Court' }, lang);
       expect(b).toContain(WARRANT[lang]);
-      expect(b).toMatch({ en: /security line.*ID.*court papers|ID.*court papers/s, es: /control de seguridad.*identificación/s, pt: /fila de segurança.*identidade/s, vi: /kiểm tra an ninh.*giấy tờ tùy thân/s }[lang]);
-      expect(b).toMatch({ en: /How (will you get|are you getting) there\?/, es: /¿Cómo va a llegar\?/, pt: /Como você vai chegar\?/, vi: /bằng cách nào\?/ }[lang]);
+      expect(b).toMatch({ en: /security line.*ID.*court papers|ID.*court papers/s, es: /control de seguridad.*identificación/s, pt: /fila de segurança.*identidade/s, vi: /kiểm tra an ninh.*giấy tờ tùy thân/s,
+        zh: /安检.*身份证件/s, ar: /تفتيش.*هويتك/s, ht: /sekirite.*pyès idantite/s, tl: /security.*ID/s }[lang]);
+      expect(b).toMatch({ en: /How (will you get|are you getting) there\?/, es: /¿Cómo va a llegar\?/, pt: /Como você vai chegar\?/, vi: /bằng cách nào\?/,
+        zh: /您打算怎么去？/, ar: /كيف ستذهب/, ht: /Kijan w ap rive la\?/, tl: /Paano kayo makakarating/ }[lang]);
       expect(followerBodyFor('Ana', '2026-09-30', days, {}, lang)).toContain(WARRANT[lang]);
     }
     for (const k of ['bd.sms.court_defendant', 'bd.sms.court_indemnitor']) {
@@ -141,11 +159,15 @@ describe('what the texts say', () => {
     expect(msg('es', 'bd.sms.court_indemnitor')).toMatch(/fiador de la fianza de \{name\}/);
     expect(msg('pt', 'bd.sms.court_indemnitor')).toMatch(/fiador da fiança de \{name\}/);
     expect(msg('vi', 'bd.sms.court_indemnitor')).toMatch(/đồng ký bảo lãnh cho \{name\}/);
+    expect(msg('zh', 'bd.sms.court_indemnitor')).toMatch(/您为 \{name\} 的保释担保共同签了字/);
+    expect(msg('ar', 'bd.sms.court_indemnitor')).toMatch(/أنت ضامن في كفالة \{name\}/);
+    expect(msg('ht', 'bd.sms.court_indemnitor')).toMatch(/Ou ko-siyen kosyon \{name\}/);
+    expect(msg('tl', 'bd.sms.court_indemnitor')).toMatch(/Co-signer kayo sa bond ni \{name\}/);
   });
 
   test.each(LANGS)('%s: no statistic and no legal claim beyond "a warrant can be issued" / "the bond can be forfeited"', (lang) => {
     for (const [k, v] of NEW_KEYS(lang)) {
-      expect([k, /\d+\s*%|percent|por ciento|por cento|phần trăm/i.test(v)]).toEqual([k, false]);
+      expect([k, /\d+\s*%|percent|por ciento|por cento|phần trăm|百分之|pousan|بالمئة|في المئة|porsiyento|bahagdan/i.test(v)]).toEqual([k, false]);
       expect([k, /\b(will be arrested|will be forfeited|must pay|jail time|fine of)\b/i.test(v)]).toEqual([k, false]);
     }
   });

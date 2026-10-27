@@ -71,16 +71,16 @@ export function bondCourtText(step, ctx) {
   const fields = { agency: ctx.agency || msg(lang, 'bd.sms.your_agent'), name: ctx.defendant || '', first: firstName(ctx.defendant), court: ctx.courtName || '' };
   const shrink = [['court', 0], ['agency', 16], ['name', 16], ['first', 10]];
   const where = (f) => (f.court ? msg(lang, 'bd.sms.at_court', { court: f.court, room: ctx.room ? msg(lang, 'bd.sms.room', { room: String(ctx.room).slice(0, 12) }) : '' }) : '');
-  if (step === 'ask') return fitSms((f) => msg(lang, 'bd.sms.court_ask', { agency: f.agency, first: f.first }), fields, shrink);
+  if (step === 'ask') return fitSms((f) => msg(lang, 'bd.sms.court_ask', { agency: f.agency, first: f.first }), fields, shrink, { lang });
   if (step === 'missed') {
     const phone = ctx.agencyPhone ? msg(lang, 'bd.sms.agent_phone', { phone: ctx.agencyPhone }) : '';
-    return fitSms((f) => msg(lang, 'bd.sms.court_missed', { agency: f.agency, first: f.first, day, phone, link: missedCourtLink(lang) }), fields, shrink);
+    return fitSms((f) => msg(lang, 'bd.sms.court_missed', { agency: f.agency, first: f.first, day, phone, link: missedCourtLink(lang) }), fields, shrink, { lang });
   }
   const d = Number(ctx.daysLeft);
   const when = d <= 0 ? msg(lang, 'bd.sms.when_today', { day, at }) : d === 1 ? msg(lang, 'bd.sms.when_tomorrow', { day, at })
     : msg(lang, 'bd.sms.when_days', { days: d, day, at });
   const key = ctx.signerType === 'indemnitor' ? 'bd.sms.court_indemnitor' : 'bd.sms.court_defendant';
-  return fitSms((f) => msg(lang, key, { agency: f.agency, name: f.name, first: f.first, when, where: where(f) }).replace(/\.\.(?=\s|$)/g, '.'), fields, shrink);
+  return fitSms((f) => msg(lang, key, { agency: f.agency, name: f.name, first: f.first, when, where: where(f) }).replace(/\.\.(?=\s|$)/g, '.'), fields, shrink, { lang });
 }
 
 /** The confirmation texted back after a reply 1 / 2 / 3. */
@@ -88,7 +88,7 @@ export function bondReplyText(answer, { lang, agency, defendant, courtDate }) {
   const l = normalizeLang(lang) || 'en';
   const key = { attended: 'bd.sms.reply_attended', rescheduled: 'bd.sms.reply_rescheduled', missed: 'bd.sms.reply_missed' }[answer] || 'bd.sms.reply_noted';
   return fitSms((f) => msg(l, key, { agency: f.agency, first: firstName(defendant), day: formatDayShort(courtDate, l), link: missedCourtLink(l) }),
-    { agency: agency || msg(l, 'bd.sms.your_agent') }, [['agency', 14]]);
+    { agency: agency || msg(l, 'bd.sms.your_agent') }, [['agency', 14]], { lang: l });
 }
 
 // ── Loading ───────────────────────────────────────────────────────────────────

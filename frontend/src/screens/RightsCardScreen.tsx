@@ -181,7 +181,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
         </View>
       )}
       {source === 'device' && (
-        <View style={[styles.footnote, { borderLeftColor: colors.warnDark }]}>
+        <View style={[styles.footnote, { borderStartColor: colors.warnDark }]}>
           <IconLabel icon={ICONS.offline} color={colors.warnDark} textStyle={styles.footnoteText} size={15} style={styles.footnoteRow} testID="rights-offline">
             {t('rc_offline_copy')}{savedAt ? ` (${monthLabel(savedAt.slice(0, 10))})` : ''}
           </IconLabel>
@@ -233,10 +233,10 @@ const makeStyles = (c: any) => StyleSheet.create({
   stateBtn: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, minHeight: 44, marginBottom: 10 },
   stateBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stateBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
-  footnote: { borderLeftWidth: 3, borderLeftColor: c.info, paddingLeft: 10, paddingVertical: 2, marginBottom: 8 },
+  footnote: { borderStartWidth: 3, borderStartColor: c.info, paddingStart: 10, paddingVertical: 2, marginBottom: 8 },
   footnoteRow: { alignItems: 'flex-start' },
   footnoteText: { color: c.textSecond, fontSize: 13, lineHeight: 19 },
-  scriptBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderLeftWidth: 6, borderLeftColor: c.legalDark, marginTop: 2, marginBottom: 10 },
+  scriptBox: { backgroundColor: c.bgCard, borderRadius: 16, padding: 16, borderStartWidth: 6, borderStartColor: c.legalDark, marginTop: 2, marginBottom: 10 },
   scriptLabelRow: { marginBottom: 6 },
   scriptLabel: { color: c.textSecond, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
   scriptLine: { color: c.textPrimary, fontSize: 22, lineHeight: 30, fontWeight: '800', marginBottom: 6 },
@@ -254,7 +254,7 @@ const makeStyles = (c: any) => StyleSheet.create({
   disclaimerRow: { marginTop: 12, alignItems: 'flex-start' },
   disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, fontStyle: 'italic' },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
+  sheet: { backgroundColor: c.bgCard, borderTopStartRadius: 20, borderTopEndRadius: 20, padding: 16 },
   sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 8 },
   stateRow: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, borderBottomWidth: 1, borderBottomColor: c.border },
   stateRowActive: { backgroundColor: c.infoBg },

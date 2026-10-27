@@ -65,7 +65,7 @@ async function handleAppReply(db, { from, answer, courtDateId, now }) {
     if (String(sent?.channel || '').includes('sms')) return { handled: true, court_date_id: cd.id, status: answer, applied };
   }
   const key = applied ? `reminder.reply.${answer}` : 'reminder.reply.noted';
-  await textBack(db, from, fitSms(() => msg(lang, key, { day, link: missedCourtLink(lang) }), {}, []));
+  await textBack(db, from, fitSms(() => msg(lang, key, { day, link: missedCourtLink(lang) }), {}, [], { lang }));
   return { handled: true, court_date_id: cd.id, status: applied ? answer : cd.status, applied };
 }
 

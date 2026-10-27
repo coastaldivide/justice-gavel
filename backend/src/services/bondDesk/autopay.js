@@ -24,7 +24,7 @@
  */
 import { stripeConfigured } from '../../config.js';
 import { AUTOPAY_FEE_CENTS } from '../../routes/billing/plans.js';
-import { msg, normalizeLang } from '../../i18n/index.js';
+import { msg, normalizeLang, stripeLocale } from '../../i18n/index.js';
 import { fitSms } from '../smsText.js';
 import { sendPushToUser } from '../pushDelivery.js';
 import { DEFAULT_TIME_ZONE, isValidTimeZone, todayInZone, addDays, zonedParts } from '../../utils/timezone.js';
@@ -166,7 +166,7 @@ export async function sendAutopayLink(db, { agentId, bondId, to, indemnitorId, d
   if (deliver === 'sms' || deliver === 'both') {
     delivery.sms = person.phone
       ? (await sendAgentTextRecord(db, { agentId, bondId, purpose: 'autopay_link', to: person.phone,
-        body: fitSms((f) => msg(row.lang, 'bd.sms.autopay_link', f), p, [['defendant', 6], ['agency', 12]]) })).status
+        body: fitSms((f) => msg(row.lang, 'bd.sms.autopay_link', f), p, [['defendant', 6], ['agency', 12]], { lang: row.lang }) })).status
       : 'skipped';
   }
   if (deliver === 'email' || deliver === 'both') {
@@ -267,7 +267,7 @@ export async function startSetup(db, token, { agree, lang, ip, userAgent, consen
     customer = c.id;
   }
   const session = await stripe.checkout.sessions.create({
-    mode: 'setup', customer, payment_method_types: ['card'], locale: shown === 'vi' ? 'vi' : shown === 'pt' ? 'pt-BR' : shown === 'es' ? 'es' : 'en',
+    mode: 'setup', customer, payment_method_types: ['card'], locale: stripeLocale(shown),
     success_url: `${autopayLink(token)}?saved=1`, cancel_url: autopayLink(token),
     metadata: { bd_kind: 'autopay_setup', bd_autopay_id: String(row.id) },
     setup_intent_data: { description: `Automatic payments to ${a.agency || a.agent_name} — bail bond for ${bond?.defendant_name || ''}`.slice(0, 200),
@@ -320,7 +320,7 @@ export async function startActionPayment(db, token, { lang } = {}) {
   const fee = feeFor(amount);
   const session = await stripeOr503().checkout.sessions.create({
     mode: 'payment', customer: row.stripe_customer_id || undefined,
-    locale: shown === 'vi' ? 'vi' : shown === 'pt' ? 'pt-BR' : shown === 'es' ? 'es' : 'en',
+    locale: stripeLocale(shown),
     line_items: [{ quantity: 1, price_data: { currency: 'usd', unit_amount: amount,
       product_data: { name: `${a.agency || a.agent_name} — bail bond payment for ${bond?.defendant_name || ''}`.slice(0, 200) } } }],
     payment_intent_data: { ...(fee ? { application_fee_amount: fee } : {}), description: `Payment plan installment due ${att.due_on}`,
@@ -395,7 +395,7 @@ async function notifyFailure(db, att, retryOn) {
   const key = retryOn ? 'retry' : 'final';
   if (ap.payer_phone && ap.sms_consent_at) {
     await sendAgentTextRecord(db, { agentId: ap.agent_id, bondId: ap.bond_id, purpose: 'autopay_failed', to: ap.payer_phone,
-      body: fitSms((f) => msg(ap.lang, `bd.sms.autopay_failed_${key}`, f), p, [['defendant', 6], ['agency', 12]]) });
+      body: fitSms((f) => msg(ap.lang, `bd.sms.autopay_failed_${key}`, f), p, [['defendant', 6], ['agency', 12]], { lang: ap.lang }) });
   }
   if (ap.payer_email) {
     await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_failed_subject', p), text: msg(ap.lang, `bd.sms.autopay_failed_${key}`, p) });
@@ -403,7 +403,7 @@ async function notifyFailure(db, att, retryOn) {
   const { lang } = await alertAgent(db, ap.agent_id, ap.bond_id, `failed_${key}`, p, a);
   if (a.phone) {
     await sendAgentTextRecord(db, { agentId: ap.agent_id, bondId: ap.bond_id, purpose: 'autopay_failed', to: a.phone,
-      body: fitSms((f) => msg(lang, `bd.sms.autopay_agent_failed_${key}`, f), p, [['defendant', 6], ['payer', 6]]) });
+      body: fitSms((f) => msg(lang, `bd.sms.autopay_agent_failed_${key}`, f), p, [['defendant', 6], ['payer', 6]], { lang }) });
   }
 }
 
@@ -423,7 +423,7 @@ async function recordActionNeeded(db, { att, ap, pi, token }) {
   const p = { agency: a.agency || a.agent_name, defendant: b?.defendant_name || '', amount: money(att.amount_cents), link: autopayLink(fresh), phone: a.phone || '' };
   if (ap.payer_phone && ap.sms_consent_at) {
     await sendAgentTextRecord(db, { agentId: ap.agent_id, bondId: ap.bond_id, purpose: 'autopay_action', to: ap.payer_phone,
-      body: fitSms((f) => msg(ap.lang, 'bd.sms.autopay_action', f), p, [['defendant', 6], ['agency', 12]]) });
+      body: fitSms((f) => msg(ap.lang, 'bd.sms.autopay_action', f), p, [['defendant', 6], ['agency', 12]], { lang: ap.lang }) });
   }
   if (ap.payer_email) await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_action_subject', p), text: msg(ap.lang, 'bd.sms.autopay_action', p) });
   await alertAgent(db, ap.agent_id, ap.bond_id, 'action', p, a);

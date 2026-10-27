@@ -31,6 +31,9 @@ const Keyboard = { dismiss: jest.fn(), addListener: jest.fn(() => ({ remove: jes
 const useColorScheme = () => 'dark';
 const useWindowDimensions = () => ({ width: 390, height: 844 });
 const Dimensions = { get: () => ({ width: 390, height: 844 }), addEventListener: () => ({ remove: () => {} }) };
+// Layout direction (i18n/direction.ts): forceRTL is saved and read at the next start, like the real module.
+const I18nManager = { isRTL: false, allowRTL: jest.fn(), forceRTL: jest.fn(), swapLeftAndRightInRTL: jest.fn() };
+const DevSettings = { reload: jest.fn() };
 const NetInfo = { addEventListener: jest.fn(() => jest.fn()), fetch: jest.fn().mockResolvedValue({ isConnected: true }) };
 
 module.exports = {
@@ -38,5 +41,5 @@ module.exports = {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList,
   ActivityIndicator, Switch, KeyboardAvoidingView, RefreshControl,
   Image, Modal, Pressable, SafeAreaView, StatusBar, Keyboard,
-  useColorScheme, useWindowDimensions, Dimensions,
+  useColorScheme, useWindowDimensions, Dimensions, I18nManager, DevSettings,
 };

@@ -11,10 +11,11 @@ import { checkCsv, parseCourtDates, parseLang, parseDay, parseTime, MAX_ROWS, te
 import { pdPrices, officeTimeZone, CONSENT_BASIS_TEXT } from '../services/publicDefender/common.js';
 import { invoiceYear } from '../services/publicDefender/billing.js';
 import { counselFlagOn, COUNSEL_FLAGS, publicDefenderEnabled } from '../utils/counselFlags.js';
-import { smsSegments, MAX_UNICODE_SEGMENTS } from '../services/smsText.js';
+import { smsSegments, MAX_UNICODE_SEGMENTS, MAX_GSM_SEGMENTS_OTHER } from '../services/smsText.js';
 import { envReport } from '../../scripts/lib/envReport.mjs';
+import { SUPPORTED_LANGS } from '../i18n/index.js';
 
-const LANGS = ['en', 'es', 'pt', 'vi'];
+const LANGS = SUPPORTED_LANGS;
 const REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname);
 const LONG = {
   office: 'Metropolitan Nashville and Davidson County Public Defender Community Law Office', officePhone: '+16155550190',
@@ -27,7 +28,8 @@ describe('client texts (A11 step 3)', () => {
     for (const [step, daysLeft] of [['d7', 7], ['d3', 3], ['d1', 1], ['d0', 0], ['now', 2], ['ask', 0], ['missed', -1]]) {
       const t = pdCourtText(step, { ...LONG, lang, daysLeft });
       const seg = smsSegments(t);
-      expect(seg.segments).toBeLessThanOrEqual(seg.encoding === 'GSM-7' ? 2 : MAX_UNICODE_SEGMENTS);
+      expect(seg.segments).toBeLessThanOrEqual(seg.encoding === 'GSM-7' ? (lang === 'en' ? 2 : MAX_GSM_SEGMENTS_OTHER) : MAX_UNICODE_SEGMENTS);
+      expect(t).toMatch(/STOP[^]{0,60}$/);   // the opt-out line is never cut off
       if (lang === 'en') expect(seg.encoding).toBe('GSM-7');
       expect(t).toMatch(/^Metropolitan/);
       expect(t).toMatch(/STOP/);
@@ -110,6 +112,10 @@ describe('CSV client upload (A11 step 2)', () => {
     expect(parseTime('9:5')).toBeNull();
     expect(parseLang('')).toBe('en');
     expect(parseLang('Tiếng Việt')).toBe('vi');
+    expect(parseLang('Kreyòl')).toBe('ht');
+    expect(parseLang('Mandarin')).toBe('zh');
+    expect(parseLang('العربية')).toBe('ar');
+    expect(parseLang('Filipino')).toBe('tl');
     expect(parseLang('german')).toBeNull();
   });
 });

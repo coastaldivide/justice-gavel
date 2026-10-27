@@ -12,7 +12,7 @@
 import { logIgnored } from '../../utils/ignored.js';
 import { PAY_LINK_MIN_CENTS, PAY_LINK_MAX_CENTS } from '../../routes/billing/plans.js';
 import { stripeConfigured } from '../../config.js';
-import { msg, normalizeLang } from '../../i18n/index.js';
+import { msg, normalizeLang, stripeLocale } from '../../i18n/index.js';
 import { toE164 } from '../sms.js';
 import { sendPushToUser } from '../pushDelivery.js';
 import { todayInZone } from '../../utils/timezone.js';
@@ -84,7 +84,7 @@ export async function startPayLink(db, slug, b, { ip, lang } = {}) {
   const md = { bd_kind: 'paylink', bd_pay_request_id: String(req.id), bd_agent_id: String(row.agent_id) };
   const session = await stripe.checkout.sessions.create({
     mode: 'payment', customer_email: f.email || undefined,
-    locale: shown === 'vi' ? 'vi' : shown === 'pt' ? 'pt-BR' : shown === 'es' ? 'es' : 'en',
+    locale: stripeLocale(shown),
     line_items: [{ quantity: 1, price_data: { currency: 'usd', unit_amount: f.amount,
       product_data: { name: `${a.agency || a.agent_name} — bail bond payment for ${f.defendant}`.slice(0, 200) } } }],
     payment_intent_data: { description: `Pay page — ${f.payer} for ${f.defendant}`.slice(0, 200), metadata: md },

@@ -21,7 +21,7 @@
  *   replies 1 / 2 / 3 are handled by services/courtReplies.js.
  *
  *   The text is written in the recipient's saved language (users.preferred_language,
- *   en / es / pt / vi — i18n/messages); the English titles are shown above.
+ *   en / es / pt / vi / ht / zh / ar / tl — i18n/messages); the English titles are shown above.
  *   Times are wall-clock times in the USER'S time zone (users.timezone, sent
  *   by the app), falling back to the zone of the case's state, then
  *   DEFAULT_TIME_ZONE. A reminder whose time has already passed is skipped; if
@@ -46,7 +46,7 @@ import {
   DEFAULT_TIME_ZONE, isValidTimeZone, stateTimeZone, zonedDateTimeToUtc,
   addDays, todayInZone, daysBetween, parseDateOnly,
 } from '../utils/timezone.js';
-import { msg, formatDay, formatTime, userLang, rememberLanguage, requestedLang } from '../i18n/index.js';
+import { msg, formatDay, formatTime, userLang, rememberLanguage, requestedLang, SUPPORTED_LANGS } from '../i18n/index.js';
 
 export const COURT_REMINDER_PLAN = Object.freeze([
   { days: 7, hh: 9,  mm: 0,  title: 'Court date in 7 days' },
@@ -225,7 +225,7 @@ export const FOLLOWUP_AT = Object.freeze({ hh: 9, mm: 0 });
 /** Link to the missed-court guidance page (frontend MissedCourtScreen), in `lang`. */
 export function missedCourtLink(lang = 'en') {
   const base = String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
-  const l = ['es', 'pt', 'vi'].includes(lang) ? `/${lang}` : '';
+  const l = lang !== 'en' && SUPPORTED_LANGS.includes(lang) ? `/${lang}` : '';
   return `${base}/missed-court${l}`;
 }
 

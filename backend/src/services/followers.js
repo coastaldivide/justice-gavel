@@ -21,7 +21,7 @@ import {
 } from './courtReminders.js';
 import { todayInZone } from '../utils/timezone.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
-import { msg, normalizeLang, userLang } from '../i18n/index.js';
+import { msg, normalizeLang, userLang, langAttrs } from '../i18n/index.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O/1/I/L
 const CODE_LEN = 10;
@@ -116,7 +116,7 @@ export async function createInvite(db, { ownerId, caseId, email = null, name = n
         to: cleanEmail,
         subject: msg(l, 'follow.email.subject', { who }),
         text: `${share}\n\n${msg(l, 'follow.email.fine_print', { days: INVITE_DAYS })}`,
-        html: `<div lang="${l}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        html: `<div ${langAttrs(l)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
           <p>${escapeHtml(msg(l, 'follow.email.intro', { who }))}</p>
           <p>${escapeHtml(msg(l, 'follow.email.how', { label: '\u0000' })).replace('\u0000', `<strong>${escapeHtml(msg(l, 'follow.email.label'))}</strong>`)}</p>
           <p style="font-size:22px;font-weight:700;letter-spacing:2px">${escapeHtml(code)}</p>

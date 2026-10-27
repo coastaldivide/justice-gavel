@@ -15,7 +15,7 @@ import { consentText, autopayEnabled, feeFor, scheduleFrom, AUTOPAY_CONSENT_VERS
 import { payForm } from '../services/bondDesk/payLink.js';
 import { seatsFor } from '../services/bondDesk/staff.js';
 import { BONDSMAN_TIERS, AUTOPAY_FEE_CENTS, PAY_LINK_MIN_CENTS, PAY_LINK_MAX_CENTS } from '../routes/billing/plans.js';
-import { msg } from '../i18n/index.js';
+import { msg, SUPPORTED_LANGS } from '../i18n/index.js';
 import { fitSms, smsSegments } from '../services/smsText.js';
 
 const zipOf = async (files, opts) => {
@@ -114,7 +114,7 @@ describe('CSV import checks', () => {
 
 describe('automatic payments', () => {
   const schedule = [{ due_on: '2026-11-01', amount_cents: 12500 }, { due_on: '2026-12-01', amount_cents: 10000 }];
-  test.each(['en', 'es', 'pt', 'vi'])('consent text (%s): amounts, dates, how to stop, all payments final', (lang) => {
+  test.each(SUPPORTED_LANGS)('consent text (%s): amounts, dates, how to stop, all payments final', (lang) => {
     const t = consentText(lang, { agency: 'Alpha Bail', phone: '615-555-0199', defendant: 'Jordan Rivers', schedule });
     for (const part of ['Alpha Bail', 'Jordan Rivers', '11/01/2026', '$125.00', '12/01/2026', '$100.00', '615-555-0199']) expect(t).toContain(part);
     expect(t).toContain(msg(lang, 'bd.autopay.consent_final'));
@@ -199,9 +199,9 @@ describe('texts', () => {
     const t = fitSms((f) => msg('en', key, f), long, [['defendant', 6], ['payer', 6]]);
     expect(smsSegments(t).segments).toBeLessThanOrEqual(2);
   });
-  test.each(['es', 'pt', 'vi'])('%s texts keep their accents within 6 segments', (lang) => {
+  test.each(SUPPORTED_LANGS.filter((l) => l !== 'en'))('%s texts keep their accents within 6 segments', (lang) => {
     for (const key of keys) {
-      const t = fitSms((f) => msg(lang, key, f), long, [['defendant', 6], ['agency', 12]]);
+      const t = fitSms((f) => msg(lang, key, f), long, [['defendant', 6], ['agency', 12]], { lang });
       expect(smsSegments(t).segments).toBeLessThanOrEqual(6);
     }
   });

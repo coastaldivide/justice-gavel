@@ -34,7 +34,7 @@ docs in `docs/strategy/` (marketing lines, the "vibe coder" checklist).
 
 ```
 frontend/   Expo SDK 57 · React Native 0.86 · React 19 · TypeScript (strict)
-            iOS / Android / web. 92 screens. i18n en/es/pt/vi (5,059 keys each).
+            iOS / Android / web. 92 screens. i18n en/es/pt/vi/ht/zh/ar/tl (6,645 keys each; Arabic right to left; docs/TRANSLATIONS.md).
             Icons: Ionicons only, via components/AppIcon.tsx (ICONS map). No emoji (test-enforced).
             Theme tokens: constants/theme.ts (useTheme). Dark is the default theme.
 backend/    Node 22 · Express 5 (ESM) · PostgreSQL 16. 114 route files, about 614 mounted routes.
@@ -63,7 +63,7 @@ render.yaml Render blueprint: production + staging web services (Docker, Oregon,
 - **Legal content is never invented.** Every legal statement shows its source, or is labelled
   "general information, not reviewed by a lawyer". Verdicts such as expungement eligibility
   are shown only when a statute is named.
-- **Every user-facing string is translated** in all 4 languages: the i18n scan, parity tests
+- **Every user-facing string is translated** in all 8 languages (ht / zh / ar / tl still need a native-speaker legal review, docs/TRANSLATIONS.md): the i18n scan, parity tests
   and the no-emoji test run inside `npm test`.
 
 ## 3. Run it locally

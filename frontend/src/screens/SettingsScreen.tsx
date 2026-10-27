@@ -24,7 +24,7 @@ import AsyncStorage          from '@react-native-async-storage/async-storage';
 import { ScreenCapture, StoreReview, hapticImpact } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
-import { setLang, t, useLang } from '../i18n'  // t() already available;
+import { setLang, t, useLang, LANGS, ENDONYMS, onDirectionRestartNeeded } from '../i18n'  // t() already available;
 import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
 import { getToken, getItem as getSecureItem } from '../utils/secureStorage';
 import { useInFlight } from '../hooks/useInFlight';
@@ -261,11 +261,19 @@ function SettingsScreen({ navigation }: any) {
 
   const toggleLang = async (l: string) => {
     setLanguage(l);
-    setLang(l);
-    await AsyncStorage.setItem('lang', l).catch(() => {}); // non-fatal storage write
     // Signed in: court reminders and e-mails follow the new language (re-planned server-side).
-    if ((user as { id?: unknown })?.id) api.post('/push/language', { language: l }).catch(() => { /* offline: sent with the next court-date save */ });
+    // Sent first: switching to or from Arabic restarts the app on iOS / Android (direction.ts).
+    if ((user as { id?: unknown })?.id) {
+      await Promise.race([
+        api.post('/push/language', { language: l }).catch(() => { /* offline: sent with the next court-date save */ }),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+      ]);
+    }
+    await AsyncStorage.setItem('lang', l).catch(() => {}); // non-fatal storage write
+    setLang(l);
   };
+  // The app could not restart itself to change the screen direction: ask the person to reopen it.
+  useEffect(() => onDirectionRestartNeeded(() => showToast(t('x_st_restart_for_direction'), 'info')), [showToast]);
 
   // This phone's push notifications (native only): on = permission + token sent
   // to the server, off = the token is removed, so nothing is pushed here.
@@ -522,7 +530,7 @@ function SettingsScreen({ navigation }: any) {
           {t('x_st_changes_take_effect_immediately')}
         </Text>
         <View style={styles.langRow}>
-          {[{ code: 'en', label: 'English' }, { code: 'es', label: 'Español' }, { code: 'pt', label: 'Português' }, { code: 'vi', label: 'Tiếng Việt' }].map(l => (
+          {LANGS.map(code => ({ code, label: ENDONYMS[code] })).map(l => (
             <TouchableOpacity accessibilityRole="button"
               key={l.code}
               style={[

@@ -57,15 +57,15 @@ export function pdCourtText(step, ctx) {
   const fields = { office: ctx.office || msg(lang, 'pd.sms.your_office'), first: firstName(ctx.client), court: ctx.courtName || '' };
   const shrink = [['court', 0], ['office', 18], ['first', 10]];
   const where = (f) => (f.court ? msg(lang, 'bd.sms.at_court', { court: f.court, room: ctx.room ? msg(lang, 'bd.sms.room', { room: String(ctx.room).slice(0, 12) }) : '' }) : '');
-  if (step === 'ask') return fitSms((f) => msg(lang, 'pd.sms.court_ask', { office: f.office, first: f.first }), fields, shrink);
+  if (step === 'ask') return fitSms((f) => msg(lang, 'pd.sms.court_ask', { office: f.office, first: f.first }), fields, shrink, { lang });
   if (step === 'missed') {
     const phone = ctx.officePhone ? msg(lang, 'pd.sms.office_phone', { phone: ctx.officePhone }) : '';
-    return fitSms((f) => msg(lang, 'pd.sms.court_missed', { office: f.office, first: f.first, day, phone, link: missedCourtLink(lang) }), fields, shrink);
+    return fitSms((f) => msg(lang, 'pd.sms.court_missed', { office: f.office, first: f.first, day, phone, link: missedCourtLink(lang) }), fields, shrink, { lang });
   }
   const d = Number(ctx.daysLeft);
   const when = d <= 0 ? msg(lang, 'bd.sms.when_today', { day, at }) : d === 1 ? msg(lang, 'bd.sms.when_tomorrow', { day, at })
     : msg(lang, 'bd.sms.when_days', { days: d, day, at });
-  return fitSms((f) => msg(lang, 'pd.sms.court', { office: f.office, first: f.first, when, where: where(f) }).replace(/\.\.(?=\s|$)/g, '.'), fields, shrink);
+  return fitSms((f) => msg(lang, 'pd.sms.court', { office: f.office, first: f.first, when, where: where(f) }).replace(/\.\.(?=\s|$)/g, '.'), fields, shrink, { lang });
 }
 
 /** The confirmation texted back after a reply 1 / 2 / 3. */
@@ -74,7 +74,7 @@ export function pdReplyText(answer, { lang, office, client, courtDate, officePho
   const key = { attended: 'pd.sms.reply_attended', rescheduled: 'pd.sms.reply_rescheduled', missed: 'pd.sms.reply_missed' }[answer] || 'pd.sms.reply_noted';
   const phone = officePhone ? msg(l, 'pd.sms.office_phone', { phone: officePhone }) : '';
   return fitSms((f) => msg(l, key, { office: f.office, first: firstName(client), day: formatDayShort(courtDate, l), phone, link: missedCourtLink(l) }),
-    { office: office || msg(l, 'pd.sms.your_office') }, [['office', 14]]);
+    { office: office || msg(l, 'pd.sms.your_office') }, [['office', 14]], { lang: l });
 }
 
 // ── Sending one text ──────────────────────────────────────────────────────────

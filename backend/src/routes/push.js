@@ -262,7 +262,7 @@ router.post('/timezone', authRequired, async (req, res) => {
 
 // ── Language ──────────────────────────────────────────────────────────────────
 // POST /api/push/language { language: 'es' } — the language the person chose in
-// the app (en / es / pt / vi). Court reminders, follower notices and reminder
+// the app (en / es / pt / vi / ht / zh / ar / tl). Court reminders, follower notices and reminder
 // e-mails are written in it; changing it re-plans pending court reminders so
 // their text follows.
 router.post('/language', authRequired, async (req, res) => {

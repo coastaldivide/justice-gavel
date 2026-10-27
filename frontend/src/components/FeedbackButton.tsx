@@ -113,7 +113,7 @@ export default function FeedbackButton({ screen }: Props) {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  fab:        { position: 'absolute', bottom: 80, right: 16, width: 44, height: 44,
+  fab:        { position: 'absolute', bottom: 80, end: 16, width: 44, height: 44,
                 borderRadius: 22, backgroundColor: colors.navy, alignItems: 'center',
                 justifyContent: 'center', zIndex: 999, elevation: 4 },
   fabText:    { color: colors.white, fontSize: 22, fontWeight: '700', lineHeight: 24 },

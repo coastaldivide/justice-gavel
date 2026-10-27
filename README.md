@@ -19,7 +19,7 @@ are aligned at **8.7.61**; the backend reads its version from
 ```
 frontend/   React Native app — iOS, Android, Web (PWA + Electron wrapper)
             Expo SDK 57 · React Native 0.86 · React 19 · TypeScript 6 (strict)
-            React Navigation 7 · FlashList 2 · i18n: EN/ES/PT/VI
+            React Navigation 7 · FlashList 2 · i18n: EN/ES/PT/VI/HT/ZH/AR/TL (Arabic right to left; docs/TRANSLATIONS.md)
 
 backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             AES-256-GCM encryption for messages/case notes at rest

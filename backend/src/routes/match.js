@@ -22,7 +22,7 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
 
 import { Router }      from 'express';
 import { searchDirectory, formatLawyer as formatListing } from '../services/providerDirectory.js';
-import { resolveLang, msg } from '../i18n/index.js';
+import { resolveLang, msg, LANG_NAMES } from '../i18n/index.js';
 import { generateSlots, lawyerTimeZone, PENDING_HOLD_MINUTES } from '../services/consultationSlots.js';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
@@ -94,7 +94,7 @@ Rules:
 - Format your response as a JSON array of objects with keys: source_id (string, copied from the profile), report (string).
 - Return ONLY the JSON array. No preamble, no markdown fences.`;
 
-const LANGUAGE_NAMES = { en: 'English', es: 'Spanish (neutral Latin American, formal "usted")', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
+const LANGUAGE_NAMES = { ...LANG_NAMES, es: 'Spanish (neutral Latin American, formal "usted")' };
 
 async function generateMatchReports(candidates, userSituation, caseType, language, lang) {
   const profiles = candidates.map(c => ({

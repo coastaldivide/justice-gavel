@@ -33,15 +33,19 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
-import { t, useLang, perLang } from '../i18n';
+import { t, useLang, perLang, ENDONYMS } from '../i18n';
 import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = perLang(() => [
-  { code: 'en', label: t('x_st_english'),    native: 'English' },
-  { code: 'es', label: t('hn_lang_spanish'),    native: 'Español' },
-  { code: 'pt', label: t('hn_lang_portuguese'), native: 'Português' },
-  { code: 'vi', label: t('hn_lang_vietnamese'), native: 'Tiếng Việt' },
+  { code: 'en', label: t('x_st_english'),    native: ENDONYMS.en },
+  { code: 'es', label: t('hn_lang_spanish'),    native: ENDONYMS.es },
+  { code: 'pt', label: t('hn_lang_portuguese'), native: ENDONYMS.pt },
+  { code: 'vi', label: t('hn_lang_vietnamese'), native: ENDONYMS.vi },
+  { code: 'ht', label: t('bdk_lang_ht'), native: ENDONYMS.ht },
+  { code: 'zh', label: t('bdk_lang_zh'), native: ENDONYMS.zh },
+  { code: 'ar', label: t('bdk_lang_ar'), native: ENDONYMS.ar },
+  { code: 'tl', label: t('bdk_lang_tl'), native: ENDONYMS.tl },
 ]);
 
 // ── Types ──────────────────────────────────────────────────────────────────

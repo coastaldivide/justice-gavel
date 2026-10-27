@@ -38,7 +38,7 @@ not find it.
 
 - **Free crisis path with no account.** "Just arrested?" opens a state rights card, and the same search returns both lawyers and bail agents.
 - **Court reminders without an account.** Guests get up to four reminder notifications on their phone per court date (7 days, 3 days, the evening before and the morning of); texts need an account. Family followers are added with consent, Family Connect is free, and there is a free in-app guide for a missed court date.
-- **Four languages throughout:** English, Spanish, Portuguese and Vietnamese.
+- **Eight languages throughout:** English, Spanish, Portuguese, Vietnamese, Haitian Creole, Chinese (Simplified), Arabic (right to left) and Tagalog. The four newer ones were translated by Claude and need review by a native-speaker legal translator before launch (docs/TRANSLATIONS.md).
 - **Bond Desk matches the market and adds what others lack:**
   - **Pricing:** $99 / $199 / $349 plans, texts at 5¢, no per-client fee for check-ins.
   - **Records:** an integer-cent ledger, numbered receipts, payment plans that refuse totals that don't add up, power inventory, collateral receipts, forfeiture deadlines, and CSV reports with formula-injection protection.
@@ -71,7 +71,7 @@ Ordered by value for the Tennessee bail-agent launch, then the public-defender p
 | 7 | **No help getting to court.** | Uptrust | Add a "plan your court day" checklist (ride, time off, child care) with local transit and 211 links, and a family follower can offer a ride. |
 | 8 | **We don't measure appearance.** Court dates can be marked attended or missed, but nobody is asked. | Uptrust and Captira publish numbers; we have none | Ask "Did you make it to court?" by text or push after each date. Report the appearance rate per county; this is the public-defender pilot metric and the investor proof point. |
 | 9 | **No custody alerts for families.** | VINE (20M users a year) | Let a family member follow a booking and get a text when the person is released or transferred, using the roster data we already pull. |
-| 10 | **Reach: four languages, no phone access.** | VINE (phone menu, TTY, 195 languages) | Add Haitian Creole, Chinese, Arabic and Tagalog, and a toll-free number that reads the next court date (Telnyx voice). |
+| 10 | **Reach: four languages, no phone access.** (Done Oct 27 2026: eight languages — Haitian Creole, Chinese, Arabic and Tagalog added; the court-date phone line answers in English and Spanish.) | VINE (phone menu, TTY, 195 languages) | Add Haitian Creole, Chinese, Arabic and Tagalog, and a toll-free number that reads the next court date (Telnyx voice). |
 | 11 | **No sales channel through public defenders.** | Uptrust; NYC found phone numbers for only 13% of people from police data, versus 90% through public defenders | Make the public-defender pilot the county go-to-market. A defender uploads the client list, and clients get reminders and a two-way message line to the office. Benchmark price: Uptrust's ~$20K setup plus $2 per person per year. |
 | 12 | **Onboarding friction for agents.** | Captira ($1 first month, staff load your forms, first case same day); eBail ($1 for 14 days) | Offer $1 for the first month, form setup done for the agency, and a CSV import of open bonds (none exists today). |
 

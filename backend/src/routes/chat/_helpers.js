@@ -18,7 +18,7 @@ import { hasFeature }       from '../../services/entitlements.js';
 import { FEATURES }         from '../billing/plans.js';
 import { randomUUID }       from 'crypto';
 import { rightsPromptBlock } from '../../services/rightsContent.js';
-import { msg, resolveLang } from '../../i18n/index.js';
+import { msg, resolveLang, LANG_NAMES } from '../../i18n/index.js';
 import { isValidTimeZone, todayInZone, zonedDateTimeToUtc, addDays, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT } from './_prompts.js';
 
@@ -27,7 +27,6 @@ export const FREE_CHAT_MESSAGES_PER_DAY = 3;
 export const MAX_MESSAGE_CHARS = 4000;
 export const MAX_CASE_CONTEXT_CHARS = 8000;
 
-const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
 const PROFESSIONAL_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
 
 /** Defender mode (no consumer guard rails, no daily cap) is for attorneys and public defenders only. */
@@ -113,7 +112,7 @@ export function readChatBody(req, lang) {
 export function languageInstruction(lang) {
   const name = LANG_NAMES[lang] || LANG_NAMES.en;
   return `\n\nLANGUAGE: The person's app is set to ${name}. Write your whole answer in ${name}`
-    + (lang === 'en' ? '' : ' (plain, everyday words; formal "usted" in Spanish, "você" in Portuguese)')
+    + (lang === 'en' ? '' : ' (plain, everyday words; formal "usted" in Spanish, "você" in Portuguese, Haitian Creole and not French, Simplified characters for Chinese, "po/opo" politeness in Tagalog)')
     + '. Keep phone numbers, names of laws and courts, and any words they must say out loud exactly as given.';
 }
 

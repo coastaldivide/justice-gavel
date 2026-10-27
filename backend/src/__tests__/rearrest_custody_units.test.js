@@ -11,9 +11,9 @@ import { normalizeRecord, sourceKeyFor, parseDob, cleanPhone, parseArrestFeeds }
 import { counselFlagOn, COUNSEL_FLAGS } from '../utils/counselFlags.js';
 import { smsSegments } from '../services/smsText.js';
 import { envReport } from '../../scripts/lib/envReport.mjs';
-import { CATALOGS } from '../i18n/index.js';
+import { CATALOGS, SUPPORTED_LANGS } from '../i18n/index.js';
 
-const LANGS = ['en', 'es', 'pt', 'vi'];
+const LANGS = SUPPORTED_LANGS;
 
 describe('re-arrest matching (A4)', () => {
   test('names are normalized: case, accents, commas, initials, suffixes, particles', () => {
@@ -166,9 +166,9 @@ describe('⚖ settings', () => {
       expect(envReport({ ...base, [k]: 'false' }).warnings.some((w) => w.startsWith(k))).toBe(false);
     }
   });
-  test('every new server text exists in all four languages', () => {
+  test('every new server text exists in every language', () => {
     const keys = Object.keys(CATALOGS.en).filter((k) => /^(custody\.|rearrest\.|recovery\.|bd\.err\.share_)/.test(k));
     expect(keys.length).toBeGreaterThan(30);
-    for (const l of ['es', 'pt', 'vi']) for (const k of keys) expect(typeof CATALOGS[l][k]).toBe('string');
+    for (const l of LANGS.filter((x) => x !== 'en')) for (const k of keys) expect(typeof CATALOGS[l][k]).toBe('string');
   });
 });

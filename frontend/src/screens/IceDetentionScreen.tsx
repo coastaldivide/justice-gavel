@@ -23,7 +23,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useTheme, COLORS, RADIUS, themeColors, type ThemeColors } from '../constants/theme';
 import { hapticImpact, hapticSelection, RNShare, COPIED_ACTION } from '../utils/webCompat';
-import { t, tl, useLang, type Lang } from '../i18n';
+import { t, tl, useLang, ENDONYMS, type Lang } from '../i18n';
 import { formatPhone, telUrl } from '../utils/contact';
 import { SourceLine, UnreviewedNotice } from '../components/LegalSource';
 import { AppIcon, IconLabel, ICONS } from '../components/AppIcon';
@@ -57,7 +57,7 @@ const RIGHTS = () => {
     { icon: ICONS.globe, color: c.legal, bg: c.legalBg, bold: false },
   ];
 };
-const ENDONYM: Record<Lang, string> = { en: 'English', es: 'Español', pt: 'Português', vi: 'Tiếng Việt' };
+const ENDONYM: Record<Lang, string> = ENDONYMS;
 
 function content(lang: Lang) {
   const tx = (k: string) => tl(lang, k);

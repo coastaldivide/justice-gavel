@@ -171,7 +171,7 @@ async function textCourtDate(db, callId, phone, cd, lang) {
   const recent = await db.get(
     `SELECT 1 FROM voice_calls WHERE text_to_hash = ? AND texted = 'sent' AND started_at > NOW() - INTERVAL '1 hour' LIMIT 1`, [h]);
   if (recent) { await logText(db, callId, 'skipped:recent'); return 'text_wait'; }
-  const body = fitSms(() => smsCourtDate(cd, lang), {}, []);
+  const body = fitSms(() => smsCourtDate(cd, lang), {}, [], { lang });
   const r = await sendSms({ to, body });
   if (!r?.ok) { await logText(db, callId, 'failed'); return 'text_failed'; }
   await logUpdate(db, callId, 'texted = ?, text_provider_id = ?, text_to_hash = ?', ['sent', r.id ? String(r.id).slice(0, 80) : null, h]);

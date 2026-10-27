@@ -522,7 +522,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         {/* Footer tagline */}
         <View style={styles.footerCard}>
           <JTBLogo size={32} />
-          <View style={{ marginLeft: 12, flex: 1 }}>
+          <View style={{ marginStart: 12, flex: 1 }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
               {t('home_footer_innocent')}
             </Text>
@@ -558,7 +558,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   logoMark: { width: 42, height: 42, borderRadius: RADIUS.sm, overflow: 'hidden' },
   brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 8 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginStart: 8 },
   settingsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   settingsIcon: { fontSize: 20 },
 
@@ -596,7 +596,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     ...SHADOW.sm },
   tileLg: { minHeight: 76 },
   tileText:  { flex: 1, minWidth: 0 },
-  tileLabel: { ...FONTS.black, textAlign: 'left' },
+  tileLabel: { ...FONTS.black },
   tileLabelLg: { fontSize: 15, lineHeight: 19 },
   tileLabelSm: { fontSize: 13, lineHeight: 17 },
 
@@ -608,7 +608,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   quickConnectTag:   { fontSize: 11, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
   quickConnectTitle: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
   quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: colors.textSecond },
-  quickConnectRight: { alignItems: 'center', marginLeft: 12 },
+  quickConnectRight: { alignItems: 'center', marginStart: 12 },
   quickConnectPrice: { fontSize: 22, ...FONTS.black, color: colors.textPrimary, lineHeight: 26 },
   quickConnectPriceSub: { fontSize: 11, color: colors.textSecond, ...FONTS.medium },
   footerCard: {
@@ -618,13 +618,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
     ...SHADOW.sm },
   returningCard: {
     backgroundColor: COLORS.navy + '0D', borderRadius: 8, padding: 10,
-    marginBottom: 8, borderLeftWidth: 3, borderLeftColor: COLORS.steel },
+    marginBottom: 8, borderStartWidth: 3, borderStartColor: COLORS.steel },
   returningText: { fontSize: 12, color: colors.textSecond, lineHeight: 17 },
   tipCard: {
     backgroundColor: colors.bg,
     borderRadius: 12, padding: 16, marginBottom: 12,
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderLeftWidth: 3, borderLeftColor: COLORS.steel,
+    borderStartWidth: 3, borderStartColor: COLORS.steel,
     shadowColor: COLORS.navy, shadowOpacity: 0.05,
     shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   tipLeft:  { flex: 1 },
@@ -654,7 +654,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   courtCountdownTitle:{ fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
   courtCountdownCase: { fontSize: 11, color: colors.textOnNavy },
   courtCountdownArrow:{ fontSize: 28, color: colors.textOnNavy, ...FONTS.medium },
-  tileUnreadBadge:     { position: 'absolute', top: -4, right: -4, backgroundColor: colors.emergency,
+  tileUnreadBadge:     { position: 'absolute', top: -4, end: -4, backgroundColor: colors.emergency,
     borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 3 },
   tileUnreadBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900' },

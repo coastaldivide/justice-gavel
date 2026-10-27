@@ -19,7 +19,7 @@ const ts = require('typescript');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SRC = path.join(ROOT, 'src');
-const LANGS = ['en', 'es', 'pt', 'vi'];
+const LANGS = ['en', 'es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'];
 
 const EMOJI = /(?![©®™])[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}️⃣]/gu;
 const emojiIn = (s) => [...new Set(String(s).match(EMOJI) || [])];

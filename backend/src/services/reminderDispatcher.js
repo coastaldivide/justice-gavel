@@ -53,7 +53,7 @@ import { fitSms } from './smsText.js';
 import { sendSms, smsLive } from './sms.js';
 import { sendWebPushToUser } from './webPush.js';
 import { guardJob } from '../utils/cronGuard.js';
-import { msg, formatDay, normalizeLang } from '../i18n/index.js';
+import { msg, formatDay, normalizeLang, langAttrs } from '../i18n/index.js';
 import { checkinReminderStale, planCheckinReminder, backfillCheckinReminders } from './checkinReminders.js';
 
 const BATCH = 50;
@@ -145,7 +145,7 @@ async function sendReminderEmail(user, row, data) {
   const dateLine = msg(lang, 'reminder.email.court_date', { date: '\u0000' });
   const [before, after] = dateLine.split('\u0000');
   const html = `
-    <div lang="${lang}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+    <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
       <h2 style="color:#042C53;margin:0 0 12px">${escapeHtml(row.title)}</h2>
       <p style="font-size:15px;line-height:1.5">${escapeHtml(row.body || '')}</p>
       ${isCourt ? `<p style="font-size:13px;color:#555">${escapeHtml(before)}<strong>${escapeHtml(day)}</strong>${escapeHtml(after ?? '')}
@@ -176,15 +176,15 @@ export async function courtSmsText(db, row, data, lang) {
   const cd = row.court_date_id ? await db.get(
     `SELECT cd.id, cd.court_date, cd.court_time, cd.courthouse_id, cd.location, c.title, c.user_id
        FROM court_dates cd JOIN cases c ON c.id = cd.case_id WHERE cd.id = ?`, [row.court_date_id]).catch(() => null) : null;
-  if (!cd) return fitSms((f) => msg(lang, 'reminder.sms', { body: f.body }), { body: row.body || row.title || '' }, [['body', 40]]);
+  if (!cd) return fitSms((f) => msg(lang, 'reminder.sms', { body: f.body }), { body: row.body || row.title || '' }, [['body', 40]], { lang });
   const date = dateOnly(cd.court_date);
   const caseTitle = String(cd.title || msg(lang, 'reminder.default_case'));
   if (type === 'court_checkin') {
-    return fitSms((f) => msg(lang, 'reminder.ask.sms', { case: f.case }), { case: caseTitle }, [['case', 10]]);
+    return fitSms((f) => msg(lang, 'reminder.ask.sms', { case: f.case }), { case: caseTitle }, [['case', 10]], { lang });
   }
   if (type === 'court_missed_followup') {
     return fitSms((f) => msg(lang, 'reminder.missed.sms', { case: f.case, day: formatDay(date, lang), link: missedCourtLink(lang) }),
-      { case: caseTitle }, [['case', 10]]);
+      { case: caseTitle }, [['case', 10]], { lang });
   }
   const days = Number.isFinite(Number(data.days_before)) ? Number(data.days_before) : 0;
   const time = timeOnly(cd.court_time);
@@ -192,14 +192,14 @@ export async function courtSmsText(db, row, data, lang) {
     const who = await ownerFirstName(db, Number(cd.user_id));
     const place = await courthousePlaceFor(db, cd);
     return fitSms((f) => msg(lang, 'reminder.sms', { body: followerBodyFor(f.who, date, days, { time, place: f.place || null }, lang) }),
-      { who: who || '', place: place || '' }, [['place', 0], ['who', 8]]);
+      { who: who || '', place: place || '' }, [['place', 0], ['who', 8]], { lang });
   }
   const place = await placeFor(db, cd);
   // A6 plan prompt → the court date's "Plan your court day" (A8). The link fits within the
   // segment limits with the case title at its minimum (reminder wording tests check it).
   const plan = courtPlanLink(cd.id);
   return fitSms((f) => msg(lang, 'reminder.sms', { body: `${bodyFor(f.case, date, days, { time, place: f.place || null }, lang)} ${plan}` }),
-    { case: caseTitle, place: place || '' }, [['place', 0], ['case', 12]]);
+    { case: caseTitle, place: place || '' }, [['place', 0], ['case', 12]], { lang });
 }
 
 /**

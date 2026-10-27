@@ -6,8 +6,11 @@
  * ơ, ư, "—", curly quotes are not) switches the whole text to UCS-2: 70 characters (67 when
  * split). Court reminders, the "Did you make it?" question and the morning-after text must
  * stay within 2 segments in GSM-7 (English) and within MAX_UNICODE_SEGMENTS when the language
- * needs accents (Spanish, Portuguese, Vietnamese are sent with their accents — owner decision,
- * October 27 2026: correct spelling over the cheapest text).
+ * needs accents (Spanish, Portuguese, Vietnamese, Chinese, Arabic are sent in their own letters —
+ * owner decision, October 27 2026: correct spelling over the cheapest text). Haitian Creole and
+ * Tagalog are usually plain GSM-7 but longer than English: a text in a language other than
+ * English may use MAX_GSM_SEGMENTS_OTHER GSM-7 segments (3 × 153 = 459 characters, still fewer
+ * segments than the 6 a Unicode text may use).
  *
  *   toGsm(text)         the text in GSM-7: dashes, quotes and spaces made plain, letters
  *                       outside GSM-7 written without their accent (á→a, ã→a, ơ→o, đ→d).
@@ -15,13 +18,15 @@
  *   plainPunctuation(text)  only dashes, quotes, spaces and ellipses made plain (accents kept),
  *                       so an English text stays GSM-7.
  *   smsSegments(text)   { encoding: 'GSM-7'|'UCS-2', units, segments }
- *   fitSms(build, fields, shrink, { maxSegments, maxUnicodeSegments })
+ *   fitSms(build, fields, shrink, { lang, maxSegments, maxUnicodeSegments })
  *                       builds the text from `fields`, then shortens the named fields
  *                       (longest first, never below their minimum) until it fits.
  */
 
 /** Most segments a text with accents (UCS-2) may use. */
 export const MAX_UNICODE_SEGMENTS = 6;
+/** Most GSM-7 segments a text in a language other than English may use (English: 2). */
+export const MAX_GSM_SEGMENTS_OTHER = 3;
 
 // GSM 03.38 basic set (Ç left out: carriers disagree whether 0x09 is Ç or ç) and extension table.
 const BASIC = new Set(
@@ -88,7 +93,8 @@ const cut = (v, n) => {
  * (UCS-2). Only when every field is already at its minimum and the text is still too long is
  * it cut at the segment limit (the wording tests make sure that never happens with real values).
  */
-export function fitSms(build, fields, shrink = [], { maxSegments = 2, maxUnicodeSegments = MAX_UNICODE_SEGMENTS } = {}) {
+export function fitSms(build, fields, shrink = [], { lang = 'en', maxSegments, maxUnicodeSegments = MAX_UNICODE_SEGMENTS } = {}) {
+  if (maxSegments === undefined) maxSegments = String(lang || 'en').toLowerCase().startsWith('en') ? 2 : MAX_GSM_SEGMENTS_OTHER;
   const f = { ...fields };
   for (const [k] of shrink) f[k] = f[k] == null ? '' : String(f[k]);
   const limitFor = (t) => (smsSegments(t).encoding === 'GSM-7' ? maxSegments : maxUnicodeSegments);

@@ -84,7 +84,7 @@ export async function sendReceipt(db, { paymentId, lang = 'en', email = null, ph
     out.email = await sendAgentEmail({ to: email, subject: msg(lang, 'bd.email.receipt_subject', params), text: msg(lang, 'bd.email.receipt_body', params) });
   }
   if (phone && smsOk) {
-    const body = fitSms((f) => msg(lang, 'bd.sms.receipt', f), params, [['defendant', 6], ['agency', 12]]);
+    const body = fitSms((f) => msg(lang, 'bd.sms.receipt', f), params, [['defendant', 6], ['agency', 12]], { lang });
     out.sms = (await sendAgentTextRecord(db, { agentId: p.agent_id, bondId: p.bond_id, purpose: 'payment_receipt', to: phone, body })).status;
   }
   return out;

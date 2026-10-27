@@ -8,7 +8,7 @@
  *   PATCH  /bonds/:id/court-dates/:cdId        change it / mark attended | missed | rescheduled | cancelled | scheduled
  *   DELETE /bonds/:id/court-dates/:cdId        remove it (its pending texts are cancelled)
  *   GET    /bonds/:id/reminders                every planned / sent text with its delivery status
- *   PUT    /bonds/:id/reminders                { on: bool, lang?: en|es|pt|vi } the per-bond switch and text language
+ *   PUT    /bonds/:id/reminders                { on: bool, lang?: en|es|pt|vi|ht|zh|ar|tl } the per-bond switch and text language
  *   PUT    /bonds/:id/text-consent             { to: defendant|indemnitor, indemnitor_id?, consent_confirmed: bool }
  *                                              "the person gave me this number for texts about this bond"
  */
@@ -23,11 +23,12 @@ import { dateOnly, timeOnly } from '../../services/courtReminders.js';
 import { smsLive, toE164 } from '../../services/sms.js';
 import { todayInZone } from '../../utils/timezone.js';
 import logger from '../../utils/logger.js';
+import { SUPPORTED_LANGS } from '../../i18n/index.js';
 
 const router = Router();
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MAX_HEARINGS = 50;
-const LANGS = ['en', 'es', 'pt', 'vi'];
+const LANGS = SUPPORTED_LANGS;
 
 function time(v, field) {
   if (v === undefined || v === null || v === '') return null;

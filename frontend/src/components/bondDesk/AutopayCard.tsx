@@ -15,7 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import { api, apiErrorMessage } from '../../services/api';
 import { useToast } from '../ToastProvider';
 import { useTheme } from '../../constants/theme';
-import { t, useLang } from '../../i18n';
+import { t, useLang, LANGS, type Lang } from '../../i18n';
 import { Btn, Card, Check, Chips, Line, Pill } from './ui';
 import { type Access, type AutopayInfo, type BondDetail, type ConnectState, attemptTone, fmtDay, fmtWhen, money } from '../../services/bondDesk';
 
@@ -29,7 +29,7 @@ export function AutopayCard({ detail, access, reload, onSettings }: { detail: Bo
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState('defendant');
   const [deliver, setDeliver] = useState<'sms' | 'email' | 'both' | 'none'>('sms');
-  const [lang, setLang] = useState<'en' | 'es' | 'pt' | 'vi'>('en');
+  const [lang, setLang] = useState<Lang>('en');
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export function AutopayCard({ detail, access, reload, onSettings }: { detail: Bo
               <Chips options={[{ key: 'defendant', label: b.defendant_name }, ...detail.indemnitors.map(i => ({ key: String(i.id), label: i.full_name }))]}
                 value={to} onChange={setTo} testIDPrefix="autopay-to" />
               <Chips options={(['sms', 'email', 'both', 'none'] as const).map(k => ({ key: k, label: t(`bdk_deliver_${k}`) }))} value={deliver} onChange={setDeliver} testIDPrefix="autopay-deliver" />
-              <Chips options={(['en', 'es', 'pt', 'vi'] as const).map(k => ({ key: k, label: t(`bdk_lang_${k}`) }))} value={lang} onChange={setLang} testIDPrefix="autopay-lang" />
+              <Chips options={LANGS.map(k => ({ key: k, label: t(`bdk_lang_${k}`) }))} value={lang} onChange={setLang} testIDPrefix="autopay-lang" />
               {(deliver === 'sms' || deliver === 'both') && (
                 <>
                   <Line muted>{t('bdk_text_cost', { cost: money(access?.text_cents ?? 5) })}</Line>

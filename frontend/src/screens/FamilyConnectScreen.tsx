@@ -81,7 +81,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
   const specialties: string[] = Array.isArray(contact.specialties) ? contact.specialties : [];
 
   return (
-    <View style={[styles.contactCard, { borderLeftColor: color, borderLeftWidth: 4 }]}>
+    <View style={[styles.contactCard, { borderStartColor: color, borderStartWidth: 4 }]}>
       <View style={styles.contactHeader}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.contactName, { color }]}>{contact.name}</Text>
@@ -624,7 +624,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   arrestResultDetail: { fontSize: 12, color: colors.info, marginBottom: 2 },
   arrestResultCharges: { fontSize: 12, color: colors.info, marginBottom: 2 },
   arrestResultBail: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textSecond },
-  selectArrow: { fontSize: 22, color: colors.textBrand, fontWeight: '300', marginLeft: 8 },
+  selectArrow: { fontSize: 22, color: colors.textBrand, fontWeight: '300', marginStart: 8 },
 
   skipBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   skipBtnText: { fontSize: 12, lineHeight: 20, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
@@ -673,7 +673,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   contactHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   contactName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 2 },
   contactAddress: { fontSize: 12, color: colors.info },
-  contactTypeBadge: { paddingHorizontal: 8, paddingVertical: 10, borderRadius: 8, marginLeft: 8 },
+  contactTypeBadge: { paddingHorizontal: 8, paddingVertical: 10, borderRadius: 8, marginStart: 8 },
   contactTypeBadgeText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4 },

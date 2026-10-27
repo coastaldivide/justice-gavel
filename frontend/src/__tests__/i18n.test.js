@@ -1,13 +1,13 @@
 /**
  * i18n.test.js
- * Tests translation key parity across all 4 languages.
+ * Tests translation key parity across all 8 languages.
  * Reads actual language files — catches missing keys before submission.
  */
 const fs   = require('fs');
 const path = require('path');
 
 const I18N_DIR = require('path').resolve(__dirname, '../i18n');
-const LANGS    = ['en', 'es', 'vi', 'pt'];
+const LANGS    = ['en', 'es', 'vi', 'pt', 'ht', 'zh', 'ar', 'tl'];
 
 // Load all language files
 let langs = {};
@@ -37,7 +37,7 @@ function collectKeys(obj, prefix = '') {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 describe('i18n Language Files', () => {
-  it('all 4 language files load without error', () => {
+  it('all 8 language files load without error', () => {
     expect(loadError).toBeNull();
     expect(Object.keys(langs)).toHaveLength(LANGS.length);
   });
@@ -45,7 +45,7 @@ describe('i18n Language Files', () => {
   it('all languages have the same number of keys as English', () => {
     if (loadError) return;
     const enKeys = collectKeys(langs.en);
-    for (const lang of ['es', 'vi', 'pt']) {
+    for (const lang of LANGS.filter(l => l !== 'en')) {
       const keys = collectKeys(langs[lang]);
       expect(keys.length).toBe(enKeys.length);
     }
@@ -54,7 +54,7 @@ describe('i18n Language Files', () => {
   it('all keys in English exist in all other languages', () => {
     if (loadError) return;
     const enKeys = new Set(collectKeys(langs.en));
-    for (const lang of ['es', 'vi', 'pt']) {
+    for (const lang of LANGS.filter(l => l !== 'en')) {
       const otherKeys = new Set(collectKeys(langs[lang]));
       const missing = [...enKeys].filter(k => !otherKeys.has(k));
       expect(missing).toHaveLength(0);
@@ -64,7 +64,7 @@ describe('i18n Language Files', () => {
   it('no language has extra keys not present in English', () => {
     if (loadError) return;
     const enKeys = new Set(collectKeys(langs.en));
-    for (const lang of ['es', 'vi', 'pt']) {
+    for (const lang of LANGS.filter(l => l !== 'en')) {
       const extra = collectKeys(langs[lang]).filter(k => !enKeys.has(k));
       expect(extra).toHaveLength(0);
     }

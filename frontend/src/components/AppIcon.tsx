@@ -16,6 +16,7 @@ import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons'; // one icon set only: the package root bundles every set's glyph map
 import { themeColors, useTheme } from '../constants/theme';
+import { isRTL } from '../i18n/direction';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,7 +30,18 @@ interface AppIconProps {
   testID?: string;
 }
 
-export function AppIcon({ name, size = 22, color, style, accessibilityLabel, testID }: AppIconProps) {
+// Arrows that point "back" / "forward" mirror in a right-to-left layout (Arabic).
+const MIRROR: Record<string, IconName> = {
+  'chevron-back': 'chevron-forward', 'chevron-forward': 'chevron-back',
+  'arrow-back': 'arrow-forward', 'arrow-forward': 'arrow-back',
+  'arrow-back-outline': 'arrow-forward-outline', 'arrow-forward-outline': 'arrow-back-outline',
+  'chevron-back-outline': 'chevron-forward-outline', 'chevron-forward-outline': 'chevron-back-outline',
+};
+/** The icon to draw for `name` in the current direction. */
+export const directionalIcon = (name: IconName): IconName => (isRTL() && MIRROR[name] ? MIRROR[name] : name);
+
+export function AppIcon({ name: raw, size = 22, color, style, accessibilityLabel, testID }: AppIconProps) {
+  const name = directionalIcon(raw);
   const a11y = accessibilityLabel
     ? { accessibilityLabel, accessibilityRole: 'image' as const }
     : { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const, 'aria-hidden': true };
@@ -56,7 +68,7 @@ export function IconLabel({ icon, color, iconColor, size, textStyle, style, chil
   const flat = { ...(StyleSheet.flatten(textStyle) || {}) } as TextStyle;
   const margins: ViewStyle = {};
   // So do the label's own flex / alignSelf / width (they size the row in its parent).
-  for (const k of ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical',
+  for (const k of ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginStart', 'marginEnd', 'marginHorizontal', 'marginVertical',
     'flex', 'flexGrow', 'alignSelf', 'width', 'maxWidth'] as const) {
     if (flat[k] !== undefined) { (margins as Record<string, unknown>)[k] = flat[k]; delete flat[k]; }
   }

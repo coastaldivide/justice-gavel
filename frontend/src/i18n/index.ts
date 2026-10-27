@@ -1,5 +1,7 @@
 /**
- * i18n — the app's four languages (en, es, pt, vi).
+ * i18n — the app's eight languages (en, es, pt, vi, ht, zh, ar, tl). Arabic is right to left
+ * (./direction.ts: a saved choice of Arabic, or of another language after Arabic, lays the
+ * app out again — at once on the web, after a restart on iOS / Android).
  *
  *   t(key, params?)   text in the current language ({name} placeholders filled);
  *                     English when a key is missing (never in a release: the
@@ -7,7 +9,9 @@
  *   getLang / setLang current language; setLang saves the choice and tells
  *                     every subscriber (useLang) so mounted screens re-render
  *   useLang()         React hook — call it in a screen so it re-renders on change
- *   locale()          'en-US' | 'es-US' | 'pt-BR' | 'vi-VN' for dates and times
+ *   locale()          'en-US' | 'es-US' | 'pt-BR' | 'vi-VN' | 'zh-CN' | 'ar-u-nu-latn' | 'fil-PH'
+ *                     for dates, times and numbers (Haitian Creole: en-US numbers, and htDay()
+ *                     for court dates — Intl has no Haitian Creole)
  *   initLang()        startup: the saved choice, else the device language
  */
 import { useSyncExternalStore } from 'react';
@@ -16,12 +20,26 @@ import en from './en.json';
 import es from './es.json';
 import pt from './pt.json';
 import vi from './vi.json';
+import ht from './ht.json';
+import zh from './zh.json';
+import ar from './ar.json';
+import tagalog from './tl.json';
 import { themeMode } from '../constants/theme';
+import { applyDirection, isRtlLang } from './direction';
 
-export type Lang = 'en' | 'es' | 'pt' | 'vi';
-export const LANGS: readonly Lang[] = ['en', 'es', 'pt', 'vi'];
-const LOCALES: Record<Lang, string> = { en: 'en-US', es: 'es-US', pt: 'pt-BR', vi: 'vi-VN' };
-const dict: Record<Lang, Record<string, string>> = { en, es, pt, vi };
+export { isRTL, isRtlLang, applyDirection } from './direction';
+
+export type Lang = 'en' | 'es' | 'pt' | 'vi' | 'ht' | 'zh' | 'ar' | 'tl';
+export const LANGS: readonly Lang[] = ['en', 'es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'];
+/** Each language's own name, for language pickers. */
+export const ENDONYMS: Record<Lang, string> = {
+  en: 'English', es: 'Español', pt: 'Português', vi: 'Tiếng Việt',
+  ht: 'Kreyòl ayisyen', zh: '中文', ar: 'العربية', tl: 'Tagalog',
+};
+const LOCALES: Record<Lang, string> = {
+  en: 'en-US', es: 'es-US', pt: 'pt-BR', vi: 'vi-VN', ht: 'en-US', zh: 'zh-CN', ar: 'ar-u-nu-latn', tl: 'fil-PH',
+};
+const dict: Record<Lang, Record<string, string>> = { en, es, pt, vi, ht, zh, ar, tl: tagalog };
 
 let lang: Lang = 'en';
 const listeners = new Set<() => void>();
@@ -44,8 +62,31 @@ export function setLang(l: string, { persist = true }: { persist?: boolean } = {
   decided = true;
   const changed = l !== lang;
   lang = l;
-  if (persist) AsyncStorage.setItem('lang', l).catch(() => { /* non-fatal */ });
+  const saved = persist ? AsyncStorage.setItem('lang', l).catch(() => { /* non-fatal */ }) : Promise.resolve();
   if (changed) listeners.forEach(fn => { try { fn(); } catch { /* a listener must not break others */ } });
+  // Layout direction: the web flips at once; iOS / Android restart, but only for a saved
+  // choice (after it is saved, so the app comes back in that language).
+  saved.then(() => applyDirection(l, { restart: persist }))
+    .then(r => { if (r === 'needs_restart') directionListeners.forEach(fn => { try { fn(); } catch { /* ignore */ } }); })
+    .catch(() => { /* non-fatal */ });
+}
+
+const directionListeners = new Set<() => void>();
+/** Called when the app could not restart itself to change direction (Settings asks the person to reopen it). */
+export function onDirectionRestartNeeded(fn: () => void): () => void {
+  directionListeners.add(fn);
+  return () => { directionListeners.delete(fn); };
+}
+
+/** True when `l` (default: the current language) is written right to left. */
+export function rtlLang(l: Lang = lang): boolean { return isRtlLang(l); }
+
+// Haitian Creole day and month names (Intl has none): "mèkredi 30 septanm 2026".
+const HT_DAYS = ['dimanch', 'lendi', 'madi', 'mèkredi', 'jedi', 'vandredi', 'samdi'];
+const HT_MONTHS = ['janvye', 'fevriye', 'mas', 'avril', 'me', 'jen', 'jiyè', 'out', 'septanm', 'oktòb', 'novanm', 'desanm'];
+/** A UTC date in Haitian Creole: "mèkredi 30 septanm 2026" (weekday / year optional). */
+export function htDay(d: Date, { weekday = true, year = true }: { weekday?: boolean; year?: boolean } = {}): string {
+  return `${weekday ? `${HT_DAYS[d.getUTCDay()]} ` : ''}${d.getUTCDate()} ${HT_MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ''}`;
 }
 
 /** Subscribe to language changes; returns the unsubscribe function. */
@@ -103,13 +144,24 @@ export function tl(l: Lang, key: string, params?: TParams): string {
   return v ? fill(v, params) : key;
 }
 
-// ── Device locale → one of our 4 languages ─────────────────────────────────────
+// ── Device locale → one of our 8 languages ─────────────────────────────────────
 const LOCALE_MAP: Record<string, Lang> = {
   'es': 'es', 'es-MX': 'es', 'es-US': 'es', 'es-419': 'es', 'es-AR': 'es',
   'pt': 'pt', 'pt-BR': 'pt', 'pt-PT': 'pt',
   'vi': 'vi', 'vi-VN': 'vi',
+  'ht': 'ht', 'ht-HT': 'ht',
+  'zh': 'zh', 'zh-CN': 'zh', 'zh-Hans': 'zh', 'zh-Hans-CN': 'zh', 'zh-Hans-US': 'zh', 'zh-SG': 'zh',
+  'ar': 'ar',
+  'fil': 'tl', 'fil-PH': 'tl', 'tl': 'tl', 'tl-PH': 'tl',
   'en': 'en', 'en-US': 'en', 'en-GB': 'en', 'en-AU': 'en', 'en-CA': 'en',
 };
+
+/** 'es_MX' / 'zh-Hans-CN' / 'fil_PH' / 'ar' → one of our languages, or null. */
+export function langFromLocale(localeStr: string): Lang | null {
+  const tag = String(localeStr || '').replace(/_/g, '-');
+  const parts = tag.split('-');
+  return LOCALE_MAP[tag] || LOCALE_MAP[`${parts[0]}-${parts[1] || ''}`] || LOCALE_MAP[parts[0].toLowerCase()] || null;
+}
 
 export function detectLang(): Lang {
   try {
@@ -127,6 +179,9 @@ export async function initLang(): Promise<void> {
   const saved = await AsyncStorage.getItem('lang').catch(() => null);
   if (decided) return; // the person picked a language while storage was read
   decided = true;
-  if (isLang(saved)) { setLang(saved, { persist: false }); return; }
-  setLang(detectLang(), { persist: false });
+  const l = isLang(saved) ? saved : detectLang();
+  setLang(l, { persist: false });
+  // The start-up language is stable (saved, or the device's), so the layout may follow it:
+  // the first start in Arabic (or the first start after leaving Arabic) restarts once.
+  applyDirection(l, { restart: true }).catch(() => { /* non-fatal */ });
 }

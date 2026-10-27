@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(133,183,235,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginStart: 12,
   },
   actionIcon: { fontSize: 18 },
   accentLine: {

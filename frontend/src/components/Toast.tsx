@@ -64,7 +64,7 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number
     <Animated.View
       style={[
         s.toast,
-        { backgroundColor: variantColors.bg, borderLeftColor: variantColors.border },
+        { backgroundColor: variantColors.bg, borderStartColor: variantColors.border },
         {
           opacity:   anim,
           transform: [{ translateY: anim.interpolate({ inputRange: [0,1], outputRange: [-20,0] }) }],
@@ -133,9 +133,9 @@ const s = StyleSheet.create({
     flexDirection:  'row',
     alignItems:     'center',
     borderRadius:   10,
-    borderLeftWidth: 4,
+    borderStartWidth: 4,
     paddingVertical: 12,
-    paddingRight:   16,
+    paddingEnd:   16,
     gap:            10,
     shadowColor:    THEME_COLORS.black,
     shadowOpacity:  0.08,
@@ -149,7 +149,7 @@ const s = StyleSheet.create({
     borderRadius:   16,
     alignItems:     'center',
     justifyContent: 'center',
-    marginLeft:     10,
+    marginStart:     10,
     flexShrink:     0,
   },
   message:   { flex: 1, fontSize: 14, fontWeight: '500', lineHeight: 20 },

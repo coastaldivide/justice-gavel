@@ -1,6 +1,6 @@
 /**
  * i18n_server_content.test.js — every piece of server text the core path
- * returns exists in en / es / pt / vi with the same structure, and the server
+ * returns exists in en / es / pt / vi / ht / zh / ar / tl with the same structure, and the server
  * and the app say the same thing (no drift between the two copies).
  *
  *   catalogs   same keys, same {placeholders}, nothing empty, nothing left in
@@ -21,7 +21,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import {
-  CATALOGS, SUPPORTED_LANGS, msg, normalizeLang, parseAcceptLanguage, resolveLang, formatDay, formatTime, stateName,
+  CATALOGS, SUPPORTED_LANGS, msg, normalizeLang, parseAcceptLanguage, resolveLang, formatDay, formatDayShort, formatTime, stateName,
+  langAttrs, isRtl, LANG_NAMES, stripeLocale,
 } from '../i18n/index.js';
 import { STATE_NAMES_I18N } from '../i18n/stateNames.js';
 import { generalSections, scriptFor, getRightsCard, buildLegacyRightsCard, GENERAL_SECTIONS } from '../services/rightsContent.js';
@@ -33,7 +34,7 @@ import { titleForDaysLeft, bodyFor, followerTitleFor, followerBodyFor, formatCou
 
 const REPO = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const app = Object.fromEntries(SUPPORTED_LANGS.map(l => [l, JSON.parse(readFileSync(resolve(REPO, `frontend/src/i18n/${l}.json`), 'utf8'))]));
-const OTHER = ['es', 'pt', 'vi'];
+const OTHER = SUPPORTED_LANGS.filter(l => l !== 'en');
 const PH = /\{\w+\}/g;
 const ph = (s) => (String(s).match(PH) || []).sort();
 // Pure punctuation around a placeholder (" — {place}") is the same in every language.
@@ -43,7 +44,8 @@ const SAME_OK = new Set(['reminder.where', 'push.consult_reminder.body', 'push.c
 describe('server catalogs', () => {
   const en = CATALOGS.en;
   it('has a catalog for each app language', () => {
-    expect(SUPPORTED_LANGS).toEqual(['en', 'es', 'pt', 'vi']);
+    expect(SUPPORTED_LANGS).toEqual(['en', 'es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl']);
+    expect(Object.keys(CATALOGS).sort()).toEqual([...SUPPORTED_LANGS].sort());
     expect(Object.keys(en).length).toBeGreaterThan(150);
   });
   for (const l of OTHER) {
@@ -145,7 +147,8 @@ describe('court-day guidance in every language', () => {
       expect(g.checklist.note).toBe(b.cg_checklist_note);
       expect(g.missed.steps.at(-1).text).toBe(msg(l, 'guidance.missed.4'));
       for (const s of [...g.checklist.bring, ...g.checklist.wear, ...g.missed.steps]) expect(s.source).toMatch(/Justice Gavel/);
-      expect(JSON.stringify(g)).not.toMatch(/\b\d+\s*(days?|hours?|días|horas|dias|ngày|giờ)\b/);
+      expect(JSON.stringify(g)).not.toMatch(/\b\d+\s*(days?|hours?|días|horas|dias|ngày|giờ|jou|èdtan|araw|oras)\b/);
+      expect(JSON.stringify(g)).not.toMatch(/\d+\s*(天|小时|个小时|يوم|أيام|ساعة|ساعات)/);
     });
   }
   it('unknown language → English', () => {
@@ -194,6 +197,30 @@ describe('reminder text in every language', () => {
     expect(formatTime('09:30', 'es')).toMatch(/^9:30 a\.\s?m\.$/);
     expect(formatTime(null, 'es')).toBeNull();
   });
+  it('the four newer languages: Haitian Creole has its own day names (Intl has none), Arabic keeps Western digits', () => {
+    expect(formatDay('2026-11-05', 'ht')).toBe('jedi 5 novanm');
+    expect(formatDay('2026-11-05', 'ht', { year: true })).toBe('jedi 5 novanm 2026');
+    expect(formatDayShort('2026-09-30', 'ht')).toBe('mèk 30 sept');
+    expect(formatDay('2026-11-05', 'zh')).toBe('11月5日星期四');
+    expect(formatDay('2026-11-05', 'ar')).toBe('الخميس، 5 نوفمبر');
+    expect(formatDay('2026-11-05', 'tl')).toBe('Huwebes, Nobyembre 5');
+    expect(formatTime('09:30', 'ht')).toBe('09:30');
+    expect(formatTime('14:05', 'zh')).toBe('14:05');
+    expect(formatTime('09:30', 'ar')).toBe('9:30 ص');
+    expect(formatTime('14:05', 'tl')).toBe('2:05 PM');
+    for (const l of OTHER) expect([l, formatDay('2026-11-05', l)]).not.toEqual([l, formatDay('2026-11-05', 'en')]);
+  });
+  it('e-mail markup: lang on every language, dir="rtl" only for Arabic', () => {
+    expect(langAttrs('ar')).toBe('lang="ar" dir="rtl"');
+    expect(langAttrs('zh')).toBe('lang="zh"');
+    expect(langAttrs('xx')).toBe('lang="en"');
+    expect(isRtl('ar')).toBe(true);
+    expect(OTHER.filter(isRtl)).toEqual(['ar']);
+  });
+  it('every language has an English name for AI prompts and a Stripe checkout language', () => {
+    for (const l of SUPPORTED_LANGS) expect(typeof LANG_NAMES[l]).toBe('string');
+    expect(SUPPORTED_LANGS.map(stripeLocale)).toEqual(['en', 'es', 'pt-BR', 'vi', 'en', 'zh', 'en', 'fil']);
+  });
 });
 
 describe('request language', () => {
@@ -201,6 +228,11 @@ describe('request language', () => {
     expect(normalizeLang('es-MX')).toBe('es');
     expect(normalizeLang('PT_br')).toBe('pt');
     expect(normalizeLang('fr')).toBeNull();
+    expect(normalizeLang('zh-Hans-CN')).toBe('zh');
+    expect(normalizeLang('fil-PH')).toBe('tl');
+    expect(normalizeLang('ar-EG')).toBe('ar');
+    expect(normalizeLang('ht_HT')).toBe('ht');
+    expect(parseAcceptLanguage('fr-HT,fr;q=0.9,ht;q=0.8,en;q=0.5')).toBe('ht');
     expect(parseAcceptLanguage('fr-FR,fr;q=0.9,vi;q=0.8,en;q=0.5')).toBe('vi');
     expect(parseAcceptLanguage('en;q=0.2, pt-BR')).toBe('pt');
     expect(parseAcceptLanguage('de,fr')).toBeNull();
@@ -217,8 +249,8 @@ describe('request language', () => {
 describe('state names match the app', () => {
   it('backend and frontend tables are identical', () => {
     const ts = readFileSync(resolve(REPO, 'frontend/src/i18n/stateNames.ts'), 'utf8');
-    for (const l of ['es', 'pt', 'vi']) {
-      const block = (new RegExp(`\\n  ${l}: \\{([\\s\\S]*?)\\n  \\}`).exec(ts) || ['', ''])[1];
+    for (const l of OTHER) {
+      const block = (new RegExp(`\\n  ${l}: \\{([^}]*)\\}`).exec(ts) || ['', ''])[1];
       const fe = Object.fromEntries([...block.matchAll(/([A-Z]{2}): '([^']+)'/g)].map(m => [m[1], m[2]]));
       expect([l, fe]).toEqual([l, { ...STATE_NAMES_I18N[l] }]);
     }
@@ -253,7 +285,7 @@ describe('legal tip of the day (Home) in every language', () => {
     const en = await request(app).get('/push/tip');
     expect(en.body.language).toBe('en');
     expect(en.body.tip).toBe(CATALOGS.en[`tip.${en.body.index}`]);
-    for (const lang of ['es', 'pt', 'vi']) {
+    for (const lang of OTHER) {
       const r = await request(app).get('/push/tip').set('Accept-Language', `${lang};q=0.9, en;q=0.5`);
       expect(r.body.language).toBe(lang);
       expect(r.headers['content-language']).toBe(lang);

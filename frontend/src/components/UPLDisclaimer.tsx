@@ -45,8 +45,8 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
 }
 
 const makeS = (colors: ThemeColors) => StyleSheet.create({
-  banner:      { flexDirection: 'row', backgroundColor: colors.warnBg, borderLeftWidth: 3, borderLeftColor: colors.gold, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
-  icon:        { marginRight: 10, marginTop: 1 },
+  banner:      { flexDirection: 'row', backgroundColor: colors.warnBg, borderStartWidth: 3, borderStartColor: colors.gold, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
+  icon:        { marginEnd: 10, marginTop: 1 },
   textBlock:   { flex: 1 },
   heading:     { fontSize: 12, fontWeight: '700', color: colors.textPrimary, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
   body:        { fontSize: 11, color: colors.textPrimary, lineHeight: 16 },

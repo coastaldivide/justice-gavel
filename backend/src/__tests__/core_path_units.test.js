@@ -15,6 +15,7 @@ import { parseHours, isOpenNow, is24x7, completeness, rankProviders } from '../s
 import { buildCourtDateIcs, foldLine, escapeIcsText, vtimezoneLines } from '../services/ics.js';
 import { sendSms, smsLive, toE164 } from '../services/sms.js';
 import { courtDayGuidance, CALL_LAWYER_OR_CLERK } from '../services/courtDayGuidance.js';
+import { SUPPORTED_LANGS } from '../i18n/index.js';
 
 const REPO = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 
@@ -40,7 +41,7 @@ describe('rights content', () => {
   });
 
   it('no unsourced bail-fee estimate anywhere in the card or its translations', () => {
-    for (const lang of ['en', 'es', 'pt', 'vi']) {
+    for (const lang of SUPPORTED_LANGS) {
       const j = JSON.parse(readFileSync(resolve(REPO, `frontend/src/i18n/${lang}.json`), 'utf8'));
       for (let i = 1; i <= 8; i++) expect(j[`rc_b${i}`]).not.toMatch(/10\s?%/);
     }

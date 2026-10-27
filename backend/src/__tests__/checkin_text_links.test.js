@@ -8,7 +8,7 @@ import {
 } from '../services/checkinTexts.js';
 import { nextDate } from '../routes/me.js';
 import { todayInZone, addDays } from '../utils/timezone.js';
-import { CATALOGS } from '../i18n/index.js';
+import { CATALOGS, SUPPORTED_LANGS } from '../i18n/index.js';
 
 describe('missedDays (A3)', () => {
   test('daily: every ended day after monitoring started without a check-in, at most the lookback', () => {
@@ -105,10 +105,10 @@ describe('nextDate (B6)', () => {
   });
 });
 
-describe('texts and alerts in four languages', () => {
+describe('texts and alerts in every language', () => {
   const keys = ['checkin.sms.link', 'checkin.sms.reminder', 'checkin.sms.reminder_weekly', 'checkin.sms.missed', 'checkin.sms.agent_missed',
     'checkin.push.missed_title', 'checkin.email.missed_body', 'checkin.push.location_body', 'checkin.err.link_expired', 'checkin.err.plan_required'];
-  test.each(['en', 'es', 'pt', 'vi'])('%s has every key; every text to a person names STOP', (lang) => {
+  test.each(SUPPORTED_LANGS)('%s has every key; every text to a person names STOP', (lang) => {
     for (const k of keys) expect(typeof CATALOGS[lang][k]).toBe('string');
     for (const k of keys.filter((x) => x.startsWith('checkin.sms.'))) expect(CATALOGS[lang][k]).toContain('STOP');
     for (const k of ['checkin.sms.link', 'checkin.sms.reminder', 'checkin.sms.missed']) expect(CATALOGS[lang][k]).toContain('{link}');

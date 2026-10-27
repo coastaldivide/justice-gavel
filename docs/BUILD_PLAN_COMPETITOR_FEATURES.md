@@ -9,7 +9,7 @@ the other competitor strengths (part B). Each step names the file or table it to
   - go through `services/sms.js` (Telnyx);
   - check `sms_opt_outs` before sending; STOP wins;
   - Bond Desk texts are billed 5¢ through `services/bondDesk/textBilling.js`.
-- **Wording:** all text is in the four languages, in `i18n/messages/{en,es,pt,vi}.js`.
+- **Wording:** all text is in the app's languages, in `i18n/messages/{en,es,pt,vi,ht,zh,ar,tl}.js` (eight since Oct 27 2026; docs/TRANSLATIONS.md).
 - **No refunds and no guarantees.** No claim is made without a source.
 - **Tests and checks:** each feature ships with:
   - unit tests;
@@ -186,7 +186,7 @@ Effort: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 ### A10. More languages and a phone line (M each)
 *Proven by VINE: phone, TTY, 195 languages.*
 1. **Languages:**
-   - Add Haitian Creole, Chinese (Simplified), Arabic (right to left) and Tagalog to `i18n/messages` and the frontend.
+   - Add Haitian Creole, Chinese (Simplified), Arabic (right to left) and Tagalog to `i18n/messages` and the frontend. **Done Oct 27 2026** (docs/TRANSLATIONS.md; review by native-speaker legal translators still needed).
    - Use professional translation of legal wording; machine translation for the rest, with review.
    - The key-parity tests already fail on a missing key.
 2. **Phone line:** a Telnyx toll-free voice number with a voice menu.

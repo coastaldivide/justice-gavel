@@ -5,7 +5,7 @@ import { requireDisclaimer } from '../middleware/disclaimer.js';
 import { asyncRoute, safeInt } from '../utils/routeHelpers.js';
 import { hasFeature } from '../services/entitlements.js';
 import { TIERS, FEATURES, planFeatures } from './billing/plans.js';
-import { msg, resolveLang } from '../i18n/index.js';
+import { msg, resolveLang, LANG_NAMES } from '../i18n/index.js';
 /**
  * research.js — AI Legal Research (included in the paid plans that list
  * `legal_research` in routes/billing/plans.js PLAN_FEATURES; attorneys and
@@ -115,7 +115,6 @@ IMPORTANT:
 
 You are a comprehensive legal research partner for the full arc of criminal defense — from arrest through direct appeal through post-conviction. Be thorough, cite precisely, and be honest about uncertainty.`;
 
-const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
 
 // ── Claude research call ──────────────────────────────────────────────────────
 async function callResearch(history, query, lang, context) {

@@ -64,7 +64,7 @@ For every client court date (`pd_reminders`, unique per hearing + number + step 
 
 - **Wording.** Every text starts with the office's name ("Metro Nashville Public Defender: …") and is in the client's
   language. It ends "Reply STOP to opt out". It warns that a warrant can be issued, says what to expect and prompts a plan.
-  English stays within 2 SMS segments. es / pt / vi keep their accents within 6 (tested).
+  English stays within 2 SMS segments. es / pt / vi / zh / ar keep their own letters within 6 Unicode segments; ht / tl stay within 3 GSM-7 segments (tested).
 - **Replies** `1 / 2 / 3` (services/courtReplies.js) answer the newest question of the last 48 hours. That can be an app
   user's, a Bond Desk defendant's or an office client's question. The answer sets that court date's status, unless staff
   already set it. "3" sends the morning-after text right away. The reply is logged in the conversation.
@@ -134,7 +134,7 @@ Deleting an account removes the person's office membership. The office, its clie
 office; who sent a text or ticked the consent basis is anonymised (services/accountDeletion.js).
 
 ## Tests
-- `backend/src/__tests__/public_defender_units.test.js`: wording and length in four languages, CSV checks, the 5,000-row
+- `backend/src/__tests__/public_defender_units.test.js`: wording and length in all eight languages, CSV checks, the 5,000-row
   limit, inbox routing words, prices, the ⚖ setting, and the consent text shared with the app.
 - `backend/src/__tests__/integration/public_defender.int.test.js` (PD1–PD8, real Postgres, fake Telnyx and Stripe
   invoicing).

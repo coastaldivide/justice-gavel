@@ -3,8 +3,15 @@
  * and the pages Bond Desk writes itself (signature certificate, receipts).
  *
  * Text is set with the bundled Inter font (backend/assets/fonts, SIL Open Font License), so
- * names in Spanish, Portuguese or Vietnamese print correctly — the 14 standard PDF fonts
- * cannot encode "Nguyễn".
+ * names in Spanish, Portuguese, Vietnamese, Haitian Creole or Tagalog print correctly — the 14
+ * standard PDF fonts cannot encode "Nguyễn".
+ *
+ * Inter has no Arabic or Chinese letters (and no font with them ships in node_modules). A
+ * character the font cannot draw would come out as an empty box that looks like text, so
+ * every string goes through pdfSafeText() first: each run of such characters is written as its
+ * Unicode code points, e.g. "王小明" → "[U+738B U+5C0F U+660E]", and the certificate says so.
+ * The exact text (typed name, answers) stays unchanged in the bond record; the certificate
+ * itself is always in English.
  *
  * Prepared copy (what the signer reviews): mapped fields filled, every field read-only, the
  * signature fields (signature.name / signature.date) left empty. Signed copy: those filled
@@ -21,6 +28,45 @@ import PDFKit from 'pdfkit';
 const FONT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../assets/fonts');
 const FONT_REGULAR = fs.readFileSync(path.join(FONT_DIR, 'Inter_400Regular.ttf'));
 const FONT_BOLD = fs.readFileSync(path.join(FONT_DIR, 'Inter_700Bold.ttf'));
+const GLYPHS = [fontkit.create(FONT_REGULAR), fontkit.create(FONT_BOLD)];
+
+/** True when both bundled fonts can draw the character. */
+export const canDraw = (ch) => GLYPHS.every((f) => f.hasGlyphForCodePoint(ch.codePointAt(0)));
+const KEEP = /[\n\r\t ]/;
+const INVISIBLE = /\p{Cf}/u;   // direction marks, zero-width joiners: nothing to draw
+const codePoints = (run) => `[${[...run].map((c) => `U+${c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`).join(' ')}]`;
+
+/**
+ * Text the bundled font can draw: → { text, replaced }. Each run of characters it cannot draw
+ * (Arabic, Chinese, emoji …) becomes "[U+XXXX U+YYYY …]" — never an empty box passed off as
+ * text. Spaces between two such characters stay inside the run.
+ */
+export function pdfSafeText(value) {
+  const s = String(value ?? '').normalize('NFC');
+  let out = '';
+  let run = '';
+  let pendingSpace = '';
+  let replaced = false;
+  const flush = () => { if (run) { out += codePoints(run.trimEnd()); replaced = true; run = ''; } };
+  for (const ch of s) {
+    if (INVISIBLE.test(ch)) continue;
+    if (KEEP.test(ch) || canDraw(ch)) {
+      if (run && ch === ' ') { pendingSpace += ch; continue; }
+      flush();
+      out += pendingSpace + ch; pendingSpace = '';
+      continue;
+    }
+    run += pendingSpace; pendingSpace = '';
+    run += ch;
+  }
+  flush();
+  out += pendingSpace;
+  return { text: out, replaced };
+}
+/** The note printed under text that pdfSafeText() changed. */
+export const UNICODE_NOTE = 'Text in [U+...] brackets is written in a script this PDF font cannot display (for example Arabic or Chinese). Each code is one Unicode character of the exact text, which is kept unchanged in the bond record.';
+/** What a form field shows when the code-point form does not fit its maximum length. */
+export const FIELD_NOT_SHOWN = '[see bond record]';
 
 export const MAX_PDF_BYTES = 10 * 1024 * 1024;
 export const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -65,9 +111,11 @@ async function setFields(doc, values) {
   for (const [name, value] of Object.entries(values)) {
     let field;
     try { field = form.getTextField(name); } catch { throw new PdfError('field_missing', name); }
-    const text = String(value ?? '');
+    const raw = String(value ?? '');
     const max = field.getMaxLength();
-    if (max !== undefined && text.length > max) throw new PdfError('field_too_long', name);
+    if (max !== undefined && raw.length > max) throw new PdfError('field_too_long', name);
+    let { text } = pdfSafeText(raw);
+    if (max !== undefined && text.length > max) text = FIELD_NOT_SHOWN.slice(0, max);
     field.setText(text);
   }
   form.updateFieldAppearances(font);
@@ -137,6 +185,15 @@ export function kit(title) {
   doc.registerFont('R', FONT_REGULAR);
   doc.registerFont('B', FONT_BOLD);
   doc.font('R');
+  // Every string goes through pdfSafeText(); doc.unicodeReplaced tells the page to add UNICODE_NOTE.
+  doc.unicodeReplaced = false;
+  const text = doc.text.bind(doc);
+  doc.text = (value, ...rest) => {
+    if (typeof value !== 'string' && typeof value !== 'number') return text(value, ...rest);
+    const safe = pdfSafeText(value);
+    if (safe.replaced) doc.unicodeReplaced = true;
+    return text(safe.text, ...rest);
+  };
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
   const done = new Promise((resolve, reject) => { doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
@@ -176,6 +233,7 @@ export async function certificatePdf(info) {
   doc.font('R').fontSize(9).fillColor('#000');
   for (const l of info.consent_lines) doc.text(`• ${l}`, { paragraphGap: 3 });
   doc.moveDown(0.6);
+  if (doc.unicodeReplaced) doc.font('R').fontSize(8).fillColor('#444').text(UNICODE_NOTE, { paragraphGap: 4 });
   doc.fontSize(8).fillColor('#444').text('The SHA-256 fingerprint identifies the exact reviewed copy: any change to that file changes the fingerprint. The reviewed copy is kept with the bond record.');
   doc.end();
   return await done;
@@ -197,6 +255,7 @@ export async function receiptPdf(r) {
   if (r.void_note) { doc.moveDown(0.5); doc.font('B').fontSize(12).fillColor('#b00020').text(r.void_note); doc.fillColor('#000'); }
   doc.moveDown(1.5);
   doc.font('R').fontSize(9).fillColor('#444').text(r.footer || '');
+  if (doc.unicodeReplaced) doc.moveDown(0.5).fontSize(8).text(UNICODE_NOTE);
   doc.end();
   return await done;
 }

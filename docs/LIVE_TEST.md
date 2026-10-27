@@ -190,6 +190,23 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] H10 **Menu entries**: with `CUSTODY_ALERTS_ENABLED=true` Home shows "Custody alerts"; with
   `BOND_RECOVERY_SHARING_ENABLED=true` and a bond shared with this account, "Bonds shared with me"; off → neither.
 
+## I. Eight languages (migration 41, 20 min)
+- [ ] I1 Settings → Language lists English, Español, Português, Tiếng Việt, Kreyòl ayisyen, 中文, العربية, Tagalog.
+  Pick **Kreyòl ayisyen**: Home, Just arrested, the rights card and Court dates are in Haitian Creole; a court date
+  reads like "mèkredi 30 septanm 2026".
+- [ ] I2 Pick **العربية** on an iPhone and an Android phone: the app restarts once and comes back right to left
+  (back arrows point right, the rights-card bars are on the right). Pick English again: it restarts once, left to
+  right. On the web (justicegavel.app) the page flips at once, with no reload (`<html dir="rtl">`).
+- [ ] I3 Pick **中文** and **Tagalog**: the same screens are in those languages. Signed in, the account's language
+  is saved (a court reminder text arrives in that language; Chinese ends "回复 STOP 退订。").
+- [ ] I4 Bond Desk: set a bond's text language to Arabic (the reminder texts come in Arabic) and send yourself the
+  signing link; open it on a phone set to Arabic and sign with an Arabic name. The signing page is in Arabic, right to
+  left; the signed PDF's certificate is in English and shows the name as
+  "[U+…]" code points with the note under it (Inter has no Arabic letters). Same with a Chinese name.
+- [ ] I5 Pay page `/pay/<slug>` → language chips include the four new languages; Chinese opens Stripe Checkout in
+  Chinese, Tagalog in Filipino; Haitian Creole and Arabic open Stripe's English page (Stripe has neither).
+- [ ] I6 E-mails (password reset with the app in Arabic): the e-mail reads right to left.
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

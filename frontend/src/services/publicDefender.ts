@@ -6,11 +6,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiErrorMessage } from './api';
-import { t } from '../i18n';
+import { t, LANGS, type Lang } from '../i18n';
 
 export type PdRole = 'admin' | 'staff';
-export type PdLang = 'en' | 'es' | 'pt' | 'vi';
-export const PD_LANGS: PdLang[] = ['en', 'es', 'pt', 'vi'];
+export type PdLang = Lang;
+export const PD_LANGS: readonly PdLang[] = LANGS;
 export type PdCourtStatus = 'scheduled' | 'attended' | 'missed' | 'rescheduled' | 'cancelled';
 export const PD_COURT_STATUSES: PdCourtStatus[] = ['scheduled', 'attended', 'rescheduled', 'missed', 'cancelled'];
 

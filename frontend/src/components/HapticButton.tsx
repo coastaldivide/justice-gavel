@@ -122,8 +122,8 @@ const s = StyleSheet.create({
   disabled:  { opacity: 0.45 },
   pressing:  { transform: [{ scale: 0.97 }] },
   text:      { fontFamily: 'Inter_700Bold' },
-  iconLeft:  { marginRight: 7 },
-  iconRight: { marginLeft: 7 },
+  iconLeft:  { marginEnd: 7 },
+  iconRight: { marginStart: 7 },
 });
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({

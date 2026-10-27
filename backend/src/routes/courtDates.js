@@ -18,7 +18,7 @@
  *                                           (GET /:id carries `plan`, `help` links and `ride_offers`; services/courtDayHelp.js)
  *
  * Text (errors, guidance, time labels, .ics) is in the request's language
- * (?lang= / Accept-Language: en, es, pt, vi); the person's language is saved
+ * (?lang= / Accept-Language: en, es, pt, vi, ht, zh, ar, tl); the person's language is saved
  * on create / update so reminders go out in it.
  *
  * Every read and write is scoped to the owner (user_id = req.user.id); a

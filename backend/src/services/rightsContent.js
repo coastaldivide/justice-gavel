@@ -63,7 +63,7 @@ const GENERAL_TOPICS = Object.freeze([
 const SOURCE_KEY = { rc_1: 'rights.source.rc_1', rc_2: 'rights.source.rc_2', rc_3: 'rights.source.rc_3' };
 
 /**
- * The general (federal / constitutional) card in `lang` (en / es / pt / vi).
+ * The general (federal / constitutional) card in `lang` (en / es / pt / vi / ht / zh / ar / tl).
  * The text is the app's bundled card (frontend/src/i18n/<lang>.json rc_h1-8 /
  * rc_b1-8 — i18n_server_content.test.js fails if they drift); `key` is the
  * i18n suffix (rc_h1 / rc_b1 → 'rc_1'). Every section says which language it is in.
@@ -450,7 +450,7 @@ export async function reviewedStateCodes(db) {
 }
 
 /**
- * The full rights card for a state, in `lang` (en / es / pt / vi; anything
+ * The full rights card for a state, in `lang` (en / es / pt / vi / ht / zh / ar / tl; anything
  * else → English): general (federal) sections + the state's sourced sections
  * + the 30-second script. `language` is the language the card's bundled text
  * is in; every section carries its own `language` (a reviewed English
@@ -525,16 +525,16 @@ export function rightsPromptBlock(rawState) {
   return parts.join('\n');
 }
 
-// English, Spanish, Portuguese and Vietnamese words for each section's topic.
+// Words for each section's topic in the app's eight languages (en, es, pt, vi, ht, zh, ar, tl).
 const REF_RULES = [
-  [/silen|silên|miranda|question|interrogat|talk to (the )?police|callad|interrog|im lặng|thẩm vấn|hỏi cung/i, 'rc_1'],
-  [/lawyer|attorney|public defender|counsel|abogad|defensor|advogad|luật sư/i, 'rc_2'],
-  [/search|warrant|consent|phone.*(look|unlock)|car.*search|\bregistra(r|ron|rme)?\b|cateo|orden judicial|consentimiento|revist|mandado|busca e apreens|khám|lục soát|lệnh/i, 'rc_3'],
-  [/charge|arraign|accus|cargo|acusa|denuncia|cáo buộc|truy tố|tội danh/i, 'rc_4'],
-  [/traffic|pulled over|pull(ed)? me over|license|registration|drinking|tráfico|me pararon|licencia|trânsito|carteira|giao thông|bằng lái|bị chặn xe/i, 'rc_5'],
-  [/arrest|handcuff|resist|detenid|esposas|\bpres[oa]s?\b|algema|bắt giữ|bị bắt|còng/i, 'rc_6'],
-  [/bail|bond|release|fianza|libertad|fiança|soltura|tại ngoại|bảo lãnh/i, 'rc_7'],
-  [/phone call|one call|call (my )?(family|mom|dad)|llamada|llamar a mi|ligação|ligar para|cuộc gọi|gọi điện/i, 'rc_8'],
+  [/silen|silên|miranda|question|interrogat|talk to (the )?police|callad|interrog|im lặng|thẩm vấn|hỏi cung|silans|kesyon|沉默|审问|讯问|米兰达|الصمت|استجواب|ميراندا|manahimik|tahimik|tanong|imbestigasyon/i, 'rc_1'],
+  [/lawyer|attorney|public defender|counsel|abogad|defensor|advogad|luật sư|avoka|律师|公设辩护|محام|abugado/i, 'rc_2'],
+  [/search|warrant|consent|phone.*(look|unlock)|car.*search|\bregistra(r|ron|rme)?\b|cateo|orden judicial|consentimiento|revist|mandado|busca e apreens|khám|lục soát|lệnh|fouye|\bmanda\b|搜查|搜身|搜索令|تفتيش|مذكرة|halughog|kapkap|pahintulot/i, 'rc_3'],
+  [/charge|arraign|accus|cargo|acusa|denuncia|cáo buộc|truy tố|tội danh|akizasyon|\bchaj\b|指控|罪名|传讯|تهمة|اتهام|\bkaso\b|paratang|sakdal/i, 'rc_4'],
+  [/traffic|pulled over|pull(ed)? me over|license|registration|drinking|tráfico|me pararon|licencia|trânsito|carteira|giao thông|bằng lái|bị chặn xe|trafik|lisans|交通|驾照|被拦|مرور|رخصة|trapiko|lisensya/i, 'rc_5'],
+  [/arrest|handcuff|resist|detenid|esposas|\bpres[oa]s?\b|algema|bắt giữ|bị bắt|còng|arete|menot|逮捕|被抓|手铐|اعتقال|القبض|أصفاد|aresto|posas|hinuli/i, 'rc_6'],
+  [/bail|bond|release|fianza|libertad|fiança|soltura|tại ngoại|bảo lãnh|kosyon|\blage\b|保释|保证金|كفالة|إفراج|piyansa|pyansa/i, 'rc_7'],
+  [/phone call|one call|call (my )?(family|mom|dad)|llamada|llamar a mi|ligação|ligar para|cuộc gọi|gọi điện|\brele\b|\bapèl\b|打电话|电话|مكالمة|اتصال|tawag|tumawag/i, 'rc_8'],
 ];
 
 /**
