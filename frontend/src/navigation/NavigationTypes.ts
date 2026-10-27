@@ -125,6 +125,7 @@ export type RootStackParamList = {
   BondPowers:               undefined;
   BondReports:              undefined;
   SignPacket:               { token: string };
+  CheckInLink:              { token: string };
   ArrestMonitor:            undefined;
 
   // ── Education & Gamification ─────────────────────────────────────────────

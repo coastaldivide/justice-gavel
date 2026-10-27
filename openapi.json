@@ -10074,6 +10074,41 @@
         }
       }
     },
+    "/api/checkins/agent-settings": {
+      "put": {
+        "operationId": "put_api_checkins_agent-settings",
+        "summary": "PUT /api/checkins/agent-settings",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/checkins/compliance-report/{enrollmentId}": {
       "get": {
         "operationId": "get_api_checkins_compliance-report_enrollmentId",
@@ -10228,10 +10263,185 @@
         }
       }
     },
+    "/api/checkins/enrollments/{id}/home": {
+      "delete": {
+        "operationId": "delete_api_checkins_enrollments_id_home",
+        "summary": "DELETE /api/checkins/enrollments/{id}/home",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "put_api_checkins_enrollments_id_home",
+        "summary": "PUT /api/checkins/enrollments/{id}/home",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/checkins/enrollments/{id}/link": {
+      "post": {
+        "operationId": "post_api_checkins_enrollments_id_link",
+        "summary": "POST /api/checkins/enrollments/{id}/link",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/checkins/enrollments/{id}/note": {
       "patch": {
         "operationId": "patch_api_checkins_enrollments_id_note",
         "summary": "PATCH /api/checkins/enrollments/{id}/note",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/checkins/enrollments/{id}/settings": {
+      "patch": {
+        "operationId": "patch_api_checkins_enrollments_id_settings",
+        "summary": "PATCH /api/checkins/enrollments/{id}/settings",
         "tags": [
           "checkins"
         ],
@@ -10315,10 +10525,113 @@
         ]
       }
     },
+    "/api/checkins/link/{token}": {
+      "get": {
+        "operationId": "get_api_checkins_link_token",
+        "summary": "GET /api/checkins/link/{token}",
+        "tags": [
+          "checkins"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_checkins_link_token",
+        "summary": "POST /api/checkins/link/{token}",
+        "tags": [
+          "checkins"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/checkins/mine": {
       "get": {
         "operationId": "get_api_checkins_mine",
         "summary": "GET /api/checkins/mine",
+        "tags": [
+          "checkins"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/checkins/missed": {
+      "get": {
+        "operationId": "get_api_checkins_missed",
+        "summary": "GET /api/checkins/missed",
         "tags": [
           "checkins"
         ],
@@ -20086,6 +20399,38 @@
         ],
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/me/bail-agent": {
+      "get": {
+        "operationId": "get_api_me_bail-agent",
+        "summary": "GET /api/me/bail-agent",
+        "tags": [
+          "me"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },

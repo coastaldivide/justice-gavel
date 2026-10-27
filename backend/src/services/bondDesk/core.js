@@ -190,20 +190,28 @@ export const maskEmail = (e) => { const [u, h] = String(e || '').split('@'); ret
  * Text someone for an agent. Never to a number that replied STOP. Logged and billed only when
  * the carrier accepted it. → 'sent' | 'skipped' | 'failed' | 'opted_out'
  */
-export async function sendAgentText(db, { agentId, bondId, purpose, to, body }) {
+export async function sendAgentText(db, opts) {
+  return (await sendAgentTextDetailed(db, opts)).status;
+}
+
+/**
+ * sendAgentText with the records it made: → { status, providerId, bdTextId }
+ * (providerId joins sms_delivery for the carrier's delivery status).
+ */
+export async function sendAgentTextDetailed(db, { agentId, bondId, purpose, to, body }) {
   const dest = toE164(to);
-  if (!dest) return 'skipped';
+  if (!dest) return { status: 'skipped', providerId: null, bdTextId: null };
   const out = await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [dest]);
-  if (out) return 'opted_out';
-  if (!smsLive()) return 'skipped';
+  if (out) return { status: 'opted_out', providerId: null, bdTextId: null };
+  if (!smsLive()) return { status: 'skipped', providerId: null, bdTextId: null };
   const r = await sendSms({ to: dest, body });
   if (!r?.ok) {
     logger.warn({ err: r?.error }, '[bond-desk] text not sent');
-    return r?.skipped ? 'skipped' : 'failed';
+    return { status: r?.skipped ? 'skipped' : 'failed', providerId: null, bdTextId: null };
   }
-  await db.run('INSERT INTO bd_texts (agent_id, bond_id, purpose, to_masked, provider_id, cents) VALUES (?, ?, ?, ?, ?, ?)',
+  const row = await db.get('INSERT INTO bd_texts (agent_id, bond_id, purpose, to_masked, provider_id, cents) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
     [agentId, bondId || null, purpose, maskPhone(dest), r.id || null, AGENT_TEXT_CENTS]);
-  return 'sent';
+  return { status: 'sent', providerId: r.id || null, bdTextId: row?.id == null ? null : Number(row.id) };
 }
 
 /** E-mail for an agent (free). → 'sent' | 'skipped' | 'failed' */

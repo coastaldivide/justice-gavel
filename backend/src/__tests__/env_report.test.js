@@ -51,4 +51,9 @@ describe('envReport', () => {
     const r = envReport({ ...full, APP_ENV: 'staging', JWT_SECRET: 'tiny' });
     expect(JSON.stringify(r)).not.toMatch(/sk_live_1|whsec_1|tiny/);
   });
+  test('⚖ check-in location alerts on in production is a warning (counsel question 2.4)', () => {
+    expect(envReport({ ...base, CHECKIN_LOCATION_ALERTS_ENABLED: 'true' }).warnings.some((w) => w.includes('CHECKIN_LOCATION_ALERTS_ENABLED'))).toBe(true);
+    expect(envReport({ ...base, CHECKIN_LOCATION_ALERTS_ENABLED: 'false' }).warnings.some((w) => w.includes('CHECKIN_LOCATION_ALERTS_ENABLED'))).toBe(false);
+    expect(envReport(base).warnings.some((w) => w.includes('CHECKIN_LOCATION_ALERTS_ENABLED'))).toBe(false);
+  });
 });

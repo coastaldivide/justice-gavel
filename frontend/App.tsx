@@ -35,6 +35,7 @@ import { registerAuthSetter, AuthState, canBrowse, setGuestStart } from './src/s
 import { signOut, takePendingHome } from './src/services/session';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import SignPacketScreen from './src/screens/SignPacketScreen';
+import CheckInLinkScreen from './src/screens/CheckInLinkScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -355,6 +356,8 @@ function AppInner() {
           <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           {/* A bail agent's signing link (defendant / indemnitor) — no account needed */}
           <RootStack.Screen name="SignPacket" component={SignPacketScreen} />
+          {/* A bail agent's check-in text link (c/<token>) — no app account needed */}
+          <RootStack.Screen name="CheckInLink" component={CheckInLinkScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

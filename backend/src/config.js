@@ -291,6 +291,7 @@ export const ALL_ENV_VARS = {
   EXPO_ACCESS_TOKEN:        process.env.EXPO_ACCESS_TOKEN          || '',
   EXPO_PUSH_API_URL:        process.env.EXPO_PUSH_API_URL          || '',    // default https://exp.host/--/api/v2 (services/expoPush.js)
   REMINDERS_ENABLED:        process.env.REMINDERS_ENABLED          || 'true', // 'false' stops reminder delivery in this process
+  CHECKIN_LOCATION_ALERTS_ENABLED: process.env.CHECKIN_LOCATION_ALERTS_ENABLED || '', // ⚖ counsel 2.4: check-in location alerts; unset → off in production, on elsewhere
 
   // ── SMS court reminders + SOS texts (optional; Telnyx — services/sms.js) ──
   TELNYX_API_KEY:           process.env.TELNYX_API_KEY             || '',    // Telnyx API v2 key; with TELNYX_FROM_NUMBER → texts on

@@ -147,6 +147,7 @@ export const USER_REFS = {
   'checkin_enrollments.bondsman_id': 'nullify',
   'checkin_enrollments.enrolled_by': 'nullify',
   'checkin_enrollments.user_id': 'nullify',     // the bondsman's enrolment record
+  'checkin_agent_settings.agent_id': 'delete',  // the agent's own alert choice (text me when a check-in is missed)
   'codefendant_links.created_by': 'nullify',
   'collateral_consequences.created_by': 'nullify',
   'conflict_waivers.authorized_by': 'nullify',

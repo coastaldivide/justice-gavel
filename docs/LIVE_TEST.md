@@ -66,6 +66,14 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E15 Collateral: add "2015 Honda Civic" → receipt **C-000001** PDF. Return it → shows returned.
 - [ ] E16 Forfeit the bond with a deadline in 30 days → dashboard lists it with 30 days left; reinstate it.
 - [ ] E17 Reports: each opens and downloads as CSV; totals match the screens.
+- [ ] E17a Check-ins by text (docs/CHECKINS.md): Check-In Manager → Enroll → you, your phone, **Text link**, tick the consent box → a text with a `/c/…` link arrives within a minute; the row says "Text link" and "Last text: delivered".
+- [ ] E17b Open the link on the phone (no app, not signed in) → it shows the agency and your first name only → leave "Share my location" unticked → **Check in now** → "Checked in"; the agent's phone gets a push. Check in again → "recorded … not counted again"; the row still shows one check-in for today.
+- [ ] E17c Tick "Share my location" → the browser asks for location → allow → check in → the history shows the coordinates. Reopen the page: the box is unticked again.
+- [ ] E17d **Reset link** → the old text's link says "expired"; the new text's link works.
+- [ ] E17e Enroll a second person (a phone you control) by text and move its start back two days in the database (`UPDATE checkin_enrollments SET active_since = NOW() - INTERVAL '2 days'`) → within an hour the agent gets a push and an e-mail "missed a check-in"; the day shows under "Missed check-ins"; after 09:00 the second phone gets "you missed your check-in … check in now"; it arrives once. Attach that enrollment to a bond → Bond Desk dashboard lists the missed check-in.
+- [ ] E17f The second phone replies STOP → "Text the link again" is refused "replied STOP"; no more reminders.
+- [ ] E17g Staging only (`CHECKIN_LOCATION_ALERTS_ENABLED=true`): in the history, **Use this location as home**, radius 1 mile → check in by link from more than a mile away with location shared → the agent gets "checked in away from home" and the record is flagged. Production (setting off): the home-point controls are not shown.
+- [ ] E17h Phone A signed in with the e-mail of an enrollment attached to a bond with a balance → Home shows "Your bail agent": agency, tap-to-call, next court date, balance, Check in. A different account sees no card.
 - [ ] E18 **Next day**: Stripe → the agent's subscription → upcoming invoice has a line "Texts sent for you: N × 5¢" matching Bond Desk → Texts this month. Running the billing job again adds nothing.
 
 ## F. Webhooks and recovery (10 min)

@@ -109,6 +109,8 @@ const PUBLIC = {
   'GET /api/billing/case-pass': 'price list; optionalAuth adds only the caller\'s own pass end date',
   // Bond Desk signing links: the 32-byte random token in the path (stored as SHA-256) is the credential;
   // expires 30 days after sending, stops on void / rotation; rate limited; token redacted from logs
+  'GET /api/checkins/link/:token': 'check-in text link (token credential, stored hashed; IP rate limit); first name + agency only',
+  'POST /api/checkins/link/:token': 'check-in text link (token credential, stored hashed; IP + per-link rate limit)',
   'GET /api/sign/:token': 'signing link (token credential)',
   'POST /api/sign/:token/answers': 'signing link (token credential)',
   'POST /api/sign/:token/uploads': 'signing link (token credential), 10 MB cap, type sniffed',
