@@ -490,22 +490,29 @@ async function main() {
   });
 
   await check('bail ranges (recorded, with source; no invented calculator)', async () => {
+    // Since the Oct 26 2026 legal review only source-checked rows are shown (verified_only);
+    // unchecked rows are withheld and counted, so an empty list with a withheld count is the
+    // correct answer until those rows are verified.
     const r = await call('GET', '/api/help/bail-schedule?state=TN');
-    assert(r.status === 200 && Array.isArray(r.json?.data) && r.json.data.length > 0 && r.json.data.every(x => 'source' in x), `bail-schedule: ${brief(r)}`);
+    assert(r.status === 200 && Array.isArray(r.json?.data) && r.json.meta?.verified_only === true, `bail-schedule: ${brief(r)}`);
+    assert(r.json.data.every(x => 'source' in x && x.source), 'every bail row shown must carry its source');
+    assert(r.json.data.length > 0 || Number(r.json.meta?.withheld) > 0, `bail-schedule: neither verified rows nor a withheld count: ${brief(r)}`);
     assert(r.json.meta?.fee_estimate_available === false, 'bail-schedule must not estimate a fee');
     const gone = await call('POST', '/api/bail/calculate', { body: { state: 'TN', charge_type: 'felony' } });
     assert(gone.status === 404, `removed calculator should be 404, got ${brief(gone)}`);
-    return `${r.json.data.length} TN/national ranges`;
+    return `${r.json.data.length} verified TN/national ranges, ${r.json.meta.withheld || 0} withheld until checked`;
   });
 
   await check('courthouse + legal reference data', async () => {
     const c = await call('GET', '/api/courthouses?state=TN', { token });
     assert(c.status === 200 && Array.isArray(c.json) && c.json.length > 0, `courthouses: ${brief(c)}`);
+    // verified rows only (see the bail check above): rows shown, or a withheld count — never unsourced rows
+    const shownOrWithheld = (x) => x.status === 200 && x.json?.meta?.verified_only === true && (x.json.data.length > 0 || Number(x.json.meta.withheld) > 0);
     const b = await call('GET', '/api/legaldata/bail?state=TN&limit=200', { token });
-    assert(b.status === 200 && b.json?.data?.length > 0, `legaldata bail: ${brief(b)}`);
+    assert(shownOrWithheld(b), `legaldata bail: ${brief(b)}`);
     const d = await call('GET', '/api/legaldata/dui?state=TN', { token });
-    assert(d.status === 200 && d.json?.data?.length > 0, `legaldata dui: ${brief(d)}`);
-    return `${c.json.length} courthouses, ${b.json.data.length} bail rows`;
+    assert(shownOrWithheld(d), `legaldata dui: ${brief(d)}`);
+    return `${c.json.length} courthouses, ${b.json.data.length} bail rows shown (${b.json.meta.withheld || 0} withheld), ${d.json.data.length} DUI rows shown (${d.json.meta.withheld || 0} withheld)`;
   });
 
   await check('password reset request stores a token (or says e-mail is off)', async () => {
