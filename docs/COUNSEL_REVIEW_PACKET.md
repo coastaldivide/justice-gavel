@@ -96,6 +96,13 @@ texts; app reminders stay off until the person turns them on again in the app.
 users. Who is the "sender" for TCPA purposes, and is the agent's confirmation (2.5) adequate consent?
 Are payment reminders "debt collection" communications (FDCPA / state law), given the agent is the
 creditor?
+3.2a **Automatic payment-plan charges (built, off in production: `BOND_AUTOPAY_ENABLED`).** The payer (defendant or
+indemnitor) opens a personal link from the agent, reads the dates and amounts, how to stop and "All payments are final"
+(wording in docs/BOND_DESK.md "Automatic payments"), ticks "I agree" and saves a card in Stripe Checkout on the **agency's**
+Stripe account. Each installment is charged on its due date; a declined card is tried once more 3 days later and the payer
+and agent are told; the payer can stop it on the same page. Justice Gavel's 99¢ fee is taken from each successful charge
+(Stripe application fee). Is this authorization adequate for recurring card charges, and does running these charges for the
+agency make Justice Gavel (or the agency) subject to debt-collection rules for payment-plan collection?
 3.3 Quiet hours: the morning-of reminder is at 6:30 local time. Do any launch states' laws (e.g., FL,
 OK, MD, WA mini-TCPA statutes) restrict informational texts before 8:00? If so we will move it.
 3.4 HELP keyword handling and the campaign's sample messages — anything to add?

@@ -102,6 +102,17 @@ export const ALL_COUNTIES = 999;
 export const AGENT_TEXT_CENTS = 5;
 
 /**
+ * Bond Desk card payments (docs/BOND_DESK.md "Card payments"): payers pay the agency directly
+ * (Stripe Connect, direct charges on the agency's own Stripe account; Stripe's own card fee is
+ * the agency's). Justice Gavel's fee is 99¢ per successful automatic payment-plan charge, taken
+ * as the Stripe application fee of that charge (never on a failed charge, never on a charge
+ * under $1). The public pay page carries no Justice Gavel fee.
+ */
+export const AUTOPAY_FEE_CENTS = 99;
+export const PAY_LINK_MIN_CENTS = 100;          // $1
+export const PAY_LINK_MAX_CENTS = 5_000_000;    // $50,000
+
+/**
  * One-time Case Pass: the Legal Pro features for 90 days, no renewal. $19 to extend 90 days.
  * Sold as a single Stripe PaymentIntent (routes/billing/casePass.js); each payment is a
  * case_passes row (90 days from the end of the current pass, or now) and grants
@@ -142,16 +153,18 @@ export const BONDSMAN_TIERS = Object.freeze({
   // Oct 26 2026: matched to eBail's published tiers ($99 / $199 / $349 a month, 20% off annual).
   // Check-ins, court reminders and the Bond Desk (bonds, paperwork + e-sign, receivables) are
   // included; texts sent for the agent are metered at AGENT_TEXT_CENTS each (Captira/eBail: 5¢).
+  // seats: people who can use the agency's Bond Desk, the owner included (eBail: 3 / 10 / 20).
+  // No paid extra seats: over the limit an invite is refused until the agency moves up a plan.
   starter: {
-    name: 'Bondsman Starter', monthly_cents: 9900, display: '$99/mo', counties: 1,
+    name: 'Bondsman Starter', seats: 3, monthly_cents: 9900, display: '$99/mo', counties: 1,
     price_env: 'STRIPE_BONDSMAN_STARTER_ID', price_id: process.env.STRIPE_BONDSMAN_STARTER_ID || null, annual_cents: 95000, annual_price_env: 'STRIPE_BONDSMAN_STARTER_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_STARTER_ANNUAL_ID || null,
   },
   pro: {
-    name: 'Bondsman Pro', monthly_cents: 19900, display: '$199/mo', counties: 3,
+    name: 'Bondsman Pro', seats: 10, monthly_cents: 19900, display: '$199/mo', counties: 3,
     price_env: 'STRIPE_BONDSMAN_PRO_ID', price_id: process.env.STRIPE_BONDSMAN_PRO_ID || null, annual_cents: 191000, annual_price_env: 'STRIPE_BONDSMAN_PRO_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_PRO_ANNUAL_ID || null,
   },
   market: {
-    name: 'Bondsman Market', monthly_cents: 34900, display: '$349/mo', counties: ALL_COUNTIES,
+    name: 'Bondsman Market', seats: 20, monthly_cents: 34900, display: '$349/mo', counties: ALL_COUNTIES,
     price_env: 'STRIPE_BONDSMAN_MARKET_ID', price_id: process.env.STRIPE_BONDSMAN_MARKET_ID || null, annual_cents: 335000, annual_price_env: 'STRIPE_BONDSMAN_MARKET_ANNUAL_ID', annual_price_id: process.env.STRIPE_BONDSMAN_MARKET_ANNUAL_ID || null,
   },
 });

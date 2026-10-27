@@ -38,6 +38,9 @@ import SignPacketScreen from './src/screens/SignPacketScreen';
 import MissedCourtScreen from './src/screens/MissedCourtScreen';
 import CheckInLinkScreen from './src/screens/CheckInLinkScreen';
 import RecoveryInviteScreen from './src/screens/RecoveryInviteScreen';
+import AutopayLinkScreen from './src/screens/AutopayLinkScreen';
+import AgencyPayScreen from './src/screens/AgencyPayScreen';
+import StaffJoinScreen from './src/screens/StaffJoinScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -364,6 +367,11 @@ function AppInner() {
           <RootStack.Screen name="CheckInLink" component={CheckInLinkScreen} />
           {/* A bail agent's "shared a forfeited bond with you" e-mail link (recovery/<token>) — any auth state */}
           <RootStack.Screen name="RecoveryInvite" component={RecoveryInviteScreen} />
+          {/* A payer's automatic-payment link and an agency's pay page (card payments to the agency) — no account needed */}
+          <RootStack.Screen name="AutopayLink" component={AutopayLinkScreen} />
+          <RootStack.Screen name="AgencyPay" component={AgencyPayScreen} />
+          {/* An invitation to work in an agency's Bond Desk (sign-in asked on the page) */}
+          <RootStack.Screen name="StaffJoin" component={StaffJoinScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

@@ -224,7 +224,7 @@ router.get('/bondsman/tiers', (req, res) => {
     key, name: t.name, display: t.display, monthly_cents: t.monthly_cents,
     annual_cents: t.annual_cents, annual_display: `${usd(t.annual_cents)}/yr`,
     annual_savings_cents: t.monthly_cents * 12 - t.annual_cents,
-    counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties,
+    counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties, seats: t.seats,
     features: [{ key: 'lead_alerts', counties: t.counties >= ALL_COUNTIES ? 'all' : t.counties },
       { key: 'bond_desk' }, { key: 'checkins' }, { key: 'texts', cents: AGENT_TEXT_CENTS }],
   }));
@@ -239,7 +239,7 @@ router.get('/bondsman/subscription', authRequired, async (req, res) => {
     const t = BONDSMAN_TIERS[sub.tier] || {};
     res.json({
       active: true, tier: sub.tier, status: sub.status, name: t.name || sub.tier, billing: sub.billing_period || 'monthly',
-      counties_covered: t.counties >= ALL_COUNTIES ? 'all' : (t.counties || 0),
+      counties_covered: t.counties >= ALL_COUNTIES ? 'all' : (t.counties || 0), seats: t.seats || null,
       display: t.display || '', renews_at: sub.renews_at, cancel_at_period_end: Number(sub.cancel_at_period_end || 0) === 1,
     });
   } catch (e) { billingFail(req, res, e); }

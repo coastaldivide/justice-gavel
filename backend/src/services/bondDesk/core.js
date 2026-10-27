@@ -18,17 +18,31 @@ const isAdmin = (u) => ['admin', 'super_admin'].includes(u?.role);
 
 // ── Access ────────────────────────────────────────────────────────────────────
 
-/** → { allowed, reason: null|'not_agent'|'no_plan', plan, profile } */
+/**
+ * → { allowed, reason: null|'not_agent'|'no_plan', plan, profile, role: 'owner'|'staff'|null, agentId }
+ *
+ * `agentId` is the agency whose Bond Desk the caller works in: the agent themself, or — for staff
+ * (bd_staff, docs/BOND_DESK.md "Staff") — the agency owner, whose plan then decides access.
+ * Admins work in their own desk (role 'owner').
+ */
 export async function agentAccess(db, user) {
   const profile = await db.get(
     'SELECT user_id, company_name, license_number, phone, email, name FROM bondsman_profiles WHERE user_id = ?', [user.id]);
-  const sub = await db.get(
+  const planOf = (id) => db.get(
     `SELECT tier, stripe_sub_id FROM bondsman_subscriptions WHERE user_id = ? AND status IN (${PAID_SQL}) ORDER BY id DESC LIMIT 1`,
-    [user.id]).catch(() => null);
-  if (isAdmin(user)) return { allowed: true, reason: null, plan: sub?.tier || null, profile };
-  if (!profile) return { allowed: false, reason: 'not_agent', plan: null, profile: null };
-  if (!sub) return { allowed: false, reason: 'no_plan', plan: null, profile };
-  return { allowed: true, reason: null, plan: sub.tier, profile };
+    [id]).catch(() => null);
+  const sub = await planOf(user.id);
+  const own = { profile, role: 'owner', agentId: Number(user.id) };
+  if (isAdmin(user)) return { allowed: true, reason: null, plan: sub?.tier || null, ...own };
+  if (profile && sub) return { allowed: true, reason: null, plan: sub.tier, ...own };
+  const staff = await db.get('SELECT owner_id FROM bd_staff WHERE user_id = ?', [user.id]).catch(() => null);
+  if (staff) {
+    const ownerSub = await planOf(staff.owner_id);
+    if (ownerSub) return { allowed: true, reason: null, plan: ownerSub.tier, profile, role: 'staff', agentId: Number(staff.owner_id) };
+    return { allowed: false, reason: 'no_plan', plan: null, profile, role: 'staff', agentId: Number(staff.owner_id) };
+  }
+  if (!profile) return { allowed: false, reason: 'not_agent', plan: null, profile: null, role: null, agentId: null };
+  return { allowed: false, reason: 'no_plan', plan: null, ...own };
 }
 
 /** The agency as printed on receipts, forms and signing pages. */

@@ -28,3 +28,4 @@ These are built and tested, but stay **off in production** until the counsel que
 | `BOND_REARREST_ALERTS_ENABLED` | 1.2 re-arrest alerts for an agent's own defendants (Bond Desk) | off in production, on elsewhere |
 | `CUSTODY_ALERTS_ENABLED` | 6.3 release / transfer alerts for families who follow a booking | off in production, on elsewhere |
 | `BOND_RECOVERY_SHARING_ENABLED` | state recovery-agent rules (sharing a forfeited bond with a recovery agent) | off in production, on elsewhere |
+| `BOND_AUTOPAY_ENABLED` | 3.2 debt collection (Bond Desk automatic payment-plan charges, job `bd-autopay`) | off in production, on elsewhere |

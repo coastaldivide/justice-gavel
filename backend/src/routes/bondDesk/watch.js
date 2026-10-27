@@ -14,7 +14,7 @@
  * With the setting off: 503 { code: 'feature_unavailable' }.
  */
 import { Router } from 'express';
-import { BdError, fail, handle, id, email, phone, body } from './_common.js';
+import { BdError, fail, handle, id, email, phone, body, ownerOnly } from './_common.js';
 import { loadBond } from './bonds.js';
 import { rearrestAlertsEnabled, recoverySharingEnabled } from '../../utils/counselFlags.js';
 import { bondRearrests, coverage, decide } from '../../services/bondDesk/rearrest.js';
@@ -94,7 +94,7 @@ router.get('/bonds/:id/recovery', recoveryOn, handle(async (req, res, db) => {
   res.json({ bond_status: bond.status, state: bond.state || null, state_rule: stateRule(bond.state), shares: await sharesForBond(db, bond.id) });
 }));
 
-router.post('/bonds/:id/recovery/shares', recoveryOn, handle(async (req, res, db) => {
+router.post('/bonds/:id/recovery/shares', recoveryOn, ownerOnly, handle(async (req, res, db) => {
   const bond = await loadBond(db, req.agentId, id(req.params.id));
   const b = body(req);
   const to = email(b.email, 'email');

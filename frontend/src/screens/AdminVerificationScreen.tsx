@@ -82,6 +82,10 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
       </ScrollView>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(q); }} />}>
+        <TouchableOpacity accessibilityRole="button" testID="adm-forms-setup" style={s.card} onPress={() => navigation.navigate('AdminFormsSetup' as never)}>
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('adm_forms_setup')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_forms_setup_line')}</Text>
+        </TouchableOpacity>
         {!!notice && <View testID="adm-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
         {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
         {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}

@@ -55,6 +55,21 @@ sell through Apple In-App Purchase or Google Play Billing, and never sees your f
   STOP are never texted.
 - Signers sign by typing their name after agreeing to sign electronically; each signed copy carries a
   certificate of how and when it was signed.
+- **Your data is yours.** Your agency owns the Bond Desk data it enters or imports (bonds, people,
+  payments, forms, signed documents, receipts). You can export all of it at any time from Bond Desk →
+  Settings → "Export everything" (one ZIP file with every report as CSV, your records, every signed
+  document and every receipt). Justice Gavel uses it only to run Bond Desk for you.
+- **Card payments.** If you turn on card payments, payments from defendants, indemnitors and families go
+  to your agency's own Stripe account (Stripe Connect), under Stripe's terms for connected accounts;
+  Justice Gavel does not hold your money. Stripe's card processing fee is your agency's cost. For each
+  automatic payment-plan charge that goes through, Justice Gavel's fee is 99¢, taken from that payment;
+  there is no Justice Gavel fee on your pay page. Disputes and chargebacks are handled in your Stripe
+  account. Payers are told that all payments are final.
+- **Automatic payments** are charged only on the dates and in the amounts the payer agreed to on their
+  personal link; the payer can stop them there at any time. You are responsible for your payment-plan
+  agreements and for following the laws that apply to collecting them.
+- **Staff.** You may invite staff up to your plan's seats (the owner included). You are responsible for
+  what your staff do in your Bond Desk; removing someone ends their access at once.
 
 ## Acceptable Use
 You may not use Justice Gavel to:

@@ -82,6 +82,14 @@ staging**, **live keys on production** (the server refuses a live key on staging
       `invoice.paid`, `invoice.payment_succeeded`, `invoice.payment_failed`,
       `payment_intent.succeeded`, `charge.refunded`
     - Signing secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`
+[ ] **Connect (Bond Desk card payments — EXTERNAL_SERVICES_SETUP.md 3b):** Connect → Get started → Express;
+    Connect settings → Branding (name, icon, colour). Webhooks → Add endpoint, same URL, **"Listen to events on
+    Connected accounts"**, events `account.updated`, `checkout.session.completed`, `checkout.session.expired`,
+    `payment_intent.succeeded`, `payment_intent.payment_failed` → its secret → `STRIPE_CONNECT_WEBHOOK_SECRET`
+[ ] `BOND_AUTOPAY_ENABLED=false` in production until counsel answers question 3.2 (automatic payment plans)
+[ ] Test mode: a test agency finishes onboarding with Stripe's test data → Bond Desk → Settings shows
+    "On — you can take card payments"; the pay page takes `4242 4242 4242 4242`; the payment shows under
+    "Unassigned payments" and in the agency's Express dashboard (not in the platform's balance)
 
 ---
 

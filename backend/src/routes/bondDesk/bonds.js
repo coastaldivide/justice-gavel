@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { BdError, handle, id, text, date, cents, phone, email, oneOf, sendFile, body } from './_common.js';
 import { bondMoney, planError, money, usDate, liveTotal } from '../../services/bondDesk/money.js';
 import { agencyFor, agentToday, sendAgentText, sendAgentEmail, reminderMessage } from '../../services/bondDesk/core.js';
-import { receiptPdf } from '../../services/bondDesk/pdf.js';
+import { postPayment, PAYMENT_COLS, publicPayment, paymentReceiptPdf, collateralReceiptPdf } from '../../services/bondDesk/payments.js';
 import { normalizeLang } from '../../i18n/index.js';
 import logger from '../../utils/logger.js';
 import { planBond, syncBondCourtDate, mirrorBondFormCourtDate } from '../../services/bondDesk/courtDates.js';
@@ -53,13 +53,13 @@ function publicBond(b, p) {
 export async function ledger(db, bondId, today, planChargedCents) {
   const [charges, payments, installments] = await Promise.all([
     db.all('SELECT id, kind, amount_cents, description, created_at, voided_at, void_reason FROM bd_charges WHERE bond_id = ? ORDER BY id', [bondId]),
-    db.all('SELECT id, receipt_no, amount_cents, method, reference, payer_name, received_on, created_at, voided_at, void_reason FROM bd_payments WHERE bond_id = ? ORDER BY id', [bondId]),
+    db.all(`SELECT ${PAYMENT_COLS} FROM bd_payments WHERE bond_id = ? ORDER BY id`, [bondId]),
     db.all('SELECT id, due_on, amount_cents FROM bd_installments WHERE bond_id = ? ORDER BY due_on, id', [bondId]),
   ]);
   const m = bondMoney({ charges, payments, installments, planChargedCents }, today);
   return {
     charges: charges.map((c) => ({ ...c, id: Number(c.id), amount_cents: Number(c.amount_cents) })),
-    payments: payments.map((p) => ({ ...p, id: Number(p.id), receipt_no: receiptNo('R', p.receipt_no), amount_cents: Number(p.amount_cents) })),
+    payments: payments.map(publicPayment),
     installments: m.installments,
     money: { charged_cents: m.charged_cents, paid_cents: m.paid_cents, balance_cents: m.balance_cents,
       plan_scheduled_cents: m.plan_scheduled_cents, plan_in_sync: m.plan_in_sync, overdue_cents: m.overdue_cents, next_due: m.next_due },
@@ -339,24 +339,12 @@ router.post('/bonds/:id/payments', handle(async (req, res, db) => {
   const today = await agentToday(db, req.agentId);
   const receivedOn = date(b.received_on, 'received_on') || today;
   if (receivedOn > today) throw new BdError(400, 'future_date', { field: 'received_on' });
-  const row = await db.transaction(async (tx) => {
-    await loadBond(tx, req.agentId, bondId, { lock: true });   // serialises payments on this bond
-    const charges = await tx.all('SELECT amount_cents, voided_at FROM bd_charges WHERE bond_id = ?', [bondId]);
-    const payments = await tx.all('SELECT amount_cents, voided_at FROM bd_payments WHERE bond_id = ?', [bondId]);
-    const balance = liveTotal(charges) - liveTotal(payments);
-    if (amount > balance) throw new BdError(409, 'over_balance', { balance_cents: balance });
-    const n = await tx.get(
-      `INSERT INTO bd_counters (agent_id, series, last_no) VALUES (?, 'R', 1)
-       ON CONFLICT (agent_id, series) DO UPDATE SET last_no = bd_counters.last_no + 1 RETURNING last_no`, [req.agentId]);
-    const p = await tx.get(
-      `INSERT INTO bd_payments (bond_id, agent_id, receipt_no, amount_cents, method, reference, payer_name, received_on, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, receipt_no, amount_cents, method, reference, payer_name, received_on, created_at, voided_at, void_reason`,
-      [bondId, req.agentId, Number(n.last_no), amount, method, reference, payer, receivedOn, req.user.id]);
-    await tx.run('UPDATE bd_bonds SET updated_at = NOW() WHERE id = ?', [bondId]);
-    return p;
-  });
-  res.status(201).json({ payment: { ...row, id: Number(row.id), receipt_no: receiptNo('R', row.receipt_no), amount_cents: Number(row.amount_cents) } });
+  await loadBond(db, req.agentId, bondId);
+  // the same posting every card payment uses (services/bondDesk/payments.js): receipt number, balance check
+  const { payment } = await db.transaction((tx) => postPayment(tx, {
+    agentId: req.agentId, bondId, amountCents: amount, method, payerName: payer, reference, receivedOn, createdBy: req.user.id,
+  }));
+  res.status(201).json({ payment });
 }));
 
 router.post('/payments/:id/void', handle(async (req, res, db) => {
@@ -372,28 +360,9 @@ router.post('/payments/:id/void', handle(async (req, res, db) => {
 }));
 
 router.get('/payments/:id/receipt.pdf', handle(async (req, res, db) => {
-  const p = await db.get(
-    `SELECT p.*, b.defendant_name, b.case_number, b.bond_amount_cents FROM bd_payments p JOIN bd_bonds b ON b.id = p.bond_id
-      WHERE p.id = ? AND p.agent_id = ?`, [id(req.params.id), req.agentId]);
+  const p = await db.get('SELECT id, receipt_no FROM bd_payments WHERE id = ? AND agent_id = ?', [id(req.params.id), req.agentId]);
   if (!p) throw new BdError(404, 'not_found');
-  const a = await agencyFor(db, req.agentId);
-  const today = await agentToday(db, req.agentId);
-  const l = await ledger(db, Number(p.bond_id), today, null);
-  const methodLabel = { cash: 'Cash', check: 'Check', card: 'Card', money_order: 'Money order', bank_transfer: 'Bank transfer', other: 'Other' };
-  const pdf = await receiptPdf({
-    title: 'Payment Receipt', receipt_no: receiptNo('R', p.receipt_no), agency: a.agency, license: a.license, agency_phone: a.phone,
-    date: usDate(p.received_on),
-    lines: [
-      ['Received from', p.payer_name], ['Amount', money(p.amount_cents)],
-      ['Method', methodLabel[p.method] + (p.reference ? ` — ${p.reference}` : '')],
-      ['For', `Bail bond premium / fees — ${p.defendant_name}${p.case_number ? `, case ${p.case_number}` : ''}`],
-      ['Bond amount', money(p.bond_amount_cents)],
-      [`Balance owed as of ${usDate(today)}`, money(l.money.balance_cents)],
-    ],
-    void_note: p.voided_at ? `VOID — ${p.void_reason}` : null,
-    footer: 'Keep this receipt. Premium paid for a bail bond is earned when the bond is posted.',
-  });
-  sendFile(res, pdf, { type: 'application/pdf', name: `receipt-${receiptNo('R', p.receipt_no)}.pdf` });
+  sendFile(res, await paymentReceiptPdf(db, req.agentId, Number(p.id)), { type: 'application/pdf', name: `receipt-${receiptNo('R', p.receipt_no)}.pdf` });
 }));
 
 // ── Payment plan ──────────────────────────────────────────────────────────────
@@ -491,24 +460,9 @@ router.post('/collateral/:id/return', handle(async (req, res, db) => {
 }));
 
 router.get('/collateral/:id/receipt.pdf', handle(async (req, res, db) => {
-  const c = await db.get(
-    `SELECT c.*, b.defendant_name, b.case_number FROM bd_collateral c JOIN bd_bonds b ON b.id = c.bond_id WHERE c.id = ? AND c.agent_id = ?`,
-    [id(req.params.id), req.agentId]);
+  const c = await db.get('SELECT id, receipt_no FROM bd_collateral WHERE id = ? AND agent_id = ?', [id(req.params.id), req.agentId]);
   if (!c) throw new BdError(404, 'not_found');
-  const a = await agencyFor(db, req.agentId);
-  const kinds = { cash: 'Cash', real_estate: 'Real estate', vehicle: 'Vehicle', jewelry: 'Jewelry', other: 'Other' };
-  const pdf = await receiptPdf({
-    title: 'Collateral Receipt', receipt_no: receiptNo('C', c.receipt_no), agency: a.agency, license: a.license, agency_phone: a.phone,
-    date: usDate(c.received_on),
-    lines: [
-      ['Received from', c.received_from], ['Type', kinds[c.kind]], ['Description', c.description],
-      ['Stated value', Number(c.value_cents) > 0 ? money(c.value_cents) : '—'],
-      ['Held as security for the bail bond of', `${c.defendant_name}${c.case_number ? `, case ${c.case_number}` : ''}`],
-      ['Returned', c.returned_on ? `${usDate(c.returned_on)} to ${c.returned_to}` : 'Not yet returned'],
-    ],
-    footer: 'Collateral is returned when the bond is discharged and every amount owed under the agreement is paid, as state law and the agreement provide.',
-  });
-  sendFile(res, pdf, { type: 'application/pdf', name: `collateral-${receiptNo('C', c.receipt_no)}.pdf` });
+  sendFile(res, await collateralReceiptPdf(db, req.agentId, Number(c.id)), { type: 'application/pdf', name: `collateral-${receiptNo('C', c.receipt_no)}.pdf` });
 }));
 
 // ── Powers ────────────────────────────────────────────────────────────────────

@@ -121,10 +121,16 @@ export type RootStackParamList = {
   CheckInManager:           undefined;
   BondDesk:                 undefined;
   BondDetail:               { bondId: number | string; tab?: 'overview' | 'court' | 'people' | 'paperwork' | 'money' | 'collateral' | 'alerts' | 'recovery' };
-  BondForms:                undefined;
+  BondForms:                { setupRequestId?: number; agency?: string } | undefined;
   BondPowers:               undefined;
   BondReports:              undefined;
+  BondDeskSettings:         { connect?: 'return' | 'refresh' } | undefined;
+  BondImport:               undefined;
+  AdminFormsSetup:          undefined;
   SignPacket:               { token: string };
+  AutopayLink:              { token: string; saved?: string; paid?: string };
+  AgencyPay:                { slug: string; paid?: string };
+  StaffJoin:                { token: string };
   MissedCourt:              { lang?: string } | undefined;
   CheckInLink:              { token: string };
   CustodyAlerts:            undefined;

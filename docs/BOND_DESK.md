@@ -18,7 +18,10 @@ Built October 26, 2026 to match what eBail and Captira include in their $99–$3
 | Power inventory with liability tracking | Powers by surety and number, limit, status; liability per surety |
 | Surety / DOI reporting | Liability, surety (executed powers), receivables, receipts journal, collateral — on screen and CSV |
 | Forfeiture tracking | Forfeiture date, deadline, outcome; dashboard sorted by days left |
-| Online payments / payment plans | Payment ledger, numbered receipts, payment plans with overdue tracking. **Card payments taken online for the agent are NOT built** (that needs Stripe Connect for each agency) — agents record payments they receive |
+| Online payments / payment plans | Payment ledger, numbered receipts, payment plans with overdue tracking; **card payments to the agency's own Stripe account** (Stripe Connect Express): automatic payment-plan charges (⚖, see below) and a public "Pay {agency}" page |
+| Auto Pay (Captira), Bail Pay | Automatic payment plans (payer saves a card by link; 99¢ per charge) and the pay page |
+| Unlimited users / offices | Staff seats per plan: Starter 3, Pro 10, Market 20 (owner included) |
+| Forms loaded for you, data import, backups | Justice Gavel staff map the agency's surety PDFs on request; CSV import of open bonds; export everything as one ZIP |
 | SMS 5¢ each | 5¢ per text actually delivered to the carrier, billed on the agent's next invoice |
 
 **Not built on purpose:** a drawn ("finger") signature pad. A typed name with intent, consent and
@@ -33,12 +36,16 @@ Everything is under `/api/bond-desk` for the agent and `/api/sign` for the peopl
 ## Access
 
 A bail agent (a `bondsman_profiles` row) with a bail-agent plan in status `active` or `past_due`,
-or an admin. Otherwise 403 `{ code: 'no_plan' }` (agent without plan) or 403 `{ code: 'not_agent' }`.
+or an admin, or a **staff member** of such an agency (`bd_staff`, see "Staff and seats": they work in
+the owner's desk — every row they create belongs to the owner). Otherwise 403 `{ code: 'no_plan' }`
+(agent without plan, or staff whose agency has no plan) or 403 `{ code: 'not_agent' }`.
+Owner-only routes answer 403 `{ code: 'owner_only' }` to staff.
 
 `GET /api/bond-desk/access` (sign-in only, never 403) →
 ```
 { allowed: bool, reason: null | 'not_agent' | 'no_plan', plan: 'starter'|'pro'|'market'|null,
-  texts_live: bool, email_live: bool, storage_live: bool, text_cents: 5 }
+  role: 'owner'|'staff'|null, texts_live: bool, email_live: bool, storage_live: bool, text_cents: 5,
+  autopay_enabled: bool }
 ```
 `storage_live` false → uploads answer 503 `storage_unavailable`.
 
@@ -87,12 +94,15 @@ Indemnitor: `{ id, bond_id, full_name, relationship, phone, email, address, dob,
 
 - Charge: `{ id, kind: 'premium'|'fee', amount_cents, description, created_at, voided_at, void_reason }`
   - `POST /bond-desk/bonds/:id/charges` `{ kind, amount_cents, description }` · `POST /bond-desk/charges/:id/void` `{ reason }` (409 `would_go_negative` if voiding makes payments exceed charges)
-- Payment: `{ id, receipt_no: 'R-000123', amount_cents, method, reference, payer_name, received_on, created_at, voided_at, void_reason }`
+- Payment: `{ id, receipt_no: 'R-000123', amount_cents, method, reference, payer_name, received_on, created_at, voided_at, void_reason, source: 'manual'|'autopay'|'pay_link' }`
   - methods: `cash`, `check`, `card`, `money_order`, `bank_transfer`, `other`
   - `POST /bond-desk/bonds/:id/payments` `{ amount_cents, method, payer_name, received_on?, reference? }` → `{ payment }`; 409 `over_balance` when amount > balance; received_on cannot be in the future
   - `POST /bond-desk/payments/:id/void` `{ reason }` (receipt numbers are never reused)
   - `GET /bond-desk/payments/:id/receipt.pdf`
-- Receipt numbers are per agency, sequential, assigned in the same database transaction.
+- Receipt numbers are per agency, sequential, assigned in the same database transaction. Every payment —
+  typed in, automatic, or from the pay page — is posted by one function (`services/bondDesk/payments.js`
+  `postPayment`): bond locked, balance checked, receipt number drawn; a card payment carries its Stripe
+  PaymentIntent id, which is unique, so it is posted at most once.
 - Payment plan: `PUT /bond-desk/bonds/:id/plan` `{ installments: [{ due_on, amount_cents }] }` replaces the plan; the amounts must add up to the bond's total non-void charges exactly (409 `plan_total`); `[]` removes it.
   Installment: `{ id, due_on, amount_cents, covered_cents, status: 'paid'|'partial'|'due'|'overdue' }` — payments (non-void, total) cover installments in due-date order.
   `money.plan_in_sync` is false when charges changed after the plan was saved.
@@ -115,6 +125,8 @@ Indemnitor: `{ id, bond_id, full_name, relationship, phone, email, address, dob,
 Form: `{ id, name, page_count, roles: ['defendant'|'indemnitor'], fields: [{ name, type: 'text'|'checkbox'|'other' }], field_map: { [fieldName]: dataKey }, archived, created_at }`
 - `GET /bond-desk/forms` → `{ forms, data_keys }` (`data_keys`: the list below)
 - `POST /bond-desk/forms` multipart: `file` (PDF ≤ 10 MB, not password-protected), `name` → `{ form }`; 400 `bad_pdf`
+- Forms still being set up by Justice Gavel staff (`setup_pending`, see "Forms set up for you") are not listed and cannot be sent.
+- `GET /bond-desk/forms/:id/preview.pdf` without `bond_id` fills sample data (used by staff, who have no bond of the agency's).
 - `PATCH /bond-desk/forms/:id` `{ name?, roles?, field_map? }` (only `text` fields can be mapped; unknown keys → 400 `bad_field_map`)
 - `POST /bond-desk/forms/:id/archive` · `GET /bond-desk/forms/:id/file` (original) · `GET /bond-desk/forms/:id/preview.pdf?bond_id=` (filled with that bond's data, for checking the mapping)
 
@@ -242,7 +254,7 @@ Make a plan now. Reply STOP to opt out." Indemnitor: "{agency}: You co-signed {n
 
 Every text sent for an agent (signing links, payment reminders, court reminders, "Did you make it?", the
 "act today" text and reply confirmations — purposes `signing_link`, `payment_reminder`, `court_reminder`, `court_ask`,
-`court_missed`, `court_reply`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
+`court_missed`, `court_reply`; card payments: `autopay_link`, `autopay_failed`, `autopay_action`, `payment_receipt`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
 Every text sent for an agent (signing links, payment reminders, and check-in texts — link, reminder,
 missed-check-in text to the defendant, missed-check-in alert to the agent; docs/CHECKINS.md; re-arrest alerts
 `rearrest_alert`) is logged. `GET /bond-desk/texts?month=YYYY-MM`
@@ -349,3 +361,128 @@ define "liability in each county", so both readings are given, labelled: bonds i
 open at the end of the quarter — confirm with the Department which one its schedule asks for. Bonds posted in the
 quarter without a state or Tennessee county are listed so the agent can fix them. The CSV and PDF headers cite the law,
 the date it was checked and the sources. The report is prepared from Bond Desk entries; it is not a filing.
+## Card payments (Stripe Connect)
+
+Money a defendant or indemnitor pays goes to the **agency**, never to Justice Gavel. Each agency
+connects its own **Stripe Express** account; every card payment is a **direct charge on the agency's
+connected account** (Checkout sessions and PaymentIntents are created with the `Stripe-Account` header).
+Why direct charges: the agency is the merchant of record (its name on the payer's card statement), the
+saved cards (customers, payment methods) belong to the agency's account, and Stripe's processing fee is
+taken from the agency's balance by Stripe itself — exactly "Stripe's fee is the agency's" with no
+bookkeeping on our side. Justice Gavel's 99¢ per automatic charge is that charge's
+**`application_fee_amount`**: collected by Stripe only when the charge succeeds, never on a failed one,
+no invoice line to reconcile, and it works even if the agency's plan invoice is unpaid (billing it
+"like texts" would need a second exactly-once ledger and could leave fees unpaid). Charges under $1
+carry no fee; the pay page carries none.
+
+- `GET /bond-desk/connect` → `{ status: 'none'|'onboarding'|'restricted'|'enabled', charges_enabled, payouts_enabled,
+  details_submitted, disabled_reason, fees_acknowledged_at, pay_link, pay_link_on, payments_live, autopay_available,
+  autopay_fee_cents: 99, pay_link_limits: { min_cents: 100, max_cents: 5000000 }, role }`
+- `POST /bond-desk/connect/start` (owner) `{ fees_acknowledged: true }` → `{ url }` — the Express account is created once
+  (`metadata.agent_id`, idempotency key `bd-connect-account-<agent>`), then a fresh Stripe onboarding link
+  (return `/bond-desk/settings?connect=return`, refresh `…?connect=refresh`). 400 `fees_ack_required` without the box.
+- `POST /bond-desk/connect/refresh` re-reads the account from Stripe · `POST /bond-desk/connect/dashboard` (owner) → `{ url }` Express dashboard
+- `PUT /bond-desk/connect/pay-link` (owner) `{ on }`
+- Webhook `account.updated` (Connect endpoint, `STRIPE_CONNECT_WEBHOOK_SECRET`) copies the flags. Same handler,
+  signature check and replay protection (`stripe_event_log`) as every other Stripe event.
+- The app shows the fee terms before set-up: Stripe's card fee is the agency's (taken from the payout; Stripe's
+  prices at stripe.com/pricing — no number is quoted by us), 99¢ per automatic payment-plan charge, all payments final,
+  disputes handled in the agency's Stripe account. Until `charges_enabled`, Bond Desk shows "Set up card payments".
+
+## Automatic payments (A5, ⚖ counsel question 3.2)
+
+Off unless `BOND_AUTOPAY_ENABLED` (unset = off in production, on elsewhere). Off: the routes below answer
+503 `feature_unavailable`, the job does nothing, the app hides the card.
+
+1. **Link.** `POST /bond-desk/bonds/:id/autopay/link` `{ to: 'defendant'|'indemnitor', indemnitor_id?, deliver: 'sms'|'email'|'both'|'none',
+   consent_confirmed (texts), lang }` → 201 `{ autopay, link, delivery }`. Needs card payments on, a payment plan in sync
+   with the charges (409 `no_plan_to_collect` / `plan_out_of_sync` / `nothing_owed`), and no active autopay (409 `autopay_active`).
+   The link (`/autopay/<token>`, 32 random bytes, SHA-256 stored) works 30 days for saving a card, and for as long as autopay is on.
+2. **Consent.** `GET /api/bd-pay/autopay/:token?lang=` shows the agency, the schedule (the unpaid part of every installment due
+   today or later) and the consent text built on the server in the payer's language. `POST …/start { agree: true, consent_version, lang }`
+   stores the snapshot on `bd_autopay` (text exactly as shown, version `autopay-2026-10`, language, schedule, IP, browser, time)
+   and opens **Stripe Checkout in setup mode on the agency's account** (customer created there). Only Stripe ids, card brand
+   and last 4 are stored. `checkout.session.completed` (or the page itself, reading the session) turns autopay on.
+   English consent wording (es / pt / vi in `i18n/messages`, `bd.autopay.consent_*`):
+   > I authorize {agency} to charge my card for the payment plan on the bail bond for {defendant}, on these dates and in these amounts:
+   > • MM/DD/YYYY: $amount (one line per installment)
+   > Each amount is charged on its date. A charge is never more than the balance owed on the bond; if part is already paid, only the rest is charged. If a charge does not go through, it is tried once more 3 days later and you are told by text or e-mail. Other dates or amounts need a new link and your agreement.
+   > To stop automatic payments at any time, tap "Stop automatic payments" on this page or contact {agency} at {phone}. Stopping does not change what is owed.
+   > Your card is kept by Stripe for {agency}; Justice Gavel never sees your card number. Payments go to {agency}.
+   > All payments are final.
+3. **Job `bd-autopay`** (hourly, `services/bondDesk/autopay.js`, monitored in `/api/admin/diagnostics/jobs`): for every active
+   autopay, from 08:00 in the agency's zone, each installment **due today** whose date and amount the payer agreed to is charged
+   off-session on the agency's account: amount = the unpaid part, never more than the bond's balance (under 50¢ is skipped);
+   idempotency key `bd-inst-<installmentId>-<attempt>`; one `bd_autopay_attempts` row per installment and attempt (unique).
+   - succeeded → posted by `postPayment` (`source: 'autopay'`, numbered receipt, oldest-first coverage) exactly once, receipt e-mailed
+   - declined → payer texted (if the agent confirmed the number) and e-mailed, agent pushed, e-mailed and texted; retried once 3 days later
+   - the bank asks the payer to confirm (`authentication_required`) → the off-session charge is cancelled, the payer gets a fresh link
+     by text / e-mail; `POST …/confirm` opens Checkout (payment mode, same fee) and the webhook posts it
+   - a charge Stripe did not answer is re-sent with the same idempotency key (never a second charge)
+   - the plan changed after the payer agreed → those installments are not charged; the agent sees "plan changed" and sends a new link
+4. **Stop.** The payer: `POST /api/bd-pay/autopay/:token/stop` (the agent is told). The agent: `POST /bond-desk/bonds/:id/autopay/stop`.
+   The card is detached from the agency's Stripe customer.
+- `GET /bond-desk/bonds/:id/autopay` → `{ enabled, autopay, attempts: [{ due_on, attempt, amount_cents, fee_cents, status:
+  processing|succeeded|failed|action_needed|cancelled, failure_code, retry_on, payment_id }], plan_changed, fee_cents }`
+- Webhooks (`payment_intent.succeeded` / `payment_intent.payment_failed` / `checkout.session.completed` with `metadata.bd_kind`)
+  change nothing on a replay: the event id is claimed once and the PaymentIntent id is unique on `bd_payments`.
+
+## Pay link (B2) — "Pay {agency}"
+
+Every agency with card payments on has a public page `/pay/<slug>` (stable random slug; on/off in Settings).
+- `GET /api/bd-pay/agency/:slug` → `{ agency: { name, phone, license }, available, min_cents: 100, max_cents: 5000000 }`
+- `POST /api/bd-pay/agency/:slug/checkout` `{ amount_cents (100–5,000,000), payer_name, payer_phone?, payer_email? (one needed),
+  defendant_name, receipt_by_text?, agree_final: true, lang? }` → `{ url }` Stripe Checkout (payment mode) on the agency's
+  account; 10 per IP per 15 minutes. The payer agrees "I am paying {agency}, not Justice Gavel. All payments are final."
+- Paid (`payment_intent.succeeded` / `checkout.session.completed`) → `bd_pay_requests.status = 'paid'`, the agent gets a push and an e-mail.
+- `GET /bond-desk/pay-requests?status=paid|attached` → "Unassigned payments" on the Bond Desk dashboard.
+- `POST /bond-desk/pay-requests/:id/attach { bond_id }` → posted by `postPayment` (`source: 'pay_link'`, numbered receipt, 409
+  `over_balance` if more than the bond's balance — add the charge first), once (409 `already_attached`); the receipt is e-mailed and,
+  when the payer asked, texted (5¢).
+
+## Staff and seats (B8)
+
+Owner = the bail agent whose plan it is; staff = people the owner invited. Staff do everything in Bond Desk
+**except** billing / the plan, card-payment set-up (Connect), staff and the export (403 `owner_only`).
+Seats include the owner: **Starter 3, Pro 10, Market 20** (`plans.js` `BONDSMAN_TIERS[].seats`, shown on the plans
+screen). Used = owner + staff + invitations not accepted / withdrawn / expired. Over the limit an invitation is refused
+(409 `seats_full`, "Move up a plan to invite more people") — **no paid extra seats**. A plan moved down keeps the people
+already in.
+- `GET /bond-desk/staff` → `{ seats: { included, used, staff, pending }, owner, staff: [...], invites: [...], role }`
+- `POST /bond-desk/staff/invites` (owner) `{ email }` → 201 `{ invite, link, email_status }` (e-mailed link `/bond-desk/join/<token>`, 14 days)
+- `DELETE /bond-desk/staff/invites/:id` · `DELETE /bond-desk/staff/:userId` (owner; access ends at once) · `POST /bond-desk/staff/leave` (staff)
+- `GET /bond-desk/staff/invite/:token`, `POST /bond-desk/staff/accept { token }` — signed in with the invited e-mail (403
+  `invite_other_email`); one agency per person (409 `other_agency`); an account with its own bail-agent plan cannot join (409 `has_own_plan`).
+
+## Forms set up for you (A12 step 2)
+
+- Agency: `GET /bond-desk/forms-setup` · `POST /bond-desk/forms-setup { note? }` (one open request) ·
+  `POST /bond-desk/forms-setup/:id/files` (multipart PDF, as the forms library) · `POST /bond-desk/forms-setup/:id/cancel` (while requested;
+  its PDFs go to the library unmapped). Status: requested → in progress → ready.
+- Staff (admin role) — `/api/admin/bd-setup`: `GET /?status=open|requested|in_progress|ready|cancelled|all`, `GET /:id`,
+  `POST /:id/start`, `POST /:id/ready { note? }`, and the **same forms tool** at `/:id/forms…` (list, upload, map, archive, original,
+  preview with sample data) acting on the agency's forms of that request only, while in progress. The PDFs stay hidden from the
+  agency's library until "ready"; then the agency gets a push and an e-mail. Every step is in `audit_log`
+  (`bond_desk.forms_setup_requested`, `admin.bd_setup_started`, `admin.bd_setup_form_uploaded|mapped|archived`, `admin.bd_setup_ready`).
+
+## Import open bonds (A12 step 3)
+
+- `GET /bond-desk/import/template.csv` — header `defendant_name, defendant_phone, defendant_email, defendant_dob, bond_amount, surety,
+  power_number, posted_on, court_date, case_number, court_name, county, state, premium, balance, indemnitor_name, indemnitor_phone`
+  (common other spellings such as "Defendant", "Bond Amount", "Power" are accepted).
+- `POST /bond-desk/import/preview` (multipart CSV ≤ 2 MB, ≤ 2,000 rows) → `{ rows: [{ line, values, errors: [{ field, code }] }], total, valid,
+  invalid, file_errors, unknown_columns }`; nothing is written.
+- `POST /bond-desk/import` → 201 `{ imported, bond_ids }`, or 409 `import_has_errors` and nothing written: **one transaction, all or nothing**.
+  Each row: an **active** bond (posted on `posted_on`), its executed power (limit = bond amount), its first hearing, its first indemnitor,
+  and, when `balance` > 0, one premium charge **"imported balance"** (`source: 'import'`). The file's `premium` is kept on the bond
+  (`imported_premium_cents`) for forms (`bond.premium`) and the surety report. Money is parsed from text to cents exactly
+  ("$1,234.5" → 123450); power numbers must be unique in the file and not already in the agency's inventory. Imported numbers get
+  no texts until the agent confirms them (court-text consent).
+
+## Export everything (A12 step 4)
+
+`GET /bond-desk/export.zip` (owner; 3 an hour) streams one ZIP (`services/bondDesk/zip.js`: store/deflate with node:zlib and CRC-32,
+no dependency): `reports/*.csv` (liability, surety, receivables, receipts, collateral held, court appearance — whole history),
+`records/*.csv` (bonds, indemnitors, charges, payments, payment plans, collateral, powers, court dates), `receipts/payments/R-*.pdf`,
+`receipts/collateral/C-*.pdf`, `signed/…pdf` (every signed copy with its certificate) and `README.txt` listing everything. The agency
+owns its Bond Desk data and can export it at any time (docs/TERMS_OF_SERVICE.md).

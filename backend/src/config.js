@@ -248,6 +248,7 @@ export const ALL_ENV_VARS = {
   STRIPE_SECRET_KEY:        process.env.STRIPE_SECRET_KEY          || '',    // unset → billing 503 payments_unavailable
   STRIPE_SECRET:            process.env.STRIPE_SECRET              || '',    // legacy alias of STRIPE_SECRET_KEY
   STRIPE_WEBHOOK_SECRET:    process.env.STRIPE_WEBHOOK_SECRET      || '',
+  STRIPE_CONNECT_WEBHOOK_SECRET: process.env.STRIPE_CONNECT_WEBHOOK_SECRET || '', // Connect endpoint (Bond Desk card payments: events from agencies' accounts)
   // Lead rules (services/leadRules.js): set to 1 only after the filing is complete (docs/LEAD_FEE_RULES.md)
   LEAD_REG_FL_QUALIFYING_PROVIDER: process.env.LEAD_REG_FL_QUALIFYING_PROVIDER || '',
   LEAD_REG_CA_CERTIFIED_LRS:       process.env.LEAD_REG_CA_CERTIFIED_LRS       || '',
@@ -295,6 +296,7 @@ export const ALL_ENV_VARS = {
   BOND_REARREST_ALERTS_ENABLED: process.env.BOND_REARREST_ALERTS_ENABLED || '',       // ⚖ counsel 1.2: re-arrest alerts for Bond Desk defendants; unset → off in production
   CUSTODY_ALERTS_ENABLED:   process.env.CUSTODY_ALERTS_ENABLED     || '',    // ⚖ counsel 6.3: release / transfer alerts for followed bookings; unset → off in production
   BOND_RECOVERY_SHARING_ENABLED: process.env.BOND_RECOVERY_SHARING_ENABLED || '',     // ⚖ state rules: share a forfeited bond with a recovery agent; unset → off in production
+  BOND_AUTOPAY_ENABLED:     process.env.BOND_AUTOPAY_ENABLED       || '', // ⚖ counsel 3.2: Bond Desk automatic payment-plan charges; unset → off in production, on elsewhere
 
   // ── SMS court reminders + SOS texts (optional; Telnyx — services/sms.js) ──
   TELNYX_API_KEY:           process.env.TELNYX_API_KEY             || '',    // Telnyx API v2 key; with TELNYX_FROM_NUMBER → texts on

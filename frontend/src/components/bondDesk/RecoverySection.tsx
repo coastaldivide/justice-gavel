@@ -42,7 +42,7 @@ export function StateRuleCard({ rule, state }: { rule: StateRule | null; state: 
   );
 }
 
-export function RecoverySection({ detail, reload }: { detail: BondDetail; reload: () => Promise<void> }) {
+export function RecoverySection({ detail, reload, staff = false }: { detail: BondDetail; reload: () => Promise<void>; staff?: boolean }) {
   useLang();
   const { colors } = useTheme();
   const { showToast } = useToast();
@@ -97,7 +97,8 @@ export function RecoverySection({ detail, reload }: { detail: BondDetail; reload
     );
   }
   const banned = data.state_rule?.allowed === false;
-  const canShare = data.bond_status === 'forfeited' && !banned;
+  // Sharing a defendant's file with a recovery agent is the agency owner's decision (server: ownerOnly)
+  const canShare = data.bond_status === 'forfeited' && !banned && !staff;
 
   return (
     <View testID="bond-recovery">
@@ -106,6 +107,7 @@ export function RecoverySection({ detail, reload }: { detail: BondDetail; reload
         {data.bond_status !== 'forfeited' && <Line tone="warn" testID="recovery-not-forfeited">{t('bdr_only_forfeited')}</Line>}
       </Card>
       <StateRuleCard rule={data.state_rule} state={data.state} />
+      {staff && data.bond_status === 'forfeited' && !banned && <Line muted testID="recovery-owner-only">{t('bdk_owner_only_line')}</Line>}
       {canShare && (
         <Card title={t('bdr_share_title')} testID="recovery-share-form">
           <Field label={t('bdr_email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" testID="recovery-email" maxLength={254} />

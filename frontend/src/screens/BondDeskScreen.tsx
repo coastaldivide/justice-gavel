@@ -17,7 +17,7 @@ import { useHasSession, SignInNeeded } from '../components/SignInNeeded';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { Btn, Card, Chips, Field, Line, Notice, Pill } from '../components/bondDesk/ui';
-import { type Access, type Bond, type BondStatus, type Dashboard, BOND_STATUSES, fmtDay, money } from '../services/bondDesk';
+import { type Access, type Bond, type BondStatus, type ConnectState, type Dashboard, type PayRequest, BOND_STATUSES, fmtDay, fmtWhen, money } from '../services/bondDesk';
 import { BondFields, EMPTY_BOND, bondBody, type BondDraft } from '../components/bondDesk/bondFields';
 
 export const statusTone = (s: BondStatus): 'muted' | 'ok' | 'warn' | 'danger' =>
@@ -60,6 +60,14 @@ function BondDeskScreen({ navigation }: ScreenProps) {
   const [draft, setDraft] = useState<BondDraft>(EMPTY_BOND);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  // card payments (Stripe Connect) and pay-page payments not yet on a bond
+  const [connect, setConnect] = useState<ConnectState | null>(null);
+  const [unassigned, setUnassigned] = useState<PayRequest[]>([]);
+  const [attaching, setAttaching] = useState<PayRequest | null>(null);
+  const [attachQ, setAttachQ] = useState('');
+  const [attachBonds, setAttachBonds] = useState<Bond[]>([]);
+  const [attachErr, setAttachErr] = useState('');
+  const [attachBusy, setAttachBusy] = useState<number | null>(null);
 
   const loadBonds = useCallback(async (st: BondStatus | 'all', query: string) => {
     const params: Record<string, string> = {};
@@ -79,6 +87,12 @@ function BondDeskScreen({ navigation }: ScreenProps) {
       if (mounted.current) setDash(d.data);
       await loadBonds(status, q);
       if (mounted.current) setError('');
+      // optional extras: an older server (or no card payments yet) simply shows nothing here
+      const [c, pr] = await Promise.all([
+        api.get<ConnectState>('/bond-desk/connect').catch(() => null),
+        api.get<{ pay_requests: PayRequest[] }>('/bond-desk/pay-requests').catch(() => null),
+      ]);
+      if (mounted.current) { setConnect(c?.data || null); setUnassigned(pr?.data?.pay_requests || []); }
     } catch (e) {
       if (mounted.current) setError(apiErrorMessage(e, t('bdk_load_failed')));
     }
@@ -109,6 +123,25 @@ function BondDeskScreen({ navigation }: ScreenProps) {
   }
 
   const go = (screen: string, params?: object) => navigation.navigate(screen, params);
+  const openAttach = async (p: PayRequest) => {
+    setAttaching(p); setAttachErr(''); setAttachQ(p.defendant_name);
+    try { const r = await api.get<{ bonds: Bond[] }>('/bond-desk/bonds', { params: { q: p.defendant_name.split(' ').slice(-1)[0] } }); if (mounted.current) setAttachBonds(r.data?.bonds || []); }
+    catch { if (mounted.current) setAttachBonds([]); }
+  };
+  const searchAttach = async () => {
+    try { const r = await api.get<{ bonds: Bond[] }>('/bond-desk/bonds', { params: attachQ.trim() ? { q: attachQ.trim() } : {} }); if (mounted.current) setAttachBonds(r.data?.bonds || []); }
+    catch (e) { setAttachErr(apiErrorMessage(e, t('bdk_load_failed'))); }
+  };
+  const attach = async (bond: Bond) => {
+    if (!attaching) return;
+    setAttachBusy(bond.id); setAttachErr('');
+    try {
+      await api.post(`/bond-desk/pay-requests/${attaching.id}/attach`, { bond_id: bond.id });
+      if (!mounted.current) return;
+      setAttaching(null); await load();
+      navigation.navigate('BondDetail', { bondId: bond.id, tab: 'money' });
+    } catch (e) { if (mounted.current) setAttachErr(apiErrorMessage(e, t('bdk_save_failed'))); } finally { if (mounted.current) setAttachBusy(null); }
+  };
   const statusOptions = [{ key: 'all' as const, label: t('bdk_all') }, ...BOND_STATUSES.map(k => ({ key: k, label: t(`bdk_st_${k}`) }))];
 
   return (
@@ -141,7 +174,26 @@ function BondDeskScreen({ navigation }: ScreenProps) {
               <Btn kind="ghost" label={t('bdk_forms')} onPress={() => go('BondForms')} testID="bond-desk-forms" style={s.actionBtn} />
               <Btn kind="ghost" label={t('bdk_powers')} onPress={() => go('BondPowers')} testID="bond-desk-powers" style={s.actionBtn} />
               <Btn kind="ghost" label={t('bdk_reports')} onPress={() => go('BondReports')} testID="bond-desk-reports" style={s.actionBtn} />
+              <Btn kind="ghost" label={t('bdk_settings')} onPress={() => go('BondDeskSettings')} testID="bond-desk-settings" style={s.actionBtn} />
             </View>
+            {connect && connect.status !== 'enabled' && connect.payments_live && (
+              <Card title={t('bdk_connect_cta_title')} testID="bond-desk-setup-payments">
+                <Line>{t('bdk_connect_cta_body')}</Line>
+                <Btn label={t('bdk_connect_setup')} onPress={() => go('BondDeskSettings')} testID="bond-desk-setup-payments-go" />
+              </Card>
+            )}
+            {!!unassigned.length && (
+              <Card title={t('bdk_unassigned_title')} testID="bond-desk-unassigned">
+                <Line muted>{t('bdk_unassigned_help')}</Line>
+                {unassigned.map(p => (
+                  <View key={p.id} style={s.item} testID={`unassigned-${p.id}`}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.itemTitle}>{money(p.amount_cents)} · {p.payer_name}</Text>
+                    <Line>{t('bdk_unassigned_line', { defendant: p.defendant_name, date: fmtWhen(p.paid_at) })}</Line>
+                    <Btn kind="ghost" label={t('bdk_unassigned_attach')} onPress={() => openAttach(p)} testID={`unassigned-attach-${p.id}`} />
+                  </View>
+                ))}
+              </Card>
+            )}
             {!access.texts_live && <Notice text={t('bdk_texts_off')} testID="bond-desk-texts-off" />}
 
             {!!dash?.forfeitures.length && (
@@ -217,6 +269,28 @@ function BondDeskScreen({ navigation }: ScreenProps) {
           </>
         )}
       </ScrollView>
+
+      <Modal visible={!!attaching} animationType="slide" onRequestClose={() => setAttaching(null)}>
+        <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" testID="attach-modal">
+          {attaching && (
+            <Card title={t('bdk_attach_title', { amount: money(attaching.amount_cents), payer: attaching.payer_name })}>
+              <Line muted>{t('bdk_attach_help', { defendant: attaching.defendant_name })}</Line>
+              <Field label={t('bdk_search')} value={attachQ} onChangeText={setAttachQ} testID="attach-search" />
+              <Btn kind="ghost" label={t('bdk_search_go')} onPress={searchAttach} testID="attach-search-go" />
+              {!attachBonds.length && <Line muted>{t('bdk_no_bonds')}</Line>}
+              {attachBonds.slice(0, 50).map(b => (
+                <View key={b.id} style={s.item}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.itemTitle}>{b.defendant_name}</Text>
+                  <Line>{[money(b.bond_amount_cents), b.case_number, t('bdk_balance_pill', { amount: money(b.balance_cents || 0) })].filter(Boolean).join(' · ')}</Line>
+                  <Btn label={t('bdk_attach_here')} onPress={() => attach(b)} busy={attachBusy === b.id} testID={`attach-to-${b.id}`} />
+                </View>
+              ))}
+              {!!attachErr && <Line tone="danger" testID="attach-error">{attachErr}</Line>}
+              <Btn kind="ghost" label={t('cancel')} onPress={() => setAttaching(null)} testID="attach-cancel" />
+            </Card>
+          )}
+        </ScrollView>
+      </Modal>
 
       <Modal visible={newOpen} animationType="slide" onRequestClose={() => setNewOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
