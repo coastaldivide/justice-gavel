@@ -56,6 +56,9 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { if (hasSession && allowed) load(q); }, [hasSession, allowed, q, load]);
+  // Public defender offices (A11): the entry shows only while the ⚖ server setting is on
+  const [pdOn, setPdOn] = useState(false);
+  useEffect(() => { if (hasSession && allowed) api.get('/pd/status').then(r => setPdOn(!!r.data?.enabled)).catch(() => setPdOn(false)); }, [hasSession, allowed]);
 
   const decide = (key: string, path: string, body: object, title: string) => confirm(title, t('adm_confirm_body'), { confirmLabel: t('adm_confirm_cta') }).then(async ok => {
     if (!ok) return;
@@ -86,6 +89,12 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
           <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('adm_forms_setup')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('adm_forms_setup_line')}</Text>
         </TouchableOpacity>
+        {pdOn && (
+          <TouchableOpacity accessibilityRole="button" testID="adm-pd-offices" style={s.card} onPress={() => navigation.navigate('AdminPdOffices' as never)}>
+            <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('pd_adm_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('pd_adm_entry_line')}</Text>
+          </TouchableOpacity>
+        )}
         {!!notice && <View testID="adm-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
         {!!error && <View style={s.card}><Text maxFontSizeMultiplier={1.4} style={{ color: colors.danger }}>{error}</Text></View>}
         {rows === null && <ActivityIndicator style={{ marginTop: 24 }} color={colors.textBrand} />}

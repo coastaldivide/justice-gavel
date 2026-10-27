@@ -33,7 +33,8 @@ import { runScheduled, purgeJobRuns } from '../utils/jobLock.js';
  * regardless of LIVE_REFRESH (REMINDERS_ENABLED=false switches it off per
  * process): reminder delivery (services/reminderDispatcher.js), the 24-hour
  * consultation reminder (hourly), Expo receipt checks (every 30 minutes), Bond Desk court
- * texts (every 5 minutes, 'bd-court-reminders'), Bond Desk automatic payment-plan charges (hourly,
+ * texts (every 5 minutes, 'bd-court-reminders'), public defender client texts (every 5 minutes,
+ * 'pd-court-reminders', ⚖), Bond Desk automatic payment-plan charges (hourly,
  * 'bd-autopay', only while BOND_AUTOPAY_ENABLED is on), and
  * the daily clean-up of expired sign-in tokens, idempotency keys and job
  * records.
@@ -64,6 +65,7 @@ let consultReminderTask = null;
 let receiptsTask = null;
 let tokenCleanupTask = null;
 let bdCourtTask = null;
+let pdCourtTask = null;
 let checkinTextsTask = null;
 let checkinMissedTask = null;
 let arrestFeedsTask = null;
@@ -378,6 +380,14 @@ export function startScheduler() {
         const { runBondCourtReminders } = await import('./bondDesk/courtDates.js');
         return runBondCourtReminders(await getDb());
       }));
+    // Public defender offices' client texts: reminders, "Did you make it?" and the morning-after
+    // text under the office's name (services/publicDefender/texts.js; ⚖ PUBLIC_DEFENDER_CHANNEL_ENABLED —
+    // the run does nothing while it is off). Bulk uploads are planned here too.
+    pdCourtTask = scheduleGuarded('2-59/5 * * * *', 'pd-court-reminders',
+      (ctx) => runScheduled('pd-court-reminders', ctx, async () => {
+        const { runPdCourtReminders } = await import('./publicDefender/texts.js');
+        return runPdCourtReminders(await getDb());
+      }));
     // Check-ins by text link: reminder texts + the gentle missed-check-in text (quiet hours 09–21
     // in the defendant's zone) and the hourly missed-check-in alert to the agent
     // (services/checkinTexts.js; one instance per fire via job_runs).
@@ -444,8 +454,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = null;
   stopHealthScanScheduler();
 }
 

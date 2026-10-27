@@ -96,6 +96,13 @@ texts; app reminders stay off until the person turns them on again in the app.
 users. Who is the "sender" for TCPA purposes, and is the agent's confirmation (2.5) adequate consent?
 Are payment reminders "debt collection" communications (FDCPA / state law), given the agent is the
 creditor?
+3.2b **Public defender offices (built, off in production: `PUBLIC_DEFENDER_CHANNEL_ENABLED`; docs/PUBLIC_DEFENDER.md).**
+A public defender office uploads its clients (name, phone, language, case number, court dates) and an office admin ticks
+"These clients gave this office their number and agreed to receive texts about their case." (stored with who and when).
+The clients then get court reminders, "Did you make it to court?" and a morning-after text, each starting with the office's
+name, and any reply goes to a shared office inbox where staff answer by text. Who is the sender (the office or Justice Gavel),
+is the office's statement adequate consent for these informational texts and for two-way staff texts, and does anything
+change for a government office (public records, retention of the message log)?
 3.2a **Automatic payment-plan charges (built, off in production: `BOND_AUTOPAY_ENABLED`).** The payer (defendant or
 indemnitor) opens a personal link from the agent, reads the dates and amounts, how to stop and "All payments are final"
 (wording in docs/BOND_DESK.md "Automatic payments"), ticks "I agree" and saves a card in Stripe Checkout on the **agency's**
@@ -156,7 +163,9 @@ Telnyx (texts), Resend (e-mail), Expo (push), Anthropic (AI), Sentry (error trac
 
 **Questions.**
 6.1 Privacy policy (docs/PRIVACY_POLICY.md) — complete and accurate for the above? State laws that apply
-at launch (TN Information Protection Act from July 2025; CCPA if California users).
+at launch (TN Information Protection Act from July 2025; CCPA if California users). Also covers the public defender
+channel (3.2b): client names, phones, case numbers, court dates and every text with the office (bodies encrypted at rest),
+visible to that office's staff and exportable by them — what must the policy and the office agreement say?
 6.2 **Record retention for bail agents.** Today, when a bail agent deletes their account, their Bond Desk
 records are deleted. State law requires bail agents to keep bond records for years. Should we instead
 (a) require an export first and (b) archive for N years? Which N per state?

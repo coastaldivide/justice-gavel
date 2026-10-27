@@ -41,6 +41,7 @@ import RecoveryInviteScreen from './src/screens/RecoveryInviteScreen';
 import AutopayLinkScreen from './src/screens/AutopayLinkScreen';
 import AgencyPayScreen from './src/screens/AgencyPayScreen';
 import StaffJoinScreen from './src/screens/StaffJoinScreen';
+import PdJoinScreen from './src/screens/PdJoinScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -372,6 +373,8 @@ function AppInner() {
           <RootStack.Screen name="AgencyPay" component={AgencyPayScreen} />
           {/* An invitation to work in an agency's Bond Desk (sign-in asked on the page) */}
           <RootStack.Screen name="StaffJoin" component={StaffJoinScreen} />
+          {/* An invitation into a public defender office (pd/join/<token>) — any auth state */}
+          <RootStack.Screen name="PdJoin" component={PdJoinScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
       </ToastProvider>

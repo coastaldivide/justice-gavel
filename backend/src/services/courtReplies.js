@@ -4,7 +4,8 @@
  * routes/webhooks/telnyx.js hands every inbound text that is not STOP / START here. Only a
  * reply of exactly 1, 2 or 3 counts, and only from a number that was asked in the last 48
  * hours; it answers the NEWEST question sent to that number — an app user's hearing
- * (court_dates.asked_phone) or a Bond Desk defendant's (bd_reminders step 'ask'):
+ * (court_dates.asked_phone), a Bond Desk defendant's (bd_reminders step 'ask') or a public
+ * defender office client's (pd_reminders step 'ask', while PUBLIC_DEFENDER_CHANNEL_ENABLED is on):
  *   1 → attended, 2 → rescheduled, 3 → missed (the morning-after "act today" message is sent now).
  * Anything else changes nothing. A short confirmation is texted back (never to a STOP number).
  */
@@ -14,6 +15,7 @@ import { msg, formatDay, userLang } from '../i18n/index.js';
 import { fitSms } from './smsText.js';
 import { scheduleForCourtDate, refreshNextCourtDate, dateOnly, missedCourtLink } from './courtReminders.js';
 import { parseCourtReply, lastBondAsk, handleBondReply } from './bondDesk/courtDates.js';
+import { lastPdAsk, handlePdReply } from './publicDefender/texts.js';
 import logger from '../utils/logger.js';
 import { logIgnored } from '../utils/ignored.js';
 
@@ -69,19 +71,21 @@ async function handleAppReply(db, { from, answer, courtDateId, now }) {
 
 /**
  * → { handled: false } for anything that is not an answer to a recent question, else
- *   { handled: true, kind: 'app'|'bond_desk', court_date_id, status, applied }.
+ *   { handled: true, kind: 'app'|'bond_desk'|'public_defender', court_date_id, status, applied }.
  */
 export async function handleCourtReplyText({ from, text, now = new Date(), db: dbArg } = {}) {
   const answer = parseCourtReply(text);
   if (!answer || !from) return { handled: false };
   const db = dbArg || await getDb();
-  const [bd, app] = await Promise.all([lastBondAsk(db, from, now), lastAppAsk(db, from, now)]);
-  if (!bd && !app) return { handled: false };
+  const [bd, app, pd] = await Promise.all([lastBondAsk(db, from, now), lastAppAsk(db, from, now), lastPdAsk(db, from, now)]);
+  const newest = [['bond_desk', bd], ['app', app], ['public_defender', pd]].filter(([, a]) => a)
+    .sort((x, y) => y[1].sent_at - x[1].sent_at)[0];
+  if (!newest) return { handled: false };
   try {
-    if (bd && (!app || bd.sent_at >= app.sent_at)) {
-      return { kind: 'bond_desk', ...(await handleBondReply(db, { from, answer, courtDateId: bd.court_date_id, now })) };
-    }
-    return { kind: 'app', ...(await handleAppReply(db, { from, answer, courtDateId: app.court_date_id, now })) };
+    const [kind, ask] = newest;
+    if (kind === 'bond_desk') return { kind, ...(await handleBondReply(db, { from, answer, courtDateId: ask.court_date_id, now })) };
+    if (kind === 'public_defender') return { kind, ...(await handlePdReply(db, { from, text, answer, courtDateId: ask.court_date_id, now })) };
+    return { kind, ...(await handleAppReply(db, { from, answer, courtDateId: ask.court_date_id, now })) };
   } catch (e) {
     logger.error({ err: e.message }, '[court-reply] not handled');
     return { handled: false, error: true };

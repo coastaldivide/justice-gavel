@@ -11,6 +11,8 @@
  *     off until the person turns them on in the app, which records fresh consent (migration 31).
  *   message.received with 1 / 2 / 3 from a number asked "Did you make it to court today?" in the
  *     last 48 hours → that hearing is marked attended / rescheduled / missed (services/courtReplies.js)
+ *   message.received with anything else (not STOP / START / HELP / 1 / 2 / 3) from a public defender
+ *     office's client → that office's shared inbox (services/publicDefender/texts.js routeInbound)
  *   message.finalized → the text's final delivery status into sms_delivery (migration 33):
  *     Bond Desk shows it per text; monitoring/smsHealth.js alerts when many texts fail.
  * Other events are acknowledged and ignored.
@@ -26,6 +28,7 @@ import crypto from 'node:crypto';
 import { getDb } from '../../db/index.js';
 import { toE164 } from '../../services/sms.js';
 import { handleCourtReplyText } from '../../services/courtReplies.js';
+import { routeInbound } from '../../services/publicDefender/texts.js';
 import logger from '../../utils/logger.js';
 
 const router = Router();
@@ -84,6 +87,12 @@ router.post('/', async (req, res) => {
         // else, or a number not asked in the last 48 hours, changes nothing.
         const r = await handleCourtReplyText({ from, text: p.text });
         if (r.handled) logger.info({ kind: r.kind, status: r.status, applied: r.applied }, '[telnyx] court answer received');
+        // Anything else (not STOP / START / HELP / 1 / 2 / 3) from a public defender office's
+        // client goes to that office's shared inbox (services/publicDefender/texts.js, ⚖ flag).
+        if (!r.handled) {
+          const inbox = await routeInbound(await getDb(), { from, text: p.text });
+          if (inbox.handled) logger.info({ office: inbox.office_id }, '[telnyx] client text routed to an office inbox');
+        }
       }
     }
     if (type === 'message.finalized' && p.id) {

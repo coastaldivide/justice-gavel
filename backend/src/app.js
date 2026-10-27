@@ -7,6 +7,7 @@ import bondsmanCRMRouter from './routes/bondsmanCRM.js';
 import bondDeskRouter from './routes/bondDesk/index.js';
 import recoverySharesRouter from './routes/recoveryShares.js';
 import custodyRouter from './routes/custody.js';
+import publicDefenderRouter from './routes/publicDefender.js';
 import signRouter from './routes/sign.js';
 import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
@@ -63,6 +64,7 @@ import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import telnyxWebhookRouter from './routes/webhooks/telnyx.js';
 import adminQueueRouter from './routes/admin/queue.js';
 import adminBdSetupRouter from './routes/admin/bdSetup.js';
+import adminPdOfficesRouter from './routes/admin/pdOffices.js';
 import bdPayRouter from './routes/bdPay.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -503,6 +505,7 @@ app.use('/api/discovery',  discoveryRouter);
 app.use('/api/translate',  translateRouter);
 app.use('/api/admin/ai-costs', aiCostsRouter);
 app.use('/api/admin/queue',    adminQueueRouter);   // in-app review screen (admin role, no ops key)
+app.use('/api/admin/pd-offices', adminPdOfficesRouter); // public defender offices + annual invoices (admin role, ⚖)
 app.use('/api/admin/bd-setup', adminBdSetupRouter); // Bond Desk "set up my forms" queue (admin role, no ops key)
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
@@ -552,6 +555,7 @@ app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
 app.use('/api/bondsman', bondsmanCRMRouter);
 app.use('/api/bond-desk', bondDeskRouter);   // bond paperwork, e-sign, ledger, powers (docs/BOND_DESK.md)
 app.use('/api/recovery-shares', recoverySharesRouter);   // a recovery agent's read-only view of a shared forfeited bond (⚖)
+app.use('/api/pd', publicDefenderRouter);       // public defender offices: clients, reminders, shared inbox (⚖)
 app.use('/api/custody', custodyRouter);       // release / transfer alerts for a followed booking (⚖)
 app.use('/api/sign', signRouter);            // public signing links (no account)
 app.use('/api/bd-pay', bdPayRouter);         // public: pay a bail agency by card (automatic-payment link, pay page)

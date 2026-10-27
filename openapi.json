@@ -2053,6 +2053,288 @@
         "x-staff-only": true
       }
     },
+    "/api/admin/pd-offices": {
+      "get": {
+        "operationId": "get_api_admin_pd-offices",
+        "summary": "GET /api/admin/pd-offices",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_api_admin_pd-offices",
+        "summary": "POST /api/admin/pd-offices",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/pd-offices/{id}": {
+      "get": {
+        "operationId": "get_api_admin_pd-offices_id",
+        "summary": "GET /api/admin/pd-offices/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patch_api_admin_pd-offices_id",
+        "summary": "PATCH /api/admin/pd-offices/{id}",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/pd-offices/{id}/invites": {
+      "post": {
+        "operationId": "post_api_admin_pd-offices_id_invites",
+        "summary": "POST /api/admin/pd-offices/{id}/invites",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/pd-offices/{id}/invoice-preview": {
+      "get": {
+        "operationId": "get_api_admin_pd-offices_id_invoice-preview",
+        "summary": "GET /api/admin/pd-offices/{id}/invoice-preview",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/admin/pd-offices/{id}/invoices": {
+      "post": {
+        "operationId": "post_api_admin_pd-offices_id_invoices",
+        "summary": "POST /api/admin/pd-offices/{id}/invoices",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/admin/proposals": {
       "get": {
         "operationId": "get_api_admin_proposals",
@@ -23895,6 +24177,1166 @@
         ],
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients": {
+      "get": {
+        "operationId": "get_api_pd_clients",
+        "summary": "GET /api/pd/clients",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_api_pd_clients",
+        "summary": "POST /api/pd/clients",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/import": {
+      "post": {
+        "operationId": "post_api_pd_clients_import",
+        "summary": "POST /api/pd/clients/import",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/import/preview": {
+      "post": {
+        "operationId": "post_api_pd_clients_import_preview",
+        "summary": "POST /api/pd/clients/import/preview",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/template.csv": {
+      "get": {
+        "operationId": "get_api_pd_clients_template.csv",
+        "summary": "GET /api/pd/clients/template.csv",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/clients/{id}": {
+      "delete": {
+        "operationId": "delete_api_pd_clients_id",
+        "summary": "DELETE /api/pd/clients/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "operationId": "get_api_pd_clients_id",
+        "summary": "GET /api/pd/clients/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patch_api_pd_clients_id",
+        "summary": "PATCH /api/pd/clients/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/{id}/court-dates": {
+      "post": {
+        "operationId": "post_api_pd_clients_id_court-dates",
+        "summary": "POST /api/pd/clients/{id}/court-dates",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/{id}/handled": {
+      "post": {
+        "operationId": "post_api_pd_clients_id_handled",
+        "summary": "POST /api/pd/clients/{id}/handled",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/clients/{id}/messages": {
+      "get": {
+        "operationId": "get_api_pd_clients_id_messages",
+        "summary": "GET /api/pd/clients/{id}/messages",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_pd_clients_id_messages",
+        "summary": "POST /api/pd/clients/{id}/messages",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/court-dates/{id}": {
+      "delete": {
+        "operationId": "delete_api_pd_court-dates_id",
+        "summary": "DELETE /api/pd/court-dates/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patch_api_pd_court-dates_id",
+        "summary": "PATCH /api/pd/court-dates/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/dashboard": {
+      "get": {
+        "operationId": "get_api_pd_dashboard",
+        "summary": "GET /api/pd/dashboard",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/export.zip": {
+      "get": {
+        "operationId": "get_api_pd_export.zip",
+        "summary": "GET /api/pd/export.zip",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/export/{part}.csv": {
+      "get": {
+        "operationId": "get_api_pd_export_part_.csv",
+        "summary": "GET /api/pd/export/{part}.csv",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pd/inbox": {
+      "get": {
+        "operationId": "get_api_pd_inbox",
+        "summary": "GET /api/pd/inbox",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/inbox/unread": {
+      "get": {
+        "operationId": "get_api_pd_inbox_unread",
+        "summary": "GET /api/pd/inbox/unread",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/invite/accept": {
+      "post": {
+        "operationId": "post_api_pd_invite_accept",
+        "summary": "POST /api/pd/invite/accept",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/invite/{token}": {
+      "get": {
+        "operationId": "get_api_pd_invite_token",
+        "summary": "GET /api/pd/invite/{token}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pd/office": {
+      "get": {
+        "operationId": "get_api_pd_office",
+        "summary": "GET /api/pd/office",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch_api_pd_office",
+        "summary": "PATCH /api/pd/office",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/office/baseline": {
+      "put": {
+        "operationId": "put_api_pd_office_baseline",
+        "summary": "PUT /api/pd/office/baseline",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/office/consent": {
+      "post": {
+        "operationId": "post_api_pd_office_consent",
+        "summary": "POST /api/pd/office/consent",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/staff": {
+      "get": {
+        "operationId": "get_api_pd_staff",
+        "summary": "GET /api/pd/staff",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/pd/staff/invites": {
+      "post": {
+        "operationId": "post_api_pd_staff_invites",
+        "summary": "POST /api/pd/staff/invites",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/staff/invites/{id}": {
+      "delete": {
+        "operationId": "delete_api_pd_staff_invites_id",
+        "summary": "DELETE /api/pd/staff/invites/{id}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pd/staff/{userId}": {
+      "delete": {
+        "operationId": "delete_api_pd_staff_userId",
+        "summary": "DELETE /api/pd/staff/{userId}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patch_api_pd_staff_userId",
+        "summary": "PATCH /api/pd/staff/{userId}",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/pd/status": {
+      "get": {
+        "operationId": "get_api_pd_status",
+        "summary": "GET /api/pd/status",
+        "tags": [
+          "pd"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },
