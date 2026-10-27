@@ -61,7 +61,7 @@ beforeAll(async () => {
 });
 
 // ─── Builders ────────────────────────────────────────────────────────────────
-const daysFrom = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const daysFrom = (n) => { const d = new Date(); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };   // UTC calendar days
 const daysAgo  = (n) => daysFrom(-n);
 
 const base = (vertical, o = {}) => ({

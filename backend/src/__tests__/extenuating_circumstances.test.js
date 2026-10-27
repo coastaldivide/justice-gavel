@@ -46,7 +46,7 @@ beforeAll(async () => {
 // ─── TEST HELPERS ─────────────────────────────────────────────────────────────
 const today      = () => new Date().toISOString().slice(0, 10);
 const daysFromNow = (n) => {
-  const d = new Date(); d.setDate(d.getDate() + n);
+  const d = new Date(); d.setUTCDate(d.getUTCDate() + n);   // UTC calendar days (setDate is off by one across a DST change)
   return d.toISOString().slice(0, 10);
 };
 const daysAgo = (n) => daysFromNow(-n);
@@ -685,5 +685,20 @@ describe('Extenuating — Signal Independence (no false positives)', () => {
     expect(noDV.vertical_signals.lethalityExtreme).toBe(false);
     expect(noScore.vertical_signals.lethalityExtreme).toBe(false);
     expect(both.vertical_signals.lethalityExtreme).toBe(true);
+  });
+});
+
+describe('calendarDaysUntil — deadlines count calendar days, not clock hours', () => {
+  test('same answer at any time of day and across the November DST change', async () => {
+    const { calendarDaysUntil } = await import('../routes/matter_intelligence.js');
+    for (const iso of ['2026-10-27T00:05:00Z', '2026-10-27T12:00:00Z', '2026-10-27T23:59:00Z']) {
+      const now = new Date(iso);
+      expect(calendarDaysUntil('2026-11-10', now)).toBe(14);
+      expect(calendarDaysUntil('2026-11-11', now)).toBe(15);
+      expect(calendarDaysUntil('2026-10-27', now)).toBe(0);   // the deadline day itself is not missed
+      expect(calendarDaysUntil('2026-10-26', now)).toBe(-1);
+    }
+    expect(calendarDaysUntil(null)).toBeNull();
+    expect(calendarDaysUntil('not a date')).toBeNull();
   });
 });

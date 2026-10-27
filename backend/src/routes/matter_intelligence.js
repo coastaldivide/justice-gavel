@@ -20,6 +20,17 @@ import logger           from '../utils/logger.js';
 import { err403, err404, safeInt } from '../utils/routeHelpers.js';
 import { writeAuditLog }                   from '../middleware/audit.js';
 import { hasMinRole }                      from '../middleware/rbac.js';
+
+/** Whole calendar days from today (UTC date) to a 'YYYY-MM-DD' (or date-like) value; null when absent/invalid. */
+export function calendarDaysUntil(value, now = new Date()) {
+  if (!value) return null;
+  const s = value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  const target = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.round((target - today) / 86400000);
+}
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
@@ -242,14 +253,14 @@ function computeImmigrationSignals(m) {
     // IJ may grant vol. departure — client must leave by deadline or face:
     //   automatic 10-year bar + bond forfeiture + destruction of future relief options.
     // This is separate from the asylum clock. Even ONE DAY late is irreversible.
+    // Calendar days (UTC dates), not clock hours: the deadline day itself is day 0 and is not missed.
     volDepartureImminent: (() => {
-      if (!m.vol_departure_date) return false;
-      const daysLeft = Math.ceil((new Date(m.vol_departure_date) - new Date()) / 86400000);
-      return daysLeft >= 0 && daysLeft <= 14;
+      const daysLeft = calendarDaysUntil(m.vol_departure_date);
+      return daysLeft != null && daysLeft >= 0 && daysLeft <= 14;
     })(),
     volDepartureMissed: (() => {
-      if (!m.vol_departure_date) return false;
-      return new Date(m.vol_departure_date) < new Date();
+      const daysLeft = calendarDaysUntil(m.vol_departure_date);
+      return daysLeft != null && daysLeft < 0;
     })(),
     // ── Withholding of removal / CAT alternatives ────────────────────────────────
     // When asylum bar is exceeded, withholding (§ 1231(b)(3)) and Convention Against
