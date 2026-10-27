@@ -16,8 +16,9 @@
  * Jobs that only run when a feature is on (LIVE_REFRESH, reminders) are checked
  * only when that feature is on, so a switched-off job never raises a false alarm.
  */
-import { CONFIG } from '../config.js';
+import { CONFIG, stripeConfigured } from '../config.js';
 import { remindersEnabled as remindersOn } from '../services/reminderDispatcher.js';
+import { autopayEnabled } from '../services/bondDesk/autopay.js';
 
 const H = 3600_000;
 /** job → { everyMs, when() } — `when` false = the job is not expected to run now. */
@@ -29,6 +30,7 @@ export const EXPECTED = Object.freeze({
   'bd-court-reminders': { everyMs: H / 12, when: () => remindersOn() },
   'checkin-texts': { everyMs: 0.25 * H, when: () => remindersOn() },
   'checkin-missed': { everyMs: 1 * H, when: () => remindersOn() },
+  'bd-autopay': { everyMs: 1 * H, when: () => autopayEnabled() && stripeConfigured() },
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
 });

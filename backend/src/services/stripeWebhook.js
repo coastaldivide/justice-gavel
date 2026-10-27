@@ -24,6 +24,17 @@
  *   payment_intent.succeeded                             bail / case lead purchases; Case Pass; outbound-bot
  *                                                        payment links; family connections
  *   charge.refunded                                      lead purchases marked refunded
+ *
+ * Bond Desk card payments (Stripe Connect; docs/BOND_DESK.md "Card payments"). Events from the
+ * agencies' connected accounts arrive on the Connect endpoint, signed with
+ * STRIPE_CONNECT_WEBHOOK_SECRET (event.account = the agency's acct_ id); the same handler,
+ * verification and replay protection serve both secrets:
+ *   account.updated                                       the agency's charges / payouts flags
+ *   checkout.session.completed  bd_kind autopay_setup     card saved → automatic payments on
+ *                               bd_kind paylink / autopay pay-page payment / a confirmed installment
+ *   checkout.session.expired    bd_kind paylink           the pay-page checkout lapsed
+ *   payment_intent.succeeded    bd_kind autopay / paylink posted once (unique PaymentIntent id)
+ *   payment_intent.payment_failed bd_kind autopay         payer + agent told, one retry in 3 days
  */
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
@@ -38,17 +49,17 @@ import { msg, userLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
 
 let verifier = null;
+/** Verify against the platform secret, then the Connect secret (events from agencies' accounts). */
 function verify(rawBody, signature) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET || '';
-  if (!secret || !signature) return null;
+  const secrets = [process.env.STRIPE_WEBHOOK_SECRET, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(Boolean);
+  if (!secrets.length || !signature) return null;
   if (!Buffer.isBuffer(rawBody) && typeof rawBody !== 'string') return null;
-  try {
-    const s = stripeClient() || (verifier ||= new Stripe('sk_signature_verification_only'));
-    return s.webhooks.constructEvent(rawBody, signature, secret);
-  } catch (e) {
-    logger.warn('[webhook:stripe] signature verification failed:', e?.message);
-    return null;
+  const s = stripeClient() || (verifier ||= new Stripe('sk_signature_verification_only'));
+  for (const secret of secrets) {
+    try { return s.webhooks.constructEvent(rawBody, signature, secret); } catch { /* try the next secret */ }
   }
+  logger.warn('[webhook:stripe] signature verification failed');
+  return null;
 }
 
 async function retrieveSub(id) {
@@ -60,6 +71,43 @@ async function pushTo(db, userId, titleKey, bodyKey, params, data) {
   if (!userId) return;
   const lang = await userLang(db, userId).catch(() => 'en');
   await sendPushToUser(Number(userId), { title: msg(lang, titleKey), body: msg(lang, bodyKey, params), data }).catch(logIgnored('services/stripeWebhook'));
+}
+
+/** Bond Desk card payments (services/bondDesk/*). → true when the event was one of them. */
+async function bondDeskEvent(db, event) {
+  const obj = event.data?.object || {};
+  const md = obj.metadata || {};
+  if (event.type === 'account.updated') {
+    const { syncAccount } = await import('./bondDesk/connect.js');
+    return (await syncAccount(db, obj)) != null;
+  }
+  if (!md.bd_kind) return false;
+  const account = typeof event.account === 'string' ? event.account : null;
+  const autopay = () => import('./bondDesk/autopay.js');
+  const payLink = () => import('./bondDesk/payLink.js');
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      if (md.bd_kind === 'autopay_setup') await (await autopay()).completeSetup(db, { session: obj, account });
+      const piId = typeof obj.payment_intent === 'string' ? obj.payment_intent : obj.payment_intent?.id;
+      if (obj.payment_status === 'paid' && piId) {
+        if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkPaid(db, { requestId: Number(md.bd_pay_request_id), piId, account });
+        if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, { id: piId, amount: obj.amount_total, metadata: md });
+      }
+      return true;
+    }
+    case 'checkout.session.expired':
+      if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkExpired(db, obj.id);
+      return true;
+    case 'payment_intent.succeeded':
+      if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, obj);
+      if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkPaid(db, { requestId: Number(md.bd_pay_request_id), piId: obj.id, account });
+      return true;
+    case 'payment_intent.payment_failed':
+      if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentFailed(db, obj);
+      return true;
+    default:
+      return true;
+  }
 }
 
 async function onPaymentSucceeded(db, pi) {
@@ -100,6 +148,7 @@ async function onPaymentSucceeded(db, pi) {
 
 async function processEvent(db, event) {
   const obj = event.data?.object || {};
+  if (await bondDeskEvent(db, event)) return;
   switch (event.type) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
@@ -147,7 +196,7 @@ async function processEvent(db, event) {
 
 /** Express handler (raw body). */
 export async function stripeWebhookHandler(req, res) {
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  if (!process.env.STRIPE_WEBHOOK_SECRET && !process.env.STRIPE_CONNECT_WEBHOOK_SECRET) {
     logger.warn('[webhook:stripe] STRIPE_WEBHOOK_SECRET not set — rejecting unverifiable webhook');
     return res.status(400).json({ error: 'webhook_signature_invalid', message: 'Webhook signature could not be verified' });
   }

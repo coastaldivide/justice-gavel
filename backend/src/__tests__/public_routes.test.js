@@ -119,6 +119,13 @@ const PUBLIC = {
   'POST /api/sign/:token/sign': 'signing link (token credential)',
   'POST /api/sign/:token/decline': 'signing link (token credential)',
   'GET /api/sign/:token/signed.pdf': 'signing link (token credential); only this signer\'s signed copies',
+  // Bond Desk card payments (docs/BOND_DESK.md): money goes to the agency's own Stripe account (Connect)
+  'GET /api/bd-pay/autopay/:token': 'automatic-payment link (32-byte token credential, stored hashed; IP rate limit; ⚖ flag); agency, schedule, consent, card last 4',
+  'POST /api/bd-pay/autopay/:token/start': 'automatic-payment link: consent snapshot + Stripe Checkout (setup) on the agency account; IP rate limit',
+  'POST /api/bd-pay/autopay/:token/stop': 'automatic-payment link: the payer stops automatic payments; IP rate limit',
+  'POST /api/bd-pay/autopay/:token/confirm': 'automatic-payment link: Checkout to confirm a payment the bank asked about; IP rate limit',
+  'GET /api/bd-pay/agency/:slug': 'an agency\'s public pay page (stable random slug): agency name, phone, limits',
+  'POST /api/bd-pay/agency/:slug/checkout': 'pay page: Stripe Checkout on the agency account, $1–$50,000, 10 per IP per 15 minutes',
 };
 
 describe('item 2 — every route requires auth unless deliberately public', () => {

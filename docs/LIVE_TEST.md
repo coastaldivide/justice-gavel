@@ -92,6 +92,35 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E17f The second phone replies STOP → "Text the link again" is refused "replied STOP"; no more reminders.
 - [ ] E17g Staging only (`CHECKIN_LOCATION_ALERTS_ENABLED=true`): in the history, **Use this location as home**, radius 1 mile → check in by link from more than a mile away with location shared → the agent gets "checked in away from home" and the record is flagged. Production (setting off): the home-point controls are not shown.
 - [ ] E17h Phone A signed in with the e-mail of an enrollment attached to a bond with a balance → Home shows "Your bail agent": agency, tap-to-call, next court date, balance, Check in. A different account sees no card.
+- [ ] E17i **Card payments** (Stripe test mode; Connect set up — EXTERNAL_SERVICES_SETUP.md 3b): Bond Desk → Settings →
+  Card payments shows the fee terms; "Set up card payments" stays disabled until the box is ticked → tick → Stripe onboarding
+  opens → fill it with Stripe's test data → back in the app the card says **On**; Bond Desk no longer shows "Set up card payments".
+  Stripe → Connect → Accounts lists the agency as an Express account.
+- [ ] E17j **Pay page**: copy the pay link → open it signed out on the phone → $0.50 is refused, no phone/e-mail is refused →
+  $250.00 with your phone, "Text me the receipt", agree → Stripe Checkout (`4242…`) → back on the page "Thank you". Within a
+  minute the agent gets a push; Bond Desk → **Unassigned payments** shows $250.00 → Attach to a bond with a balance ≥ $250 →
+  receipt **R-…** on the bond, a text with the receipt number on the phone. Stripe: the payment is in the agency's Express
+  account, not the platform balance. Resend the `payment_intent.succeeded` event → nothing changes.
+- [ ] E17k **Automatic payments** (staging, `BOND_AUTOPAY_ENABLED=true`): a bond with a plan whose first installment is **today** →
+  Money → Automatic payments → send the link to your phone by text (tick consent) → open it: the dates, amounts, how to stop and
+  "All payments are final" → agree → Checkout saves `4242…` → the page says "on" with the card's last 4. Within the hour after
+  08:00 the installment is paid (receipt R-…, payment marked "automatic"); Stripe shows a 99¢ application fee on it. Repeat on a
+  second bond with card `4000 0000 0000 0341` (attached, then declined): the payer and you are texted "did not go through", the
+  attempt shows "Declined · tried again on …". A third bond with `4000 0027 6000 3184` (3-D Secure): the phone gets "your bank needs
+  you to confirm" with a link → Confirm payment → Checkout → paid once. "Stop automatic payments" on the payer page → the agent is
+  told. Production (setting off): the card is not shown and the routes answer 503.
+- [ ] E17l **Staff seats** (Starter = 3): Settings → invite two e-mails → "3 of 3 seats used" and the invite form is replaced by
+  "Move up a plan"; the plans screen shows "Bond Desk seats: 3 of 3 used". Sign in as an invited person (same e-mail) → open the
+  e-mailed link → Accept → Bond Desk shows the owner's bonds; Settings shows no set-up, export or invite buttons. Owner removes
+  them → their next Bond Desk load says no access.
+- [ ] E17m **Forms set up for you**: Forms → "Have us set up your forms" → add a surety PDF → status Requested; the PDF is not in
+  the library yet. Admin account → Admin review → Bond Desk forms set-up → Start → Open the forms tool → map the fields → Preview
+  with sample data → Hand over with a note → the agent gets a push / e-mail, the form is in the library, status Ready.
+- [ ] E17n **Import**: Settings → Import open bonds → download the template → fill 3 rows (one with a bad amount "12.345") → the
+  preview shows the row's problem and Import is disabled → fix it → Import → 3 active bonds, each with "imported balance".
+  Import the same file again → refused (power numbers already used), nothing added.
+- [ ] E17o **Export**: Settings → Export everything → the ZIP opens on the laptop: README.txt, reports/*.csv, records/*.csv,
+  receipts/…pdf, signed/…pdf. A fourth export within the hour is refused.
 - [ ] E18 **Next day**: Stripe → the agent's subscription → upcoming invoice has a line "Texts sent for you: N × 5¢" matching Bond Desk → Texts this month. Running the billing job again adds nothing.
 
 ## F. Webhooks and recovery (10 min)

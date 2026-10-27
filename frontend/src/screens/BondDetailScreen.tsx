@@ -94,7 +94,7 @@ function BondDetailScreen({ navigation, route }: ScreenProps) {
       {tab === 'overview' && <OverviewSection detail={detail} reload={reload} onCheckins={() => navigation.navigate('CheckInManager' as never)} />}
       {tab === 'people' && <IndemnitorsSection detail={detail} reload={reload} />}
       {tab === 'paperwork' && <PaperworkSection detail={detail} reload={reload} access={access} />}
-      {tab === 'money' && <MoneySection detail={detail} reload={reload} access={access} />}
+      {tab === 'money' && <MoneySection detail={detail} reload={reload} access={access} onSettings={() => navigation.navigate('BondDeskSettings' as never)} />}
       {tab === 'collateral' && <CollateralSection detail={detail} reload={reload} />}
       {tab === 'court' && <CourtSection detail={detail} reload={reload} access={access} />}
     </ScrollView>

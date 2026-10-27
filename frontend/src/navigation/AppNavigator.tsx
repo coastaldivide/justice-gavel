@@ -99,6 +99,9 @@ const BondDetailScreen = withSuspense(React.lazy(() => import('../screens/BondDe
 const BondFormsScreen = withSuspense(React.lazy(() => import('../screens/BondFormsScreen')));
 const PowersScreen = withSuspense(React.lazy(() => import('../screens/PowersScreen')));
 const BondReportsScreen = withSuspense(React.lazy(() => import('../screens/BondReportsScreen')));
+const BondDeskSettingsScreen = withSuspense(React.lazy(() => import('../screens/BondDeskSettingsScreen')));
+const BondImportScreen = withSuspense(React.lazy(() => import('../screens/BondImportScreen')));
+const AdminFormsSetupScreen = withSuspense(React.lazy(() => import('../screens/AdminFormsSetupScreen')));
 const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
 const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
 const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
@@ -232,6 +235,9 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="BondForms"             component={BondFormsScreen}             options={{ title: t('bdk_forms') }} />
       <MoreStack.Screen name="BondPowers"            component={PowersScreen}                options={{ title: t('bdk_powers') }} />
       <MoreStack.Screen name="BondReports"           component={BondReportsScreen}           options={{ title: t('bdk_reports') }} />
+      <MoreStack.Screen name="BondDeskSettings"      component={BondDeskSettingsScreen}      options={{ title: t('bdk_settings') }} />
+      <MoreStack.Screen name="BondImport"            component={BondImportScreen}            options={{ title: t('bdk_import_title') }} />
+      <MoreStack.Screen name="AdminFormsSetup"       component={AdminFormsSetupScreen}       options={{ title: t('adm_forms_setup') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />

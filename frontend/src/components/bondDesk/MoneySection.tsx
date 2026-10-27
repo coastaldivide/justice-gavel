@@ -15,11 +15,12 @@ import { useToast } from '../ToastProvider';
 import { useTheme } from '../../constants/theme';
 import { t, useLang } from '../../i18n';
 import { Btn, Card, Check, Chips, Field, Line, Pill, Row, useTextPrompt } from './ui';
+import { AutopayCard } from './AutopayCard';
 import { type Access, type BondDetail, type Charge, type PayMethod, type Payment, type PlanRow, PAY_METHODS, centsToInput, checkPlan, fmtDay, isIsoDate, money, parseCents, splitPlan, todayIso } from '../../services/bondDesk';
 
 const instTone = { paid: 'ok', partial: 'warn', due: 'muted', overdue: 'danger' } as const;
 
-export function MoneySection({ detail, reload, access }: { detail: BondDetail; reload: () => Promise<void>; access: Access | null }) {
+export function MoneySection({ detail, reload, access, onSettings }: { detail: BondDetail; reload: () => Promise<void>; access: Access | null; onSettings?: () => void }) {
   useLang();
   const { colors } = useTheme();
   const { showToast } = useToast();
@@ -155,7 +156,7 @@ export function MoneySection({ detail, reload, access }: { detail: BondDetail; r
         {!detail.payments.length && <Line muted>{t('bdk_payments_none')}</Line>}
         {detail.payments.map(p => (
           <View key={p.id} testID={`payment-${p.id}`} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Line strong>{p.receipt_no} · {money(p.amount_cents)} · {t(`bdk_pm_${p.method}`)}</Line>
+            <Line strong>{p.receipt_no} · {money(p.amount_cents)} · {t(`bdk_pm_${p.method}`)}{p.source && p.source !== 'manual' ? ` · ${t(`bdk_pay_source_${p.source}`)}` : ''}</Line>
             <Line muted>{t('bdk_payment_line', { payer: p.payer_name, date: fmtDay(p.received_on) })}{p.reference ? ` · ${p.reference}` : ''}</Line>
             {p.voided_at && <Pill text={t('bdk_voided_pill', { reason: p.void_reason || '' })} tone="danger" />}
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -225,6 +226,8 @@ export function MoneySection({ detail, reload, access }: { detail: BondDetail; r
           </View>
         )}
       </Card>
+
+      <AutopayCard detail={detail} access={access} reload={reload} onSettings={onSettings} />
 
       <Card title={t('bdk_reminder')} testID="money-reminder">
         {!remOpen ? <Btn kind="ghost" label={t('bdk_send_reminder')} onPress={() => { setRemErr(''); setRemOpen(true); }} disabled={m.balance_cents <= 0} testID="reminder-open" /> : (

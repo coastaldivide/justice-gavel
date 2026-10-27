@@ -3,121 +3,20 @@
  * Mounted at /api/bond-desk (docs/BOND_DESK.md). Every row is the calling agent's own.
  */
 import { Router } from 'express';
-import { BdError, handle, fail, id, text, oneOf, sendFile, body, requireStorage } from './_common.js';
-import { uploadGuard } from '../../middleware/uploads.js';
-import { inspectPdf, preparePdf, sha256, PdfError, mergePdfs, MAX_PDF_BYTES } from '../../services/bondDesk/pdf.js';
+import { BdError, handle, id, text, oneOf, sendFile, body, requireStorage } from './_common.js';
+import { mergePdfs } from '../../services/bondDesk/pdf.js';
 import {
-  DATA_KEYS, agencyFor, newToken, hashToken, signLink, LINK_DAYS, sendAgentText, sendAgentEmail, signingMessage,
-  dataValues, fieldValues, agentToday,
+  agencyFor, newToken, hashToken, signLink, LINK_DAYS, sendAgentText, sendAgentEmail, signingMessage,
 } from '../../services/bondDesk/core.js';
-import { putFile, getFile, event } from '../../services/bondDesk/packets.js';
+import { getFile, event } from '../../services/bondDesk/packets.js';
 import { loadBond } from './bonds.js';
-import { liveTotal } from '../../services/bondDesk/money.js';
 import { normalizeLang } from '../../i18n/index.js';
 
+// Errors: handle() (./_common.js) runs every handler inside try { … } catch → fail(), which answers
+// { error, code } in the caller's language.
 const router = Router();
 const ROLES = ['defendant', 'indemnitor'];
 export const DOC_REQUESTS = ['id_front', 'id_back', 'selfie_with_id', 'proof_of_income', 'proof_of_address'];
-
-const pdfUpload = uploadGuard({
-  maxBytes: MAX_PDF_BYTES, field: 'file', requireMultipart: true, maxFields: 5, maxFieldBytes: 1000,
-  onError: (err, req, res) => fail(req, res, new BdError(err?.code === 'LIMIT_FILE_SIZE' ? 413 : 400,
-    err?.code === 'LIMIT_FILE_SIZE' ? 'too_large' : 'bad_upload', err?.code === 'LIMIT_FILE_SIZE' ? { mb: 10 } : {})),
-});
-
-// ── Forms ─────────────────────────────────────────────────────────────────────
-
-const FORM_COLS = 'id, name, page_count, roles, fields, field_map, archived, created_at, size_bytes';
-const pubForm = (f) => ({ id: Number(f.id), name: f.name, page_count: Number(f.page_count), roles: f.roles, fields: f.fields,
-  field_map: f.field_map, archived: !!f.archived, created_at: f.created_at, size_bytes: Number(f.size_bytes) });
-
-async function loadForm(db, agentId, formId) {
-  const f = await db.get(`SELECT ${FORM_COLS}, storage_key FROM bd_forms WHERE id = ? AND agent_id = ?`, [formId, agentId]);
-  if (!f) throw new BdError(404, 'not_found');
-  return f;
-}
-
-router.get('/forms', handle(async (req, res, db) => {
-  const rows = await db.all(`SELECT ${FORM_COLS} FROM bd_forms WHERE agent_id = ? ORDER BY archived, name, id`, [req.agentId]);
-  res.json({ forms: rows.map(pubForm), data_keys: DATA_KEYS });
-}));
-
-router.post('/forms', requireStorage, pdfUpload, handle(async (req, res, db) => {
-  const file = req.file;
-  if (!file?.buffer?.length) throw new BdError(400, 'file_required');
-  const name = text(req.body?.name, 120, 'name') || text(String(file.originalname || '').replace(/\.pdf$/i, ''), 120, 'name') || 'Form';
-  let info;
-  try { info = await inspectPdf(file.buffer); } catch (e) {
-    if (e instanceof PdfError) throw new BdError(400, e.code === 'encrypted_pdf' ? 'encrypted_pdf' : 'bad_pdf');
-    throw e;
-  }
-  const n = await db.get('SELECT COUNT(*)::int AS n FROM bd_forms WHERE agent_id = ? AND NOT archived', [req.agentId]);
-  if (n.n >= 100) throw new BdError(409, 'too_many');
-  const key = await putFile(req.storage, file.buffer);
-  const row = await db.get(
-    `INSERT INTO bd_forms (agent_id, name, storage_key, sha256, size_bytes, page_count, fields) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
-     RETURNING ${FORM_COLS}`,
-    [req.agentId, name, key, sha256(file.buffer), file.buffer.length, info.page_count, JSON.stringify(info.fields)]);
-  res.status(201).json({ form: pubForm(row) });
-}));
-
-router.patch('/forms/:id', handle(async (req, res, db) => {
-  const f = await loadForm(db, req.agentId, id(req.params.id));
-  const b = body(req);
-  const set = {};
-  if (Object.prototype.hasOwnProperty.call(b, 'name')) set.name = text(b.name, 120, 'name', { required: true });
-  if (Object.prototype.hasOwnProperty.call(b, 'roles')) {
-    if (!Array.isArray(b.roles) || !b.roles.length || b.roles.some((r) => !ROLES.includes(r))) throw new BdError(400, 'invalid', { field: 'roles' });
-    set.roles = [...new Set(b.roles)];
-  }
-  if (Object.prototype.hasOwnProperty.call(b, 'field_map')) {
-    const m = b.field_map;
-    if (!m || typeof m !== 'object' || Array.isArray(m)) throw new BdError(400, 'bad_field_map');
-    const textFields = new Set((f.fields || []).filter((x) => x.type === 'text').map((x) => x.name));
-    const clean = {};
-    for (const [field, key] of Object.entries(m)) {
-      if (key === null || key === '') continue;            // unmapped
-      if (!textFields.has(field) || !DATA_KEYS.includes(key)) throw new BdError(400, 'bad_field_map', { field });
-      clean[field] = key;
-    }
-    set.field_map = clean;
-  }
-  const cols = Object.keys(set);
-  if (cols.length) {
-    await db.run(`UPDATE bd_forms SET ${cols.map((c) => (c === 'field_map' ? 'field_map = ?::jsonb' : c === 'roles' ? 'roles = ?::text[]' : `${c} = ?`)).join(', ')}, updated_at = NOW() WHERE id = ?`,
-      [...cols.map((c) => (c === 'field_map' ? JSON.stringify(set[c]) : c === 'roles' ? `{${set[c].join(',')}}` : set[c])), f.id]);
-  }
-  const row = await db.get(`SELECT ${FORM_COLS} FROM bd_forms WHERE id = ?`, [f.id]);
-  res.json({ form: pubForm(row) });
-}));
-
-router.post('/forms/:id/archive', handle(async (req, res, db) => {
-  const f = await loadForm(db, req.agentId, id(req.params.id));
-  const archived = body(req).archived !== false;
-  await db.run('UPDATE bd_forms SET archived = ?, updated_at = NOW() WHERE id = ?', [archived, f.id]);
-  res.json({ ok: true, archived });
-}));
-
-router.get('/forms/:id/file', requireStorage, handle(async (req, res, db) => {
-  const f = await loadForm(db, req.agentId, id(req.params.id));
-  sendFile(res, await getFile(req.storage, f.storage_key), { type: 'application/pdf', name: `${f.name}.pdf` });
-}));
-
-router.get('/forms/:id/preview.pdf', requireStorage, handle(async (req, res, db) => {
-  const f = await loadForm(db, req.agentId, id(req.params.id));
-  const bond = await loadBond(db, req.agentId, id(req.query.bond_id));
-  const raw = await db.get('SELECT * FROM bd_bonds WHERE id = ?', [bond.id]);
-  const agency = await agencyFor(db, req.agentId);
-  const premium = await db.all(`SELECT amount_cents, voided_at FROM bd_charges WHERE bond_id = ? AND kind = 'premium'`, [bond.id]);
-  const values = dataValues({ bond: raw, agency, signer: { role: 'defendant', name: raw.defendant_name, phone: raw.defendant_phone, email: raw.defendant_email, answers: {} },
-    indemnitor: null, premiumCents: liveTotal(premium), powerNumber: bond.power?.number || null, today: await agentToday(db, req.agentId) });
-  let pdf;
-  try { pdf = await preparePdf(await getFile(req.storage, f.storage_key), fieldValues(f.field_map, values)); } catch (e) {
-    if (e instanceof PdfError) throw new BdError(409, 'form_problem', { form: f.name, field: e.detail || null, reason: e.code });
-    throw e;
-  }
-  sendFile(res, pdf, { type: 'application/pdf', name: `${f.name} (preview).pdf`, inline: true });
-}));
 
 // ── Packets ───────────────────────────────────────────────────────────────────
 
@@ -150,7 +49,7 @@ router.post('/bonds/:id/packets', handle(async (req, res, db) => {
   // forms
   if (!Array.isArray(b.form_ids) || !b.form_ids.length || b.form_ids.length > 10) throw new BdError(400, 'invalid', { field: 'form_ids' });
   const formIds = [...new Set(b.form_ids.map((x) => id(x)))];
-  const forms = await db.all(`SELECT id, roles FROM bd_forms WHERE agent_id = ? AND NOT archived AND id IN (${formIds.map(() => '?').join(',')})`, [req.agentId, ...formIds]);
+  const forms = await db.all(`SELECT id, roles FROM bd_forms WHERE agent_id = ? AND NOT archived AND NOT setup_pending AND id IN (${formIds.map(() => '?').join(',')})`, [req.agentId, ...formIds]);
   if (forms.length !== formIds.length) throw new BdError(400, 'invalid', { field: 'form_ids' });
   // signers
   if (!Array.isArray(b.signers) || !b.signers.length || b.signers.length > 6) throw new BdError(400, 'invalid', { field: 'signers' });

@@ -127,6 +127,32 @@ Until these are set, billing deliberately returns `503 payments_unavailable`
 
 **Cost:** 2.9% + 30¢ per successful charge. No monthly fee.
 
+#### 3b. Stripe Connect — card payments for bail agencies (Bond Desk)
+Defendants and indemnitors pay the **agency's own** Stripe account (Express accounts, direct charges);
+Justice Gavel takes 99¢ per automatic payment-plan charge as the Stripe application fee
+(docs/BOND_DESK.md "Card payments"). One-time owner setup, test mode first:
+
+1. `dashboard.stripe.com` → **Connect** → Get started → choose **Express** accounts, platform type
+   "marketplace / platform", country United States. Complete the platform profile Stripe asks for
+   (business type, what connected accounts sell: "bail bond premium and fees").
+2. Connect → Settings → **Branding**: Justice Gavel name, icon, brand colour (shown on the agencies'
+   onboarding pages and Express dashboard). Connect → Settings → **Onboarding options**: leave the
+   defaults (Stripe collects identity and bank details).
+3. Connect → Settings → **Payouts**: default schedule is fine (agencies manage theirs in the Express dashboard).
+4. Webhooks → **Add endpoint** a second time, same URL `https://<api-host>/api/billing/webhook`, and tick
+   **"Listen to events on Connected accounts"**. Events: `account.updated`, `checkout.session.completed`,
+   `checkout.session.expired`, `payment_intent.succeeded`, `payment_intent.payment_failed`.
+   Copy its signing secret → `STRIPE_CONNECT_WEBHOOK_SECRET` (the platform endpoint keeps `STRIPE_WEBHOOK_SECRET`;
+   the server accepts either signature).
+5. Settings → **Checkout and Payment Links** → make sure Checkout is enabled (the payer pages use Stripe Checkout).
+6. Automatic payment plans stay off in production until counsel answers question 3.2:
+   `BOND_AUTOPAY_ENABLED=false` (the pay page and card set-up work without it).
+
+```env
+STRIPE_CONNECT_WEBHOOK_SECRET=<whsec_ of the Connect endpoint>
+BOND_AUTOPAY_ENABLED=false      # ⚖ counsel 3.2
+```
+
 ---
 
 ## 🟠 IMPORTANT — Major features missing without these
@@ -381,6 +407,7 @@ APP_OAUTH_REDIRECT=https://yourdomain.com/settings/integrations
 ANTHROPIC_API_KEY=
 
 # ── Payments (optional — billing returns 503 payments_unavailable until set) ──
+# STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...   (Bond Desk card payments, Connect endpoint — section 3b)
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_ADVISOR_PRICE_ID=

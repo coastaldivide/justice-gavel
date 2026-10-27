@@ -33,7 +33,8 @@ import { runScheduled, purgeJobRuns } from '../utils/jobLock.js';
  * regardless of LIVE_REFRESH (REMINDERS_ENABLED=false switches it off per
  * process): reminder delivery (services/reminderDispatcher.js), the 24-hour
  * consultation reminder (hourly), Expo receipt checks (every 30 minutes), Bond Desk court
- * texts (every 5 minutes, 'bd-court-reminders'), and
+ * texts (every 5 minutes, 'bd-court-reminders'), Bond Desk automatic payment-plan charges (hourly,
+ * 'bd-autopay', only while BOND_AUTOPAY_ENABLED is on), and
  * the daily clean-up of expired sign-in tokens, idempotency keys and job
  * records.
  *
@@ -65,6 +66,7 @@ let tokenCleanupTask = null;
 let bdCourtTask = null;
 let checkinTextsTask = null;
 let checkinMissedTask = null;
+let bdAutopayTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
 // runRefresh is re-exported for the admin console and existing callers.
@@ -383,6 +385,14 @@ export function startScheduler() {
     checkinMissedTask = scheduleGuarded('4 * * * *', 'checkin-missed',
       (ctx) => runScheduled('checkin-missed', ctx, async () => (await import('./checkinTexts.js')).runMissedCheckins(await getDb())));
   }
+  // Bond Desk automatic payment-plan charges (⚖ BOND_AUTOPAY_ENABLED; services/bondDesk/autopay.js):
+  // hourly so every agency is charged on its own local due day from 08:00; each installment and
+  // attempt is claimed once (unique row + Stripe idempotency key), so extra runs charge nothing twice.
+  bdAutopayTask = scheduleGuarded('17 * * * *', 'bd-autopay',
+    (ctx) => runScheduled('bd-autopay', ctx, async () => {
+      const { runAutopay } = await import('./bondDesk/autopay.js');
+      return runAutopay(await getDb());
+    }));
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
     (ctx) => runScheduled('refresh-token-cleanup', ctx, cleanupExpiredTokens), { timezone: tz });
@@ -421,8 +431,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, checkinTextsTask, checkinMissedTask, bdAutopayTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = checkinTextsTask = checkinMissedTask = bdAutopayTask = null;
   stopHealthScanScheduler();
 }
 

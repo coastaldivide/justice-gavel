@@ -60,6 +60,8 @@ import billingRouter    from './routes/billing/index.js';
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import telnyxWebhookRouter from './routes/webhooks/telnyx.js';
 import adminQueueRouter from './routes/admin/queue.js';
+import adminBdSetupRouter from './routes/admin/bdSetup.js';
+import bdPayRouter from './routes/bdPay.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
 import recoveryAgentsRouter  from './routes/recovery_agents.js';
@@ -248,9 +250,10 @@ app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
 if (process.env.NODE_ENV !== 'test') {
-  // Signing links and check-in text links carry their credential in the path
-  // (/api/sign/<token>/…, /api/checkins/link/<token>): never log it.
-  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/|\/api\/checkins\/link\/)[^/]+/, '$1[link]');
+  // Signing links, check-in text links, automatic-payment links and staff invitations carry their
+  // credential in the path (/api/sign/<token>/…, /api/checkins/link/<token>, /api/bd-pay/autopay/<token>,
+  // /api/bond-desk/staff/invite/<token>): never log it.
+  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/|\/api\/checkins\/link\/|\/api\/bd-pay\/autopay\/|\/api\/bond-desk\/staff\/invite\/)[^/]+/, '$1[link]');
   if (IS_PROD) {
     // One JSON object per line (Render log stream / Datadog-friendly). Logs req.path, never
     // the query string — search params can carry PII (names, emails, counties).
@@ -498,6 +501,7 @@ app.use('/api/discovery',  discoveryRouter);
 app.use('/api/translate',  translateRouter);
 app.use('/api/admin/ai-costs', aiCostsRouter);
 app.use('/api/admin/queue',    adminQueueRouter);   // in-app review screen (admin role, no ops key)
+app.use('/api/admin/bd-setup', adminBdSetupRouter); // Bond Desk "set up my forms" queue (admin role, no ops key)
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
 app.use('/api/consultations', consultationsRouter);
@@ -546,6 +550,7 @@ app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
 app.use('/api/bondsman', bondsmanCRMRouter);
 app.use('/api/bond-desk', bondDeskRouter);   // bond paperwork, e-sign, ledger, powers (docs/BOND_DESK.md)
 app.use('/api/sign', signRouter);            // public signing links (no account)
+app.use('/api/bd-pay', bdPayRouter);         // public: pay a bail agency by card (automatic-payment link, pay page)
 app.use('/api/legal-aid', legalAidRouter);
 app.use('/api/impact', impactRouter);
 app.use('/api/admin/bar-verification', barVerifyRouter);

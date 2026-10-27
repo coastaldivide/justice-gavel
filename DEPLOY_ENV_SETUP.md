@@ -88,6 +88,10 @@ STRIPE_SECRET_KEY=<sk_live_/sk_test_...> payments; unset → charging/subscribin
                                           available yet". Setting it re-enables Stripe, no code change.
 STRIPE_SECRET                            legacy alias of STRIPE_SECRET_KEY (prefer STRIPE_SECRET_KEY)
 STRIPE_WEBHOOK_SECRET=<whsec_...>        Stripe webhook verification (POST /webhooks/stripe)
+STRIPE_CONNECT_WEBHOOK_SECRET=<whsec_...> the CONNECT endpoint's signing secret (same URL, "Events on
+                                          connected accounts"): Bond Desk card payments — agency
+                                          onboarding (account.updated) and payer payments. See
+                                          EXTERNAL_SERVICES_SETUP.md "Stripe Connect".
 LEAD_REG_FL_QUALIFYING_PROVIDER=1       Only after the Florida Bar Qualifying Provider registration (docs/LEAD_FEE_RULES.md); unset = no lead sales in FL
 LEAD_REG_CA_CERTIFIED_LRS=1             Only after State Bar certification as a lawyer referral service; unset = no lead sales in CA
 STRIPE_LEGAL_RADAR_ID                    consumer subscription price ids: Legal Radar $19.99/mo,
@@ -209,6 +213,13 @@ CHECKIN_LOCATION_ALERTS_ENABLED=false    ⚖ counsel question 2.4 (location priv
                                           Off: the home-point routes answer 503 feature_unavailable
                                           and the app hides the feature. Leave off in production
                                           until counsel answers 2.4.
+BOND_AUTOPAY_ENABLED=false               ⚖ counsel question 3.2 (debt collection). Bond Desk automatic
+                                          payment-plan charges (A5): the payer saves a card by link and
+                                          the hourly 'bd-autopay' job charges each installment on its
+                                          due day. Unset → OFF when NODE_ENV/APP_ENV is production, on
+                                          elsewhere; true/false forces it. Off: the autopay routes answer
+                                          503 feature_unavailable, the job does nothing and the app hides
+                                          the feature (the pay page and card setup still work).
 REFRESH_CRON=0 3 * * *                   nightly refresh schedule   (REFRESH_TZ=America/Chicago)
 HEALTH_SCAN_CRON=0 2 * * *               nightly health-scan schedule (SCAN_QUIET=true to hush)
 ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients

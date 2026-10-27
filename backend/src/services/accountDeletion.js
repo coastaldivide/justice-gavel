@@ -217,9 +217,10 @@ export const USER_REFS = {
   'firms.owner_id': 'retain',   // handled by transferOrDeleteFirms() first
   'lawyers.user_id': 'retain',  // verified directory rows are never modified (owner rule)
   // ── Bond Desk (docs/BOND_DESK.md) and the Case Pass ─────────────────────
+  // powers first: deleting a bond would set an executed power's bond_id to NULL, which its CHECK refuses
+  'bd_powers.agent_id': 'delete',
   'bd_bonds.agent_id': 'delete',        // the agent's own bond book (indemnitors, ledger, packets cascade)
   'bd_forms.agent_id': 'delete',
-  'bd_powers.agent_id': 'delete',
   'bd_counters.agent_id': 'delete',
   'bd_packets.agent_id': 'delete',
   'bd_payments.agent_id': 'delete',
@@ -231,6 +232,16 @@ export const USER_REFS = {
   'bd_uploads.signer_id': 'retain',     // bd_signers.id (a signing link), not a users.id
   'bd_events.signer_id': 'retain',      // bd_signers.id, not a users.id
   'bd_documents.signer_id': 'retain',   // bd_signers.id, not a users.id
+  // card payments, staff, forms setup (migration 37)
+  'bd_connect_accounts.agent_id': 'delete',   // the agency's link to its own Stripe Express account (the account and its money stay with Stripe)
+  'bd_autopay.agent_id': 'delete',            // payers' automatic-payment set-ups (Stripe ids + consent snapshots)
+  'bd_pay_requests.agent_id': 'delete',       // pay-page payments (the money is in the agency's own Stripe account)
+  'bd_setup_requests.agent_id': 'delete',
+  'bd_setup_requests.handled_by': 'nullify',  // the staff member who set the forms up
+  'bd_staff.user_id': 'delete',               // the user's own seat in another agency
+  'bd_staff.owner_id': 'delete',              // the agency's staff lose access with it
+  'bd_staff_invites.owner_id': 'delete',
+  'bd_staff_invites.accepted_user_id': 'nullify',
   'case_passes.user_id': 'delete',
   'attorney_lead_credits.attorney_id': 'delete', // prepaid lead-credit ledger (payments stay in Stripe)
 };

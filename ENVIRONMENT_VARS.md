@@ -25,3 +25,4 @@ These are built and tested, but stay **off in production** until the counsel que
 | Variable | Counsel question | Unset means |
 |---|---|---|
 | `CHECKIN_LOCATION_ALERTS_ENABLED` | 2.4 location privacy (check-in location alerts) | off in production, on elsewhere |
+| `BOND_AUTOPAY_ENABLED` | 3.2 debt collection (Bond Desk automatic payment-plan charges, job `bd-autopay`) | off in production, on elsewhere |

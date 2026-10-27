@@ -8,10 +8,11 @@ import { bondMoney } from '../../services/bondDesk/money.js';
 import { agentToday } from '../../services/bondDesk/core.js';
 import { daysBetween } from '../../utils/timezone.js';
 import { bondDeskAppearance } from '../../services/appearanceMetrics.js';
+import { PREMIUM_SQL } from '../../services/bondDesk/payments.js';
 
 const router = Router();
 const OPEN = `('active','forfeited')`;
-const dollars = (c) => (Number(c) / 100).toFixed(2);
+export const dollars = (c) => (Number(c) / 100).toFixed(2);
 
 /** RFC 4180 CSV; cells that start with = + - @ are prefixed with ' (spreadsheet formula injection). */
 export function toCsv(header, rows) {
@@ -23,7 +24,7 @@ export function toCsv(header, rows) {
   return [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
 }
 const wantsCsv = (req) => req.query.format === 'csv';
-const csv = (res, name, header, rows) => sendFile(res, Buffer.from(toCsv(header, rows), 'utf8'), { type: 'text/csv; charset=utf-8', name });
+export const csv = (res, name, header, rows) => sendFile(res, Buffer.from(toCsv(header, rows), 'utf8'), { type: 'text/csv; charset=utf-8', name });
 
 /** Money blocks for many bonds at once. */
 async function moneyFor(db, bondIds, today) {
@@ -91,12 +92,21 @@ router.get('/dashboard', handle(async (req, res, db) => {
   });
 }));
 
-router.get('/reports/liability', handle(async (req, res, db) => {
+// ── Reports: each one → { json, csv: { name, header, rows } } (routes below and the export ZIP) ──
+
+function range(q) {
+  const from = date(q.from, 'from');
+  const to = date(q.to, 'to');
+  if (from && to && to < from) throw new BdError(400, 'bad_date', { field: 'to' });
+  return { from, to };
+}
+
+async function liabilityReport(db, agentId) {
   const rows = await db.all(
     `SELECT b.id, b.defendant_name, b.case_number, b.status, b.bond_amount_cents, b.posted_on,
             COALESCE(pw.surety_name, b.surety_name, '') AS surety_name, pw.number AS power_number
        FROM bd_bonds b LEFT JOIN bd_powers pw ON pw.bond_id = b.id AND pw.status = 'executed'
-      WHERE b.agent_id = ? AND b.status IN ${OPEN} ORDER BY surety_name, b.posted_on, b.id`, [req.agentId]);
+      WHERE b.agent_id = ? AND b.status IN ${OPEN} ORDER BY surety_name, b.posted_on, b.id`, [agentId]);
   const by = new Map();
   for (const r of rows) {
     const k = r.surety_name || '';
@@ -105,25 +115,17 @@ router.get('/reports/liability', handle(async (req, res, db) => {
     by.set(k, x);
   }
   const total = rows.reduce((s, r) => s + Number(r.bond_amount_cents), 0);
-  if (wantsCsv(req)) {
-    return csv(res, 'liability.csv', ['Surety', 'Power', 'Defendant', 'Case', 'Status', 'Posted', 'Bond amount'],
-      rows.map((r) => [r.surety_name, r.power_number, r.defendant_name, r.case_number, r.status, r.posted_on, dollars(r.bond_amount_cents)]));
-  }
-  res.json({ by_surety: [...by.values()], total_cents: total,
-    bonds: rows.map((r) => ({ ...r, id: Number(r.id), bond_amount_cents: Number(r.bond_amount_cents) })) });
-}));
-
-function range(req) {
-  const from = date(req.query.from, 'from');
-  const to = date(req.query.to, 'to');
-  if (from && to && to < from) throw new BdError(400, 'bad_date', { field: 'to' });
-  return { from, to };
+  return {
+    json: { by_surety: [...by.values()], total_cents: total, bonds: rows.map((r) => ({ ...r, id: Number(r.id), bond_amount_cents: Number(r.bond_amount_cents) })) },
+    csv: { name: 'liability.csv', header: ['Surety', 'Power', 'Defendant', 'Case', 'Status', 'Posted', 'Bond amount'],
+      rows: rows.map((r) => [r.surety_name, r.power_number, r.defendant_name, r.case_number, r.status, r.posted_on, dollars(r.bond_amount_cents)]) },
+  };
 }
 
-router.get('/reports/surety', handle(async (req, res, db) => {
-  const { from, to } = range(req);
-  const surety = typeof req.query.surety === 'string' && req.query.surety.trim() ? req.query.surety.trim() : null;
-  const args = [req.agentId];
+async function suretyReport(db, agentId, q = {}) {
+  const { from, to } = range(q);
+  const surety = typeof q.surety === 'string' && q.surety.trim() ? q.surety.trim() : null;
+  const args = [agentId];
   let where = `pw.agent_id = ? AND pw.status = 'executed'`;
   if (surety) { where += ' AND pw.surety_name = ?'; args.push(surety); }
   if (from) { where += ' AND pw.executed_on >= ?'; args.push(from); }
@@ -131,23 +133,23 @@ router.get('/reports/surety', handle(async (req, res, db) => {
   const rows = await db.all(
     `SELECT pw.surety_name, pw.number AS power_number, pw.executed_on, pw.limit_cents, b.id AS bond_id, b.defendant_name, b.case_number,
             b.bond_amount_cents, b.status,
-            COALESCE((SELECT SUM(amount_cents) FROM bd_charges c WHERE c.bond_id = b.id AND c.kind = 'premium' AND c.voided_at IS NULL), 0) AS premium_cents
+            ${PREMIUM_SQL} AS premium_cents
        FROM bd_powers pw JOIN bd_bonds b ON b.id = pw.bond_id
       WHERE ${where} ORDER BY pw.surety_name, pw.executed_on, pw.number`, args);
   const out = rows.map((r) => ({ surety_name: r.surety_name, power_number: r.power_number, executed_on: r.executed_on, bond_id: Number(r.bond_id),
     defendant_name: r.defendant_name, case_number: r.case_number, bond_amount_cents: Number(r.bond_amount_cents),
     premium_cents: Number(r.premium_cents), status: r.status }));
   const totals = { bonds: out.length, bond_amount_cents: out.reduce((s, r) => s + r.bond_amount_cents, 0), premium_cents: out.reduce((s, r) => s + r.premium_cents, 0) };
-  if (wantsCsv(req)) {
-    return csv(res, 'surety-report.csv', ['Surety', 'Power', 'Executed', 'Defendant', 'Case', 'Bond amount', 'Premium charged', 'Status'],
-      out.map((r) => [r.surety_name, r.power_number, r.executed_on, r.defendant_name, r.case_number, dollars(r.bond_amount_cents), dollars(r.premium_cents), r.status]));
-  }
-  res.json({ rows: out, totals, from, to, surety });
-}));
+  return {
+    json: { rows: out, totals, from, to, surety },
+    csv: { name: 'surety-report.csv', header: ['Surety', 'Power', 'Executed', 'Defendant', 'Case', 'Bond amount', 'Premium charged', 'Status'],
+      rows: out.map((r) => [r.surety_name, r.power_number, r.executed_on, r.defendant_name, r.case_number, dollars(r.bond_amount_cents), dollars(r.premium_cents), r.status]) },
+  };
+}
 
-router.get('/reports/receivables', handle(async (req, res, db) => {
-  const today = await agentToday(db, req.agentId);
-  const bonds = await db.all('SELECT id, defendant_name, case_number, status FROM bd_bonds WHERE agent_id = ? ORDER BY defendant_name, id', [req.agentId]);
+async function receivablesReport(db, agentId) {
+  const today = await agentToday(db, agentId);
+  const bonds = await db.all('SELECT id, defendant_name, case_number, status FROM bd_bonds WHERE agent_id = ? ORDER BY defendant_name, id', [agentId]);
   const m = await moneyFor(db, bonds.map((b) => Number(b.id)), today);
   const rows = bonds.map((b) => ({ b, x: m.get(Number(b.id)) })).filter(({ x }) => x.balance_cents > 0).map(({ b, x }) => ({
     bond_id: Number(b.id), defendant_name: b.defendant_name, case_number: b.case_number, status: b.status,
@@ -155,16 +157,16 @@ router.get('/reports/receivables', handle(async (req, res, db) => {
     next_due_on: x.next_due?.due_on || null, plan_in_sync: x.plan_in_sync,
   }));
   const totals = ['charged_cents', 'paid_cents', 'balance_cents', 'overdue_cents'].reduce((t, k) => ({ ...t, [k]: rows.reduce((s, r) => s + r[k], 0) }), {});
-  if (wantsCsv(req)) {
-    return csv(res, 'receivables.csv', ['Defendant', 'Case', 'Status', 'Charged', 'Paid', 'Balance', 'Overdue', 'Next due'],
-      rows.map((r) => [r.defendant_name, r.case_number, r.status, dollars(r.charged_cents), dollars(r.paid_cents), dollars(r.balance_cents), dollars(r.overdue_cents), r.next_due_on]));
-  }
-  res.json({ rows, totals, today });
-}));
+  return {
+    json: { rows, totals, today },
+    csv: { name: 'receivables.csv', header: ['Defendant', 'Case', 'Status', 'Charged', 'Paid', 'Balance', 'Overdue', 'Next due'],
+      rows: rows.map((r) => [r.defendant_name, r.case_number, r.status, dollars(r.charged_cents), dollars(r.paid_cents), dollars(r.balance_cents), dollars(r.overdue_cents), r.next_due_on]) },
+  };
+}
 
-router.get('/reports/receipts', handle(async (req, res, db) => {
-  const { from, to } = range(req);
-  const args = [req.agentId];
+async function receiptsReport(db, agentId, q = {}) {
+  const { from, to } = range(q);
+  const args = [agentId];
   let where = 'p.agent_id = ?';
   if (from) { where += ' AND p.received_on >= ?'; args.push(from); }
   if (to) { where += ' AND p.received_on <= ?'; args.push(to); }
@@ -175,40 +177,58 @@ router.get('/reports/receipts', handle(async (req, res, db) => {
   const out = rows.map((r) => ({ id: Number(r.id), receipt_no: `R-${String(r.receipt_no).padStart(6, '0')}`, received_on: r.received_on,
     amount_cents: Number(r.amount_cents), method: r.method, reference: r.reference, payer_name: r.payer_name, voided: !!r.voided_at,
     void_reason: r.void_reason, bond_id: Number(r.bond_id), defendant_name: r.defendant_name, case_number: r.case_number }));
-  const by_method = {};
-  for (const r of out) if (!r.voided) by_method[r.method] = (by_method[r.method] || 0) + r.amount_cents;
-  const total = Object.values(by_method).reduce((s, v) => s + v, 0);
-  if (wantsCsv(req)) {
-    return csv(res, 'receipts.csv', ['Receipt', 'Date', 'Payer', 'Defendant', 'Case', 'Method', 'Reference', 'Amount', 'Void'],
-      out.map((r) => [r.receipt_no, r.received_on, r.payer_name, r.defendant_name, r.case_number, r.method, r.reference, dollars(r.amount_cents), r.voided ? `VOID: ${r.void_reason}` : '']));
-  }
-  res.json({ rows: out, by_method: Object.entries(by_method).map(([method, amount_cents]) => ({ method, amount_cents })), total_cents: total, from, to });
-}));
+  const byMethod = {};
+  for (const r of out) if (!r.voided) byMethod[r.method] = (byMethod[r.method] || 0) + r.amount_cents;
+  const total = Object.values(byMethod).reduce((s, v) => s + v, 0);
+  return {
+    json: { rows: out, by_method: Object.entries(byMethod).map(([method, amount_cents]) => ({ method, amount_cents })), total_cents: total, from, to },
+    csv: { name: 'receipts.csv', header: ['Receipt', 'Date', 'Payer', 'Defendant', 'Case', 'Method', 'Reference', 'Amount', 'Void'],
+      rows: out.map((r) => [r.receipt_no, r.received_on, r.payer_name, r.defendant_name, r.case_number, r.method, r.reference, dollars(r.amount_cents), r.voided ? `VOID: ${r.void_reason}` : '']) },
+  };
+}
 
-router.get('/reports/collateral', handle(async (req, res, db) => {
+async function collateralReport(db, agentId) {
   const rows = await db.all(
     `SELECT c.id, c.receipt_no, c.kind, c.description, c.value_cents, c.received_from, c.received_on, b.id AS bond_id, b.defendant_name, b.case_number, b.status
-       FROM bd_collateral c JOIN bd_bonds b ON b.id = c.bond_id WHERE c.agent_id = ? AND c.returned_on IS NULL ORDER BY c.received_on, c.receipt_no`, [req.agentId]);
+       FROM bd_collateral c JOIN bd_bonds b ON b.id = c.bond_id WHERE c.agent_id = ? AND c.returned_on IS NULL ORDER BY c.received_on, c.receipt_no`, [agentId]);
   const out = rows.map((r) => ({ id: Number(r.id), receipt_no: `C-${String(r.receipt_no).padStart(6, '0')}`, kind: r.kind, description: r.description,
     value_cents: Number(r.value_cents), received_from: r.received_from, received_on: r.received_on, bond_id: Number(r.bond_id),
     defendant_name: r.defendant_name, case_number: r.case_number, bond_status: r.status }));
-  if (wantsCsv(req)) {
-    return csv(res, 'collateral-held.csv', ['Receipt', 'Received', 'From', 'Type', 'Description', 'Stated value', 'Defendant', 'Case', 'Bond status'],
-      out.map((r) => [r.receipt_no, r.received_on, r.received_from, r.kind, r.description, dollars(r.value_cents), r.defendant_name, r.case_number, r.bond_status]));
-  }
-  res.json({ rows: out, total_value_cents: out.reduce((s, r) => s + r.value_cents, 0) });
-}));
+  return {
+    json: { rows: out, total_value_cents: out.reduce((s, r) => s + r.value_cents, 0) },
+    csv: { name: 'collateral-held.csv', header: ['Receipt', 'Received', 'From', 'Type', 'Description', 'Stated value', 'Defendant', 'Case', 'Bond status'],
+      rows: out.map((r) => [r.receipt_no, r.received_on, r.received_from, r.kind, r.description, dollars(r.value_cents), r.defendant_name, r.case_number, r.bond_status]) },
+  };
+}
 
 // "Did you make it to court?" for the agent's own bonds: per county and month of the hearing.
-router.get('/reports/appearance', handle(async (req, res, db) => {
-  const { from, to } = range(req);
-  const rows = await bondDeskAppearance(db, { agentId: req.agentId, from: from ? from.slice(0, 7) : null, to: to ? to.slice(0, 7) : null });
+async function appearanceReport(db, agentId, q = {}) {
+  const { from, to } = range(q);
+  const rows = await bondDeskAppearance(db, { agentId, from: from ? from.slice(0, 7) : null, to: to ? to.slice(0, 7) : null });
   const totals = ['asked', 'attended', 'rescheduled', 'missed', 'no_answer'].reduce((t, k) => ({ ...t, [k]: rows.reduce((s, r) => s + r[k], 0) }), {});
-  if (wantsCsv(req)) {
-    return csv(res, 'court-appearance.csv', ['County / state', 'Month', 'Asked', 'Attended', 'Rescheduled', 'Missed', 'No answer'],
-      rows.map((r) => [r.region, r.month, r.asked, r.attended, r.rescheduled, r.missed, r.no_answer]));
-  }
-  res.json({ rows: rows.map((r) => ({ region: r.region, month: r.month, asked: r.asked, attended: r.attended, rescheduled: r.rescheduled, missed: r.missed, no_answer: r.no_answer })), totals, from, to });
-}));
+  return {
+    json: { rows: rows.map((r) => ({ region: r.region, month: r.month, asked: r.asked, attended: r.attended, rescheduled: r.rescheduled, missed: r.missed, no_answer: r.no_answer })), totals, from, to },
+    csv: { name: 'court-appearance.csv', header: ['County / state', 'Month', 'Asked', 'Attended', 'Rescheduled', 'Missed', 'No answer'],
+      rows: rows.map((r) => [r.region, r.month, r.asked, r.attended, r.rescheduled, r.missed, r.no_answer]) },
+  };
+}
+
+/** Every report (the export ZIP writes each one's CSV, whole history). */
+export const REPORTS = Object.freeze({
+  liability: liabilityReport, surety: suretyReport, receivables: receivablesReport,
+  receipts: receiptsReport, collateral: collateralReport, appearance: appearanceReport,
+});
+
+const report = (fn) => handle(async (req, res, db) => {
+  const r = await fn(db, req.agentId, req.query);
+  if (wantsCsv(req)) return csv(res, r.csv.name, r.csv.header, r.csv.rows);
+  res.json(r.json);
+});
+router.get('/reports/liability', report(liabilityReport));
+router.get('/reports/surety', report(suretyReport));
+router.get('/reports/receivables', report(receivablesReport));
+router.get('/reports/receipts', report(receiptsReport));
+router.get('/reports/collateral', report(collateralReport));
+router.get('/reports/appearance', report(appearanceReport));
 
 export default router;

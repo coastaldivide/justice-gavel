@@ -6,6 +6,7 @@ import { getDb } from '../../db/index.js';
 import logger from '../../utils/logger.js';
 import { agentAccess } from '../../services/bondDesk/core.js';
 import { isDate } from '../../services/bondDesk/money.js';
+import { LedgerError } from '../../services/bondDesk/payments.js';
 import { toE164 } from '../../services/sms.js';
 import { getAttachmentStorage } from '../../services/attachmentStorage.js';
 
@@ -15,8 +16,12 @@ export class BdError extends Error {
 
 /** Send an error in the request's language: { error, code, ...params }. */
 export function fail(req, res, e) {
-  if (e instanceof BdError) {
+  if (e instanceof BdError || e instanceof LedgerError || e?.bdError === true) {
     return res.status(e.status).json({ error: msg(resolveLang(req), `bd.err.${e.code}`, e.params), code: e.code, ...e.params });
+  }
+  if (typeof e?.type === 'string' && e.type.startsWith('Stripe')) {
+    logger.warn({ err: e?.message, type: e.type }, '[bond-desk] Stripe refused');
+    return res.status(502).json({ error: msg(resolveLang(req), 'bd.err.payment_provider'), code: 'payment_provider' });
   }
   logger.error({ err: e?.message, stack: e?.stack?.split('\n').slice(0, 3).join(' | ') }, '[bond-desk]');
   return res.status(500).json({ error: msg(resolveLang(req), 'bd.err.server'), code: 'server_error' });
@@ -30,15 +35,23 @@ export const handle = (fn) => async (req, res) => {
   } catch (e) { fail(req, res, e); }
 };
 
-/** Bail agent with a plan (or admin). Sets req.agentId. */
+/** Bail agent with a plan (or admin), or their staff. Sets req.agentId (the agency) and req.bdRole. */
 export async function requireBondDesk(req, res, next) {
   try {
     const db = await getDb();
     const a = await agentAccess(db, req.user);
     if (!a.allowed) return fail(req, res, new BdError(403, a.reason));
-    req.agentId = Number(req.user.id);
+    req.agentId = Number(a.agentId);
+    req.bdRole = a.role;
+    req.bdPlan = a.plan;
     next();
   } catch (e) { fail(req, res, e); }
+}
+
+/** The agency owner only (staff may do everything except billing, plan, card payments, staff and export). */
+export function ownerOnly(req, res, next) {
+  if (req.bdRole === 'staff') return fail(req, res, new BdError(403, 'owner_only'));
+  next();
 }
 
 export async function requireStorage(req, res, next) {

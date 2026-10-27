@@ -2,12 +2,12 @@
  * services/bondDesk/packets.js — a signer's copies: prepare (fill), sign (typed name +
  * certificate), and the packet's status. Files are stored encrypted (attachmentStorage).
  */
+import { premiumCentsFor } from './payments.js';
 import { logIgnored } from '../../utils/ignored.js';
 import { newStorageKey } from '../attachmentStorage.js';
 import { encryptBuffer, decryptBuffer } from '../encryption.js';
 import { preparePdf, signPdf, certificatePdf, sha256, PdfError } from './pdf.js';
 import { dataValues, fieldValues, signatureValues, agencyFor, maskPhone, maskEmail, CONSENT_LINES, CONSENT_VERSION, sameName } from './core.js';
-import { liveTotal } from './money.js';
 import { todayInZone } from '../../utils/timezone.js';
 
 export class SignError extends Error {
@@ -43,12 +43,12 @@ export async function signerContext(db, { packet, signer, today }) {
   const bond = await db.get('SELECT * FROM bd_bonds WHERE id = ?', [packet.bond_id]);
   const agency = await agencyFor(db, packet.agent_id);
   const indemnitor = signer.indemnitor_id ? await db.get('SELECT * FROM bd_indemnitors WHERE id = ?', [signer.indemnitor_id]) : null;
-  const premiumRows = await db.all(`SELECT amount_cents, voided_at FROM bd_charges WHERE bond_id = ? AND kind = 'premium'`, [bond.id]);
+  const premiumCents = await premiumCentsFor(db, bond.id);
   const power = await db.get(`SELECT number FROM bd_powers WHERE bond_id = ? AND status = 'executed'`, [bond.id]);
   const day = today || todayInZone(agency.tz);
   return {
     bond, agency, indemnitor, today: day,
-    values: dataValues({ bond, agency, signer, indemnitor, premiumCents: liveTotal(premiumRows), powerNumber: power?.number || null, today: day }),
+    values: dataValues({ bond, agency, signer, indemnitor, premiumCents, powerNumber: power?.number || null, today: day }),
   };
 }
 

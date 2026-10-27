@@ -11,7 +11,10 @@
  *   ├─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
  *   ├─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
  *   └─ MissedCourt (missed-court[/es|pt|vi] — the morning-after text's link; any auth state)
- *   └─ CheckInLink (c/<token> — a bail agent's check-in text link; any auth state)
+ *   ├─ CheckInLink (c/<token> — a bail agent's check-in text link; any auth state)
+ *   ├─ AutopayLink (autopay/<token> — a payer's automatic-payment link; any auth state)
+ *   ├─ AgencyPay (pay/<slug> — a bail agency's public pay page; any auth state)
+ *   └─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
  * main app (browsing / signed in), `guestLinking` the signed-out flow (App.tsx
@@ -127,6 +130,9 @@ export const linking: LinkingOptions<any> = {
               BondForms:          'bond-desk/forms',
               BondPowers:         'bond-desk/powers',
               BondReports:        'bond-desk/reports',
+              BondDeskSettings:   'bond-desk/settings',
+              BondImport:         'bond-desk/import',
+              AdminFormsSetup:    'admin-forms-setup',
               FamilyConnect:      'family',
               Contacts:           'emergency-contacts',
 
@@ -160,6 +166,9 @@ export const linking: LinkingOptions<any> = {
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
+      AutopayLink:   'autopay/:token',
+      AgencyPay:     'pay/:slug',
+      StaffJoin:     'bond-desk/join/:token',
     },
   },
 };
@@ -178,6 +187,9 @@ export const guestLinking: LinkingOptions<any> = {
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
+      AutopayLink:   'autopay/:token',
+      AgencyPay:     'pay/:slug',
+      StaffJoin:     'bond-desk/join/:token',
       GuestNav: {
         screens: {
           Onboarding:      'welcome',

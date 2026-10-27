@@ -57,11 +57,18 @@ export function envReport(env, { launch = false } = {}) {
     try { if (Buffer.from(env.TELNYX_PUBLIC_KEY, 'base64').length !== 32) throw new Error(); } catch { errors.push('TELNYX_PUBLIC_KEY must be the base64 Ed25519 public key from Telnyx (32 bytes)'); }
   }
   if (has(env, 'STRIPE_WEBHOOK_SECRET') && !/^whsec_/.test(env.STRIPE_WEBHOOK_SECRET)) errors.push('STRIPE_WEBHOOK_SECRET must start with whsec_');
+  if (has(env, 'STRIPE_CONNECT_WEBHOOK_SECRET') && !/^whsec_/.test(env.STRIPE_CONNECT_WEBHOOK_SECRET)) errors.push('STRIPE_CONNECT_WEBHOOK_SECRET must start with whsec_');
+  if (has(env, 'STRIPE_SECRET_KEY') && !has(env, 'STRIPE_CONNECT_WEBHOOK_SECRET') && appEnv === 'production') {
+    warnings.push('STRIPE_CONNECT_WEBHOOK_SECRET not set — Bond Desk card payments cannot learn when an agency finishes Stripe onboarding or when a payer pays (EXTERNAL_SERVICES_SETUP.md, Stripe Connect)');
+  }
   if (has(env, 'APP_URL') && !/^https:\/\//.test(env.APP_URL) && appEnv !== 'development') errors.push('APP_URL must be https:// (signing links and payment returns use it)');
   if (!has(env, 'APP_URL') && appEnv !== 'development') warnings.push('APP_URL not set — signing links default to https://justicegavel.app');
   // ⚖ settings that wait for counsel: on in production only by an explicit choice
   if (appEnv === 'production' && /^(true|1)$/i.test(String(env.CHECKIN_LOCATION_ALERTS_ENABLED || '').trim())) {
     warnings.push('CHECKIN_LOCATION_ALERTS_ENABLED is on — check-in location alerts need counsel question 2.4 answered first');
+  }
+  if (appEnv === 'production' && /^(true|1)$/i.test(String(env.BOND_AUTOPAY_ENABLED || '').trim())) {
+    warnings.push('BOND_AUTOPAY_ENABLED is on — automatic payment-plan charges need counsel question 3.2 answered first');
   }
   return { appEnv, errors, warnings, features };
 }

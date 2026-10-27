@@ -36,7 +36,7 @@ export function attorneyPlansFrom(body: unknown): ProviderPlan[] {
   ]);
 }
 
-type BondsmanTier = { key: string; name: string; display: string; annual_cents: number; annual_savings_cents: number; counties: number | 'all'; features?: { key: string; cents?: number }[] };
+type BondsmanTier = { key: string; name: string; display: string; annual_cents: number; annual_savings_cents: number; counties: number | 'all'; seats?: number; features?: { key: string; cents?: number }[] };
 export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
   return unwrapList<BondsmanTier>(body, 'tiers').filter(x => x && typeof x.display === 'string').map(x => ({
     key: x.key, name: x.name, price: x.display,
@@ -45,6 +45,8 @@ export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
       x.counties === 'all' ? t('plan_feat_lead_alerts_all') : t(Number(x.counties) === 1 ? 'plan_feat_lead_alerts_one' : 'plan_feat_lead_alerts_other', { n: x.counties }),
       // Included in every bail-agent plan (server: billing/bondsman.js features, docs/BOND_DESK.md).
       ...((x.features || []).some(f => f?.key === 'bond_desk') ? [t('plan_feat_bond_desk')] : []),
+      // Bond Desk seats (B8): the owner + staff + open invitations; no paid extra seats
+      ...(Number(x.seats) > 0 ? [t('plan_feat_seats', { n: Number(x.seats) })] : []),
       ...((x.features || []).some(f => f?.key === 'checkins') ? [t('plan_feat_checkins')] : []),
       ...((x.features || []).filter(f => f?.key === 'texts' && typeof f.cents === 'number').map(f => t('plan_feat_texts', { price: `${f.cents}¢` }))),
     ],
@@ -76,6 +78,8 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   useEffect(() => { if (ready && isBailAgentUser(user)) setType('bail_agent'); }, [ready, user]);
   const [plans, setPlans] = useState<ProviderPlan[]>([]);
   const [current, setCurrent] = useState<{ tier: string; line: string; cancelling: boolean } | null>(null);
+  // Bond Desk seats in use (bail-agent plans: the owner + staff + open invitations)
+  const [seats, setSeats] = useState<{ used: number; included: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
@@ -118,6 +122,14 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
     }
   }, [hasSession]);
   useEffect(() => { setLoading(true); load(type); }, [type, load]);
+  // Bond Desk seats used / included (none for an account without a desk)
+  useEffect(() => {
+    if (type !== 'bail_agent' || !hasSession) { setSeats(null); return; }
+    api.get('/bond-desk/staff').then(r => {
+      const x = (r.data as { seats?: { used: number; included: number } } | undefined)?.seats;
+      if (mounted.current) setSeats(x && Number(x.included) > 0 ? { used: Number(x.used), included: Number(x.included) } : null);
+    }, () => { if (mounted.current) setSeats(null); });
+  }, [type, hasSession, current?.tier]);
 
   const confirmFor = useCallback((pt: ProviderType) => async (ids: Record<string, string | undefined>) =>
     (await api.post(pt === 'lawyer' ? '/billing/subscription/confirm' : '/billing/bondsman/subscription/confirm', ids)).data as { message: string }, []);
@@ -211,6 +223,9 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
           <Text maxFontSizeMultiplier={1.4} style={s.kicker}>{t('plan_your_plan')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{plans.find(p => p.key === current.tier)?.name || current.tier}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{current.line}</Text>
+          {type === 'bail_agent' && !!seats && (
+            <Text maxFontSizeMultiplier={1.4} style={s.cardLine} testID="current-plan-seats">{t('plan_seats_used', { used: seats.used, included: seats.included })}</Text>
+          )}
           <View style={s.row}>
             <TouchableOpacity accessibilityRole="button" style={s.ghostBtn} onPress={() => navigation.navigate('Payments' as never)}>
               <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('plan_billing_link')}</Text>

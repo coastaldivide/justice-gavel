@@ -7,6 +7,7 @@
  * strings ("12.50" → 1250) — never through floating point — so the ledger and
  * the payment-plan total check are exact.
  */
+import { Linking, Platform } from 'react-native';
 import { locale, t, tIn, type TParams } from '../i18n';
 
 export type BondStatus = 'prospect' | 'active' | 'forfeited' | 'exonerated' | 'surrendered' | 'forfeiture_paid' | 'cancelled';
@@ -42,7 +43,7 @@ export interface Charge { id: number; kind: 'premium' | 'fee'; amount_cents: num
 export type PayMethod = 'cash' | 'check' | 'card' | 'money_order' | 'bank_transfer' | 'other';
 export const PAY_METHODS: PayMethod[] = ['cash', 'check', 'card', 'money_order', 'bank_transfer', 'other'];
 export interface Payment { id: number; receipt_no: string; amount_cents: number; method: PayMethod; reference: string | null; payer_name: string;
-  received_on: string; created_at: string; voided_at: string | null; void_reason: string | null }
+  received_on: string; created_at: string; voided_at: string | null; void_reason: string | null; source?: 'manual' | 'autopay' | 'pay_link' }
 export interface Installment { id: number; due_on: string; amount_cents: number; covered_cents: number; status: 'paid' | 'partial' | 'due' | 'overdue' }
 export type CollateralKind = 'cash' | 'real_estate' | 'vehicle' | 'jewelry' | 'other';
 export const COLLATERAL_KINDS: CollateralKind[] = ['cash', 'real_estate', 'vehicle', 'jewelry', 'other'];
@@ -76,7 +77,11 @@ export interface FormField { name: string; type: 'text' | 'checkbox' | 'other' }
 export interface BondForm { id: number; name: string; page_count: number; roles: ('defendant' | 'indemnitor')[]; fields: FormField[];
   field_map: Record<string, string>; archived: boolean; created_at: string }
 
-export interface Access { allowed: boolean; reason: null | 'not_agent' | 'no_plan'; plan: string | null; texts_live: boolean; email_live: boolean; storage_live: boolean; text_cents: number }
+export interface Access { allowed: boolean; reason: null | 'not_agent' | 'no_plan'; plan: string | null; texts_live: boolean; email_live: boolean; storage_live: boolean; text_cents: number;
+  /** 'owner' (the agent whose plan it is, or an admin) or 'staff' (B8); absent on older servers */
+  role?: 'owner' | 'staff' | null;
+  /** ⚖ automatic payment plans (BOND_AUTOPAY_ENABLED) */
+  autopay_enabled?: boolean }
 export interface Dashboard {
   counts: { prospect: number; active: number; forfeited: number }; liability_cents: number; receivable_cents: number; overdue_cents: number;
   overdue: { bond_id: number; defendant_name: string; due_on: string; amount_due_cents: number }[];
@@ -224,4 +229,72 @@ export const maskLink = (link: string) => (link.length > 40 ? `${link.slice(0, 3
 /** t(key) when the key exists, else the fallback text (server values we may not have a label for). */
 export function tOr(key: string, fallback: string, params?: TParams): string {
   return tIn('en', key) ? t(key, params) : fallback;
+}
+
+// ── Card payments (Stripe Connect), automatic payments, pay page (routes/bondDesk/payments.js) ──
+export type ConnectStatus = 'none' | 'onboarding' | 'restricted' | 'enabled';
+export interface ConnectState {
+  status: ConnectStatus; charges_enabled: boolean; payouts_enabled: boolean; details_submitted: boolean; disabled_reason: string | null;
+  fees_acknowledged_at: string | null; pay_link: string | null; pay_link_on: boolean; payments_live: boolean; autopay_available: boolean;
+  autopay_fee_cents: number; pay_link_limits: { min_cents: number; max_cents: number }; role?: 'owner' | 'staff' | null;
+}
+export type AutopayStatus = 'link_sent' | 'active' | 'stopped';
+export interface Autopay {
+  id: number; status: AutopayStatus; payer_role: 'defendant' | 'indemnitor'; indemnitor_id: number | null; payer_name: string;
+  payer_phone_masked: string | null; payer_email: string | null; card: { brand: string | null; last4: string } | null; consent_at: string | null;
+  consent_version: string | null; consent_schedule: { due_on: string; amount_cents: number }[] | null; link_expires_at: string; activated_at: string | null;
+  stopped_at: string | null; stopped_by: 'payer' | 'agent' | 'system' | null; stop_reason: string | null; created_at: string;
+}
+export type AttemptStatus = 'processing' | 'succeeded' | 'failed' | 'action_needed' | 'cancelled';
+export interface AutopayAttempt { id: number; installment_id: number; due_on: string; attempt: number; amount_cents: number; fee_cents: number;
+  status: AttemptStatus; failure_code: string | null; failure_message: string | null; retry_on: string | null; payment_id: number | null; created_at: string }
+export interface AutopayInfo { enabled: boolean; autopay: Autopay | null; attempts: AutopayAttempt[]; plan_changed: boolean; fee_cents: number }
+export interface PayRequest { id: number; status: 'paid' | 'attached'; amount_cents: number; payer_name: string; payer_phone: string | null;
+  payer_email: string | null; defendant_name: string; paid_at: string | null; bond_id: number | null; payment_id: number | null; attached_at: string | null }
+
+/** Tone for an automatic-payment attempt. */
+export const attemptTone = (s: AttemptStatus): 'ok' | 'warn' | 'danger' | 'muted' =>
+  s === 'succeeded' ? 'ok' : s === 'failed' ? 'danger' : s === 'action_needed' ? 'warn' : 'muted';
+
+/** i18n key for the card-payment state on the settings screen. */
+export const connectStatusKey = (c: Pick<ConnectState, 'status'>): string => `bdk_connect_status_${c.status}`;
+
+// ── Staff and seats (routes/bondDesk/agency.js) ──────────────────────────────
+export interface Seats { included: number; used: number; staff: number; pending: number }
+export interface StaffList {
+  seats: Seats; role?: 'owner' | 'staff' | null;
+  owner: { user_id: number; email: string | null; name: string | null; role: 'owner' };
+  staff: { user_id: number; email: string | null; name: string | null; role: 'staff'; added_at: string }[];
+  invites: { id: number; email: string; created_at: string; expires_at: string }[];
+}
+/** Seats left to invite with (never negative: a plan moved down keeps the people already in). */
+export const seatsLeft = (s: Seats | null | undefined) => (s ? Math.max(0, s.included - s.used) : 0);
+
+// ── Forms set up for the agency ──────────────────────────────────────────────
+export type SetupStatus = 'requested' | 'in_progress' | 'ready' | 'cancelled';
+export interface SetupRequest { id: number; status: SetupStatus; note: string | null; staff_note: string | null; created_at: string;
+  started_at: string | null; ready_at: string | null; cancelled_at: string | null;
+  forms: { id: number; name: string; page_count: number; mapped: number; text_fields: number; created_at: string }[];
+  agent_id?: number; agency?: string; agent_email?: string | null; form_count?: number; handled_by_name?: string | null }
+export const setupTone = (s: SetupStatus): 'ok' | 'warn' | 'muted' => (s === 'ready' ? 'ok' : s === 'cancelled' ? 'muted' : 'warn');
+
+// ── CSV import (services/bondDesk/csvImport.js on the server) ─────────────────
+export interface ImportRow { line: number; values: Record<string, string | number | null>; errors: { field: string; code: string; line?: number }[] }
+export interface ImportCheck { rows: ImportRow[]; total: number; valid: number; invalid: number; file_errors: { code: string; column?: string; max?: number; line?: number }[];
+  unknown_columns: string[] }
+/** One row error as words: "power_number — already used on line 3". */
+export function importErrorText(e: { field: string; code: string; line?: number }): string {
+  const field = tOr(`bdk_imp_col_${e.field}`, e.field);
+  return t('bdk_imp_err_line', { field, problem: tOr(`bdk_imp_err_${e.code}`, e.code, { line: e.line ?? '' }) });
+}
+/** A file-level problem as words. */
+export function importFileErrorText(e: { code: string; column?: string; max?: number }): string {
+  return tOr(`bdk_imp_file_${e.code}`, e.code, { column: e.column ? tOr(`bdk_imp_col_${e.column}`, e.column) : '', max: e.max ?? '' });
+}
+
+/** Open a Stripe-hosted page (Checkout, Connect onboarding): the same tab on the web, the browser in the app. */
+export async function openHosted(url: string): Promise<void> {
+  if (!/^https:\/\//.test(url)) throw new Error('not an https link');
+  if (Platform.OS === 'web' && typeof window !== 'undefined') { window.location.assign(url); return; }
+  await Linking.openURL(url);
 }
