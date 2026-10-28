@@ -3,7 +3,11 @@
  * CUSTODY_ALERTS_ENABLED — off in production unless set). docs/CUSTODY_ALERTS.md.
  *
  * A signed-in person follows one booking (booking_follows) after agreeing to alerts; texts only
- * when they also opt in to texts for a number they give (STOP from that number blocks every text).
+ * when they also opt in to texts — and only to the account's VERIFIED phone (services/
+ * phoneVerification.js), never to a number typed in (review finding 5). STOP from that number
+ * blocks every text. Texts are not sent at night (21:00–08:00 in the follower's zone): they are
+ * held (custody_alerts.text_status = 'held') and the 'custody-held-texts' job sends them from 08:00
+ * (sendHeldCustodyTexts). Push and e-mail go at once.
  *
  * During roster ingest (services/arrest_ingest.js), for followed bookings only:
  *   - the roster shows a different status or facility → a custody event that quotes what the
@@ -19,7 +23,7 @@
 import logger from '../utils/logger.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
 import { msg, normalizeLang, LOCALES } from '../i18n/index.js';
-import { DEFAULT_TIME_ZONE, isValidTimeZone } from '../utils/timezone.js';
+import { DEFAULT_TIME_ZONE, isValidTimeZone, zonedParts } from '../utils/timezone.js';
 import { sendPushToUser } from './pushDelivery.js';
 import { sendAgentEmail } from './bondDesk/core.js';
 import { sendSms, smsLive, toE164 } from './sms.js';
@@ -27,6 +31,9 @@ import { fitSms } from './smsText.js';
 
 export const CONSENT_VERSION = 'custody-alerts-2026-10';
 export const MAX_FOLLOWS = 10;
+/** No custody texts from 21:00 until 08:00 in the follower's zone (held, sent in the morning). */
+export const TEXT_QUIET_FROM = 21;
+export const TEXT_QUIET_UNTIL = 8;
 const APP_URL = () => String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
 
 export class CustodyError extends Error {
@@ -115,10 +122,26 @@ export async function pushStatus(userId, payload) {
   } catch (e) { logger.warn({ err: e?.message }, '[custody] push failed'); return 'failed'; }
 }
 
-async function sendText(db, follow, body) {
+/** Is it night (21:00–08:00) in `tz` at `now`? */
+export function quietHours(now, tz) {
+  const h = zonedParts(now, isValidTimeZone(tz) ? tz : DEFAULT_TIME_ZONE).hour % 24;
+  return h >= TEXT_QUIET_FROM || h < TEXT_QUIET_UNTIL;
+}
+
+/** The account's verified phone (E.164) or null. */
+const verifiedPhone = (u) => (u?.phone_verified_at && u.phone_verified_phone && toE164(u.phone) === toE164(u.phone_verified_phone)
+  ? toE164(u.phone_verified_phone) : null);
+
+/**
+ * One custody text. follow: { text_opt_in, text_phone, timezone, phone, phone_verified_phone,
+ * phone_verified_at }. → { status: null | 'held' | 'skipped' | 'opted_out' | 'sent' | 'failed', providerId? }
+ */
+async function sendText(db, follow, body, { now = new Date(), hold = true } = {}) {
   if (!follow.text_opt_in) return { status: null };
   const to = toE164(follow.text_phone);
-  if (!to) return { status: 'skipped' };
+  // only the account's verified phone (it may have changed since the follow was made)
+  if (!to || to !== verifiedPhone(follow)) return { status: 'skipped' };
+  if (hold && quietHours(now, follow.timezone)) return { status: 'held' };
   const out = await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [to]);
   if (out) return { status: 'opted_out' };
   if (!smsLive()) return { status: 'skipped' };
@@ -137,7 +160,8 @@ export async function notifyEvents(db, eventIds) {
         WHERE e.id = ? AND ${realArrestSql('a')}`, [eventId]);
     if (!ev) continue;   // taken down since: nobody is alerted
     const follows = await db.all(
-      `SELECT f.id, f.user_id, f.text_opt_in, f.text_phone, u.email, u.timezone, u.preferred_language
+      `SELECT f.id, f.user_id, f.text_opt_in, f.text_phone, u.email, u.timezone, u.preferred_language,
+              u.phone, u.phone_verified_phone, u.phone_verified_at
          FROM booking_follows f JOIN users u ON u.id = f.user_id
         WHERE f.arrest_id = ? AND f.ended_at IS NULL AND f.created_at <= ? LIMIT 500`, [ev.arrest_id, ev.observed_at]);
     for (const f of follows) {
@@ -158,6 +182,42 @@ export async function notifyEvents(db, eventIds) {
   return n;
 }
 
+/**
+ * Job 'custody-held-texts' (every 15 minutes): send the texts held during the night once it is
+ * 08:00 or later in the follower's zone. A follow that ended, a booking taken down or texts turned
+ * off since → the held text is dropped ('cancelled'); the verified phone changed → 'skipped'.
+ * → { checked, sent, cancelled, skipped }
+ */
+export async function sendHeldCustodyTexts(db, { now = new Date() } = {}) {
+  const out = { checked: 0, sent: 0, cancelled: 0, skipped: 0 };
+  const rows = await db.all(
+    `SELECT ca.id AS alert_id, f.id, f.user_id, f.text_opt_in, f.text_phone, f.ended_at, u.timezone, u.preferred_language,
+            u.phone, u.phone_verified_phone, u.phone_verified_at,
+            e.kind, e.old_value, e.new_value, e.observed_at, a.name, a.county, a.jail_phone, a.source,
+            CASE WHEN ${realArrestSql('a')} THEN TRUE ELSE FALSE END AS available
+       FROM custody_alerts ca JOIN booking_follows f ON f.id = ca.follow_id JOIN users u ON u.id = f.user_id
+       JOIN custody_events e ON e.id = ca.event_id JOIN arrest_records a ON a.id = e.arrest_id
+      WHERE ca.text_status = 'held' ORDER BY ca.id LIMIT 1000`);
+  for (const r of rows) {
+    out.checked += 1;
+    if (r.ended_at || !r.available || !r.text_opt_in) {
+      await db.run(`UPDATE custody_alerts SET text_status = 'cancelled' WHERE id = ? AND text_status = 'held'`, [r.alert_id]);
+      out.cancelled += 1;
+      continue;
+    }
+    if (quietHours(now, r.timezone)) continue;
+    // claim it (two runs at once never text twice)
+    const claim = await db.get(`UPDATE custody_alerts SET text_status = 'sending' WHERE id = ? AND text_status = 'held' RETURNING id`, [r.alert_id]);
+    if (!claim) continue;
+    const lang = normalizeLang(r.preferred_language) || 'en';
+    let text = { status: 'failed' };
+    try { text = await sendText(db, r, eventMessage(lang, r, r, r.timezone).sms, { now, hold: false }); } catch (e) { logger.warn({ err: e?.message }, '[custody] held text failed'); }
+    await db.run('UPDATE custody_alerts SET text_status = ?, provider_id = ? WHERE id = ?', [text.status || 'skipped', text.providerId || null, r.alert_id]);
+    if (text.status === 'sent') out.sent += 1; else out.skipped += 1;
+  }
+  return out;
+}
+
 // ── Follows (routes/custody.js) ───────────────────────────────────────────────
 
 /** The arrest a person may follow: real, not taken down, from a roster feed we re-read. */
@@ -170,12 +230,22 @@ export async function followableArrest(db, arrestId) {
   return a;
 }
 
-/** Validated text opt-in: { text_opt_in, text_phone, text_consent_at } (STOP checked). */
-async function textChoice(db, body, now) {
+/** The person's verified phone (E.164) or null — the only number custody texts go to. */
+export async function verifiedPhoneOf(db, userId) {
+  return verifiedPhone(await db.get('SELECT phone, phone_verified_phone, phone_verified_at FROM users WHERE id = ?', [userId]));
+}
+
+/**
+ * Validated text opt-in: { text_opt_in, text_phone, text_consent_at } (STOP checked). Texts go to
+ * the account's verified phone only; a typed number that is not it is refused (phone_not_verified).
+ */
+async function textChoice(db, userId, body, now) {
   if (body.text_opt_in !== true) return { text_opt_in: false, text_phone: null, text_consent_at: null };
-  const phone = toE164(body.phone);
-  if (!phone) throw new CustodyError(400, 'bad_phone');
+  const typed = body.phone === undefined || body.phone === null || String(body.phone).trim() === '' ? null : toE164(body.phone);
+  if (body.phone != null && String(body.phone).trim() !== '' && !typed) throw new CustodyError(400, 'bad_phone');
   if (body.text_consent !== true) throw new CustodyError(400, 'text_consent_required');
+  const phone = await verifiedPhoneOf(db, userId);
+  if (!phone || (typed && typed !== phone)) throw new CustodyError(409, 'phone_not_verified');
   if (await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [phone])) throw new CustodyError(409, 'opted_out');
   return { text_opt_in: true, text_phone: phone, text_consent_at: now };
 }
@@ -196,7 +266,7 @@ export async function followBooking(db, userId, body) {
   await followableArrest(db, arrestId);
   const now = new Date().toISOString();
   const caseId = await ownCase(db, userId, body.case_id);
-  const t = await textChoice(db, body, now);
+  const t = await textChoice(db, userId, body, now);
   const live = await db.get('SELECT COUNT(*)::int AS n FROM booking_follows WHERE user_id = ? AND ended_at IS NULL', [userId]);
   if (live.n >= MAX_FOLLOWS) throw new CustodyError(409, 'too_many');
   const row = await db.get(
@@ -223,7 +293,7 @@ export async function updateFollow(db, userId, followId, body) {
   const sets = []; const args = [];
   if (Object.prototype.hasOwnProperty.call(body, 'case_id')) { sets.push('case_id = ?'); args.push(await ownCase(db, userId, body.case_id)); }
   if (Object.prototype.hasOwnProperty.call(body, 'text_opt_in')) {
-    const t = await textChoice(db, body, new Date().toISOString());
+    const t = await textChoice(db, userId, body, new Date().toISOString());
     sets.push('text_opt_in = ?', 'text_phone = ?', 'text_consent_at = ?'); args.push(t.text_opt_in, t.text_phone, t.text_consent_at);
   }
   if (sets.length) await db.run(`UPDATE booking_follows SET ${sets.join(', ')} WHERE id = ?`, [...args, f.id]);

@@ -19,6 +19,7 @@ describeIntegration('Telnyx webhook (real Postgres, real Ed25519 signatures)', (
     ctx.addCleanup(async (db) => {
       await db.run('DELETE FROM sms_opt_outs WHERE phone = ?', [PHONE]);
       await db.run(`DELETE FROM sms_delivery WHERE provider_id LIKE 'it-telnyx-%'`);
+      await db.run(`DELETE FROM telnyx_event_log WHERE event_id LIKE 'rf7-%'`);
     });
   });
   afterAll(() => { delete process.env.TELNYX_PUBLIC_KEY; });
@@ -53,6 +54,25 @@ describeIntegration('Telnyx webhook (real Postgres, real Ed25519 signatures)', (
     expect(await ctx.db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [PHONE])).toBeFalsy();
     // app reminders stay off until the person turns them on again in the app (fresh consent)
     expect(Number((await ctx.db.get('SELECT sms_reminders FROM users WHERE id = ?', [u.user.id])).sms_reminders)).toBe(0);
+  });
+
+  test('RF7 a replayed event (same data.id) is acknowledged and not processed again', async () => {
+    if (!ctx.app) return;
+    const { inboundIdle } = await import('../../routes/webhooks/telnyx.js');
+    const ev = (id, text) => ({ data: { id, event_type: 'message.received', payload: { text, from: { phone_number: PHONE } } } });
+    const stopId = `rf7-stop-${Date.now()}`; const startId = `rf7-start-${Date.now()}`;
+    IDS.push(stopId, startId);
+    expect((await send(ev(stopId, 'STOP'))).body).toEqual({ ok: true });
+    expect(await ctx.db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [PHONE])).toBeTruthy();
+    expect((await send(ev(startId, 'START'))).body).toEqual({ ok: true });
+    expect(await ctx.db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [PHONE])).toBeFalsy();
+    // Telnyx retries the old STOP: acknowledged, but the newer START stands
+    const replay = await send(ev(stopId, 'STOP'));
+    expect([replay.status, replay.body]).toEqual([200, { ok: true, duplicate: true }]);
+    expect(await ctx.db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [PHONE])).toBeFalsy();
+    await inboundIdle();
+    expect(await ctx.db.all('SELECT event_id, event_type, status FROM telnyx_event_log WHERE event_id IN (?, ?) ORDER BY event_id', [startId, stopId]))
+      .toEqual([{ event_id: startId, event_type: 'message.received', status: 'done' }, { event_id: stopId, event_type: 'message.received', status: 'done' }]);
   });
 
   test('final delivery status is recorded; many failures raise the alarm', async () => {

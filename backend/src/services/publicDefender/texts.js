@@ -19,10 +19,14 @@
  *   1 / 2 / 3 answering the newest "Did you make it?" of the last 48 hours → that hearing's status
  *     (services/courtReplies.js picks the newest question among app users, Bond Desk and offices)
  *   anything else that is not STOP / START / HELP / 1 / 2 / 3 → the shared inbox of the office whose
- *     client has that number (several offices: the one that texted it most recently)
+ *     client has that number. When the number is a client of MORE THAN ONE office it goes to no
+ *     office (one office must never read another's client's message — review finding 9): it is kept
+ *     as unroutable (pd_unroutable_texts, shown to Justice Gavel admins) and the sender is texted to
+ *     call their public defender's office.
  */
+import crypto from 'node:crypto';
 import { toE164, sendSms, smsLive } from '../sms.js';
-import { encrypt } from '../encryption.js';
+import { encrypt, decrypt } from '../encryption.js';
 import { msg, formatDayShort, formatTime, normalizeLang } from '../../i18n/index.js';
 import { zonedDateTimeToUtc, addDays, todayInZone, daysBetween, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { planSteps, ASK_AT, FOLLOWUP_AT, missedCourtLink, dateOnly, timeOnly } from '../courtReminders.js';
@@ -332,20 +336,57 @@ export function isInboxText(text) {
   return !parseCourtReply(s);
 }
 
+const phoneHash = (p) => crypto.createHmac('sha256', process.env.PHONE_CODE_SECRET || process.env.JWT_SECRET || '').update(String(p)).digest('hex');
+
+/** A text from a number that is a client of several offices: kept for admins, the sender told to call. */
+async function recordUnroutable(db, { phone, text, officeIds, lang, now }) {
+  const row = await db.get(
+    `INSERT INTO pd_unroutable_texts (phone_hash, phone_last4, body_enc, office_ids, received_at) VALUES (?, ?, ?, ?::bigint[], ?) RETURNING id`,
+    [phoneHash(phone), phone.slice(-4), encrypt(String(text).slice(0, 1600)), `{${officeIds.join(',')}}`, now.toISOString()]);
+  let replied = 'skipped';
+  if (await db.get('SELECT 1 AS x FROM sms_opt_outs WHERE phone = ?', [phone])) replied = 'opted_out';
+  else if (smsLive()) {
+    const l = normalizeLang(lang) || 'en';
+    const r = await sendSms({ to: phone, body: fitSms(() => msg(l, 'pd.sms.unroutable'), {}, [], { lang: l }) }).catch(() => null);
+    replied = r?.ok ? 'sent' : 'failed';
+  }
+  await db.run('UPDATE pd_unroutable_texts SET replied = ? WHERE id = ?', [replied, row.id]);
+  logger.warn({ offices: officeIds.length }, '[pd] a client text matched several offices — delivered to none');
+  return { handled: true, unroutable: true, unroutable_id: Number(row.id), replied };
+}
+
+/** Justice Gavel admins: the texts that matched several offices (newest first, last 100). */
+export async function listUnroutable(db) {
+  const rows = await db.all('SELECT * FROM pd_unroutable_texts ORDER BY received_at DESC, id DESC LIMIT 100');
+  const ids = [...new Set(rows.flatMap((r) => (r.office_ids || []).map(Number)))];
+  const names = ids.length ? await db.all(`SELECT id, name FROM pd_offices WHERE id IN (${ids.map(() => '?').join(',')})`, ids) : [];
+  const byId = new Map(names.map((o) => [Number(o.id), o.name]));
+  return rows.map((r) => {
+    let body = null;
+    try { body = r.body_enc ? decrypt(r.body_enc) : null; } catch { body = null; }
+    return { id: Number(r.id), received_at: r.received_at, phone_last4: r.phone_last4, body, replied: r.replied,
+      offices: (r.office_ids || []).map((id) => ({ id: Number(id), name: byId.get(Number(id)) || null })) };
+  });
+}
+
 /**
- * An inbound text from a client's number → the inbox of the office that texted that number most
- * recently (one client of that office: the most recently texted one with this number).
- * Office members get a push without the message content. → { handled, office_id?, client_id?, message_id? }
+ * An inbound text from a client's number → the inbox of the ONE office whose client has that number
+ * (its most recently texted client with this number). A number that is a client of several offices
+ * goes to none (recordUnroutable). Office members get a push without the message content.
+ * → { handled, office_id?, client_id?, message_id?, unroutable? }
  */
 export async function routeInbound(db, { from, text, now = new Date() }) {
   if (!publicDefenderEnabled() || !isInboxText(text)) return { handled: false };
   const phone = toE164(from);
   if (!phone) return { handled: false };
-  const c = await db.get(
-    `SELECT c.id, c.office_id FROM pd_clients c JOIN pd_offices o ON o.id = c.office_id
+  const rows = await db.all(
+    `SELECT c.id, c.office_id, c.lang FROM pd_clients c JOIN pd_offices o ON o.id = c.office_id
       WHERE c.phone = ? AND o.status = 'active'
-      ORDER BY c.last_texted_at DESC NULLS LAST, c.id DESC LIMIT 1`, [phone]);
-  if (!c) return { handled: false };
+      ORDER BY c.last_texted_at DESC NULLS LAST, c.id DESC LIMIT 50`, [phone]);
+  if (!rows.length) return { handled: false };
+  const officeIds = [...new Set(rows.map((r) => Number(r.office_id)))];
+  if (officeIds.length > 1) return recordUnroutable(db, { phone, text, officeIds, lang: rows[0].lang, now });
+  const c = rows[0];
   const officeId = Number(c.office_id);
   const messageId = await logMessage(db, { officeId, clientId: Number(c.id), direction: 'in', kind: 'inbound', body: String(text).slice(0, 1600), status: 'received' });
   await db.run('UPDATE pd_clients SET last_inbound_at = ?, last_message_at = ? WHERE id = ?', [now.toISOString(), now.toISOString(), c.id]);

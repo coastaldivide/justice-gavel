@@ -70,6 +70,24 @@ export function stripQuery(url) {
   return typeof url === 'string' ? url.split('?')[0] : url;
 }
 
+/**
+ * Paths that carry a secret link token (the token IS the credential): the API routes and the app's
+ * own pages. Keep this list complete when a new link type is added (review finding 6;
+ * review_fixes_units.test.js RF6 tests each one).
+ */
+const SECRET_PATH_PREFIXES = [
+  '/api/sign/', '/api/checkins/link/', '/api/bd-pay/autopay/', '/api/bond-desk/staff/invite/', '/api/pd/invite/',
+  '/api/cases/shared/', '/api/push/token/',
+  '/sign/', '/c/', '/autopay/', '/pd/join/', '/bond-desk/join/', '/recovery/',
+];
+const esc = (t) => t.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const SECRET_PATH_RE = new RegExp(`(^|^[a-z][a-z0-9+.-]*://[^/]+)(${SECRET_PATH_PREFIXES.map(esc).join('|')})(?!accept(?:[/?#]|$))[^/?#]+`, 'i');
+
+/** A request path or URL with its link token replaced by [link]: '/api/pd/invite/abc' → '/api/pd/invite/[link]'. */
+export function redactSecretPath(p) {
+  return typeof p === 'string' ? p.replace(SECRET_PATH_RE, '$1$2[link]') : p;
+}
+
 export function redact(value, depth = 0, seen = new WeakSet()) {
   if (value == null) return value;
   if (typeof value === 'string') return redactString(value);

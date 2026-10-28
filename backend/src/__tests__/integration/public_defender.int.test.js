@@ -51,8 +51,10 @@ describeIntegration('Public defender channel (real Postgres, fake Telnyx + Strip
     const raw = JSON.stringify({ data: { event_type: 'message.received', payload: { text, from: { phone_number: from } } } });
     const ts = Math.floor(Date.now() / 1000);
     const sig = crypto.sign(null, Buffer.from(`${ts}|${raw}`), privateKey).toString('base64');
+    // the slow part (court answers, inbox routing) runs after Telnyx has its 200: wait for it
     return ctx.request().post('/api/webhooks/telnyx').set('Content-Type', 'application/json')
-      .set('telnyx-signature-ed25519', sig).set('telnyx-timestamp', String(ts)).send(raw);
+      .set('telnyx-signature-ed25519', sig).set('telnyx-timestamp', String(ts)).send(raw)
+      .then(async (r) => { await (await import('../../routes/webhooks/telnyx.js')).inboundIdle(); return r; });
   };
   const textsTo = (to) => texts.filter((t) => t.to === to);
   const csv = (rows) => Buffer.from(['name,phone,language,case_number,court_dates,email', ...rows].join('\n'), 'utf8');
@@ -288,9 +290,19 @@ describeIntegration('Public defender channel (real Postgres, fake Telnyx + Strip
     const s2 = await pd('post', `/clients/${c2.body.client.id}/messages`, other).send({ body: 'Please call our office.' });
     expect(s2.status).toBe(201);
     expect(textsTo(P.shared).slice(-1)[0].text).toBe('Knox County PD: Please call our office.');
+    // RF9: the number is a client of BOTH offices → no office gets it (never the wrong office's
+    // inbox); the sender is asked to call their office; Justice Gavel admins see it as unroutable
     expect((await inbound(P.shared, 'Can I get a ride to court?')).status).toBe(200);
-    expect((await pd('get', '/inbox/unread', other)).body.unread).toBe(1);
+    expect((await pd('get', '/inbox/unread', other)).body.unread).toBe(0);
     expect((await pd('get', '/inbox/unread')).body.unread).toBe(0);
+    expect(textsTo(P.shared).slice(-1)[0].text).toMatch(/^Justice Gavel: .*call your public defender's office.* Reply STOP to opt out\.$/);
+    expect((await adm('get', '/unroutable', outsider)).status).toBe(403);
+    const un = await adm('get', '/unroutable');
+    expect(un.status).toBe(200);
+    expect(un.body.texts[0]).toMatchObject({ phone_last4: '0405', body: 'Can I get a ride to court?', replied: 'sent' });
+    expect(un.body.texts[0].offices.map((o) => o.name).sort()).toEqual(['Knox County PD', 'Metro Nashville Public Defender']);
+    // office 2 removes its client: the number belongs to one office again
+    expect((await pd('delete', `/clients/${c2.body.client.id}`, other)).status).toBe(200);
     // office 1 texts it: now office 1 gets the next one
     const dee1 = (await pd('get', '/clients?q=GS-400')).body.clients[0];
     expect((await pd('post', `/clients/${dee1.id}/messages`, pdStaff).send({ body: 'Your hearing is at General Sessions.' })).status).toBe(201);
@@ -390,6 +402,25 @@ describeIntegration('Public defender channel (real Postgres, fake Telnyx + Strip
     expect([y2.status, y2.body.invoice.amount_cents]).toEqual([201, 800]);
     expect((await adm('get', `/${office.id}`)).body.invoices.map((i) => i.year)).toEqual([2027, 2026]);
     expect((await adm('get', `/${office.id}/invoice-preview?year=1999`)).body.code).toBe('bad_year');
+  });
+
+  test('RF2 an invoice retried after Stripe forgot the idempotency keys gets no duplicate lines', async () => {
+    if (!ctx.app) return;
+    // the lines are added, then finalizing fails; the retry comes after Stripe's ~24-hour key window
+    fake.failNext = 'invoices.finalizeInvoice';
+    const f = await adm('post', `/${office2.id}/invoices`).send({ year: 2026, confirm: true });
+    expect([f.status, f.body.code]).toEqual([502, 'payment_provider']);
+    const row = await ctx.db.get('SELECT stripe_invoice_id FROM pd_invoices WHERE office_id = ? AND year = 2026', [office2.id]);
+    const firstTry = fake.items.filter((i) => i.invoice === row.stripe_invoice_id).length;
+    expect(firstTry).toBeGreaterThanOrEqual(1);
+    fake.forgetKeys();
+    const ok = await adm('post', `/${office2.id}/invoices`).send({ year: 2026, confirm: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.invoice.status).toBe('sent');
+    const lines = fake.items.filter((i) => i.invoice === row.stripe_invoice_id);
+    expect(lines).toHaveLength(firstTry);
+    expect(lines.filter((i) => i.metadata.line === 'setup').map((i) => i.amount)).toEqual([2000000]);
+    expect(fake.invoices.get(row.stripe_invoice_id)).toMatchObject({ status: 'open', amount_due: ok.body.invoice.amount_cents, sent: 1 });
   });
 
   test('PD8 setting off: 503, hidden, no texts, no inbox', async () => {

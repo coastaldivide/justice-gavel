@@ -52,6 +52,7 @@ async function sampleForm() {
 describeIntegration('Bond Desk card payments, import / export, staff (real Postgres, fake Stripe Connect)', () => {
   const ctx = initSuite();
   const texts = [];
+  const pushes = [];
   let telnyx;
   let owner, owner2, staffA, staffB, stranger, admin;
   let tz; let today; let at9;
@@ -77,12 +78,19 @@ describeIntegration('Bond Desk card payments, import / export, staff (real Postg
     telnyx = http.createServer((rq, rs) => {
       let data = '';
       rq.on('data', (c) => { data += c; });
-      rq.on('end', () => { texts.push(JSON.parse(data || '{}')); rs.writeHead(200, { 'Content-Type': 'application/json' }); rs.end(JSON.stringify({ data: { id: `tx_p${texts.length}` } })); });
+      rq.on('end', () => {
+        if (rq.url.startsWith('/--/')) {   // Expo push (agent alerts)
+          const msgs = [].concat(JSON.parse(data || '[]')); pushes.push(...msgs);
+          rs.writeHead(200, { 'Content-Type': 'application/json' }); rs.end(JSON.stringify({ data: msgs.map((_, k) => ({ status: 'ok', id: `px${k}` })) })); return;
+        }
+        texts.push(JSON.parse(data || '{}')); rs.writeHead(200, { 'Content-Type': 'application/json' }); rs.end(JSON.stringify({ data: { id: `tx_p${texts.length}` } }));
+      });
     });
     await new Promise((r) => telnyx.listen(0, '127.0.0.1', r));
     process.env.TELNYX_API_KEY = 'KEY_test';
     process.env.TELNYX_FROM_NUMBER = '+16155550100';
     process.env.TELNYX_API_BASE = `http://127.0.0.1:${telnyx.address().port}`;
+    process.env.EXPO_PUSH_API_URL = `http://127.0.0.1:${telnyx.address().port}/--/api/v2`;
     [owner, owner2] = await Promise.all(['O1', 'O2'].map((n) => ctx.register({ displayName: `BDP ${n}`, accountType: 'bail_agent' })));
     [staffA, staffB, stranger, admin] = await Promise.all(['SA', 'SB', 'X', 'ADM'].map((n) => ctx.register({ displayName: `BDP ${n}` })));
     await ctx.db.run(`UPDATE users SET role = 'admin' WHERE id = ?`, [admin.user.id]);
@@ -111,19 +119,19 @@ describeIntegration('Bond Desk card payments, import / export, staff (real Postg
   });
   afterAll(async () => {
     if (telnyx) await new Promise((r) => telnyx.close(r));
-    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_CONNECT_WEBHOOK_SECRET', 'BOND_AUTOPAY_ENABLED']) delete process.env[k];
+    for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE', 'EXPO_PUSH_API_URL', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_CONNECT_WEBHOOK_SECRET', 'BOND_AUTOPAY_ENABLED']) delete process.env[k];
   });
 
   /** A bond with charges and a plan: installments [{ due_on, amount_cents }]. */
-  const bondWithPlan = async (charges, plan, extra = {}) => {
-    const b = (await bd('post', '/bonds').send({ defendant_name: 'Riley Stone', bond_amount_cents: 1000000, defendant_phone: '615-555-0141', defendant_email: 'riley@example.com', ...extra })).body.bond;
-    for (const c of charges) expect((await bd('post', `/bonds/${b.id}/charges`).send({ kind: c.kind || 'premium', amount_cents: c.amount_cents })).status).toBe(201);
-    if (plan) expect((await bd('put', `/bonds/${b.id}/plan`).send({ installments: plan })).status).toBe(200);
+  const bondWithPlan = async (charges, plan, extra = {}, who = owner) => {
+    const b = (await bd('post', '/bonds', who).send({ defendant_name: 'Riley Stone', bond_amount_cents: 1000000, defendant_phone: '615-555-0141', defendant_email: 'riley@example.com', ...extra })).body.bond;
+    for (const c of charges) expect((await bd('post', `/bonds/${b.id}/charges`, who).send({ kind: c.kind || 'premium', amount_cents: c.amount_cents })).status).toBe(201);
+    if (plan) expect((await bd('put', `/bonds/${b.id}/plan`, who).send({ installments: plan })).status).toBe(200);
     return b;
   };
   /** Send the payer's link, agree, save a card (Checkout + webhook). → { token, autopay } */
-  const setUpAutopay = async (bondId, pm, { deliver = 'none' } = {}) => {
-    const r = await bd('post', `/bonds/${bondId}/autopay/link`).send({ to: 'defendant', deliver, consent_confirmed: true });
+  const setUpAutopay = async (bondId, pm, { deliver = 'none', who = owner } = {}) => {
+    const r = await bd('post', `/bonds/${bondId}/autopay/link`, who).send({ to: 'defendant', deliver, consent_confirmed: true });
     expect(r.status).toBe(201);
     const token = r.body.link.split('/autopay/')[1];
     const start = await pub('post', `/autopay/${token}/start`).set('User-Agent', 'PayerBrowser/1.0').send({ agree: true, consent_version: 'autopay-2026-10' });
@@ -355,9 +363,7 @@ describeIntegration('Bond Desk card payments, import / export, staff (real Postg
     const list = (await bd('get', '/pay-requests')).body.pay_requests;
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ status: 'paid', amount_cents: 25000, payer_name: 'Pat Payer', defendant_name: 'Sam Stone' });
-    // attach: over the balance refused; then posted once with a receipt, and the receipt texted (5¢)
-    const small = await bondWithPlan([{ amount_cents: 10000 }], null);
-    expect((await bd('post', `/pay-requests/${list[0].id}/attach`).send({ bond_id: small.id })).body.code).toBe('over_balance');
+    // attach: posted once with a receipt, and the receipt texted (5¢) (over the balance: RF8)
     const big = await bondWithPlan([{ amount_cents: 40000 }], null);
     const before = texts.length;
     const at = await bd('post', `/pay-requests/${list[0].id}/attach`).send({ bond_id: big.id });
@@ -376,6 +382,123 @@ describeIntegration('Bond Desk card payments, import / export, staff (real Postg
     let limited = false;
     for (let i = 0; i < 12 && !limited; i++) limited = (await pub('post', `/agency/${slug}/checkout`, '10.92.0.9').send({ ...ok, amount_cents: 100 })).status === 429;
     expect(limited).toBe(true);
+  });
+
+  // ── Review fixes (docs/BOND_DESK.md "Automatic payment plans", "Pay page") ────────────────
+  // Run as the second agency with its own connected account (the first agency's per-minute
+  // request limit is needed by PAY6–PAY9).
+  let acct2;
+  const ownerPushReady = async () => {
+    if (acct2) return;
+    expect((await req('post', '/api/push/token', owner2).send({ token: 'ExponentPushToken[bdp-owner2]' })).status).toBeLessThan(300);
+    expect((await bd('post', '/connect/start', owner2).send({ fees_acknowledged: true })).status).toBe(200);
+    acct2 = (await ctx.db.get('SELECT stripe_account_id FROM bd_connect_accounts WHERE agent_id = ?', [owner2.user.id])).stripe_account_id;
+    const acc = { ...fake.accounts.get(acct2), charges_enabled: true, payouts_enabled: true, details_submitted: true, requirements: { disabled_reason: null } };
+    fake.accounts.set(acct2, acc);
+    expect((await webhook(event('account.updated', acc, acct2))).status).toBe(200);
+  };
+  /** A bond whose installment due today needs the payer's confirmation (3-D Secure). → { b, att, fresh } */
+  const actionNeeded = async (phone) => {
+    await ownerPushReady();
+    const b = await bondWithPlan([{ amount_cents: 15000 }], [{ due_on: today, amount_cents: 15000 }], { defendant_phone: phone }, owner2);
+    await setUpAutopay(b.id, 'pm_3ds', { deliver: 'sms', who: owner2 });
+    await runJob(today);
+    const att = await ctx.db.get('SELECT * FROM bd_autopay_attempts WHERE bond_id = ?', [b.id]);
+    expect(att.status).toBe('action_needed');
+    const fresh = /\/autopay\/([A-Za-z0-9_-]+)/.exec(textsTo(`+1${phone.replace(/\D/g, '')}`).pop().text)[1];
+    return { b, att, fresh };
+  };
+  const sessionsCreated = () => fake.calls.filter((c) => c.name === 'checkout.sessions.create');
+
+  test('RF1 "Confirm payment" reuses one Checkout session per attempt; a second payment is posted and the agent alerted', async () => {
+    if (!ctx.app) return;
+    await ownerPushReady();
+    const { b, att, fresh } = await actionNeeded('615-555-0146');
+    const n0 = sessionsCreated().length;
+    // double click / two tabs / a refresh: one session, the same page
+    const [c1, c2] = await Promise.all([pub('post', `/autopay/${fresh}/confirm`).send({}), pub('post', `/autopay/${fresh}/confirm`).send({})]);
+    const c3 = await pub('post', `/autopay/${fresh}/confirm`).send({});
+    expect([c1.status, c2.status, c3.status]).toEqual([200, 200, 200]);
+    expect(new Set([c1.body.url, c2.body.url, c3.body.url]).size).toBe(1);
+    expect(sessionsCreated().length - n0).toBe(1);
+    expect(sessionsCreated().at(-1).idem).toBe(`bd-action-${att.id}-first-15000`);
+    // paid in Checkout, the webhook not here yet: confirming again says it was paid (no new session)
+    const sessId = (await ctx.db.get('SELECT action_session_id FROM bd_autopay_attempts WHERE id = ?', [att.id])).action_session_id;
+    const { session, pi } = completePaymentSession(fake, sessId);
+    const again = await pub('post', `/autopay/${fresh}/confirm`).send({});
+    expect([again.status, again.body.code]).toEqual([409, 'payment_received']);
+    expect(sessionsCreated().length - n0).toBe(1);
+    expect((await webhook(event('checkout.session.completed', session, acct2))).status).toBe(200);
+    expect((await webhook(event('payment_intent.succeeded', pi, acct2))).status).toBe(200);
+    expect((await bd('get', `/bonds/${b.id}`, owner2)).body.payments).toHaveLength(1);
+    // a second successful payment for the same attempt (e.g. an older Checkout page paid too) is
+    // posted to the bond — never silently dropped — and the agent is alerted
+    const second = { id: `pi_second_${ctx.tag}`, amount: 15000, amount_received: 15000, status: 'succeeded',
+      metadata: { bd_kind: 'autopay', bd_attempt_id: String(att.id), bd_autopay_id: String(att.autopay_id), bd_bond_id: String(b.id) } };
+    const p0 = pushes.length;
+    expect((await webhook(event('payment_intent.succeeded', second, acct2))).status).toBe(200);
+    expect((await webhook(event('payment_intent.succeeded', second, acct2))).status).toBe(200);   // replay: once
+    const pays = (await bd('get', `/bonds/${b.id}`, owner2)).body.payments;
+    expect(pays).toHaveLength(2);
+    expect(pays.map((p) => p.amount_cents)).toEqual([15000, 15000]);
+    expect((await bd('get', `/bonds/${b.id}`, owner2)).body.money.balance_cents).toBe(-15000);
+    expect(pushes.slice(p0).filter((p) => /Second card payment/.test(p.title))).toHaveLength(1);
+    expect(pushes.slice(p0).find((p) => /Second card payment/.test(p.title)).body).toContain('$150.00');
+  });
+
+  test('RF1b a changed amount expires the earlier Checkout session and opens a new one', async () => {
+    if (!ctx.app) return;
+    const { b, att, fresh } = await actionNeeded('615-555-0147');
+    const first = await pub('post', `/autopay/${fresh}/confirm`).send({});
+    const s1 = (await ctx.db.get('SELECT action_session_id FROM bd_autopay_attempts WHERE id = ?', [att.id])).action_session_id;
+    // the agent records a 50.00 cash payment meanwhile: 100.00 is left to confirm
+    expect((await bd('post', `/bonds/${b.id}/payments`, owner2).send({ amount_cents: 5000, method: 'cash', payer_name: 'Riley Stone' })).status).toBe(201);
+    const second = await pub('post', `/autopay/${fresh}/confirm`).send({});
+    expect(second.status).toBe(200);
+    expect(second.body.url).not.toBe(first.body.url);
+    expect(fake.sessions.get(s1).status).toBe('expired');
+    expect(sessionsCreated().at(-1).params.line_items[0].price_data.unit_amount).toBe(10000);
+  });
+
+  test('RF13 the autopay webhook posts only a succeeded payment from the plan\'s own connected account', async () => {
+    if (!ctx.app) return;
+    const { b, att } = await actionNeeded('615-555-0148');
+    const md = { bd_kind: 'autopay', bd_attempt_id: String(att.id), bd_autopay_id: String(att.autopay_id), bd_bond_id: String(b.id) };
+    const pi = (id, status = 'succeeded') => ({ id: `${id}_${ctx.tag}`, amount: 15000, amount_received: 15000, status, metadata: md });
+    // another agency's connected account (signed with the Connect secret, but not this plan's account)
+    expect((await webhook(event('payment_intent.succeeded', pi('pi_other_acct'), acct))).status).toBe(200);
+    // no account at all (platform endpoint)
+    expect((await webhook(event('payment_intent.succeeded', pi('pi_platform'), undefined), WH)).status).toBe(200);
+    // the right account but not succeeded
+    expect((await webhook(event('payment_intent.succeeded', pi('pi_processing', 'processing'), acct2))).status).toBe(200);
+    expect((await bd('get', `/bonds/${b.id}`, owner2)).body.payments).toHaveLength(0);
+    expect((await ctx.db.get('SELECT status, payment_id FROM bd_autopay_attempts WHERE id = ?', [att.id]))).toEqual({ status: 'action_needed', payment_id: null });
+    // the genuine one is posted
+    expect((await webhook(event('payment_intent.succeeded', pi('pi_real'), acct2))).status).toBe(200);
+    expect((await bd('get', `/bonds/${b.id}`, owner2)).body.payments).toHaveLength(1);
+  });
+
+  test('RF8 a pay-page payment larger than the bond balance is attached (taken) and flagged to the agent', async () => {
+    if (!ctx.app) return;
+    await ownerPushReady();
+    const slug = (await bd('get', '/connect', owner2)).body.pay_link.split('/pay/')[1];
+    const r = await pub('post', `/agency/${slug}/checkout`, '10.92.1.1').send({ amount_cents: 30000, payer_name: 'Over Payer', payer_email: 'over@example.com',
+      defendant_name: 'Sam Small', agree_final: true });
+    expect(r.status).toBe(200);
+    const pr = await ctx.db.get('SELECT * FROM bd_pay_requests WHERE agent_id = ? ORDER BY id DESC LIMIT 1', [owner2.user.id]);
+    const { session, pi } = completePaymentSession(fake, pr.checkout_session_id);
+    expect((await webhook(event('payment_intent.succeeded', pi, acct2))).status).toBe(200);
+    expect((await webhook(event('checkout.session.completed', session, acct2))).status).toBe(200);
+    const small = await bondWithPlan([{ amount_cents: 10000 }], null, {}, owner2);
+    const p0 = pushes.length;
+    const at = await bd('post', `/pay-requests/${pr.id}/attach`, owner2).send({ bond_id: small.id });
+    expect(at.status).toBe(200);
+    expect(at.body.payment).toMatchObject({ amount_cents: 30000, source: 'pay_link' });
+    expect(at.body.over_balance_cents).toBe(20000);
+    expect((await bd('get', `/bonds/${small.id}`, owner2)).body.money.balance_cents).toBe(-20000);
+    const alert = pushes.slice(p0).find((p) => /above the balance/.test(p.title));
+    expect(alert.body).toContain('$200.00');
+    expect((await bd('post', `/pay-requests/${pr.id}/attach`, owner2).send({ bond_id: small.id })).body.code).toBe('already_attached');
   });
 
   test('PAY6 forms set up for the agency: request, admin queue, mapping, hand-over, audit', async () => {

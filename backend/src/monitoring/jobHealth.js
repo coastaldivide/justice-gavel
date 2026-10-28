@@ -20,7 +20,7 @@ import { CONFIG, stripeConfigured } from '../config.js';
 import { remindersEnabled as remindersOn } from '../services/reminderDispatcher.js';
 import { arrestFeedsConfigured } from '../services/arrest_ingest.js';
 import { autopayEnabled } from '../services/bondDesk/autopay.js';
-import { publicDefenderEnabled } from '../utils/counselFlags.js';
+import { publicDefenderEnabled, custodyAlertsEnabled } from '../utils/counselFlags.js';
 
 const H = 3600_000;
 /** job → { everyMs, when() } — `when` false = the job is not expected to run now. */
@@ -34,6 +34,7 @@ export const EXPECTED = Object.freeze({
   'checkin-texts': { everyMs: 0.25 * H, when: () => remindersOn() },
   'checkin-missed': { everyMs: 1 * H, when: () => remindersOn() },
   'bd-autopay': { everyMs: 1 * H, when: () => autopayEnabled() && stripeConfigured() },
+  'custody-held-texts': { everyMs: 0.25 * H, when: () => custodyAlertsEnabled() },
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'arrest-feeds': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH && arrestFeedsConfigured() },

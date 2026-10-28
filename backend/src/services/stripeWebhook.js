@@ -91,7 +91,7 @@ async function bondDeskEvent(db, event) {
       const piId = typeof obj.payment_intent === 'string' ? obj.payment_intent : obj.payment_intent?.id;
       if (obj.payment_status === 'paid' && piId) {
         if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkPaid(db, { requestId: Number(md.bd_pay_request_id), piId, account });
-        if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, { id: piId, amount: obj.amount_total, metadata: md });
+        if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, { id: piId, amount: obj.amount_total, status: 'succeeded', metadata: md }, { account });
       }
       return true;
     }
@@ -99,7 +99,7 @@ async function bondDeskEvent(db, event) {
       if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkExpired(db, obj.id);
       return true;
     case 'payment_intent.succeeded':
-      if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, obj);
+      if (md.bd_kind === 'autopay') await (await autopay()).onAutopayIntentSucceeded(db, obj, { account });
       if (md.bd_kind === 'paylink') await (await payLink()).markPayLinkPaid(db, { requestId: Number(md.bd_pay_request_id), piId: obj.id, account });
       return true;
     case 'payment_intent.payment_failed':

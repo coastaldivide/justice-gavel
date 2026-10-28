@@ -23,6 +23,7 @@ import { ANTHROPIC_MESSAGES_URL } from './ai.js';
  */
 
 import logger from './logger.js';
+import { redactSecretPath } from './redact.js';
 
 /**
  * Wraps an async route handler in a try/catch.
@@ -41,7 +42,7 @@ export function asyncRoute(fn) {
       logger.error({
         msg:    '[route_error]',
         method: req.method,
-        url:    req.originalUrl,
+        url:    redactSecretPath(String(req.originalUrl || '').split('?')[0]),
         status,
         error:  err.message,
         stack:  process.env.NODE_ENV !== 'production' ? err.stack?.split('\n').slice(0,4).join(' | ') : undefined,

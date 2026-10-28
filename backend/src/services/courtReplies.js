@@ -42,9 +42,12 @@ async function handleAppReply(db, { from, answer, courtDateId, now }) {
     `SELECT cd.id, cd.case_id, cd.user_id, cd.court_date, cd.status, c.title, c.state
        FROM court_dates cd JOIN cases c ON c.id = cd.case_id WHERE cd.id = ?`, [courtDateId]);
   if (!cd) return { handled: false };
+  // Only a hearing still scheduled, or one whose status came from an earlier reply: a status the
+  // person set in the app is never overwritten by a late text (review finding 11; the Bond Desk and
+  // public defender replies use the same guard).
   const upd = await db.run(
     `UPDATE court_dates SET status = ?, status_source = 'reply', status_at = ?, updated_at = NOW()
-      WHERE id = ? AND deleted_at IS NULL AND status <> 'cancelled'`, [answer, now.toISOString(), cd.id]);
+      WHERE id = ? AND deleted_at IS NULL AND (status = 'scheduled' OR status_source = 'reply')`, [answer, now.toISOString(), cd.id]);
   const applied = !!upd?.changes;
   const lang = await userLang(db, Number(cd.user_id));
   const day = formatDay(dateOnly(cd.court_date), lang);

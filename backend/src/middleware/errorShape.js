@@ -19,6 +19,7 @@
  */
 import { CATALOGS, msg, resolveLang } from '../i18n/index.js';
 import logger, { currentRequestContext } from '../utils/logger.js';
+import { redactSecretPath } from '../utils/redact.js';
 
 const IS_CODE = /^[a-z][a-z0-9_.:-]{1,63}$/;
 const STATUS_CODES = {
@@ -97,7 +98,7 @@ export function errorShape() {
         const db = currentRequestContext()?.lastDbError;
         const mapped = inputErrorStatus(db?.code);
         if (mapped) {
-          logger.warn({ path: req.originalUrl?.split('?')[0], sqlstate: db.code }, '[errorShape] bad input reached the database → 4xx');
+          logger.warn({ path: redactSecretPath(req.originalUrl?.split('?')[0]), sqlstate: db.code }, '[errorShape] bad input reached the database → 4xx');
           res.status(mapped.status);
           const lang = resolveLang(req);
           return json({ error: mapped.code, code: mapped.code, message: msg(lang, CODE_KEYS[mapped.code] || STATUS_KEYS[mapped.status]) });

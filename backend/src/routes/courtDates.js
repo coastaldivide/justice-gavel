@@ -353,6 +353,8 @@ router.patch('/:id', authRequired, writeLimiter, async (req, res) => {
       else if (k === 'court_time') { sets.push('court_time = CAST(? AS time)'); vals.push(v); }
       else { sets.push(`${k} = ?`); vals.push(v); }
     }
+    // a status set here is the person's own: a late text reply never overwrites it (services/courtReplies.js)
+    if (out.status !== undefined) sets.push(`status_source = 'app'`, 'status_at = NOW()');
     sets.push('updated_at = NOW()');
     try {
       await db.run(`UPDATE court_dates SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`, [...vals, id, req.user.id]);

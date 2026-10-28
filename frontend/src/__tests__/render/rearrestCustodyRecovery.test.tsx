@@ -174,8 +174,8 @@ describe('custody alerts (families)', () => {
     expect(screen.queryByTestId('follow-booking-card')).toBeNull();
   });
 
-  it('following needs consent; texts need a number and their own consent', async () => {
-    on('get', '/custody/status', { enabled: true, max_follows: 10, texts_live: true });
+  it('following needs consent; texts go to the verified phone only and need their own consent', async () => {
+    on('get', '/custody/status', { enabled: true, max_follows: 10, texts_live: true, verified_phone_last4: '0160' });
     on('get', '/custody/arrest/900', { follow_id: null, trackable: true });
     on('post', '/custody/follows', { follow_id: 44, follows: [] });
     wrap(<FollowBookingCard arrestId={900} />);
@@ -183,13 +183,29 @@ describe('custody alerts (families)', () => {
     expect(screen.getByTestId('follow-booking').props.accessibilityState?.disabled).toBe(true);
     fireEvent.press(screen.getByTestId('follow-consent'));
     fireEvent.press(screen.getByTestId('follow-texts'));
-    fireEvent.changeText(screen.getByTestId('follow-phone'), '615-555-0160');
+    expect(screen.queryByTestId('follow-phone')).toBeNull();   // no number is typed
+    expect(screen.getByTestId('follow-verified-phone')).toHaveTextContent(has(t('cus_texts_verified', { last4: '0160' })));
     fireEvent.press(screen.getByTestId('follow-booking'));
     expect(await screen.findByTestId('follow-error')).toHaveTextContent(has(t('cus_text_needed')));
     fireEvent.press(screen.getByTestId('follow-text-consent'));
     fireEvent.press(screen.getByTestId('follow-booking'));
     expect(await screen.findByTestId('follow-following')).toBeTruthy();
-    expect(calls.find(c => c.method === 'post')?.data).toEqual({ arrest_id: 900, consent: true, text_opt_in: true, phone: '615-555-0160', text_consent: true });
+    expect(calls.find(c => c.method === 'post')?.data).toEqual({ arrest_id: 900, consent: true, text_opt_in: true, text_consent: true });
+  });
+
+  it('without a verified phone, texts offer "Verify my number" instead', async () => {
+    on('get', '/custody/status', { enabled: true, max_follows: 10, texts_live: true, verified_phone_last4: null });
+    on('get', '/custody/arrest/900', { follow_id: null, trackable: true });
+    wrap(<FollowBookingCard arrestId={900} />);
+    expect(await screen.findByTestId('follow-booking-card')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('follow-consent'));
+    fireEvent.press(screen.getByTestId('follow-texts'));
+    expect(screen.getByTestId('follow-verify-first')).toHaveTextContent(has(t('cus_verify_first')));
+    fireEvent.press(screen.getByTestId('follow-verify-phone'));
+    expect(mockNavigate).toHaveBeenCalledWith('VerifyPhone');
+    fireEvent.press(screen.getByTestId('follow-booking'));
+    expect(await screen.findByTestId('follow-error')).toHaveTextContent(has(t('cus_verify_first')));
+    expect(calls.some(c => c.method === 'post')).toBe(false);
   });
 
   it('a booking not from a roster we re-check cannot be followed', async () => {

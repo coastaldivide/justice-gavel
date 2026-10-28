@@ -15,6 +15,7 @@ import aiCostsRouter from './routes/admin/aiCosts.js';
 import * as Sentry from '@sentry/node';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger, { runWithRequestContext } from './utils/logger.js';
+import { redactSecretPath } from './utils/redact.js';
 import { APP_VERSION, GIT_COMMIT_SHORT } from './utils/version.js';
 import express from 'express';
 import helmet      from 'helmet';
@@ -257,10 +258,9 @@ app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
 if (process.env.NODE_ENV !== 'test') {
-  // Signing links, check-in text links, automatic-payment links and staff invitations carry their
-  // credential in the path (/api/sign/<token>/…, /api/checkins/link/<token>, /api/bd-pay/autopay/<token>,
-  // /api/bond-desk/staff/invite/<token>): never log it.
-  const redactSecretPath = (p) => p.replace(/^(\/api\/sign\/|\/api\/checkins\/link\/|\/api\/bd-pay\/autopay\/|\/api\/bond-desk\/staff\/invite\/)[^/]+/, '$1[link]');
+  // Signing links, check-in text links, automatic-payment links, staff and public defender
+  // invitations, shared cases and push tokens carry their credential in the path: never log it
+  // (utils/redact.js redactSecretPath has the full list).
   if (IS_PROD) {
     // One JSON object per line (Render log stream / Datadog-friendly). Logs req.path, never
     // the query string — search params can carry PII (names, emails, counties).

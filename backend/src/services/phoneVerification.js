@@ -127,13 +127,23 @@ export async function confirmVerification(db, userId, rawCode, { now = new Date(
     await db.run(`UPDATE phone_verifications SET status = 'expired' WHERE id = ?`, [v.id]);
     throw new VerifyError(410, 'code_expired');
   }
+  // Count this try FIRST, atomically (review finding 14): every guess takes one of the
+  // MAX_ATTEMPTS slots before its code is compared, so parallel guesses can never compare more
+  // than MAX_ATTEMPTS codes.
+  const slot = await db.get(
+    `UPDATE phone_verifications SET attempts = attempts + 1
+      WHERE id = ? AND status = 'pending' AND attempts < ? RETURNING attempts`, [v.id, MAX_ATTEMPTS]);
+  if (!slot) {
+    await db.run(`UPDATE phone_verifications SET status = 'locked' WHERE id = ? AND status = 'pending'`, [v.id]);
+    throw new VerifyError(429, 'code_locked');
+  }
   if (!sameCode(hashCode(userId, v.phone, code), v.code_hash)) {
-    const u = await db.get(
-      `UPDATE phone_verifications SET attempts = attempts + 1,
-              status = CASE WHEN attempts + 1 >= ? THEN 'locked' ELSE status END
-        WHERE id = ? AND status = 'pending' RETURNING attempts, status`, [MAX_ATTEMPTS, v.id]);
-    if (!u || u.status === 'locked') throw new VerifyError(429, 'code_locked');
-    throw new VerifyError(400, 'wrong_code', { left: MAX_ATTEMPTS - Number(u.attempts) });
+    const used = Number(slot.attempts);
+    if (used >= MAX_ATTEMPTS) {
+      await db.run(`UPDATE phone_verifications SET status = 'locked' WHERE id = ? AND status = 'pending'`, [v.id]);
+      throw new VerifyError(429, 'code_locked');
+    }
+    throw new VerifyError(400, 'wrong_code', { left: MAX_ATTEMPTS - used });
   }
   const won = await db.get(
     `UPDATE phone_verifications SET status = 'verified', verified_at = ? WHERE id = ? AND status = 'pending' RETURNING id`,

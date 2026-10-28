@@ -45,8 +45,10 @@ export const COUNTY_TIME_ZONES = Object.freeze({
   ID: C('America/Los_Angeles', 'Kootenai,Boundary,Bonner,Benewah,Shoshone,Latah,Clearwater,Nez Perce,Lewis'),
   OR: C('America/Boise', 'Malheur'),
   ND: C('America/Denver', 'Adams,Billings,Bowman,Golden Valley,Grant,Hettinger,Slope,Stark'),
-  SD: C('America/Denver', 'Pennington,Meade,Lawrence,Butte,Custer,Fall River,Harding,Perkins'),
-  NE: C('America/Denver', 'Scotts Bluff,Box Butte,Cheyenne,Dawes,Sioux,Kimball,Banner,Morrill,Sheridan,Garden,Deuel,Keith,Perkins,Chase,Dundy'),
+  // SD west river (Stanley County is split by the line and keeps Central); Shannon = Oglala Lakota's former name
+  SD: C('America/Denver', 'Pennington,Meade,Lawrence,Butte,Custer,Fall River,Harding,Perkins,Oglala Lakota,Shannon,Jackson,Bennett,Haakon,Ziebach,Dewey,Corson'),
+  // NE: Cherry County is split by the line and keeps Central
+  NE: C('America/Denver', 'Scotts Bluff,Box Butte,Cheyenne,Dawes,Sioux,Kimball,Banner,Morrill,Sheridan,Garden,Deuel,Keith,Perkins,Chase,Dundy,Grant,Arthur,Hooker'),
   KS: C('America/Denver', 'Sherman,Wallace,Greeley,Hamilton'),
 });
 

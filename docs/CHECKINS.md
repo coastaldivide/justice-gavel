@@ -50,6 +50,7 @@ are redacted from request logs like signing links.
 ## Defendant without an account (public, the link is the credential)
 
 - `GET /api/checkins/link/:token` → `{ agency: { name, phone }, first_name, frequency, checked_in_today, done_for_period, next_due, today, time_zone, location: { optional, distance_alerts } }`. Nothing else about the person (no last name, case, phone).
+  Opening or using the link fills the enrollment's time zone from the phone (`X-Timezone`) **only when none is set**: a zone the agent chose is never replaced.
 - `POST /api/checkins/link/:token` `{ lat?, lng?, note? }` → 201 `{ counted, location_shared, … }`.
   The first check-in of the period counts; another on a day already done is recorded (`counted = false`,
   status `extra`) and is not counted twice. Location is stored only when the person ticked "share my

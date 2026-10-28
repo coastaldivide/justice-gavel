@@ -35,7 +35,8 @@ import { runScheduled, purgeJobRuns } from '../utils/jobLock.js';
  * consultation reminder (hourly), Expo receipt checks (every 30 minutes), Bond Desk court
  * texts (every 5 minutes, 'bd-court-reminders'), public defender client texts (every 5 minutes,
  * 'pd-court-reminders', ⚖), Bond Desk automatic payment-plan charges (hourly,
- * 'bd-autopay', only while BOND_AUTOPAY_ENABLED is on), and
+ * 'bd-autopay', only while BOND_AUTOPAY_ENABLED is on), custody alert texts held overnight
+ * (every 15 minutes, 'custody-held-texts', ⚖ CUSTODY_ALERTS_ENABLED), and
  * the daily clean-up of expired sign-in tokens, idempotency keys and job
  * records.
  *
@@ -69,6 +70,7 @@ let pdCourtTask = null;
 let checkinTextsTask = null;
 let checkinMissedTask = null;
 let arrestFeedsTask = null;
+let custodyHeldTask = null;
 let bdAutopayTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
@@ -404,6 +406,15 @@ export function startScheduler() {
       const { runAutopay } = await import('./bondDesk/autopay.js');
       return runAutopay(await getDb());
     }));
+  // Custody alert texts held during the night (21:00–08:00 in the follower's zone) go out from
+  // 08:00 (services/custodyAlerts.js; ⚖ CUSTODY_ALERTS_ENABLED — nothing runs while it is off).
+  custodyHeldTask = scheduleGuarded('6-59/15 * * * *', 'custody-held-texts',
+    (ctx) => runScheduled('custody-held-texts', ctx, async () => {
+      const { custodyAlertsEnabled } = await import('../utils/counselFlags.js');
+      if (!custodyAlertsEnabled()) return { skipped: 'off' };
+      const { sendHeldCustodyTexts } = await import('./custodyAlerts.js');
+      return sendHeldCustodyTexts(await getDb());
+    }));
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
     (ctx) => runScheduled('refresh-token-cleanup', ctx, cleanupExpiredTokens), { timezone: tz });
@@ -454,8 +465,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask, custodyHeldTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = custodyHeldTask = null;
   stopHealthScanScheduler();
 }
 
@@ -476,6 +487,10 @@ export async function cleanupExpiredTokens() {
     const { purgeFinishedJobs } = await import('./aiQueue.js');
     await purgeFinishedJobs(db).catch(e => logger.warn('[scheduler] AI job purge failed:', e?.message));
     await purgeJobRuns(db).catch(e => logger.warn('[scheduler] job-run purge failed:', e?.message));
+    // Telnyx webhook ids (replay protection, 30 days) and phone-line keypad lookups (2 days)
+    await db.run(`DELETE FROM telnyx_event_log WHERE received_at < NOW() - INTERVAL '30 days'`).catch(e => logger.warn('[scheduler] telnyx event purge failed:', e?.message));
+    await db.run(`DELETE FROM voice_keypad_lookups WHERE created_at < NOW() - INTERVAL '2 days'`).catch(e => logger.warn('[scheduler] keypad lookup purge failed:', e?.message));
+    await db.run(`DELETE FROM pd_unroutable_texts WHERE received_at < NOW() - INTERVAL '90 days'`).catch(e => logger.warn('[scheduler] unroutable text purge failed:', e?.message));
   } catch (err) {
     logger.error('[scheduler] token cleanup failed:', err?.message);
   }

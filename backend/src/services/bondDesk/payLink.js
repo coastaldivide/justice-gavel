@@ -129,7 +129,11 @@ export async function listPayRequests(db, agentId, status = 'paid') {
   return rows.map(pub);
 }
 
-/** Attach a paid pay-page payment to a bond: posted once, with a numbered receipt, and the receipt sent. */
+/**
+ * Attach a paid pay-page payment to a bond: posted once, with a numbered receipt, and the receipt sent.
+ * The card was already charged, so a payment larger than the bond's balance is still posted (taken,
+ * like automatic payments — review finding 8); the overpayment is returned and the agent alerted.
+ */
 export async function attachPayRequest(db, { agentId, requestId, bondId, userId }) {
   const a = await agencyFor(db, agentId);
   const out = await db.transaction(async (tx) => {
@@ -137,14 +141,24 @@ export async function attachPayRequest(db, { agentId, requestId, bondId, userId 
     if (!r) throw new LedgerError(404, 'not_found');
     if (r.status === 'attached') throw new LedgerError(409, 'already_attached');
     if (r.status !== 'paid' || !r.stripe_pi_id) throw new LedgerError(409, 'not_paid');
-    const { payment, duplicate } = await postPayment(tx, {
+    const { payment, duplicate, over_balance_cents: over = 0 } = await postPayment(tx, {
       agentId, bondId, amountCents: Number(r.amount_cents), method: 'card', payerName: r.payer_name, reference: 'Card — pay page',
-      receivedOn: todayInZone(a.tz, new Date(r.paid_at)), createdBy: userId, stripePiId: r.stripe_pi_id, source: 'pay_link',
+      receivedOn: todayInZone(a.tz, new Date(r.paid_at)), createdBy: userId, stripePiId: r.stripe_pi_id, source: 'pay_link', taken: true,
     });
     await tx.run(`UPDATE bd_pay_requests SET status = 'attached', bond_id = ?, payment_id = ?, attached_at = NOW(), updated_at = NOW() WHERE id = ?`, [bondId, payment.id, r.id]);
-    return { payment, duplicate, r };
+    return { payment, duplicate, r, over: duplicate ? 0 : over };
   });
   const receipt = out.duplicate ? { email: null, sms: null }
     : await sendReceipt(db, { paymentId: out.payment.id, lang: out.r.lang, email: out.r.payer_email, phone: out.r.payer_phone, smsOk: !!out.r.receipt_sms_ok });
-  return { payment: out.payment, receipt };
+  if (out.over > 0) {
+    const b = await db.get('SELECT defendant_name FROM bd_bonds WHERE id = ?', [bondId]);
+    const u = await db.get('SELECT preferred_language FROM users WHERE id = ?', [agentId]).catch(() => null);
+    const lang = normalizeLang(u?.preferred_language) || 'en';
+    const p = { amount: money(out.over), payer: out.r.payer_name, defendant: b?.defendant_name || '' };
+    const title = msg(lang, 'bd.paylink.agent_over_title', p);
+    const body = msg(lang, 'bd.paylink.agent_over_body', p);
+    await sendPushToUser(Number(agentId), { title, body, data: { type: 'bd_paylink', screen: 'BondDetail', bond_id: Number(bondId) } }).catch(logIgnored('services/bondDesk/payLink'));
+    await sendAgentEmail({ to: a.email, subject: title, text: `${body}\n\n${appUrl()}/bond-desk/bond/${bondId}` });
+  }
+  return { payment: out.payment, receipt, over_balance_cents: out.over };
 }

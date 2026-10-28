@@ -29,10 +29,19 @@ class CardError extends Error {
 export function fakeStripeClass(fake) {
   const id = (p) => `${p}_${fake.run}${++fake.seq}`;
   const log = (name, params, opts) => fake.calls.push({ name, params: clone(params), account: opts?.stripeAccount || null, idem: opts?.idempotencyKey || null });
+  // Same key → the same result, also for requests that arrive at the same time (the first one's
+  // outcome is shared). Card errors are remembered like Stripe does; other errors are not.
+  // fake.forgetKeys() = Stripe's ~24-hour idempotency window has passed.
+  fake.forgetKeys = () => fake.idem.clear();
   const idem = async (opts, fn) => {
     const key = opts?.idempotencyKey ? `${opts.stripeAccount || ''}|${opts.idempotencyKey}` : null;
-    if (key && fake.idem.has(key)) { const r = fake.idem.get(key); if (r.error) throw r.error; return clone(r.value); }
-    try { const value = await fn(); if (key) fake.idem.set(key, { value: clone(value) }); return value; } catch (error) { if (key && error?.type === 'StripeCardError') fake.idem.set(key, { error }); throw error; }
+    if (key && fake.idem.has(key)) { const r = await fake.idem.get(key); if (r.error) throw r.error; return clone(r.value); }
+    const run = (async () => { try { return { value: clone(await fn()) }; } catch (error) { return { error }; } })();
+    if (key) fake.idem.set(key, run);
+    const r = await run;
+    if (r.error && key && r.error?.type !== 'StripeCardError') fake.idem.delete(key);
+    if (r.error) throw r.error;
+    return clone(r.value);
   };
   return class FakeStripe {
     constructor() {
@@ -61,6 +70,13 @@ export function fakeStripeClass(fake) {
           return clone(s);
         }),
         retrieve: async (cid, _p, o) => { log('checkout.sessions.retrieve', { cid }, o); return clone(fake.sessions.get(cid)); },
+        expire: async (cid, _p, o) => {
+          log('checkout.sessions.expire', { cid }, o);
+          const s = fake.sessions.get(cid);
+          if (!s || s.status !== 'open') { const e = new Error('Only Checkout Sessions with a status of open can be expired.'); e.type = 'StripeInvalidRequestError'; throw e; }
+          s.status = 'expired';
+          return clone(s);
+        },
       } };
       this.setupIntents = { retrieve: async (sid, p, o) => {
         log('setupIntents.retrieve', { sid, ...p }, o);
@@ -91,7 +107,10 @@ export function fakeStripeClass(fake) {
       };
       this.subscriptions = { retrieve: async (sid) => ({ id: sid, customer: 'cus_plan' }) };
       this.invoiceItems = {
-        list: async ({ customer }) => ({ data: fake.items.filter((i) => i.customer === customer), has_more: false }),
+        list: async ({ customer, invoice } = {}) => {
+          log('invoiceItems.list', { customer, invoice });
+          return { data: fake.items.filter((i) => (!customer || i.customer === customer) && (!invoice || i.invoice === invoice)).map(clone), has_more: false };
+        },
         create: async (p, o) => idem(o, async () => {
           log('invoiceItems.create', p, o);
           if (fake.failNext === 'invoiceItems.create') { fake.failNext = null; const e = new Error('api error'); e.type = 'StripeAPIError'; throw e; }
@@ -111,6 +130,7 @@ export function fakeStripeClass(fake) {
         retrieve: async (iid) => { log('invoices.retrieve', { iid }); const inv = fake.invoices.get(iid); return inv ? clone({ ...inv, amount_due: invTotal(inv) }) : null; },
         finalizeInvoice: async (iid, _p, o) => idem(o, async () => {
           log('invoices.finalizeInvoice', { iid }, o);
+          if (fake.failNext === 'invoices.finalizeInvoice') { fake.failNext = null; const e = new Error('api error'); e.type = 'StripeAPIError'; throw e; }
           const inv = fake.invoices.get(iid);
           if (inv.status !== 'draft') { const e = new Error('Invoice is already finalized'); e.type = 'StripeInvalidRequestError'; throw e; }
           inv.status = 'open'; inv.amount_due = invTotal(inv); inv.hosted_invoice_url = `https://invoice.stripe.test/${iid}`;

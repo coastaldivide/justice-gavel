@@ -93,7 +93,7 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E17g Staging only (`CHECKIN_LOCATION_ALERTS_ENABLED=true`): in the history, **Use this location as home**, radius 1 mile → check in by link from more than a mile away with location shared → the agent gets "checked in away from home" and the record is flagged. Production (setting off): the home-point controls are not shown.
 - [ ] E17h Phone A signed in with the e-mail of an enrollment attached to a bond with a balance → Home shows "Your bail agent": agency, tap-to-call, next court date, balance, Check in. A different account sees no card.
 - [ ] E17i Staging only (`BOND_REARREST_ALERTS_ENABLED=true`, a test feed in `ARREST_FEED_URLS` you control): a bond (Active) for "Test Quill", date of birth 1990-04-05, county = the feed's county. Add "QUILL, TEST" with dob 1990-04-05 to the feed → run `POST /api/arrests/ingest` (admin) → within a minute the agent gets a push and an e-mail "Re-arrest: Test Quill"; the bond's **Alerts** tab shows the match and "Watching the jail rosters we import for: <county>"; the dashboard lists it. Run the ingest again → no second alert. Turn on "Text me too" → a new booking for another bond with a date of birth → a text (5¢ in Texts this month). A name-only booking → "Possible re-arrest" → **Dismiss** removes it from the dashboard. Production (setting off): no Alerts tab.
-- [ ] E17j Staging only (`CUSTODY_ALERTS_ENABLED=true`): signed in as phone A, Family Connect → find a booking from the test feed → **Follow this booking** with alerts + texts to phone A → More → Custody alerts lists it. Change its status in the feed and ingest → push, e-mail and text "As of … shows … status as "…" (before: "…")" once; ingest again → nothing. Remove the row from the feed and ingest → "no longer listed on the … roster as of … Call … to confirm." (never "released"). Reply STOP from phone A → the next change is pushed but not texted. Unfollow → no more alerts.
+- [ ] E17j Staging only (`CUSTODY_ALERTS_ENABLED=true`): signed in as phone A, Family Connect → find a booking from the test feed → **Follow this booking** with alerts + texts (phone A must be verified first: More → Verify my phone; without it the card offers "Verify my number" and no number can be typed) → More → Custody alerts lists it. Change its status in the feed and ingest → push, e-mail and text "As of … shows … status as "…" (before: "…")" once; ingest again → nothing. Remove the row from the feed and ingest → "no longer listed on the … roster as of … Call … to confirm." (never "released"). Reply STOP from phone A → the next change is pushed but not texted. Unfollow → no more alerts.
 - [ ] E17k Staging only (`BOND_RECOVERY_SHARING_ENABLED=true`): mark a bond Forfeited → **Recovery** tab shows the state's rule and "checked against secondary summaries" → tick it, share with an e-mail you control → the e-mail arrives; open the link on phone B, create an account with that address → the read-only file shows name, deadline, addresses/phones from the questionnaire, check-ins and the agency's phone. On the agent side the share shows "Active" and the view with its time. Signing in with another address → "Sign in with the e-mail address the invitation was sent to". Reinstate the bond (Active) → phone B gets "no longer available". A bond in Illinois → sharing is refused.
 - [ ] E17l Reports → **Tennessee quarterly** → last quarter shows bonds issued and liability per county with "Required by … § 40-11-314 … checked 2026-10-27"; **Export CSV** and **Download PDF** open with the same citation; a TN bond without a county is listed under "needs county".
 - [ ] E17i **Card payments** (Stripe test mode; Connect set up — EXTERNAL_SERVICES_SETUP.md 3b): Bond Desk → Settings →
@@ -206,6 +206,36 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] I5 Pay page `/pay/<slug>` → language chips include the four new languages; Chinese opens Stripe Checkout in
   Chinese, Tagalog in Filipino; Haitian Creole and Arabic open Stripe's English page (Stripe has neither).
 - [ ] I6 E-mails (password reset with the app in Arabic): the e-mail reads right to left.
+
+## J. Review fixes (migration 42, 25 min)
+- [ ] J1 **Confirm payment, once** (staging, autopay on, card `4000 0027 6000 3184`): open the "confirm the payment" link on two
+  tabs and tap **Confirm payment** on both → the same Stripe Checkout page opens in both (Stripe → Checkout sessions shows one
+  for that attempt). Pay in one tab, then tap Confirm on the link again before the bond updates → "This payment was already
+  made…". The bond shows one payment.
+- [ ] J2 **Pay page above the balance**: pay $300 on the pay page for a bond whose balance is $100 → Unassigned payments →
+  Attach → it attaches; a notice says "Attached. It was $200.00 more than the bond's balance — check the ledger."; the agent
+  gets a push / e-mail "Pay-page payment above the balance"; the bond's balance shows −$200.00.
+- [ ] J3 **Phone line without caller ID** (`TELNYX_VOICE_ENABLED=true`): call with caller ID hidden (*67 on most US phones) →
+  1 → "Your caller ID is hidden …" and no keypad prompt. From four different phones, enter the same number on the keypad →
+  the 4th hears "That phone number has been looked up too many times today" and the call ends.
+- [ ] J4 **Phone line texts need consent**: a Bond Desk defendant whose text consent was never confirmed calls → 2 → "We can only
+  text a number that agreed…", no text. Confirm the defendant's number for texts in Bond Desk → call again → 2 → the text arrives.
+- [ ] J5 **Custody texts at night**: with phone A verified and following a booking, change its status in the test feed after
+  9 PM local time and ingest → the push and e-mail arrive at once, no text; after 8 AM the text arrives (job
+  `custody-held-texts`, every 15 minutes). Admin diagnostics → jobs lists `custody-held-texts` ok.
+- [ ] J6 **Public defender: a number in two offices**: make one test phone a client of two offices → text "hello" from it →
+  neither office's inbox shows it; the phone gets "We could not tell which public defender office…"; Admin → Public
+  defender offices shows it under "Client texts not delivered to any office".
+- [ ] J7 **Telnyx replay**: Telnyx portal → Debugging → resend an inbound STOP webhook after you texted START → the number
+  stays opted in (the replay is acknowledged as a duplicate).
+- [ ] J8 **Logs**: open a public defender invitation link, a check-in link and a signing link, then search the server logs
+  (Render → Logs) for the tokens → only `/api/pd/invite/[link]`, `/api/checkins/link/[link]`, `/api/sign/[link]` appear.
+- [ ] J9 **A late reply**: mark today's court date "Attended" in the app, then reply **3** to the "Did you make it?" text →
+  the app still shows Attended; the reply text says it was noted.
+- [ ] J10 **Check-in time zone**: set a text-link enrollment's time zone to Mountain in the agent app, open the check-in link
+  on a phone set to Eastern → the enrollment still shows Mountain.
+- [ ] J11 **Texts end with the opt-out line**: the automatic-payment "did not go through", "confirm the payment" and the
+  receipt texts end "Reply STOP to opt out." (Spanish "Responda STOP para no recibir más mensajes."); the e-mails do not.
 
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card

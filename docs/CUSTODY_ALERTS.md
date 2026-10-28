@@ -8,7 +8,10 @@ routes answer 503 `feature_unavailable`, `GET /api/custody/status` says `enabled
 
 - On an arrest record (Family Connect → find the person → the record), a signed-in person taps **Follow this
   booking** after ticking "Send me alerts about this booking". Optional: link it to one of their own cases, and
-  **texts** to a number they give, with a second tick ("I agree to receive texts at this number"). Up to 10 follows.
+  **texts**, with a second tick ("I agree to receive texts about this booking at this number"). Texts go **only to the
+  account's verified mobile number** (More → Verify my phone, services/phoneVerification.js) — no number is typed in.
+  Without a verified number the card says "Texts go only to a mobile number you have verified" and offers "Verify my
+  number". Up to 10 follows.
 - **Custody alerts** (More → Custody alerts, `/custody-alerts`) lists each followed booking as the roster shows it
   now (status, facility, listed or not, the jail's phone) and the changes since they followed it. Unfollow any time.
 - Only bookings from a roster feed we re-read can be followed (`ARREST_FEED_URLS`, source `feed_*`). Sample / seed
@@ -39,9 +42,17 @@ For followed bookings only, each time the feed is read (nightly, and every two h
 ## How we tell them
 
 Push, e-mail (when the account has one) and — if they opted in — a text through Telnyx (`services/sms.js`):
-never to a number that replied STOP (`sms_opt_outs`), recorded with the provider id (`custody_alerts.provider_id`) so
-`sms_delivery` gets the carrier's status. Texts end "Reply STOP to opt out"; English stays within 2 segments. These
-texts are a platform cost (not billed to anyone). The person's language and time zone are used.
+only to the account's verified phone (checked again at send time: a phone changed since gets nothing, `text_status`
+`skipped`), never to a number that replied STOP (`sms_opt_outs`), recorded with the provider id
+(`custody_alerts.provider_id`) so `sms_delivery` gets the carrier's status. Texts end "Reply STOP to opt out"; English
+stays within 2 segments. These texts are a platform cost (not billed to anyone). The person's language and time zone
+are used.
+
+**Night hours:** no text between 21:00 and 08:00 in the person's time zone (`users.timezone`, default
+America/Chicago). Push and e-mail still go at once; the text is held (`custody_alerts.text_status = 'held'`) and the job
+**`custody-held-texts`** (every 15 minutes, services/scheduler.js; monitored in monitoring/jobHealth.js while
+`CUSTODY_ALERTS_ENABLED` is on) sends it from 08:00, once (claimed before sending). A follow ended, a record taken down
+or texts turned off before the morning → the held text is dropped (`cancelled`).
 
 ## Data and deletion
 
@@ -51,11 +62,13 @@ follow unlinked.
 
 ## API
 
-- `GET /api/custody/status` → `{ enabled, max_follows, texts_live }`
-- `GET /api/custody/follows` → `{ follows: [{ id, arrest_id, available, case_id, case_title, text_opt_in, text_phone_last4,
+- `GET /api/custody/status` → `{ enabled, max_follows, texts_live, verified_phone_last4 }`
+- `GET /api/custody/follows` → `{ verified_phone_last4, follows: [{ id, arrest_id, available, case_id, case_title, text_opt_in, text_phone_last4,
   booking: { name, county, state, facility, status, jail_phone, booking_date, listed, not_listed_since, last_seen_at },
   events: [{ kind, old_value, new_value, observed_at }] }] }`
-- `POST /api/custody/follows` `{ arrest_id, consent: true, case_id?, text_opt_in?, phone?, text_consent? }` → 201
-- `PATCH /api/custody/follows/:id` `{ case_id?, text_opt_in?, phone?, text_consent? }`
+- `POST /api/custody/follows` `{ arrest_id, consent: true, case_id?, text_opt_in?, text_consent?, phone? }` → 201
+- `PATCH /api/custody/follows/:id` `{ case_id?, text_opt_in?, text_consent?, phone? }`
+  With `text_opt_in: true`: 400 `text_consent_required` without the second tick; 409 `phone_not_verified` when the account
+  has no verified phone or `phone` (optional) is another number. Texts go to the verified phone.
 - `DELETE /api/custody/follows/:id`
 - `GET /api/custody/arrest/:arrestId` → `{ follow_id, trackable }`
