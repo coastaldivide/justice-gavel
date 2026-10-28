@@ -12,9 +12,13 @@
  *   The caller is matched by caller ID to a phone number on file: an account's VERIFIED phone
  *   (services/phoneVerification.js), a Bond Desk defendant's phone, or a check-in enrollment's
  *   phone. Otherwise the caller is asked to enter the number on file on the keypad (3 tries per
- *   call, 10 per caller a day). The next court date is read: day, time, court name, room —
- *   nothing else (no case details, no balances). Option 2 texts it to the number on file (never
- *   to a number that replied STOP; one text an hour per number). Option 3 reads the existing
+ *   call, 10 per caller a day) — only when the call shows a caller ID (a hidden / anonymous caller
+ *   is never offered a lookup), and one entered number is looked up at most 3 times a day, whoever
+ *   calls (voice_keypad_lookups). The next court date is read: day, time, court name, room —
+ *   nothing else (no case details, no balances). Option 2 texts it to the number on file only when
+ *   that number has recorded text consent (an account that verified it and agreed to texts, a Bond
+ *   Desk defendant whose agent confirmed it for texts, a check-in enrollment with text consent);
+ *   never to a number that replied STOP; one text an hour per number. Option 3 reads the existing
  *   missed-court guidance (services/courtDayGuidance.js).
  *
  * Settings: TELNYX_VOICE_ENABLED (default off), TELNYX_VOICE_NUMBER (the line's number; calls to
@@ -40,6 +44,7 @@ export const CALLS_PER_HOUR = 6;
 export const CALLS_PER_DAY = 20;
 export const KEYPAD_TRIES_PER_CALL = 3;
 export const KEYPAD_TRIES_PER_DAY = 10;
+export const KEYPAD_LOOKUPS_PER_NUMBER_DAY = 3;
 const OPEN_BONDS = ['prospect', 'active', 'forfeited'];
 
 export function phoneLineEnabled(env) {
@@ -150,6 +155,27 @@ export async function phoneOnFile(db, phone) {
   return r?.hit === true || Number(r?.hit) === 1;
 }
 
+/**
+ * Has this number recorded consent to texts? An account that VERIFIED it and agreed to text
+ * reminders (and has not turned them off since), an open Bond Desk bond whose agent confirmed the
+ * defendant's number for texts, or an active check-in enrollment with text consent for it.
+ */
+export async function textConsentOnFile(db, phone) {
+  const e164 = toE164(phone); const ten = d10(phone);
+  if (!e164 || ten.length !== 10) return false;
+  const digits = (col) => `RIGHT(regexp_replace(COALESCE(${col}, ''), '[^0-9]', '', 'g'), 10)`;
+  const r = await db.get(
+    `SELECT EXISTS (SELECT 1 FROM users WHERE phone_verified_at IS NOT NULL AND phone_verified_phone = ? AND phone = ?
+                     AND sms_consent_at IS NOT NULL AND ${digits('sms_consent_phone')} = ?
+                     AND (sms_opt_out_at IS NULL OR sms_opt_out_at < sms_consent_at))
+         OR EXISTS (SELECT 1 FROM bd_bonds WHERE defendant_text_consent_at IS NOT NULL AND ${digits('defendant_text_consent_phone')} = ?
+                     AND ${digits('defendant_phone')} = ? AND status IN (${OPEN_BONDS.map(() => '?').join(',')}))
+         OR EXISTS (SELECT 1 FROM checkin_enrollments WHERE active = 1 AND sms_consent_at IS NOT NULL
+                     AND ${digits('sms_consent_phone')} = ? AND ${digits('defendant_phone')} = ?) AS ok`,
+    [e164, e164, ten, ten, ten, ...OPEN_BONDS, ten, ten]);
+  return r?.ok === true || Number(r?.ok) === 1;
+}
+
 const lineToday = () => todayInZone(process.env.PHONE_LINE_TIME_ZONE || 'America/Chicago');
 
 /** Record what happened to a text on this call (a 'sent' already recorded is never overwritten). */
@@ -167,6 +193,7 @@ async function textCourtDate(db, callId, phone, cd, lang) {
   if (await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [to])) {
     await logText(db, callId, 'skipped:opted_out'); return 'text_blocked';
   }
+  if (!(await textConsentOnFile(db, to))) { await logText(db, callId, 'skipped:no_consent'); return 'text_no_consent'; }
   const h = hmac(to);
   const recent = await db.get(
     `SELECT 1 FROM voice_calls WHERE text_to_hash = ? AND texted = 'sent' AND started_at > NOW() - INTERVAL '1 hour' LIMIT 1`, [h]);
@@ -246,6 +273,12 @@ export async function handleVoiceEvent(db, event) {
       }
       if (digits === '1' || digits === '2') {
         if (!state.p) {
+          // no caller ID (hidden / anonymous): never look up a typed number (keypad enumeration)
+          const call = await db.get('SELECT caller_hash FROM voice_calls WHERE call_control_id = ?', [id]);
+          if (!call?.caller_hash) {
+            await gather(id, `${say(state.l, 'no_caller_id')} ${say(state.l, 'menu')}`, state);
+            return { handled: true, action: 'no_caller_id' };
+          }
           await gather(id, say(state.l, 'enter_phone'), { ...state, s: 'phone', a: digits }, { digits: '0123456789', min: 10, max: 11 });
           return { handled: true, action: 'ask_phone' };
         }
@@ -260,6 +293,11 @@ export async function handleVoiceEvent(db, event) {
       const tries = Number(state.k || 0) + 1;
       const row = await db.get(
         `UPDATE voice_calls SET keypad_tries = keypad_tries + 1 WHERE call_control_id = ? RETURNING caller_hash`, [id]);
+      if (!row?.caller_hash) {
+        // no caller ID on this call (or no such call): no lookup, whatever client_state says
+        await gather(id, `${say(state.l, 'no_caller_id')} ${say(state.l, 'menu')}`, { s: 'menu', l: state.l, p: null, m: null, k: tries });
+        return { handled: true, action: 'no_caller_id' };
+      }
       const day = row?.caller_hash ? await db.get(
         `SELECT COALESCE(SUM(keypad_tries), 0)::int AS n FROM voice_calls WHERE caller_hash = ? AND started_at > NOW() - INTERVAL '1 day'`,
         [row.caller_hash]) : { n: tries };
@@ -272,6 +310,15 @@ export async function handleVoiceEvent(db, event) {
       if (!entered || d10(entered).length !== 10) {
         await gather(id, `${say(state.l, 'not_found')} ${say(state.l, 'menu')}`, next);
         return { handled: true, action: 'keypad_not_found' };
+      }
+      // one entered number: at most KEYPAD_LOOKUPS_PER_NUMBER_DAY lookups a day, whoever calls
+      const nh = hmac(entered);
+      await db.run('INSERT INTO voice_keypad_lookups (number_hash, call_control_id) VALUES (?, ?)', [nh, String(id).slice(0, 200)]);
+      const looked = await db.get(
+        `SELECT COUNT(*)::int AS n FROM voice_keypad_lookups WHERE number_hash = ? AND created_at > NOW() - INTERVAL '1 day'`, [nh]);
+      if (Number(looked?.n || 0) > KEYPAD_LOOKUPS_PER_NUMBER_DAY) {
+        await speakThenHangUp(id, say(state.l, 'number_limited'), state);
+        return { handled: true, action: 'keypad_number_limited' };
       }
       const matched = await phoneOnFile(db, entered);
       if (!matched) {

@@ -28,7 +28,7 @@ import { msg, normalizeLang, stripeLocale } from '../../i18n/index.js';
 import { fitSms } from '../smsText.js';
 import { sendPushToUser } from '../pushDelivery.js';
 import { DEFAULT_TIME_ZONE, isValidTimeZone, todayInZone, addDays, zonedParts } from '../../utils/timezone.js';
-import { agencyFor, hashToken, newToken, sendAgentTextRecord, sendAgentEmail, maskPhone } from './core.js';
+import { agencyFor, hashToken, newToken, sendAgentTextRecord, sendAgentEmail, maskPhone, withoutOptOut } from './core.js';
 import { planStatus, liveTotal, money, usDate } from './money.js';
 import { LedgerError, postPayment, sendReceipt } from './payments.js';
 import { appUrl, chargeableAccount, stripeOr503 } from './connect.js';
@@ -315,10 +315,25 @@ export async function startActionPayment(db, token, { lang } = {}) {
     await db.run(`UPDATE bd_autopay_attempts SET status = 'cancelled', failure_code = 'nothing_owed', updated_at = NOW() WHERE id = ?`, [att.id]);
     throw new LedgerError(409, 'nothing_owed');
   }
+  const stripe = stripeOr503();
+  const opts = { stripeAccount: row.stripe_account_id };
+  // One Checkout session per attempt (review finding 1): a second click, another tab or a refresh
+  // gets the session already open for this amount. A paid one is never offered again; an open one
+  // for another amount (a payment was recorded since) is expired before a new one is made.
+  if (att.action_session_id) {
+    const prev = await stripe.checkout.sessions.retrieve(att.action_session_id, {}, opts).catch(() => null);
+    if (prev?.status === 'complete' || prev?.payment_status === 'paid') throw new LedgerError(409, 'payment_received');
+    if (prev?.status === 'open' && Number(prev.amount_total) === amount && prev.url) return { url: prev.url };
+    if (prev?.status === 'open') {
+      await stripe.checkout.sessions.expire(prev.id, {}, opts).catch((e) => logger.warn({ err: e?.message }, '[bd-autopay] expire session'));
+    }
+  }
   const bond = await db.get('SELECT defendant_name FROM bd_bonds WHERE id = ?', [row.bond_id]);
   const shown = normalizeLang(lang) || row.lang;
   const fee = feeFor(amount);
-  const session = await stripeOr503().checkout.sessions.create({
+  // the key is the same for requests that arrive together (→ the same session), new after an expiry
+  const idempotencyKey = `bd-action-${att.id}-${att.action_session_id || 'first'}-${amount}`;
+  const session = await stripe.checkout.sessions.create({
     mode: 'payment', customer: row.stripe_customer_id || undefined,
     locale: stripeLocale(shown),
     line_items: [{ quantity: 1, price_data: { currency: 'usd', unit_amount: amount,
@@ -327,8 +342,9 @@ export async function startActionPayment(db, token, { lang } = {}) {
       metadata: { bd_kind: 'autopay', bd_attempt_id: String(att.id), bd_autopay_id: String(row.id), bd_bond_id: String(row.bond_id), bd_agent_id: String(row.agent_id) } },
     metadata: { bd_kind: 'autopay', bd_attempt_id: String(att.id) },
     success_url: `${autopayLink(token)}?paid=1`, cancel_url: autopayLink(token),
-  }, { stripeAccount: row.stripe_account_id });
-  await db.run('UPDATE bd_autopay_attempts SET action_session_id = ?, amount_cents = ?, fee_cents = ?, updated_at = NOW() WHERE id = ?', [session.id, amount, fee, att.id]);
+  }, { ...opts, idempotencyKey });
+  await db.run(`UPDATE bd_autopay_attempts SET action_session_id = ?, amount_cents = ?, fee_cents = ?, updated_at = NOW()
+                 WHERE id = ? AND status = 'action_needed'`, [session.id, amount, fee, att.id]);
   return { url: session.url };
 }
 
@@ -345,29 +361,38 @@ async function alertAgent(db, agentId, bondId, kind, params, agency = null) {
   return { a, lang };
 }
 
-/** Post a successful automatic charge (job or webhook), exactly once. → payment | null */
+/**
+ * Post a successful automatic charge (job or webhook), once per PaymentIntent. → payment | null
+ * The money was taken, so it is always posted (taken: true). A second successful payment for an
+ * attempt that is already paid (review finding 1: e.g. an older Checkout page paid as well) is
+ * posted too — never dropped — and the agent is alerted to it.
+ */
 export async function recordAutopaySuccess(db, { attemptId, pi }) {
   const att = await db.get('SELECT * FROM bd_autopay_attempts WHERE id = ?', [attemptId]);
-  if (!att) return null;
+  if (!att || !pi?.id) return null;
   const ap = await db.get('SELECT * FROM bd_autopay WHERE id = ?', [att.autopay_id]);
   const tz = await agentTz(db, ap.agent_id);
   const amount = Number(pi.amount_received || pi.amount || att.amount_cents);
   const out = await db.transaction(async (tx) => {
     const cur = await tx.get('SELECT payment_id FROM bd_autopay_attempts WHERE id = ? FOR UPDATE', [attemptId]);
-    if (cur.payment_id) return null;
     const r = await postPayment(tx, {
       agentId: Number(ap.agent_id), bondId: Number(ap.bond_id), amountCents: amount, method: 'card', payerName: ap.payer_name,
-      reference: `Automatic payment${ap.card_last4 ? ` (card ending ${ap.card_last4})` : ''}`, receivedOn: todayInZone(tz),
-      stripePiId: pi.id, source: 'autopay', taken: true,
+      reference: `Automatic payment${ap.card_last4 ? ` (card ending ${ap.card_last4})` : ''}${cur.payment_id ? ' — second payment for one installment' : ''}`,
+      receivedOn: todayInZone(tz), stripePiId: pi.id, source: 'autopay', taken: true,
     });
+    if (r.duplicate) return r;   // this PaymentIntent was posted already (webhook replay, job + webhook)
+    if (cur.payment_id) return { ...r, second: true };
     await tx.run(`UPDATE bd_autopay_attempts SET status = 'succeeded', payment_id = ?, stripe_pi_id = ?, failure_code = NULL, failure_message = NULL, updated_at = NOW() WHERE id = ?`,
       [r.payment.id, pi.id, attemptId]);
     return r;
   });
-  if (!out || out.duplicate) return out?.payment || null;
+  if (out.duplicate) return out.payment;
   if (ap.payer_email) await sendReceipt(db, { paymentId: out.payment.id, lang: ap.lang, email: ap.payer_email }).catch(logIgnored('services/bondDesk/autopay'));
-  if (out.over_balance_cents > 0) {
-    const b = await db.get('SELECT defendant_name FROM bd_bonds WHERE id = ?', [ap.bond_id]);
+  const b = await db.get('SELECT defendant_name FROM bd_bonds WHERE id = ?', [ap.bond_id]);
+  if (out.second) {
+    logger.warn({ attempt: attemptId, payment: out.payment.id }, '[bd-autopay] a second payment for one installment was posted');
+    await alertAgent(db, ap.agent_id, ap.bond_id, 'second', { amount: money(amount), defendant: b?.defendant_name || '' });
+  } else if (out.over_balance_cents > 0) {
     await alertAgent(db, ap.agent_id, ap.bond_id, 'over', { amount: money(out.over_balance_cents), defendant: b?.defendant_name || '' });
   }
   return out.payment;
@@ -398,7 +423,7 @@ async function notifyFailure(db, att, retryOn) {
       body: fitSms((f) => msg(ap.lang, `bd.sms.autopay_failed_${key}`, f), p, [['defendant', 6], ['agency', 12]], { lang: ap.lang }) });
   }
   if (ap.payer_email) {
-    await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_failed_subject', p), text: msg(ap.lang, `bd.sms.autopay_failed_${key}`, p) });
+    await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_failed_subject', p), text: withoutOptOut(ap.lang, msg(ap.lang, `bd.sms.autopay_failed_${key}`, p)) });
   }
   const { lang } = await alertAgent(db, ap.agent_id, ap.bond_id, `failed_${key}`, p, a);
   if (a.phone) {
@@ -425,7 +450,7 @@ async function recordActionNeeded(db, { att, ap, pi, token }) {
     await sendAgentTextRecord(db, { agentId: ap.agent_id, bondId: ap.bond_id, purpose: 'autopay_action', to: ap.payer_phone,
       body: fitSms((f) => msg(ap.lang, 'bd.sms.autopay_action', f), p, [['defendant', 6], ['agency', 12]], { lang: ap.lang }) });
   }
-  if (ap.payer_email) await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_action_subject', p), text: msg(ap.lang, 'bd.sms.autopay_action', p) });
+  if (ap.payer_email) await sendAgentEmail({ to: ap.payer_email, subject: msg(ap.lang, 'bd.email.autopay_action_subject', p), text: withoutOptOut(ap.lang, msg(ap.lang, 'bd.sms.autopay_action', p)) });
   await alertAgent(db, ap.agent_id, ap.bond_id, 'action', p, a);
 }
 
@@ -536,11 +561,22 @@ export async function runAutopay(db, { now = new Date() } = {}) {
 
 // ── Webhook (services/stripeWebhook.js) ──────────────────────────────────────
 
-/** payment_intent.succeeded with metadata.bd_kind = 'autopay' */
-export async function onAutopayIntentSucceeded(db, pi) {
+/**
+ * payment_intent.succeeded (or a paid Checkout session) with metadata.bd_kind = 'autopay'.
+ * Posted only when the payment succeeded on the plan's own connected account (event.account) —
+ * review finding 13: metadata alone is not trusted.
+ */
+export async function onAutopayIntentSucceeded(db, pi, { account } = {}) {
   const attemptId = Number.parseInt(pi?.metadata?.bd_attempt_id, 10);
-  if (!Number.isSafeInteger(attemptId)) return;
-  await recordAutopaySuccess(db, { attemptId, pi });
+  if (!Number.isSafeInteger(attemptId) || pi?.status !== 'succeeded') return null;
+  const row = await db.get(
+    `SELECT ap.id, ap.stripe_account_id FROM bd_autopay_attempts t JOIN bd_autopay ap ON ap.id = t.autopay_id WHERE t.id = ?`, [attemptId]);
+  if (!row || !account || account !== row.stripe_account_id) {
+    logger.warn({ attempt: attemptId }, '[bd-autopay] payment event not from the plan\'s connected account — ignored');
+    return null;
+  }
+  if (pi.metadata.bd_autopay_id && String(pi.metadata.bd_autopay_id) !== String(row.id)) return null;
+  return recordAutopaySuccess(db, { attemptId, pi });
 }
 
 /** payment_intent.payment_failed with metadata.bd_kind = 'autopay' (off-session charges only) */

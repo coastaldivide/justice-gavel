@@ -461,7 +461,13 @@ Off unless `BOND_AUTOPAY_ENABLED` (unset = off in production, on elsewhere). Off
    - succeeded → posted by `postPayment` (`source: 'autopay'`, numbered receipt, oldest-first coverage) exactly once, receipt e-mailed
    - declined → payer texted (if the agent confirmed the number) and e-mailed, agent pushed, e-mailed and texted; retried once 3 days later
    - the bank asks the payer to confirm (`authentication_required`) → the off-session charge is cancelled, the payer gets a fresh link
-     by text / e-mail; `POST …/confirm` opens Checkout (payment mode, same fee) and the webhook posts it
+     by text / e-mail; `POST …/confirm` opens Checkout (payment mode, same fee) and the webhook posts it. **One Checkout session per
+     attempt:** a second click, another tab or a refresh gets the session already open (idempotency key
+     `bd-action-<attemptId>-<previous session or "first">-<amount>`, so requests that arrive together get the same session);
+     if the amount changed since (a payment was recorded), the open session is expired and a new one made; once the session is
+     paid, `…/confirm` answers 409 `payment_received`. If a second successful payment for an already-paid attempt still arrives,
+     it is **posted** to the bond (taken, "second payment for one installment"), receipt e-mailed, and the agent gets a push and
+     an e-mail "Second card payment for one installment" — never dropped. Any refund is the agency's decision in its Stripe dashboard.
    - a charge Stripe did not answer is re-sent with the same idempotency key (never a second charge)
    - the plan changed after the payer agreed → those installments are not charged; the agent sees "plan changed" and sends a new link
 4. **Stop.** The payer: `POST /api/bd-pay/autopay/:token/stop` (the agent is told). The agent: `POST /bond-desk/bonds/:id/autopay/stop`.
@@ -469,7 +475,12 @@ Off unless `BOND_AUTOPAY_ENABLED` (unset = off in production, on elsewhere). Off
 - `GET /bond-desk/bonds/:id/autopay` → `{ enabled, autopay, attempts: [{ due_on, attempt, amount_cents, fee_cents, status:
   processing|succeeded|failed|action_needed|cancelled, failure_code, retry_on, payment_id }], plan_changed, fee_cents }`
 - Webhooks (`payment_intent.succeeded` / `payment_intent.payment_failed` / `checkout.session.completed` with `metadata.bd_kind`)
-  change nothing on a replay: the event id is claimed once and the PaymentIntent id is unique on `bd_payments`.
+  change nothing on a replay: the event id is claimed once and the PaymentIntent id is unique on `bd_payments`. An automatic
+  payment is posted only when the event comes from **the plan's own connected account** (`event.account` = the autopay's
+  `stripe_account_id`) and the PaymentIntent's status is `succeeded` (a paid Checkout session counts as succeeded); metadata alone
+  is never trusted.
+- Payer texts about automatic payments (failed, confirm, receipt) end with the opt-out sentence ("Reply STOP to opt out." and its
+  equivalent in each language, `sms.opt_out`); the e-mails built from the same words leave it out.
 
 ## Pay link (B2) — "Pay {agency}"
 
@@ -480,9 +491,11 @@ Every agency with card payments on has a public page `/pay/<slug>` (stable rando
   account; 10 per IP per 15 minutes. The payer agrees "I am paying {agency}, not Justice Gavel. All payments are final."
 - Paid (`payment_intent.succeeded` / `checkout.session.completed`) → `bd_pay_requests.status = 'paid'`, the agent gets a push and an e-mail.
 - `GET /bond-desk/pay-requests?status=paid|attached` → "Unassigned payments" on the Bond Desk dashboard.
-- `POST /bond-desk/pay-requests/:id/attach { bond_id }` → posted by `postPayment` (`source: 'pay_link'`, numbered receipt, 409
-  `over_balance` if more than the bond's balance — add the charge first), once (409 `already_attached`); the receipt is e-mailed and,
-  when the payer asked, texted (5¢).
+- `POST /bond-desk/pay-requests/:id/attach { bond_id }` → `{ payment, receipt, over_balance_cents }`, posted by `postPayment`
+  (`source: 'pay_link'`, numbered receipt) once (409 `already_attached`); the receipt is e-mailed and, when the payer asked,
+  texted (5¢). The card was already charged, so a payment **larger than the bond's balance is still attached** (taken, like
+  automatic payments): the response carries `over_balance_cents`, the app shows "Attached. It was $X more than the bond's
+  balance — check the ledger.", and the agent gets a push and an e-mail "Pay-page payment above the balance".
 
 ## Staff and seats (B8)
 

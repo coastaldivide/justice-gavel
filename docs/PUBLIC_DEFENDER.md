@@ -74,8 +74,14 @@ For every client court date (`pd_reminders`, unique per hearing + number + step 
 
 ## Two-way messages
 - Any inbound text that is not STOP / START / HELP / 1 / 2 / 3 goes to the **shared inbox** of the office whose client has
-  that number (routes/webhooks/telnyx.js → `routeInbound`). If the number belongs to clients of several offices, the
-  office that texted it most recently gets it.
+  that number (routes/webhooks/telnyx.js → `routeInbound`). If the number belongs to clients of **more than one office**,
+  it goes to **no** office (one office must never read another office's client's message): it is kept in
+  `pd_unroutable_texts` (body encrypted, the number as an HMAC + last 4 digits, the offices' ids), shown to Justice Gavel
+  admins (`GET /api/admin/pd-offices/unroutable`, "Client texts not delivered to any office" on the admin screen), and the
+  sender is texted (not to a STOP number): "Justice Gavel: We could not tell which public defender office your message is
+  for, so it was not delivered. Please call your public defender's office. Reply STOP to opt out." (8 languages,
+  `pd.sms.unroutable`, in the language of the client's most recent office record). Kept 90 days (daily clean-up).
+- Replayed Telnyx webhooks (same `data.id`) are processed once (`telnyx_event_log`); routing runs after Telnyx has its 200.
 - Office members get a push "New text from a client", with no message content.
 - Staff see one conversation per client: every text sent and received, newest first, 100 per page. They can:
   - reply by text, sent as "{office}: …", up to 480 characters, never to a STOP number;

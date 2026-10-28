@@ -2118,6 +2118,38 @@
         }
       }
     },
+    "/api/admin/pd-offices/unroutable": {
+      "get": {
+        "operationId": "get_api_admin_pd-offices_unroutable",
+        "summary": "GET /api/admin/pd-offices/unroutable",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/admin/pd-offices/{id}": {
       "get": {
         "operationId": "get_api_admin_pd-offices_id",

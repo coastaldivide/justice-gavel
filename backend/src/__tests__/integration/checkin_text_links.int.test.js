@@ -181,6 +181,20 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
     expect((await req('put', `/api/checkins/enrollments/${sms.id}`, agent).send({ active: true })).status).toBe(200);
   });
 
+  test('RF12 opening the link never replaces the time zone the agent set; it fills one only when none is set', async () => {
+    if (!ctx.app) return;
+    const set = await req('patch', `/api/checkins/enrollments/${sms.id}/settings`, agent).send({ time_zone: 'America/Denver' });
+    expect(set.status).toBe(200);
+    expect((await req('get', `/api/checkins/link/${firstToken}`).set('X-Timezone', 'America/New_York')).status).toBe(200);
+    expect((await ctx.db.get('SELECT time_zone FROM checkin_enrollments WHERE id = ?', [sms.id])).time_zone).toBe('America/Denver');
+    await ctx.db.run('UPDATE checkin_enrollments SET time_zone = NULL WHERE id = ?', [sms.id]);
+    await req('get', `/api/checkins/link/${firstToken}`).set('X-Timezone', 'America/New_York');
+    expect((await ctx.db.get('SELECT time_zone FROM checkin_enrollments WHERE id = ?', [sms.id])).time_zone).toBe('America/New_York');
+    await req('get', `/api/checkins/link/${firstToken}`).set('X-Timezone', 'America/Los_Angeles');
+    expect((await ctx.db.get('SELECT time_zone FROM checkin_enrollments WHERE id = ?', [sms.id])).time_zone).toBe('America/New_York');
+    await ctx.db.run('UPDATE checkin_enrollments SET time_zone = ? WHERE id = ?', [TZ, sms.id]);
+  });
+
   test('CT4 reminder texts go once per due day inside quiet hours; STOP blocks every text', async () => {
     if (!ctx.app) return;
     const phone = '+16155550162';

@@ -246,6 +246,12 @@ export async function sendAgentEmail({ to, subject, text }) {
   }
 }
 
+/** A text's words for an e-mail: without the "Reply STOP to opt out." sentence (sms.opt_out). */
+export function withoutOptOut(lang, text) {
+  const stop = msg(lang, 'sms.opt_out');
+  return String(text ?? '').split(stop).join('').replace(/[ \t]+$/g, '').trim();
+}
+
 /** The signing-link message in the packet's language. */
 export function signingMessage(lang, { agency, defendant, link }) {
   return {

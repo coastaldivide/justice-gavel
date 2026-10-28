@@ -6,6 +6,7 @@
  *   GET    /                                  offices (newest first, at most 200)
  *   POST   /  { name, county?, state, phone?, seat_limit?, billing_email?, admin_email }
  *                                             creates the office and e-mails its first office admin an invitation
+ *   GET    /unroutable                        client texts that matched several offices (delivered to none; last 100)
  *   GET    /:id                               the office, members and invitations, invoices
  *   PATCH  /:id { name?, county?, state?, phone?, seat_limit?, billing_email?, status? }
  *   POST   /:id/invites { email, role? }      invite another office admin / staff member
@@ -41,6 +42,12 @@ router.post('/', pdHandle(async (req, res, db) => {
   const out = await createOffice(db, { adminId: req.user.id, body: b(req), lang: b(req).lang || resolveLang(req) });
   await audit('pd.office_created', { userId: req.user.id, req, entityType: 'pd_office', entityId: out.office.id, metadata: { seat_limit: out.office.seat_limit } }).catch(logIgnored('routes/admin/pdOffices'));
   res.status(201).json(out);
+}));
+
+// texts from a number that is a client of several offices: delivered to none (review finding 9)
+router.get('/unroutable', pdHandle(async (req, res, db) => {
+  const { listUnroutable } = await import('../../services/publicDefender/texts.js');
+  res.json({ texts: await listUnroutable(db) });
 }));
 
 router.get('/:id', pdHandle(async (req, res, db) => {

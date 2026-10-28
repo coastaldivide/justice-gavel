@@ -73,6 +73,7 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
       await db.run(`DELETE FROM checkin_enrollments WHERE bondsman_id = ?`, [agent.user.id]);
       await db.run(`DELETE FROM bd_bonds WHERE agent_id = ?`, [agent.user.id]);
       await db.run(`DELETE FROM voice_calls WHERE call_control_id LIKE 'v3:pl-%'`);
+      await db.run(`DELETE FROM voice_keypad_lookups WHERE call_control_id LIKE 'v3:pl-%'`);
       await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
       await db.transaction(async (tx) => {
         await tx.get(`SELECT set_config('jg.results_purge', 'on', true)`);
@@ -291,8 +292,9 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
     expect((await req('get', '/api/court-dates/guidance')).body.phone_line).toEqual({ number: '+18005550199', languages: ['en', 'es'] });
     // a Bond Desk defendant with two hearings; the bond carries details that must never be read
     const b = await ctx.db.get(
-      `INSERT INTO bd_bonds (agent_id, status, defendant_name, defendant_phone, county, state, court_name, bond_amount_cents, charges, case_number)
-       VALUES (?, 'active', 'Pat Phoneline', '(615) 555-0240', 'Davidson', 'TN', 'General Sessions Court', 900000, 'SECRET-CHARGE', 'CASE-SECRET') RETURNING id`, [agent.user.id]);
+      `INSERT INTO bd_bonds (agent_id, status, defendant_name, defendant_phone, county, state, court_name, bond_amount_cents, charges, case_number,
+                             defendant_text_consent_at, defendant_text_consent_phone)
+       VALUES (?, 'active', 'Pat Phoneline', '(615) 555-0240', 'Davidson', 'TN', 'General Sessions Court', 900000, 'SECRET-CHARGE', 'CASE-SECRET', NOW(), '+16155550240') RETURNING id`, [agent.user.id]);
     const d1 = addDays(today(), 8); const d2 = addDays(today(), 30);
     await ctx.db.run(`INSERT INTO bd_court_dates (bond_id, court_date, court_time, court_name, room) VALUES (?, CAST(? AS date), '09:00', 'General Sessions Court', '5C'), (?, CAST(? AS date), '10:00', NULL, NULL)`,
       [b.id, d1, b.id, d2]);
@@ -389,6 +391,110 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
     expect(lastCmd().url).toMatch(/\/speak$/);
     expect((await ctx.db.get('SELECT refused FROM voice_calls WHERE call_control_id = ?', [lim])).refused).toBe('rate_limited');
     delete process.env.TELNYX_VOICE_ENABLED;
+  });
+
+  test('RF3 no caller ID → no keypad lookup; one entered number is looked up only a few times a day, whoever calls', async () => {
+    if (!ctx.app) return;
+    process.env.TELNYX_VOICE_ENABLED = 'true';
+    try {
+      // a withheld / anonymous caller ID: the line will not look up a typed number
+      for (const from of ['anonymous', 'Restricted', '']) {
+        const id = `v3:pl-${++callN}`;
+        const base = { call_control_id: id, from, to: '+18005550199', direction: 'incoming' };
+        await voice('call.initiated', base);
+        await voice('call.answered', { ...base, client_state: lastCmd().body.client_state });
+        await voice('call.gather.ended', { ...base, digits: '1', status: 'valid', client_state: lastCmd().body.client_state });
+        const r = await voice('call.gather.ended', { ...base, digits: '1', status: 'valid', client_state: lastCmd().body.client_state });
+        expect(r.body.action).toBe('no_caller_id');
+        expect(lastCmd().body.payload).toMatch(/caller ID/);
+        expect(lastCmd().body.minimum_digits).not.toBe(10);
+        // a keypad state forged into client_state is refused too
+        const forged = Buffer.from(JSON.stringify({ s: 'phone', l: 'en', a: '1', k: 0 })).toString('base64');
+        expect((await voice('call.gather.ended', { ...base, digits: '6155550240', status: 'valid', client_state: forged })).body.action).toBe('no_caller_id');
+      }
+      // one number typed from many phones: the 4th lookup of the day is refused
+      const victimNo = '6155550262';
+      const out = [];
+      for (let i = 0; i < 4; i++) {
+        const id = `v3:pl-${++callN}`;
+        const base = { call_control_id: id, from: `+1212555013${i}`, to: '+18005550199', direction: 'incoming' };
+        await voice('call.initiated', base);
+        await voice('call.answered', { ...base, client_state: lastCmd().body.client_state });
+        await voice('call.gather.ended', { ...base, digits: '1', status: 'valid', client_state: lastCmd().body.client_state });
+        await voice('call.gather.ended', { ...base, digits: '1', status: 'valid', client_state: lastCmd().body.client_state });
+        out.push((await voice('call.gather.ended', { ...base, digits: victimNo, status: 'valid', client_state: lastCmd().body.client_state })).body.action);
+      }
+      expect(out).toEqual(['keypad_not_found', 'keypad_not_found', 'keypad_not_found', 'keypad_number_limited']);
+      expect(lastCmd().url).toMatch(/\/speak$/);
+      const rows = await ctx.db.all('SELECT number_hash FROM voice_keypad_lookups WHERE call_control_id LIKE ?', ['v3:pl-%']);
+      expect(JSON.stringify(rows)).not.toContain(victimNo);
+    } finally { delete process.env.TELNYX_VOICE_ENABLED; }
+  });
+
+  test('RF4 option 2 texts only a number with recorded text consent', async () => {
+    if (!ctx.app) return;
+    process.env.TELNYX_VOICE_ENABLED = 'true';
+    try {
+      const b = await ctx.db.get(
+        `INSERT INTO bd_bonds (agent_id, status, defendant_name, defendant_phone, bond_amount_cents) VALUES (?, 'active', 'Nora Noconsent', '615-555-0263', 100000) RETURNING id`, [agent.user.id]);
+      await ctx.db.run(`INSERT INTO bd_court_dates (bond_id, court_date, court_time) VALUES (?, CAST(? AS date), '09:00')`, [b.id, addDays(today(), 6)]);
+      const press2 = async (phone) => {
+        const id = `v3:pl-${++callN}`;
+        const st = Buffer.from(JSON.stringify({ s: 'menu', l: 'en', p: phone, m: 'caller_id' })).toString('base64');
+        await voice('call.gather.ended', { call_control_id: id, from: phone, digits: '2', status: 'valid', client_state: st });
+        return lastCmd().body.payload;
+      };
+      // a Bond Desk defendant whose agent never recorded text consent: not texted
+      const t0 = textsTo('+16155550263').length;
+      expect(await press2('+16155550263')).toMatch(/only text a number that agreed/);
+      expect(textsTo('+16155550263').length).toBe(t0);
+      await ctx.db.run(`UPDATE bd_bonds SET defendant_text_consent_at = NOW(), defendant_text_consent_phone = '+16155550263' WHERE id = ?`, [b.id]);
+      expect(await press2('+16155550263')).toMatch(/We sent your next court date/);
+      expect(textsTo('+16155550263').length).toBe(t0 + 1);
+      // a verified account without text consent: not texted; with it: texted
+      await verifyDirect(follower, '+16155550264');
+      const caseRow = await ctx.db.get(`INSERT INTO cases (user_id, title) VALUES (?, 'RF4 case') RETURNING id`, [follower.user.id]);
+      await ctx.db.run(`INSERT INTO court_dates (user_id, case_id, court_date, status) VALUES (?, ?, CAST(? AS date), 'scheduled')`, [follower.user.id, caseRow.id, addDays(today(), 5)]);
+      expect(await press2('+16155550264')).toMatch(/only text a number that agreed/);
+      expect(textsTo('+16155550264')).toHaveLength(0);
+      await ctx.db.run(`UPDATE users SET sms_consent_at = NOW(), sms_consent_phone = '+16155550264' WHERE id = ?`, [follower.user.id]);
+      expect(await press2('+16155550264')).toMatch(/We sent your next court date/);
+      expect(textsTo('+16155550264')).toHaveLength(1);
+      // turned texts off since: not texted
+      await ctx.db.run(`UPDATE users SET sms_opt_out_at = NOW() + INTERVAL '1 second' WHERE id = ?`, [follower.user.id]);
+      await ctx.db.run(`UPDATE voice_calls SET started_at = started_at - INTERVAL '2 hours' WHERE text_to_hash IS NOT NULL`);
+      expect(await press2('+16155550264')).toMatch(/only text a number that agreed/);
+      expect(textsTo('+16155550264')).toHaveLength(1);
+    } finally { delete process.env.TELNYX_VOICE_ENABLED; }
+  });
+
+  test('RF14 parallel guesses: never more than 5 codes are compared', async () => {
+    if (!ctx.app) return;
+    const { confirmVerification } = await import('../../services/phoneVerification.js');
+    expect((await req('post', '/api/me/phone/verify', quietFollower).send({ phone: '615-555-0270' })).status).toBe(200);
+    const good = codeFor('+16155550270');
+    const bad = good === '000000' ? '111111' : '000000';
+    // every "count this try" statement waits here until it is released, then they run one by one
+    const queue = []; let open = false;
+    const gatedGet = (sql, params) => {
+      if (open || !/attempts\s*=\s*attempts\s*\+\s*1/.test(sql)) return ctx.db.get(sql, params);
+      return new Promise((resolve, reject) => queue.push({ sql, params, resolve, reject }));
+    };
+    const db = new Proxy(ctx.db, { get: (t, k) => (k === 'get' ? gatedGet : (typeof t[k] === 'function' ? t[k].bind(t) : t[k])) });
+    const wrongs = Array.from({ length: 5 }, () => confirmVerification(db, quietFollower.user.id, bad).then(() => 'verified', (e) => e.code));
+    for (let i = 0; i < 100 && queue.length < 5; i++) await new Promise((r) => setTimeout(r, 10));
+    expect(queue.length).toBe(5);
+    // the 6th guess (the right code) arrives while the five wrong ones are still being counted
+    const right = confirmVerification(db, quietFollower.user.id, good).then(() => 'verified', (e) => e.code);
+    await Promise.race([right, new Promise((r) => setTimeout(r, 400))]);
+    open = true;
+    for (const q of queue) { try { q.resolve(await ctx.db.get(q.sql, q.params)); } catch (e) { q.reject(e); } }
+    const results = await Promise.all([...wrongs, right]);
+    expect(results.slice(0, 5).sort()).toEqual(['code_locked', 'wrong_code', 'wrong_code', 'wrong_code', 'wrong_code']);
+    expect(results[5]).not.toBe('verified');
+    expect((await req('get', '/api/me/phone', quietFollower)).body.phone_verified).toBe(false);
+    expect((await ctx.db.get(`SELECT attempts, status FROM phone_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [quietFollower.user.id])))
+      .toEqual({ attempts: 5, status: 'locked' });
   });
 
   // ── B11 results ────────────────────────────────────────────────────────────

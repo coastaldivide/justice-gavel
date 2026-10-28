@@ -2,8 +2,10 @@
  * FollowBookingCard — "Follow this booking" on an arrest record (A9, docs/CUSTODY_ALERTS.md).
  * Shown only when the server's ⚖ setting CUSTODY_ALERTS_ENABLED is on (GET /api/custody/status)
  * and the person is signed in. Following needs an explicit "send me alerts" consent; texts need a
- * number and a second consent. We repeat only what the jail roster shows ("no longer listed —
- * call the jail to confirm"), never "released" on our own.
+ * second consent and go only to the account's VERIFIED phone (no number is typed here; without
+ * one the card offers "Verify my number"). Texts are held between 9 PM and 8 AM local time. We
+ * repeat only what the jail roster shows ("no longer listed — call the jail to confirm"), never
+ * "released" on our own.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -11,9 +13,9 @@ import { useNavigation } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from './ToastProvider';
 import { t, useLang } from '../i18n';
-import { Btn, Card, Check, Field, Line } from './bondDesk/ui';
+import { Btn, Card, Check, Line } from './bondDesk/ui';
 
-interface Status { enabled: boolean; max_follows: number; texts_live: boolean }
+interface Status { enabled: boolean; max_follows: number; texts_live: boolean; verified_phone_last4?: string | null }
 
 export function FollowBookingCard({ arrestId }: { arrestId: number | null | undefined }) {
   useLang();
@@ -23,7 +25,6 @@ export function FollowBookingCard({ arrestId }: { arrestId: number | null | unde
   const [state, setState] = useState<{ follow_id: number | null; trackable: boolean } | null>(null);
   const [consent, setConsent] = useState(false);
   const [texts, setTexts] = useState(false);
-  const [phone, setPhone] = useState('');
   const [textConsent, setTextConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -48,11 +49,12 @@ export function FollowBookingCard({ arrestId }: { arrestId: number | null | unde
   const follow = async () => {
     if (busy) return;
     if (!consent) { setError(t('cus_consent_needed')); return; }
-    if (texts && (!phone.trim() || !textConsent)) { setError(t('cus_text_needed')); return; }
+    if (texts && !status?.verified_phone_last4) { setError(t('cus_verify_first')); return; }
+    if (texts && !textConsent) { setError(t('cus_text_needed')); return; }
     setBusy(true); setError('');
     try {
       const r = await api.post<{ follow_id: number }>('/custody/follows', {
-        arrest_id: arrestId, consent: true, ...(texts ? { text_opt_in: true, phone: phone.trim(), text_consent: true } : {}),
+        arrest_id: arrestId, consent: true, ...(texts ? { text_opt_in: true, text_consent: true } : {}),
       });
       if (!mounted.current) return;
       setState({ follow_id: r.data.follow_id, trackable: true });
@@ -74,12 +76,18 @@ export function FollowBookingCard({ arrestId }: { arrestId: number | null | unde
             <Line muted>{t('cus_follow_intro')}</Line>
             <Check label={t('cus_consent')} value={consent} onChange={setConsent} testID="follow-consent" />
             {status.texts_live && <Check label={t('cus_texts_too')} value={texts} onChange={setTexts} testID="follow-texts" />}
-            {texts && (
+            {texts && (status.verified_phone_last4 ? (
               <>
-                <Field label={t('cus_phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" testID="follow-phone" maxLength={40} />
+                <Line testID="follow-verified-phone">{t('cus_texts_verified', { last4: status.verified_phone_last4 })}</Line>
                 <Check label={t('cus_text_consent')} value={textConsent} onChange={setTextConsent} testID="follow-text-consent" />
+                <Line muted>{t('cus_text_night')}</Line>
               </>
-            )}
+            ) : (
+              <>
+                <Line testID="follow-verify-first">{t('cus_verify_first')}</Line>
+                <Btn kind="ghost" label={t('cus_verify_btn')} onPress={() => navigation.navigate('VerifyPhone')} testID="follow-verify-phone" />
+              </>
+            ))}
             {!!error && <Line tone="danger" testID="follow-error">{error}</Line>}
             <Btn label={t('cus_follow')} onPress={follow} busy={busy} disabled={!consent} testID="follow-booking" />
           </View>

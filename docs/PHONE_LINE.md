@@ -25,17 +25,29 @@ EXTERNAL_SERVICES_SETUP.md section 8b; test in docs/LIVE_TEST.md step H7.
    There are no guest (no-account) reminders in the app, so there is nothing else to match.
 4. Menu: **1** hear your next court date · **2** get it by text · **3** what to do if you missed court.
    - No match: 1 or 2 asks for the 10-digit number on file on the keypad (3 numbers per call, 10 per caller a day).
+     Only when the call shows a caller ID: a hidden / anonymous / restricted caller is told "Your caller ID is hidden …
+     please call again from your own phone with caller ID on" and nothing typed is looked up (no keypad enumeration
+     without a per-caller limit). One typed number is looked up at most **3 times a day, whoever calls**
+     (`voice_keypad_lookups`, an HMAC of the number); the 4th lookup hears "That phone number has been looked up too
+     many times today" and the call ends. Answers stay date-only.
    - 1 reads only: day, time, court name, room ("Your next court date is Tuesday, November 3, at 9:30 AM. General
      Sessions Court. Room 5C."). Never case numbers, charges, names, balances or anything else.
-   - 2 texts the same to the number on file (never to the caller's number if it differs), never to a number that
-     replied STOP (`sms_opt_outs`), at most once an hour per number; the Telnyx message id is kept for `sms_delivery`.
+   - 2 texts the same to the number on file (never to the caller's number if it differs) **only when that number has
+     recorded text consent**: an account that verified it and agreed to text reminders (`users.sms_consent_*`, not
+     turned off since), an open Bond Desk bond whose agent confirmed the defendant's number for texts
+     (`bd_bonds.defendant_text_consent_*`), or an active check-in enrollment with text consent
+     (`checkin_enrollments.sms_consent_*`). Otherwise the caller hears "We can only text a number that agreed to get
+     text messages about court dates. Press 1 to hear the date instead." Never to a number that replied STOP
+     (`sms_opt_outs`), at most once an hour per number; the Telnyx message id is kept for `sms_delivery`.
    - 3 reads the app's existing missed-court guidance (services/courtDayGuidance.js), then the menu again.
    - No key at the menu → goodbye and hang up.
 5. `call.hangup` → the log row is closed.
 
 ## Call log (`voice_calls`)
 No recordings (recording is never requested). No full numbers: an HMAC of the caller (for the limit) and its last 4
-digits; language, how the caller was matched, whether the date was read, the text result, keypad tries, refusals.
+digits; language, how the caller was matched, whether the date was read, the text result (`sent`, `skipped:no_consent`,
+`skipped:opted_out`, …), keypad tries, refusals. Keypad lookups (`voice_keypad_lookups`: HMAC of the typed number, call
+id, time) are deleted after 2 days by the daily clean-up.
 
 ## Cost
 Telnyx bills the number and the minutes to the platform (not to bail agents). Watch usage in Telnyx → Reporting.

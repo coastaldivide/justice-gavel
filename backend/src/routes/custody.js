@@ -2,10 +2,12 @@
  * routes/custody.js — release / transfer alerts for families (A9, ⚖ counsel question 6.3,
  * CUSTODY_ALERTS_ENABLED; services/custodyAlerts.js, docs/CUSTODY_ALERTS.md).
  *
- *   GET    /api/custody/status              { enabled, max_follows, texts_live } (never 503)
+ *   GET    /api/custody/status              { enabled, max_follows, texts_live, verified_phone_last4 } (never 503)
  *   GET    /api/custody/follows             my follows: the booking as the roster shows it + its events
- *   POST   /api/custody/follows             { arrest_id, consent: true, case_id?, text_opt_in?, phone?, text_consent? }
- *   PATCH  /api/custody/follows/:id         { case_id? , text_opt_in?, phone?, text_consent? }
+ *   POST   /api/custody/follows             { arrest_id, consent: true, case_id?, text_opt_in?, text_consent?, phone? }
+ *   PATCH  /api/custody/follows/:id         { case_id? , text_opt_in?, text_consent?, phone? }
+ * Texts go only to the account's verified phone (409 phone_not_verified without one, or when `phone`
+ * is another number); they are held at night (21:00–08:00 local) and sent from 08:00.
  *   DELETE /api/custody/follows/:id         unfollow (any time)
  *   GET    /api/custody/arrest/:arrestId    { follow_id, trackable } for the arrest record page
  * Everything but /status answers 503 feature_unavailable while the setting is off.
@@ -20,7 +22,7 @@ import { smsLive } from '../services/sms.js';
 import { safeInt } from '../utils/routeHelpers.js';
 import { custodyAlertsEnabled } from '../utils/counselFlags.js';
 import {
-  CustodyError, MAX_FOLLOWS, followBooking, followFor, followableArrest, listFollows, unfollow, updateFollow,
+  CustodyError, MAX_FOLLOWS, followBooking, followFor, followableArrest, listFollows, unfollow, updateFollow, verifiedPhoneOf,
 } from '../services/custodyAlerts.js';
 
 const router = Router();
@@ -42,12 +44,16 @@ const b = (req) => (req.body && typeof req.body === 'object' && !Array.isArray(r
 
 router.use(authRequired, limiter);
 
-router.get('/status', (req, res) => {
-  res.json({ enabled: custodyAlertsEnabled(), max_follows: MAX_FOLLOWS, texts_live: smsLive() });
-});
+const last4 = (p) => (p ? String(p).slice(-4) : null);
+
+router.get('/status', handle(async (req, res, db) => {
+  const enabled = custodyAlertsEnabled();
+  res.json({ enabled, max_follows: MAX_FOLLOWS, texts_live: smsLive(), verified_phone_last4: enabled ? last4(await verifiedPhoneOf(db, req.user.id)) : null });
+}));
 
 router.get('/follows', on, handle(async (req, res, db) => {
-  res.json({ follows: await listFollows(db, req.user.id), max_follows: MAX_FOLLOWS, texts_live: smsLive() });
+  res.json({ follows: await listFollows(db, req.user.id), max_follows: MAX_FOLLOWS, texts_live: smsLive(),
+    verified_phone_last4: last4(await verifiedPhoneOf(db, req.user.id)) });
 }));
 
 router.post('/follows', on, writeLimiter, handle(async (req, res, db) => {

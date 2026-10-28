@@ -184,6 +184,11 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
   });
 
   let followId; let arrestQuill;
+  /** A zone where the local hour is now `hour` (Etc/GMT zones: the sign is inverted). */
+  const zoneAtHour = (hour, now = new Date()) => {
+    let off = (hour - now.getUTCHours() + 24) % 24; if (off > 12) off -= 24;
+    return off === 0 ? 'UTC' : `Etc/GMT${off > 0 ? '-' : '+'}${Math.abs(off)}`;
+  };
   test('RC3 custody alerts: consent, one alert per change, "no longer listed", STOP, takedown, unfollow', async () => {
     if (!ctx.app) return;
     arrestQuill = Number((await ctx.db.get(`SELECT id FROM arrest_records WHERE source = ? AND source_key = 'b:RC-101'`, [SOURCE])).id);
@@ -196,7 +201,14 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     expect(noTextConsent.body.code).toBe('text_consent_required');
     const seed = await ctx.db.get(`SELECT id FROM arrest_records WHERE source = 'seed_v1' LIMIT 1`);
     if (seed) expect((await req('post', '/api/custody/follows', family).send({ arrest_id: seed.id, consent: true })).status).toBe(404);
-    const f = await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true, text_opt_in: true, phone: '615-555-0160', text_consent: true });
+    // RF5: texts go only to the account's VERIFIED phone, never to a number typed in
+    const unverified = await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true, text_opt_in: true, phone: '615-555-0160', text_consent: true });
+    expect([unverified.status, unverified.body.code]).toEqual([409, 'phone_not_verified']);
+    await ctx.db.run('UPDATE users SET phone = ?, phone_verified_phone = ?, phone_verified_at = NOW(), timezone = ? WHERE id = ?', ['+16155550160', '+16155550160', zoneAtHour(12), family.user.id]);
+    expect((await req('get', '/api/custody/status', family)).body.verified_phone_last4).toBe('0160');
+    const other = await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true, text_opt_in: true, phone: '615-555-0169', text_consent: true });
+    expect([other.status, other.body.code]).toEqual([409, 'phone_not_verified']);
+    const f = await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true, text_opt_in: true, text_consent: true });
     expect(f.status).toBe(201);
     followId = f.body.follow_id;
     expect((await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true })).body.code).toBe('already_following');
@@ -249,6 +261,43 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     expect((await req('delete', `/api/custody/follows/${followId}`, stranger)).status).toBe(404);
     expect((await req('delete', `/api/custody/follows/${followId}`, family)).body).toEqual({ ok: true });
     expect((await req('get', '/api/custody/follows', family)).body.follows).toEqual([]);
+  });
+
+  test('RF5 custody texts: only to the verified phone; held at night (21:00–08:00 local) and sent in the morning', async () => {
+    if (!ctx.app) return;
+    const { sendHeldCustodyTexts } = await import('../../services/custodyAlerts.js');
+    const night = new Date();
+    await ctx.db.run('UPDATE users SET timezone = ? WHERE id = ?', [zoneAtHour(2, night), family.user.id]);
+    await ctx.db.run('DELETE FROM sms_opt_outs WHERE phone = ?', ['+16155550160']);
+    const f = await req('post', '/api/custody/follows', family).send({ arrest_id: arrestQuill, consent: true, text_opt_in: true, text_consent: true });
+    expect(f.status).toBe(201);
+    const fid = f.body.follow_id;
+    roster = roster.map((x) => (x.booking_id === 'RC-101' ? { ...x, status: 'Court hold' } : x));
+    const t0 = texts.filter((t) => t.to === '+16155550160').length;
+    const p0 = pushesTo('ExponentPushToken[rc-family]').length;
+    await ingest();
+    expect(pushesTo('ExponentPushToken[rc-family]').length).toBe(p0 + 1);          // push and e-mail at once
+    expect(texts.filter((t) => t.to === '+16155550160').length).toBe(t0);           // the text waits
+    const held = await ctx.db.get(`SELECT a.id, a.text_status FROM custody_alerts a WHERE a.follow_id = ?`, [fid]);
+    expect(held.text_status).toBe('held');
+    // still night: nothing; 07:59 local: nothing; 08:00 local: sent once
+    expect(await sendHeldCustodyTexts(ctx.db, { now: night })).toMatchObject({ sent: 0 });
+    const at8 = night.getTime() + (6 * 60 - night.getUTCMinutes()) * 60_000 - night.getUTCSeconds() * 1000;   // 08:00:00 local
+    expect(await sendHeldCustodyTexts(ctx.db, { now: new Date(at8 - 60_000) })).toMatchObject({ sent: 0 });
+    const morning = new Date(at8 + 60_000);
+    expect(await sendHeldCustodyTexts(ctx.db, { now: morning })).toMatchObject({ sent: 1 });
+    expect(await sendHeldCustodyTexts(ctx.db, { now: morning })).toMatchObject({ sent: 0 });
+    const sent = texts.filter((t) => t.to === '+16155550160').slice(t0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].text).toMatch(/Court hold.*Reply STOP to opt out\.$/);
+    expect((await ctx.db.get('SELECT text_status, provider_id FROM custody_alerts WHERE id = ?', [held.id]))).toEqual({ text_status: 'sent', provider_id: expect.any(String) });
+    // the verified phone changed since: a held text is not sent to the old number
+    roster = roster.map((x) => (x.booking_id === 'RC-101' ? { ...x, status: 'In custody' } : x));
+    await ingest();
+    await ctx.db.run('UPDATE users SET phone = ? WHERE id = ?', ['+16155550168', family.user.id]);   // the trigger drops the verification
+    expect(await sendHeldCustodyTexts(ctx.db, { now: morning })).toMatchObject({ sent: 0 });
+    expect((await ctx.db.get(`SELECT text_status FROM custody_alerts WHERE follow_id = ? ORDER BY id DESC LIMIT 1`, [fid])).text_status).toBe('skipped');
+    expect((await req('delete', `/api/custody/follows/${fid}`, family)).body).toEqual({ ok: true });
   });
 
   let shareLink; let shareId;

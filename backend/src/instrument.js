@@ -9,7 +9,7 @@ import 'dotenv/config';
 import * as Sentry from '@sentry/node';
 import logger from './utils/logger.js';
 import { defaultRelease } from './utils/version.js';
-import { redact, redactString, stripQuery } from './utils/redact.js';
+import { redact, redactString, redactSecretPath, stripQuery } from './utils/redact.js';
 
 const FLAG = Symbol.for('justicegavel.sentry.initialised');
 
@@ -26,7 +26,7 @@ export function scrubSentryEvent(event) {
     if (r.data !== undefined) r.data = '[Filtered]';
     delete r.cookies;
     delete r.query_string;
-    if (r.url) r.url = stripQuery(r.url);
+    if (r.url) r.url = redactSecretPath(stripQuery(r.url));
     if (r.headers) {
       const h = {};
       for (const [k, v] of Object.entries(r.headers)) {
@@ -55,7 +55,7 @@ export function scrubSentryBreadcrumb(crumb) {
   if (typeof out.message === 'string') out.message = redactString(out.message);
   if (out.data) {
     out.data = redact(out.data);
-    if (typeof out.data.url === 'string') out.data.url = stripQuery(out.data.url);
+    if (typeof out.data.url === 'string') out.data.url = redactSecretPath(stripQuery(out.data.url));
   }
   return out;
 }

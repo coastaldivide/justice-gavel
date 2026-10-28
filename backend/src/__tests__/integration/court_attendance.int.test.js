@@ -43,8 +43,10 @@ describeIntegration('Court attendance: Bond Desk reminders, morning-after, "Did 
     const raw = JSON.stringify({ data: { event_type: 'message.received', payload: { text, from: { phone_number: from } } } });
     const ts = Math.floor(Date.now() / 1000);
     const sig = crypto.sign(null, Buffer.from(`${ts}|${raw}`), privateKey).toString('base64');
+    // the slow part (court answers, inbox routing) runs after Telnyx has its 200: wait for it
     return ctx.request().post('/api/webhooks/telnyx').set('Content-Type', 'application/json')
-      .set('telnyx-signature-ed25519', sig).set('telnyx-timestamp', String(ts)).send(raw);
+      .set('telnyx-signature-ed25519', sig).set('telnyx-timestamp', String(ts)).send(raw)
+      .then(async (r) => { await (await import('../../routes/webhooks/telnyx.js')).inboundIdle(); return r; });
   };
   const textsTo = (to) => texts.filter((t) => t.to === to);
   const rowsFor = (cdId) => ctx.db.all(`SELECT id, phone, step, court_day, send_at, status, reason, text_id FROM bd_reminders WHERE court_date_id = ? ORDER BY send_at, phone`, [cdId]);
@@ -392,6 +394,30 @@ describeIntegration('Court attendance: Bond Desk reminders, morning-after, "Did 
     await dispatchDueReminders({ db: ctx.db, now: new Date() });
     expect(await ctx.db.get('SELECT status, error FROM scheduled_pushes WHERE id = ?', [planned.id])).toEqual({ status: 'cancelled', error: 'court_date_not_scheduled' });
     expect(texts.length).toBe(b3);
+  });
+
+  test('RF11 a late text reply never overwrites a status the person set in the app; a reply can change a reply', async () => {
+    if (!ctx.app) return;
+    const today = todayInZone('America/Chicago');
+    const caseId = Number((await ctx.db.get('SELECT case_id FROM court_dates WHERE user_id = ? ORDER BY id LIMIT 1', [consumer.user.id])).case_id);
+    const cd = await req('post', '/api/court-dates', consumer).send({ case_id: caseId, court_date: today, court_time: '07:00' });
+    expect(cd.status).toBe(201);
+    await ctx.db.run('UPDATE court_dates SET asked_phone = ?, asked_at = NOW() WHERE id = ?', [APP, cd.body.id]);
+    // the person marks it in the app first …
+    expect((await req('patch', `/api/court-dates/${cd.body.id}`, consumer).send({ status: 'attended' })).status).toBe(200);
+    expect(await ctx.db.get('SELECT status, status_source FROM court_dates WHERE id = ?', [cd.body.id])).toEqual({ status: 'attended', status_source: 'app' });
+    // … then a late "3" by text: noted, nothing changed, no "act today" text
+    const b0 = texts.length;
+    expect((await inbound(APP, '3')).status).toBe(200);
+    expect(await ctx.db.get('SELECT status, status_source FROM court_dates WHERE id = ?', [cd.body.id])).toEqual({ status: 'attended', status_source: 'app' });
+    expect(texts.slice(b0).filter((x) => x.to === APP && /act today/.test(x.text))).toEqual([]);
+    // a status that came from a reply can be corrected by the next reply
+    const cd2 = await req('post', '/api/court-dates', consumer).send({ case_id: caseId, court_date: today, court_time: '07:30' });
+    await ctx.db.run('UPDATE court_dates SET asked_phone = ?, asked_at = NOW() WHERE id = ?', [APP, cd2.body.id]);
+    await inbound(APP, '2');
+    expect((await ctx.db.get('SELECT status FROM court_dates WHERE id = ?', [cd2.body.id])).status).toBe('rescheduled');
+    await inbound(APP, '1');
+    expect(await ctx.db.get('SELECT status, status_source FROM court_dates WHERE id = ?', [cd2.body.id])).toEqual({ status: 'attended', status_source: 'reply' });
   });
 
   test('CA8 metrics: admin per county and month; the agent sees their own bonds (JSON + CSV)', async () => {

@@ -5,6 +5,8 @@
  *   - per office: members and invitations, change seats / billing e-mail, invite another person
  *   - "Create annual invoice": a preview of active clients and the amount (setup fee on the first
  *     invoice only + clients × the yearly fee; texts included), then one Stripe invoice per office and year
+ *   - client texts delivered to no office: the number is a client of more than one office (the
+ *     sender was texted to call their office)
  */
 import React, { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -20,6 +22,7 @@ import { fmtWhen } from '../services/bondDesk';
 import { type PdInvoice, type PdMembers, type PdOffice, usd } from '../services/publicDefender';
 
 type OfficeRow = PdOffice & { members: number; pending_invites: number; clients: number };
+interface Unroutable { id: number; received_at: string; phone_last4: string | null; body: string | null; replied: string | null; offices: { id: number; name: string | null }[] }
 interface Preview { year: number; existing: PdInvoice | null; active_clients: number; setup_cents: number; per_client_cents: number; clients_cents?: number; amount_cents: number; billing_email: string | null }
 const blank = { name: '', county: '', state: 'TN', phone: '', seat_limit: '5', billing_email: '', admin_email: '' };
 
@@ -41,6 +44,7 @@ function AdminPdOfficesScreen(_: ScreenProps) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [link, setLink] = useState('');
+  const [unroutable, setUnroutable] = useState<Unroutable[]>([]);
 
   const fail = (e: unknown) => {
     const err = e as { response?: { status?: number; data?: { code?: string } } };
@@ -49,7 +53,8 @@ function AdminPdOfficesScreen(_: ScreenProps) {
     else setProblem(apiErrorMessage(e, t('pd_failed')));
   };
   const load = useCallback(async () => {
-    try { const r = await api.get<{ offices: OfficeRow[]; prices: { setup_cents: number; per_client_cents: number } }>('/admin/pd-offices'); setOffices(r.data.offices); setPrices(r.data.prices); } catch (e) { fail(e); }
+    try { const r = await api.get<{ offices: OfficeRow[]; prices: { setup_cents: number; per_client_cents: number } }>('/admin/pd-offices'); setOffices(r.data.offices); setPrices(r.data.prices); } catch (e) { fail(e); return; }
+    try { const u = await api.get<{ texts: Unroutable[] }>('/admin/pd-offices/unroutable'); setUnroutable(u.data?.texts || []); } catch { setUnroutable([]); }
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const openOffice = async (id: number) => {
@@ -115,6 +120,17 @@ function AdminPdOfficesScreen(_: ScreenProps) {
         </Card>
       )}
       {offices?.length === 0 && <Card><Line muted testID="admin-pd-empty">{t('pd_adm_none')}</Line></Card>}
+      {unroutable.length > 0 && (
+        <Card title={t('pd_adm_unroutable_title')} testID="admin-pd-unroutable">
+          <Line muted>{t('pd_adm_unroutable_help')}</Line>
+          {unroutable.map(u => (
+            <View key={u.id} testID={`admin-pd-unroutable-${u.id}`}>
+              <Line strong>{t('pd_adm_unroutable_line', { when: fmtWhen(u.received_at), last4: u.phone_last4 || '—', offices: u.offices.map(o => o.name || `#${o.id}`).join(', ') })}</Line>
+              {!!u.body && <Line>{u.body}</Line>}
+            </View>
+          ))}
+        </Card>
+      )}
       {offices?.map(o => (
         <Card key={o.id} title={o.name} testID={`admin-pd-office-${o.id}`}>
           <Line muted>{[o.county, o.state].filter(Boolean).join(', ')} · {t('pd_adm_counts', { members: o.members, pending: o.pending_invites, seats: o.seat_limit, clients: o.clients })}</Line>

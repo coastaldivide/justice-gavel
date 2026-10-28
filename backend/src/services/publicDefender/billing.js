@@ -108,14 +108,25 @@ export async function createInvoice(db, { officeId, year, adminId, now = new Dat
     }
     let inv = await stripe.invoices.retrieve(invId);
     if (inv.status === 'draft') {
-      // 3. the lines
-      if (Number(row.setup_cents) > 0) {
+      // 3. the lines — each once. Stripe forgets idempotency keys after ~24 hours, so a retry after
+      // that would add a line again (review finding 2): the invoice's own lines are read first and a
+      // line whose metadata.line is already on it is not added again.
+      const have = new Set();
+      for (let after = null, page = 0; page < 10; page++) {
+        const list = await stripe.invoiceItems.list({ invoice: invId, limit: 100, ...(after ? { starting_after: after } : {}) });
+        for (const it of list?.data || []) {
+          if (it?.metadata?.pd_invoice_id === String(row.id) && it.metadata.line) have.add(it.metadata.line);
+        }
+        if (!list?.has_more || !list.data?.length) break;
+        after = list.data[list.data.length - 1].id;
+      }
+      if (Number(row.setup_cents) > 0 && !have.has('setup')) {
         await stripe.invoiceItems.create({ customer, invoice: invId, currency: 'usd', amount: Number(row.setup_cents),
           description: 'Setup fee (one time)', metadata: { pd_invoice_id: String(row.id), line: 'setup' } },
         { idempotencyKey: `pd-inv-${row.id}-setup` });
       }
       const clientsCents = Number(row.active_clients) * Number(row.per_client_cents);
-      if (clientsCents > 0) {
+      if (clientsCents > 0 && !have.has('clients')) {
         await stripe.invoiceItems.create({ customer, invoice: invId, currency: 'usd', amount: clientsCents,
           description: `Active clients ${year}: ${row.active_clients} × ${usd(row.per_client_cents)} (texts included)`,
           metadata: { pd_invoice_id: String(row.id), line: 'clients' } },

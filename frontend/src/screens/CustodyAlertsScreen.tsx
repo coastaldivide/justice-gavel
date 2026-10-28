@@ -4,7 +4,8 @@
  *
  * Each followed booking as the jail roster shows it now (status, facility, listed or "no longer
  * listed since …", the jail's phone to call) and the changes since it was followed. The person
- * can link it to one of their cases, turn texts on or off, and unfollow at any time. Wording
+ * can link it to one of their cases, turn texts on or off (texts go only to the account's verified
+ * phone, never between 9 PM and 8 AM local time), and unfollow at any time. Wording
  * repeats the roster; it never says "released" unless the roster's own status does.
  * API: GET/PATCH/DELETE /api/custody/follows (backend routes/custody.js).
  */
@@ -17,7 +18,7 @@ import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { FONTS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
-import { Btn, Card, Check, Chips, Field, Line, Pill, Row } from '../components/bondDesk/ui';
+import { Btn, Card, Check, Chips, Line, Pill, Row } from '../components/bondDesk/ui';
 import { fmtDay, fmtWhen } from '../services/bondDesk';
 
 export interface CustodyEvent { id: number; kind: 'status_changed' | 'facility_changed' | 'not_listed' | 'listed_again'; old_value: string | null; new_value: string | null; observed_at: string }
@@ -36,7 +37,7 @@ export function eventText(e: CustodyEvent): string {
   return t(e.kind === 'not_listed' ? 'cus_ev_not_listed' : 'cus_ev_listed_again');
 }
 
-function CustodyAlertsScreen(_: ScreenProps) {
+function CustodyAlertsScreen({ navigation }: ScreenProps) {
   useLang();
   const { colors } = useTheme();
   const s = makeStyles(colors);
@@ -48,14 +49,15 @@ function CustodyAlertsScreen(_: ScreenProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [cases, setCases] = useState<{ id: number; title: string | null }[]>([]);
-  const [editing, setEditing] = useState<{ id: number; phone: string; consent: boolean } | null>(null);
+  const [editing, setEditing] = useState<{ id: number; consent: boolean } | null>(null);
+  const [verified4, setVerified4] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get<{ follows: Follow[] }>('/custody/follows');
-      if (mounted.current) { setFollows(r.data?.follows || []); setError(''); setOff(false); }
+      const r = await api.get<{ follows: Follow[]; verified_phone_last4?: string | null }>('/custody/follows');
+      if (mounted.current) { setFollows(r.data?.follows || []); setVerified4(r.data?.verified_phone_last4 || null); setError(''); setOff(false); }
     } catch (e) {
       const err = e as { response?: { status?: number; data?: { code?: string } } };
       if (err?.response?.data?.code === 'feature_unavailable') { if (mounted.current) { setOff(true); setFollows([]); } return; }
@@ -83,9 +85,10 @@ function CustodyAlertsScreen(_: ScreenProps) {
   const linkCase = (f: Follow, caseId: string) => run(`case-${f.id}`, () => api.patch(`/custody/follows/${f.id}`, { case_id: caseId === 'none' ? null : Number(caseId) }), t('cus_saved'));
   const textsOff = (f: Follow) => run(`txt-${f.id}`, () => api.patch(`/custody/follows/${f.id}`, { text_opt_in: false }), t('cus_saved'));
   const textsOn = (f: Follow) => {
-    if (!editing || !editing.phone.trim() || !editing.consent) { showToast(t('cus_text_needed'), 'error'); return; }
+    if (!verified4) { showToast(t('cus_verify_first'), 'error'); return; }
+    if (!editing || !editing.consent) { showToast(t('cus_text_needed'), 'error'); return; }
     return run(`txt-${f.id}`, async () => {
-      await api.patch(`/custody/follows/${f.id}`, { text_opt_in: true, phone: editing.phone.trim(), text_consent: true });
+      await api.patch(`/custody/follows/${f.id}`, { text_opt_in: true, text_consent: true });
       if (mounted.current) setEditing(null);
     }, t('cus_saved'));
   };
@@ -142,14 +145,20 @@ function CustodyAlertsScreen(_: ScreenProps) {
               <Line testID={`custody-texts-on-${f.id}`}>{t('cus_texts_on', { last4: f.text_phone_last4 || '' })}</Line>
               <Btn kind="ghost" label={t('cus_texts_stop')} busy={busy === `txt-${f.id}`} onPress={() => textsOff(f)} testID={`custody-texts-off-${f.id}`} />
             </>
-          ) : editing?.id === f.id ? (
+          ) : editing?.id === f.id ? (verified4 ? (
             <>
-              <Field label={t('cus_phone')} value={editing.phone} onChangeText={v => setEditing({ ...editing, phone: v })} keyboardType="phone-pad" maxLength={40} testID={`custody-phone-${f.id}`} />
+              <Line testID={`custody-verified-${f.id}`}>{t('cus_texts_verified', { last4: verified4 })}</Line>
               <Check label={t('cus_text_consent')} value={editing.consent} onChange={v => setEditing({ ...editing, consent: v })} testID={`custody-text-consent-${f.id}`} />
+              <Line muted>{t('cus_text_night')}</Line>
               <Btn label={t('cus_texts_start')} busy={busy === `txt-${f.id}`} onPress={() => textsOn(f)} testID={`custody-texts-save-${f.id}`} />
             </>
           ) : (
-            <Btn kind="ghost" label={t('cus_texts_add')} onPress={() => setEditing({ id: f.id, phone: '', consent: false })} testID={`custody-texts-add-${f.id}`} />
+            <>
+              <Line testID={`custody-verify-first-${f.id}`}>{t('cus_verify_first')}</Line>
+              <Btn kind="ghost" label={t('cus_verify_btn')} onPress={() => navigation.navigate('VerifyPhone')} testID={`custody-verify-phone-${f.id}`} />
+            </>
+          )) : (
+            <Btn kind="ghost" label={t('cus_texts_add')} onPress={() => setEditing({ id: f.id, consent: false })} testID={`custody-texts-add-${f.id}`} />
           )}
           <Btn kind="danger" label={t('cus_unfollow')} busy={busy === `un-${f.id}`} onPress={() => unfollow(f)} testID={`custody-unfollow-${f.id}`} />
         </Card>

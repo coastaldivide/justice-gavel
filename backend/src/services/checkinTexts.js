@@ -364,10 +364,15 @@ export async function checkLocation(db, e, { recordId, lat, lng }) {
   return d;
 }
 
-/** Remember the defendant's zone on a text-link enrollment (no account to hold it). */
+/**
+ * Remember the defendant's zone on a text-link enrollment (no account to hold it) — only when none
+ * is set: a zone the agent chose is never replaced by the phone that opens the link (review
+ * finding 12).
+ */
 export async function rememberEnrollmentZone(db, e, tz) {
-  if (!isValidTimeZone(tz) || e.user_id || e.time_zone === tz) return false;
-  await db.run('UPDATE checkin_enrollments SET time_zone = ? WHERE id = ?', [tz, e.id]);
+  if (!isValidTimeZone(tz) || e.user_id || e.time_zone) return false;
+  const r = await db.run('UPDATE checkin_enrollments SET time_zone = ? WHERE id = ? AND time_zone IS NULL', [tz, e.id]);
+  if (!r?.changes) return false;
   e.time_zone = tz;
   return true;
 }

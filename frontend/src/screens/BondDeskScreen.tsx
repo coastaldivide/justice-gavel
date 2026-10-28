@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { useHasSession, SignInNeeded } from '../components/SignInNeeded';
+import { useToast } from '../components/ToastProvider';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { Btn, Card, Chips, Field, Line, Notice, Pill } from '../components/bondDesk/ui';
@@ -44,6 +45,7 @@ export function AccessGate({ access, onPlans }: { access: Access; onPlans: () =>
 function BondDeskScreen({ navigation }: ScreenProps) {
   useLang();
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const s = makeStyles(colors);
   const { hasSession, recheck } = useHasSession();
   const mounted = useRef(true);
@@ -136,7 +138,9 @@ function BondDeskScreen({ navigation }: ScreenProps) {
     if (!attaching) return;
     setAttachBusy(bond.id); setAttachErr('');
     try {
-      await api.post(`/bond-desk/pay-requests/${attaching.id}/attach`, { bond_id: bond.id });
+      const r = await api.post<{ over_balance_cents?: number }>(`/bond-desk/pay-requests/${attaching.id}/attach`, { bond_id: bond.id });
+      // the card was already charged: a payment above the balance is posted anyway and flagged
+      if ((r.data?.over_balance_cents || 0) > 0) showToast(t('bdk_attach_over', { amount: money(r.data.over_balance_cents) }), 'warning');
       if (!mounted.current) return;
       setAttaching(null); await load();
       navigation.navigate('BondDetail', { bondId: bond.id, tab: 'money' });
