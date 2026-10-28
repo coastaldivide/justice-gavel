@@ -79,5 +79,16 @@ The reviewer found these areas clean:
 - **Account deletion** failed for an agent with an executed power.
 - **Inter in PDF form fields** had a spacing bug.
 
-## Final verification
-See the end of this file (filled in after the last full run).
+## Final verification (October 27, 2026, fresh Postgres 16 database, migrations 00–42)
+| Check | Result |
+|---|---|
+| Backend database and security suites (real Postgres) | 56 suites, 483 tests passed |
+| Backend unit suite | 353 suites, 28,434 tests passed |
+| Frontend logic and screen tests | 837 + 363 passed |
+| TypeScript check | clean |
+| Smoke test against a running server | 43/43 checks passed |
+| Route sweep (808 routes × 6 callers, valid and junk input) | 37,571 requests, no findings |
+
+**What this does not prove.** Real texts, card charges, Stripe Connect onboarding, phone calls and app-store
+builds can only be confirmed with your live accounts and real phones (docs/LIVE_TEST.md). The tests use
+signed fake Telnyx and Stripe traffic. Every non-English translation still needs native-speaker legal review.
