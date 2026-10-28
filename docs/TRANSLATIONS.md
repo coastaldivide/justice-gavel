@@ -57,7 +57,8 @@ translator before launch."
 - Text messages: English stays within 2 GSM-7 segments; Spanish, Portuguese, Vietnamese, Chinese and Arabic are
   sent as Unicode (up to 6 segments); Haitian Creole and Tagalog are usually GSM-7 and may use up to 3 segments.
 - Stripe Checkout pages: Chinese and Filipino exist; Haitian Creole and Arabic payers see Stripe's English page.
-- PDFs: the bundled Inter font has no Arabic or Chinese letters. Names and answers in those scripts are printed
-  as Unicode code points ("[U+738B U+5C0F U+660E]") with a note that the exact text is in the bond record; the
-  certificate text stays English. Adding fonts (for example Noto Sans Arabic / Noto Sans SC) and right-to-left
-  shaping would be needed to print the letters themselves.
+- PDFs (Bond Desk forms, signature lines, certificates, receipts): Chinese and Arabic print as real letters — a Noto
+  Sans SC subset (GB2312 + CJK Unified Ideographs) and a DejaVu Sans Arabic subset are bundled next to Inter; Arabic is
+  shaped and set right to left, Arabic-only lines are right-aligned, mixed lines choose the font per run. The
+  certificate text stays English. Only characters no bundled font has (emoji, Hebrew, Devanagari, rare CJK Extension
+  characters) print as Unicode code points ("[U+1F44D]") with a note. Details: docs/BOND_DESK.md → "Letters in the PDFs".

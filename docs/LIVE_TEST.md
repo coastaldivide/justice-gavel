@@ -201,8 +201,9 @@ an attorney account with bar verification approved by an admin, an admin account
   is saved (a court reminder text arrives in that language; Chinese ends "回复 STOP 退订。").
 - [ ] I4 Bond Desk: set a bond's text language to Arabic (the reminder texts come in Arabic) and send yourself the
   signing link; open it on a phone set to Arabic and sign with an Arabic name. The signing page is in Arabic, right to
-  left; the signed PDF's certificate is in English and shows the name as
-  "[U+…]" code points with the note under it (Inter has no Arabic letters). Same with a Chinese name.
+  left; the signed PDF's certificate is in English and shows the name in Arabic letters, joined and right to
+  left ("/s/ محمد علي"), with no "[U+…]" codes and no note; the filled form shows the name right-aligned in its field.
+  Same with a Chinese name (王小明). A payment receipt with an Arabic payer and a Chinese name prints both.
 - [ ] I5 Pay page `/pay/<slug>` → language chips include the four new languages; Chinese opens Stripe Checkout in
   Chinese, Tagalog in Filipino; Haitian Creole and Arabic open Stripe's English page (Stripe has neither).
 - [ ] I6 E-mails (password reset with the app in Arabic): the e-mail reads right to left.

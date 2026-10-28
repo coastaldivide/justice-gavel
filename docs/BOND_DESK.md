@@ -193,6 +193,36 @@ The consent wording printed on the certificate is, word for word, the English te
 `sgn_esign_consent`, `sgn_agree_esign` and `sgn_agree_terms` (a test keeps them equal); when the signer
 saw it in another language the certificate says which.
 
+### Letters in the PDFs (fonts, Chinese, Arabic)
+
+Every PDF Bond Desk writes or fills (prepared and signed copies, the "/s/ Name" signature line, the signature
+certificate, payment and collateral receipts, the Tennessee report) prints names and answers in all eight app
+languages with real letters. Fonts in `backend/assets/fonts` (licenses next to them; rebuilt by
+`python3 backend/scripts/build-pdf-fonts.py` from the Debian `fonts-noto-cjk` / `fonts-dejavu-core` files):
+
+| Font | Draws | File |
+|---|---|---|
+| Inter Regular / Bold (SIL OFL) | Latin incl. Vietnamese, Greek, Cyrillic | 310 KB each |
+| Noto Sans SC subset (SIL OFL), TrueType outlines | GB2312 (6,763 hanzi + symbols, CJK punctuation, full-width forms) and the whole CJK Unified Ideographs block U+4E00–9FFF (20,976 hanzi: Simplified, Traditional, rarer name characters) | 6.9 MB |
+| DejaVu Sans Arabic subset, regular + bold (Bitstream Vera license) | Arabic U+0600–06FF, Presentation Forms-A/B | 33 KB each |
+
+- Each character is drawn with the first font that has it (Inter first), so a mixed string ("Apt 5, شارع الملك فهد 12,
+  北京市朝阳区") is set run by run on one baseline; bold text uses Inter Bold / DejaVu Sans Bold (Chinese has no bold face
+  and prints regular).
+- Arabic is shaped (isolated / initial / medial / final forms, lam-alef ligatures) and put in right-to-left order
+  (Unicode bidi algorithm for one paragraph: digits and Latin words inside Arabic stay left to right, brackets mirror).
+  A line that is only Arabic is right-aligned — on pages and in form fields. The paragraph direction follows the first
+  letter, except the certificate's "Signer" line, which stays left to right ("محمد علي (indemnitor)").
+- Form fields keep the exact text as their value; a field with Chinese or Arabic gets an appearance drawn run by run
+  (its border, background, font size or auto size and alignment as before) and is flattened on signing as before.
+- Size: fonts are subset per document. A Chinese or Arabic name adds about 2–7 KB to a certificate, a prepared copy or a
+  signed copy (measured: certificate 13.7 KB Latin → 15.2 KB Chinese / 15.7 KB Arabic). Inter in form fields is still
+  embedded whole (pdf-lib's subsetter halves `loca` offsets of fonts with odd-length glyph records, which garbles Inter);
+  the Chinese and Arabic fonts are written with 4-byte glyph padding and subset safely.
+- Text no bundled font has — emoji, Hebrew, Devanagari, CJK Extension characters — still prints as Unicode code points
+  ("Juan [U+1F44D]") with a note under it; a form field too short for the codes shows `[see bond record]`. The exact text
+  is always kept in the bond record.
+
 The signature certificate page lists: document name, SHA-256 of the copy reviewed and of the signed
 copy, signer name typed, role, how the link reached the signer (only channels that actually delivered it, masked; otherwise "given directly by the agent"), timestamps (UTC) of sent / opened / each
 document viewed / signed, IP address and browser, and the consent wording agreed to.

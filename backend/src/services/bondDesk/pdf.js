@@ -2,16 +2,28 @@
  * services/bondDesk/pdf.js — the agent's PDF forms: read their fields, fill them, sign them,
  * and the pages Bond Desk writes itself (signature certificate, receipts).
  *
- * Text is set with the bundled Inter font (backend/assets/fonts, SIL Open Font License), so
- * names in Spanish, Portuguese, Vietnamese, Haitian Creole or Tagalog print correctly — the 14
- * standard PDF fonts cannot encode "Nguyễn".
+ * Fonts (backend/assets/fonts, built by backend/scripts/build-pdf-fonts.py):
+ *   Inter (SIL OFL)                    Latin, Vietnamese, Greek, Cyrillic — names in Spanish,
+ *                                      Portuguese, Vietnamese, Haitian Creole, Tagalog
+ *   Noto Sans SC subset (SIL OFL)      Chinese: GB2312 + the CJK Unified Ideographs block
+ *   DejaVu Sans Arabic subset          Arabic, regular and bold (Bitstream Vera license)
+ * Each character is drawn with the first of those fonts that has it (Inter first), so a mixed
+ * string is set run by run. Arabic is shaped and put in right-to-left order by pdfText.js;
+ * a line that is only Arabic is right-aligned. Text with no Arabic or Chinese is drawn exactly
+ * as before (one pdfkit text call, Inter only).
  *
- * Inter has no Arabic or Chinese letters (and no font with them ships in node_modules). A
- * character the font cannot draw would come out as an empty box that looks like text, so
- * every string goes through pdfSafeText() first: each run of such characters is written as its
- * Unicode code points, e.g. "王小明" → "[U+738B U+5C0F U+660E]", and the certificate says so.
- * The exact text (typed name, answers) stays unchanged in the bond record; the certificate
- * itself is always in English.
+ * Size: pdfkit subsets every font it embeds. pdf-lib (form fields) embeds Inter whole
+ * (`subset: false`): @pdf-lib/fontkit's subsetter writes `loca` in the short format when the
+ * subset is small and halves every offset, which garbles Inter (550 odd-length glyph
+ * records). The Chinese and Arabic fonts are written by fontTools with 4-byte glyph padding,
+ * so pdf-lib subsets them (`subset: true`) and a Chinese name adds a few kilobytes.
+ *
+ * A character none of the fonts has (emoji, Hebrew, Devanagari, rare CJK Extension
+ * characters …) would come out as an empty box that looks like text, so every string goes
+ * through pdfSafeText() first: each run of such characters is written as its Unicode code
+ * points, e.g. "👍" → "[U+1F44D]", and the page says so (UNICODE_NOTE). The exact text
+ * (typed name, answers) stays unchanged in the bond record; the certificate itself is always
+ * in English.
  *
  * Prepared copy (what the signer reviews): mapped fields filled, every field read-only, the
  * signature fields (signature.name / signature.date) left empty. Signed copy: those filled
@@ -21,25 +33,64 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFName } from 'pdf-lib';
+import {
+  PDFDocument, PDFTextField, PDFCheckBox, PDFName, TextAlignment,
+  beginMarkedContent, endMarkedContent, pushGraphicsState, popGraphicsState, rectangle, clip, endPath,
+  beginText, endText, setFontAndSize, setTextMatrix, showText, setFillingGrayscaleColor, setFillingRgbColor,
+  componentsToColor, drawRectangle, rotateInPlace, adjustDimsForRotation, degrees,
+} from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import PDFKit from 'pdfkit';
+import { layoutParagraph } from './pdfText.js';
 
 const FONT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../assets/fonts');
 const FONT_REGULAR = fs.readFileSync(path.join(FONT_DIR, 'Inter_400Regular.ttf'));
 const FONT_BOLD = fs.readFileSync(path.join(FONT_DIR, 'Inter_700Bold.ttf'));
 const GLYPHS = [fontkit.create(FONT_REGULAR), fontkit.create(FONT_BOLD)];
 
-/** True when both bundled fonts can draw the character. */
-export const canDraw = (ch) => GLYPHS.every((f) => f.hasGlyphForCodePoint(ch.codePointAt(0)));
+/** The Chinese and Arabic fonts are read on first use (the Chinese one is ~7 MB). */
+const lazyFont = (file) => {
+  let cache;
+  return () => {
+    if (!cache) {
+      const buf = fs.readFileSync(path.join(FONT_DIR, file));
+      cache = { buf, glyphs: fontkit.create(buf) };
+    }
+    return cache;
+  };
+};
+const CJK = lazyFont('NotoSansSC-PdfSubset.ttf');
+const ARABIC = lazyFont('DejaVuSansArabic-PdfSubset.ttf');
+const ARABIC_BOLD = lazyFont('DejaVuSansArabic-PdfSubset-Bold.ttf');
+
+const interHas = (cp) => GLYPHS.every((f) => f.hasGlyphForCodePoint(cp));
+const ARABIC_BLOCKS = /[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const arabicHas = (ch) => ARABIC_BLOCKS.test(ch)
+  && ARABIC().glyphs.hasGlyphForCodePoint(ch.codePointAt(0)) && ARABIC_BOLD().glyphs.hasGlyphForCodePoint(ch.codePointAt(0));
+const cjkHas = (ch) => ch.codePointAt(0) >= 0x2E80 && CJK().glyphs.hasGlyphForCodePoint(ch.codePointAt(0));
+
+/** Which bundled font draws the character: 'latin' (Inter), 'arabic', 'cjk', or null (none). */
+export function fontFor(ch) {
+  const cp = ch.codePointAt(0);
+  if (interHas(cp)) return 'latin';
+  if (arabicHas(ch)) return 'arabic';
+  if (cjkHas(ch)) return 'cjk';
+  return null;
+}
+/** True when one of the bundled fonts can draw the character. */
+export const canDraw = (ch) => fontFor(ch) !== null;
+/** True when the text needs the Chinese or Arabic font (or right-to-left order). */
+const needsLayout = (text) => [...text].some((ch) => !KEEP.test(ch) && fontFor(ch) !== 'latin');
+
 const KEEP = /[\n\r\t ]/;
 const INVISIBLE = /\p{Cf}/u;   // direction marks, zero-width joiners: nothing to draw
 const codePoints = (run) => `[${[...run].map((c) => `U+${c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`).join(' ')}]`;
 
 /**
- * Text the bundled font can draw: → { text, replaced }. Each run of characters it cannot draw
- * (Arabic, Chinese, emoji …) becomes "[U+XXXX U+YYYY …]" — never an empty box passed off as
- * text. Spaces between two such characters stay inside the run.
+ * Text the bundled fonts can draw: → { text, replaced }. Arabic and Chinese are kept (they
+ * have fonts); each run of characters no bundled font has (emoji, Hebrew, Devanagari …)
+ * becomes "[U+XXXX U+YYYY …]" — never an empty box passed off as text. Spaces between two
+ * such characters stay inside the run.
  */
 export function pdfSafeText(value) {
   const s = String(value ?? '').normalize('NFC');
@@ -64,7 +115,7 @@ export function pdfSafeText(value) {
   return { text: out, replaced };
 }
 /** The note printed under text that pdfSafeText() changed. */
-export const UNICODE_NOTE = 'Text in [U+...] brackets is written in a script this PDF font cannot display (for example Arabic or Chinese). Each code is one Unicode character of the exact text, which is kept unchanged in the bond record.';
+export const UNICODE_NOTE = 'Text in [U+...] brackets is written in characters the fonts of this PDF cannot display (for example emoji, Hebrew or Devanagari). Each code is one Unicode character of the exact text, which is kept unchanged in the bond record.';
 /** What a form field shows when the code-point form does not fit its maximum length. */
 export const FIELD_NOT_SHOWN = '[see bond record]';
 
@@ -106,8 +157,10 @@ export async function inspectPdf(buf) {
 
 async function setFields(doc, values) {
   doc.registerFontkit(fontkit);
-  const font = await doc.embedFont(FONT_REGULAR, { subset: false });
+  // calt off: with it, @pdf-lib/fontkit's Inter contextual alternates leave gaps ("[  U+ 1F44D]", "A-  B")
+  const font = await doc.embedFont(FONT_REGULAR, { subset: false, features: { calt: false } });
   const form = doc.getForm();
+  const laidOut = [];
   for (const [name, value] of Object.entries(values)) {
     let field;
     try { field = form.getTextField(name); } catch { throw new PdfError('field_missing', name); }
@@ -116,10 +169,109 @@ async function setFields(doc, values) {
     if (max !== undefined && raw.length > max) throw new PdfError('field_too_long', name);
     let { text } = pdfSafeText(raw);
     if (max !== undefined && text.length > max) text = FIELD_NOT_SHOWN.slice(0, max);
+    // the field's own font size and color (pdf-lib rewrites /DA when it builds its appearance)
+    const das = [field.acroField.getDefaultAppearance() ?? '', ...field.acroField.getWidgets().map((w) => w.getDefaultAppearance() ?? '')];
     field.setText(text);
+    if (needsLayout(text)) laidOut.push([field, text, das]);
   }
   form.updateFieldAppearances(font);
+  // Inter cannot draw Arabic or Chinese: those fields get an appearance set run by run.
+  const fonts = { latin: font };
+  for (const [field, text, das] of laidOut) await setLaidOutAppearance(doc, field, text, das, fonts);
   return form;
+}
+
+/** pdf-lib fonts for the scripts in `text`, embedded once per document (subset). */
+async function fieldFonts(doc, text, fonts) {
+  for (const ch of text) {
+    const key = fontFor(ch);
+    if (key === 'arabic' && !fonts.arabic) fonts.arabic = await doc.embedFont(ARABIC().buf, { subset: true });
+    if (key === 'cjk' && !fonts.cjk) fonts.cjk = await doc.embedFont(CJK().buf, { subset: true });
+  }
+}
+
+const daFontSize = (da) => { const m = /(\d*\.?\d+)\s+Tf/.exec(da || ''); return m ? Number(m[1]) : undefined; };
+/** The text color from a default appearance string ("0 g", "0 0 1 rg"); undefined when it names none. */
+function daColor(da) {
+  const rgb = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+rg\b/.exec(da || '');
+  if (rgb) return setFillingRgbColor(+rgb[1], +rgb[2], +rgb[3]);
+  const g = /(-?[\d.]+)\s+g\b/.exec(da || '');
+  return g ? setFillingGrayscaleColor(+g[1]) : undefined;
+}
+
+/**
+ * Normal appearance for a text field whose value needs the Arabic or Chinese font, built like
+ * pdf-lib's own (background and border from /MK, widget rotation, /DA font size or auto size,
+ * the field's alignment) but with the value laid out by pdfText.js — shaped, right to left
+ * where needed — and drawn run by run, each run in the font that has its characters. An
+ * Arabic-only line in a left-aligned field is right-aligned. The field keeps the exact text
+ * as its value.
+ */
+async function setLaidOutAppearance(doc, field, text, das, fonts) {
+  await fieldFonts(doc, text, fonts);
+  const acro = field.acroField;
+  const multiline = field.isMultiline();
+  const alignment = field.getAlignment();
+  const fontKey = (ch) => fontFor(ch) || 'latin';
+  const paras = multiline ? text.split(/\r\n|\r|\n/) : [text.replace(/[\r\n]+/g, ' ')];
+  acro.getWidgets().forEach((widget, wi) => {
+    const rect = widget.getRectangle();
+    const ap = widget.getAppearanceCharacteristics();
+    const rotation = (((ap?.getRotation() ?? 0) % 360) + 360) % 360;
+    const { width: w, height: h } = adjustDimsForRotation(rect, rotation);
+    const bw = widget.getBorderStyle()?.getWidth() ?? 0;
+    const pad = bw + 2;
+    const avail = Math.max(1, w - 2 * pad);
+    const availH = Math.max(1, h - 2 * pad);
+    const layAt = (size, width) => {
+      const lines = [];
+      for (const p of paras) {
+        const lay = layoutParagraph(p, { fontFor: fontKey, measure: (k, str) => fonts[k].widthOfTextAtSize(str, size), width });
+        for (const l of lay.lines) lines.push({ ...l, arabicOnly: lay.arabicOnly });
+      }
+      return lines;
+    };
+    let size = daFontSize(das[wi + 1]) || daFontSize(das[0]) || 0;
+    if (!size) {   // auto size, as pdf-lib does: as large as fits (single line: the height; multiline: all lines)
+      if (multiline) {
+        size = 12;
+        while (size > 4 && layAt(size, avail).length * size * 1.2 > availH) size -= 0.5;
+      } else {
+        size = Math.max(4, Math.min(availH / 1.2, 40));
+        const one = layAt(size, Infinity)[0];
+        if (one.width > avail) size = Math.max(4, size * (avail / one.width));
+      }
+    }
+    const lines = layAt(size, multiline ? avail : Infinity);
+    const lineHeight = size * 1.2;
+    let baseline = multiline ? h - pad - size : (h - size * 0.73) / 2;
+    const ops = [...rotateInPlace({ ...rect, rotation })];
+    const borderColor = componentsToColor(ap?.getBorderColor());
+    const background = componentsToColor(ap?.getBackgroundColor());
+    if (borderColor || background) {
+      ops.push(...drawRectangle({ x: bw / 2, y: bw / 2, width: w - bw, height: h - bw, borderWidth: bw, borderColor, color: background, rotate: degrees(0), xSkew: degrees(0), ySkew: degrees(0) }));
+    }
+    ops.push(beginMarkedContent('Tx'), pushGraphicsState(), rectangle(bw, bw, w - 2 * bw, h - 2 * bw), clip(), endPath(),
+      daColor(das[wi + 1]) || daColor(das[0]) || setFillingGrayscaleColor(0), beginText());
+    const used = new Set();
+    for (const line of lines) {
+      const align = alignment === TextAlignment.Center ? 'center'
+        : alignment === TextAlignment.Right || line.arabicOnly ? 'right' : 'left';
+      let x = align === 'right' ? w - pad - line.width : align === 'center' ? (w - line.width) / 2 : pad;
+      for (const run of line.runs) {
+        const f = fonts[run.font];
+        used.add(run.font);
+        ops.push(setFontAndSize(f.name, size), setTextMatrix(1, 0, 0, 1, x, baseline), showText(f.encodeText(run.text)));
+        x += run.width;
+      }
+      baseline -= lineHeight;
+    }
+    ops.push(endText(), popGraphicsState(), endMarkedContent());
+    const Font = {};
+    for (const k of used) Font[fonts[k].name] = fonts[k].ref;
+    const stream = doc.context.formXObject(ops, { BBox: doc.context.obj([0, 0, rect.width, rect.height]), Resources: { Font } });
+    widget.setNormalAppearance(doc.context.register(stream));
+  });
 }
 
 /** The copy a signer reviews: `values` set (text fields), all fields read-only. → Buffer */
@@ -184,6 +336,12 @@ export function kit(title) {
   const doc = new PDFKit({ size: 'LETTER', margin: 54, info: { Title: title, Producer: 'Justice Gavel Bond Desk' } });
   doc.registerFont('R', FONT_REGULAR);
   doc.registerFont('B', FONT_BOLD);
+  // Pages choose 'R' or 'B'; text in Arabic or Chinese is drawn with the matching font for its script.
+  const setFont = doc.font.bind(doc);
+  doc.font = (name, ...rest) => {
+    if (name === 'R' || name === 'B') doc._jgWeight = name;
+    return setFont(name, ...rest);
+  };
   doc.font('R');
   // Every string goes through pdfSafeText(); doc.unicodeReplaced tells the page to add UNICODE_NOTE.
   doc.unicodeReplaced = false;
@@ -192,7 +350,8 @@ export function kit(title) {
     if (typeof value !== 'string' && typeof value !== 'number') return text(value, ...rest);
     const safe = pdfSafeText(value);
     if (safe.replaced) doc.unicodeReplaced = true;
-    return text(safe.text, ...rest);
+    if (!needsLayout(safe.text)) return text(safe.text, ...rest);
+    return laidOutText(doc, safe.text, rest, text, setFont);
   };
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
@@ -200,9 +359,63 @@ export function kit(title) {
   return { doc, done };
 }
 
-export const row = (doc, label, value) => {
+const KIT_FONTS = { R: { latin: 'R', arabic: 'AR', cjk: 'C' }, B: { latin: 'B', arabic: 'AB', cjk: 'C' } };
+
+/**
+ * doc.text() for text with Arabic or Chinese: laid out by pdfText.js (shaped, bidi order,
+ * wrapped to the width), each line drawn run by run on a common baseline, then doc.x / doc.y
+ * left where pdfkit would leave them (options used by these pages: width, align, lineGap,
+ * paragraphGap; plus direction: 'ltr' for a line that is English with a name in it). An
+ * Arabic-only paragraph is right-aligned.
+ */
+function laidOutText(doc, str, rest, draw, setFont) {
+  let x = doc.x;
+  let y = doc.y;
+  let opts = {};
+  if (typeof rest[0] === 'number') { x = rest[0]; y = rest[1] ?? doc.y; opts = rest[2] || {}; } else opts = rest[0] || {};
+  if (!doc._jgFonts) {   // registered on first use: a page without Arabic or Chinese never loads those fonts
+    doc.registerFont('C', CJK().buf);
+    doc.registerFont('AR', ARABIC().buf);
+    doc.registerFont('AB', ARABIC_BOLD().buf);
+    doc._jgFonts = true;
+  }
+  const weight = doc._jgWeight || 'R';
+  const names = KIT_FONTS[weight];
+  const size = doc._fontSize;
+  const measure = (k, s) => { setFont(names[k]); return doc.widthOfString(s); };
+  setFont(names.latin);
+  const lineHeight = doc.currentLineHeight(true);
+  const ascent = (doc._font.ascender / 1000) * size;
+  const lineGap = opts.lineGap ?? doc._lineGap ?? 0;
+  const width = opts.width ?? (doc.page.width - x - doc.page.margins.right);
+  const fontKey = (ch) => fontFor(ch) || 'latin';
+  doc.x = x;
+  doc.y = y;
+  for (const para of str.split(/\r\n|\r|\n/)) {
+    const lay = layoutParagraph(para, { fontFor: fontKey, measure, width, direction: opts.direction });
+    const align = opts.align || (lay.arabicOnly ? 'right' : 'left');
+    for (const line of lay.lines) {
+      const extra = line.runs.some((r) => r.font === 'arabic') ? 0.15 * size : 0;   // Arabic reaches lower than Latin
+      if (doc.y + lineHeight + extra > doc.page.maxY() && doc.y > doc.page.margins.top) doc.addPage();
+      const top = doc.y;
+      let cx = align === 'right' ? x + width - line.width : align === 'center' ? x + (width - line.width) / 2 : x;
+      for (const run of line.runs) {
+        setFont(names[run.font]);
+        draw(run.text, cx, top + ascent, { lineBreak: false, baseline: 'alphabetic' });
+        cx += run.width;
+      }
+      doc.y = top + lineHeight + extra + lineGap;
+    }
+  }
+  if (opts.paragraphGap) doc.y += opts.paragraphGap;
+  doc.x = x;
+  setFont(names.latin);
+  return doc;
+}
+
+export const row = (doc, label, value, opts = {}) => {
   doc.font('B').fontSize(9).fillColor('#444').text(label, { continued: false });
-  doc.font('R').fontSize(10).fillColor('#000').text(value == null || value === '' ? '—' : String(value), { paragraphGap: 6 });
+  doc.font('R').fontSize(10).fillColor('#000').text(value == null || value === '' ? '—' : String(value), { paragraphGap: 6, ...opts });
 };
 
 /**
@@ -220,7 +433,7 @@ export async function certificatePdf(info) {
   row(doc, 'Bond', info.bond_label);
   row(doc, 'Agency', info.agency);
   row(doc, 'SHA-256 of the copy the signer reviewed', info.prepared_sha256);
-  row(doc, 'Signer', `${info.signer_name} (${info.role})`);
+  row(doc, 'Signer', `${info.signer_name} (${info.role})`, { direction: 'ltr' });   // the name, then the English role
   row(doc, 'Signature (typed by the signer)', `/s/ ${info.typed_name}`);
   row(doc, 'Signing link sent to', info.sent_to);
   doc.font('B').fontSize(9).fillColor('#444').text('Timeline (UTC)');
