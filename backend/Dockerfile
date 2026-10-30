@@ -46,4 +46,8 @@ EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT:-10000}/health" || exit 1
 
-CMD ["node", "--import", "./src/instrument.js", "src/server.js"]
+# V8 heap cap = 5/8 of the container limit (320 MB of 512). Without it V8 sizes its heap from the
+# host, lets garbage pile up under a burst and the process passes the limit (the self-heal restarts
+# it at 93%). Measured Oct 30 on the full route sweep: peak 535 MB uncapped, 279 MB capped, same speed.
+# `exec` keeps node as PID 1's direct child target so SIGTERM still reaches it for a graceful stop.
+CMD ["sh", "-c", "exec node --max-old-space-size=$(( ${MEMORY_LIMIT_MB:-512} * 5 / 8 )) --import ./src/instrument.js src/server.js"]

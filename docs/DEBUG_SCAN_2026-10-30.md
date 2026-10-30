@@ -34,9 +34,11 @@ nothing was changed for style alone.
 - Public token routes (check-in links, pay page, automatic-payment links): rate-limited, tokens hashed.
 - Eight languages: every key present; no untranslated English in the sampled core-path keys.
 - App config: location, camera, notification permissions and right-to-left support declared.
-- Server memory under the route sweep (37,620 requests in under a minute against one process): the server peaks
-  around 520–535 MB, so with `MEMORY_LIMIT_MB=512` (Render starter) its self-heal restarts it partway through and
-  the sweep reports "no response". The Oct 29 code (48fdab8) peaks at 521 MB on the same sweep, so this is not
-  from these fixes (they add about 15 MB). With the limit raised for the test, both sweeps finish with no findings.
-  The restart is the intended safety valve; if real traffic ever triggers it, move to the 1 GB Render plan and set
-  `MEMORY_LIMIT_MB=1024`.
+
+## Follow-up the same day (GitHub CI on the pull request into `main`)
+
+| # | Severity | Issue | Evidence | Resolution |
+|---|---|---|---|---|
+| 17 | High (production) | Under a burst the API passed its 512 MB container limit, so the memory guard restarted it (on Render, every request in flight fails). V8 sized its heap from the host, not the container, and let garbage pile up. Not a leak: memory falls back to 191 MB a minute after the burst. The Oct 29 code does the same (peak 521 MB). | Route sweep, 37,620 requests in 56 s: peak 535 MB uncapped; CI's route sweep failed for this reason. | `backend/Dockerfile` starts node with `--max-old-space-size` = 5/8 of `MEMORY_LIMIT_MB` (320 MB on the 512 MB plan; follows the setting if the plan grows). Same sweep: peak 279 MB, same speed, no findings, no restart. CI starts its test servers the same way. Test: `ci_cd_config.test.js`. |
+| 18 | Low (CI) | CI's web-bundle check expected a separate Home chunk, but Home has been bundled with the app since Oct 19 so it opens offline. CI never ran on this branch (it runs on pushes to `main` and on pull requests), so this was not seen. | Frontend job: "HomeScreen chunk missing from web bundle". | The check now looks for Home inside the bundle and keeps checking the lazy screens' chunks. |
+| 19 | Medium (dependencies) | Known advisories in installed packages. | `npm audit` | Non-breaking fixes applied: backend 0 advisories in production dependencies; frontend electron, node-forge, undici fixed. Left: zod inside Expo's build tool (needs an Expo major upgrade) and low-severity deepmerge. |

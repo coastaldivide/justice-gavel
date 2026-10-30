@@ -106,7 +106,8 @@ jobs:
           ANTHROPIC_BASE_URL: http://127.0.0.1:${{ env.ANTHROPIC_MOCK_PORT }}
         run: |
           set -euo pipefail
-          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          # same V8 heap cap as the production image (backend/Dockerfile): 5/8 of the 512 MB limit
+          nohup node --max-old-space-size=320 --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 60); do
             if curl -fsS "http://localhost:${API_PORT}/health" > "$RUNNER_TEMP/health.json" 2>/dev/null; then
@@ -288,7 +289,8 @@ jobs:
         run: |
           set -euo pipefail
           nohup node scripts/anthropic-mock.mjs "$MOCK_PORT" > "$RUNNER_TEMP/mock.log" 2>&1 &
-          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          # same V8 heap cap as the production image (backend/Dockerfile): 5/8 of the 512 MB limit
+          nohup node --max-old-space-size=320 --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 60); do
             curl -fsS "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && curl -fsS "http://127.0.0.1:${MOCK_PORT}/__requests" > /dev/null 2>&1 && exit 0
@@ -383,7 +385,10 @@ jobs:
           if grep -qE "electron-log|electron-updater|ipcRenderer" "$RUNNER_TEMP/web-bundle.js"; then
             echo "::error::Electron code found in the web bundle"; exit 1
           fi
-          for s in HomeScreen ChatScreen LawyersScreen PaymentsScreen SettingsScreen; do
+          # Home (and the offline screens) are bundled with the app since Oct 19 so they open with no
+          # network; the rest load as chunks.
+          grep -q '"home-screen"' "$RUNNER_TEMP/web-bundle.js" || { echo "::error::HomeScreen missing from web bundle"; exit 1; }
+          for s in ChatScreen LawyersScreen PaymentsScreen SettingsScreen; do
             compgen -G "$js/$s-*.js" > /dev/null || { echo "::error::$s chunk missing from web bundle"; exit 1; }
           done
           grep -q "Justice Gavel" "$RUNNER_TEMP/web-bundle.js"
