@@ -34,3 +34,9 @@ nothing was changed for style alone.
 - Public token routes (check-in links, pay page, automatic-payment links): rate-limited, tokens hashed.
 - Eight languages: every key present; no untranslated English in the sampled core-path keys.
 - App config: location, camera, notification permissions and right-to-left support declared.
+- Server memory under the route sweep (37,620 requests in under a minute against one process): the server peaks
+  around 520–535 MB, so with `MEMORY_LIMIT_MB=512` (Render starter) its self-heal restarts it partway through and
+  the sweep reports "no response". The Oct 29 code (48fdab8) peaks at 521 MB on the same sweep, so this is not
+  from these fixes (they add about 15 MB). With the limit raised for the test, both sweeps finish with no findings.
+  The restart is the intended safety valve; if real traffic ever triggers it, move to the 1 GB Render plan and set
+  `MEMORY_LIMIT_MB=1024`.
