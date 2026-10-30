@@ -4,12 +4,11 @@
  */
 import { Router } from 'express';
 import { BdError, handle, date, sendFile } from './_common.js';
-import { agencyFor } from '../../services/bondDesk/core.js';
+import { agencyFor, agentToday } from '../../services/bondDesk/core.js';
 import { rearrestAlertsEnabled } from '../../utils/counselFlags.js';
 import { agentRearrests } from '../../services/bondDesk/rearrest.js';
 import { TN_REPORT, previousQuarter, quarterRange, tnCsvRows, tnQuarterlyReport, tnReportPdf } from '../../services/bondDesk/tnReport.js';
 import { bondMoney } from '../../services/bondDesk/money.js';
-import { agentToday } from '../../services/bondDesk/core.js';
 import { daysBetween } from '../../utils/timezone.js';
 import { bondDeskAppearance } from '../../services/appearanceMetrics.js';
 import { PREMIUM_SQL } from '../../services/bondDesk/payments.js';

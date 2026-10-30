@@ -6650,5 +6650,18 @@
   "ares_load_failed": "无法加载数据。",
   "ares_history": "已发布的快照",
   "ares_none": "还没有发布任何内容。",
-  "ares_snapshot_line": "{day}：{from} 至 {to}，出庭率 {rate}"
+  "ares_snapshot_line": "{day}：{from} 至 {to}，出庭率 {rate}",
+  "cp_family_title": "家庭案件通行证",
+  "cp_family_body": "{days} 天内享有相同功能，适用于被捕者以及在应用中关注此案件的每位家人。",
+  "cp_family_buy": "购买家庭案件通行证 — {price}",
+  "cp_family_extend": "为家人增加 {days} 天，价格 {price}",
+  "ad_credits_title": "请求点数",
+  "ad_credits_balance": "余额：{n} 点",
+  "ad_credits_why": "在包括田纳西州在内的大多数州，回复请求需使用预付点数（每点 {price}）。由您选择回复哪些请求。",
+  "ad_credits_buy": "{credits} 点 — {price}",
+  "ad_credits_added": "点数已添加。余额：{n}。",
+  "ad_lead_answer_cta": "使用 {credits} 点回复",
+  "ad_lead_answer_title": "使用 {credits} 点回复此请求？",
+  "ad_lead_answer_body": "您有 {balance} 点。此人的联系方式仅向您显示。点数绝不会因案件结果而退还。",
+  "ad_lead_disclosure": "Justice Gavel 不推荐或认可任何律师。请求仅按州、城市和案件类型显示，价格从不取决于对方是否聘请您。"
 }

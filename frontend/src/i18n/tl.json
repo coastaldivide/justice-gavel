@@ -6650,5 +6650,18 @@
   "ares_load_failed": "Hindi ma-load ang mga bilang.",
   "ares_history": "Mga nailathalang snapshot",
   "ares_none": "Wala pang nailathala.",
-  "ares_snapshot_line": "{day}: {from} hanggang {to}, antas ng pagdalo {rate}"
+  "ares_snapshot_line": "{day}: {from} hanggang {to}, antas ng pagdalo {rate}",
+  "cp_family_title": "Family Case Pass para sa pamilya",
+  "cp_family_body": "Parehong mga feature sa loob ng {days} araw, para sa taong inaresto at sa bawat kapamilyang sumusubaybay sa kaso sa app.",
+  "cp_family_buy": "Kunin ang Family Case Pass — {price}",
+  "cp_family_extend": "Magdagdag ng {days} araw para sa pamilya sa halagang {price}",
+  "ad_credits_title": "Mga credit para sa kahilingan",
+  "ad_credits_balance": "Balanse: {n} credit",
+  "ad_credits_why": "Sa karamihan ng estado, kasama ang Tennessee, sinasagot ang mga kahilingan gamit ang prepaid na credit ({price} bawat isa). Ikaw ang pipili kung aling kahilingan ang sasagutin.",
+  "ad_credits_buy": "{credits} credit — {price}",
+  "ad_credits_added": "Naidagdag ang mga credit. Balanse: {n}.",
+  "ad_lead_answer_cta": "Sagutin sa halagang {credits} credit",
+  "ad_lead_answer_title": "Sagutin ang kahilingang ito sa halagang {credits} credit?",
+  "ad_lead_answer_body": "Mayroon kang {balance} credit. Ikaw lang ang makakakita ng contact details ng tao. Hindi kailanman ibinabalik ang credit dahil sa kinalabasan ng kaso.",
+  "ad_lead_disclosure": "Hindi nagrerekomenda o nag-eendorso ang Justice Gavel ng anumang abogado. Ipinapakita ang mga kahilingan ayon lang sa estado, lungsod at uri ng kaso, at hindi kailanman nakadepende ang presyo sa pagkuha sa iyo ng tao."
 }

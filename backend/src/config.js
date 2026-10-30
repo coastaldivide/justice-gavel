@@ -296,6 +296,7 @@ export const ALL_ENV_VARS = {
   BOND_REARREST_ALERTS_ENABLED: process.env.BOND_REARREST_ALERTS_ENABLED || '',       // ⚖ counsel 1.2: re-arrest alerts for Bond Desk defendants; unset → off in production
   CUSTODY_ALERTS_ENABLED:   process.env.CUSTODY_ALERTS_ENABLED     || '',    // ⚖ counsel 6.3: release / transfer alerts for followed bookings; unset → off in production
   BOND_RECOVERY_SHARING_ENABLED: process.env.BOND_RECOVERY_SHARING_ENABLED || '',
+  OUTBOUND_BOT_ENABLED:     process.env.OUTBOUND_BOT_ENABLED       || '',    // ⚖ nightly paid-lead e-mails to directory lawyers (services/outbound_bot.js); unset → off in production
   PUBLIC_DEFENDER_CHANNEL_ENABLED: process.env.PUBLIC_DEFENDER_CHANNEL_ENABLED || '', // ⚖ counsel 3.2 + 6.1: public defender offices (reminders + two-way texts); unset → off in production
   PD_SETUP_FEE_CENTS:       process.env.PD_SETUP_FEE_CENTS         || '',    // public defender office one-time setup fee in cents (default 2000000 = $20,000)
   PD_CLIENT_YEAR_CENTS:     process.env.PD_CLIENT_YEAR_CENTS       || '',    // per active client per year in cents (default 200 = $2.00)     // ⚖ state rules: share a forfeited bond with a recovery agent; unset → off in production

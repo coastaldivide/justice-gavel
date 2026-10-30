@@ -6650,5 +6650,18 @@
   "ares_load_failed": "Không tải được số liệu.",
   "ares_history": "Các bản đã công bố",
   "ares_none": "Chưa công bố gì.",
-  "ares_snapshot_line": "{day}: từ {from} đến {to}, tỷ lệ có mặt {rate}"
+  "ares_snapshot_line": "{day}: từ {from} đến {to}, tỷ lệ có mặt {rate}",
+  "cp_family_title": "Gói Hồ sơ Gia đình",
+  "cp_family_body": "Cùng các tính năng trong {days} ngày, cho người bị bắt và mọi thành viên gia đình theo dõi hồ sơ trong ứng dụng.",
+  "cp_family_buy": "Mua Gói Hồ sơ Gia đình — {price}",
+  "cp_family_extend": "Thêm {days} ngày cho gia đình với giá {price}",
+  "ad_credits_title": "Tín dụng yêu cầu",
+  "ad_credits_balance": "Số dư: {n} tín dụng",
+  "ad_credits_why": "Ở hầu hết các tiểu bang, kể cả Tennessee, yêu cầu được trả lời bằng tín dụng trả trước ({price} mỗi tín dụng). Bạn chọn yêu cầu nào để trả lời.",
+  "ad_credits_buy": "{credits} tín dụng — {price}",
+  "ad_credits_added": "Đã thêm tín dụng. Số dư: {n}.",
+  "ad_lead_answer_cta": "Trả lời với {credits} tín dụng",
+  "ad_lead_answer_title": "Trả lời yêu cầu này với {credits} tín dụng?",
+  "ad_lead_answer_body": "Bạn có {balance} tín dụng. Thông tin liên lạc của người này chỉ hiển thị cho bạn. Tín dụng không bao giờ được hoàn lại dựa trên kết quả của hồ sơ.",
+  "ad_lead_disclosure": "Justice Gavel không giới thiệu hay bảo đảm cho bất kỳ luật sư nào. Yêu cầu chỉ được hiển thị theo tiểu bang, thành phố và loại hồ sơ, và giá không bao giờ phụ thuộc vào việc người đó có thuê bạn hay không."
 }

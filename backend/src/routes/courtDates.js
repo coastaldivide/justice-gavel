@@ -34,6 +34,7 @@ import { safeCourtDate } from './cases.js';
 import {
   scheduleForCourtDate, cancelCourtDateReminders, refreshNextCourtDate, listPendingCourtReminders,
   rememberRequestPrefs, rescheduleUserCourtReminders, resolveReminderTimeZone, dateOnly, timeOnly, formatCourtTime,
+  SMS_CONSENT_TEXT_VERSION,
 } from '../services/courtReminders.js';
 import { buildCourtDateIcs } from '../services/ics.js';
 import { courtDayGuidance } from '../services/courtDayGuidance.js';
@@ -41,8 +42,7 @@ import { normalizeState } from '../services/rightsContent.js';
 import { smsLive, toE164 } from '../services/sms.js';
 
 /** Version of the opt-in wording shown at consent (frontend i18n cdd_sms_consent). Bump when it changes. */
-export { SMS_CONSENT_TEXT_VERSION } from '../services/courtReminders.js';
-import { SMS_CONSENT_TEXT_VERSION } from '../services/courtReminders.js';
+export { SMS_CONSENT_TEXT_VERSION };
 import { todayInZone, stateTimeZone } from '../utils/timezone.js';
 import { notifyFollowersCourtDateChanged } from '../services/followers.js';
 import { isExpoPushToken } from '../services/expoPush.js';

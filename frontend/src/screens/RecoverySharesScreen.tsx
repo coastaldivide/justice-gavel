@@ -62,12 +62,12 @@ function RecoverySharesScreen({ route }: ScreenProps) {
   const loadList = useCallback(async () => {
     try { const r = await api.get<{ shares: ShareRow[] }>('/recovery-shares'); if (mounted.current) { setList(r.data?.shares || []); setError(''); } }
     catch (e) { if (mounted.current) { setList([]); handleErr(e); } }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   const loadFile = useCallback(async (id: number) => {
     setFile(null);
     try { const r = await api.get<ShareFile>(`/recovery-shares/${id}`); if (mounted.current) { setFile(r.data); setError(''); } }
     catch (e) { if (mounted.current) { setOpen(null); handleErr(e); loadList(); } }
-  }, [loadList]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadList]);
   useEffect(() => { loadList(); }, [loadList]);
   useEffect(() => { if (open) loadFile(open); }, [open, loadFile]);
 

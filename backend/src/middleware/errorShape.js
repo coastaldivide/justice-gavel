@@ -108,6 +108,9 @@ export function errorShape() {
     };
     res.send = (body) => {
       if (res.statusCode >= 400 && typeof body === 'string' && !/json/i.test(String(res.get('Content-Type') || ''))) {
+        // res.json keeps a Content-Type that is already set: without this an HTML / text 4xx came back
+        // here from res.json → send and looped forever (debug scan Oct 30, issue 16).
+        res.type('json');
         return res.json(isSentence(body) ? { error: body } : {});
       }
       return send(body);

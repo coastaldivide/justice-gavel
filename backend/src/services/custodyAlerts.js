@@ -85,7 +85,7 @@ export function whenText(at, lang, tz) {
   const zone = isValidTimeZone(tz) ? tz : DEFAULT_TIME_ZONE;
   return new Date(at).toLocaleString(LOCALES[normalizeLang(lang) || 'en'], {
     timeZone: zone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
-  }).replace(/[  ]/g, ' ');
+  }).replace(/[\u00a0\u202f]/g, ' ');
 }
 
 /**

@@ -6650,5 +6650,18 @@
   "ares_load_failed": "No se pudieron cargar las cifras.",
   "ares_history": "Versiones publicadas",
   "ares_none": "Nada publicado todavía.",
-  "ares_snapshot_line": "{day}: del {from} al {to}, tasa de comparecencia {rate}"
+  "ares_snapshot_line": "{day}: del {from} al {to}, tasa de comparecencia {rate}",
+  "cp_family_title": "Pase de Caso Familiar",
+  "cp_family_body": "Las mismas funciones por {days} días, para la persona arrestada y cada familiar que sigue el caso en la app.",
+  "cp_family_buy": "Obtener Pase de Caso Familiar — {price}",
+  "cp_family_extend": "Agregar {days} días para la familia por {price}",
+  "ad_credits_title": "Créditos para solicitudes",
+  "ad_credits_balance": "Saldo: {n} créditos",
+  "ad_credits_why": "En la mayoría de los estados, incluido Tennessee, las solicitudes se responden con créditos prepagados ({price} cada uno). Usted elige qué solicitudes responder.",
+  "ad_credits_buy": "{credits} créditos — {price}",
+  "ad_credits_added": "Créditos agregados. Saldo: {n}.",
+  "ad_lead_answer_cta": "Responder por {credits} créditos",
+  "ad_lead_answer_title": "¿Responder esta solicitud por {credits} créditos?",
+  "ad_lead_answer_body": "Usted tiene {balance} créditos. Los datos de contacto de la persona se le muestran solo a usted. Los créditos nunca se reembolsan según el resultado de un caso.",
+  "ad_lead_disclosure": "Justice Gavel no recomienda ni respalda a ningún abogado. Las solicitudes se muestran solo por estado, ciudad y tipo de caso, y el precio nunca depende de si la persona lo contrata."
 }

@@ -310,7 +310,7 @@ describeIntegration('Public defender channel (real Postgres, fake Telnyx + Strip
     for (const t of ['Thank you', 'What do I wear?']) expect((await inbound(P.shared, t)).status).toBe(200);
     // STOP / HELP / START / a bare 2 never reach the inbox
     for (const t of ['HELP', '2']) await inbound(P.shared, t);
-    let box = await pd('get', '/inbox', pdStaff);
+    const box = await pd('get', '/inbox', pdStaff);
     expect(box.body.unread_total).toBe(2);
     expect(box.body.conversations[0]).toMatchObject({ client_id: dee1.id, unread: 2, handled: false, last_direction: 'in', last_preview: 'What do I wear?' });
     expect(box.body.page_size).toBe(30);

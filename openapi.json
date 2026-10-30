@@ -11667,6 +11667,57 @@
         "x-staff-only": true
       }
     },
+    "/api/bot/unsubscribe": {
+      "get": {
+        "operationId": "get_api_bot_unsubscribe",
+        "summary": "GET /api/bot/unsubscribe",
+        "tags": [
+          "bot"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_api_bot_unsubscribe",
+        "summary": "POST /api/bot/unsubscribe",
+        "tags": [
+          "bot"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "operationId": "get_api_cases",

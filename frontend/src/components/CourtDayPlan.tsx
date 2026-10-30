@@ -43,18 +43,18 @@ export function CourtHelpLinks({ help, styles, testID = 'court-help' }: { help: 
         <Text maxFontSizeMultiplier={1.4} style={styles.link}>{t('cdp_211_web')}</Text>
       </TouchableOpacity>
       <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('cdp_211_about')}</Text>
-      {help.transit && (
+      {help.transit && (() => { const transit = help.transit; return (
         <View testID={`${testID}-transit`}>
-          <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn} onPress={() => open(help.transit!.url)}>
+          <TouchableOpacity accessibilityRole="link" style={styles.secondaryBtn} onPress={() => open(transit.url)}>
             <IconLabel center icon={ICONS.car} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>
-              {t(help.transit.trip_planner ? 'cdp_transit_planner' : 'cdp_transit_site', { agency: help.transit.agency })}
+              {t(transit.trip_planner ? 'cdp_transit_planner' : 'cdp_transit_site', { agency: transit.agency })}
             </IconLabel>
           </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('cdp_transit_serves', { area: help.transit.serves, date: help.transit.checked })}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('cdp_transit_serves', { area: transit.serves, date: transit.checked })}</Text>
         </View>
-      )}
+      ); })()}
       {!!help.directions_url && (
-        <TouchableOpacity accessibilityRole="link" testID={`${testID}-directions`} style={styles.secondaryBtn} onPress={() => open(help.directions_url!)}>
+        <TouchableOpacity accessibilityRole="link" testID={`${testID}-directions`} style={styles.secondaryBtn} onPress={() => open(help.directions_url || '')}>
           <IconLabel center icon={ICONS.directions} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdp_directions')}</IconLabel>
         </TouchableOpacity>
       )}

@@ -16,6 +16,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';   // static, like services/push.ts (web: no-op paths below)
 import { parseLocalDate } from '../utils/dateUtils';
 
 export const GUEST_KEY = 'guest_court_dates_v1';
@@ -50,12 +51,14 @@ function at(day: Date, offsetDays: number, h: number, m = 0): Date {
 
 /**
  * The local instants to remind at, in the phone's time zone, skipping any that
- * have passed. The morning-of reminder is 7:00, or 1 hour before an early hearing.
+ * have passed. Same times as the server (backend services/courtReminders.js COURT_REMINDER_PLAN):
+ * 09:00 seven and three days before, 18:00 the evening before, 06:30 the morning of — or 1 hour
+ * before a hearing that starts earlier than 07:30.
  */
 export function planGuestReminders(courtDate: string, courtTime: string | null, now: Date = new Date()): PlannedLocal[] {
   const day = parseLocalDate(courtDate);
   if (!day) return [];
-  let morning = at(day, 0, 7, 0);
+  let morning = at(day, 0, 6, 30);
   if (courtTime && TIME_RE.test(courtTime)) {
     const [h, m] = courtTime.split(':').map(Number);
     const hearing = at(day, 0, h, m);
@@ -95,16 +98,16 @@ export interface Scheduler {
 export const deviceScheduler: Scheduler = {
   async schedule(when, title, body) {
     if (Platform.OS === 'web') return '';
-    const N = await import('expo-notifications');
-    return N.scheduleNotificationAsync({
-      content: { title, body, data: { kind: 'guest_court_reminder' } },
-      trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: when } as any,
+    return Notifications.scheduleNotificationAsync({
+      // screen: a tap opens Court dates (services/notificationRoute.ts).
+      content: { title, body, data: { kind: 'guest_court_reminder', screen: 'CourtDates' } },
+      // Android: the high-importance channel the server's court reminders use (services/push.ts).
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: 'court_reminders' },
     });
   },
   async cancel(id) {
     if (Platform.OS === 'web' || !id) return;
-    const N = await import('expo-notifications');
-    await N.cancelScheduledNotificationAsync(id).catch(() => {});
+    await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
   },
 };
 

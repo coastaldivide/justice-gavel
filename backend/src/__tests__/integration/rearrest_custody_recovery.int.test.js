@@ -95,7 +95,7 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
       await db.run('DELETE FROM bondsman_subscriptions WHERE user_id = ?', [agent.user.id]);
       await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [agent.user.id]);
       await db.run(`DELETE FROM arrest_records WHERE source = ? OR (source = 'seed_v1' AND name LIKE 'RCTEST%')`, [SOURCE]);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone = '+16155550160'`);   // only this suite's number
     });
   });
   afterAll(async () => {
@@ -148,6 +148,7 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     const rows = await ctx.db.all('SELECT bond_id, match, status, push_status, text_status FROM bd_rearrests WHERE agent_id = ? ORDER BY bond_id', [agent.user.id]);
     expect(rows.map((x) => [Number(x.bond_id), x.match, x.status])).toEqual([
       [bondStrong.id, 'strong', 'alerted'], [bondPossible.id, 'possible', 'pending'], [bondAnswers.id, 'strong', 'alerted']]);
+    expect(rows.some((x) => Number(x.bond_id) === bondClosed.id)).toBe(false);   // a prospect is never watched
     expect(rows.find((x) => Number(x.bond_id) === bondStrong.id)).toMatchObject({ push_status: 'sent', text_status: 'sent' });
     expect(rows.find((x) => Number(x.bond_id) === bondPossible.id).text_status).toBeNull();   // texts only for strong matches
     expect(pushesTo('ExponentPushToken[rc-agent]').length - pushBefore).toBe(3);

@@ -103,6 +103,10 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # Bond Desk card payments (Stripe Connect): the second webhook endpoint, for events from
+      # agencies' accounts (EXTERNAL_SERVICES_SETUP.md §3b). Without it payments never confirm.
+      - key: STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
       # Telnyx texts (court reminders, Bond Desk signing links and reminders). Messaging webhook:
       # <service URL>/api/webhooks/telnyx (STOP/START replies + delivery status).
       - key: TELNYX_API_KEY
@@ -112,6 +116,11 @@ services:
       - key: TELNYX_MESSAGING_PROFILE_ID
         sync: false
       - key: TELNYX_PUBLIC_KEY
+        sync: false
+      # Court-date phone line (docs/PHONE_LINE.md): off until the number is set up in Telnyx.
+      - key: TELNYX_VOICE_ENABLED
+        value: "false"
+      - key: TELNYX_VOICE_NUMBER
         sync: false
       # Browser push (web app). Generate once: npx web-push generate-vapid-keys
       - key: VAPID_PUBLIC_KEY
@@ -197,6 +206,10 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # Bond Desk card payments (Stripe Connect): the second webhook endpoint, for events from
+      # agencies' accounts (EXTERNAL_SERVICES_SETUP.md §3b). Without it payments never confirm.
+      - key: STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
       # Telnyx texts (court reminders, Bond Desk signing links and reminders). Messaging webhook:
       # <service URL>/api/webhooks/telnyx (STOP/START replies + delivery status).
       - key: TELNYX_API_KEY
@@ -206,6 +219,11 @@ services:
       - key: TELNYX_MESSAGING_PROFILE_ID
         sync: false
       - key: TELNYX_PUBLIC_KEY
+        sync: false
+      # Court-date phone line (docs/PHONE_LINE.md): off until the number is set up in Telnyx.
+      - key: TELNYX_VOICE_ENABLED
+        value: "false"
+      - key: TELNYX_VOICE_NUMBER
         sync: false
       # Browser push (web app). Generate once: npx web-push generate-vapid-keys
       - key: VAPID_PUBLIC_KEY

@@ -6650,5 +6650,18 @@
   "ares_load_failed": "Nou pa t ka chaje chif yo.",
   "ares_history": "Foto ki pibliye",
   "ares_none": "Poko gen anyen ki pibliye.",
-  "ares_snapshot_line": "{day}: soti {from} rive {to}, to prezans {rate}"
+  "ares_snapshot_line": "{day}: soti {from} rive {to}, to prezans {rate}",
+  "cp_family_title": "Pas Ka Fanmi",
+  "cp_family_body": "Menm fonksyon yo pandan {days} jou, pou moun yo arete a ak chak manm fanmi ki swiv ka a nan aplikasyon an.",
+  "cp_family_buy": "Pran Pas Ka Fanmi — {price}",
+  "cp_family_extend": "Ajoute {days} jou pou fanmi an pou {price}",
+  "ad_credits_title": "Kredi pou demann",
+  "ad_credits_balance": "Balans: {n} kredi",
+  "ad_credits_why": "Nan pifò eta, tankou Tennessee, ou reponn demann yo ak kredi ou peye davans ({price} chak). Se ou ki chwazi ki demann pou reponn.",
+  "ad_credits_buy": "{credits} kredi — {price}",
+  "ad_credits_added": "Kredi yo ajoute. Balans: {n}.",
+  "ad_lead_answer_cta": "Reponn pou {credits} kredi",
+  "ad_lead_answer_title": "Reponn demann sa a pou {credits} kredi?",
+  "ad_lead_answer_body": "Ou gen {balance} kredi. Se ou sèl ki wè enfòmasyon kontak moun nan. Yo pa janm ranbouse kredi selon jan yon ka fini.",
+  "ad_lead_disclosure": "Justice Gavel pa rekòmande ni sipòte okenn avoka. Demann yo parèt sèlman dapre eta, vil ak kalite ka, epi pri a pa janm depann si moun nan anplwaye w."
 }

@@ -6650,5 +6650,18 @@
   "ares_load_failed": "Could not load the numbers.",
   "ares_history": "Published snapshots",
   "ares_none": "Nothing published yet.",
-  "ares_snapshot_line": "{day}: {from} to {to}, appearance rate {rate}"
+  "ares_snapshot_line": "{day}: {from} to {to}, appearance rate {rate}",
+  "cp_family_title": "Family Case Pass",
+  "cp_family_body": "The same features for {days} days, for the person arrested and every family member who follows the case in the app.",
+  "cp_family_buy": "Get Family Case Pass — {price}",
+  "cp_family_extend": "Add {days} days for the family for {price}",
+  "ad_credits_title": "Lead credits",
+  "ad_credits_balance": "Balance: {n} credits",
+  "ad_credits_why": "In most states, including Tennessee, requests are answered with prepaid credits ({price} each). You choose which requests to answer.",
+  "ad_credits_buy": "{credits} credits — {price}",
+  "ad_credits_added": "Credits added. Balance: {n}.",
+  "ad_lead_answer_cta": "Answer for {credits} credits",
+  "ad_lead_answer_title": "Answer this request for {credits} credits?",
+  "ad_lead_answer_body": "You have {balance} credits. The person's contact details are shown to you only. Credits are never refunded because of how a case turns out.",
+  "ad_lead_disclosure": "Justice Gavel does not recommend or endorse any lawyer. Requests are shown by state, city and case type only, and the price never depends on whether the person hires you."
 }

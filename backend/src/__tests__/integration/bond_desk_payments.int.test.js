@@ -113,7 +113,6 @@ describeIntegration('Bond Desk card payments, import / export, staff (real Postg
         `DELETE FROM bd_setup_requests WHERE agent_id IN (${ids})`, `DELETE FROM bd_payments WHERE agent_id IN (${ids})`,
         `DELETE FROM bd_counters WHERE agent_id IN (${ids})`, `DELETE FROM bd_connect_accounts WHERE agent_id IN (${ids})`,
         `DELETE FROM bondsman_subscriptions WHERE user_id IN (${ids})`, `DELETE FROM bondsman_profiles WHERE user_id IN (${ids})`,
-        `DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`,
       ]) await db.run(sql).catch((e) => { throw new Error(`cleanup failed: ${sql}: ${e.message}`); });
     });
   });

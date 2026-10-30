@@ -447,6 +447,15 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     const optedOut = await deliverNow(await pick());
     expect(optedOut.status).toBe('undeliverable');
     expect(optedOut.error).toMatch(/sms_not_opted_in/);
+    // opted in again in the app, but the number replied STOP and never START: no text (debug scan Oct 30, issue 4)
+    await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true });
+    await ctx.db.run('INSERT INTO sms_opt_outs (phone) VALUES (?) ON CONFLICT (phone) DO NOTHING', ['+16155550142']);
+    const before = telnyx.received.length;
+    const stopped = await deliverNow(await pick());
+    expect(stopped.status).toBe('undeliverable');
+    expect(stopped.error).toMatch(/sms_stop_list/);
+    expect(telnyx.received.length).toBe(before);
+    await ctx.db.run('DELETE FROM sms_opt_outs WHERE phone = ?', ['+16155550142']);
     for (const k of ['TELNYX_API_KEY', 'TELNYX_FROM_NUMBER', 'TELNYX_API_BASE']) delete process.env[k];
   });
 

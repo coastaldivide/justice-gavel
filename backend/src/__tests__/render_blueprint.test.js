@@ -36,7 +36,7 @@ const REGIONS = new Set(['oregon', 'ohio', 'virginia', 'frankfurt', 'singapore']
 const TRIGGERS = new Set(['commit', 'checksPass', 'off']);
 const SECRETS = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'ENCRYPTION_KEY', 'ADMIN_KEY',
   'ANTHROPIC_API_KEY', 'SUPABASE_SERVICE_KEY', 'RESEND_API_KEY', 'EXPO_ACCESS_TOKEN', 'GOOGLE_PLACES_KEY',
-  'ALERT_WEBHOOK_URL', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'MIGRATIONS_DATABASE_URL'];
+  'ALERT_WEBHOOK_URL', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'MIGRATIONS_DATABASE_URL', 'STRIPE_CONNECT_WEBHOOK_SECRET'];
 
 describe('render.yaml — Blueprint shape', () => {
   test('parses and declares exactly the production and staging web services', () => {
@@ -128,6 +128,15 @@ describe('render.yaml — matches the code and the image', () => {
       const env = envOf(s);
       expect({ svc: s.name, unknown: Object.keys(env).filter(k => !(k in ALL_ENV_VARS)) }).toEqual({ svc: s.name, unknown: [] });
       for (const k of REQUIRED_IN_PROD) expect({ svc: s.name, k, declared: k in env }).toEqual({ svc: s.name, k, declared: true });
+    }
+  });
+
+  test('the Oct 27 features\' settings are declared, so a Blueprint deploy prompts for them (debug scan Oct 30, issue 10)', () => {
+    for (const s of services) {
+      const env = envOf(s);
+      expect({ svc: s.name, connect: env.STRIPE_CONNECT_WEBHOOK_SECRET }).toEqual({ svc: s.name, connect: { key: 'STRIPE_CONNECT_WEBHOOK_SECRET', sync: false } });
+      expect({ svc: s.name, voice: env.TELNYX_VOICE_NUMBER }).toEqual({ svc: s.name, voice: { key: 'TELNYX_VOICE_NUMBER', sync: false } });
+      expect({ svc: s.name, voiceOn: env.TELNYX_VOICE_ENABLED?.value }).toEqual({ svc: s.name, voiceOn: 'false' });
     }
   });
 

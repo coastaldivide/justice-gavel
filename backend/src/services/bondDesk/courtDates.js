@@ -93,7 +93,7 @@ export function bondReplyText(answer, { lang, agency, defendant, courtDate }) {
 
 // ── Loading ───────────────────────────────────────────────────────────────────
 
-async function courtCtx(db, courtDateId) {
+function courtCtx(db, courtDateId) {
   return db.get(
     `SELECT cd.id, cd.bond_id, cd.court_date, cd.court_time, cd.court_name, cd.room, cd.status, cd.status_source, cd.asked_at,
             cd.followup_at, cd.deleted_at,

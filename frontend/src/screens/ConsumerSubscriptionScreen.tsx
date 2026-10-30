@@ -27,7 +27,11 @@ import { t, useLang, locale } from '../i18n';
 export { consumerPlansFrom };
 export type { ConsumerPlan };
 
-export interface CasePassInfo { cents: number; extend_cents: number; days: number; payments_live?: boolean; active_until: string | null; can_extend: boolean; features: string[] }
+export interface CasePassInfo {
+  cents: number; extend_cents: number; days: number; payments_live?: boolean; active_until: string | null; can_extend: boolean; features: string[];
+  /** Family Case Pass (backend plans.js FAMILY_CASE_PASS): also covers the case owner and the family who follow the case. */
+  family?: { cents: number; extend_cents: number; days: number };
+}
 type CasePassConfirm = { ok: boolean; active_until: string | null; message: string };
 const centsUsd = (cents: number) => (cents / 100).toLocaleString(locale(), { style: 'currency', currency: 'USD', minimumFractionDigits: cents % 100 ? 2 : 0 });
 const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '');
@@ -135,12 +139,13 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
     else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
   });
 
-  const buyPass = () => requireAuth(async () => {
+  // family: the Family Case Pass (same confirm route; the server prices it from `family`).
+  const buyPass = (family = false) => requireAuth(async () => {
     if (Platform.OS === 'ios') return iosGate();
-    setBusy('case_pass'); setNotice(null);
+    setBusy(family ? 'family_pass' : 'case_pass'); setNotice(null);
     const r = await purchase.run({
       key: 'case_pass',
-      start: async (ui) => (await api.post('/billing/case-pass/buy', { ui, return_path: '/plans' })).data,
+      start: async (ui) => (await api.post('/billing/case-pass/buy', { ui, return_path: '/plans', ...(family ? { family: true } : {}) })).data,
       confirm: confirmPass,
     });
     if (!mounted.current) return;
@@ -256,13 +261,26 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
             ))}
           </View>
           {(!pass.active_until || pass.can_extend) && (
-            <TouchableOpacity accessibilityRole="button" testID="case-pass-buy" style={[s.primaryBtn, !!busy && { opacity: 0.6 }]} disabled={!!busy} onPress={buyPass}>
+            <TouchableOpacity accessibilityRole="button" testID="case-pass-buy" style={[s.primaryBtn, !!busy && { opacity: 0.6 }]} disabled={!!busy} onPress={() => buyPass(false)}>
               {busy === 'case_pass' ? <ActivityIndicator color={COLORS.white} /> : (
                 <Text maxFontSizeMultiplier={1.4} style={s.primaryBtnText}>
                   {pass.active_until ? t('cp_extend', { days: pass.days, price: centsUsd(pass.extend_cents) }) : t('cp_buy', { price: centsUsd(pass.cents) })}
                 </Text>
               )}
             </TouchableOpacity>
+          )}
+          {!!pass.family && (!pass.active_until || pass.can_extend) && (
+            <View testID="family-pass" style={{ marginTop: 14 }}>
+              <Text maxFontSizeMultiplier={1.4} style={s.cardTitle}>{t('cp_family_title')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('cp_family_body', { days: pass.family.days })}</Text>
+              <TouchableOpacity accessibilityRole="button" testID="family-pass-buy" style={[s.primaryBtn, !!busy && { opacity: 0.6 }]} disabled={!!busy} onPress={() => buyPass(true)}>
+                {busy === 'family_pass' ? <ActivityIndicator color={COLORS.white} /> : (
+                  <Text maxFontSizeMultiplier={1.4} style={s.primaryBtnText}>
+                    {pass.active_until ? t('cp_family_extend', { days: pass.family.days, price: centsUsd(pass.family.extend_cents) }) : t('cp_family_buy', { price: centsUsd(pass.family.cents) })}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           )}
           <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { textAlign: 'center' }]}>{t('cp_final')}</Text>
         </View>

@@ -25,7 +25,7 @@ import {
 import { endAlign, resetDirectionStateForTests } from '../i18n/direction';
 import { formatCourtDay, formatCourtTime } from '../services/corePath';
 
-const flush = () => new Promise(r => setTimeout(r, 0));
+const flush = () => new Promise<void>(r => { setTimeout(r, 0); });
 const mgr = I18nManager as unknown as { isRTL: boolean; allowRTL: jest.Mock; forceRTL: jest.Mock };
 const reload = DevSettings.reload as unknown as jest.Mock;
 

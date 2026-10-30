@@ -78,7 +78,7 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
       await db.run(`DELETE FROM bd_texts WHERE agent_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_subscriptions WHERE user_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_profiles WHERE user_id IN (${ids})`);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone IN ('+16155550162', '+16155550163')`);   // only this suite's numbers
     });
   });
   afterAll(async () => {

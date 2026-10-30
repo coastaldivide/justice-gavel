@@ -38,6 +38,7 @@ export function normalizePlan(body) {
     if (!v || typeof v !== 'object' || Array.isArray(v)) throw new HelpError(400, 'bad_plan');
     if (v.done !== undefined && typeof v.done !== 'boolean') throw new HelpError(400, 'bad_plan');
     if (v.note !== undefined && v.note !== null && typeof v.note !== 'string') throw new HelpError(400, 'bad_plan');
+    // eslint-disable-next-line no-control-regex -- strip control characters from a free-text note
     const note = String(v.note ?? '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim();
     if (note.length > NOTE_MAX) throw new HelpError(400, 'note_too_long');
     out[k] = { done: v.done === true, note: note || null };
@@ -103,7 +104,7 @@ export async function rideOffersForOwner(db, courtDateId) {
 }
 
 /** The follower's active follow of the court date's case, with share_reminders. */
-async function followFor(db, followerId, followId, courtDateId) {
+function followFor(db, followerId, followId, courtDateId) {
   return db.get(
     `SELECT cfa.id, cfa.case_id, cfa.share_reminders, cfa.invite_name, c.user_id AS owner_id,
             cd.id AS court_date_id, cd.court_date, cd.status AS cd_status

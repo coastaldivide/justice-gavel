@@ -103,7 +103,7 @@ describeIntegration('Bond Desk (real Postgres, fake Telnyx and Stripe)', () => {
       await db.run(`DELETE FROM bd_text_batches WHERE agent_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_subscriptions WHERE user_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_profiles WHERE user_id IN (${ids})`);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone = '+16155550133'`);   // only this suite's number
     });
   });
   afterAll(async () => {
