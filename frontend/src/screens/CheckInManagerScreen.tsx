@@ -5,11 +5,12 @@
  *    soon / waiting for them to sign in), the check-in link to send them
  *    (share sheet; copied on web), history with 30-day compliance, stop
  *    monitoring.
- *  - Enroll: name, phone and/or e-mail (the defendant's account is matched by
- *    them), case number, court date, daily or weekly.
+ *  - Enroll: name, mobile number (required: the defendant's account is matched by
+ *    the phone number they verify in the app), e-mail (optional), case number,
+ *    court date, daily or weekly.
  *  - Only bail-agent accounts can enroll (the server answers 403 otherwise);
  *    other accounts see what the tool is for.
- *  - Billing: the per-defendant price is shown, and that it is not charged yet
+ *  - Billing: included in every bail-agent plan (shown); a price, if one is set again, is shown
  *    (no payment exists for it) — never a "demo" charge.
  *  - Channel: "app" (the defendant signs in to the app) or "text link" (no app:
  *    every reminder is a text with a personal link, 5¢ per text on the plan
@@ -171,7 +172,7 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
 
   const enroll = async () => {
     if (!name.trim()) { setFormError(t('x_check_in_manager_enter_defendant_name')); return; }
-    if (!phone.trim() && !email.trim()) { setFormError(t('ckm_need_contact')); return; }
+    if (!phone.trim()) { setFormError(t('ckm_need_contact')); return; }   // accounts match by verified phone only
     if (channel === 'sms' && !phone.trim()) { setFormError(t('ckm_text_needs_phone')); return; }
     if (channel === 'sms' && !consent) { setFormError(t('ckm_err_consent')); return; }
     if (courtDate.trim() && !validCourtDate(courtDate.trim())) { setFormError(t('cs2_err_date')); return; }

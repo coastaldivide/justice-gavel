@@ -411,7 +411,7 @@ export default {
   "checkin.err.name_required": "Ilagay ang buong pangalan ng nasasakdal.",
   "checkin.err.bad_phone": "Maglagay ng wastong numero ng telepono (10 digit, o + at ang country code).",
   "checkin.err.bad_email": "Maglagay ng wastong e-mail address.",
-  "checkin.err.contact_required": "Ilagay ang numero ng telepono o e-mail ng nasasakdal para maitugma ang kanyang account sa enrollment na ito.",
+  "checkin.err.contact_required": "Ilagay ang mobile number ng nasasakdal. Itinutugma ang kanyang account sa numero ng telepono na kinumpirma niya sa app (hindi maitutugma sa e-mail).",
   "checkin.err.bad_date": "Ilagay ang petsa sa korte bilang YYYY-MM-DD.",
   "checkin.err.bad_freq": "Pumili ng araw-araw o lingguhang check-in.",
   "checkin.err.agents_only": "Mga account lamang ng bail agent ang makakapag-enroll ng nasasakdal sa mga check-in.",

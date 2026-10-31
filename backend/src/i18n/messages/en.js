@@ -430,7 +430,7 @@ export default {
   "checkin.err.name_required": "Enter the defendant's full name.",
   "checkin.err.bad_phone": "Enter a valid phone number (10 digits, or + and the country code).",
   "checkin.err.bad_email": "Enter a valid e-mail address.",
-  "checkin.err.contact_required": "Enter the defendant's phone number or e-mail so their account can be matched to this enrollment.",
+  "checkin.err.contact_required": "Enter the defendant's mobile number. Their account is matched by the phone number they verify in the app (e-mail cannot be matched).",
   "checkin.err.bad_date": "Enter the court date as YYYY-MM-DD.",
   "checkin.err.bad_freq": "Choose daily or weekly check-ins.",
   "checkin.err.agents_only": "Only bail agent accounts can enroll defendants in check-ins.",

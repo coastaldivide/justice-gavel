@@ -411,7 +411,7 @@ export default {
   "checkin.err.name_required": "Antre non konplè akize a.",
   "checkin.err.bad_phone": "Antre yon nimewo telefòn ki valab (10 chif, oswa + ak kòd peyi a).",
   "checkin.err.bad_email": "Antre yon adrès imèl ki valab.",
-  "checkin.err.contact_required": "Antre nimewo telefòn oswa imèl akize a pou kont li ka konekte ak enskripsyon sa a.",
+  "checkin.err.contact_required": "Antre nimewo selilè akize a. Yo konekte kont li ak nimewo telefòn li verifye nan aplikasyon an (yo pa ka konekte ak imèl).",
   "checkin.err.bad_date": "Antre dat tribinal la konsa: YYYY-MM-DD.",
   "checkin.err.bad_freq": "Chwazi prezans chak jou oswa chak semèn.",
   "checkin.err.agents_only": "Se sèlman kont ajan kosyon ki ka enskri akize nan prezans.",

@@ -192,10 +192,13 @@ describeIntegration('section D — cases, court dates, check-ins, messages (real
   // ── D4 ────────────────────────────────────────────────────────────────────
   test('D4 check-ins: agents only, found by verified phone (never by e-mail), the defendant\'s day, one per day, agent notified', async () => {
     if (!ctx.app) return;
-    expect((await req('post', '/api/checkins/enroll', owner).send({ defendant_name: 'X Y', defendant_email: defendant.email })).status).toBe(403);
+    expect((await req('post', '/api/checkins/enroll', owner).send({ defendant_name: 'X Y', defendant_phone: '615-555-0140' })).status).toBe(403);
     const noContact = await req('post', '/api/checkins/enroll', agent, 'es').send({ defendant_name: 'X Y' });
     expect(noContact.status).toBe(400);
-    expect(noContact.body.error).toMatch(/teléfono o el correo/);
+    expect(noContact.body.error).toMatch(/número de celular/);
+    // e-mail alone is refused: it is never used to find the defendant's account, so it could never be reached
+    const emailOnly = await req('post', '/api/checkins/enroll', agent).send({ defendant_name: 'X Y', defendant_email: defendant.email });
+    expect([emailOnly.status, emailOnly.body.code]).toEqual([400, 'phone_required']);
     const en = await req('post', '/api/checkins/enroll', agent).send({ defendant_name: 'Dana Defendant', defendant_email: defendant.email.toUpperCase(), defendant_phone: '615-555-0144', check_in_freq: 'daily' });
     expect(en.status).toBe(201);
     expect(en.body.checkin_link).toMatch(/\/checkin\?enrollmentId=\d+$/);

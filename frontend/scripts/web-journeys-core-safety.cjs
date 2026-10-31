@@ -348,8 +348,11 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
     const acc = await newUser('a8');
     const s = await open(browser, { lang: 'es', account: acc, state: 'CA' });
     await go(s.page, '/encounter-recorder');
-    const law = await byTid(s.page, 'recorder-law').innerText({ timeout: 15000 });
-    if (!law.includes(tx('es', 'x_interrogation_recorder_all_party_consent_state')) || !law.includes('California exige')) throw new Error(`law box: ${law}`);
+    // the law box is the server's (GET /interrogation/recording-law, sourced and in Spanish): wait for its text
+    const rl = (await apiCall('GET', '/interrogation/recording-law?state=CA', { lang: 'es' })).body;
+    await byTid(s.page, 'recorder-law').getByText(rl.note.slice(0, 40), { exact: false }).waitFor({ timeout: 15000 });
+    const law = await byTid(s.page, 'recorder-law').innerText();
+    if (!law.includes(tx('es', 'x_interrogation_recorder_all_party_consent_state')) || !law.includes('California') || !law.includes(rl.law)) throw new Error(`law box: ${law}`);
     await byTid(s.page, 'recorder-officer').fill('Ofc. Ruiz #4411');
     await byTid(s.page, 'recorder-toggle').click();
     await byTid(s.page, 'recorder-timer').waitFor({ timeout: 10000 });
@@ -443,7 +446,11 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
     const f = await open(browser, { lang: 'es', account: free });
     await go(f.page, '/arrest-monitor');
     const btn = await byTid(f.page, 'arrest-monitor-upgrade').innerText({ timeout: 15000 });
-    if (!btn.includes('34,99') && !btn.includes('34.99')) throw new Error(`upgrade button "${btn}"`);
+    // the server's Legal Pro price (Oct 26 2026 competitor-matched prices), not a number written here
+    const tiers = (await apiCall('GET', '/billing/tiers')).body;
+    const proCents = Number(((tiers && tiers.tiers) || tiers || []).find(x => x.key === 'legal_pro')?.monthly_cents);
+    const want = (proCents / 100).toFixed(2);
+    if (!(proCents > 0) || (!btn.includes(want) && !btn.includes(want.replace('.', ',')))) throw new Error(`upgrade button "${btn}" (server ${proCents})`);
     if (!btn.includes('/mes')) throw new Error(`price not in Spanish: "${btn}"`);
     allErrors.push(...f.errors);
     await f.ctx.close();

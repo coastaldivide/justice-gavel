@@ -125,10 +125,13 @@ function SubscriptionScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   // Bond Desk seats used / included (none for an account without a desk)
   useEffect(() => {
     if (type !== 'bail_agent' || !hasSession) { setSeats(null); return; }
-    api.get('/bond-desk/staff').then(r => {
-      const x = (r.data as { seats?: { used: number; included: number } } | undefined)?.seats;
-      if (mounted.current) setSeats(x && Number(x.included) > 0 ? { used: Number(x.used), included: Number(x.included) } : null);
-    }, () => { if (mounted.current) setSeats(null); });
+    // /access never refuses; the staff list is only for accounts that have a desk (else 403)
+    api.get<{ allowed?: boolean }>('/bond-desk/access')
+      .then(a => (a.data?.allowed ? api.get('/bond-desk/staff') : null))
+      .then(r => {
+        const x = (r?.data as { seats?: { used: number; included: number } } | undefined)?.seats;
+        if (mounted.current) setSeats(x && Number(x.included) > 0 ? { used: Number(x.used), included: Number(x.included) } : null);
+      }, () => { if (mounted.current) setSeats(null); });
   }, [type, hasSession, current?.tier]);
 
   const confirmFor = useCallback((pt: ProviderType) => async (ids: Record<string, string | undefined>) =>

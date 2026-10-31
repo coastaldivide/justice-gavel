@@ -327,6 +327,8 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     expect((await req('post', '/api/recovery-shares/accept', stranger).send({ token })).body.code).toBe('share_wrong_account');
     expect((await req('post', '/api/recovery-shares/accept', recov).send({ token })).body).toEqual({ share_id: shareId });
     expect((await req('get', '/api/recovery-shares', recov)).body.shares).toEqual([expect.objectContaining({ id: shareId, defendant_name: 'Ida Vance', agency: 'Sigma Bail Bonds' })]);
+    expect((await req('get', '/api/recovery-shares/status', recov)).body).toEqual({ enabled: true, count: 1 });
+    expect((await req('get', '/api/recovery-shares/status', stranger)).body).toEqual({ enabled: true, count: 0 });
     expect((await req('get', `/api/recovery-shares/${shareId}`, stranger)).status).toBe(404);
     const view = await req('get', `/api/recovery-shares/${shareId}`, recov);
     expect(view.status).toBe(200);
@@ -410,6 +412,8 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
         expect([r.status, r.body.code]).toEqual([503, 'feature_unavailable']);
       }
       expect((await req('get', '/api/custody/status', family)).body.enabled).toBe(false);
+      // the status route still answers (Home asks it instead of the 503 list)
+      expect((await req('get', '/api/recovery-shares/status', recov)).body).toEqual({ enabled: false, count: 0 });
       expect((await req('get', '/api/bond-desk/dashboard', agent)).body.rearrests).toEqual([]);
       // ingest runs, but nothing is matched or alerted
       roster = [rec({ name: 'Rhea Quill', dob: '1990-04-05', booking_id: 'RC-201' })];

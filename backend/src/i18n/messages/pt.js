@@ -428,7 +428,7 @@ export default {
   "checkin.err.name_required": "Digite o nome completo do réu.",
   "checkin.err.bad_phone": "Digite um telefone válido (10 dígitos, ou + e o código do país).",
   "checkin.err.bad_email": "Digite um e-mail válido.",
-  "checkin.err.contact_required": "Digite o telefone ou o e-mail do réu para vincular a conta dele a esta inscrição.",
+  "checkin.err.contact_required": "Digite o número de celular do réu. A conta dele é vinculada pelo telefone que ele confirma no app (o e-mail não serve para vincular).",
   "checkin.err.bad_date": "Digite a data da audiência como AAAA-MM-DD.",
   "checkin.err.bad_freq": "Escolha check-ins diários ou semanais.",
   "checkin.err.agents_only": "Somente contas de agentes de fiança podem inscrever réus nos check-ins.",

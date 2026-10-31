@@ -13,7 +13,7 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
  *   - Works 100% OFFLINE — no API calls — always available
  *   - Bilingual English / Spanish toggle at the top
  *   - Panic-readable: big text, high contrast, action-first
- *   - Real phone numbers, real links (ACLU, NILC, RAICES, CLINIC)
+ *   - Only numbers and links checked against official pages (EOIR, ICE locator)
  *   - Legally accurate: sourced from ACLU "Know Your Rights" (2024),
  *     National Immigration Law Center, Immigrant Legal Resource Center
  *   - All rights described apply under the 4th, 5th, 14th Amendments

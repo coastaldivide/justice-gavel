@@ -4,6 +4,8 @@
  *
  *   POST /api/recovery-shares/accept   { token }  accept an e-mailed invite (the account must use
  *                                                 the invited e-mail address)
+ *   GET  /api/recovery-shares/status              { enabled, count } — answers with the setting off
+ *                                                 too (Home asks it instead of getting a 503)
  *   GET  /api/recovery-shares                     my live shares
  *   GET  /api/recovery-shares/:id                 the read-only file (every view is logged)
  *   GET  /api/recovery-shares/:id/photo           the defendant's photo, if on file (logged)
@@ -39,6 +41,11 @@ const shareId = (v) => {
   if (!n || n <= 0 || String(n) !== String(v)) throw new ShareError(404, 'not_found');
   return n;
 };
+
+router.get('/status', authRequired, limiter, handle(async (req, res, db) => {
+  const enabled = recoverySharingEnabled();
+  res.json({ enabled, count: enabled ? (await sharesForRecoveryAgent(db, req.user.id)).length : 0 });
+}));
 
 router.use(authRequired, limiter, (req, res, next) => {
   if (recoverySharingEnabled()) return next();

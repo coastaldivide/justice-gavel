@@ -555,7 +555,12 @@ test('G10 bail-agent plan: verified before it counts; new-arrest alerts for the 
     const q = await req('get', '/api/admin/queue/bar', admin);
     expect(q.body.pending.find(p => p.user_id === attorney2.user.id)).toMatchObject({ bar_number: 'TN4455', lookup_url: expect.stringMatching(/^https:/) });
     expect((await req('post', `/api/admin/queue/bar/${attorney2.user.id}`, admin).send({ approved: false })).status).toBe(400);
+    // a lead claim while pending is refused for the bar check (and caches the unverified account)
+    expect((await req('post', '/api/billing/pi-lead/claim/999999999', attorney2).send({})).body.code).toBe('bar_verification_required');
     expect((await req('post', `/api/admin/queue/bar/${attorney2.user.id}`, admin).send({ approved: true })).status).toBe(200);
+    // right after approval the lawyer is verified everywhere (the auth cache is cleared): the claim
+    // gets past the bar check to "no such lead"
+    expect((await req('post', '/api/billing/pi-lead/claim/999999999', attorney2).send({})).status).toBe(404);
     expect((await req('post', `/api/admin/queue/bar/${attorney2.user.id}`, admin).send({ approved: true })).status).toBe(404);
     expect((await req('get', '/api/attorney/profile', attorney2)).body.bar_verified).toBe(true);
     const audit = await ctx.db.get(`SELECT user_id, entity_id FROM audit_log WHERE action = 'admin.bar_approved' ORDER BY id DESC LIMIT 1`);

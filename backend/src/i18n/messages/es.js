@@ -428,7 +428,7 @@ export default {
   "checkin.err.name_required": "Escriba el nombre completo del acusado.",
   "checkin.err.bad_phone": "Escriba un número de teléfono válido (10 dígitos, o + y el código del país).",
   "checkin.err.bad_email": "Escriba un correo electrónico válido.",
-  "checkin.err.contact_required": "Escriba el teléfono o el correo del acusado para vincular su cuenta con esta inscripción.",
+  "checkin.err.contact_required": "Escriba el número de celular del acusado. Su cuenta se vincula con el teléfono que verifica en la app (el correo no sirve para vincular).",
   "checkin.err.bad_date": "Escriba la fecha de corte como AAAA-MM-DD.",
   "checkin.err.bad_freq": "Elija registros diarios o semanales.",
   "checkin.err.agents_only": "Solo las cuentas de agentes de fianzas pueden inscribir acusados en los registros.",

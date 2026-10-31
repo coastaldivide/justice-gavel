@@ -27089,6 +27089,38 @@
         }
       }
     },
+    "/api/recovery-shares/status": {
+      "get": {
+        "operationId": "get_api_recovery-shares_status",
+        "summary": "GET /api/recovery-shares/status",
+        "tags": [
+          "recovery-shares"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/recovery-shares/{id}": {
       "get": {
         "operationId": "get_api_recovery-shares_id",

@@ -176,7 +176,9 @@ router.post('/enroll', authRequired, writeLimiter, async (req, res) => {
   if (phoneRaw && !phone) return fail(req, res, 400, 'checkin.err.bad_phone');
   const email = String(b.defendant_email || '').trim().toLowerCase() || null;
   if (email && !looksLikeEmail(email)) return fail(req, res, 400, 'checkin.err.bad_email');
-  if (!phone && !email) return fail(req, res, 400, 'checkin.err.contact_required');
+  // A phone number is required: accounts are matched only by a phone number the defendant verified
+  // (claimMatching; e-mail is never verified, so an e-mail-only enrollment could never be reached).
+  if (!phone) return fail(req, res, 400, 'checkin.err.contact_required', { code: 'phone_required' });
   const courtDate = b.court_date ? safeCourtDate(b.court_date) : null;
   if (b.court_date && !courtDate) return fail(req, res, 400, 'checkin.err.bad_date');
   const freq = b.check_in_freq == null || b.check_in_freq === '' ? 'daily' : String(b.check_in_freq);

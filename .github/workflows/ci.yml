@@ -214,7 +214,8 @@ jobs:
   # Web journeys: the production web export driven in headless Chromium against
   # a production-mode API on a migrated Postgres, with the scriptable Anthropic
   # mock (backend/scripts/anthropic-mock.mjs). frontend/scripts/run-all-journeys.sh
-  # runs web-journeys-*.cjs and web-journeys.cjs; any failure fails the job.
+  # runs web-journeys-*.cjs and web-journeys.cjs on the full build, and the core-scope,
+  # UI and main scripts on the shipped core-path build; any failure fails the job.
   # ───────────────────────────────────────────────────────────────────────────
   journeys:
     name: Web journeys (production API + Chromium)
@@ -302,7 +303,11 @@ jobs:
         working-directory: frontend
         env:
           EXPO_PUBLIC_API_BASE: http://localhost:${{ env.API_PORT }}/api
-        run: npx expo export --platform web --output-dir dist
+        # dist = the shipped core-path build; dist-full = every screen (EXPO_PUBLIC_FULL_APP=1), so the
+        # journeys still exercise the parked and professional screens' code
+        run: |
+          npx expo export --platform web --output-dir dist
+          EXPO_PUBLIC_FULL_APP=1 npx expo export --platform web --output-dir dist-full
 
       - name: Install Playwright Chromium
         working-directory: frontend
@@ -312,7 +317,7 @@ jobs:
 
       - name: Run every web journey
         working-directory: frontend
-        run: bash scripts/run-all-journeys.sh dist "$RUNNER_TEMP/journeys" --api "http://localhost:${API_PORT}/api" --mock "http://127.0.0.1:${MOCK_PORT}" --db-url "$CI_DATABASE_URL" --port "$WEB_PORT"
+        run: bash scripts/run-all-journeys.sh dist-full "$RUNNER_TEMP/journeys" --core-dist dist --api "http://localhost:${API_PORT}/api" --mock "http://127.0.0.1:${MOCK_PORT}" --db-url "$CI_DATABASE_URL" --port "$WEB_PORT"
 
       - name: Upload journey screenshots and logs
         if: failure()

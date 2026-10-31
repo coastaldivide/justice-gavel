@@ -187,7 +187,9 @@ async function checkRecord(page, { state, status, type }) {
     let v = await checkRecord(s.page, { state: 'CA', status: 'Dismissed' });
     if (v !== tx('en', 'exp_r_eligible')) throw new Error(`CA dismissed verdict: ${v}`);
     const src = await byTid(s.page, 'expungement-source').innerText();
-    if (!src.includes('PC 851.91') || !/recorded/.test(src)) throw new Error(`source line: ${src}`);
+    // the citation is the server's (legal accuracy review, Oct 2026: full statute names)
+    const caRule = (await apiCall('GET', '/expungement/check?state=CA&status=Dismissed&lang=en')).body;
+    if (!src.includes(caRule.source.citation) || !src.includes('851.91') || !/recorded/.test(src)) throw new Error(`source line: ${src}`);
     if (!(await byTid(s.page, 'expungement-notice').isVisible())) throw new Error('no "not reviewed" notice');
     if (!(await bodyText(s.page)).includes('California')) throw new Error('not about California');
     await byTid(s.page, 'expungement-attorney').first().waitFor({ timeout: 10000 });
@@ -199,16 +201,27 @@ async function checkRecord(page, { state, status, type }) {
     v = await checkRecord(s.page, { state: 'CA', status: 'Open' });
     if (v !== tx('en', 'exp_r_case_open')) throw new Error(`open verdict: ${v}`);
     await byTid(s.page, 'expungement-start-over').click();
-    v = await checkRecord(s.page, { state: 'TN', status: 'Convicted', type: 'domestic' });
-    if (v !== tx('en', 'exp_r_unsourced')) throw new Error(`TN domestic verdict: ${v}`);
+    // a combination the recorded rules still have no statute for (TN domestic assault gained one in the
+    // legal accuracy review, so pick from the server instead of naming one here)
+    let gap = null;
+    for (const st of ['AR', 'MN', 'NC', 'NH', 'TN']) {
+      for (const ty of ['domestic', 'dui']) {
+        const r = (await apiCall('GET', `/expungement/check?state=${st}&status=Convicted&type=${ty}&lang=en`)).body;
+        if (r && r.eligibility && r.eligibility.result === 'unsourced') { gap = { st, ty }; break; }
+      }
+      if (gap) break;
+    }
+    if (!gap) throw new Error('no unsourced rule left to check among the sampled states');
+    v = await checkRecord(s.page, { state: gap.st, status: 'Convicted', type: gap.ty });
+    if (v !== tx('en', 'exp_r_unsourced')) throw new Error(`${gap.st} ${gap.ty} verdict: ${v}`);
     const rule = await byTid(s.page, 'expungement-rule').innerText();
     if (!rule.includes(tx('en', 'exp_rule_title_unsourced')) || !rule.includes(tx('en', 'pen_source_unknown'))) throw new Error(`unsourced rule card: ${rule}`);
     if (await byTid(s.page, 'expungement-wait-years').count()) throw new Error('waiting period shown without a source');
-    await shot(s.page, 'F1-tn-domestic');
+    await shot(s.page, `F1-${gap.st}-${gap.ty}-unsourced`);
     if (s.failed.length) throw new Error(`failed requests: ${s.failed.join(', ')}`);   // no guest log-visit 401
     if (s.calls.some(c => c.includes('log-visit'))) throw new Error('guest called log-visit');
     await done(s);
-    return 'CA dismissed eligible (PC 851.91) · not sure → unknown · open → no verdict · TN DV → unsourced, no wait';
+    return `CA dismissed eligible (PC 851.91) · not sure → unknown · open → no verdict · ${gap.st} ${gap.ty} → unsourced, no wait`;
   });
 
   // ── F2 ──────────────────────────────────────────────────────────────────
@@ -238,7 +251,10 @@ async function checkRecord(page, { state, status, type }) {
     const g = await open(browser, { lang: 'es' });
     await go(g.page, '/expungement');
     const v = await checkRecord(g.page, { state: 'TX', status: 'Convicted', type: 'misdemeanor' });
-    if (v !== tx('es', 'exp_r_conditional')) throw new Error(`es verdict: ${v}`);
+    // the verdict is the server's recorded rule (Texas misdemeanor: nondisclosure → "eligible" since the
+    // legal accuracy review), shown in Spanish
+    const txRule = (await apiCall('GET', '/expungement/check?state=TX&status=Convicted&type=misdemeanor&lang=es')).body;
+    if (v !== tx('es', `exp_r_${txRule.eligibility.result}`)) throw new Error(`es verdict: ${v} (server ${txRule.eligibility.result})`);
     const text = await bodyText(g.page);
     if (!text.includes(tx('es', 'pen_notes_english'))) throw new Error('English notes not labelled');
     if (!text.includes('Texas')) throw new Error('state name missing');
@@ -258,7 +274,7 @@ async function checkRecord(page, { state, status, type }) {
     await shot(s.page, 'F3-draft');
     if (!s.calls.some(c => c.startsWith('POST /expungement/log-visit'))) throw new Error('signed-in visit not logged');
     await done(s);
-    return 'es conditional (TX) with English-notes label · guest → sign in · signed in → AI draft with notice';
+    return 'es verdict = the server TX rule, with English-notes label · guest → sign in · signed in → AI draft with notice';
   });
 
   // ── F4 ──────────────────────────────────────────────────────────────────
@@ -304,6 +320,20 @@ async function checkRecord(page, { state, status, type }) {
   await journey('F6 Specialty courts (vi): state picker, translated text, contacts, sources', async () => {
     const s = await open(browser, { lang: 'vi' });
     await go(s.page, '/specialty-courts');
+    // Legal accuracy review (Oct 2026): the server lists only courts checked against an official
+    // source. With none checked for Tennessee, the screen says so (in Vietnamese) and shows no cards.
+    const tnMeta = (await apiCall('GET', '/legaldata/specialty-courts?state=TN&limit=200')).body.meta;
+    if (!tnMeta.count) {
+      await pickState(s.page, 'specialty-state', 'TN');
+      await byTid(s.page, 'specialty-empty').waitFor({ timeout: 10000 });
+      const msg = await byTid(s.page, 'specialty-empty').innerText();
+      if (tnMeta.withheld > 0 && msg !== tx('vi', 'legal_unverified_withheld', { state: 'Tennessee' })) throw new Error(`TN notice: ${msg}`);
+      if (await byTid(s.page, 'specialty-court').count()) throw new Error('unchecked courts shown');
+      if (rawKeys(await bodyText(s.page)).length) throw new Error('raw keys');
+      await shot(s.page, 'F6-vi-tn-withheld');
+      await done(s);
+      return `TN: no checked courts (${tnMeta.withheld} withheld) → Vietnamese notice, no cards, no raw keys`;
+    }
     await byTid(s.page, 'specialty-court').first().waitFor({ timeout: 10000 });
     await pickState(s.page, 'specialty-state', 'TN');
     await until(async () => (await byTid(s.page, 'specialty-count').innerText()).includes(tx('vi', 'sc_count_other', { n: 5, where: 'Tennessee' })), 8000, 'TN count');
@@ -342,7 +372,9 @@ async function checkRecord(page, { state, status, type }) {
     await byTid(g.page, 'hague-country-MX').click();
     await byTid(g.page, 'hague-authority').waitFor();
     const auth = await byTid(g.page, 'hague-authority').innerText();
-    if (!auth.includes('SEGOB') || !auth.includes('HCCH member state registry')) throw new Error(`MX authority: ${auth}`);
+    // the stored record (legal accuracy review, Oct 26 2026: Mexico's authority is the SRE, source = HCCH page)
+    const mx = (await apiCall('GET', '/hague-contacts/central-authority/MX?lang=en')).body;
+    if (!auth.includes(mx.central_authority.name) || !auth.includes(mx.source.label)) throw new Error(`MX authority: ${auth}`);
     await byTid(g.page, 'hague-start-intake').click();
     await byTid(g.page, 'hague-sign-in').waitFor();
     await shot(g.page, 'F7-guest-intake');
@@ -375,7 +407,7 @@ async function checkRecord(page, { state, status, type }) {
     const row = await apiCall('GET', `/hague-contacts/intake/${caseId}`, { token: me.token });
     if (row.body.intake.country_code !== 'MX' || row.body.intake.abduction_date !== '2026-09-15') throw new Error(`stored ${JSON.stringify(row.body)}`);
     await done(s, { allow: ['400 POST /hague-contacts/report-intake'] });
-    return 'US card from stored data (tel:+18884074747) · FBI page, no IC3 · MX SEGOB with source · guest → sign in · es intake: bad date refused, recorded';
+    return 'US card from stored data (tel:+18884074747) · FBI page, no IC3 · MX authority + source from the stored record · guest → sign in · es intake: bad date refused, recorded';
   });
 
   // ── F8 ──────────────────────────────────────────────────────────────────
@@ -388,12 +420,15 @@ async function checkRecord(page, { state, status, type }) {
     await byTid(s.page, 'ice-call-0').click();
     const opened = await s.opened();
     if (!opened.includes('https://www.ice.gov/locator')) throw new Error(`locator opened ${opened}`);
-    if (!opened.some(u => /^tel:\+?1?2107873745$/.test(u))) throw new Error(`call link ${opened}`);
+    // legal accuracy review (Oct 2026): the only call button left is EOIR's case line (1-800-898-7180)
+    if (!opened.some(u => /^tel:\+?1?8008987180$/.test(u))) throw new Error(`call link ${opened}`);
     const src = await byTid(s.page, 'ice-locator-source').innerText();
     if (!src.includes('ice.gov')) throw new Error(`locator source ${src}`);
     await byTid(s.page, 'ice-share-btn').click();
     const shared = await s.shared();
-    if (!shared.length || !String(shared[0].text || shared[0].message || '').includes('https://www.ice.gov/locator')) throw new Error(`share ${JSON.stringify(shared)}`);
+    const sharedText = shared.length ? String(shared[0].text || shared[0].message || '') : '';
+    if (!sharedText.includes('https://www.ice.gov/locator')) throw new Error(`share ${JSON.stringify(shared)}`);
+    if (/RAICES|NILC|210-787-3745|213-639-3900/.test(sharedText)) throw new Error('share still carries the unconfirmed numbers the review removed');
     await byTid(s.page, 'ice-lang-toggle').click();
     await until(async () => (await bodyText(s.page)).includes(L.en.iced_rights_label), 5000, 'English page');
     if (!(await bodyText(s.page)).includes(L.en.iced_not_reviewed)) throw new Error('notice not in English after switch');
@@ -403,7 +438,7 @@ async function checkRecord(page, { state, status, type }) {
     if (off > 1) throw new Error(`overflow ${off}`);
     await shot(s.page, 'F8-es');
     await done(s);
-    return 'www.ice.gov/locator with ice.gov source · tel:+12107873745 · share carries the locator · es ↔ en';
+    return 'www.ice.gov/locator with ice.gov source · tel:+18008987180 (EOIR) · share carries the locator, no unconfirmed numbers · es ↔ en';
   });
 
   // ── F9 ──────────────────────────────────────────────────────────────────
@@ -414,13 +449,17 @@ async function checkRecord(page, { state, status, type }) {
     const text = await bodyText(s.page);
     if (!text.includes(tx('en', 'ins_none_title'))) throw new Error('no-insurance notice');
     const pro = await byTid(s.page, 'insurance-price-legal_pro').innerText();
-    if (!pro.includes('$34.99')) throw new Error(`Legal Pro price ${pro}`);
-    if (/Insurance Partners|\$19\.99\/mo.*Legal Pro/.test(text)) throw new Error('fake quote text');
+    // the price is the server's (Oct 26 2026 competitor-matched prices), not a number written here
+    const tiers = (await apiCall('GET', '/billing/tiers')).body.tiers;
+    const proCents = Number(tiers.find(x => x.key === 'legal_pro')?.monthly_cents);
+    if (!(proCents > 0) || !pro.includes(`$${(proCents / 100).toFixed(2)}`)) throw new Error(`Legal Pro price ${pro} (server ${proCents})`);
+    // the old invented quote ("Insurance Partners"); $19.99 is now the real Legal Pro price, so it is no longer a marker
+    if (/Insurance Partners/.test(text)) throw new Error('fake quote text');
     if (s.calls.some(c => c.includes('/insurance'))) throw new Error('called /insurance');
     await byTid(s.page, 'insurance-see-plans').click();
     await byTid(s.page, 'consumer-subscription-screen').first().waitFor({ timeout: 10000 });
     await done(s);
-    return 'no insurance product · Legal Pro $34.99 · plans screen opens';
+    return `no insurance product · Legal Pro at the server's price · plans screen opens`;
   });
 
   // ── F10 ─────────────────────────────────────────────────────────────────
@@ -447,10 +486,15 @@ async function checkRecord(page, { state, status, type }) {
     const rows = await byTid(s.page, 'juvenile-row-source').count();
     if (rows !== 1 || !(await bodyText(s.page)).includes('Nevada')) throw new Error(`juvenile sealing rows ${rows}`);
     await pickState(s.page, 'juvenile-state', 'ALL');
-    if (await byTid(s.page, 'juvenile-row-source').count() !== 51) throw new Error('all states');
+    // legal accuracy review (Oct 2026): a state whose rule is not checked shows the "not checked" notice, not a source line
+    const juv = (await apiCall('GET', '/expungement/juvenile')).body.data;
+    const checked = juv.filter(r => r.verified).length;
+    await until(async () => (await byTid(s.page, 'juvenile-row-source').count()) === checked, 8000, 'all states');
+    const unchecked = await byTid(s.page, 'juvenile-unverified').count();
+    if (juv.length !== 51 || unchecked !== juv.length - checked) throw new Error(`all states: ${checked} sourced + ${unchecked} not checked of ${juv.length}`);
     await shot(s.page, 'F10-juvenile');
     await done(s);
-    return 'Hague / child support / tenant rights reachable · juvenile sealing NV (1) → all (51), each with a source line';
+    return 'Hague / child support / tenant rights reachable · juvenile sealing NV (1) → all 51: checked ones with a source line, the rest marked not checked';
   });
 
   // ── F11 ─────────────────────────────────────────────────────────────────

@@ -411,7 +411,7 @@ export default {
   "checkin.err.name_required": "请输入被告的全名。",
   "checkin.err.bad_phone": "请输入有效的电话号码（10 位数字，或 + 加国家代码）。",
   "checkin.err.bad_email": "请输入有效的电子邮件地址。",
-  "checkin.err.contact_required": "请输入被告的电话号码或电子邮件，以便将其账户与这项登记匹配。",
+  "checkin.err.contact_required": "请输入被告的手机号码。系统按对方在应用中验证的手机号码匹配其账户（无法用电子邮件匹配）。",
   "checkin.err.bad_date": "请按 YYYY-MM-DD 格式输入出庭日期。",
   "checkin.err.bad_freq": "请选择每天或每周报到。",
   "checkin.err.agents_only": "只有保释担保人账户才能为被告登记报到。",

@@ -428,7 +428,7 @@ export default {
   "checkin.err.name_required": "Hãy nhập họ tên đầy đủ của bị cáo.",
   "checkin.err.bad_phone": "Hãy nhập số điện thoại hợp lệ (10 chữ số, hoặc dấu + và mã quốc gia).",
   "checkin.err.bad_email": "Hãy nhập địa chỉ e-mail hợp lệ.",
-  "checkin.err.contact_required": "Hãy nhập số điện thoại hoặc e-mail của bị cáo để liên kết tài khoản của họ với đăng ký này.",
+  "checkin.err.contact_required": "Hãy nhập số điện thoại di động của bị cáo. Tài khoản của họ được liên kết bằng số điện thoại họ xác minh trong ứng dụng (không thể liên kết bằng e-mail).",
   "checkin.err.bad_date": "Nhập ngày ra tòa theo dạng YYYY-MM-DD.",
   "checkin.err.bad_freq": "Hãy chọn điểm danh hằng ngày hoặc hằng tuần.",
   "checkin.err.agents_only": "Chỉ tài khoản của đại lý bảo lãnh mới có thể đăng ký điểm danh cho bị cáo.",

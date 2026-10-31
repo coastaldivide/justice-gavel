@@ -16,6 +16,7 @@ import { STATE_BAR_LOOKUP } from '../routes/attorney/_helpers.js';
 import { sendPushToUser } from './pushDelivery.js';
 import { msg, userLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
+import { invalidateUserCache } from '../middleware/auth.js';
 
 export class QueueError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
@@ -57,6 +58,9 @@ export async function decideBar(db, { adminId, userId, approved, reason, req }) 
       `UPDATE users SET pending_bar_verification = 0, bar_verified = 0, bar_rejection_reason = ?
         WHERE id = ? AND pending_bar_verification = 1 RETURNING id, bar_number, bar_state`, [why, userId]);
   if (!row) throw new QueueError(404, 'not_found');
+  // req.user.bar_verified comes from a 60 s principal cache: without this a lawyer approved a
+  // moment ago was still refused ("verify your bar number") while the dashboard said verified
+  invalidateUserCache(userId);
   await audit(approved ? AUDIT_ACTIONS.ADMIN_BAR_APPROVED : AUDIT_ACTIONS.ADMIN_BAR_REJECTED, {
     userId: adminId, req, entityType: 'user', entityId: userId,
     metadata: { bar_number: row.bar_number, bar_state: row.bar_state, ...(approved ? {} : { reason: why }) },

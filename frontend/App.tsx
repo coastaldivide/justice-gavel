@@ -176,13 +176,22 @@ function AppInner() {
   // ── Network status ──────────────────────────────────────────────────────────
   useEffect(() => {
     let wasOnline: boolean | null = null;
-    const unsub = NetInfo.addEventListener(state => {
-      const offline = state.isConnected === false;
+    const apply = (offline: boolean) => {
       setIsOffline(offline);
       // Send cases saved offline: on start (left from an earlier session) and on every reconnect
       if (!offline && wasOnline !== true) processSyncQueue().catch(() => {});
       wasOnline = !offline;
-    });
+    };
+    const unsub = NetInfo.addEventListener(state => apply(state.isConnected === false));
+    // Web: NetInfo listens only to navigator.connection 'change' when the browser has it
+    // (Chrome, Edge), which does not fire when the network drops, so the banner never
+    // showed there. The browser's own online/offline events do.
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      const onNet = () => apply(navigator.onLine === false);
+      window.addEventListener('online', onNet);
+      window.addEventListener('offline', onNet);
+      return () => { unsub(); window.removeEventListener('online', onNet); window.removeEventListener('offline', onNet); };
+    }
     return unsub;
   }, []);
 

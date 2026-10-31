@@ -308,16 +308,22 @@ const RAW_KEY = /\b(?:ad|adm|ai|bd|bill|cc|dm|fa|plan|pay|lead_type|x)_[a-z0-9]+
     const s = await open(browser, { account: atty });
     await go(s.page, '/attorney-dashboard');
     await byTid(s.page, 'ad-tab-leads').click();
-    const buy = byTid(s.page, `ad-buy-lead-${lead.body.lead?.id ?? lead.body.id}`);
-    await buy.waitFor({ timeout: 15000 });
-    const card = await s.page.locator('[data-testid="ad-open-lead"]', { has: buy }).innerText();
-    if (!card.includes('$100')) throw new Error(`employment lead fee not $100: "${card}"`);
+    // Alabama sells client requests as prepaid credits (services/leadRules.js), so the card shows
+    // "answer with credits", never the per-lead card purchase the server would refuse there.
+    const leadId = lead.body.lead?.id ?? lead.body.lead_id;
+    const answerBtn = byTid(s.page, `ad-answer-lead-${leadId}`);
+    await answerBtn.waitFor({ timeout: 15000 });
+    if (await byTid(s.page, `ad-buy-lead-${leadId}`).count()) throw new Error('card purchase offered in a credit-pack state');
+    const card = await s.page.locator('[data-testid="ad-open-lead"]', { has: answerBtn }).innerText();
     if (/615-555-0199|Maria/.test(card)) throw new Error('contact shown before purchase');
-    await buy.click();
+    const bal = (await apiCall('GET', '/billing/pi-lead/credits', { token: atty.token })).body;
+    await answerBtn.click();
     await byTid(s.page, 'ad-leads-notice').waitFor({ timeout: 10000 });
-    if (!(await byTid(s.page, 'ad-leads-notice').innerText()).includes(PAY_OFF('en'))) throw new Error('no friendly message (case lead)');
+    const note = await byTid(s.page, 'ad-leads-notice').innerText();
+    // no credits bought (payments are off): the server's "buy a credit pack first" message
+    if (Number(bal.balance) === 0 && !/credit/i.test(note)) throw new Error(`no honest message (case lead): "${note}"`);
     await shot(s.page, 'G5-case-lead-payments-off');
-    await done(s, { allow: PAY_ALLOW });
+    await done(s, { allow: [...PAY_ALLOW, '402 POST /billing/pi-lead/claim/'] });   // 402 not_enough_credits is the expected answer
     const after = await apiCall('GET', '/billing/pi-leads/mine', { token: atty.token });
     const mine = Array.isArray(after.body) ? after.body : (after.body?.leads || []);
     if (mine.length) throw new Error('lead recorded as bought without payment');
