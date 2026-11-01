@@ -93,6 +93,8 @@ const PUBLIC = {
   'GET /api/webpush/key': 'VAPID public key',
   // feedback works signed out (user_id NULL)
   'POST /api/feedback': 'anonymous feedback allowed (M5)',
+  'GET /api/bot/unsubscribe': 'unsubscribe page for the outbound bot e-mails (signed token per address, IP rate limit; changes nothing)',
+  'POST /api/bot/unsubscribe': 'unsubscribe from the outbound bot e-mails (signed token per address, IP rate limit)',
   'GET /api/billing/pi-lead/rules': 'state-by-state lead rules and the no-recommendation disclosure (public, read-only)',
   'GET /api/billing/record-clearing': 'the record-clearing price and whether it is on sale (public, read-only)',
   'GET /api/feedback/summary': 'aggregate rating',

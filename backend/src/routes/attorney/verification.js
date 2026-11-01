@@ -15,7 +15,7 @@
  */
 import { escapeHtml, safeUrl } from '../../utils/html.js';
 import { Router }       from 'express';
-import { authRequired } from '../../middleware/auth.js';
+import { authRequired, invalidateUserCache } from '../../middleware/auth.js';
 import logger           from '../../utils/logger.js';
 import { STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
@@ -50,6 +50,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
       `UPDATE users SET bar_number = ?, bar_state = ?, pending_bar_verification = 1, bar_verified = 0,
               bar_submitted_at = NOW(), bar_rejection_reason = NULL
         WHERE id = ?`, [cleanBar, st, req.user.id]);
+    invalidateUserCache(req.user.id);   // the badge is gone now, not after the 60 s principal cache
     await audit('attorney.bar_submitted', { userId: req.user.id, req, entityType: 'user', entityId: req.user.id, metadata: { state: st, was_verified: Number(current?.bar_verified) === 1 } });
 
     const lookupUrl = STATE_BAR_LOOKUP[st] || 'https://www.americanbar.org/groups/legal_services/flh-home/';

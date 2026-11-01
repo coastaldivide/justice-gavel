@@ -53,7 +53,7 @@ async function appearanceSince(db, officeId, from, today) {
 }
 
 /** Messages per month (newest first, at most 60 months). */
-async function messagesByMonth(db, officeId) {
+function messagesByMonth(db, officeId) {
   return db.all(
     `SELECT to_char(created_at, 'YYYY-MM') AS month,
             COUNT(*) FILTER (WHERE direction = 'out' AND status = 'sent')::int AS sent,
@@ -63,7 +63,7 @@ async function messagesByMonth(db, officeId) {
        FROM pd_messages WHERE office_id = ? GROUP BY 1 ORDER BY 1 DESC LIMIT 60`, [officeId]);
 }
 
-async function optOuts(db, officeId, limit = 5000) {
+function optOuts(db, officeId, limit = 5000) {
   return db.all(
     `SELECT c.id, c.name, c.case_number, c.phone, x.opted_out_at FROM pd_clients c JOIN sms_opt_outs x ON x.phone = c.phone
       WHERE c.office_id = ? ORDER BY x.opted_out_at DESC, c.id LIMIT ?`, [officeId, limit]);

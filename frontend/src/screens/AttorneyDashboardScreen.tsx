@@ -35,7 +35,11 @@ type Tab = 'overview' | 'cases' | 'leads' | 'templates' | 'cle' | 'profile';
 type Stats = { active_cases: number; pending_assignments: number; hearings_this_week: number; unread_messages: number; motions_generated: number; cle_hours: number; upcoming_consultations: number | null; avg_rating: number | null; review_count: number | null };
 type Profile = { name: string | null; bar_number: string | null; bar_state: string | null; bar_verified: boolean; pending_bar_verification: boolean; bar_rejection_reason: string | null; office_id: number | null; office_name: string | null; listing: { id: number; name: string } | null; plan: { tier: string; status: string } | null; stats: Stats };
 type CaseRow = { id: number; title: string | null; status: string | null; state: string | null; client_name: string | null; next_hearing_date: string | null; unread_count: number; assignment_notes: string | null };
-type OpenLead = { id: number; case_type: string; severity: string | null; city: string | null; state: string | null; lead_fee_cents: number; lead_fee_display: string; created_at: string };
+// credits / pay_by_card: the state's lead rule (backend services/leadRules.js). pay_by_card false →
+// the request is answered with prepaid credits only (Tennessee and most states).
+type OpenLead = { id: number; case_type: string; severity: string | null; city: string | null; state: string | null; lead_fee_cents: number; lead_fee_display: string; created_at: string; credits?: number; pay_by_card?: boolean };
+type CreditPack = { key: string; credits: number; cents: number };
+type Credits = { balance: number; credit_cents: number; packs: CreditPack[] };
 type MyLead = { id: number; case_type: string; severity: string | null; city: string | null; state: string | null; description: string; incident_date: string | null; contact_name: string | null; contact_email: string | null; contact_phone: string | null; lead_fee_cents: number; accepted_at: string };
 type Template = { id: number; motion_type: string; title: string; status: string; created_by_name: string | null; notes: string | null };
 type Course = { id: number; title: string; credit_hours: number; completed_at: string | null; description: string | null };
@@ -215,19 +219,33 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
   const [mine, setMine] = useState<MyLead[]>([]);
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
   const load = useCallback(async () => {
     try {
-      const [o, m] = await Promise.all([api.get('/billing/pi-leads', { params: state ? { state } : {} }), api.get('/billing/pi-leads/mine')]);
+      const [o, m, c] = await Promise.all([
+        api.get('/billing/pi-leads', { params: state ? { state } : {} }), api.get('/billing/pi-leads/mine'),
+        api.get('/billing/pi-lead/credits').catch(() => null),
+      ]);
       setOpen(Array.isArray(o.data) ? (o.data as OpenLead[]) : []);
       setMine((m.data?.leads || []) as MyLead[]);
+      if (c?.data) setCredits(c.data as Credits);
     } catch (e) { setOpen([]); setNotice({ text: apiErrorMessage(e, t('ad_load_error')), tone: 'error' }); }
   }, [state]);
   useEffect(() => { load(); }, [load]);
 
   const confirmLead = useCallback((id: number) => async (ids: Record<string, string | undefined>) => (await api.post(`/billing/pi-lead/confirm/${id}`, ids)).data, []);
+  const confirmCredits = useCallback(async (ids: Record<string, string | undefined>) =>
+    (await api.post('/billing/pi-lead/credits/confirm', ids)).data as { balance: number }, []);
   const sessionId = (route?.params as { checkout_session_id?: string } | undefined)?.checkout_session_id;
   useEffect(() => {
     if (!sessionId) return;
+    if (takePendingCheckout('lead_credits')) {   // back from Checkout for a credit pack
+      purchase.finish(confirmCredits, { checkout_session_id: sessionId }).then(r => {
+        if (r.status === 'done') { setNotice({ text: t('ad_credits_added', { n: r.data.balance }), tone: 'ok' }); load(); }
+        else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+      });
+      return;
+    }
     const pending = takePendingCheckout('case_lead');
     const id = Number(pending?.ctx?.leadId);
     if (!id) return;
@@ -236,7 +254,7 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
       else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, confirmLead, load]);
+  }, [sessionId, confirmLead, confirmCredits, load]);
 
   const buy = (l: OpenLead) => confirm(t('ad_lead_buy_title', { fee: l.lead_fee_display }), t('ad_lead_buy_body', { fee: l.lead_fee_display }), { confirmLabel: t('ad_lead_buy_cta', { fee: l.lead_fee_display }) }).then(async ok => {
     if (!ok) return;
@@ -254,6 +272,36 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
     }
   });
 
+  const buyPack = async (p: CreditPack) => {
+    setBusy(-1); setNotice(null);
+    try {
+      const r = await purchase.run({
+        key: 'lead_credits', ctx: { pack: p.key },
+        start: async (ui) => (await api.post('/billing/pi-lead/credits/buy', { pack: p.key, ui, return_path: '/attorney-dashboard' })).data,
+        confirm: confirmCredits,
+      });
+      if (r.status === 'done') { setNotice({ text: t('ad_credits_added', { n: r.data.balance }), tone: 'ok' }); load(); }
+      else if (r.status === 'error') setNotice({ text: r.message, tone: 'error' });
+    } catch (e) {
+      setNotice({ text: apiErrorMessage(e, t('pay_failed')), tone: 'error' });
+    } finally { setBusy(null); }
+  };
+
+  // Credit-pack states: the lawyer chooses the request and spends its credits (no card step).
+  const answer = (l: OpenLead) => {
+    const need = Number(l.credits || 0);
+    return confirm(t('ad_lead_answer_title', { credits: need }), t('ad_lead_answer_body', { balance: credits?.balance ?? 0 }),
+      { confirmLabel: t('ad_lead_answer_cta', { credits: need }) }).then(async ok => {
+      if (!ok) return;
+      setBusy(l.id); setNotice(null);
+      try {
+        await api.post(`/billing/pi-lead/claim/${l.id}`, {});
+        setNotice({ text: t('ad_lead_bought'), tone: 'ok' });
+      } catch (e) { setNotice({ text: apiErrorMessage(e, t('pay_failed')), tone: 'error' }); }
+      finally { setBusy(null); load(); }
+    });
+  };
+
   return (
     <>
       {!!notice && <View testID="ad-leads-notice" style={[s.notice, { borderColor: notice.tone === 'ok' ? colors.legal : colors.danger, backgroundColor: notice.tone === 'ok' ? colors.legalBg : colors.errorBg }]}><Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger }}>{notice.text}</Text></View>}
@@ -269,7 +317,20 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
           <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('ad_lead_bought_on', { date: fmtDay(l.accepted_at), fee: usd(l.lead_fee_cents) })}</Text>
         </View>
       ))}
+      {!!credits && (
+        <View style={s.card} testID="ad-credits">
+          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('ad_credits_title')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.line} testID="ad-credits-balance">{t('ad_credits_balance', { n: credits.balance })}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('ad_credits_why', { price: usd(credits.credit_cents) })}</Text>
+          {credits.packs.map(p => (
+            <TouchableOpacity key={p.key} accessibilityRole="button" testID={`ad-credits-buy-${p.key}`} style={[s.primaryBtn, busy !== null && { opacity: 0.5 }]} disabled={busy !== null} onPress={() => buyPack(p)}>
+              {busy === -1 ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_credits_buy', { credits: p.credits, price: usd(p.cents) })}</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
       <Text maxFontSizeMultiplier={1.4} style={s.section}>{t('ad_leads_open')}</Text>
+      <Text maxFontSizeMultiplier={1.3} style={s.hint} testID="ad-lead-disclosure">{t('ad_lead_disclosure')}</Text>
       <View style={{ marginHorizontal: 12, marginTop: 8 }}><StatePicker value={state} onChange={setState} allowAll remember={false} testID="ad-leads-state" /></View>
       <Text maxFontSizeMultiplier={1.3} style={s.hint}>{t('ad_leads_hint')}</Text>
       {open === null && <ActivityIndicator style={{ marginTop: 16 }} color={colors.textBrand} />}
@@ -279,9 +340,15 @@ function Leads({ profile, route }: { profile: Profile | null; route: ScreenProps
           <Text maxFontSizeMultiplier={1.4} style={s.title}>{leadType(l.case_type)}</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.line}>{[l.severity && SEVERITY_KEYS[l.severity] ? t(SEVERITY_KEYS[l.severity]) : '', l.city, l.state ? stateName(l.state) : ''].filter(Boolean).join(' · ')}</Text>
           <Text maxFontSizeMultiplier={1.3} style={s.line}>{fmtDay(l.created_at)}</Text>
-          <TouchableOpacity accessibilityRole="button" testID={`ad-buy-lead-${l.id}`} style={[s.primaryBtn, (busy !== null || !profile?.bar_verified) && { opacity: 0.5 }]} disabled={busy !== null || !profile?.bar_verified} onPress={() => buy(l)}>
-            {busy === l.id ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_lead_buy_cta', { fee: l.lead_fee_display })}</Text>}
-          </TouchableOpacity>
+          {l.pay_by_card === false ? (
+            <TouchableOpacity accessibilityRole="button" testID={`ad-answer-lead-${l.id}`} style={[s.primaryBtn, (busy !== null || !profile?.bar_verified) && { opacity: 0.5 }]} disabled={busy !== null || !profile?.bar_verified} onPress={() => answer(l)}>
+              {busy === l.id ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_lead_answer_cta', { credits: Number(l.credits || 0) })}</Text>}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity accessibilityRole="button" testID={`ad-buy-lead-${l.id}`} style={[s.primaryBtn, (busy !== null || !profile?.bar_verified) && { opacity: 0.5 }]} disabled={busy !== null || !profile?.bar_verified} onPress={() => buy(l)}>
+              {busy === l.id ? <ActivityIndicator color={colors.textOnNavy} /> : <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('ad_lead_buy_cta', { fee: l.lead_fee_display })}</Text>}
+            </TouchableOpacity>
+          )}
         </View>
       ))}
     </>

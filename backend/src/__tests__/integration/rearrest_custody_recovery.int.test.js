@@ -95,7 +95,7 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
       await db.run('DELETE FROM bondsman_subscriptions WHERE user_id = ?', [agent.user.id]);
       await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [agent.user.id]);
       await db.run(`DELETE FROM arrest_records WHERE source = ? OR (source = 'seed_v1' AND name LIKE 'RCTEST%')`, [SOURCE]);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone = '+16155550160'`);   // only this suite's number
     });
   });
   afterAll(async () => {
@@ -148,6 +148,7 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     const rows = await ctx.db.all('SELECT bond_id, match, status, push_status, text_status FROM bd_rearrests WHERE agent_id = ? ORDER BY bond_id', [agent.user.id]);
     expect(rows.map((x) => [Number(x.bond_id), x.match, x.status])).toEqual([
       [bondStrong.id, 'strong', 'alerted'], [bondPossible.id, 'possible', 'pending'], [bondAnswers.id, 'strong', 'alerted']]);
+    expect(rows.some((x) => Number(x.bond_id) === bondClosed.id)).toBe(false);   // a prospect is never watched
     expect(rows.find((x) => Number(x.bond_id) === bondStrong.id)).toMatchObject({ push_status: 'sent', text_status: 'sent' });
     expect(rows.find((x) => Number(x.bond_id) === bondPossible.id).text_status).toBeNull();   // texts only for strong matches
     expect(pushesTo('ExponentPushToken[rc-agent]').length - pushBefore).toBe(3);
@@ -326,6 +327,8 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
     expect((await req('post', '/api/recovery-shares/accept', stranger).send({ token })).body.code).toBe('share_wrong_account');
     expect((await req('post', '/api/recovery-shares/accept', recov).send({ token })).body).toEqual({ share_id: shareId });
     expect((await req('get', '/api/recovery-shares', recov)).body.shares).toEqual([expect.objectContaining({ id: shareId, defendant_name: 'Ida Vance', agency: 'Sigma Bail Bonds' })]);
+    expect((await req('get', '/api/recovery-shares/status', recov)).body).toEqual({ enabled: true, count: 1 });
+    expect((await req('get', '/api/recovery-shares/status', stranger)).body).toEqual({ enabled: true, count: 0 });
     expect((await req('get', `/api/recovery-shares/${shareId}`, stranger)).status).toBe(404);
     const view = await req('get', `/api/recovery-shares/${shareId}`, recov);
     expect(view.status).toBe(200);
@@ -409,6 +412,8 @@ describeIntegration('re-arrest alerts, custody alerts, recovery sharing, Tenness
         expect([r.status, r.body.code]).toEqual([503, 'feature_unavailable']);
       }
       expect((await req('get', '/api/custody/status', family)).body.enabled).toBe(false);
+      // the status route still answers (Home asks it instead of the 503 list)
+      expect((await req('get', '/api/recovery-shares/status', recov)).body).toEqual({ enabled: false, count: 0 });
       expect((await req('get', '/api/bond-desk/dashboard', agent)).body.rearrests).toEqual([]);
       // ingest runs, but nothing is matched or alerted
       roster = [rec({ name: 'Rhea Quill', dob: '1990-04-05', booking_id: 'RC-201' })];

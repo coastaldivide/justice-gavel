@@ -22,7 +22,7 @@
  *   C7  Bail agents (pt): formatted call link, 24/7 filter narrows, scroll to end
  *   C8  Booking in America/Chicago: server prices, a Texas lawyer's 9:00 AM shown
  *       as 9:00 AM CDT, a New York lawyer's 9:00 AM as 8:00 AM CDT with the
- *       lawyer's time noted; refund terms = 2 hours; payments off → friendly
+ *       lawyer's time noted; terms = the platform fee is final once confirmed (Oct 26 policy); payments off → friendly
  *       message, nothing stored; a lawyer not on the app → phone instead
  *   C9  AI match: job polled → 3 nearest cards with a report; location off →
  *       asks for a place; "Richmond, VA" → Richmond lawyers
@@ -432,7 +432,8 @@ const done = async (s, { allow = [] } = {}) => {
       await byTid(s.page, 'booking-time').first().click();
       await byTid(s.page, 'booking-confirm-button').click();
       const terms = await byTid(s.page, 'booking-refund-terms').innerText();
-      if (!terms.includes('2 hours')) throw new Error(`refund terms: ${terms}`);
+      // Oct 26 2026 owner decision: no refund window — the platform fee is final once the booking is confirmed
+      if (terms.trim() !== tx('en', 'bk_fee_terms')) throw new Error(`refund terms: ${terms}`);
       await byTid(s.page, 'booking-confirm').click();
       await s.page.getByText(tx('en', 'bk_payments_unavailable').slice(0, 40)).first().waitFor({ timeout: 8000 });
       const stored = await sql('SELECT COUNT(*)::int AS n FROM consultation_bookings b JOIN users u ON u.id = b.user_id WHERE u.email = $1', [acc.email]);

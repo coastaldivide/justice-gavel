@@ -74,7 +74,7 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
       await db.run(`DELETE FROM bd_bonds WHERE agent_id = ?`, [agent.user.id]);
       await db.run(`DELETE FROM voice_calls WHERE call_control_id LIKE 'v3:pl-%'`);
       await db.run(`DELETE FROM voice_keypad_lookups WHERE call_control_id LIKE 'v3:pl-%'`);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone IN ('+16155550298', '+16155550240')`);   // only this suite's numbers
       await db.transaction(async (tx) => {
         await tx.get(`SELECT set_config('jg.results_purge', 'on', true)`);
         await tx.run('DELETE FROM results_snapshots WHERE published_by = ?', [admin.user.id]);
@@ -171,7 +171,7 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
   });
 
   // ── A8 ─────────────────────────────────────────────────────────────────────
-  let cd; let followId; let pd;
+  let cd; let followId;
   test('A8a the plan is saved on the court date; help links name the cited transit agency; the reminder text links here', async () => {
     if (!ctx.app) return;
     const ch = await ctx.db.get(`SELECT id FROM courthouses WHERE state = 'TN' AND county = 'Davidson' LIMIT 1`);
@@ -269,7 +269,6 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
     const body = JSON.stringify({ data: { event_type, payload } });
     return ctx.request().post('/api/webhooks/telnyx-voice').set('Content-Type', 'application/json').set(sign(body)).send(body);
   };
-  const stateOf = (cmd) => JSON.parse(Buffer.from(cmd.body.client_state, 'base64').toString('utf8'));
   const lastCmd = () => calls.at(-1);
 
   test('A10a unsigned or badly signed webhooks are refused; the line is off by default', async () => {

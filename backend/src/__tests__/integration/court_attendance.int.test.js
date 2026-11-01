@@ -48,7 +48,6 @@ describeIntegration('Court attendance: Bond Desk reminders, morning-after, "Did 
       .set('telnyx-signature-ed25519', sig).set('telnyx-timestamp', String(ts)).send(raw)
       .then(async (r) => { await (await import('../../routes/webhooks/telnyx.js')).inboundIdle(); return r; });
   };
-  const textsTo = (to) => texts.filter((t) => t.to === to);
   const rowsFor = (cdId) => ctx.db.all(`SELECT id, phone, step, court_day, send_at, status, reason, text_id FROM bd_reminders WHERE court_date_id = ? ORDER BY send_at, phone`, [cdId]);
   const local = (iso, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
 

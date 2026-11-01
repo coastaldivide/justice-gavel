@@ -233,6 +233,10 @@ CUSTODY_ALERTS_ENABLED=false             ⚖ counsel question 6.3. Families foll
 BOND_RECOVERY_SHARING_ENABLED=false      ⚖ state recovery-agent rules. A bail agent shares one
                                           forfeited bond with a recovery agent (read only, every view
                                           logged). Unset → OFF in production.
+OUTBOUND_BOT_ENABLED=false               ⚖ lead fees. The nightly outbound bot e-mails paid-lead
+                                          summaries to lawyers in the directory (its texts are not
+                                          wired). LIVE_REFRESH runs the rest of the nightly pipeline
+                                          without it. Unset → OFF in production.
 PUBLIC_DEFENDER_CHANNEL_ENABLED=false    ⚖ counsel questions 3.2 and 6.1. Public defender offices
                                           upload clients, who get court reminders and "Did you make it?"
                                           texts under the office's name; replies go to the office's

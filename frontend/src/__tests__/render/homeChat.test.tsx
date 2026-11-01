@@ -43,7 +43,7 @@ import HomeScreen from '../../screens/HomeScreen';
 import ChatScreen from '../../screens/ChatScreen';
 
 import { apiMock, makeNavigation } from './apiMock';
-const { on, api, reject, reset } = apiMock();
+const { on, api, reject, reset, calls } = apiMock();
 
 function wrap(node: React.ReactElement) {
   return render(<ThemeProvider><ToastProvider>{node}</ToastProvider></ThemeProvider>);
@@ -89,17 +89,19 @@ describe('HomeScreen', () => {
   it('More menu: Custody alerts and Bonds shared with me appear only when the server features are on (and a bond is shared)', async () => {
     mockToken = 'jwt';
     on('get', '/custody/status', { enabled: true });
-    on('get', '/recovery-shares', { shares: [] });
+    on('get', '/recovery-shares/status', { enabled: true, count: 0 });
     const { unmount } = wrap(<HomeScreen navigation={makeNavigation()} />);
     expect(await screen.findByTestId('tile-CustodyAlerts')).toBeTruthy();
     expect(screen.queryByTestId('tile-RecoveryShares')).toBeNull();
     unmount();
     reset();
     on('get', '/custody/status', { enabled: false });
-    on('get', '/recovery-shares', { shares: [{ id: 1 }] });
+    on('get', '/recovery-shares/status', { enabled: true, count: 1 });
     wrap(<HomeScreen navigation={makeNavigation()} />);
     expect(await screen.findByTestId('tile-RecoveryShares')).toBeTruthy();
     expect(screen.queryByTestId('tile-CustodyAlerts')).toBeNull();
+    // Home asks the status route, never the share list (which answers 503 while the setting is off)
+    expect(calls.some(c => c.url === '/recovery-shares')).toBe(false);
   });
 
   it('signed out: neither feature tile is shown', async () => {

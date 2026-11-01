@@ -15,6 +15,7 @@ export const COUNSEL_FLAGS = Object.freeze({
   CUSTODY_ALERTS_ENABLED: '6.3 release / transfer alerts for families',
   BOND_RECOVERY_SHARING_ENABLED: 'state recovery-agent rules (sharing a forfeited bond with a recovery agent)',
   PUBLIC_DEFENDER_CHANNEL_ENABLED: '3.2 and 6.1 public defender offices: reminders and two-way texts to their clients',
+  OUTBOUND_BOT_ENABLED: 'nightly paid-lead summaries e-mailed to directory lawyers (MONETIZATION_PLAN pauses lead sales until counsel clears them; its texts are not wired)',
 });
 
 /** Explicit true/false wins; unset → off in production, on elsewhere. */
@@ -31,3 +32,4 @@ export const rearrestAlertsEnabled = (env) => counselFlagOn('BOND_REARREST_ALERT
 export const custodyAlertsEnabled = (env) => counselFlagOn('CUSTODY_ALERTS_ENABLED', pick(env, 'CUSTODY_ALERTS_ENABLED', process.env.CUSTODY_ALERTS_ENABLED));
 export const recoverySharingEnabled = (env) => counselFlagOn('BOND_RECOVERY_SHARING_ENABLED', pick(env, 'BOND_RECOVERY_SHARING_ENABLED', process.env.BOND_RECOVERY_SHARING_ENABLED));
 export const publicDefenderEnabled = (env) => counselFlagOn('PUBLIC_DEFENDER_CHANNEL_ENABLED', pick(env, 'PUBLIC_DEFENDER_CHANNEL_ENABLED', process.env.PUBLIC_DEFENDER_CHANNEL_ENABLED));
+export const outboundBotEnabled = (env) => counselFlagOn('OUTBOUND_BOT_ENABLED', pick(env, 'OUTBOUND_BOT_ENABLED', process.env.OUTBOUND_BOT_ENABLED));

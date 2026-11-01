@@ -76,7 +76,11 @@ describe('Deployment — Render config (details: render_blueprint.test.js)', () 
   });
   test('Dockerfile starts the backend with Sentry instrumentation', () => {
     const c = readFileSync(resolve(ROOT, 'backend/Dockerfile'), 'utf-8');
-    expect(c).toMatch(/CMD \["node", "--import", "\.\/src\/instrument\.js", "src\/server\.js"\]/);
+    expect(c).toMatch(/CMD \["sh", "-c", "exec node --max-old-space-size=.+? --import \.\/src\/instrument\.js src\/server\.js"\]/);
+  });
+  test('Dockerfile caps the V8 heap at 5/8 of MEMORY_LIMIT_MB (320 MB on the 512 MB plan)', () => {
+    const c = readFileSync(resolve(ROOT, 'backend/Dockerfile'), 'utf-8');
+    expect(c).toContain('--max-old-space-size=$(( ${MEMORY_LIMIT_MB:-512} * 5 / 8 ))');
   });
   test('no leftover config for the previous host: render.yaml + Dockerfile are the only deploy files', () => {
     const rootFiles = readdirSync(ROOT);

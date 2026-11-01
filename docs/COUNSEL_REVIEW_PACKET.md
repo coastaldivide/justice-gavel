@@ -103,6 +103,11 @@ The clients then get court reminders, "Did you make it to court?" and a morning-
 name, and any reply goes to a shared office inbox where staff answer by text. Who is the sender (the office or Justice Gavel),
 is the office's statement adequate consent for these informational texts and for two-way staff texts, and does anything
 change for a government office (public records, retention of the message log)?
+3.2c **Nightly lead e-mails to directory lawyers (built, off in production: `OUTBOUND_BOT_ENABLED`; added Oct 30, 2026).**
+Each night the bot finds new arrests with bail set and no lawyer listed, and e-mails a county summary (how many arrests,
+how many without a lawyer, the top charge types; no names) to lawyers in the public directory who have an e-mail address,
+with a link to the attorney dashboard and a one-click unsubscribe link. These lawyers never signed up. Is this allowed lead generation in each launch state (docs/LEAD_FEE_RULES.md),
+and do the e-mails meet CAN-SPAM and state rules for messages to people who did not opt in?
 3.2a **Automatic payment-plan charges (built, off in production: `BOND_AUTOPAY_ENABLED`).** The payer (defendant or
 indemnitor) opens a personal link from the agent, reads the dates and amounts, how to stop and "All payments are final"
 (wording in docs/BOND_DESK.md "Automatic payments"), ticks "I agree" and saves a card in Stripe Checkout on the **agency's**

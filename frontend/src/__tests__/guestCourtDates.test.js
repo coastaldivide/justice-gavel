@@ -32,15 +32,15 @@ describe('planGuestReminders', () => {
     expect(p[0].at).toEqual(new Date(2026, 10, 13, 9, 0));
     expect(p[1].at).toEqual(new Date(2026, 10, 17, 9, 0));
     expect(p[2].at).toEqual(new Date(2026, 10, 19, 18, 0));
-    expect(p[3].at).toEqual(new Date(2026, 10, 20, 7, 0));
+    expect(p[3].at).toEqual(new Date(2026, 10, 20, 6, 30));   // the server's 06:30 (courtReminders.js)
   });
   it('moves the morning reminder to 1 hour before an early hearing', () => {
-    const p = g.planGuestReminders('2026-11-20', '07:30', NOW);
-    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 30));
+    const p = g.planGuestReminders('2026-11-20', '07:00', NOW);
+    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 0));
   });
-  it('keeps 7:00 for a later hearing', () => {
+  it('keeps 06:30 for a later hearing', () => {
     const p = g.planGuestReminders('2026-11-20', '13:00', NOW);
-    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 7, 0));
+    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 30));
   });
   it('skips reminders that already passed', () => {
     const p = g.planGuestReminders('2026-10-28', null, NOW);
@@ -120,5 +120,25 @@ describe('migrateGuestCourtDates', () => {
     expect(out).toEqual({ moved: 0, kept: 1 });
     expect(s.cancelled).toHaveLength(0);
     expect((await g.listGuestCourtDates())[0].notification_ids).toHaveLength(4);
+  });
+});
+
+describe('deviceScheduler (debug scan Oct 30, issue 8)', () => {
+  it('schedules on the court_reminders channel, and a tap opens Court dates', async () => {
+    const calls = [];
+    jest.resetModules();
+    jest.doMock('expo-notifications', () => ({
+      __esModule: true,
+      SchedulableTriggerInputTypes: { DATE: 'date' },
+      scheduleNotificationAsync: jest.fn(async (req) => { calls.push(req); return 'id-1'; }),
+      cancelScheduledNotificationAsync: jest.fn(async () => {}),
+    }));
+    const fresh = require('../services/guestCourtDates');
+    const when = new Date(2026, 10, 19, 18, 0);
+    expect(await fresh.deviceScheduler.schedule(when, 'Court', 'Tomorrow')).toBe('id-1');
+    expect(calls[0].trigger).toEqual({ type: 'date', date: when, channelId: 'court_reminders' });
+    expect(calls[0].content.data).toEqual({ kind: 'guest_court_reminder', screen: 'CourtDates' });
+    const { notificationTarget } = require('../services/notificationRoute');
+    expect(notificationTarget(calls[0].content.data)).toEqual({ screen: 'CourtDates' });
   });
 });

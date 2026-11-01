@@ -21,11 +21,10 @@ import crypto from 'node:crypto';
 import { RECOVERY_LAWS } from '../../routes/recovery_agents.js';
 import { realArrestSql } from '../../utils/arrestVisibility.js';
 import { msg } from '../../i18n/index.js';
-import { agencyFor, sendAgentEmail } from './core.js';
+import { agencyFor, sendAgentEmail, agentToday } from './core.js';
 import { addEvent } from './rearrest.js';
 import { getFile } from './packets.js';
 import { daysBetween } from '../../utils/timezone.js';
-import { agentToday } from './core.js';
 
 export const INVITE_DAYS = 14;
 const APP_URL = () => String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
@@ -57,7 +56,7 @@ export async function endShares(db, bondId, reason) {
 }
 
 /** After a status change: a bond that is no longer forfeited is no longer shared. */
-export async function syncSharesWithStatus(db, bondId, status) {
+export function syncSharesWithStatus(db, bondId, status) {
   if (status === 'forfeited') return 0;
   return endShares(db, bondId, ENDED_BY_STATUS[status] || 'closed');
 }

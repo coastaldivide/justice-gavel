@@ -8,7 +8,7 @@
  *     statistic;
  *   - replies 1 / 2 / 3 are parsed strictly; zones follow the bond's county; the plan's times.
  */
-import { smsSegments, toGsm, fitSms, MAX_UNICODE_SEGMENTS, MAX_GSM_SEGMENTS_OTHER, plainPunctuation } from '../services/smsText.js';
+import { smsSegments, toGsm, fitSms, MAX_UNICODE_SEGMENTS, MAX_GSM_SEGMENTS_OTHER } from '../services/smsText.js';
 import { bondCourtText, bondReplyText, parseCourtReply, bondTimeZone } from '../services/bondDesk/courtDates.js';
 import { courtSmsText } from '../services/reminderDispatcher.js';
 import { bodyFor, followerBodyFor, planSteps, missedCourtLink } from '../services/courtReminders.js';

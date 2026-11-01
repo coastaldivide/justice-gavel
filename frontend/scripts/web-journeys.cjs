@@ -609,6 +609,19 @@ async function langJourney(browser, base, lang, locale) {
   // ── H12: bail calculator ─────────────────────────────────────────────────
   if (page) try {
     await page.goto(base + '/bail-calculator', { waitUntil: 'networkidle' });
+    // Legal accuracy review (Oct 2026): the server returns only rows checked against an official
+    // schedule. With none checked for the state, the screen must say so and show no numbers.
+    const sched = await (await fetch(`${API}/help/bail-schedule?state=TN`)).json();
+    if (!sched.count) {
+      const notice = 'checked these rules for TN against the official law yet';
+      await page.getByText(notice, { exact: false }).first().waitFor({ timeout: 15000 });
+      if (await byTid(page, 'bail-schedule-row').count()) throw new Error('unchecked bail rows shown');
+      if (/10\s?%/.test(await page.locator('body').innerText())) throw new Error('unsourced "10%" bail-agent fee estimate shown');
+      await page.screenshot({ path: path.join(OUT, 'H12-bail-calculator-withheld.png') });
+      if (await boundary(page)) throw new Error('ErrorBoundary after data load');
+      pass('H12 bail calculator', `no checked TN rows (${sched.withheld} withheld): honest notice, no numbers, no 10% estimate`);
+      throw 'done';
+    }
     const row = byTid(page, 'bail-schedule-row').first();
     await row.waitFor({ timeout: 15000 });
     const n = await byTid(page, 'bail-schedule-row').count();
@@ -628,7 +641,7 @@ async function langJourney(browser, base, lang, locale) {
     await page.screenshot({ path: path.join(OUT, 'H12-bail-calculator.png') });
     if (!(await boundary(page)) && desk.errors.filter(e => /filter is not a function/.test(e)).length === 0) pass('H12 bail calculator', `${n} schedule rows; breakdown shows the range + honest fee note ("${cost.replace(/\s+/g, ' ').trim().slice(0, 60)}…"), no 10% estimate`);
     else fail('H12 bail calculator', 'ErrorBoundary / crash after data load');
-  } catch (e) { fail('H12 bail calculator', e.message); await page.screenshot({ path: path.join(OUT, 'FAIL-H12.png') }).catch(() => {}); }
+  } catch (e) { if (e !== 'done') { fail('H12 bail calculator', e.message); await page.screenshot({ path: path.join(OUT, 'FAIL-H12.png') }).catch(() => {}); } }
 
   // ── H11: case with a court date → reminders ──────────────────────────────
   if (page && user) try {

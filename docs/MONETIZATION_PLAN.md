@@ -134,8 +134,10 @@ Every missed court date can cost a bail agent the full bail amount. Check-ins an
 | Agency | **$349/mo** ($3,350/yr) — matches eBail | Same, all counties | eBail $349 |
 | Texts sent for the agent | **5¢ per text** (matches Captira/eBail) — signing links and payment reminders; billed on the plan invoice | | Replaces the planned $9.99/client, which is far above market |
 
-Not built, so not sold: card payments taken online for the agent (needs Stripe Connect per agency),
-multiple users per agency, re-arrest monitoring, general-ledger / premium-remittance accounting.
+Built Oct 27, 2026 (docs/BOND_DESK.md): card payments for the agency through Stripe Connect (a pay
+page and automatic payment-plan charges), staff seats (3 / 10 / 20 by plan) and re-arrest alerts
+(⚖ off in production until counsel answers). Still not built: general-ledger / premium-remittance
+accounting.
 
 - **Stop:** the "Top placement in all searches" promise (the app doesn't do it, and it would be a
   paid recommendation).
@@ -156,6 +158,11 @@ multiple users per agency, re-arrest monitoring, general-ledger / premium-remitt
 ### C. Courts, public defenders, pretrial services (slowest to close, steadiest money)
 Court reminders are a known government purchase. They are also the use the 21–26% evidence
 supports, once texting via Telnyx is live.
+
+**What the code charges public defender offices (owner decision, Oct 27, 2026):** $20,000 setup on the
+first invoice, then $2.00 per active client per year, texts included (`PD_SETUP_FEE_CENTS`,
+`PD_CLIENT_YEAR_CENTS`; docs/PUBLIC_DEFENDER.md). The Tyler-matched tiers below are the benchmark for
+counties, not what the code charges.
 
 | Package | Annual price | Benchmark |
 |---|---|---|
@@ -276,6 +283,10 @@ before raising prices.
 | Record Clearing (v4) | $99, **not on sale** (`on_sale: false`) | `RECORD_CLEARING`, `GET /api/billing/record-clearing` |
 | Attorney Pro Profile $49.95 / Case Match $455 | Priced, **not on sale** until the features exist | `ATTORNEY_MARKETING` (`on_sale: false`) |
 | Refunds | All sales final; only billing errors and duplicate charges are refunded | `routes/billing/subscriptions.js` |
+| Bond Desk card payments (Oct 27) | Charges go to the agency's own Stripe account (the agency pays Stripe's fees). Justice Gavel: 99¢ per successful automatic payment-plan charge; nothing on pay-page payments ($1–$50,000) | `AUTOPAY_FEE_CENTS`, `PAY_LINK_MIN_CENTS` / `PAY_LINK_MAX_CENTS`, `services/bondDesk/connect.js` |
+| Bond Desk staff seats (Oct 27) | 3 / 10 / 20 people per plan (Starter / Pro / Market), owner included; no paid extra seats | `BONDSMAN_TIERS[].seats` |
+| Public defender offices (Oct 27) | $20,000 setup (first invoice), then $2.00 per active client per year; texts included | `services/publicDefender/billing.js` |
+| Outbound lead bot (Oct 30) | ⚖ Off in production until `OUTBOUND_BOT_ENABLED` is set (lead sales are paused) | `utils/counselFlags.js` |
 
 A Stripe price id set in the environment is used only when it equals the price above; otherwise the
 exact amount is sent to Stripe inline (`services/stripeBilling.js` chargeItem). Re-run

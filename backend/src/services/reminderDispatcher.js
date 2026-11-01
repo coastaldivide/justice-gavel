@@ -312,7 +312,8 @@ async function deliverOne(db, row, now) {
       pushError = `${pushError}; email: ${e.message}`;
     }
   }
-  if (SMS_FALLBACK_TYPES.has(type) && smsLive() && Number(user.sms_reminders) === 1 && user.phone) {
+  // Same rule as every other app text (smsAllowed): opted in, a valid number, not on the STOP list.
+  if (SMS_FALLBACK_TYPES.has(type) && await smsAllowed(db, user)) {
     const r = await sendSms({ to: user.phone, body: await courtSmsText(db, row, data, reminderLang(user, data)) });
     if (r.ok) {
       await finish(db, row.id, { status: 'sent', channel: 'sms', delivered: 1, sent_at: now.toISOString(), error: pushError });
@@ -336,7 +337,10 @@ async function deliverOne(db, row, now) {
   }
   const reasons = [pushError];
   if (EMAIL_FALLBACK_TYPES.has(type)) reasons.push(!looksLikeEmail(user.email) ? 'no_email' : emailLive() ? 'email_failed' : 'email_not_configured');
-  if (SMS_FALLBACK_TYPES.has(type) || PUSH_AND_SMS_TYPES.has(type)) reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in' : 'sms_failed');
+  if (SMS_FALLBACK_TYPES.has(type) || PUSH_AND_SMS_TYPES.has(type)) {
+    reasons.push(!smsLive() ? 'sms_not_configured' : Number(user.sms_reminders) !== 1 || !user.phone ? 'sms_not_opted_in'
+      : !(await smsAllowed(db, user)) ? 'sms_stop_list' : 'sms_failed');
+  }
   await finish(db, row.id, { status: 'undeliverable', delivered: 0, channel: null, error: [...new Set(reasons)].join('; ').slice(0, 300) });
   return 'undeliverable';
 }

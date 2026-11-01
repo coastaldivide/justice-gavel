@@ -15,8 +15,9 @@
 
 import { Router }              from 'express';
 import { timingSafeEqual }     from 'crypto';
+import rateLimit               from 'express-rate-limit';
 import logger                  from '../../utils/logger.js';
-import { runOutboundBot, expireOldPaymentLinks } from '../../services/outbound_bot.js';
+import { runOutboundBot, expireOldPaymentLinks, unsubscribeToken } from '../../services/outbound_bot.js';
 import { getDb }               from '../../db/index.js';
 import { makeUserLimiter }     from '../../middleware/sharedAiLimiter.js';
 import { err400, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
@@ -173,6 +174,49 @@ router.get('/opt-outs', requireAdmin, adminLimiter, async (req, res) => {
   } catch (e) {
     logger.error('[bot_admin/opt-outs]', e.message);
     res.status(500).json({ error: 'Could not load opt-outs.' });
+  }
+});
+
+// ── /api/bot/unsubscribe — unsubscribe from the bot's e-mails (public) ───────────────────────
+// Every bot e-mail links here with a signed token (services/outbound_bot.js unsubscribeToken), so
+// nobody can unsubscribe someone else. GET only shows a page with one button (mail scanners open
+// links, and a GET never changes data); the button POSTs, and the address goes on opt_outs.
+const unsubLimiter = rateLimit({ windowMs: 15 * 60_000, max: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'too_many_requests', code: 'too_many_requests' } });   // per IP: the link is opened signed out
+const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const page = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title></head>`
+  + `<body style="font-family:system-ui,sans-serif;max-width:520px;margin:48px auto;padding:0 16px;color:#0A1929"><h1 style="font-size:22px">${title}</h1>${body}</body></html>`;
+/** { email } when e + t are a valid signed pair (query or form body), else null. */
+function signedEmail(src) {
+  const email = typeof src?.e === 'string' ? src.e.trim().toLowerCase() : '';
+  const token = typeof src?.t === 'string' ? src.t : '';
+  if (!/^[^\s@]{1,100}@[^\s@]{1,150}$/.test(email)) return null;
+  const expected = unsubscribeToken(email);
+  return token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected)) ? { email, token } : null;
+}
+router.get('/unsubscribe', unsubLimiter, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const v = signedEmail(req.query);
+  if (!v) return res.status(400).json({ error: 'invalid_link', code: 'invalid_link' });
+  res.type('html').send(page('Stop these e-mails?',
+    `<p>Justice Gavel will stop sending lead summaries to <strong>${esc(v.email)}</strong>.</p>`
+    + `<form method="post" action="/api/bot/unsubscribe"><input type="hidden" name="e" value="${esc(v.email)}">`
+    + `<input type="hidden" name="t" value="${esc(v.token)}">`
+    + `<button type="submit" style="font-size:16px;padding:12px 20px;border-radius:10px;border:0;background:#042C53;color:#fff">Unsubscribe</button></form>`));
+});
+router.post('/unsubscribe', unsubLimiter, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const v = signedEmail({ ...req.query, ...(req.body && typeof req.body === 'object' ? req.body : {}) });
+  if (!v) return res.status(400).json({ error: 'invalid_link', code: 'invalid_link' });
+  try {
+    const db = await getDb();
+    if (!(await db.get('SELECT id FROM opt_outs WHERE email = ?', [v.email]))) {
+      await db.run(`INSERT INTO opt_outs (phone, email, reason) VALUES (NULL, ?, 'unsubscribe_link')`, [v.email]);
+    }
+    res.type('html').send(page('You are unsubscribed', '<p>Justice Gavel will not send you these e-mails again.</p>'));
+  } catch (e) {
+    logger.error('[bot/unsubscribe]', e.message);
+    res.status(500).json({ error: 'server_error', code: 'server_error' });
   }
 });
 

@@ -509,11 +509,16 @@ describe('11. arrest_alerts.js — Professional Alert System', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('12. webhooks/bot_admin.js — Admin Controls', () => {
 
-  test('12-01: bot_admin.js has 7 route handlers', async () => {
+  test('12-01: bot_admin.js has 7 admin route handlers, each behind requireAdmin, plus the 2 public unsubscribe routes', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js', 'utf8');
-    const handlers = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
-    expect(handlers.length).toBe(7);
+    const handlers = src.match(/router\.(get|post|put|delete|patch)\s*\([^\n]*/g) || [];
+    // Oct 30 2026: GET + POST /unsubscribe are public on purpose (signed per address; debug scan issue 15)
+    const unsub = handlers.filter(h => h.includes("'/unsubscribe'"));
+    const admin = handlers.filter(h => !h.includes("'/unsubscribe'"));
+    expect(unsub).toHaveLength(2);
+    expect(admin).toHaveLength(7);
+    for (const h of admin) expect(h).toContain('requireAdmin');
   });
 
   test('12-02: all routes require X-Admin-Key header', async () => {

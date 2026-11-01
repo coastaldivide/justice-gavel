@@ -266,7 +266,7 @@ function SettingsScreen({ navigation }: any) {
     if ((user as { id?: unknown })?.id) {
       await Promise.race([
         api.post('/push/language', { language: l }).catch(() => { /* offline: sent with the next court-date save */ }),
-        new Promise(resolve => setTimeout(resolve, 3000)),
+        new Promise<void>(resolve => { setTimeout(resolve, 3000); }),
       ]);
     }
     await AsyncStorage.setItem('lang', l).catch(() => {}); // non-fatal storage write

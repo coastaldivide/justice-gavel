@@ -89,6 +89,14 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
     expect(twilio.received).toHaveLength(1);
     expect(twilio.received[0].To).toBe('+16155550101');
     expect(twilio.received[0].Body).toBe('EMERGENCY: Someone you know needs immediate help. Location: https://maps.google.com/?q=36.16,-86.78');
+    // a contact whose number replied STOP is not texted; the app opens its own messages app for it (debug scan Oct 30, issue 5)
+    await ctx.db.run('INSERT INTO sms_opt_outs (phone) VALUES (?) ON CONFLICT (phone) DO NOTHING', ['+16155550101']);
+    twilio.received.length = 0;
+    const stop = await ctx.request().post('/api/alerts').set(bob.headers).send({ userName: '', contacts: ['6155550101', '6155550102'] });
+    expect(stop.body).toMatchObject({ ok: true, sent: 1, total: 2 });
+    expect(stop.body.results[0]).toEqual({ contact: '6155550101', method: 'sms', delivered: false, reason: 'opted_out' });
+    expect(twilio.received.map(x => x.To)).toEqual(['+16155550102']);
+    await ctx.db.run('DELETE FROM sms_opt_outs WHERE phone = ?', ['+16155550101']);
   });
 
   // ── 2 recording law ────────────────────────────────────────────────────

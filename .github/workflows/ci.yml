@@ -106,7 +106,8 @@ jobs:
           ANTHROPIC_BASE_URL: http://127.0.0.1:${{ env.ANTHROPIC_MOCK_PORT }}
         run: |
           set -euo pipefail
-          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          # same V8 heap cap as the production image (backend/Dockerfile): 5/8 of the 512 MB limit
+          nohup node --max-old-space-size=320 --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 60); do
             if curl -fsS "http://localhost:${API_PORT}/health" > "$RUNNER_TEMP/health.json" 2>/dev/null; then
@@ -213,7 +214,8 @@ jobs:
   # Web journeys: the production web export driven in headless Chromium against
   # a production-mode API on a migrated Postgres, with the scriptable Anthropic
   # mock (backend/scripts/anthropic-mock.mjs). frontend/scripts/run-all-journeys.sh
-  # runs web-journeys-*.cjs and web-journeys.cjs; any failure fails the job.
+  # runs web-journeys-*.cjs and web-journeys.cjs on the full build, and the core-scope,
+  # UI and main scripts on the shipped core-path build; any failure fails the job.
   # ───────────────────────────────────────────────────────────────────────────
   journeys:
     name: Web journeys (production API + Chromium)
@@ -288,7 +290,8 @@ jobs:
         run: |
           set -euo pipefail
           nohup node scripts/anthropic-mock.mjs "$MOCK_PORT" > "$RUNNER_TEMP/mock.log" 2>&1 &
-          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          # same V8 heap cap as the production image (backend/Dockerfile): 5/8 of the 512 MB limit
+          nohup node --max-old-space-size=320 --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/server.pid"
           for i in $(seq 1 60); do
             curl -fsS "http://localhost:${API_PORT}/health" > /dev/null 2>&1 && curl -fsS "http://127.0.0.1:${MOCK_PORT}/__requests" > /dev/null 2>&1 && exit 0
@@ -300,7 +303,11 @@ jobs:
         working-directory: frontend
         env:
           EXPO_PUBLIC_API_BASE: http://localhost:${{ env.API_PORT }}/api
-        run: npx expo export --platform web --output-dir dist
+        # dist = the shipped core-path build; dist-full = every screen (EXPO_PUBLIC_FULL_APP=1), so the
+        # journeys still exercise the parked and professional screens' code
+        run: |
+          npx expo export --platform web --output-dir dist
+          EXPO_PUBLIC_FULL_APP=1 npx expo export --platform web --output-dir dist-full
 
       - name: Install Playwright Chromium
         working-directory: frontend
@@ -310,7 +317,7 @@ jobs:
 
       - name: Run every web journey
         working-directory: frontend
-        run: bash scripts/run-all-journeys.sh dist "$RUNNER_TEMP/journeys" --api "http://localhost:${API_PORT}/api" --mock "http://127.0.0.1:${MOCK_PORT}" --db-url "$CI_DATABASE_URL" --port "$WEB_PORT"
+        run: bash scripts/run-all-journeys.sh dist-full "$RUNNER_TEMP/journeys" --core-dist dist --api "http://localhost:${API_PORT}/api" --mock "http://127.0.0.1:${MOCK_PORT}" --db-url "$CI_DATABASE_URL" --port "$WEB_PORT"
 
       - name: Upload journey screenshots and logs
         if: failure()
@@ -383,7 +390,10 @@ jobs:
           if grep -qE "electron-log|electron-updater|ipcRenderer" "$RUNNER_TEMP/web-bundle.js"; then
             echo "::error::Electron code found in the web bundle"; exit 1
           fi
-          for s in HomeScreen ChatScreen LawyersScreen PaymentsScreen SettingsScreen; do
+          # Home (and the offline screens) are bundled with the app since Oct 19 so they open with no
+          # network; the rest load as chunks.
+          grep -q '"home-screen"' "$RUNNER_TEMP/web-bundle.js" || { echo "::error::HomeScreen missing from web bundle"; exit 1; }
+          for s in ChatScreen LawyersScreen PaymentsScreen SettingsScreen; do
             compgen -G "$js/$s-*.js" > /dev/null || { echo "::error::$s chunk missing from web bundle"; exit 1; }
           done
           grep -q "Justice Gavel" "$RUNNER_TEMP/web-bundle.js"

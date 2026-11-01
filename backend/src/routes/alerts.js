@@ -62,7 +62,7 @@ const MAX_ALERT_CONTACTS = 3;   // the app saves up to three emergency contacts
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Send one alert to one contact. Never throws: { contact, method, delivered, reason? }. */
-async function deliverAlert(contact, text, subject) {
+async function deliverAlert(db, contact, text, subject) {
   if (EMAIL_RE.test(contact)) {
     if (!emailLive()) return { contact, method: 'email', delivered: false, reason: 'email_not_configured' };
     try {
@@ -72,8 +72,14 @@ async function deliverAlert(contact, text, subject) {
       return { contact, method: 'email', delivered: false, reason: 'send_failed' };
     }
   }
-  if (!toE164(contact)) return { contact, method: 'sms', delivered: false, reason: 'invalid_contact' };
-  const r = await sendSms({ to: contact, body: text });
+  const to = toE164(contact);
+  if (!to) return { contact, method: 'sms', delivered: false, reason: 'invalid_contact' };
+  // A number that replied STOP to a Justice Gavel text is never texted again (routes/webhooks/telnyx.js);
+  // the app then opens the phone's own messages app for this contact, as when texting is off.
+  if (await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [to]).catch(() => null)) {
+    return { contact, method: 'sms', delivered: false, reason: 'opted_out' };
+  }
+  const r = await sendSms({ to, body: text });
   if (r.ok) return { contact, method: 'sms', delivered: true };
   return { contact, method: 'sms', delivered: false, reason: r.skipped ? r.reason : 'send_failed' };
 }
@@ -108,7 +114,7 @@ router.post('/', authRequired, alertsLimiter, async (req, res) => {
       [req.user.id, category, text, hasLoc ? lat : null, hasLoc ? lng : null, contacts.length]
     ).catch(logIgnored('routes/alerts'));
 
-    const results = await Promise.all(contacts.map(c => deliverAlert(c, text, subject)));
+    const results = await Promise.all(contacts.map(c => deliverAlert(db, c, text, subject)));
     await Promise.all(results.map(r => db.run(
       'INSERT INTO alerts (user_name,lat,lng,contact,method,status,message) VALUES (?,?,?,?,?,?,?)',
       [name, hasLoc ? lat : null, hasLoc ? lng : null, r.contact, r.method, r.delivered ? 'sent' : (r.reason || 'not_sent'), text]

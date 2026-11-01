@@ -78,7 +78,7 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
       await db.run(`DELETE FROM bd_texts WHERE agent_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_subscriptions WHERE user_id IN (${ids})`);
       await db.run(`DELETE FROM bondsman_profiles WHERE user_id IN (${ids})`);
-      await db.run(`DELETE FROM sms_opt_outs WHERE phone LIKE '+1615555%'`);
+      await db.run(`DELETE FROM sms_opt_outs WHERE phone IN ('+16155550162', '+16155550163')`);   // only this suite's numbers
     });
   });
   afterAll(async () => {
@@ -348,7 +348,7 @@ describeIntegration('check-ins by text link, missed alerts, location alerts, bai
 
   test('CT8 the Bond Desk dashboard lists missed check-ins of bonds linked to an enrollment', async () => {
     if (!ctx.app) return;
-    const r = await enroll({ defendant_name: 'Bo Bonded', defendant_email: 'bo@it.example.test', check_in_freq: 'daily' });
+    const r = await enroll({ defendant_name: 'Bo Bonded', defendant_email: 'bo@it.example.test', defendant_phone: '(615) 555-0178', check_in_freq: 'daily' });
     const id = r.body.enrollment.id;
     const bond = await req('post', '/api/bond-desk/bonds', agent).send({ defendant_name: 'Bo Bonded', bond_amount_cents: 200_000, state: 'tn', checkin_enrollment_id: id });
     expect(bond.status).toBe(201);

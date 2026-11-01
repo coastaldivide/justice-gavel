@@ -16,14 +16,15 @@
  *       follow; the .ics download is a valid calendar file
  *   D4  Family follower: invite code → follower sees the court date, never the
  *       notes; "Stop following" removes it
- *   D5  Check-ins: bail agent enrolls by e-mail in the manager (honest billing
- *       note, link to send); the defendant opens Check-in with no link, finds it,
+ *   D5  Check-ins: bail agent enrolls in the manager (included-in-plan note; e-mail
+ *       alone refused, phone required; link to send); the defendant, whose account
+ *       verified that phone, opens Check-in with no link, finds it,
  *       checks in; the agent's list shows "checked in today" and the history
  *   D6  Messages + documents: no attorney yet is said; a "<script>" message shows
  *       as text; an attorney invited by account accepts and replies → unread
  *       badge; a PDF added on the web Documents screen is listed in the case and
  *       downloads; a stranger cannot open it
- *   D7  Family emergency connection with payments off: friendly message, nothing shown
+ *   D7  Family emergency connection (free since Oct 26, no Stripe needed): nobody listed near → honest message, nothing charged
  *   D8  Offline: a new case with a court date saved while offline is sent with its
  *       date when the connection is back
  *   D9  es / pt / vi at 390 px: cases, check-in, manager, documents — no raw
@@ -38,6 +39,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
+const JOURNEY_DB = process.env.DATABASE_URL || '';
+const psql = (q) => execFileSync('psql', [JOURNEY_DB, '-Atqc', q], { encoding: 'utf8' }).trim();
 
 let chromium;
 try { ({ chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')); }
@@ -296,23 +300,33 @@ const done = async (s, { allow = [] } = {}) => {
   });
 
   // ── D5 ──────────────────────────────────────────────────────────────────
-  await journey('D5 Check-ins: agent enrolls by e-mail, defendant finds it and checks in, agent sees it', async () => {
+  await journey('D5 Check-ins: agent enrolls by phone (e-mail alone refused), defendant with that verified phone finds it and checks in, agent sees it', async () => {
     const agent = await newUser('d5a', { accountType: 'bail_agent' }); const def = await newUser('d5d');
     const a = await open(browser, { account: agent });
     await go(a.page, '/checkin/manage');
     await byTid(a.page, 'checkin-manager-billing').waitFor({ timeout: 15000 });
-    if (!(await byTid(a.page, 'checkin-manager-billing').innerText()).includes(tx('en', 'ckm_billing_off', { price: '$9.99' }))) throw new Error('billing note not honest');
+    // Oct 26 2026: check-ins are included in every bail-agent plan (routes/checkins.js FEE_PER_DEFENDANT_CENTS = 0)
+    const billNote = await byTid(a.page, 'checkin-manager-billing').innerText();
+    if (!billNote.includes(tx('en', 'ckm_included'))) throw new Error(`billing note not honest: ${billNote}`);
     await byTid(a.page, 'checkin-manager-enroll').click();
     await byTid(a.page, 'checkin-enroll-name').fill('Dana Defendant');
     await byTid(a.page, 'checkin-enroll-save').click();
     await byTid(a.page, 'checkin-enroll-error').waitFor();
+    // e-mail alone is refused (since Oct 27 accounts are matched only by a VERIFIED phone number)
     await byTid(a.page, 'checkin-enroll-email').fill(def.email);
+    await byTid(a.page, 'checkin-enroll-save').click();
+    await a.page.waitForTimeout(400);
+    if (!(await byTid(a.page, 'checkin-enroll-error').innerText()).includes(tx('en', 'ckm_need_contact'))) throw new Error('e-mail-only enrollment not refused');
+    const phone10 = `615555${String(Date.now()).slice(-4)}`;
+    await byTid(a.page, 'checkin-enroll-phone').fill(`(${phone10.slice(0, 3)}) ${phone10.slice(3, 6)}-${phone10.slice(6)}`);
     await byTid(a.page, 'checkin-enroll-save').click();
     await byTid(a.page, 'checkin-manager-row').waitFor({ timeout: 10000 });
     const shared = await a.shared();
     if (!shared.length || !/\/checkin\?enrollmentId=\d+/.test(shared[0].text || '')) throw new Error(`no link shared: ${JSON.stringify(shared)}`);
     if (!(await byTid(a.page, 'checkin-manager-row').innerText()).includes(tx('en', 'ckm_waiting_sign_in'))) throw new Error('not "waiting for sign in"');
-    // the defendant, no link
+    // the defendant, no link: their account verified that number (a texted code; set directly here)
+    if (!JOURNEY_DB) throw new Error('DATABASE_URL is needed to mark the phone verified');
+    psql(`UPDATE users SET phone = '+1${phone10}', phone_verified_at = NOW(), phone_verified_phone = '+1${phone10}' WHERE id = ${Number(def.user.id)}`);
     const d = await open(browser, { account: def, tz: 'America/Los_Angeles' });
     await go(d.page, '/checkin');
     await byTid(d.page, 'checkin-submit-button').waitFor({ timeout: 15000 });
@@ -334,7 +348,7 @@ const done = async (s, { allow = [] } = {}) => {
     await go(c.page, '/checkin/manage');
     await byTid(c.page, 'checkin-manager-agents-only').waitFor({ timeout: 10000 });
     await done(a); await done(d); await done(c);
-    return 'enrolled by e-mail, link shared, defendant checked in (LA zone), agent list + history';
+    return 'e-mail alone refused, enrolled by phone, link shared, defendant (verified phone) checked in (LA zone), agent list + history';
   });
 
   // ── D6 ──────────────────────────────────────────────────────────────────
@@ -383,24 +397,32 @@ const done = async (s, { allow = [] } = {}) => {
   });
 
   // ── D7 ──────────────────────────────────────────────────────────────────
-  await journey('D7 Family emergency connection with payments off', async () => {
+  await journey('D7 Family emergency connection (free): nobody listed near → honest message, nothing charged', async () => {
     const me = await newUser('d7');
     const s = await open(browser, { account: me });
     await go(s.page, '/family');
     await byTid(s.page, 'family-connect-price').waitFor({ timeout: 15000 });
-    if (!(await byTid(s.page, 'family-connect-price').innerText()).includes('$28.99')) throw new Error('price not from the server');
+    // the price comes from the server (free since Oct 26 2026: billing/connections.js)
+    const quote = (await apiCall('GET', '/billing/family/quote')).body;
+    const shown = (await byTid(s.page, 'family-connect-price').innerText()).trim();
+    const want = quote.price_cents > 0 ? `$${(quote.price_cents / 100).toFixed(2)}` : tx('en', 'fc2_price_free');
+    if (!shown.includes(want)) throw new Error(`price not from the server: "${shown}" (server ${quote.price_cents})`);
     await s.page.getByText(tx('en', 'x_family_connect_skip_search_continue')).click();
     await s.page.getByPlaceholder(tx('en', 'x_family_connect_jane_smith')).fill('Ana Family');
     await s.page.getByPlaceholder(tx('en', 'x_auth_gate_phone_number')).fill('615 555 0100');
     await byTid(s.page, 'family-connect-pay').click();
     await byTid(s.page, 'family-connect-error').waitFor({ timeout: 15000 });
     const msg = await byTid(s.page, 'family-connect-error').innerText();
-    if (!msg.includes(tx('en', 'x_common_payments_aren_t_available'))) throw new Error(`message: ${msg}`);
+    // free: no payment step even with payments off; this test database lists nobody near, so the
+    // server answers 404 none_found ("…Nothing was charged.")
+    if (quote.price_cents > 0) {
+      if (!msg.includes(tx('en', 'x_common_payments_aren_t_available'))) throw new Error(`message: ${msg}`);
+    } else if (!/Nothing was charged/.test(msg)) throw new Error(`message: ${msg}`);
     const txt = await bodyText(s.page);
     if (/verified|Demo mode/i.test(txt)) throw new Error('false claims on the page');
-    await shot(s.page, 'D7-payments-off');
-    await done(s, { allow: ['503 POST /billing/family/connect'] });
-    return 'server price, 503 → friendly message, no contacts, no "verified"/"demo" claims';
+    await shot(s.page, 'D7-family-connect');
+    await done(s, { allow: ['503 POST /billing/family/connect', '404 POST /billing/family/connect'] });
+    return `server price (${quote.price_cents ? quote.price_cents + '¢' : 'free'}), honest message, no contacts invented, no "verified"/"demo" claims`;
   });
 
   // ── D8 ──────────────────────────────────────────────────────────────────

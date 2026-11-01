@@ -68,7 +68,7 @@ describe('Plan your court day', () => {
     fireEvent.press(screen.getByTestId('plan-documents-done'));
     fireEvent.press(screen.getByTestId('plan-save'));
     await waitFor(() => expect(calls.find(c => c.method === 'put')).toBeTruthy());
-    const body = calls.find(c => c.method === 'put')!.data as { items: Record<string, { done: boolean; note: string }> };
+    const body = calls.find(c => c.method === 'put')?.data as { items: Record<string, { done: boolean; note: string }> };
     expect(body.items.documents.done).toBe(true);
     expect(body.items.ride).toEqual({ done: true, note: 'Bus 52' });
     expect(screen.getByText(t('cdp_transit_site', { agency: 'WeGo Public Transit' }))).toBeTruthy();
@@ -80,7 +80,7 @@ describe('Plan your court day', () => {
     expect(screen.getByText(t('cdp_ride_status_offered', { name: 'Fran' }))).toBeTruthy();
     fireEvent.press(screen.getByTestId('ride-accept'));
     await waitFor(() => expect(onOffers).toHaveBeenCalledWith([{ id: 4, status: 'accepted', name: 'Fran' }]));
-    expect(calls.find(c => c.url === '/court-dates/9/ride-offers/4')!.data).toEqual({ decision: 'accept' });
+    expect(calls.find(c => c.url === '/court-dates/9/ride-offers/4')?.data).toEqual({ decision: 'accept' });
     expect(screen.getByText(t('cdp_phone_line', { number: '+18005550199' }))).toBeTruthy();
   });
   test('a county without a cited transit agency shows 211 and directions only', () => {
@@ -105,7 +105,7 @@ describe('Verify phone', () => {
     expect(screen.getByTestId('verify-phone-code').props.value).toBe('123456');
     fireEvent.press(screen.getByTestId('verify-phone-confirm'));
     await screen.findByTestId('verify-phone-done');
-    expect(calls.find(c => c.url === '/me/phone/confirm')!.data).toEqual({ code: '123456' });
+    expect(calls.find(c => c.url === '/me/phone/confirm')?.data).toEqual({ code: '123456' });
   });
   test('without text messages it says so and offers no send button', async () => {
     on('get', '/me/phone', { phone: null, phone_verified: false, verified_at: null, sms_available: false, pending: null });

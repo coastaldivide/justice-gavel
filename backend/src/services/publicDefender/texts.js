@@ -114,7 +114,7 @@ export async function sendOfficeText(db, { officeId, clientId, to, body, kind, s
 
 // ── Loading ───────────────────────────────────────────────────────────────────
 
-async function courtCtx(db, courtDateId) {
+function courtCtx(db, courtDateId) {
   return db.get(
     `SELECT cd.id, cd.pd_client_id, cd.office_id, cd.court_date, cd.court_time, cd.court_name, cd.room, cd.status, cd.status_source,
             cd.asked_at, cd.deleted_at,

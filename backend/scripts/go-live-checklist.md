@@ -87,6 +87,8 @@ staging**, **live keys on production** (the server refuses a live key on staging
     Connected accounts"**, events `account.updated`, `checkout.session.completed`, `checkout.session.expired`,
     `payment_intent.succeeded`, `payment_intent.payment_failed` → its secret → `STRIPE_CONNECT_WEBHOOK_SECRET`
 [ ] `BOND_AUTOPAY_ENABLED=false` in production until counsel answers question 3.2 (automatic payment plans)
+[ ] `OUTBOUND_BOT_ENABLED` unset (off) in production until counsel answers question 3.2c — `LIVE_REFRESH=true` alone no
+    longer e-mails paid-lead summaries to directory lawyers
 [ ] Test mode: a test agency finishes onboarding with Stripe's test data → Bond Desk → Settings shows
     "On — you can take card payments"; the pay page takes `4242 4242 4242 4242`; the payment shows under
     "Unassigned payments" and in the agency's Express dashboard (not in the platform's balance)

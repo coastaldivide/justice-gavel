@@ -26,8 +26,10 @@ import logger from '../utils/logger.js';
  *  - Safe to run multiple times — no double-sends
  */
 
+import crypto from 'node:crypto';
 import { getDb as getAppDb } from '../db/index.js';
 import { normalizePhone } from '../utils/sanitize.js';
+import { outboundBotEnabled } from '../utils/counselFlags.js';
 // SMS is not wired up (push notifications and Resend email handle delivery).
 // The stub reports a non-delivery instead of returning null, which made every
 // `result.error` read throw a TypeError.
@@ -36,6 +38,19 @@ import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee } from '../payments/stripe.js';
 import { bondsmanLeadFeeCents, formatLeadFee } from '../routes/billing/leadFee.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
+
+const appBase = () => String(process.env.APP_URL || 'https://justicegavel.app').replace(/\/+$/, '');
+const apiBase = () => String(process.env.BASE_URL || 'https://api.justicegavel.app').replace(/\/+$/, '');
+
+/** Signed one-click unsubscribe token for an e-mail address (routes/webhooks/bot_admin.js GET /unsubscribe). */
+export function unsubscribeToken(email) {
+  const secret = process.env.JWT_SECRET || '';
+  return crypto.createHmac('sha256', secret).update(`unsubscribe:${String(email || '').trim().toLowerCase()}`).digest('hex').slice(0, 32);
+}
+export function unsubscribeUrl(email) {
+  const e = String(email || '').trim().toLowerCase();
+  return `${apiBase()}/api/bot/unsubscribe?e=${encodeURIComponent(e)}&t=${unsubscribeToken(e)}`;
+}
 
 // Arrest columns the bot reads. Every lookup goes through realArrestSql(): the
 // bot must never message or bill anyone because of a sample/seed or taken-down row.
@@ -172,14 +187,14 @@ function buildAttorneyEmail(attorney, arrests) {
       `Top charge types:`,
       breakdown,
       ``,
-      `Start your free 30-day trial to receive daily arrest alerts and get top placement in family searches:`,
-      `https://justicegavel.app/subscribe`,
+      // Only what the app does (debug scan Oct 30): no "top placement" (search order is never paid —
+      // MONETIZATION_PLAN rule M2) and no arrest-alert product for lawyers; links that exist.
+      `People who ask to be contacted appear as requests in the attorney dashboard. Justice Gavel does not recommend`,
+      `any lawyer, and the price of a request never depends on whether you are hired:`,
+      `${appBase()}/attorney-dashboard`,
       ``,
-      `Already subscribed? Log in to view all leads:`,
-      `https://justicegavel.app/leads`,
-      ``,
-      `— Justice Gavel Alert System`,
-      `Unsubscribe: https://justicegavel.app/unsubscribe?email=${encodeURIComponent(attorney.email || '')}`,
+      `— Justice Gavel`,
+      `Stop these e-mails (one click): ${unsubscribeUrl(attorney.email)}`,
     ].join('\n'),
   };
 }
@@ -288,6 +303,13 @@ export async function runOutboundBot(options = {}) {
   const stats = { messagesSent: 0, arrestsFound: 0, leadsSold: 0, revenueCents: 0 };
   const errors = [];
 
+  // ⚖ Paid-lead e-mails wait for counsel (utils/counselFlags.js): off in production unless
+  // OUTBOUND_BOT_ENABLED is set, even when LIVE_REFRESH runs the rest of the nightly pipeline.
+  if (!outboundBotEnabled() && !options.dryRun) {   // a dry run sends nothing
+    logger.info('[bot] OUTBOUND_BOT_ENABLED is off — no lead offers sent (counsel review pending).');
+    return { skipped: true, reason: 'counsel_flag_off' };
+  }
+
   logger.info('\n[bot] ═══ Outbound bot starting ═══');
 
   // TCPA quiet hours — do not send between 9pm and 8am
@@ -345,6 +367,8 @@ export async function runOutboundBot(options = {}) {
       for (const agent of targets) {
         // Send one SMS per arrest (bondsmen buy individual leads)
         for (const arrest of countyArrests.slice(0, 5)) { // Max 5 per county per agent per run
+          // A dry run reports what would be sent and sends nothing.
+          if (options.dryRun) { stats.planned = (stats.planned || 0) + 1; continue; }
           await processBondsmanLead(db, agent, arrest, stats, errors);
         }
       }
@@ -362,6 +386,7 @@ export async function runOutboundBot(options = {}) {
       const targets = matchedAttorneys.length > 0 ? matchedAttorneys : attorneys.slice(0, 5);
 
       for (const attorney of targets) {
+        if (options.dryRun) { stats.planned = (stats.planned || 0) + 1; continue; }
         await processAttorneyLeads(db, attorney, countyArrests, stats, errors);
       }
     }

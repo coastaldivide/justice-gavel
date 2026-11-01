@@ -33,7 +33,7 @@
  *       filing status changes; reopen shows the draft
  *   E12 penalties: DUI link opens the DUI tab; state change; every row shows
  *       its recorded source; guest, no 401s
- *   E13 resources: guest list of all 631; "988 then press 1" dials 988,
+ *   E13 resources: guest list of every row the server has; "988 then press 1" dials 988,
  *       "Text HOME to 741741" opens an SMS, never a 6-digit call
  *   E14 lessons: guest reads the reworded "How Bail Works" (migration 22);
  *       completing asks to sign in; signed in → complete → points once →
@@ -452,8 +452,16 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     await byTid(c.page, 'research-paywall').waitFor({ timeout: 10000 });
     const pw = await bodyText(c.page);
     if (/Casetext|374\.99|49\.99|14-day/.test(pw)) throw new Error('invented prices / competitor claims on the paywall');
-    for (const plan of ['legal_radar', 'advisor', 'legal_pro', 'esquire']) await byTid(c.page, `research-plan-${plan}`).waitFor();
-    if (!pw.includes('$19.99')) throw new Error('paywall without the real Legal Radar price');
+    // the plans and prices are the server's (GET /research/status plans ∩ GET /billing/tiers, monthly);
+    // Oct 26 2026: Legal Pro and Esquire
+    const want = (await apiCall('GET', '/research/status', { token: consumer.token })).body.plans || [];
+    const tiers = ((await apiCall('GET', '/billing/tiers')).body.tiers || []).filter(x => want.includes(x.key) && x.billing !== 'annual');
+    if (!tiers.length) throw new Error('server lists no research plans');
+    for (const tr of tiers) {
+      await byTid(c.page, `research-plan-${tr.key}`).waitFor({ timeout: 10000 });
+      const price = `$${(Number(tr.monthly_cents) / 100).toFixed(2)}`;
+      if (!pw.includes(price) && !(await bodyText(c.page)).includes(price)) throw new Error(`paywall without the real ${tr.key} price ${price}`);
+    }
     await shot(c.page, 'E10-paywall');
     await done(c);
     const atty = await newUser('e10a', { accountType: 'attorney' });
@@ -519,6 +527,27 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     const s = await open(browser, { lang: 'pt' });
     await s.page.addInitScript(() => localStorage.setItem('jg_user_state', 'TN'));
     await go(s.page, '/dui-laws');
+    // Legal accuracy review (Oct 2026): only rows checked against the official law are shown. With
+    // none checked (DUI and drug rows wait for their research round), each tab must say so.
+    const meta = async (type, st) => (await apiCall('GET', `/legaldata/${type}?state=${st}`)).body.meta || {};
+    const [tnDui, caDrug] = [await meta('dui', 'TN'), await meta('drugs', 'CA')];
+    if (!tnDui.count && !caDrug.count) {
+      const withheld = (st) => tx('pt', 'legal_unverified_withheld', { state: st }).slice(0, 30);
+      await s.page.getByText(withheld('Tennessee'), { exact: false }).first().waitFor({ timeout: 10000 });
+      // the notice is the open tab's server disclaimer (in Portuguese): the DUI one means the DUI tab opened
+      const duiNote = (await apiCall('GET', '/legaldata/dui?state=TN', { lang: 'pt' })).body.meta.disclaimer;
+      if (!(await byTid(s.page, 'penalties-notice').innerText()).includes(duiNote)) throw new Error('DUI link did not open the DUI tab');
+      await byTid(s.page, 'penalties-state').click();
+      await byTid(s.page, 'penalties-state-CA').click();
+      await byTid(s.page, 'penalties-tab-drug').click();
+      await s.page.getByText(withheld('Califórnia'), { exact: false }).first().waitFor({ timeout: 8000 });
+      if (await byTid(s.page, 'penalties-row').count()) throw new Error('unchecked penalty rows shown');
+      if (!(await byTid(s.page, 'penalties-notice').innerText()).includes('advogado')) throw new Error('no "not reviewed by a lawyer" notice in Portuguese');
+      if (s.failed.length) throw new Error(`failed: ${s.failed.join(', ')}`);
+      await shot(s.page, 'E12-withheld-pt');
+      await done(s);
+      return `no checked rows yet (TN DUI ${tnDui.withheld ?? 0} and CA drug ${caDrug.withheld ?? 0} withheld): Portuguese "not checked" notice on both tabs, no numbers, guest 0 failed requests`;
+    }
     await byTid(s.page, 'penalties-row').first().waitFor({ timeout: 10000 });
     const duiText = await bodyText(s.page);
     if (!duiText.includes(tx('pt', 'pen_dui_bac').split(':')[0])) throw new Error('DUI link did not open the DUI tab');
@@ -541,7 +570,10 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     const s = await open(browser);
     await s.page.addInitScript(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; });
     await go(s.page, '/resources');
-    await until(async () => /631/.test(await bodyText(s.page)), 10000, 'count of 631');
+    const all = await apiCall('GET', '/resources?limit=1000');
+    const total = Array.isArray(all.body) ? all.body.length : (all.body.resources || all.body.data || []).length;
+    if (!total) throw new Error('server lists no resources');
+    await until(async () => new RegExp(`(^|\\D)${total} `).test(await bodyText(s.page)), 10000, `count of ${total}`);
     await s.page.getByText(tx('en', 'x_resources_crisis_lines')).first().click();
     await s.page.getByText('Veterans Crisis Line', { exact: true }).click();
     await byTid(s.page, 'resource-call').first().scrollIntoViewIfNeeded();
@@ -563,7 +595,7 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     if (s.failed.length) throw new Error(`failed: ${s.failed.join(', ')}`);
     await shot(s.page, 'E13-resources');
     await done(s);
-    return `631 listed to a guest; veterans "${vet.trim()}"; text line → ${hrefs[0]}`;
+    return `${total} listed to a guest (all the server has); veterans "${vet.trim()}"; text line → ${hrefs[0]}`;
   });
 
   await journey('E14 lessons: reworded content, completion persists, points once', async () => {

@@ -176,7 +176,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (!token) { if (mountedRef.current) setFlags({ custody: false, recovery: false }); return; }
       const [cus, rec] = await Promise.all([
         api.get<{ enabled: boolean }>('/custody/status').then(r => r.data?.enabled === true).catch(() => false),
-        api.get<{ shares: unknown[] }>('/recovery-shares').then(r => Array.isArray(r.data?.shares) && r.data.shares.length > 0).catch(() => false),
+        api.get<{ enabled: boolean; count: number }>('/recovery-shares/status').then(r => r.data?.enabled === true && Number(r.data?.count) > 0).catch(() => false),
       ]);
       if (mountedRef.current) setFlags({ custody: cus, recovery: rec });
     }).catch(() => {});
