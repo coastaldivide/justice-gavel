@@ -94,6 +94,8 @@ export type RootStackParamList = {
   CourtLocator:             { state?: string; county?: string };
   CourtDates:               { add?: boolean; guidance?: 'missed'; caseId?: number };
   CourtDateDetail:          { id: number };
+  CourtGuide:               { courtDateId?: number } | undefined;
+  CaseSteps:                { caseId?: number } | undefined;
   CourtForms:               { state?: string; chargeType?: string };
 
   // ── Subscriptions & Payments ─────────────────────────────────────────────

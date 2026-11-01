@@ -58,6 +58,7 @@ import rightsRouter       from './routes/rights.js';
 import helpRouter         from './routes/help.js';
 import courtDatesRouter   from './routes/courtDates.js';
 import followingRouter    from './routes/following.js';
+import caseStepsRouter    from './routes/caseSteps.js';
 import expungementRouter   from './routes/expungement/index.js';
 import immigrationRouter   from './routes/immigration.js';
 import billingRouter    from './routes/billing/index.js';
@@ -523,6 +524,7 @@ app.use('/api/rights',      rightsRouter);      // core path step 1 (public)
 app.use('/api/help',        helpRouter);        // core path step 2 (public)
 app.use('/api/court-dates', courtDatesRouter);  // core path step 3
 app.use('/api/following',   followingRouter);   // family followers
+app.use('/api/case-steps',  caseStepsRouter);   // "Your case, step by step" progress (owner only)
 app.use('/api/checkins',      checkinsRouter);
 app.use('/api/me',            meRouter);       // the signed-in person's own cards ("Your bail agent")
 app.use('/api/expungement',   expungementRouter);

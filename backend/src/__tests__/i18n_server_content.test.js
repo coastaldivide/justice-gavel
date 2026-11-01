@@ -146,7 +146,11 @@ describe('court-day guidance in every language', () => {
       expect(g.missed.title).toBe(b.cg_missed_title);
       expect(g.checklist.note).toBe(b.cg_checklist_note);
       expect(g.missed.steps.at(-1).text).toBe(msg(l, 'guidance.missed.4'));
-      for (const s of [...g.checklist.bring, ...g.checklist.wear, ...g.missed.steps]) expect(s.source).toMatch(/Justice Gavel/);
+      for (const s of [...g.checklist.bring, ...g.missed.steps]) expect(s.source).toMatch(/Justice Gavel/);
+      // what to wear: the official page behind it, the same words as the app's copy, and the guide it points to
+      expect(g.checklist.wear[0].source).toBe(b.cg_src_tn_dhs);
+      expect(g.checklist.wear[0].source_url).toMatch(/^https:\/\/www\.tn\.gov\//);
+      expect(g.checklist.wear[0].guide).toBe('court_guide');
       expect(JSON.stringify(g)).not.toMatch(/\b\d+\s*(days?|hours?|días|horas|dias|ngày|giờ|jou|èdtan|araw|oras)\b/);
       expect(JSON.stringify(g)).not.toMatch(/\d+\s*(天|小时|个小时|يوم|أيام|ساعة|ساعات)/);
     });

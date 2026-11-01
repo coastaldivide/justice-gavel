@@ -1,8 +1,8 @@
 /**
  * services/courtDayHelp.js — "Plan your court day" (build plan A8, migration 40).
  *
- *   Plan: five items saved on the court date (court_dates.plan, owner only): ride, time off work,
- *         child care, documents, address and room. Each { done, note } (note ≤ 200 characters).
+ *   Plan: six items saved on the court date (court_dates.plan, owner only): ride, time off work,
+ *         child care, documents, address and room, clothes ready ("Going to court" guide, migration 43). Each { done, note } (note ≤ 200 characters).
  *   Help links (no claims, only places to call or open):
  *     - 211 — call 211 or visit 211.org (every county)
  *     - the county's transit agency, ONLY when data/transit_agencies.js has a cited row for the
@@ -20,7 +20,7 @@ import { sendPushToUser } from './pushDelivery.js';
 import { dateOnly } from './courtReminders.js';
 import logger from '../utils/logger.js';
 
-export const PLAN_ITEMS = Object.freeze(['ride', 'time_off', 'child_care', 'documents', 'address_room']);
+export const PLAN_ITEMS = Object.freeze(['ride', 'time_off', 'child_care', 'documents', 'address_room', 'clothes']);
 export const NOTE_MAX = 200;
 export const LINK_211 = Object.freeze({ phone: '211', url: 'https://www.211.org' });
 

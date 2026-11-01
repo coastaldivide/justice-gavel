@@ -2,7 +2,8 @@
  * CourtDayPlan — "Plan your court day" on a court date (build plan A8).
  *
  *   - checklist saved on the court date (PUT /api/court-dates/:id/plan): ride, time off work,
- *     child care, documents, address and room — each "done" plus a short note
+ *     child care, documents, address and room, clothes ready — each "done" plus a short note;
+ *     "Going to court: how to dress and act" opens from the clothes item
  *   - help links from the server: call 211 / 211.org, the county's transit agency (only where the
  *     server has a cited source; the source and the date checked are shown), map directions
  *   - ride offers from family followers, with Accept / No thanks (the follower is told)
@@ -17,7 +18,7 @@ import { useTheme } from '../constants/theme';
 import { t } from '../i18n';
 import { IconLabel, ICONS } from './AppIcon';
 
-export const PLAN_ITEMS = ['ride', 'time_off', 'child_care', 'documents', 'address_room'] as const;
+export const PLAN_ITEMS = ['ride', 'time_off', 'child_care', 'documents', 'address_room', 'clothes'] as const;
 export type PlanItemId = typeof PLAN_ITEMS[number];
 export interface PlanItem { id: PlanItemId; done: boolean; note: string | null }
 export interface HelpLinks {
@@ -62,9 +63,9 @@ export function CourtHelpLinks({ help, styles, testID = 'court-help' }: { help: 
   );
 }
 
-export default function CourtDayPlan({ courtDateId, plan, help, offers, phoneLine, styles, onOffers }: {
+export default function CourtDayPlan({ courtDateId, plan, help, offers, phoneLine, styles, onOffers, onOpenGuide }: {
   courtDateId: number; plan: PlanItem[]; help: HelpLinks | null; offers: RideOffer[]; phoneLine?: { number: string } | null;
-  styles: any; onOffers: (o: RideOffer[]) => void;
+  styles: any; onOffers: (o: RideOffer[]) => void; onOpenGuide?: () => void;
 }) {
   const { colors } = useTheme();
   const { showToast } = useToast();
@@ -106,6 +107,11 @@ export default function CourtDayPlan({ courtDateId, plan, help, offers, phoneLin
           </TouchableOpacity>
           <TextInput accessibilityLabel={t('cdp_note_a11y', { item: t(`cdp_item_${i.id}`) })} testID={`plan-${i.id}-note`} style={styles.inputFull}
             value={i.note || ''} onChangeText={v => change(i.id, { note: v })} placeholder={t(`cdp_hint_${i.id}`)} placeholderTextColor={colors.textMuted} maxLength={200} />
+          {i.id === 'clothes' && onOpenGuide && (
+            <TouchableOpacity accessibilityRole="link" testID="plan-clothes-guide" style={{ minHeight: 44, justifyContent: 'center' }} onPress={onOpenGuide}>
+              <IconLabel icon={ICONS.shirt} color={colors.textBrand} textStyle={styles.link}>{t('cgd_title')}</IconLabel>
+            </TouchableOpacity>
+          )}
         </View>
       ))}
       <TouchableOpacity accessibilityRole="button" testID="plan-save" style={[styles.primaryBtn, !dirty && { opacity: 0.6 }]} disabled={busy || !dirty} onPress={save}>

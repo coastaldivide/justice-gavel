@@ -43,7 +43,7 @@ const TILES = perLang((): Tile[] => {
   { key: 'Chat',      label: t('home_tile_Chat'),     icon: ICONS.message, color: c.info, bg: c.bgCard, nav: 'ChatTab',        primary: false },
 
   // ── Contextual -- shown below primary, relevant to most users ────────────────
-  { key: 'WhatNext',  label: t('home_tile_WhatNext'), icon: ICONS.clipboard, color: c.textBrand,      bg: c.bgCard, nav: 'More:WhatHappensNext', primary: false },
+  { key: 'CaseSteps', label: t('home_tile_CaseSteps'), icon: ICONS.progress, color: c.textBrand,     bg: c.bgCard, nav: 'More:CaseSteps', primary: false },
   { key: 'Cases',     label: t('home_tile_Cases'),           icon: ICONS.cases, color: c.info, bg: c.bgCard, nav: 'More:Cases',     primary: false },
   { key: 'court_locator',  icon: ICONS.courthouse, label: t('home_tile_court_locator'),       nav: 'More:CourtLocator',    bg: c.bgCard, color: c.info, primary: false },
   { key: 'bail_calc',      icon: ICONS.calculator, label: t('home_tile_bail_calc'),        nav: 'More:BailCalculator',  bg: c.legalBg, color: c.legal, primary: false },

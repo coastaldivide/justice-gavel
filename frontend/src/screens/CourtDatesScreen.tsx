@@ -36,6 +36,8 @@ import {
   GuestCourtDateError, type GuestCourtDate, type ReminderText,
 } from '../services/guestCourtDates';
 import { Analytics } from '../services/analytics';
+import { STAGE_IDS, type StageId } from '../constants/caseSteps';
+import { GUIDE_SOURCES } from '../constants/guideSources';
 
 /** Local-notification text for a guest court date, in the app's language. */
 export const guestReminderText: ReminderText = (kind, d) => {
@@ -44,7 +46,7 @@ export const guestReminderText: ReminderText = (kind, d) => {
   return { title: t('gcd_n_title'), body: d.place ? `${body} ${t('gcd_n_place', { place: d.place })}` : body };
 };
 
-export interface GuidanceItem { id?: string; text: string; source: string }
+export interface GuidanceItem { id?: string; text: string; source: string; source_url?: string; guide?: string }
 export interface Guidance {
   checklist: { title?: string; bring: GuidanceItem[]; wear: GuidanceItem[]; note: string; language?: string };
   missed: { title: string; steps: GuidanceItem[]; note: string; language?: string };
@@ -65,7 +67,7 @@ export function bundledGuidance(): Guidance {
         { id: 'bring_2', text: t('cg_bring_2'), source: src.reminder },
         { id: 'bring_3', text: t('cg_bring_3'), source: src.lesson },
       ],
-      wear: [{ id: 'wear_1', text: t('cg_wear_1'), source: src.lesson }],
+      wear: [{ id: 'wear_1', text: t('cg_wear_1'), source: t('cg_src_tn_dhs'), source_url: GUIDE_SOURCES.tn_dhs.url || undefined, guide: 'court_guide' }],
       note: t('cg_checklist_note'),
       language: getLang(),
     },
@@ -91,7 +93,7 @@ export function pickGuidance(server: Guidance | null | undefined): Guidance {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed' | 'checklist' | 'both'; styles: any }) {
+export function GuidanceView({ g, which, styles, onOpenGuide }: { g: Guidance; which: 'missed' | 'checklist' | 'both'; styles: any; onOpenGuide?: () => void }) {
   const { colors } = useTheme();
   useLang();
   return (
@@ -124,6 +126,11 @@ export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed
               <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('rc_source')}: {s.source}</Text>
             </View>
           ))}
+          {onOpenGuide && (
+            <TouchableOpacity accessibilityRole="button" testID="court-checklist-guide" style={styles.secondaryBtn} onPress={onOpenGuide}>
+              <IconLabel center icon={ICONS.shirt} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cgd_title')}</IconLabel>
+            </TouchableOpacity>
+          )}
           <Text maxFontSizeMultiplier={1.4} style={styles.source}>{g.checklist.note}</Text>
         </View>
       )}
@@ -407,7 +414,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
             <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('ja_sign_in')}</Text>
           </TouchableOpacity>
         </View>
-        <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} />
+        <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} onOpenGuide={() => navigation.navigate('CourtGuide')} />
         {!showMissed && (
           <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setShowMissed(true)}>
             <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>
@@ -498,6 +505,11 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
             {following.map(f => (
               <View key={f.follow_id} style={styles.row} testID="following-case">
                 <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{f.owner_first_name ? `${f.owner_first_name}: ` : ''}{f.case_title}</Text>
+                {!!f.case_stage && STAGE_IDS.includes(f.case_stage as StageId) && (
+                  <IconLabel icon={ICONS.progress} color={colors.textSecond} textStyle={styles.rowSub} testID="following-case-stage">
+                    {t('cst_family_stage', { stage: t(`cst_${f.case_stage}_title`) })}
+                  </IconLabel>
+                )}
                 {f.court_dates.filter(d => !d.is_past).map(d => (
                   <View key={d.id}>
                     <IconLabel icon={ICONS.calendar} color={colors.textPrimary} textStyle={styles.rowDate} testID="following-court-date">
@@ -537,7 +549,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           </View>
         )}
 
-        <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} />
+        <GuidanceView g={guidance} which={showMissed ? 'both' : 'checklist'} styles={styles} onOpenGuide={() => navigation.navigate('CourtGuide')} />
         {!showMissed && (
           <TouchableOpacity accessibilityRole="button" testID="court-dates-missed" style={styles.secondaryBtn} onPress={() => setShowMissed(true)}>
             <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>

@@ -1,0 +1,14 @@
+{
+  "stages": [
+    { "id": "arrest",    "items": ["silent", "family", "no_talk", "papers"] },
+    { "id": "release",   "items": ["bail_known", "conditions_copy", "conditions_understood", "agent_saved"] },
+    { "id": "first",     "items": ["date_saved", "plan", "ask_lawyer", "next_date"] },
+    { "id": "lawyer",    "items": ["have", "saved", "contact", "money_papers"] },
+    { "id": "pretrial",  "items": ["next_date", "calls", "conditions", "papers", "checkins"] },
+    { "id": "plea",      "items": ["explained", "questions", "trial_date", "guide"] },
+    { "id": "sentence",  "items": ["date", "copy", "list", "ask"] },
+    { "id": "probation", "items": ["officer", "owe", "proof", "checkins"] },
+    { "id": "record",    "items": ["finished", "checked", "papers", "help"] }
+  ],
+  "auto": ["first.date_saved", "pretrial.next_date"]
+}

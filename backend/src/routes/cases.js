@@ -344,6 +344,8 @@ router.delete('/:id', authRequired, async (req, res) => {
     // A deleted case is shared with nobody: end its share link and its family follows.
     await db.run('UPDATE cases SET share_token=NULL, share_expires_at=NULL WHERE id=?', [caseId]);
     await db.run(`UPDATE case_family_access SET status='revoked', revoked_at=NOW(), invite_code_hash=NULL, updated_at=NOW() WHERE case_id=? AND status IN ('pending','active')`, [caseId]);
+    // "Your case, step by step" progress goes with the case (migration 43)
+    await db.run('DELETE FROM case_steps WHERE case_id=? AND user_id=?', [caseId, req.user.id]);
     await audit(AUDIT_ACTIONS.CASE_DELETED, { req, entityType: 'case', entityId: String(caseId) });
     res.json({ ok: true });
   } catch (e) {

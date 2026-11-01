@@ -32,6 +32,8 @@ import RightsCardScreen from '../screens/RightsCardScreen';
 import CourtDatesScreen from '../screens/CourtDatesScreen';
 import HelpNowScreen from '../screens/HelpNowScreen';
 import CourtDateDetailScreen from '../screens/CourtDateDetailScreen';
+import CourtGuideScreen from '../screens/CourtGuideScreen';
+import CaseStepsScreen from '../screens/CaseStepsScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import { Analytics } from '../services/analytics';
 import { getGuestStart } from '../services/auth';
@@ -263,7 +265,10 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="VerifyPhone"           component={VerifyPhoneScreen}           options={{ title: t('vp_title') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />
-        <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: t('x_nav_what_happens_next') }} />
+      {/* "What happens next" = the whole case, step by step (it used to repeat Just arrested) */}
+      <MoreStack.Screen name="WhatHappensNext"       component={CaseStepsScreen}          options={{ title: t('cst_title') }} />
+      <MoreStack.Screen name="CaseSteps"             component={CaseStepsScreen}          options={{ title: t('cst_title') }} />
+      <MoreStack.Screen name="CourtGuide"            component={CourtGuideScreen}         options={{ title: t('cgd_nav') }} />
       <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: t('x_nav_emergency_share'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: t('x_nav_crisis_support'), headerStyle: { backgroundColor: COLORS.blue }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: t('x_nav_diversion_eligibility') }} />

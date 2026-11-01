@@ -281,6 +281,11 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity accessibilityRole="link" testID="expungement-steps-link" style={{ minHeight: 44, justifyContent: 'center' }}
+          onPress={() => navigation.navigate('CaseSteps')}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.body, { color: colors.textBrand, fontWeight: '700' }]}>{t('exp_steps_link')}</Text>
+        </TouchableOpacity>
+
         <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('div_your_state')}</Text>
         <StatePicker value={state} onChange={(c) => { setState(c); setError(''); }} testID="expungement-state-picker" />
 

@@ -374,7 +374,10 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
     expect(Number(left.n)).toBe(0);
     const g = await ctx.request().get('/api/court-dates/guidance');
     expect(g.status).toBe(200);
-    expect(g.body.checklist.wear[0].text).toMatch(/No orange/);
+    // what to wear: the sourced line that points to "Going to court" (the unsourced "No orange" line is gone)
+    expect(g.body.checklist.wear[0].text).toMatch(/Clean, neat clothes are enough/);
+    expect(g.body.checklist.wear[0].text).not.toMatch(/orange/i);
+    expect(g.body.checklist.wear[0]).toMatchObject({ guide: 'court_guide', source_url: expect.stringMatching(/^https:\/\/www\.tn\.gov\//) });
     const del = await ctx.request().delete(`/api/court-dates/${extra.body.id}`).set(alice.headers);
     expect(del.status).toBe(200);
   });

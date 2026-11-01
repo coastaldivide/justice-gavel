@@ -237,10 +237,12 @@ export async function acceptInvite(db, userId, rawCode) {
 /** `court_time_label`s are in the follower's saved language (pass `lang` to override). */
 export async function listFollowing(db, userId, { lang: langOverride = null } = {}) {
   const rows = await db.all(
-    `SELECT cfa.id AS follow_id, cfa.share_reminders, cfa.accepted_at, c.id AS case_id, c.title, c.state, u.display_name, u.name
+    `SELECT cfa.id AS follow_id, cfa.share_reminders, cfa.accepted_at, c.id AS case_id, c.title, c.state, u.display_name, u.name,
+            cs.stage AS shared_stage
        FROM case_family_access cfa
        JOIN cases c ON c.id = cfa.case_id AND c.deleted_at IS NULL
        LEFT JOIN users u ON u.id = c.user_id
+       LEFT JOIN case_steps cs ON cs.case_id = c.id AND cs.user_id = c.user_id AND cs.share_stage = TRUE
       WHERE cfa.user_id = ? AND cfa.status = 'active'
       ORDER BY cfa.accepted_at DESC LIMIT 50`, [userId]);
   const { tz } = await resolveReminderTimeZone(db, userId, null);
@@ -254,6 +256,8 @@ export async function listFollowing(db, userId, { lang: langOverride = null } = 
       owner_first_name: firstName(r), share_reminders: Number(r.share_reminders) === 1, accepted_at: r.accepted_at,
       next_court_date: dates.find(d => !d.is_past && d.status === 'scheduled')?.court_date || null,
       court_dates: dates,
+      // "Your case, step by step": the stage name only, and only when the owner chose to share it
+      case_stage: r.shared_stage || null,
     });
   }
   return out;

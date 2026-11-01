@@ -16,6 +16,10 @@
  *
  * "Plan your court day" (A8, components/CourtDayPlan.tsx): a checklist saved on the court date,
  * 211 / the county's transit agency (cited) / directions, and ride offers from family followers.
+ *
+ * "Going to court: how to dress and act" (CourtGuideScreen) opens from the checklist and from the
+ * plan's "Clothes ready" item; when the court publishes its own dress / conduct rules (backend
+ * data/court_rules.js) they show here as "This court's posted rules" with the link and date checked.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -34,11 +38,14 @@ import { SignInNeeded } from '../components/SignInNeeded';
 import { t, useLang, locale } from '../i18n';
 import { IconLabel, ICONS } from '../components/AppIcon';
 import CourtDayPlan, { type PlanItem, type HelpLinks, type RideOffer } from '../components/CourtDayPlan';
+import { CourtRulesBox } from './CourtGuideScreen';
+import type { CourtRule } from '../constants/courtGuide';
 
 interface Reminder { id: number; deliver_at: string; days_before: number | null; title: string }
 interface Detail extends CourtDate {
   reminders: Reminder[]; time_zone: string; guidance?: Guidance;
   plan?: PlanItem[]; help?: HelpLinks | null; ride_offers?: RideOffer[]; phone_line?: { number: string } | null;
+  court_rules?: CourtRule[];
 }
 interface Follower { id: number; status: string; name: string | null; email: string | null; share_reminders: boolean }
 
@@ -148,6 +155,8 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
       setEditError(e?.response?.status === 409 ? t('cd_err_duplicate') : apiErrorMessage(e, t('cdd_update_failed')));
     } finally { if (mounted.current) setBusy(false); }
   };
+
+  const openGuide = () => (navigation as any).navigate('CourtGuide', { courtDateId: id });
 
   const markRescheduled = async () => {
     await patch({ status: 'rescheduled' }, t('cdd_marked_rescheduled'));
@@ -279,8 +288,9 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       {phase === 'ok' && Array.isArray(d.plan) && d.status === 'scheduled' && !d.is_past && (
         <CourtDayPlan courtDateId={d.id} plan={d.plan} help={d.help || null} offers={d.ride_offers || []} phoneLine={d.phone_line || null}
-          styles={styles} onOffers={(o) => setD(prev => (prev ? { ...prev, ride_offers: o } : prev))} />
+          styles={styles} onOffers={(o) => setD(prev => (prev ? { ...prev, ride_offers: o } : prev))} onOpenGuide={openGuide} />
       )}
+      {phase === 'ok' && Array.isArray(d.court_rules) && d.court_rules.length > 0 && <CourtRulesBox rules={d.court_rules} styles={styles} />}
 
       {phase === 'ok' && (
         <TouchableOpacity accessibilityRole="button" testID="court-date-edit" style={styles.secondaryBtn} onPress={openEdit}>
@@ -319,7 +329,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
         <IconLabel center icon={ICONS.calculator} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cdd_bail_amounts')}</IconLabel>
       </TouchableOpacity>
 
-      <GuidanceView g={guidance} which="checklist" styles={styles} />
+      <GuidanceView g={guidance} which="checklist" styles={styles} onOpenGuide={openGuide} />
 
       {phase === 'ok' && (
         <View style={styles.box} testID="court-date-family">

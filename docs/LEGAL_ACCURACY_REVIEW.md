@@ -44,6 +44,7 @@ Presenting them as settled would be the inaccurate choice.
 | Crisis / ICE help lines | 12 | 1 | — | 11 | Fabricated number removed; ICE list reduced to verified EOIR resources |
 | Deadline calculator rules | 77 | 0 | 0 | 77 | Unchanged — see open item L7 |
 | Rights card, lessons, guide screens | ~600 strings | — | — | not started | See open item L8 |
+| Court guide + case steps (Nov 1 2026) | 35 guide items, 9 stages, 4 court-rule rows | 57 | — | — | Each section / stage cites official pages checked 2026-11-01 (docs/COURT_GUIDE.md); no deadlines or numbers; record-clearing verdicts only from the sourced expungement rows |
 
 \* secondary source, flagged in the app.
 
@@ -177,6 +178,18 @@ a source URL and an eligibility value.
 | L7 | Deadline calculator: 77 rules reviewed but none confirmed against a source yet. About 17 look wrong (e.g. "Arraignment 3 business days, Fed. R. Crim. P. 10" — Rule 10 sets no deadline), and 21 are scheduling-order dates, not rules. Fix and source next pass; until then the attorney dashboard should label them "verify against the local rules". | Claude |
 | L8 | Line-by-line review of the rights card, 50 lessons and the guide screens (housing, tenant, family, juvenile, diversion). Not started this pass: the search budget ran out. | Claude |
 | L9 | Directory listings (404 courthouses, 89 federal courts, 57 probation offices, 96 clinics, 51 public defenders, 51 bar offices): research flagged non-PD organizations in the public-defender list (associations, appellate-only offices, a nonprofit). Verify contacts. | Claude |
+
+## 3a. Court guide and "Your case, step by step" (added November 1, 2026)
+
+"Going to court: how to dress and act" and "Your case, step by step" (docs/COURT_GUIDE.md) follow the same rule: every
+section and stage names the official pages it comes from (court and government self-help pages, public-defender
+offices, U.S. Attorney / Pretrial Services pages), with the date checked, and carries the label "General information —
+not legal advice — not reviewed by a lawyer". Nothing in them states a deadline, a number, a fee or a state rule; the
+record-clearing stage shows a verdict or waiting period only from the already-sourced expungement rows (citation
+required), else "check with legal aid". The old court-day line "Business casual minimum. No orange." had no source and
+was replaced (the "no orange" rule is not in any page we read). Court-specific dress / conduct rules are shown only as
+links to the court's own page (Davidson and Knox County, TN). Several general sources are from other states or federal
+courts — counsel should confirm they match Tennessee practice (counsel packet 5.3).
 
 ## 4. Files changed
 

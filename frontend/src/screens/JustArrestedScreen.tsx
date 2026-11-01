@@ -7,7 +7,9 @@
  *   2) Find a lawyer AND a bail agent — opens the combined results (Help Now).
  *   3) Never miss a court date — signed in: add the date (reminders 7d/3d/1d/
  *                               morning-of, phone calendar); guest: a clear
- *                               "sign in to save it" prompt.
+ *                               "sign in to save it" prompt. Then "Going to court:
+ *                               how to dress and act" and "What happens next: your
+ *                               case, step by step".
  *
  * Progress ("Step 2 of 3") is saved on the device and restored, so an
  * interrupted person comes back to the same step. 911 / 988 and "alert family"
@@ -282,6 +284,14 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             <TouchableOpacity accessibilityRole="button" testID="core-missed" style={styles.secondaryBtn}
               onPress={() => openScreen('CourtDates', { guidance: 'missed' })}>
               <IconLabel center icon={ICONS.help} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_missed')}</IconLabel>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="core-court-guide" style={styles.secondaryBtn}
+              onPress={() => openScreen('CourtGuide')}>
+              <IconLabel center icon={ICONS.shirt} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cgd_title')}</IconLabel>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" testID="core-what-next" style={styles.secondaryBtn}
+              onPress={() => openScreen('CaseSteps')}>
+              <IconLabel center icon={ICONS.progress} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('ja_what_next')}</IconLabel>
             </TouchableOpacity>
             <View style={styles.navRow}>
               <TouchableOpacity accessibilityRole="button" style={styles.navBtn} onPress={() => goStep(2)}>

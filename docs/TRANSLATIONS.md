@@ -20,8 +20,8 @@ translator before launch."
 
 ## Where the text lives
 
-- App: `frontend/src/i18n/<code>.json` (6,645 keys each), state names in `frontend/src/i18n/stateNames.ts`.
-- Server: `backend/src/i18n/messages/<code>.js` (1,155 keys each), state names in `backend/src/i18n/stateNames.js`
+- App: `frontend/src/i18n/<code>.json` (6,833 keys each), state names in `frontend/src/i18n/stateNames.ts`.
+- Server: `backend/src/i18n/messages/<code>.js` (1,172 keys each), state names in `backend/src/i18n/stateNames.js`
   (must match the app's table — tested).
 - Specialty-court eligibility and notes (database rows 1–30): `content_translations`, migrations 26 (es / pt / vi) and
   41 (ht / zh / ar / tl). An edited English row falls back to English (source MD5 check).
@@ -29,6 +29,10 @@ translator before launch."
   lawyer review (docs/LEGAL_ACCURACY_REVIEW.md), the immigration rights endpoint (English and Spanish only), the
   court-date phone line (English and Spanish voice prompts), the Bond Desk e-signature certificate and other PDFs
   (English — the language of the court record).
+
+Added Nov 1 2026 (docs/COURT_GUIDE.md): the court guide (`cgd_*`), "Your case, step by step" (`cst_*`), the court-day
+plan's "Clothes ready" and the new "what to wear" line (`cg_wear_1`, `guidance.wear.1`) — translated by Claude in all
+seven languages; same review needed.
 
 ## What a reviewer should check first
 

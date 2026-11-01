@@ -166,6 +166,7 @@ const CaseCard = React.memo(function CaseCard({ item, styles, colors, unread, on
               <IconLabel icon={ICONS.edit} textStyle={styles.actionPrimaryText} maxFontSizeMultiplier={1.3}>{t('x_cs_edit_case')}</IconLabel>
             </TouchableOpacity>
             <Action id="court-dates" icon={ICONS.calendar} label={t('cs_court_dates')} />
+            <Action id="steps" icon={ICONS.progress} label={t('cst_act_short')} />
             <Action id="timeline" icon={ICONS.clock} label={t('cs2_act_timeline')} />
             <Action id="messages" icon={ICONS.message} label={t('messages_title')} badge={unread} />
             <Action id="documents" icon={ICONS.attach} label={t('cs2_documents')} />
@@ -446,6 +447,7 @@ function CaseScreen({ navigation }: any) {
   const onAction = useCallback(async (action: string, c: Case) => {
     switch (action) {
       case 'court-dates': navigation.navigate('CourtDates', { caseId: c.id }); break;
+      case 'steps': navigation.navigate('CaseSteps', { caseId: c.id }); break;
       case 'timeline': navigation.navigate('CaseTimeline', { caseId: c.id, caseTitle: c.title }); break;
       case 'messages': navigation.navigate('Messages', { caseId: c.id, caseTitle: c.title }); break;
       case 'documents': navigation.navigate('DocumentScanner', { caseId: c.id, caseTitle: c.title }); break;

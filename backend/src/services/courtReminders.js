@@ -393,12 +393,17 @@ export async function scheduleCourtReminders(db, {
 
   const planned = plannedSteps(date, tz, now, lang);
   for (const p of planned) {
+    // The day-before reminder (app) points to "Going to court: how to dress and act": tapping it
+    // opens the guide for this court date. Texts are built separately (reminderDispatcher
+    // courtSmsText) and are unchanged — they already link the court date page, which links the guide.
+    const guide = p.days === 1 && !!courtDateId;
+    const body = bodyFor(caseTitle, date, p.days, { time: courtTime, place }, lang);
     await insertReminder(db, {
       userId, type: 'court_reminder', title: p.title,
-      body: bodyFor(caseTitle, date, p.days, { time: courtTime, place }, lang),
+      body: guide ? `${body} ${msg(lang, 'reminder.push.guide_hint')}` : body,
       data: {
         type: 'court_reminder', screen: 'Cases', case_id: caseId, court_date_id: courtDateId,
-        court_date: date, days_before: p.days, time_zone: tz, lang,
+        court_date: date, days_before: p.days, time_zone: tz, lang, ...(guide ? { guide: 'court' } : {}),
       },
       at: p.at, caseId, courtDateId,
       dedupe: courtDateId

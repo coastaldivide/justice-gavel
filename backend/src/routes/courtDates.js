@@ -13,9 +13,10 @@
  * GET    /api/court-dates/:id/ics         — text/calendar file for the phone calendar
  * GET    /api/court-dates/:id/reminders   — the planned reminder rows
  * PUT    /api/court-dates/preferences     — { sms_reminders: bool, phone? } (texts only when Telnyx is configured — services/sms.js)
- * PUT    /api/court-dates/:id/plan        — "Plan your court day" { items: { ride|time_off|child_care|documents|address_room: { done, note } } }
+ * PUT    /api/court-dates/:id/plan        — "Plan your court day" { items: { ride|time_off|child_care|documents|address_room|clothes: { done, note } } }
  * POST   /api/court-dates/:id/ride-offers/:offerId — { decision: 'accept'|'decline' } a family follower's ride offer
- *                                           (GET /:id carries `plan`, `help` links and `ride_offers`; services/courtDayHelp.js)
+ *                                           (GET /:id carries `plan`, `help` links and `ride_offers`; services/courtDayHelp.js,
+ *                                           and `court_rules`: the court's own posted dress / conduct rules — data/court_rules.js)
  *
  * Text (errors, guidance, time labels, .ics) is in the request's language
  * (?lang= / Accept-Language: en, es, pt, vi, ht, zh, ar, tl); the person's language is saved
@@ -50,6 +51,7 @@ import { logIgnored } from '../utils/ignored.js';
 import { resolveLang, msg } from '../i18n/index.js';
 import { phoneLineNumber } from '../services/phoneLine.js';
 import { normalizePlan, planView, helpLinks, rideOffersForOwner, decideRide, HelpError } from '../services/courtDayHelp.js';
+import { courtRulesFor } from '../data/court_rules.js';
 
 const router = Router();
 const writeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req) => msg(resolveLang(req), 'cd.err.too_many_changes') });
@@ -323,6 +325,8 @@ router.get('/:id', authRequired, async (req, res) => {
       ...cd, time_zone: tz, language: lang, reminders, guidance: courtDayGuidance(lang),
       plan: planView(row.plan), plan_updated_at: row.plan_updated_at || null,
       help: helpLinks(cd.courthouse), ride_offers: await rideOffersForOwner(db, id),
+      // "This court's posted rules" (dress / conduct), only for courts in data/court_rules.js
+      court_rules: courtRulesFor(cd.courthouse),
       phone_line: phoneLineNumber() ? { number: phoneLineNumber() } : null,
     });
   } catch (e) {

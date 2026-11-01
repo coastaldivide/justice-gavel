@@ -5,7 +5,8 @@ Build plan items A8, B10, B11 and a security fix. The phone line (A10) is in doc
 ## A8 — Plan your court day
 On each upcoming court date (CourtDateDetailScreen, `components/CourtDayPlan.tsx`):
 - **Checklist saved on the court date** (`court_dates.plan`, owner only): ride, time off work, child care,
-  documents, address and room — each "done" plus a note (≤ 200 characters).
+  documents, address and room, clothes ready (migration 43, links "Going to court: how to dress and act" —
+  docs/COURT_GUIDE.md) — each "done" plus a note (≤ 200 characters).
   `PUT /api/court-dates/:id/plan { items: { ride: { done, note }, … } }`; `GET /api/court-dates/:id` returns `plan`.
 - **Help links** (`help` on `GET /api/court-dates/:id`, services/courtDayHelp.js):
   - 211 — "Call 211" and 211.org, every county.

@@ -179,7 +179,7 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
     expect(r.status).toBe(201);
     cd = r.body;
     const g = await req('get', `/api/court-dates/${cd.id}`, owner);
-    expect(g.body.plan.map((i) => i.id)).toEqual(['ride', 'time_off', 'child_care', 'documents', 'address_room']);
+    expect(g.body.plan.map((i) => i.id)).toEqual(['ride', 'time_off', 'child_care', 'documents', 'address_room', 'clothes']);
     expect(g.body.help).toMatchObject({
       call_211: { phone: '211', url: 'https://www.211.org' },
       transit: { agency: 'WeGo Public Transit', source_url: expect.stringMatching(/^https:\/\//), checked: '2026-10-27' },

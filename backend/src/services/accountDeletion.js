@@ -42,6 +42,7 @@ export const USER_REFS = {
   'case_events.user_id': 'delete',
   'case_family_access.user_id': 'delete',
   'case_messages.sender_id': 'delete',
+  'case_steps.user_id': 'delete',               // "Your case, step by step" progress (migration 43)
   'case_messages.user_id': 'delete',
   'case_status_history.user_id': 'delete',
   'cases.user_id': 'delete',
@@ -278,6 +279,7 @@ export const CASE_CHILDREN = {
   case_family_access: 'delete',
   case_messages: 'delete',
   case_status_history: 'delete',
+  case_steps: 'delete',
   cases_fts: 'delete',
   client_assignments: 'delete',
   codefendant_links: 'delete',

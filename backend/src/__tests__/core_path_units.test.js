@@ -271,7 +271,10 @@ describe('court-day guidance', () => {
     const g = courtDayGuidance();
     expect(g.missed.steps.at(-1).text).toBe(CALL_LAWYER_OR_CLERK);
     expect(CALL_LAWYER_OR_CLERK).toBe('Call your lawyer or the court clerk.');
-    for (const s of [...g.missed.steps, ...g.checklist.bring, ...g.checklist.wear]) expect(s.source).toMatch(/^Justice Gavel/);
+    for (const s of [...g.missed.steps, ...g.checklist.bring]) expect(s.source).toMatch(/^Justice Gavel/);
+    // what to wear now cites the official page it comes from (no "No orange" — nothing sourced said so)
+    expect(g.checklist.wear[0].source).toMatch(/^Tennessee Department of Human Services/);
+    expect(g.checklist.wear[0].text).not.toMatch(/orange/i);
     expect(JSON.stringify(g)).not.toMatch(/\b\d+\s*(days?|hours?)\b/);   // no invented deadlines
     expect(g.missed.lawyer_reviewed).toBe(false);
   });

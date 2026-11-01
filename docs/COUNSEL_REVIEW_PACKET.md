@@ -149,7 +149,14 @@ Details: docs/LEGAL_ACCURACY_REVIEW.md.
 5.2 AI-drafted documents (motions, letters) say they must be reviewed by a licensed attorney before
 filing. Enough?
 5.3 Sign-off on a sample of each legal table (we will send 20 rows per table with their sources), and on
-the rights card for Tennessee.
+the rights card for Tennessee. **Also in the sample (Nov 1 2026):** the "Going to court: how to dress and act"
+guide (35 items in 8 sections) and the nine stages of "Your case, step by step" (explanation + checklist), with
+their sources — docs/COURT_GUIDE.md has the full English text and the source list. Questions: (a) is each line
+accurate for Tennessee criminal courts, given that several sources are other states' or federal pages; (b) is
+"Whether you can get a lawyer at no cost can depend on your state and your charge, so ask the court" right for
+Tennessee (Tenn. Sup. Ct. R. 13); (c) may the app link a court's own posted dress / conduct rules (Davidson and Knox
+County) without restating them; (d) is the record-clearing stage's use of the sourced expungement rows (verdict and
+waiting period with the citation) acceptable as shown.
 
 ## 6. Privacy and data
 

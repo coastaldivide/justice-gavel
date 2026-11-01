@@ -40,7 +40,7 @@ import { apiMock, makeNavigation } from './apiMock';
 
 const { on, reject, calls, reset } = apiMock();
 const wrap = (node: React.ReactElement) => render(<ThemeProvider><ToastProvider>{node}</ToastProvider></ThemeProvider>);
-const PLAN: PlanItem[] = ['ride', 'time_off', 'child_care', 'documents', 'address_room'].map(id => ({ id: id as PlanItem['id'], done: id === 'ride', note: id === 'ride' ? 'Bus 52' : null }));
+const PLAN: PlanItem[] = ['ride', 'time_off', 'child_care', 'documents', 'address_room', 'clothes'].map(id => ({ id: id as PlanItem['id'], done: id === 'ride', note: id === 'ride' ? 'Bus 52' : null }));
 const HELP = {
   call_211: { phone: '211', url: 'https://www.211.org' },
   transit: { agency: 'WeGo Public Transit', serves: 'Nashville and Davidson County', url: 'https://www.wegotransit.com/', trip_planner: false, source_url: 'https://wegotransit.com/ride', checked: '2026-10-27' },

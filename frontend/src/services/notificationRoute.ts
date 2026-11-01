@@ -44,6 +44,8 @@ export function notificationTarget(data: Record<string, unknown> | null | undefi
   const caseId = num(data.case_id ?? data.caseId);
   const courtDateId = num(data.court_date_id);
   // a court reminder opens its hearing
+  // the day-before reminder opens "Going to court: how to dress and act" for that court date
+  if (type === 'court_reminder' && data.guide === 'court' && courtDateId) return { screen: 'CourtGuide', params: { courtDateId } }; // i18n-exempt: screen names
   if ((type === 'court_reminder' || screen === 'Cases') && courtDateId) return { screen: 'CourtDateDetail', params: { id: courtDateId } }; // i18n-exempt: screen names
   if (screen === 'Messages') {
     const directWith = num(data.directWith);

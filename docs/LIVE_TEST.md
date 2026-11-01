@@ -238,6 +238,39 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] J11 **Texts end with the opt-out line**: the automatic-payment "did not go through", "confirm the payment" and the
   receipt texts end "Reply STOP to opt out." (Spanish "Responda STOP para no recibir más mensajes."); the e-mails do not.
 
+## K. Going to court guide + Your case, step by step (migration 43, 20 min)
+- [ ] K1 **Guide, signed out** (phone A, logged out): Just arrested → step 3 → "Going to court: how to dress and act" →
+  eight parts (What to wear … After your hearing), each with "Sources" links and "checked November 1, 2026"; the yellow
+  label "General information — not legal advice — not reviewed by a lawyer…". Tap a source → the official page opens.
+  Tap a chip ("Inside the courtroom") → the page scrolls there. Airplane mode → the guide still opens.
+- [ ] K2 **Court date** (signed in, a court date at the A.A. Birch building, Davidson County): the checklist's
+  "What to wear" line says clean, neat clothes are enough (no "orange") with a button to the guide; the box "This
+  court's posted rules" lists the General Sessions dress code and security pages and the Trial Courts dress code with
+  "We checked this page on …"; each opens the court's page. Plan your court day → "Clothes ready" → tick, Save, reopen →
+  kept. A court date at the Shelby County courthouse (or with no courthouse) shows no posted-rules box; its guide says
+  "We don't have this court's own posted rules."
+- [ ] K3 **Day-before push**: add a court date for tomorrow evening + 1 day (or wait for one) → the 6 PM push "Court
+  date TOMORROW" ends "Open Justice Gavel to see what to wear and what to expect in court." → tap it → the guide opens
+  for that court date ("Back to my court date"). The reminder TEXT is unchanged (still ends with the court-date link and
+  "Reply STOP to opt out.").
+- [ ] K4 **Case steps, guest** (logged out): Home → "Your Case, Step by Step" → "You are not signed in: … saved on this
+  phone only"; tick two items in Arrest, open Before trial → "I'm at this stage" → the badge "You are here"; close and
+  reopen the app → kept. Save a court date on the phone (guest court dates) → "I know my next court date" is ticked
+  "From your court dates" and cannot be unticked.
+- [ ] K5 **Case steps, signed in**: My Cases → a case → "Step by step" → pick a stage, tick items → sign in on another
+  phone → same progress for that case. With two cases, the chips switch between them. Clearing your record (case state
+  TN) → "What we have checked for Tennessee" shows only verdicts with a citation; others "Not checked yet — ask legal
+  aid". The buttons open the rights card, Help Now, Court dates, Check-in, the record-clearing check; Custody alerts
+  appears only with `CUSTODY_ALERTS_ENABLED=true`.
+- [ ] K6 **Family sees the stage only when shared**: phone B follows the case (invite code) → Court dates → family
+  section shows no stage → on phone A turn on "Let family who follow this case see which stage I'm in" → phone B (pull
+  to refresh) shows "Stage: Before trial", never the checklist → turn it off → gone.
+- [ ] K7 **Only the owner**: `curl -H "Authorization: Bearer <phone B token>" …/api/case-steps/<phone A's case id>` → 404.
+  Delete the case → its progress is gone (`SELECT * FROM case_steps WHERE case_id = …` → 0 rows). Settings → Export my
+  data → the file has `case_steps`.
+- [ ] K8 **Arabic**: Settings → Language → العربية → both screens read right to left (checkboxes and bullets on the
+  right), all text in Arabic except court and publisher names (shown as published).
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".
