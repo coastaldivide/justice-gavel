@@ -92,3 +92,19 @@ The reviewer found these areas clean:
 **What this does not prove.** Real texts, card charges, Stripe Connect onboarding, phone calls and app-store
 builds can only be confirmed with your live accounts and real phones (docs/LIVE_TEST.md). The tests use
 signed fake Telnyx and Stripe traffic. Every non-English translation still needs native-speaker legal review.
+
+## Addendum — November 1, 2026
+- **"Going to court: how to dress and act"** (8 sections, 35 items, sourced per section) replaces the unsourced line "Business casual minimum. No orange." Davidson County and Knox County courts' own posted rules show on matching court dates. "Clothes ready" was added to the court-day plan. docs/COURT_GUIDE.md
+- **"Your case, step by step: from arrest to clearing your record"** has 9 stages, each with a sourced explanation, items to tick and links to the features that help. Progress is saved per case (migration 43) or on the phone for guests. Expungement facts are shown only from cited data. It is reached from a Home tile, Just arrested, case cards, the expungement screen, court dates and the day-before reminder.
+- **Merged** another session's October 30 work: a debug scan with 16 fixes, dependency security updates and web fixes.
+- **Final verification** on a fresh database with migrations 00–43:
+
+  | Check | Result |
+  |---|---|
+  | Database and security suites | 493 tests passed |
+  | Unit suite | 28,462 tests passed |
+  | Frontend | 868 + 376 tests passed; TypeScript clean |
+  | Smoke test | 43/43 |
+  | Route sweep | 813 routes, 37,775 requests, no findings |
+
+  Both new screens were checked in a phone-size browser in English, Spanish and Arabic (right to left).
