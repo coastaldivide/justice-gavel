@@ -62,6 +62,8 @@ export const USER_REFS = {
   'consultations.user_id': 'delete',
   'court_dates.user_id': 'delete',
   'ai_document_reads.user_id': 'delete',   // AI document-read log for the per-person limits (AI step 4; no content)
+  'ai_conversation_memory.user_id': 'delete',   // "What the assistant remembers about this chat" recaps (AI step 5)
+  'draft_documents.user_id': 'delete',          // petition drafts kept for Word / PDF download (AI step 5)
   'idempotency_keys.user_id': 'delete',   // cached create responses (migration 21)
   'listing_claims.user_id': 'delete',
   'contract_executions.user_id': 'delete',

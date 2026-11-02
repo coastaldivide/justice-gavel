@@ -2,6 +2,7 @@ import { aiMessage } from './aiClient.js';
 import { sentences } from '../ai/legalCorpus.js';
 import { CITATION_RULES } from '../ai/citations.js';
 import { planSources, userTurn, historyMessages, sentInOrder, recordsFor, finishAnswer } from './sourcedAnswers.js';
+import { recapPrompt } from './conversationMemory.js';
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
 // Embedding model: Supabase gte-small (384 dimensions, no API key needed)
@@ -133,19 +134,39 @@ export async function findLibrary(query, opts = {}) {
  * rights card, court guide, case steps — ai/legalCorpus.js) go to Claude as citable search
  * results after the cached instructions. Nothing relevant → no model call (mode nothing_found).
  */
-export async function sourcedResearch({ query, history = [], lang = 'en', context = '', jurisdiction = null, practiceArea = null, userId = null, task = 'research', route = task, system }) {
+export async function sourcedResearch({ query, history = [], lang = 'en', context = '', jurisdiction = null, practiceArea = null, userId = null, task = 'research', route = task, system, prepare = null }) {
   const library = await findLibrary(query, { practiceArea, jurisdiction });
+  // AI step 5: a long research conversation sends its recap + the recent turns
+  // (services/conversationMemory.js); `prepare(build)` returns the history to use.
+  if (prepare) {
+    const build = (rows, recap) => researchRequest({ query, history: rows, lang, context, jurisdiction, library, task, system, recap });
+    const prepared = await prepare(build);
+    return await answerResearch(prepared.request, { lang, route, userId });
+  }
+  return await answerResearch(researchRequest({ query, history, lang, context, jurisdiction, library, task, system }), { lang, route, userId });
+}
+
+/** The research request (pure): the plan, the messages, the citable records in request order. */
+export function researchRequest({ query, history, lang, context, jurisdiction, library, task, system, recap = null }) {
   const plan = planSources({ question: query, lang, state: jurisdiction, history, extra: library, limit: 8, legal: true });
   const fresh = recordsFor(plan.fresh);
   const text = (context ? `[Case: ${context}]\n\n` : '') + query;
   const sent = { text, sources: fresh };
-  if (plan.mode === 'nothing_found') {
-    return { mode: plan.mode, answer: finishAnswer({ mode: plan.mode, lang, kind: 'research' }), sent, docsUsed: 0, libraryUsed: 0 };
-  }
   const messages = [...historyMessages(history), userTurn(text, fresh)];
   const records = [...plan.sentBefore, ...fresh];
   const byId = new Map(records.map((r) => [`jg:${r.id}`, r]));
   const order = sentInOrder(messages).map((b) => byId.get(b.source)).filter(Boolean);
+  const recapText = recapPrompt(recap);
+  const sys = recapText && Array.isArray(system) ? [...system, { text: recapText }] : system;
+  return { task, system: sys, messages, mode: plan.mode, sent, fresh, order };
+}
+
+async function answerResearch(req, { lang, route, userId }) {
+  const { task, system, messages, sent, fresh, order } = req;
+  if (req.mode === 'nothing_found') {
+    return { mode: req.mode, answer: finishAnswer({ mode: req.mode, lang, kind: 'research' }), sent, docsUsed: 0, libraryUsed: 0 };
+  }
+  const plan = { mode: req.mode };
   // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
   const out = await aiMessage({
     task, system, messages, cacheConversation: true, route, userId, timeoutMs: 100_000, retries: 1,

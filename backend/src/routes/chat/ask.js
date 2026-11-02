@@ -20,8 +20,8 @@ import { rightsRefsFor }  from '../../services/rightsContent.js';
 import { msg, resolveLang } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
 import {
-  chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
-  getHistory, detectLawyerHandoff, callClaude, classifyIntent, sourcedReply, sentOf, replayOf,
+  chatContext, limitBody, readChatBody, prepareChatRequest, findReplay, saveExchange,
+  detectLawyerHandoff, callClaude, classifyIntent, sourcedReply, sentOf, replayOf,
 } from './_helpers.js';
 
 export const chatBurstLimiter = rateLimit({
@@ -54,10 +54,10 @@ router.post('/ask', chatBurstLimiter, authRequired, requireDisclaimer, requireAi
     });
     if (replay == null && !ctx.unlimited && ctx.limited) return res.status(402).json(limitBody(ctx));
 
-    const history = replay == null ? await getHistory(db, body.sessionId, 20, userId) : [];
-    const request = buildChatRequest({ history, body, lang, defender: ctx.defender });
     const jobId = await enqueue('chat', async () => {
       if (replay != null) { const r = replayOf(replay, lang); return answerOf(r.reply, true, r.answer); }
+      // Long conversations: older turns → the stored recap, recent turns sent (AI step 5).
+      const { request } = await prepareChatRequest(db, { body, lang, defender: ctx.defender, userId });
       // nothing_found: a legal question with no source → no model call (services/sourcedAnswers.js)
       const out = request.mode === 'nothing_found' ? null : await callClaude({ ...request, defender: ctx.defender, userId });
       const r = sourcedReply(request, out ?? {}, lang);

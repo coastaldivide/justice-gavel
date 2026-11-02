@@ -180,6 +180,16 @@ export const SCHEMAS = Object.freeze({
   // AI step 4 — which case-file value fills each fillable text field of a blank surety PDF
   // (services/bondDesk/formMapping.js). data_key is one of the app's data keys or "none"; the
   // signature keys are not offered (staff map those by hand; nothing is ever drawn).
+  // AI step 5 — the recap of a long conversation (services/conversationMemory.js): only what the
+  // person said (made from their own messages), shown to them and deletable. "" / [] when absent.
+  chat_memory: obj({
+    case_stage: S,
+    places: arr(S),
+    dates: arr(obj({ what: S, date: S })),
+    facts: arr(S),
+    asked: arr(S),
+  }),
+
   form_field_map: obj({
     suggestions: arr(obj({ field: S, data_key: en(...FORM_MAP_KEYS, 'none'), confidence: en('high', 'medium', 'low'), reason: S })),
   }),

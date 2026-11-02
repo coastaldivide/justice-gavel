@@ -34,6 +34,7 @@ import { notifyDisclaimerRequired } from '../services/legalGate';
 import { askChat, ChatError, chatErrorText, type RightsRef } from '../services/chatStream';
 import { readSourced, sourcedPlainText, type SourcedAnswer } from '../services/sourced';
 import CitedAnswer from '../components/CitedAnswer';
+import ConversationMemory from '../components/ConversationMemory';
 import { isOnline } from '../services/offlineCache';
 import { detectCrisis } from '../utils/crisisDetect';
 import { t, useLang, perLang, locale } from '../i18n';
@@ -615,7 +616,8 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>{t('x_ch_ai_powered_rights_guide')}</Text>
       </View>
       {messages.length > 0 && (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <ConversationMemory kind="chat" conversationId={sessionId} testID="chat-memory" />
           <TouchableOpacity accessibilityRole="button" onPress={exportConversation} style={styles.clearBtn}
             testID="chat-export-button" accessibilityLabel={t('x_ch_share_conversation')}>
             <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>{t('share')}</Text>

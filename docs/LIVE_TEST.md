@@ -394,6 +394,42 @@ confirm the real API. Use made-up papers only (a printed sample notice with a fa
 - [ ] O11 **Cost**: a 1-page photo read ≈ 1.6k image tokens + ~1.5k prompt ≈ $0.01 on Sonnet 5.5; a 2-page PDF
   ≈ 5–8k tokens ≈ $0.02; compare `ai_usage_log.cost_usd` with the console.
 
+## P. Long chats (recap) and Word / PDF drafts with a real key (migration 48, 30 min)
+Staging with a real `ANTHROPIC_API_KEY`, a consumer test account with unlimited chat (or an attorney account in defender
+mode), a research account, and `AI_MEMORY_THRESHOLD_TOKENS=6000` so a recap happens within a few questions. Use made-up
+facts only. The recap is our own summariser (docs/AI_PLATFORM.md §12.1 — the API's compaction and context editing were
+evaluated and not used); the documents are written by the server (§13 — no Agent Skills). These checks confirm the real
+model and real Word / PDF readers.
+- [ ] P1 **Recap made**: in one chat ask 6–8 long questions that mention a county, a date ("my court date is March 3")
+  and your stage ("I was arrested last week") → the server log shows `[memory] older turns summarised` with
+  `method: 'counted'` (count_tokens decided), one `chat_memory` row in `ai_usage_log` on `claude-haiku-5-5`, status
+  `completed`, no 400. `SELECT recap, covered_rows FROM ai_conversation_memory ORDER BY id DESC LIMIT 1;` → the county,
+  the date and the stage in your words; no statute, no advice, no phone number / e-mail even if you typed one.
+- [ ] P2 **Quality check** (5 long chats, two in Spanish, one in Chinese): any recap item that you did not say, or that
+  states a legal rule, is a finding — note it in docs/AI_PLATFORM.md §12 (the server drops places / dates you never
+  wrote and anything naming a law; anything else that slips through is what this check is for).
+- [ ] P3 **The chat continues**: ask "what did I say my county was?" → the answer uses the recap; the next request's
+  `system` has the cached prompt (1h breakpoint) then the recap block; `ai_usage_log.cache_read_tokens > 0` on the
+  question after the recap (the system prefix is still cached; the conversation prefix restarts once).
+- [ ] P4 **See and forget**: Chat → "What the assistant remembers" shows the recap (case stage, places, dates, what you
+  told us, what you asked, "Replaces your first N questions"); "Forget this" → the forgotten message; the row has
+  `recap = NULL, forgotten = true`; further questions make no `chat_memory` call. Clear the chat → the row is gone.
+  Another account opening the same session id sees nothing. Repeat in Legal research (session screen).
+- [ ] P5 **Off**: `AI_MEMORY=off` → no `chat_memory` calls; the screen says recaps are off; answers still work.
+- [ ] P6 **Petition download**: Record clearing → a state with a checked rule → "Generate petition draft" → the draft
+  shows the checked statute only (other laws replaced by "No source found for this part — not shown") → "Download as
+  Word (.docx)" opens in **Microsoft Word, Google Docs and LibreOffice** without a repair prompt; header and footer on
+  every page carry the notice in the app's language; "Page X of Y" updates; your typed name / county appear exactly as
+  typed; the signature line is blank. "Download as PDF" → same content; open in Acrobat / Preview / Chrome.
+- [ ] P7 **Scripts**: switch the app to Arabic and to Chinese and download again → in the PDF the Arabic notice reads
+  right to left with joined letters and the Chinese characters show (no empty boxes); in Word the Arabic paragraphs are
+  right-to-left. Vietnamese accents are intact in both.
+- [ ] P8 **Motions**: Motion library → generate a motion (attorney account) → "Download as Word" / "PDF" → paragraphs that
+  cite a case or statute are replaced by the not-shown marker (the app has no checked source for case law — expected),
+  the case details are as typed, no "/s/" signature.
+- [ ] P9 **Cost**: a recap ≈ 3–8k input + ~300 output tokens on Haiku 5.5 ≈ $0.001; compare `ai_usage_log.cost_usd` with
+  the console. Downloads make no AI call.
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

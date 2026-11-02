@@ -14,7 +14,8 @@ import { msg, resolveLang, LANG_NAMES } from '../i18n/index.js';
  * POST /api/research/ask          — run a legal research query → { jobId, session_id }
  * GET  /api/research/history      — past research sessions
  * GET  /api/research/session/:id  — full session with all queries
- * DELETE /api/research/session/:id
+ * DELETE /api/research/session/:id    (also removes its recap)
+ * GET|DELETE /api/research/session/:id/memory — the session's recap (AI step 5): view / forget
  * GET  /api/research/status       — { has_access, plans } (plans that include research)
  *
  * Model: the gateway's 'deep' class (ai/tasks.js: AI_MODEL_DEEP, default claude-opus-5-5) with a
@@ -41,6 +42,7 @@ import express         from 'express';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
 import { ragSearch, sourcedResearch } from '../services/rag.js';
+import { prepareConversation, loadMemory, forgetMemory, deleteMemory, publicMemory } from '../services/conversationMemory.js';
 import { plainText, publicAnswer, CITATION_RULES } from '../ai/citations.js';
 import { authRequired } from '../middleware/auth.js';
 
@@ -117,9 +119,11 @@ Be thorough, cite precisely, and be honest about what the sources do not cover.`
 const languageLine = (lang) => (lang === 'en' ? '' : `LANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`);
 
 /** One sourced research answer (services/rag.js sourcedResearch). */
-async function callResearch(history, query, lang, context, userId) {
+async function callResearch(db, sessionId, query, lang, context, userId) {
   return await sourcedResearch({
-    query, history, lang, context, userId, task: 'research', route: 'research',
+    query, lang, context, userId, task: 'research', route: 'research',
+    // AI step 5: long sessions send the stored recap + the recent turns (services/conversationMemory.js)
+    prepare: (build) => prepareConversation(db, { kind: 'research', key: sessionId, userId, lang, build, route: 'research_memory' }),
     system: [{ text: `${RESEARCH_SYSTEM}\n\n${CITATION_RULES}`, cache: '5m' }, { text: languageLine(lang) }],
   });
 }
@@ -149,12 +153,10 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
       sessionId = (await db.run('INSERT INTO research_sessions (user_id, title) VALUES (?,?)', [req.user.id, title])).lastID;
     }
 
-    const history = (await db.all(
-      `SELECT role, content, ai_sent FROM research_messages WHERE session_id=? ORDER BY created_at DESC, id DESC LIMIT 20`, [sessionId])).reverse();
     const q = query.trim();
     const lang = resolveLang(req);
     const jobId = await enqueue('research', async () => {
-      const r = await callResearch(history, q, lang, ctx, req.user.id);
+      const r = await callResearch(db, sessionId, q, lang, ctx, req.user.id);
       const sourced = publicAnswer(r.answer);
       const answer = plainText(r.answer, lang, { markers: true });
       const db2 = await getDb();
@@ -227,9 +229,38 @@ router.delete('/session/:id', authRequired, async (req, res) => {
     if (!sess) return refuse(res, req, 404, 'session_not_found');
     await db.run('DELETE FROM research_messages WHERE session_id=?', [sess.id]);
     await db.run('DELETE FROM research_sessions WHERE id=? AND user_id=?', [sess.id, req.user.id]);
+    await deleteMemory(db, { userId: req.user.id, kind: 'research', key: sess.id });
     res.json({ ok: true });
   } catch (e) {
     logger.error('[research/delete]', e.message);
+    refuse(res, req, 500, 'server');
+  }
+});
+
+// ── What the assistant remembers about this research session (AI step 5) ────
+// GET → { enabled, remembered, forgotten, recap, covered_turns, updated_at }; DELETE → forget it
+// (removed, and nothing is summarised again for this session). Own sessions only (404 otherwise).
+router.get('/session/:id/memory', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sess = await db.get('SELECT id FROM research_sessions WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
+    if (!sess) return refuse(res, req, 404, 'session_not_found');
+    res.json(publicMemory(await loadMemory(db, { userId: req.user.id, kind: 'research', key: sess.id })));
+  } catch (e) {
+    logger.error('[research/memory]', e.message);
+    refuse(res, req, 500, 'server');
+  }
+});
+
+router.delete('/session/:id/memory', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sess = await db.get('SELECT id FROM research_sessions WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
+    if (!sess) return refuse(res, req, 404, 'session_not_found');
+    await forgetMemory(db, { userId: req.user.id, kind: 'research', key: sess.id });
+    res.json({ ok: true, ...publicMemory({ forgotten: true }) });
+  } catch (e) {
+    logger.error('[research/memory/forget]', e.message);
     refuse(res, req, 500, 'server');
   }
 });

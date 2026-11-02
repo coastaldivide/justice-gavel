@@ -23,6 +23,7 @@ import { planSources, userTurn, historyMessages, sentInOrder, recordsFor, finish
 import { msg, resolveLang, LANG_NAMES } from '../../i18n/index.js';
 import { isValidTimeZone, todayInZone, zonedDateTimeToUtc, addDays, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT } from './_prompts.js';
+import { prepareConversation, recapPrompt } from '../../services/conversationMemory.js';
 
 /** Free accounts: AI chat questions per local calendar day (the app says "3 per day"). */
 export const FREE_CHAT_MESSAGES_PER_DAY = 3;
@@ -131,7 +132,7 @@ export function languageInstruction(lang) {
  * → { task, system, messages, max_tokens, mode, sent, fresh, userText }
  *   mode: grounded | nothing_found (no model call) | plain — services/sourcedAnswers.js
  */
-export function buildChatRequest({ history, body, lang, defender }) {
+export function buildChatRequest({ history, body, lang, defender, recap = null }) {
   const contextParts = [];
   if (body.city) contextParts.push(`City: ${body.city}`);
   if (body.lat != null && body.lng != null) contextParts.push(`Coords: ${body.lat.toFixed(4)}, ${body.lng.toFixed(4)}`);
@@ -143,7 +144,10 @@ export function buildChatRequest({ history, body, lang, defender }) {
   const rights = rightsPromptParts(body.user_state);
   const stable = (defender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT) + '\n\n' + CITATION_RULES;
   const perPerson = (!defender && rights.stateNote ? rights.stateNote + '\n' : '') + languageInstruction(lang).trim();
-  const system = [{ text: stable, cache: 'chat' }, { text: perPerson }];
+  // AI step 5: the recap of older turns (services/conversationMemory.js) — uncached, after the cached
+  // prompt, labelled "not a source"; it changes only when older turns are summarised again.
+  const recapText = recapPrompt(recap);
+  const system = [{ text: stable, cache: 'chat' }, { text: recapText ? `${perPerson}\n\n${recapText}` : perPerson }];
   const plan = planSources({ question: body.message, lang, state: body.user_state, history, limit: defender ? 8 : 6 });
   const fresh = recordsFor(plan.fresh);
   const userText = caseNote + body.message + contextNote + jurisdictionNote;
@@ -173,6 +177,17 @@ export const sentOf = (request) => ({ text: request.userText, sources: request.f
 export function replayOf(replay, lang = 'en') {
   if (replay?.ai_answer?.segments) return { reply: plainText(replay.ai_answer, lang, { markers: true }), answer: replay.ai_answer };
   return { reply: replay?.content ?? '', answer: null };
+}
+
+/**
+ * The request for the next question, with the conversation's recap when it is long (AI step 5):
+ * → { request, recap, compacted } (services/conversationMemory.js prepareConversation).
+ */
+export async function prepareChatRequest(db, { body, lang, defender, userId }) {
+  return await prepareConversation(db, {
+    kind: 'chat', key: body.sessionId, userId, lang, route: defender ? 'chat_defender_memory' : 'chat_memory',
+    build: (history, recap) => buildChatRequest({ history, body, lang, defender, recap }),
+  });
 }
 
 export async function getHistory(db, sessionId, limit = 20, userId = null) {

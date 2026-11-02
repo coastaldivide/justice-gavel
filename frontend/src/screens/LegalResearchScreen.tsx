@@ -43,6 +43,7 @@ import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticSelection, Clipboard } from '../utils/webCompat';
 import CitedAnswer from '../components/CitedAnswer';
+import ConversationMemory from '../components/ConversationMemory';
 import { readSourced, type SourcedAnswer } from '../services/sourced';
 
 // ── Quick research prompts ────────────────────────────────────────────────────
@@ -664,6 +665,11 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         )}
 
         {/* ── Thread ──────────────────────────────────────────────────────── */}
+        {phase === 'thread' && sessionId != null && (
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <ConversationMemory kind="research" conversationId={sessionId} testID="research-memory" />
+          </View>
+        )}
         {(messages ?? []).map((msg, i) => msg.error ? (
           <View key={`msg-${i}`} testID="research-error-msg" style={[styles.searchingRow, { backgroundColor: colors.bgCard, borderColor: colors.border, flexDirection: 'column', alignItems: 'flex-start' }]}>
             <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.searchingText, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{msg.content}</IconLabel>

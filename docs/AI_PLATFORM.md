@@ -1,4 +1,4 @@
-# AI platform — the gateway (step 1), verified citations (step 2), source re-checks and batches (step 3), documents: court papers, surety forms, Files API (step 4), November 2 2026
+# AI platform — the gateway (step 1), verified citations (step 2), source re-checks and batches (step 3), documents: court papers, surety forms, Files API (step 4), long chats and Word / PDF drafts (step 5), November 2 2026
 
 Justice Gavel gives legal **information**, never legal advice. Every AI feature keeps the
 disclaimer gate, the "general information — not reviewed by a lawyer" labels and the rule that
@@ -22,6 +22,10 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | Web fetch tool (step 3) | agents-and-tools/tool-use/web-fetch-tool + server-tools ("Domain filtering") | `tools: [{ type: "web_fetch_20250910", name: "web_fetch", max_uses, allowed_domains, max_content_tokens }]`; no beta header; no wildcards in domains |
 | Vision (step 4) | build-with-claude/vision | `{ type: "image", source: { type: "base64", media_type, data } \| { type: "file", file_id } }`, image before the text; jpeg / png / gif / webp; ≤ 8000 px a side; long edge > 1568 px is downscaled |
 | PDF support (step 4) | build-with-claude/pdf-support | `{ type: "document", source: { type: "base64", media_type: "application/pdf", data } \| { type: "file", file_id } }`; ≤ 100 pages under a 1M context; no encrypted PDFs; no beta header |
+| Compaction (step 5 — evaluated, not used) | build-with-claude/compaction (+ compaction-background, compaction-keep-recent-turns) | on-demand: top-level `compaction: { type: "summarize" }` + `anthropic-beta: compact-2026-09-04`, `stop_reason: "compaction"`, a signed block sent back first as an assistant turn; threshold: `context_management.edits[{ type: "compact_20260112" }]` + `compact-2026-01-12`; not on Haiku / Opus / Sonnet 4.5 — §12.1 |
+| Context editing (step 5 — evaluated, not used) | build-with-claude/context-editing | `context_management: { edits: [clear_tool_uses_20250919 \| clear_thinking_20251015] }` + `anthropic-beta: context-management-2025-06-27`; clears tool results / thinking only — §12.1 |
+| Memory tool (step 5 — evaluated, not used) | agents-and-tools/tool-use/memory-tool | `{ type: "memory_20250818", name: "memory" }`, client-side file commands — §12.1 |
+| Agent Skills (step 5 — evaluated, not used) | agents-and-tools/agent-skills/overview | `container.skill_ids` (docx / pdf …) + the code execution tool; not ZDR / HIPAA eligible — §13.4 |
 | Files API (step 4) | build-with-claude/files | `POST /v1/files` (multipart `file`, `expires_in_seconds` 3,600–7,776,000), `GET`/`DELETE /v1/files/{id}`; out of beta (no header needed); Messages requests that reference a file send `anthropic-beta: files-api-2025-04-14` (the vision page still asks for it) |
 
 ## Where it lives
@@ -56,6 +60,12 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | `backend/src/services/bondDesk/formMapping.js` (+ routes in `routes/bondDesk/forms.js`) | step 4: AI field-mapping suggestions for staff setting up an agency's surety PDF |
 | `frontend/src/screens/CourtPaperScreen.tsx`, `services/courtPaper.ts`, `components/bondDesk/FormMapSuggestions.tsx` | step 4: the review / confirm screen and the staff suggestions card |
 | `supabase/migrations/00000000000047_documents_vision_files.sql` | step 4: `ai_files`, `ai_document_reads`, `bd_form_map_suggestions`, court_dates `courtroom` / `case_number` / `judge` / `bring` / `source` |
+| `backend/src/services/conversationMemory.js` | step 5: settings, the recap (summary call, checks, storage), `prepareConversation()` used by chat (`routes/chat/_helpers.js prepareChatRequest`) and research (`services/rag.js` `prepare`) |
+| `backend/src/ai/legalRefs.js` | step 5: statute / rule / case references, `checkParagraphs()` (a paragraph naming a law without a checked source is withheld) |
+| `backend/src/services/draftDocs/` | step 5: `model.js` (the document model + rules), `docx.js` (OOXML by hand), `zip.js` (ZIP writer on node:zlib), `pdf.js` (Bond Desk fonts), `index.js` (render / send) |
+| `routes/chat/history.js`, `routes/research.js`, `routes/expungement/petition.js`, `routes/motions/history.js` | step 5: `GET\|DELETE /api/chat/memory/:sessionId`, `GET\|DELETE /api/research/session/:id/memory`, `GET /api/expungement/petition/:id/document?format=docx\|pdf`, `GET /api/motions/history/:id/document?format=docx\|pdf` |
+| `frontend/src/components/ConversationMemory.tsx`, `components/DraftDownloads.tsx` | step 5: "What the assistant remembers" (chat + research screens), the download buttons (petition draft, saved motion) |
+| `supabase/migrations/00000000000048_chat_memory_draft_documents.sql` | step 5: `ai_conversation_memory`, `draft_documents` |
 
 No call site names a model; nothing calls the API outside the gateway (the evaluation scripts
 included — `run_eval.js --model` overrides the model on purpose, for comparisons).
@@ -64,7 +74,7 @@ included — `run_eval.js --model` overrides the model on purpose, for compariso
 
 | Class | Default model | Effort | Thinking | Tasks |
 |---|---|---|---|---|
-| quick | `claude-haiku-5-5` | low | disabled | `translate`, `note_structure`, `match_reports`, `eval_grade` |
+| quick | `claude-haiku-5-5` | low | disabled | `translate`, `note_structure`, `match_reports`, `eval_grade`, step 5: `chat_memory` |
 | standard | `CLAUDE_MODEL` (`claude-sonnet-5-5`) | medium | adaptive | `chat`, `chat_defender`, `bar_explain`, `queue_job`, `discovery_intake`, `speaker_tags`, `privilege_log`, `motion_refine`, `eval_answer`, step 3 batch-only: `source_check`, `source_propose`, `translate_keys`; step 4: `court_paper_read`, `form_field_map` |
 | deep | `claude-opus-5-5` | high | adaptive | `research`, `research_rag`, `motion_generate`, `motion_generate_appeal`, `motion_review`, `discovery_analysis`, `expungement_petition`, `contract_generate`, `contract_review`, `contract_redline`, `contract_negotiation` |
 
@@ -88,7 +98,7 @@ included — `run_eval.js --model` overrides the model on purpose, for compariso
 
 ## 2. Structured outputs
 
-Thirteen tasks return JSON through `output_config.format` (17 schemas; step 4 added `court_paper` and `form_field_map`); the schema list is in
+Fourteen tasks return JSON through `output_config.format` (18 schemas; step 4 added `court_paper` and `form_field_map`, step 5 `chat_memory`); the schema list is in
 `backend/src/ai/schemas/index.js` (motion_review, discovery_intake, discovery_analysis,
 match_reports, note_structure, speaker_tags, privilege_entries, contract_review, contract_redline,
 contract_negotiation, and five eval_* grader schemas). Every property is required (nullable ones
@@ -606,6 +616,165 @@ with an image, the real upload response and whether Messages accepts the `files-
 file_id, the status code for an expired file_id, deletion visible in the console, suggestion quality on a real
 surety PDF, cost per read.
 
+
+## 12. Long chats keep working: the conversation recap (step 5, November 2 2026)
+
+Before step 5 the consumer chat, the defender chat (same routes, `mode: 'defender'`) and legal research resent the
+last **20 rows** with each question and silently dropped everything older. Now (`services/conversationMemory.js`):
+
+1. The rows not yet covered by a recap are loaded (bounded, `MAX_ROWS` 200) and the request is built as before
+   (cached system prompt, sourced passages as search results, history rebuilt byte-for-byte from `ai_sent`).
+2. Its size is measured with the gateway's preflight: the local estimate; at or over the threshold the free
+   `count_tokens` endpoint decides.
+3. Over `AI_MEMORY_THRESHOLD_TOKENS` (16,000), everything but the last `AI_MEMORY_KEEP_TURNS` (3) exchanges is
+   summarised by task **`chat_memory`** (quick class — Haiku 5.5, structured output `chat_memory`:
+   `{ case_stage, places[], dates[{ what, date }], facts[], asked[] }`) into a stored per-conversation recap
+   (`ai_conversation_memory`, one row per person × kind × conversation). From then on the request is: the cached
+   system prompt (unchanged 1-hour breakpoint) → the per-person block **+ the recap** (uncached) → the recent turns →
+   the question. When the recent turns grow past the threshold again, the next older ones are folded into the recap.
+4. A legal question with no source still makes no model call (nothing_found) and no summary.
+
+**What the recap may hold.** It is made from the **person's own messages only** (as typed — the assistant's answers are
+never given to the summariser), so it cannot carry a legal claim the app did not source. Its prompt says "only what the
+person said; never legal information, advice or statutes; leave out names, phone numbers, e-mail, addresses, ID / case
+numbers". The server then checks every item (`normalizeRecap`, unit-tested): trimmed, ≤ 200 characters, ≤ 8 per list;
+e-mail addresses, phone numbers and SSN-like / long ID numbers scrubbed to "[…]"; anything naming a statute, rule or
+case dropped (`ai/legalRefs.js`); a place must use a word the person wrote, a date only numbers the person wrote. An
+empty or invalid recap is a failure.
+
+**In the request** the recap is labelled "a recap of what the person told you … It is NOT a source: never cite it, and
+never treat it as legal information." Citations can only point at `search_result` blocks, so step 2 holds: legal
+content still comes only from cited passages, and uncited legal parts are withheld. The search results of summarised
+turns are no longer sent; a passage needed again is sent fresh (`planSources` only counts passages in the turns still
+sent, so `search_result_index` stays consistent).
+
+**Fail safe.** A failed, refused or invalid summary saves nothing; that question goes out with the newest 20 rows (and
+the earlier recap if one exists), as before step 5; the next question tries again. Contents are never logged — the
+log line has kind, user id, row counts, token figure and method.
+
+**See and delete.** Chat → "What the assistant remembers" and Legal research → the same button on a session
+(`components/ConversationMemory.tsx`): the recap by section, "Replaces your first N questions", and **Forget this**
+(`DELETE` → `recap = NULL, forgotten = true`: nothing is summarised again for that conversation, which falls back to the
+last 20 rows). Routes: `GET|DELETE /api/chat/memory/:sessionId` (own rows only — another account's id shows nothing and
+stores nothing), `GET|DELETE /api/research/session/:id/memory` (own session, 404 otherwise). The row is deleted when the
+chat is cleared (`DELETE /api/chat/history/:sessionId`), when the research session is deleted, and with the account
+(`accountDeletion.js` USER_REFS; FK `ON DELETE CASCADE`); it is included in the data export.
+
+**Settings.** `AI_MEMORY` (on | off; off = the last 20 rows, no recap, the screen says recaps are off),
+`AI_MEMORY_THRESHOLD_TOKENS` (16,000; 4,000–140,000), `AI_MEMORY_KEEP_TURNS` (3; 1–10). Metered routes
+`chat_memory`, `chat_defender_memory`, `research_memory`.
+
+**Cost.** One Haiku 5.5 call per fold: ~3–8k input + ≤ 900 output tokens ≈ $0.001. The answer requests get smaller
+(the recap is a few hundred tokens instead of every old turn). The system prefix stays cached; the conversation prefix
+(automatic cache) restarts once after each fold.
+
+### 12.1 Why not the API's compaction, context editing or the memory tool
+
+Docs read 2026-11-02 (URLs also in `services/conversationMemory.js`). The on-demand compaction page itself could not be
+fetched from this environment; its shape was read from the overview, compaction-background and
+compaction-keep-recent-turns pages.
+
+* **Server-side compaction** is supported on our 5.5 models (not on Haiku / Opus / Sonnet 4.5). On demand (beta
+  `compact-2026-09-04`, `compaction: { type: "summarize" }`, `stop_reason: "compaction"`) it returns a **signed** block
+  that must be sent back exactly as returned, first in `messages`, written by the request's own model (Sonnet / Opus
+  here — no cheaper option). That conflicts with the owner's rules: the person must **see and delete** what is
+  remembered (the block cannot be edited or checked, and its readable fields are not documented on the pages we could
+  read); the recap must hold **only facts the person told us** (a summary of the whole conversation would carry the
+  assistant's legal statements forward without their citations — step 2 forbids that); and we scrub personal data
+  before storing. The docs list "your own summarizer (compact on the client)" as the third option — that is §12.
+  Threshold compaction (`compact_20260112`, minimum trigger 50,000 tokens) has the same issues and runs inside the
+  answer request.
+* **Context editing** (`context-management-2025-06-27`) clears **tool results** and **thinking blocks**. These chats use
+  no tools (the passages are `search_result` blocks in user turns, which the page does not cover) and never send
+  thinking back (history is rebuilt from what was stored), so there is nothing for it to clear. The equivalent is done
+  in §12 (search results of summarised turns are dropped).
+* **Memory tool** (`memory_20250818`, client-side files): Claude decides what to write and reads it across
+  conversations. We need a per-conversation recap with fixed fields that we check, that never crosses conversations,
+  and that the model cannot fill with legal claims — a structured summary call fits; the tool does not.
+
+The mock (`scripts/anthropic-mock-lib.mjs contextProblem`) enforces the documented compaction / context-editing rules
+(beta headers, not both together, unsupported models, edit order, minimum trigger), so a request that ever sent them
+would fail in tests as it would on the API.
+
+## 13. Word / PDF documents from drafts (step 5, November 2 2026)
+
+**Which drafts.** The code has two drafting features that produce a court document: the **expungement petition**
+(consumer, Record clearing → "Generate petition draft") and **saved motions** (attorneys / defenders, Motion library,
+`motion_history`). There is no letter-to-the-court or records-request generator in the code, so nothing was built for
+those. Contracts (firm tool, not a court filing) are not included.
+
+**Downloads.** "Download as Word (.docx)" and "Download as PDF" (`components/DraftDownloads.tsx`) call
+`GET /api/expungement/petition/:id/document?format=docx|pdf` and `GET /api/motions/history/:id/document?format=docx|pdf`
+(own rows only, 404 otherwise; 400 for another format; 60 an hour per person). Generated on the server each time; no
+file is stored.
+
+### 13.1 What every document carries (`services/draftDocs/model.js`)
+
+* **The notice**, in the person's language, as the header **and** the footer of every page: "Prepared by you with
+  Justice Gavel — general legal information, not legal advice. Have a lawyer or the court clerk review before filing."
+  (8 languages, `docs.notice`), and "Page X of Y".
+* **Only sourced legal text.** Each paragraph of the draft is checked (`ai/legalRefs.js`): a paragraph that names a
+  statute, rule, regulation or case is kept only if every section number it names is in a citation the app has a
+  checked source for; case citations are never covered (the app has no checked case-law source). Otherwise it is
+  replaced by the step-2 marker "No source found for this part — not shown". The checked sources are listed with their
+  official page and "checked <date>".
+* **The person's own words as typed** in their own section (petition: full name, state, county, case number, charge,
+  year; motion: defendant, case number, court, state, county, attorney, bar number, facts, notes) — verbatim.
+* **No drawn or fake signature**: any "/s/ …" line in the draft becomes a blank line; the document ends with a blank
+  signature line, a date line and the printed name as typed (blank line if none).
+
+**Petition (changed in this step).** The petition request now gives the model the one checked record-clearing rule for
+the state × charge (`citationOf()`; not withheld by a source check) with its official page, and tells it to cite nothing
+else (no checked rule → a placeholder instead of a legal basis). The prompt no longer speaks as "an experienced criminal
+defense attorney" and no longer names a statute itself. The same paragraph check runs on the draft the app shows, so the
+screen and the downloads match; the checked draft (withheld paragraphs stored as a marker, never their words), the
+typed fields and the source are kept in `draft_documents` (the last 20 per person; deleted with the account) so the
+download is what was shown. **Motions**: the draft in the app is unchanged; in the downloads every paragraph that cites a
+case or statute is withheld (no checked source exists for those) — the attorney adds authorities from a primary source.
+
+### 13.2 Word (`docx.js`, `zip.js`)
+
+The repo has no docx library and no package was added; the zip library present (unzipper) only reads. So the .docx is
+written by hand: the minimum OOXML package — `[Content_Types].xml`, `_rels/.rels`, `word/document.xml`,
+`word/_rels/document.xml.rels`, `word/styles.xml`, `word/header1.xml`, `word/footer1.xml` — zipped by a small ZIP
+writer on `node:zlib` (deflate + crc32, UTF-8 names, fixed 1980 timestamps). Text is XML-escaped and characters XML 1.0
+forbids are removed. Fonts by script in the default style (Calibri / SimSun for Chinese / Arial for Arabic); a paragraph
+with Arabic is `w:bidi` with `w:rtl` runs, so Word orders and shapes it. Tests unzip every file with unzipper and parse
+every part with an XML parser in all 8 languages.
+
+### 13.3 PDF (`pdf.js`)
+
+`services/bondDesk/pdf.js kit()` (now with `bufferPages` / margins options) — the bundled subset fonts the Bond Desk PDFs
+use: Inter (Latin, Vietnamese), Noto Sans SC subset (Chinese), DejaVu Sans Arabic subset with shaping and right-to-left
+order (`pdfText.js`); characters no bundled font has are written as `[U+XXXX]` with the note. Pages are buffered, then the
+header / footer notice and page number are drawn on each.
+
+### 13.4 Agent Skills (evaluated, not used)
+
+agents-and-tools/agent-skills/overview (read 2026-11-02): the pre-built `docx` / `pdf` skills run inside the **code
+execution tool's container** (`container.skill_ids` + the code execution tool), "not covered by ZDR … HIPAA: Not
+eligible", and the file is produced by a model run. For a fixed layout of text we already hold and have checked, that
+would add a model call per download, send the person's draft out again, and give us a file whose text we would have to
+re-check. A deterministic server-side writer is cheaper, private and exact.
+
+### 13.5 Tests (step 5)
+
+`ai_memory_documents.test.js` (27: references and paragraph checks, recap rules incl. accents / Chinese / scrubbing /
+legal references, history split, prompt block, settings, the `chat_memory` request against the mock's 400 rules, the
+mock's compaction / context-editing rules, the document model, the ZIP writer read back, .docx valid OOXML and PDF in
+all 8 languages), `integration/ai_memory_documents.int.test.js` (5, real Postgres: long defender chat → recap from the
+person's words only, checked, recent turns sent, owner-only view, forget, chat clear; invalid summary saves nothing;
+memory off; research recap + view / forget / session delete; account deletion; petition with one allowed and one
+withheld paragraph → .docx header / footer notice in Spanish, own words, blank signature + PDF, 404 / 400 / 401; saved
+motion → Arabic .docx with RTL and case law withheld, Chinese PDF), frontend `render/memoryDocuments.test.tsx` (4: recap
+view, forget, empty / off / failed / research route, download buttons and failure).
+
+### 13.6 Live-key checks (docs/LIVE_TEST.md section P)
+
+Recap quality on real long chats (English / Spanish / Chinese — any item the person did not say or that states a rule
+is a finding), `count_tokens` deciding the threshold, cache reads after a fold, forget / clear / off; the .docx opened
+in Word, Google Docs and LibreOffice without a repair prompt; Arabic / Chinese in both formats; cost per fold.
+
 ## Settings
 
 All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDARD|DEEP`,
@@ -616,7 +785,7 @@ All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDA
 `AI_BATCH_MAX_ATTEMPTS`, `SOURCE_CHECK_ENABLED`, `SOURCE_CHECK_MAX_ROWS`, `SOURCE_CHECK_SKIP_DAYS`,
 `SOURCE_CHECK_MAX_FETCHES`, `SOURCE_CHECK_PROPOSAL_FETCHES`, `SOURCE_CHECK_MAX_CONTENT_TOKENS` (step 3), `AI_FILES_API`, `AI_FILES_TTL_DAYS`,
 `COURT_PAPER_READER`, `COURT_PAPER_MAX_MB`, `COURT_PAPER_MAX_PAGES`, `COURT_PAPER_READS_PER_HOUR`,
-`COURT_PAPER_READS_PER_DAY` (step 4)
+`COURT_PAPER_READS_PER_DAY` (step 4), `AI_MEMORY`, `AI_MEMORY_THRESHOLD_TOKENS`, `AI_MEMORY_KEEP_TURNS` (step 5)
 (plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
 `AI_BUDGET_ALERT_PCT`, `AI_PRICE_*`).
 
@@ -634,7 +803,7 @@ All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDA
   prefill on Opus 5.5 / Sonnet 5.5, `fallbacks` without the beta header or on Haiku 5.5,
   unsupported schema keywords, more than 4 breakpoints or a 1h breakpoint after a 5m one.
 
-## Needs a live-key check (docs/LIVE_TEST.md sections L, M, N and O)
+## Needs a live-key check (docs/LIVE_TEST.md sections L, M, N, O and P)
 
 Nothing here was verified against the real API: the mock follows the docs. To check with a key:
 structured outputs on each model, cache write then read on the second chat question (1h TTL in

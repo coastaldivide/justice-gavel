@@ -40,6 +40,7 @@ import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { t, useLang, perLang, locale } from '../i18n';
+import DraftDownloads from '../components/DraftDownloads';
 
 // ── Motion type definitions (mirrors backend) ─────────────────────────────────
 // ── Trial-stage motions ───────────────────────────────────────────────────────
@@ -524,6 +525,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [selected,  setSelected]  = useState<ReturnType<typeof MOTION_TYPES>[0] | null>(null);
   const [fields,    setFields]    = useState<Record<string, string>>({});
   const [editDraft, setEditDraft] = useState('');
+  const [motionId, setMotionId] = useState<number | null>(null);
   const [attorneyReviewed, setAttorneyReviewed] = useState(false);
   const [showExportGate, setShowExportGate]     = useState(false);
   const [reviewResult, setReviewResult]   = useState<{
@@ -608,6 +610,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           timeoutMs: 210_000 });  // phase stays 'generating' -- the spinner keeps showing
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setEditDraft(content);
+        setMotionId(Number((job.result as any)?.motion_id) || null);
         Analytics.motionGenerated(selected.key);
       setPhase('result');
         return;
@@ -997,6 +1000,8 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         </View>
       )}
 
+      {/* Word / PDF of the saved draft (AI step 5) */}
+        {motionId != null && <View style={{ paddingHorizontal: 16 }}><DraftDownloads path={`/motions/history/${motionId}/document`} fileBase={`motion-${motionId}`} testID="motion-download" /></View>}
       {/* Action bar */}
         <View style={styles.resultActionBar}>
           <TouchableOpacity accessibilityRole="button"
@@ -1028,7 +1033,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
-            accessibilityLabel={t('x_motion_library_new')} onPress={() => { setPhase('library'); setSelected(null); setEditDraft(''); }}
+            accessibilityLabel={t('x_motion_library_new')} onPress={() => { setPhase('library'); setSelected(null); setEditDraft(''); setMotionId(null); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>{t('x_motion_library_new')}</Text>
           </TouchableOpacity>
@@ -1211,6 +1216,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               if (res?.data?.draft) {
                 setSelected(MOTION_TYPES().find(m => m.key === h.motion_type) || null);
                 setEditDraft(res.data?.draft);
+                setMotionId(Number(h.id) || null);
                 setPhase('result');
               }
             }}

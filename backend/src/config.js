@@ -277,6 +277,10 @@ export const ALL_ENV_VARS = {
   COURT_PAPER_MAX_PAGES:      process.env.COURT_PAPER_MAX_PAGES      || '10',     // most PDF pages accepted (max 100, the API's limit)
   COURT_PAPER_READS_PER_HOUR: process.env.COURT_PAPER_READS_PER_HOUR || '10',     // per person
   COURT_PAPER_READS_PER_DAY:  process.env.COURT_PAPER_READS_PER_DAY  || '20',     // per person
+  // AI step 5 — long chats keep working (docs/AI_PLATFORM.md §12)
+  AI_MEMORY:                  process.env.AI_MEMORY                  || 'on',     // on | off — the per-conversation recap of older turns (chat, defender chat, research)
+  AI_MEMORY_THRESHOLD_TOKENS: process.env.AI_MEMORY_THRESHOLD_TOKENS || '16000',  // input tokens at which older turns are summarised (4,000–140,000)
+  AI_MEMORY_KEEP_TURNS:       process.env.AI_MEMORY_KEEP_TURNS       || '3',      // recent exchanges always sent word for word (1–10)
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',

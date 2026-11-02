@@ -40,6 +40,12 @@ decision; off means documents are sent inline, which always works), `AI_FILES_TT
 1 hour … 90 days; the daily `ai-files-cleanup` job deletes copies earlier when their document goes), `COURT_PAPER_READER`
 (on — "Read my court paper"; off → 503 and the app offers "add by hand"), `COURT_PAPER_MAX_MB` (8), `COURT_PAPER_MAX_PAGES`
 (10), `COURT_PAPER_READS_PER_HOUR` (10) and `COURT_PAPER_READS_PER_DAY` (20) per person.
+Long chats (step 5, migration 48, docs/AI_PLATFORM.md §12) add `AI_MEMORY` (on — when a chat, defender chat or research
+conversation passes the threshold, its older turns are summarised into a recap made from the person's own messages, which
+they can see and delete under "What the assistant remembers"; off = the last 20 rows are sent, as before),
+`AI_MEMORY_THRESHOLD_TOKENS` (16,000 input tokens, measured with the token-count preflight; 4,000–140,000) and
+`AI_MEMORY_KEEP_TURNS` (3 recent exchanges always sent word for word; 1–10). Word / PDF downloads of drafts (step 5,
+§13) need no setting.
 
 ## Settings that wait for counsel (⚖)
 

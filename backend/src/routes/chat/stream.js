@@ -42,8 +42,8 @@ import { chatBurstLimiter } from './ask.js';
 import { streamAnswer, finishAssembled } from '../../services/sourcedAnswers.js';
 import { nothingFoundAnswer } from '../../ai/citations.js';
 import {
-  chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
-  getHistory, detectLawyerHandoff, classifyIntent, sourcedOf, sentOf, replayOf,
+  chatContext, limitBody, readChatBody, prepareChatRequest, findReplay, saveExchange,
+  detectLawyerHandoff, classifyIntent, sourcedOf, sentOf, replayOf,
 } from './_helpers.js';
 
 export const STREAM_TIMEOUT_MS = 120_000;
@@ -124,8 +124,8 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
       .catch((e) => logger.warn({ err: e.message }, '[chat/stream] could not save the exchange'));
   };
   try {
-    const history = await getHistory(db, body.sessionId, 20, userId);
-    request = buildChatRequest({ history, body, lang, defender: ctx.defender });
+    // Long conversations: older turns → the stored recap, recent turns sent (AI step 5).
+    request = (await prepareChatRequest(db, { body, lang, defender: ctx.defender, userId })).request;
     if (request.mode === 'nothing_found') {
       // A legal question with no source: no model call, the person is told so (never an answer from memory).
       const r = sourcedOf(nothingFoundAnswer(lang, 'chat'), lang);

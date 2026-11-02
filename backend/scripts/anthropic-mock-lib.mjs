@@ -253,6 +253,44 @@ function webFetchAnswer(schema, wf) {
 const fam = (m) => (/^claude-opus-5-5/.test(m) ? 'opus55' : /^claude-sonnet-5-5/.test(m) ? 'sonnet55' : /^claude-haiku-5-5/.test(m) ? 'haiku55' : 'other');
 
 /** null, or the message of the 400 the real API would return. */
+/**
+ * Context management (AI step 5 — the app does not send these; the mock enforces the documented
+ * rules so a request that ever did would fail here as it would on the API):
+ *   context editing — build-with-claude/context-editing (read 2026-11-02): `context_management.edits`
+ *     needs anthropic-beta context-management-2025-06-27; edit types clear_tool_uses_20250919 /
+ *     clear_thinking_20251015 (listed first when both) / compact_20260112 (threshold compaction,
+ *     beta compact-2026-01-12, trigger input_tokens ≥ 50,000);
+ *   on-demand compaction — build-with-claude/compaction (+ -background, -keep-recent-turns):
+ *     top-level `compaction: { type: "summarize" }`, beta compact-2026-09-04, not with
+ *     context_management, not on Haiku 4.5 / Opus 4.5 / Sonnet 4.5.
+ */
+export function contextProblem(body, headers = {}) {
+  const betas = String(headers['anthropic-beta'] || '').split(',').map((x) => x.trim());
+  const model = String(body.model || '');
+  if ('compaction' in body) {
+    if (!betas.includes('compact-2026-09-04')) return 'compaction requires the beta header compact-2026-09-04';
+    if ('context_management' in body) return 'compaction cannot be combined with context_management';
+    if (/^claude-(haiku|opus|sonnet)-4-5/.test(model)) return `compaction is not supported on ${model}`;
+    if (body.compaction?.type !== 'summarize') return 'compaction.type must be "summarize"';
+  }
+  if ('context_management' in body) {
+    const edits = body.context_management?.edits;
+    if (!Array.isArray(edits)) return 'context_management.edits: field required';
+    const types = edits.map((e) => e?.type);
+    for (const t of types) {
+      if (t === 'compact_20260112') {
+        if (!betas.includes('compact-2026-01-12')) return 'compact_20260112 requires the beta header compact-2026-01-12';
+      } else if (['clear_tool_uses_20250919', 'clear_thinking_20251015'].includes(t)) {
+        if (!betas.includes('context-management-2025-06-27')) return 'context editing requires the beta header context-management-2025-06-27';
+      } else return `context_management.edits: unknown type ${String(t)}`;
+    }
+    if (types.includes('clear_thinking_20251015') && types[0] !== 'clear_thinking_20251015') return 'clear_thinking_20251015 must be listed first in edits';
+    const compact = edits.find((e) => e?.type === 'compact_20260112');
+    if (compact?.trigger && (compact.trigger.type !== 'input_tokens' || !(compact.trigger.value >= 50_000))) return 'compact_20260112 trigger must be input_tokens with value >= 50000';
+  }
+  return null;
+}
+
 export function requestProblem(body, headers = {}) {
   if (!body || typeof body !== 'object') return 'body must be JSON';
   const model = String(body.model || '');
@@ -290,6 +328,8 @@ export function requestProblem(body, headers = {}) {
   }
   const tp = toolProblem(body);
   if (tp) return tp;
+  const cm = contextProblem(body, headers);
+  if (cm) return cm;
   // cache breakpoints
   let bps = body.cache_control ? 1 : 0;
   let seen5m = false;

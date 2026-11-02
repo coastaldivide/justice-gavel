@@ -108,6 +108,8 @@ export const TASKS = Object.freeze({
   // staff accept field by field (services/bondDesk/formMapping.js).
   court_paper_read:      { cls: 'standard', maxTokens: 1500, schema: 'court_paper' },
   form_field_map:        { cls: 'standard', maxTokens: 6000, schema: 'form_field_map' },
+  // AI step 5 — the recap that lets a long chat / research conversation continue (services/conversationMemory.js).
+  chat_memory:           { cls: 'quick',    maxTokens: 900,  schema: 'chat_memory' },
 });
 
 export function taskDef(task) {

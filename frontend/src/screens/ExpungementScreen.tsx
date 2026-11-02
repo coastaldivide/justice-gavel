@@ -18,6 +18,7 @@ import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
 import { useTheme, RADIUS, FONTS, SHADOW } from '../constants/theme';
 import { RNShare } from '../utils/webCompat';
+import DraftDownloads from '../components/DraftDownloads';
 import { getUserState, stateName } from '../utils/userState';
 import { useToast } from '../components/ToastProvider';
 import { useAuthGate } from '../components/AuthGate';
@@ -91,6 +92,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [attorneys, setAttorneys] = useState<Attorney[]>([]);
   const [attLoading, setAttLoading] = useState(false);
   const [draft, setDraft] = useState('');
+  const [draftId, setDraftId] = useState<number | null>(null);
   const [drafting, setDrafting] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -137,12 +139,13 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
     if (!result) return;
     setDrafting(true);
     try {
-      const r = await api.post<{ draft: string }>('/expungement/petition', {
+      const r = await api.post<{ draft: string; document_id?: number | null }>('/expungement/petition', {
         state: result.state,
         charge_type: result.chargeType === 'dismissed' ? t('x_exp_status_dismissed') : (charges.trim() || result.chargeType),
+        charge_kind: result.chargeType,
         case_number: params.case_id ? String(params.case_id) : '',
       });
-      if (mounted.current) setDraft(r.data?.draft || '');
+      if (mounted.current) { setDraft(r.data?.draft || ''); setDraftId(r.data?.document_id ?? null); }
     } catch (e) {
       showToast(apiErrorMessage(e, t('exp_draft_failed')), 'error');
     } finally {
@@ -256,6 +259,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
             <ScrollView contentContainerStyle={{ padding: 16 }}>
               <UnreviewedNotice inset={false} text={t('x_legal_notice_ai_generated_draft_not')} testID="expungement-draft-notice" />
               <Text maxFontSizeMultiplier={1.4} selectable style={[styles.body, { fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, marginTop: 12 }]}>{draft}</Text>
+              {draftId != null && <DraftDownloads path={`/expungement/petition/${draftId}/document`} fileBase={`petition-${draftId}`} testID="expungement-download" />}
             </ScrollView>
           </View>
         </Modal>

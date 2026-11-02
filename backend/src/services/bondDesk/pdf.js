@@ -332,8 +332,9 @@ export async function mergePdfs(buffers) {
 
 // ── Pages Bond Desk writes (pdfkit) ───────────────────────────────────────────
 
-export function kit(title) {
-  const doc = new PDFKit({ size: 'LETTER', margin: 54, info: { Title: title, Producer: 'Justice Gavel Bond Desk' } });
+export function kit(title, { bufferPages = false, margins = null, producer = 'Justice Gavel Bond Desk' } = {}) {
+  // bufferPages / margins: the draft documents (services/draftDocs/pdf.js) draw a header and footer on every page at the end.
+  const doc = new PDFKit({ size: 'LETTER', ...(margins ? { margins } : { margin: 54 }), bufferPages, info: { Title: title, Producer: producer } });
   doc.registerFont('R', FONT_REGULAR);
   doc.registerFont('B', FONT_BOLD);
   // Pages choose 'R' or 'B'; text in Arabic or Chinese is drawn with the matching font for its script.

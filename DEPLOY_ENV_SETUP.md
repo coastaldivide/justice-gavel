@@ -357,6 +357,12 @@ COURT_PAPER_MAX_MB=8                     largest photo or PDF accepted (max 20)
 COURT_PAPER_MAX_PAGES=10                 most PDF pages accepted (max 100 — the API's limit under a 1M-token context)
 COURT_PAPER_READS_PER_HOUR=10            reads per person per hour (429 hourly_limit)
 COURT_PAPER_READS_PER_DAY=20             reads per person per day (429 daily_limit); the daily AI budget still applies
+# AI step 5 — long chats keep working (docs/AI_PLATFORM.md §12)
+AI_MEMORY=on                             on | off. When a chat / defender chat / research conversation passes the threshold, its older turns are
+                                         summarised (quick class, from the person's own messages only) into a recap the person can see and delete;
+                                         off = the last 20 rows are sent, as before step 5
+AI_MEMORY_THRESHOLD_TOKENS=16000         input tokens (count_tokens preflight) at which older turns are summarised (4,000–140,000)
+AI_MEMORY_KEEP_TURNS=3                   recent exchanges always sent word for word (1–10)
 AI_CONCURRENCY=8                         parallel AI jobs (in-process or BullMQ)
 AI_JOB_TIMEOUT_MS=45000                  per-AI-job timeout
 AI_DRAIN_TIMEOUT_MS=10000                graceful shutdown waits this long for in-flight AI jobs
