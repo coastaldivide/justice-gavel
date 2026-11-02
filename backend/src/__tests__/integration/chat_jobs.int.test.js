@@ -26,7 +26,6 @@ describeIntegration('chat ask + jobs polling + history (real Postgres, mock Anth
 
   it('ask → jobId → poll /jobs/:id → mock reply; both turns persisted to chat_sessions', async () => {
     await ctx.acceptDisclaimer(user);
-    ctx.anthropic.replyText = `MOCK-${ctx.tag}: You can refuse consent to a search. Not legal advice.`;
     const sessionId = `${ctx.tag}-s1`;
 
     const ask = await ctx.request().post('/api/chat/ask').set(user.headers)
@@ -37,27 +36,37 @@ describeIntegration('chat ask + jobs polling + history (real Postgres, mock Anth
 
     const done = await ctx.pollJob(user, ask.body.jobId);
     expect(done.body.status).toBe('done');
-    expect(done.body.result.reply).toBe(ctx.anthropic.replyText);
+    // A legal question: answered from the app's sourced content with verified citations
+    const sourced = done.body.result.sourced;
+    expect(sourced.grounded).toBe(true);
+    expect(sourced.sources.length).toBeGreaterThan(0);
+    expect(sourced.segments.some(g => g.cites?.length)).toBe(true);
+    expect(done.body.result.reply).toMatch(/\[1\]/);
     expect(['post_arrest', 'charges', 'know_rights', 'find_lawyer', 'general']).toContain(done.body.result.intent);
 
-    // The mock received a real Anthropic-shaped request
+    // The mock received a real Anthropic-shaped request: search results, then the question
     const sent = ctx.anthropic.requests.find(r => r.path === '/v1/messages');
     expect(sent).toBeTruthy();
-    expect(sent.body.messages[sent.body.messages.length - 1].content).toContain('traffic stop');
+    const last = sent.body.messages[sent.body.messages.length - 1].content;
+    expect(last.some(b => b.type === 'search_result' && b.citations?.enabled)).toBe(true);
+    expect(last.at(-1).text).toContain('traffic stop');
     expect(sent.headers['x-api-key']).toBeTruthy();
 
     // DB: user + assistant rows stored for this session (ids are UUIDs, so
-    // order by created_at like the history endpoint does)
+    // order by created_at like the history endpoint does), with the citations
     const rows = await ctx.db.all(
-      'SELECT role, content FROM chat_sessions WHERE session_id = ? AND user_id = ? ORDER BY created_at', [sessionId, user.user.id]);
+      'SELECT role, content, ai_answer, ai_sent FROM chat_sessions WHERE session_id = ? AND user_id = ? ORDER BY created_at', [sessionId, user.user.id]);
     expect(rows.map(r => r.role).sort()).toEqual(['assistant', 'user']);
-    expect(rows.find(r => r.role === 'assistant').content).toBe(ctx.anthropic.replyText);
+    expect(rows.find(r => r.role === 'assistant').ai_answer.sources).toEqual(sourced.sources);
+    expect(rows.find(r => r.role === 'user').ai_sent.sources.length).toBeGreaterThan(0);
 
-    // History endpoint returns the same conversation to the app
+    // History endpoint returns the same conversation to the app, citations included
     const hist = await ctx.request().get(`/api/chat/history/${sessionId}`).set(user.headers);
     expect(hist.status).toBe(200);
     expect(hist.body).toHaveLength(2);
     expect(hist.body[0]).toMatchObject({ role: 'user' });
+    expect(hist.body[1].sourced).toEqual(sourced);
+    expect(hist.body[1].ai_sent).toBeUndefined();
   });
 
   it('another user cannot read my job or my history (IDOR)', async () => {

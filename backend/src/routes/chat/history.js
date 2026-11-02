@@ -1,7 +1,9 @@
 /**
  * chat/history.js — GET + DELETE /history/:sessionId (the caller's own turns only)
  *
- * GET → [{ role, content, text, status: 'complete' | 'stopped', client_msg_id }]
+ * GET → [{ role, content, text, status: 'complete' | 'stopped', client_msg_id, sourced }]
+ *   sourced — a saved answer's verified citations (segments + sources, migration 45), so the
+ *   bubble renders exactly as it was first shown; null for questions and older answers.
  */
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
@@ -17,7 +19,8 @@ router.get('/history/:sessionId', authRequired, async (req, res) => {
   if (!validSession(req.params.sessionId)) return res.json([]);
   try {
     const db = await getDb();
-    res.json(await getHistory(db, req.params.sessionId, 50, req.user.id));
+    const rows = await getHistory(db, req.params.sessionId, 50, req.user.id);
+    res.json(rows.map(({ ai_answer, ai_sent: _sent, ...r }) => ({ ...r, sourced: ai_answer || null })));
   } catch (err) {
     logger.error({ err: err?.message }, '[chat/history]');
     res.status(500).json({ error: 'server_error', code: 'server_error', message: msg(resolveLang(req), 'chat.err.history') });

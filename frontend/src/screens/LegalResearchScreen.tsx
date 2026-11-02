@@ -42,6 +42,8 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme, themeColors } from '../constan
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticSelection, Clipboard } from '../utils/webCompat';
+import CitedAnswer from '../components/CitedAnswer';
+import { readSourced, type SourcedAnswer } from '../services/sourced';
 
 // ── Quick research prompts ────────────────────────────────────────────────────
 const QUICK_PROMPTS = perLang(() => [
@@ -56,7 +58,8 @@ const QUICK_PROMPTS = perLang(() => [
 ]);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; error?: boolean; retryQuery?: string }
+/** sourced: the answer with its verified citations (backend ai/citations.js), rendered with CitedAnswer. */
+interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; error?: boolean; retryQuery?: string; sourced?: SourcedAnswer | null }
 interface Tier { key: string; name: string; display_price?: string; monthly_cents?: number; billing?: string }
 interface Session { id: number; title: string; updated_at: string; }
 type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
@@ -141,7 +144,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
-function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithAI?: (content: string) => void }) {
+function ResearchBubble({ msg, onDiscussWithAI, onOpenApp }: { msg: Message; onDiscussWithAI?: (content: string) => void; onOpenApp?: (screen: string) => void }) {
   useLang();
   const { colors } = useTheme();
   const { showToast } = useToast();
@@ -179,10 +182,15 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
         <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={[styles.cutoffText, { color: colors.warnDark }]} maxFontSizeMultiplier={1.4}>{t('res_may_be_outdated')}</IconLabel>
       </View>
 
-      <MarkdownText
-        text={msg.content}
-        style={[styles.assistantText, { color: colors.textPrimary }]}
-      />
+      {msg.sourced ? (
+        <CitedAnswer answer={msg.sourced} onOpenApp={onOpenApp} testID="research-cited"
+          textStyle={[styles.assistantText, { color: colors.textPrimary }]} />
+      ) : (
+        <MarkdownText
+          text={msg.content}
+          style={[styles.assistantText, { color: colors.textPrimary }]}
+        />
+      )}
       {/* Copy button */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
         <TouchableOpacity accessibilityRole="button"
@@ -438,7 +446,8 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const loadSession = useCallback(async (sess: Session) => {
     try {
       const res = await api.get(`/research/session/${sess.id}`);
-      setMessages(res.data?.messages || []);
+      const rows = (res.data?.messages || []) as (Message & { sourced?: unknown })[];
+      setMessages(rows.map(m => ({ ...m, sourced: m.role === 'assistant' ? readSourced(m.sourced) : null })));
       setSessionId(sess.id);
       setPhase('thread');
       const _t1 = setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 200); return () => clearTimeout(_t1);
@@ -465,9 +474,10 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
       const res = await api.post('/research/ask', { query: text, session_id: sessionId, context: caseContext }, { signal: ctrl.signal });
       if (res.data?.session_id) setSessionId(res.data.session_id);
       const job = await pollJob(String(res.data?.jobId), { signal: ctrl.signal, timeoutMs: 120_000 });
-      const answer = String((job.result as { answer?: string } | null)?.answer || '');
+      const result = job.result as { answer?: string; sourced?: unknown } | null;
+      const answer = String(result?.answer || '');
       if (!answer) throw new JobError('ai_failed', t('x_legal_research_research_failed_check_connection'));
-      setMessages(prev => [...prev, { role: 'assistant', content: answer, created_at: new Date().toISOString() }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: answer, sourced: readSourced(result?.sourced), created_at: new Date().toISOString() }]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (e) {
       if (ctrl.signal.aborted) return;
@@ -664,6 +674,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
           </View>
         ) : (
           <ResearchBubble key={`msg-${i}`} msg={msg}
+            onOpenApp={(screen: string) => navigation.navigate('MoreTab', { screen })}
             onDiscussWithAI={msg.role === 'assistant'
               ? (content: string) => navigation.navigate('ChatTab', { mode: 'defender', caseContext: content.slice(0, 2000), caseTitle: t('legal_research') })
               : undefined} />

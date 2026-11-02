@@ -1,4 +1,4 @@
-import { aiMessage, aiErrorCode, sendAiError } from '../services/aiClient.js';
+import { aiErrorCode, sendAiError } from '../services/aiClient.js';
 import { isStaff } from '../utils/staff.js';
 import { requireAi } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
@@ -19,6 +19,12 @@ import { msg, resolveLang, LANG_NAMES } from '../i18n/index.js';
  *
  * Model: the gateway's 'deep' class (ai/tasks.js: AI_MODEL_DEEP, default claude-opus-5-5) with a
  * legal research system prompt (prompt-cached, 5 minutes).
+ * Sources: every answer is grounded (services/rag.js sourcedResearch): the research library's
+ * passages and the app's sourced legal content go to Claude as citable search results; each
+ * citation is verified against what was sent, uncited legal statements are withheld, and with
+ * nothing relevant the AI is not asked (no answer from model memory). Answers come back as
+ * `answer` (plain text with [n] markers + the source list) and `sourced` (segments + sources),
+ * and are saved with their citations (migration 45).
  * Optimised for:
  *   - Case law queries with jurisdiction awareness
  *   - Statutory interpretation
@@ -34,7 +40,8 @@ import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import express         from 'express';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
-import { ragSearch } from '../services/rag.js';
+import { ragSearch, sourcedResearch } from '../services/rag.js';
+import { plainText, publicAnswer, CITATION_RULES } from '../ai/citations.js';
 import { authRequired } from '../middleware/auth.js';
 
 // ── AI-specific rate limiter (50 requests / 15 min per user/IP) ─────────────
@@ -92,50 +99,29 @@ APPELLATE RESEARCH CAPABILITIES:
 14. POST-CONVICTION RELIEF — State-specific PCR procedures. First Step Act. Compassionate release. Sentence modifications under 18 U.S.C. § 3582. Retroactive guideline amendments.
 15. NEWLY DISCOVERED EVIDENCE — Standards for new trial motions. Actual innocence claims. DNA evidence procedures.
 
+SOURCES (this overrides everything above): every question comes with search results — passages from the research library and from Justice Gavel's checked legal information, each with its citation, jurisdiction and source page. Every case, statute, rule, standard, deadline or number you state must come from those search results and be cited from them. The topics above say what you can help analyze when the sources cover it; they are not a licence to answer from memory. If the search results do not cover a point, say plainly that no source was found for it and that the attorney should check a primary source — do not fill the gap from memory, and never invent or complete a citation.
+
 RESPONSE FORMAT:
-- Lead with the direct answer to the question
-- For appellate issues: always identify the standard of review first — it determines everything
-- Cite specific cases with full citations: Case Name, Volume Reporter Page (Court Year)
-- Distinguish controlling authority (binding) from persuasive authority (other circuits, other states)
-- Note circuit splits and identify the majority and minority positions
-- Flag when an area of law is evolving or recently decided
+- Lead with the direct answer the sources support
+- For appellate issues: identify the standard of review first when the sources state it
+- Distinguish controlling authority (binding) from persuasive authority (other circuits, other states), as far as the sources show it
+- Note when a source is from a different jurisdiction than the question
+- Flag circuit splits, unsettled or evolving law only when a source says so
 - Use precise legal language — clear and direct, not unnecessarily complex
-- For habeas issues: flag AEDPA procedural requirements explicitly
+- Do not add a disclaimer or a list of sources: the app shows the sources and the notice under every answer
 
-CITATION FORMAT:
-  Binding: Terry v. Ohio, 392 U.S. 1 (1968) [U.S. Supreme Court — binding]
-  Circuit: United States v. Jones, 565 U.S. 400 (2012) [binding in all circuits]
-  State:   State v. Smith, 456 S.W.3d 789 (Tenn. Crim. App. 2015) [binding in Tennessee]
-
-IMPORTANT:
-- Always note that attorneys should verify citations independently — case law changes
-- Flag when there is a circuit split or unsettled area of law
-- For AEDPA/habeas work: note the one-year statute of limitations and exhaustion requirement prominently
-- For Notice of Appeal work: emphasize the deadline (federal: 14 days; most states: 30 days) — missing it waives appellate rights permanently
-- Recommend checking local rules for jurisdiction-specific procedure
-
-You are a comprehensive legal research partner for the full arc of criminal defense — from arrest through direct appeal through post-conviction. Be thorough, cite precisely, and be honest about uncertainty.`;
+Be thorough, cite precisely, and be honest about what the sources do not cover.`;
 
 
 // ── Claude research call ──────────────────────────────────────────────────────
+const languageLine = (lang) => (lang === 'en' ? '' : `LANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`);
+
+/** One sourced research answer (services/rag.js sourcedResearch). */
 async function callResearch(history, query, lang, context, userId) {
-  const messages = [
-    ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: 'user', content: (context ? `[Case: ${context}]\n\n` : '') + query },
-  ];
-  const language = lang === 'en' ? '' : `LANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`;
-  // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
-  const out = await aiMessage({
-    task: 'research',
-    system: [{ text: RESEARCH_SYSTEM, cache: '5m' }, { text: language }],
-    messages,
-    cacheConversation: true,
-    route: 'research',
-    userId,
-    timeoutMs: 100_000,
-    retries: 1,
+  return await sourcedResearch({
+    query, history, lang, context, userId, task: 'research', route: 'research',
+    system: [{ text: `${RESEARCH_SYSTEM}\n\n${CITATION_RULES}`, cache: '5m' }, { text: languageLine(lang) }],
   });
-  return out.text;
 }
 
 // ── POST /api/research/ask ────────────────────────────────────────────────────
@@ -163,17 +149,20 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
       sessionId = (await db.run('INSERT INTO research_sessions (user_id, title) VALUES (?,?)', [req.user.id, title])).lastID;
     }
 
-    const history = await db.all(
-      `SELECT role, content FROM research_messages WHERE session_id=? ORDER BY created_at ASC, id ASC LIMIT 20`, [sessionId]);
+    const history = (await db.all(
+      `SELECT role, content, ai_sent FROM research_messages WHERE session_id=? ORDER BY created_at DESC, id DESC LIMIT 20`, [sessionId])).reverse();
     const q = query.trim();
     const lang = resolveLang(req);
     const jobId = await enqueue('research', async () => {
-      const answer = await callResearch(history, q, lang, ctx, req.user.id);
+      const r = await callResearch(history, q, lang, ctx, req.user.id);
+      const sourced = publicAnswer(r.answer);
+      const answer = plainText(r.answer, lang, { markers: true });
       const db2 = await getDb();
-      await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'user', q]);
-      await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'assistant', answer]);
+      await db2.run('INSERT INTO research_messages (session_id, role, content, ai_sent) VALUES (?,?,?,?::jsonb)', [sessionId, 'user', q, JSON.stringify(r.sent)]);
+      await db2.run('INSERT INTO research_messages (session_id, role, content, ai_answer) VALUES (?,?,?,?::jsonb)',
+        [sessionId, 'assistant', plainText(r.answer, lang, { markers: false }), JSON.stringify(sourced)]);
       await db2.run('UPDATE research_sessions SET updated_at = NOW() WHERE id = ?', [sessionId]);
-      return { session_id: sessionId, answer, not_legal_advice: true };
+      return { session_id: sessionId, answer, sourced, not_legal_advice: true };
     }, req.user.id);
     return res.json({ jobId, session_id: sessionId, status: 'pending', async: true });
   } catch (e) {
@@ -209,10 +198,17 @@ router.get('/session/:id', authRequired, async (req, res) => {
       [safeInt(req.params.id), req.user.id]
     );
     if (!sess) return refuse(res, req, 404, 'session_not_found');
-    const messages = await db.all(
-      'SELECT id, session_id, role, content, created_at FROM research_messages WHERE session_id=? ORDER BY created_at ASC, id ASC LIMIT 500',
+    const rows = await db.all(
+      'SELECT id, session_id, role, content, created_at, ai_answer FROM research_messages WHERE session_id=? ORDER BY created_at ASC, id ASC LIMIT 500',
       [sess.id]
     );
+    // sourced: the saved answer with its verified citations, rendered as first shown (null for older answers)
+    const lang = resolveLang(req);
+    const messages = rows.map(({ ai_answer, ...m }) => ({
+      ...m,
+      ...(ai_answer?.segments ? { content: plainText(ai_answer, lang, { markers: true }) } : {}),
+      sourced: ai_answer || null,
+    }));
     res.json({ ...sess, messages });
   } catch (e) {
     logger.error('[research/session]', e.message);
@@ -262,18 +258,24 @@ router.post('/rag', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
   }
 
   try {
+    const lang = resolveLang(req);
     const result = await ragSearch(query.trim(), {
-      practiceArea: practice_area || null,
-      jurisdiction: jurisdiction  || null,
+      practiceArea: typeof practice_area === 'string' ? practice_area.slice(0, 40) : null,
+      jurisdiction: typeof jurisdiction === 'string' ? jurisdiction.slice(0, 40) : null,
       userId:       req.user.id,
+      lang,
+      languageLine: languageLine(lang),
     });
 
     return res.json({
-      answer:    result.answer,
+      answer:    plainText(result.answer, lang, { markers: true }),
+      sourced:   publicAnswer(result.answer),
       citations: result.citations,
       docs_used: result.docsUsed,
       from_rag:  result.fromRAG,
+      nothing_found: result.mode === 'nothing_found',
       latency_ms:result.latencyMs,
+      not_legal_advice: true,
     });
   } catch (e) {
     logger?.warn('[research/rag]', e?.message);

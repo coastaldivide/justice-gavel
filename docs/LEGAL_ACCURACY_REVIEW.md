@@ -191,6 +191,33 @@ was replaced (the "no orange" rule is not in any page we read). Court-specific d
 links to the court's own page (Davidson and Knox County, TN). Several general sources are from other states or federal
 courts — counsel should confirm they match Tennessee practice (counsel packet 5.3).
 
+## 3b. How AI answers are sourced (added November 2, 2026)
+
+The rule above ("shown only when it was checked against a named source") now applies to the AI
+chat and legal research too (docs/AI_PLATFORM.md §8):
+
+- The AI answers legal questions only from passages the app already shows with a source: the
+  rights card, the court guide and case steps (official pages, checked 2026-11-01), the
+  record-clearing rules that pass `citationOf()` and the recording-consent table — plus, for
+  research, the research library when it is configured. Withheld tables and the unreviewed state
+  summaries are never given to it.
+- Each statement comes back tied to the exact passage it rests on. The server checks every
+  citation against what it sent; a citation to anything else is dropped.
+- **A legal statement without a checked citation is not shown.** The person sees "No source found
+  for this part — not shown" in its place (we chose to withhold rather than show it with a
+  warning, because this review's rule is that wrong legal numbers are worse than none). Non-legal
+  words (a kind sentence, "open Court dates") may appear without a source.
+- When nothing relevant is found for a legal question, the AI is not asked: the person is told no
+  checked source was found and pointed to legal aid / a public defender and the rights card. The
+  app never answers a legal question from the model's memory.
+- Saved answers keep their citations and the date each source was checked, so history shows the
+  same sources later.
+
+Limits to tell counsel: the legal-statement check is a broad word / number test in 8 languages
+(it errs toward withholding); English-only tables are not matched by questions in other languages;
+none of the passages has been reviewed by a lawyer yet (open item L3), so every answer still
+carries "not reviewed by a lawyer".
+
 ## 4. Files changed
 
 - Expungement: `backend/src/routes/expungement/{rules.js,rules_data.js,check.js,index.js}` (+ `GET /api/expungement/juvenile`)

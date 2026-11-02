@@ -11,7 +11,7 @@
  * Start the API with ANTHROPIC_API_KEY=<anything> ANTHROPIC_BASE_URL=http://127.0.0.1:<port>.
  *
  * Control API:
- *   POST /__mode {mode, text, json, delayMs, tokens, category, refuseModels}
+ *   POST /__mode {mode, text, json, delayMs, tokens, category, refuseModels, citeMode, blocks}
  *        mode: ok | slow | long | 429 | 500 | 529 | 401 | drop | error_event | hang |
  *              refusal | refusal_mid | refusal_hard | invalid_json | max_tokens
  *        text: the answer (default: a short general-information reply)
@@ -19,6 +19,8 @@
  *        delayMs: pause between streamed words (slow / drop), default 30
  *        tokens: number of words for `long`, default 40
  *        category: refusal category (default general_harms); refuseModels: only these decline
+ *        citeMode: auto | none | foreign | blocks — answers to requests with citable search
+ *          results (scripts/anthropic-mock-lib.mjs citedBlocks); blocks: [{ text, citations? }]
  *   GET  /__requests   the upstream requests received so far: [{ path, headers, body }]
  *   POST /__reset      mode back to ok, request log and prompt cache cleared
  * Every other POST is answered as POST /v1/messages (JSON, or SSE when the body has

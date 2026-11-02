@@ -57,13 +57,16 @@ describeIntegration('section E: AI, research & learning (real Postgres, mock Ant
     const body = { message: 'Do I have to answer questions?', sessionId: `${ctx.tag}-c1`, clientMessageId: `${ctx.tag}m1` };
     const first = await ask(u, body);
     expect(first.status).toBe(200);
-    expect((await ctx.pollJob(u, first.body.jobId)).body.result.reply).toBe(ctx.anthropic.replyText);
+    const answered = (await ctx.pollJob(u, first.body.jobId)).body.result;
+    expect(answered.sourced.sources.length).toBeGreaterThan(0);     // a legal question: cited from the rights card
     const calls = ctx.anthropic.requests.length;
 
     const again = await ask(u, body);
     expect(again.status).toBe(200);
     const replay = again.body.jobId ? (await ctx.pollJob(u, again.body.jobId)).body.result : again.body;
-    expect(replay.reply).toBe(ctx.anthropic.replyText);
+    expect(replay.reply).toBe(answered.reply);
+    expect(replay.sourced).toEqual(answered.sourced);
+    expect(replay.replayed).toBe(true);
     expect(ctx.anthropic.requests.length).toBe(calls);            // not asked again
     const n = await ctx.db.get(`SELECT COUNT(*) AS n FROM chat_sessions WHERE session_id = ? AND user_id = ?`, [body.sessionId, u.user.id]);
     expect(Number(n.n)).toBe(2);
@@ -141,7 +144,8 @@ describeIntegration('section E: AI, research & learning (real Postgres, mock Ant
     const yes = await ctx.request().post('/api/research/ask').set(atty.headers).send({ query: 'Terry stop standard' });
     expect(yes.status).toBe(200);
     const done = await ctx.pollJob(atty, yes.body.jobId);
-    expect(done.body.result.answer).toBe(ctx.anthropic.replyText);
+    expect(done.body.result.sourced.grounded).toBe(true);           // answered only from sources, with citations
+    expect(typeof done.body.result.answer).toBe('string');
     const hist = await ctx.request().get('/api/research/history').set(atty.headers);
     expect(hist.body.map(s => Number(s.id))).toContain(Number(yes.body.session_id));
 

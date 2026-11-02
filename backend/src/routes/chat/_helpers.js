@@ -3,7 +3,8 @@
  *
  * chatContext()           — who is asking: defender mode allowed?, unlimited?, quota left
  * readChatBody()          — validate the request body (400 messages in the request language)
- * buildChatRequest()      — system prompt parts (cached) + messages for the AI gateway call
+ * buildChatRequest()      — system prompt parts (cached) + sourced passages (citable search results,
+ *                           services/sourcedAnswers.js) + messages for the AI gateway call
  * findReplay()            — a retry of a question that was already answered
  * saveExchange()          — persist the question + answer (complete | stopped)
  * callClaude()            — non-streamed call (job path)
@@ -17,6 +18,8 @@ import { hasFeature }       from '../../services/entitlements.js';
 import { FEATURES }         from '../billing/plans.js';
 import { randomUUID }       from 'crypto';
 import { rightsPromptParts } from '../../services/rightsContent.js';
+import { CITATION_RULES, plainText, publicAnswer } from '../../ai/citations.js';
+import { planSources, userTurn, historyMessages, sentInOrder, recordsFor, finishAnswer } from '../../services/sourcedAnswers.js';
 import { msg, resolveLang, LANG_NAMES } from '../../i18n/index.js';
 import { isValidTimeZone, todayInZone, zonedDateTimeToUtc, addDays, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT } from './_prompts.js';
@@ -117,11 +120,16 @@ export function languageInstruction(lang) {
 
 /**
  * System prompt parts + messages for one question (services/aiClient.js systemBlocks()).
- * Prompt caching: the big stable part (rules + the verified rights card, identical for every
- * person) is the first block and carries the chat cache breakpoint (AI_CHAT_CACHE_TTL, 1 hour
- * by default — docs/AI_PLATFORM.md has the break-even); the small per-person part (state note,
- * language) follows uncached. The conversation itself is cached automatically
- * (cacheConversation), so a follow-up question re-reads the history from cache.
+ * Prompt caching: the big stable part (rules + the sources rules, identical for every person)
+ * is the first block and carries the chat cache breakpoint (AI_CHAT_CACHE_TTL, 1 hour by
+ * default — docs/AI_PLATFORM.md has the break-even); the small per-person part (state note,
+ * language) follows uncached. The citable passages (rights card, court guide, case steps,
+ * verified legal tables — ai/legalCorpus.js) go in the user turn, AFTER that breakpoint, as
+ * search_result blocks. The conversation is cached automatically (cacheConversation): earlier
+ * turns are rebuilt byte-for-byte from what was stored (ai_sent), so a follow-up re-reads them.
+ *
+ * → { task, system, messages, max_tokens, mode, sent, fresh, userText }
+ *   mode: grounded | nothing_found (no model call) | plain — services/sourcedAnswers.js
  */
 export function buildChatRequest({ history, body, lang, defender }) {
   const contextParts = [];
@@ -130,22 +138,46 @@ export function buildChatRequest({ history, body, lang, defender }) {
   const contextNote = contextParts.length ? `\n\n[User location context: ${contextParts.join(' ')}]` : '';
   const caseNote = buildCaseNote(body.caseContext, defender ? 'defender' : 'consumer');
   const jurisdictionNote = buildJurisdictionNote(body.user_state, body.user_state_name);
-  // Consumer answers about rights are grounded in the verified rights card
-  // (services/rightsContent.js) and cite it; "talk to a lawyer" otherwise.
+  // Legal answers cite the app's sourced content (the rights card is one of the passages now,
+  // not part of the prompt); nothing relevant → "no source found", never an answer from memory.
   const rights = rightsPromptParts(body.user_state);
-  const stable = defender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rights.stable;
+  const stable = (defender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT) + '\n\n' + CITATION_RULES;
   const perPerson = (!defender && rights.stateNote ? rights.stateNote + '\n' : '') + languageInstruction(lang).trim();
   const system = [{ text: stable, cache: 'chat' }, { text: perPerson }];
-  const messages = [
-    ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: 'user', content: caseNote + body.message + contextNote + jurisdictionNote },
-  ];
-  return { task: defender ? 'chat_defender' : 'chat', system, messages, max_tokens: defender ? 1500 : 800 };
+  const plan = planSources({ question: body.message, lang, state: body.user_state, history, limit: defender ? 8 : 6 });
+  const fresh = recordsFor(plan.fresh);
+  const userText = caseNote + body.message + contextNote + jurisdictionNote;
+  const messages = [...historyMessages(history), userTurn(userText, fresh)];
+  const sentBlocks = sentInOrder(messages);
+  const records = [...plan.sentBefore, ...fresh];
+  // search_result_index → record (the request order; dedupe keeps each passage once)
+  const byId = new Map(records.map(r => [`jg:${r.id}`, r]));
+  const sent = sentBlocks.map(b => byId.get(b.source)).filter(Boolean);
+  return { task: defender ? 'chat_defender' : 'chat', system, messages, max_tokens: defender ? 1500 : 800, mode: plan.mode, sent, fresh, userText };
+}
+
+/** A finished sourced answer → { answer (public, stored), reply (plain text with markers), content (stored words) } */
+export function sourcedOf(answer, lang = 'en') {
+  return { answer: publicAnswer(answer), reply: plainText(answer, lang, { markers: true }), content: plainText(answer, lang, { markers: false }), raw: answer };
+}
+
+/** The model output (or nothing, for nothing_found) → sourcedOf(). */
+export function sourcedReply(request, { content = [], text = '' } = {}, lang = 'en') {
+  return sourcedOf(finishAnswer({ mode: request.mode, content, text, sent: request.sent, lang, kind: 'chat' }), lang);
+}
+
+/** What is stored with the question (migration 45 ai_sent). */
+export const sentOf = (request) => ({ text: request.userText, sources: request.fresh });
+
+/** A stored answer replayed: { reply, answer }. */
+export function replayOf(replay, lang = 'en') {
+  if (replay?.ai_answer?.segments) return { reply: plainText(replay.ai_answer, lang, { markers: true }), answer: replay.ai_answer };
+  return { reply: replay?.content ?? '', answer: null };
 }
 
 export async function getHistory(db, sessionId, limit = 20, userId = null) {
   const rows = await db.all(
-    `SELECT role, content, content AS text, COALESCE(status, 'complete') AS status, client_msg_id FROM chat_sessions
+    `SELECT role, content, content AS text, COALESCE(status, 'complete') AS status, client_msg_id, ai_answer, ai_sent FROM chat_sessions
      WHERE session_id = ? AND role IN ('user','assistant')${userId ? ' AND user_id = ?' : ''}
      ORDER BY created_at DESC, id DESC LIMIT ?`,
     userId ? [sessionId, userId, limit] : [sessionId, limit]
@@ -161,11 +193,11 @@ export async function getHistory(db, sessionId, limit = 20, userId = null) {
 export async function findReplay(db, userId, sessionId, clientMessageId) {
   if (!clientMessageId) return null;
   const rows = await db.all(
-    `SELECT id, role, content, COALESCE(status, 'complete') AS status FROM chat_sessions
+    `SELECT id, role, content, COALESCE(status, 'complete') AS status, ai_answer FROM chat_sessions
       WHERE user_id = ? AND session_id = ? AND client_msg_id = ? LIMIT 10`,
     [userId, sessionId, clientMessageId]);
   const answer = rows.find(r => r.role === 'assistant' && r.status === 'complete');
-  if (answer) return answer.content;
+  if (answer) return { content: answer.content, ai_answer: answer.ai_answer || null };
   if (rows.length) {
     await db.run('DELETE FROM chat_sessions WHERE user_id = ? AND session_id = ? AND client_msg_id = ?',
       [userId, sessionId, clientMessageId]);
@@ -173,17 +205,21 @@ export async function findReplay(db, userId, sessionId, clientMessageId) {
   return null;
 }
 
-/** Store the question and the answer the person saw. status: 'complete' | 'stopped'. */
-export async function saveExchange(db, { sessionId, userId, question, answer, clientMessageId = null, status = 'complete' }) {
+/**
+ * Store the question and the answer the person saw. status: 'complete' | 'stopped'.
+ * aiSent { text, sources } (the exact question sent + its passages) and aiAnswer (the sourced
+ * answer: segments + citations) keep history rendering as first shown (migration 45).
+ */
+export async function saveExchange(db, { sessionId, userId, question, answer, clientMessageId = null, status = 'complete', aiSent = null, aiAnswer = null }) {
   const t0 = Date.now();
   await db.run(
-    `INSERT INTO chat_sessions (id, session_id, role, content, user_id, client_msg_id, status, created_at)
-     VALUES (?, ?, 'user', ?, ?, ?, 'complete', ?)`,
-    [randomUUID(), sessionId, question, userId, clientMessageId, new Date(t0).toISOString()]);
+    `INSERT INTO chat_sessions (id, session_id, role, content, user_id, client_msg_id, status, created_at, ai_sent)
+     VALUES (?, ?, 'user', ?, ?, ?, 'complete', ?, ?::jsonb)`,
+    [randomUUID(), sessionId, question, userId, clientMessageId, new Date(t0).toISOString(), aiSent ? JSON.stringify(aiSent) : null]);
   await db.run(
-    `INSERT INTO chat_sessions (id, session_id, role, content, user_id, client_msg_id, status, created_at)
-     VALUES (?, ?, 'assistant', ?, ?, ?, ?, ?)`,
-    [randomUUID(), sessionId, answer, userId, clientMessageId, status, new Date(t0 + 1).toISOString()]);
+    `INSERT INTO chat_sessions (id, session_id, role, content, user_id, client_msg_id, status, created_at, ai_answer)
+     VALUES (?, ?, 'assistant', ?, ?, ?, ?, ?, ?::jsonb)`,
+    [randomUUID(), sessionId, answer, userId, clientMessageId, status, new Date(t0 + 1).toISOString(), aiAnswer ? JSON.stringify(aiAnswer) : null]);
 }
 
 export function detectLawyerHandoff(userMessage, reply) {
@@ -254,7 +290,7 @@ export function buildJurisdictionNote(user_state, user_state_name) {
   ].join('\n');
 }
 
-/** Non-streamed answer (job path). Throws an AI error with a code (aiClient.aiErrorCode). */
+/** Non-streamed answer (job path): the gateway result ({ text, content, … }). Throws an AI error with a code (aiClient.aiErrorCode). */
 export async function callClaude({ task, system, messages, max_tokens, defender, userId }) {
   // Routing, caching, refusal handling, per-attempt timeout, retries, budget and metering:
   // services/aiClient.js. This AbortController is the overall 45 s deadline across all
@@ -266,7 +302,7 @@ export async function callClaude({ task, system, messages, max_tokens, defender,
     task: task || route, system, messages, maxTokens: max_tokens, cacheConversation: true,
     route, userId: userId ?? null, signal: deadline.signal, timeoutMs: 40_000,
   }).finally(() => clearTimeout(deadlineTimer));
-  return out.text;
+  return out;
 }
 
 export function classifyIntent(message) {

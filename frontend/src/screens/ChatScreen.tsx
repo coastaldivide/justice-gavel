@@ -32,6 +32,8 @@ import type { ScreenProps } from '../types/navigation';
 import { unwrapList, api } from '../services/api';
 import { notifyDisclaimerRequired } from '../services/legalGate';
 import { askChat, ChatError, chatErrorText, type RightsRef } from '../services/chatStream';
+import { readSourced, sourcedPlainText, type SourcedAnswer } from '../services/sourced';
+import CitedAnswer from '../components/CitedAnswer';
 import { isOnline } from '../services/offlineCache';
 import { detectCrisis } from '../utils/crisisDetect';
 import { t, useLang, perLang, locale } from '../i18n';
@@ -55,7 +57,12 @@ interface Message {
   intent?:             string;
   rightsRefs?:         RightsRef[];
   showUpgrade?:        boolean;
+  /** The answer with its verified citations (backend ai/citations.js); rendered instead of `text`. */
+  sourced?:            SourcedAnswer | null;
 }
+
+/** The words of a message for copy / share (citations as [n] + the source list). */
+const messageText = (m: Message): string => (m.sourced ? sourcedPlainText(m.sourced, t('cite_withheld')) : m.text || '');
 
 // ── Cryptographically secure id / session token ──────────────────────────────
 // expo-crypto works on Hermes and on web; Math.random only if the native
@@ -103,17 +110,18 @@ interface BubbleProps {
   onUpgrade:    () => void;
   onOpenRights: () => void;
   onOpenCrisis: () => void;
+  onOpenApp:    (screen: string) => void;
   onRetry:      (m: Message) => void;
 }
 
-function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, onOpenCrisis, onRetry }: BubbleProps) {
+function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, onOpenCrisis, onOpenApp, onRetry }: BubbleProps) {
   useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
   const isUser = msg.role === 'user';
   const copy = () => {
-    Clipboard.setStringAsync(msg.text || '').then(() => showToast(t('x_ch_copied_clipboard'), 'success')).catch(() => {});
+    Clipboard.setStringAsync(messageText(msg)).then(() => showToast(t('x_ch_copied_clipboard'), 'success')).catch(() => {});
   };
   const call = (url: string) => Linking.openURL(url).catch(() => showToast(t('x_crisis_resources_please_dial_manually', { number: url.replace('tel:', '') }), 'warning'));
 
@@ -140,9 +148,11 @@ function Bubble({ msg, isDefender, busy, onFindLawyer, onUpgrade, onOpenRights, 
           testID={msg.crisis ? 'chat-crisis-card' : 'chat-msg-assistant'}
           style={[styles.bubble, styles.bubbleAssistant, msg.crisis && styles.bubbleCrisis]}
         >
-          {msg.status === 'streaming' && !msg.text
+          {msg.status === 'streaming' && !msg.text && !msg.sourced?.segments.length
             ? <View style={styles.typingInline}><ActivityIndicator size="small" color={themeColors().textBrand} /><Text maxFontSizeMultiplier={1.4} style={styles.typingText}>{t('chat_thinking')}</Text></View>
-            : <MarkdownText text={msg.text} style={styles.bubbleText} testID="chat-answer-text" />}
+            : msg.sourced
+              ? <CitedAnswer answer={msg.sourced} onOpenApp={onOpenApp} textStyle={styles.bubbleText} testID="chat-cited" />
+              : <MarkdownText text={msg.text} style={styles.bubbleText} testID="chat-answer-text" />}
 
           {msg.crisis && (
             <View style={styles.crisisActions}>
@@ -432,6 +442,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         role:   h.role === 'assistant' ? 'assistant' : 'user',
         text:   String(h.content ?? ''),
         status: h.status === 'stopped' ? 'stopped' : 'complete',
+        sourced: h.role === 'assistant' ? readSourced(h.sourced) : null,
       }));
       if (mountedRef.current) setMessages(prev => (keepLocal ? [...msgs, ...prev] : msgs));
     } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
@@ -460,9 +471,9 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         caseTitle ? t('x_ch_export_case', { title: caseTitle }) : '',
         '',
       ].filter(Boolean).join('\n');
-      const body = messages.filter(m => m.text).map(m => {
+      const body = messages.filter(m => m.text || m.sourced).map(m => {
         const sender = m.role === 'assistant' ? t('x_ch_justice_gavel_ai') : t('x_ch_export_you');
-        return `[${sender}]\n${m.text}`;
+        return `[${sender}]\n${messageText(m)}`;
       }).join('\n\n---\n\n');
       const footer = [
         '', '================================',
@@ -517,11 +528,13 @@ function ChatScreen({ navigation, route }: ScreenProps) {
       }, {
         signal: ctrl.signal,
         onToken: (tok) => { pending += tok; if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_MS); },
+        // checked parts of a sourced answer, as they arrive
+        onSourced: (a) => update(answerId, { sourced: a }),
       });
       if (flushTimer) clearTimeout(flushTimer);
       pending = '';
       update(answerId, {
-        text: answer.text, status: 'complete', errorText: undefined,
+        text: answer.text, status: 'complete', errorText: undefined, sourced: answer.sourced ?? null,
         intent: answer.intent, suggestLawyerSearch: answer.suggestLawyerSearch, rightsRefs: answer.rightsRefs,
       });
     } catch (e) {
@@ -538,7 +551,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
       } else if (err.code === 'ai_refused') {
         // The AI declined: nothing it started to write is kept, and asking the same words
         // again would only be declined again, so no retry button.
-        update(answerId, { text: err.message || chatErrorText(err.code), status: 'complete', question: undefined, errorText: undefined });
+        update(answerId, { text: err.message || chatErrorText(err.code), status: 'complete', question: undefined, errorText: undefined, sourced: null });
       } else if (err.status === 401) {
         recheck();
         update(answerId, { text: '', status: 'error', errorText: t('chat_signin_body'), question: undefined });
@@ -593,6 +606,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   const onUpgrade    = () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' });
   const onOpenRights = () => navigation.navigate('MoreTab', { screen: 'RightsCard' });
   const onOpenCrisis = () => navigation.navigate('MoreTab', { screen: 'CrisisResources' });
+  const onOpenApp    = (screen: string) => navigation.navigate('MoreTab', { screen });
 
   const header = (
     <View style={styles.header}>
@@ -676,7 +690,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           renderItem={({ item }) => (
             <Bubble msg={item} isDefender={isDefender} busy={busy}
               onFindLawyer={onFindLawyer} onUpgrade={onUpgrade} onOpenRights={onOpenRights}
-              onOpenCrisis={onOpenCrisis} onRetry={retry} />
+              onOpenCrisis={onOpenCrisis} onOpenApp={onOpenApp} onRetry={retry} />
           )}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={scrollToBottom}

@@ -273,7 +273,9 @@ describeIntegration('audit11 functional fixes (real Postgres)', () => {
       expect(ok.headers['content-type']).toMatch(/text\/event-stream/);
       const frames = String(ok.body).split('\n\n').filter(Boolean).map(f => JSON.parse(f.replace(/^data: /, '')));
       expect(frames[0].type).toBe('disclaimer');
-      expect(frames.filter(f => f.type === 'token').map(f => f.text).join('')).toBe(anthropic.reply.join(''));
+      // the answer arrives as checked parts (no citation here, and no legal statement: shown as is)
+      expect(frames.filter(f => f.type === 'token')).toEqual([]);
+      expect(frames.filter(f => f.type === 'segment').map(f => f.segment.text).join('')).toBe(anthropic.reply.join(''));
       const done = frames.find(f => f.type === 'done');
       expect(done.full_text).toBe(anthropic.reply.join(''));
       // validation errors before the stream are JSON with their own status

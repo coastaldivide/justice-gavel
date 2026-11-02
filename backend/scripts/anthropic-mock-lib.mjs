@@ -17,6 +17,14 @@
  *   - refusals: stop_reason "refusal" + stop_details { type, category, explanation }; with
  *     `fallbacks` (beta server-side-fallback-2026-07-01) the fallback model answers, a `fallback`
  *     content block marks the hand-off and usage.iterations lists both attempts;
+ *   - citations (search-results + citations pages): when the user turns carry `search_result`
+ *     blocks with citations enabled, the answer is several text blocks — uncited connecting text
+ *     and blocks with `citations: [{ type: 'search_result_location', source, title, cited_text,
+ *     search_result_index, start_block_index, end_block_index }]` (index across every
+ *     search_result in the request, in order); streams send `citations_delta` events inside
+ *     the block. state.citeMode: auto (cite the newest results) | none (state.text, no
+ *     citations) | foreign (citations to results that were never sent) | blocks (state.blocks
+ *     verbatim: [{ text, citations? }]);
  *   - the request is checked like the real API (400 invalid_request_error): sampling params,
  *     thinking values per model, forced tool use / prefill on Opus 5.5 & Sonnet 5.5, fallbacks
  *     without the beta header or on Haiku 5.5, unsupported schema keywords, > 4 cache breakpoints,
@@ -35,7 +43,7 @@ export const DEFAULT_TEXT = 'MOCK REPLY: this is general legal information, not 
 export const FALLBACK_MODEL = 'claude-opus-4-8';
 
 export function freshState(extra = {}) {
-  return { mode: 'ok', text: null, json: null, delayMs: 30, tokens: 40, category: 'general_harms', refuseModels: null, ...extra };
+  return { mode: 'ok', text: null, json: null, delayMs: 30, tokens: 40, category: 'general_harms', refuseModels: null, citeMode: 'auto', blocks: null, ...extra };
 }
 
 const caches = new Map();   // prefix key → ttl ('5m' | '1h')
@@ -43,7 +51,9 @@ let seq = 0;
 export function resetCaches() { caches.clear(); }
 
 const est = (s) => Math.ceil(String(s || '').length / 3);
-const blockText = (b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type ? JSON.stringify(b).slice(0, 4000) : '');
+const blockText = (b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text
+  : b?.type === 'search_result' ? `${b.title || ''} ${(b.content || []).map((c) => c?.text || '').join(' ')}`
+  : b?.type ? JSON.stringify(b).slice(0, 4000) : '');
 const contentText = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.map(blockText).join('') : '');
 
 /** Rough input tokens of a request body (chars ÷ 3; images 1,600). */
@@ -75,6 +85,43 @@ function schemaProblem(s, p = '$') {
   return null;
 }
 
+/** Every search_result block of the request, in request order (user turns + tool results). */
+export function searchResultsOf(body = {}) {
+  const out = [];
+  for (const m of body.messages || []) {
+    for (const b of Array.isArray(m.content) ? m.content : []) {
+      if (b?.type === 'search_result') out.push({ block: b, role: m.role });
+      else if (b?.type === 'tool_result' && Array.isArray(b.content)) for (const c of b.content) if (c?.type === 'search_result') out.push({ block: c, role: m.role });
+    }
+  }
+  return out;
+}
+const citationsOn = (body) => searchResultsOf(body).some((r) => r.block.citations?.enabled === true)
+  || (body.messages || []).some((m) => Array.isArray(m.content) && m.content.some((b) => b?.type === 'document' && b.citations?.enabled === true));
+
+function searchResultProblem(body) {
+  const all = searchResultsOf(body);
+  for (const { block: b, role } of all) {
+    if (role !== 'user') return 'search_result blocks can only appear in user messages';
+    if (typeof b.source !== 'string' || !b.source) return 'search_result.source: field required';
+    if (typeof b.title !== 'string' || !b.title) return 'search_result.title: field required';
+    if (!Array.isArray(b.content) || !b.content.length) return 'search_result.content: field required';
+    if (b.content.some((c) => c?.type !== 'text' || typeof c.text !== 'string' || !c.text)) return 'search_result.content: each item must be a non-empty text block';
+  }
+  for (const m of body.messages || []) {
+    for (const b of Array.isArray(m.content) ? m.content : []) {
+      if (b?.type === 'tool_result' && Array.isArray(b.content) && b.content.some((c) => c?.type === 'search_result') && b.content.some((c) => c?.type !== 'search_result')) {
+        return 'tool_result content mixing search_result with other block types is not allowed';
+      }
+    }
+  }
+  const docs = (body.messages || []).flatMap((m) => (Array.isArray(m.content) ? m.content : [])).filter((b) => b?.type === 'document');
+  const settings = new Set([...all.map((r) => r.block.citations?.enabled === true), ...docs.map((d) => d.citations?.enabled === true)]);
+  if (settings.size > 1) return 'citations must be enabled on all or none of the search_result / document blocks';
+  if (citationsOn(body) && body.output_config?.format) return 'citations are not supported together with output_config.format (structured outputs)';
+  return null;
+}
+
 const fam = (m) => (/^claude-opus-5-5/.test(m) ? 'opus55' : /^claude-sonnet-5-5/.test(m) ? 'sonnet55' : /^claude-haiku-5-5/.test(m) ? 'haiku55' : 'other');
 
 /** null, or the message of the 400 the real API would return. */
@@ -99,6 +146,8 @@ export function requestProblem(body, headers = {}) {
   if (last?.role === 'assistant') return 'prefilling the final assistant turn is not supported on this model';
   if ((f === 'opus55' || f === 'sonnet55') && ['any', 'tool'].includes(body.tool_choice?.type)) return 'forced tool use is not supported on this model';
   if ('output_format' in body) return 'output_format is deprecated; use output_config.format';
+  const sr = searchResultProblem(body);
+  if (sr) return sr;
   if (body.output_config?.format) {
     const fmt = body.output_config.format;
     if (fmt.type !== 'json_schema' || !fmt.schema) return 'output_config.format: type json_schema with a schema is required';
@@ -184,6 +233,36 @@ function answerText(body, state) {
   return String(state.text || DEFAULT_TEXT);
 }
 
+/**
+ * The text blocks of an answer to a request with citable search results.
+ * auto: an uncited opening, then one cited block per search result of the LAST user turn (up to
+ * 3; the cited sentence quotes the passage's first block, like a model citing it), then an
+ * uncited closing line with no legal words.
+ */
+export function citedBlocks(body, state) {
+  const all = searchResultsOf(body);
+  if (!all.length || !citationsOn(body)) return null;
+  const mode = state.citeMode || 'auto';
+  if (mode === 'blocks' && Array.isArray(state.blocks)) return state.blocks.map((b) => ({ type: 'text', text: String(b.text), ...(b.citations ? { citations: b.citations } : {}) }));
+  if (mode === 'none') return [{ type: 'text', text: String(state.text || DEFAULT_TEXT) }];
+  const lastUser = [...(body.messages || [])].reverse().find((m) => m.role === 'user');
+  const newest = new Set((Array.isArray(lastUser?.content) ? lastUser.content : []).filter((b) => b?.type === 'search_result'));
+  const picks = all.map((r, i) => ({ ...r, i })).filter((r) => newest.has(r.block)).slice(0, 3);
+  const use = picks.length ? picks : all.map((r, i) => ({ ...r, i })).slice(-1);
+  const out = [{ type: 'text', text: 'Here is what I found. ' }];
+  for (const r of use) {
+    const first = r.block.content[0].text;
+    const cite = { type: 'search_result_location', source: r.block.source, title: r.block.title, cited_text: first, search_result_index: r.i, start_block_index: 0, end_block_index: 1 };
+    if (mode === 'foreign') {
+      out.push({ type: 'text', text: `${first.trim()} `, citations: [{ ...cite, search_result_index: all.length + 5, source: 'https://evil.example/fake', title: 'Not a result we were given' }] });
+    } else {
+      out.push({ type: 'text', text: `${first.trim()} `, citations: [cite] });
+    }
+  }
+  out.push({ type: 'text', text: 'I hope this helps.' });
+  return out;
+}
+
 const declines = (state, model) => !state.refuseModels || state.refuseModels.includes(model);
 
 /** The full non-streamed response for a request. → { status, headers, body } */
@@ -218,7 +297,9 @@ export function messageResponse(body, state, headers = {}) {
       ] } } };
   }
   const maxed = state.mode === 'max_tokens';
-  content.push({ type: 'text', text: maxed ? text.slice(0, Math.max(1, Math.floor(text.length / 2))) : text });
+  const cited = citedBlocks(body, state);
+  if (cited) content.push(...cited);
+  else content.push({ type: 'text', text: maxed ? text.slice(0, Math.max(1, Math.floor(text.length / 2))) : text });
   return { status: 200, headers: { 'request-id': reqId }, body: {
     id: `msg_mock_${seq}`, type: 'message', role: 'assistant', model, content,
     stop_reason: maxed ? 'max_tokens' : 'end_turn', stop_sequence: null, stop_details: null,
@@ -255,6 +336,23 @@ export function streamEvents(body, state) {
   }
   if (refusalMode && !serverFallback && state.mode !== 'refusal_mid') {
     push({ type: 'message_delta', delta: { stop_reason: 'refusal', stop_sequence: null, stop_details: { type: 'refusal', category: state.category ?? null, explanation: 'declined (mock)' } }, usage: { output_tokens: 0 } });
+    push({ type: 'message_stop' });
+    return ev;
+  }
+  const cited = refusalMode ? null : citedBlocks(body, state);
+  if (cited) {
+    let words = 0;
+    for (const blk of cited) {
+      push({ type: 'content_block_start', index, content_block: { type: 'text', text: '' } });
+      for (const c of blk.citations || []) push({ type: 'content_block_delta', index, delta: { type: 'citations_delta', citation: c } });
+      for (const w of String(blk.text).split(/(?<=\s)/)) {
+        words += 1;
+        if (state.mode === 'drop' && words === 3) { ev.push({ drop: true }); return ev; }
+        push({ type: 'content_block_delta', index, delta: { type: 'text_delta', text: w } }, pause);
+      }
+      push({ type: 'content_block_stop', index }); index += 1;
+    }
+    push({ type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null, stop_details: null }, usage: { output_tokens: words } });
     push({ type: 'message_stop' });
     return ev;
   }

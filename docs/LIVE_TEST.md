@@ -302,6 +302,31 @@ ORDER BY id DESC LIMIT 3;`
 - [ ] L7 **Budget**: `AI_DAILY_BUDGET_USD` just above today's spend → the next large request (contract review) is
   refused before sending ("too large … try again tomorrow"); a short chat still works until the cap.
 
+## M. Verified citations with a real key (migration 45, 20 min)
+Staging with a real `ANTHROPIC_API_KEY` (the mock follows the search-results / citations docs; these checks
+confirm the real API). Newest rows: `SELECT role, content, ai_answer, ai_sent FROM chat_sessions ORDER BY created_at
+DESC LIMIT 2;`
+- [ ] M1 **Chat, cited** (consumer, state Tennessee): "Can police search my car without a warrant?" → the answer
+  arrives in parts with [1] [2]; "Sources" lists the rights card (checked April 2026); tapping [1] shows the passage
+  word for word; "Open in the app" opens the rights card. No 400 in the log (`search_result` blocks accepted, no beta
+  header). In `ai_answer`: `dropped` 0; note how many parts were `withheld` (the real model's uncited sentences).
+- [ ] M2 **Citation shape**: with `LOG_LEVEL=debug` temporarily, or in the Anthropic console's request log, confirm
+  the response text blocks carry `citations[].type = "search_result_location"` with `source` = `jg:…`, `title`,
+  `cited_text` (equal to the passage blocks), `search_result_index`, `start_block_index`, `end_block_index`; and that
+  the stream sends `citations_delta` inside the cited block. If the real field names differ, `ai_answer.dropped` > 0
+  on every answer — stop and fix `ai/citations.js verifyCitation`.
+- [ ] M3 **Follow-up cached**: a follow-up within 5 minutes → `ai_usage_log.cache_read_tokens` ≥ the first question's
+  input (the earlier turn with its search results is read from cache).
+- [ ] M4 **Nothing found**: "Is quuxification lawful?" → "We couldn't find this in Justice Gavel's checked legal
+  information…" with the rights card / legal help buttons, and **no** new `/v1/messages` row in `ai_usage_log`.
+- [ ] M5 **Other languages + RTL**: ask M1 in Spanish and in Arabic → passages in that language, the marker and
+  labels translated, the Arabic bubble mirrored.
+- [ ] M6 **Research** (attorney): "Can a DUI conviction be expunged in Tennessee?" → sources include the Tennessee
+  record-clearing row with its statute citation and source URL; reopen the session from History → same citations.
+  With the research library configured (`SUPABASE_URL`), a case-law question cites library rows (title = citation).
+- [ ] M7 **400 kept away**: confirm no request ever combined citations with `output_config.format` (grep the server
+  log for `citations cannot be combined` — expected: none).
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

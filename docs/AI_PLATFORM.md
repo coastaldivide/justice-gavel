@@ -1,4 +1,4 @@
-# AI platform — the gateway (step 1, November 2 2026)
+# AI platform — the gateway (step 1) and verified citations (step 2), November 2 2026
 
 Justice Gavel gives legal **information**, never legal advice. Every AI feature keeps the
 disclaimer gate, the "general information — not reviewed by a lawyer" labels and the rule that
@@ -16,6 +16,8 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | Token counting | build-with-claude/token-counting | `POST /v1/messages/count_tokens` (free, own rate limit) |
 | Refusals + fallback | build-with-claude/refusals-and-fallback | `fallbacks: "default"` + `anthropic-beta: server-side-fallback-2026-07-01` |
 | Pricing | about-claude/pricing | — (table in `backend/src/ai/pricing.js`) |
+| Search results (step 2) | build-with-claude/search-results | `search_result` blocks `{ source, title, content: [text…], citations: { enabled: true } }` in the user turn (no beta header) |
+| Citations (step 2) | build-with-claude/citations | response text blocks with `citations` (`search_result_location`); streams `citations_delta`; never with `output_config.format` |
 
 ## Where it lives
 
@@ -29,6 +31,11 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | `backend/src/monitoring/aiHealth.js` | hourly error / refusal alarm, metrics summary |
 | `supabase/migrations/00000000000044_ai_gateway_metering.sql` | new `ai_usage_log` columns |
 | `backend/scripts/anthropic-mock-lib.mjs` | the documented-API mock shared by `anthropic-mock.mjs` and the jest harness |
+| `backend/src/ai/legalCorpus.js` | step 2: the sourced passages the AI may cite + retrieval |
+| `backend/src/ai/citations.js` | step 2: search_result blocks, citation verification, the legal-statement check, plain-text rendering |
+| `backend/src/services/sourcedAnswers.js` | step 2: grounded / nothing_found / plain modes, history rebuild, streamed assembly |
+| `backend/src/data/guideCorpus.js` | step 2: generated copy of the court guide + case steps (8 languages, with sources) — `node backend/scripts/build-guide-corpus.mjs` |
+| `supabase/migrations/00000000000045_ai_citations.sql` | step 2: `ai_answer` / `ai_sent` on chat_sessions and research_messages |
 
 No call site names a model; nothing calls the API outside the gateway (the evaluation scripts
 included — `run_eval.js --model` overrides the model on purpose, for comparisons).
@@ -117,9 +124,9 @@ and `fallback_model` set (a fallback answered).
 
 | Prefix | Breakpoint | Why |
 |---|---|---|
-| Chat system prompt + rights card (consumer, ~9.1k chars ≈ 2.3–3k tokens), defender prompt (~1.2k tokens) | **1 hour** (`AI_CHAT_CACHE_TTL`) | identical for every person; the state note and language line follow in an uncached block |
-| Chat / research conversation | automatic (top-level `cache_control`, 5 min) | a follow-up re-reads the history from cache |
-| Research instructions (~1.2–1.5k tokens), RAG instructions | 5 min | |
+| Chat system prompt + sources rules (consumer ≈ 2.4k tokens), defender prompt + sources rules (~1.5k tokens) | **1 hour** (`AI_CHAT_CACHE_TTL`) | identical for every person; the state note and language line follow in an uncached block. Since step 2 the rights card is no longer in the prompt: it is one of the citable passages (§8) |
+| Chat / research conversation (incl. the citable search results of earlier turns) | automatic (top-level `cache_control`, 5 min) | a follow-up re-reads the history from cache: earlier user turns are rebuilt byte-for-byte from `ai_sent` (exact text + the same search_result blocks) |
+| Research instructions + sources rules (~1.5–1.8k tokens), RAG instructions | 5 min | |
 | Motion templates (trial / appellate), motion clean-up, motion review, discovery, petition, privilege-log, speaker-tagging instructions | 5 min | the template moved to the system prompt, the case facts to the user turn |
 | Contract prompts, translation, match, notes | none | short and per-request (under the 512-token minimum) |
 
@@ -199,13 +206,105 @@ logged.
   follow "Set up API tracing" (platform.claude.com/docs/en/manage-claude/opentelemetry/api — that
   page could not be read from this environment, so its console steps are not described here).
 
+## 8. Verified citations (step 2, November 2 2026)
+
+Every legal statement in a chat or research answer must trace to a source. Docs read 2026-11-02:
+build-with-claude/search-results and build-with-claude/citations (URLs and date also in
+`services/aiClient.js` and `ai/citations.js`).
+
+**Which block type.** Retrieved passages go to Claude as top-level **`search_result`** blocks in
+the user turn (`{ type, source, title, content: [{ type: 'text', text }…], citations: { enabled: true } }`),
+not `document` blocks: the docs name search results for RAG, each citation then carries our own
+`source` id (`jg:<passage id>`) and title, and our passages are already cut into the units we want
+cited (the docs: a text block is the smallest citable unit; one sentence or one guide item per
+block). No beta header; all active models but Haiku 3. Citations are enabled on every block (the
+docs: all or none). The blocks sit in the user turn, after the cached system prompt, so the 1-hour
+chat prefix stays identical for everyone.
+
+**Citations vs structured outputs.** The citations page: enabling citations together with
+`output_config.format` is a **400**. So cited answers are always prose, and structured output is
+used only where nothing needs a citation (motion review, discovery, contracts, notes …). The
+gateway refuses to build a request that combines them (`buildRequest` throws before sending), and
+the mock returns the API's 400 if one ever slipped through.
+
+**The corpus** (`ai/legalCorpus.js`, 546 passages): the general rights card (8 languages; each
+section names its constitutional source; opens the Rights card), the court guide (8 sections) and
+the nine case stages (8 languages, with the official pages and the date checked —
+`data/guideCorpus.js`, generated from the app; a test fails if it drifts), the record-clearing
+rules that pass `citationOf()` (295 state × category rows: verified / corrected, citation, source
+URL — English only) and the recording-consent table (51 rows). Research adds the research library
+(`legal_documents` in Supabase, when `SUPABASE_URL` + key are set): rows with a citation and
+similarity ≥ `RAG_MIN_SIMILARITY` (0.35). Nothing unsourced is a passage (unreviewed state
+summaries, withheld tables). Retrieval is lexical BM25 in the person's language plus the
+English-only tables, limited to the person's state and the states the question names (other
+states' verdicts are never sent), lenient on purpose: the safety is in verification.
+
+**Modes** (`services/sourcedAnswers.js`):
+
+| Mode | When | What happens |
+|---|---|---|
+| grounded | relevant passages found (or the conversation already has some) | passages sent as citable search results (max 6 chat / 8 defender + research; a passage already sent earlier in the conversation is not resent — its index stays valid); answer verified |
+| nothing_found | a legal question (8-language check) and nothing relevant | **no model call**; the person is told no checked source was found and pointed to legal aid / the rights card (research: "check a primary source") — never an answer from model memory |
+| plain | not a legal question (app help, a kind word, scheduling) | asked without sources; any sentence that still makes a legal statement is withheld |
+
+**Verification rules** (`ai/citations.js verifyCitation`): a citation is kept only if
+`type === 'search_result_location'`, `search_result_index` is in range of the search results in
+that request (counted across all messages, as the docs say), `source` equals the id we sent at that
+index, `title` (when given) equals ours, `0 ≤ start_block_index < end_block_index ≤ blocks` and
+`cited_text` is contained in those blocks. Anything else (other citation types, foreign ids,
+invented text) is dropped, counted (`dropped`, logged by reason) and never shown. The passage shown
+on tap is **our stored text**, not the model's copy.
+
+**Uncited text** (owner rule, LEGAL_ACCURACY_REVIEW): a part with no surviving citation is shown
+only if it makes no legal statement (`looksLegal()`: any number other than a crisis line, §/$,
+and legal words in all 8 languages — deliberately broad); otherwise it is replaced by
+"No source found for this part — not shown" and never reaches the person, the history or an
+export. If nothing visible is left, the nothing-found answer is shown; if the answer cited nothing
+but some parts were withheld, the app adds the rights card / legal help buttons (`no_source`).
+
+**Streaming.** `citations_delta` events are collected into their text block; a block is shown only
+when it is complete and checked (`segment` frames); plain answers are shown sentence by sentence.
+No unchecked text reaches the app (no `token` frames except a replayed, already-checked answer).
+Stop saves only the checked parts already shown; a refusal still discards everything.
+
+**What people see.** Chat bubble and research answer (`components/CitedAnswer.tsx`): the text
+with tappable numbers [1] [2]; "Sources" with title, kind, jurisdiction, year and "checked
+<date>"; tapping a source shows the exact passage, "Open the source" (official page) and
+"Open in the app" (rights card, court guide, case steps, record clearing); the "not shown" marker
+in place of uncited legal parts; the label "General information — not legal advice — not reviewed
+by a lawyer". All 8 languages; mirrors in Arabic. Text-only callers get `reply` / `answer` with
+[n] markers and a numbered source list.
+
+**Storage** (migration 45): assistant rows keep `ai_answer` (segments + sources: id, kind, title,
+jurisdiction, year, URL, publisher, checked date, passage) so history renders exactly as first
+shown; user rows keep `ai_sent` (exact question text + the passages sent). `content` keeps the
+visible words only. Both are deleted with the account (chat rows by user; research messages via
+the user's research sessions — this step also closes the gap that research messages were left
+behind) and included in the data export (`research_messages`).
+
+**Costs.** Passages add input tokens (~150–400 per passage; a chat question ≈ +1–2k tokens, cached
+on follow-ups), the docs note citations add a little more for chunking; `cited_text` is not billed
+as output. No new model call: nothing_found saves the call entirely.
+
+**Tests.** `ai_citations.test.js` (21: request shape, 400 rules, verification incl. foreign ids,
+withholding in 8 languages, retrieval / modes, cache hit on the follow-up, streaming, corpus
+drift), `integration/ai_citations.int.test.js` (7, real Postgres: stream, history, follow-up cache
+read, foreign ids, nothing found, refusal unchanged, research /ask + /rag, export + deletion),
+frontend `render/citedAnswer.test.tsx` (9 incl. Arabic / RTL). The mock (`citeMode` auto | none |
+foreign | blocks) returns citation-bearing responses in the documented shapes, JSON and SSE.
+
+**Live-key checks** (docs/LIVE_TEST.md section M): real `search_result_location` fields and
+`citations_delta` order on Sonnet 5.5 / Opus 5.5, that `cited_text` matches our blocks, how often a
+real answer leaves legal sentences uncited (withheld rate), cache reads with search results in the
+history, and the 400 for citations + `output_config.format`.
+
 ## Settings
 
 All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDARD|DEEP`,
 `AI_EFFORT_*`, `AI_THINKING_*`, `AI_THINKING_HEADROOM_*`, `AI_FALLBACK`, `AI_FALLBACK_MODEL`,
 `AI_CACHE`, `AI_CHAT_CACHE_TTL`, `AI_COUNT_TOKENS_THRESHOLD`, `AI_MAX_INPUT_TOKENS`,
 `AI_MAX_REQUEST_USD`, `AI_TRACE_PROPAGATION`, `AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`,
-`AI_ALERT_REFUSAL_PCT` (plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
+`AI_ALERT_REFUSAL_PCT`, `RAG_MIN_SIMILARITY` (step 2) (plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
 `AI_BUDGET_ALERT_PCT`, `AI_PRICE_*`).
 
 ## Tests
@@ -222,7 +321,7 @@ All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDA
   prefill on Opus 5.5 / Sonnet 5.5, `fallbacks` without the beta header or on Haiku 5.5,
   unsupported schema keywords, more than 4 breakpoints or a 1h breakpoint after a 5m one.
 
-## Needs a live-key check (docs/LIVE_TEST.md section L)
+## Needs a live-key check (docs/LIVE_TEST.md sections L and M)
 
 Nothing here was verified against the real API: the mock follows the docs. To check with a key:
 structured outputs on each model, cache write then read on the second chat question (1h TTL in

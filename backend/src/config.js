@@ -252,6 +252,7 @@ export const ALL_ENV_VARS = {
   AI_FALLBACK_MODEL: process.env.AI_FALLBACK_MODEL || '',  // client-side refusal retry model (models without server-side fallback, e.g. Haiku 5.5); empty = the standard class model
   AI_CACHE: process.env.AI_CACHE || 'on',  // prompt caching breakpoints: on | off
   AI_CHAT_CACHE_TTL: process.env.AI_CHAT_CACHE_TTL || '1h',  // chat system-prompt cache lifetime: 1h | 5m (break-even in docs/AI_PLATFORM.md)
+  RAG_MIN_SIMILARITY: process.env.RAG_MIN_SIMILARITY || '0.35',  // research library passages below this similarity are not sent (services/rag.js)
   AI_COUNT_TOKENS_THRESHOLD: process.env.AI_COUNT_TOKENS_THRESHOLD || '20000',  // requests estimated at or above this many input tokens (or with documents / images) are counted with /v1/messages/count_tokens first
   AI_MAX_INPUT_TOKENS: process.env.AI_MAX_INPUT_TOKENS || '150000',  // refuse a request over this many input tokens before sending it (ai_too_large)
   AI_MAX_REQUEST_USD: process.env.AI_MAX_REQUEST_USD || '2',  // refuse a request whose worst-case cost (input + max_tokens output) is over this, before sending it

@@ -216,7 +216,10 @@ async function main() {
         if (job.status === 'done' || job.status === 'failed') break;
       }
       assert(job?.status === 'done', `job not done: ${JSON.stringify(job)}`);
-      assert(/MOCK REPLY/.test(job.result?.reply || ''), `unexpected reply: ${JSON.stringify(job.result)}`);
+      // A legal question is answered from the app's sourced content with verified citations
+      // (docs/AI_PLATFORM.md §8); the mock cites the passages it was given.
+      assert(job.result?.sourced?.grounded && job.result.sourced.sources?.length > 0 && /\[1\]/.test(job.result?.reply || ''),
+        `expected a cited answer: ${JSON.stringify(job.result)}`);
       const sent = mockRequests.find(m => m.path === '/v1/messages');
       assert(sent, 'mock Anthropic API received no /v1/messages request');
       assert(sent.body?.model === EXPECT_MODEL, `model sent was ${sent.body?.model}`);

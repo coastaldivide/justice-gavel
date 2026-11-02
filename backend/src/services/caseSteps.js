@@ -82,7 +82,7 @@ export function cleanChecked(checked) {
 
 /** The owner's case (or null): { id, title, state, user_id }. */
 export async function ownedCase(db, userId, caseId) {
-  return db.get('SELECT id, title, state, user_id FROM cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [caseId, userId]);
+  return await db.get('SELECT id, title, state, user_id FROM cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [caseId, userId]);
 }
 
 /** Items ticked by the case's court dates. */

@@ -25,7 +25,7 @@
  * (scripts/anthropic-mock-lib.mjs: structured outputs, thinking blocks, cache
  * usage, refusals + server-side fallback, count_tokens, 400s for bad requests).
  * Tests steer it with ctx.anthropic.replyText / status / mode / json / category /
- * refuseModels.
+ * refuseModels / citeMode (auto | none | foreign | blocks) / blocks.
  */
 import { randomBytes } from 'crypto';
 import http from 'http';
@@ -112,7 +112,8 @@ export function initSuite({ anthropicMock = false } = {}) {
           }
           const a = ctx.anthropic;
           const state = freshState({ text: a.replyText, mode: a.mode || 'ok', json: a.json ?? null,
-            category: a.category ?? 'general_harms', refuseModels: a.refuseModels ?? null });
+            category: a.category ?? 'general_harms', refuseModels: a.refuseModels ?? null,
+            citeMode: a.citeMode || 'auto', blocks: a.blocks ?? null });
           if (body?.stream) {
             const problem = requestProblem(body, req.headers);
             if (problem) {

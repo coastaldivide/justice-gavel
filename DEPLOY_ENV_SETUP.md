@@ -336,6 +336,7 @@ AI_TRACE_PROPAGATION=off                 on = send a W3C traceparent header on e
 AI_ALERT_MIN_CALLS=20                    AI error / refusal alerts need at least this many calls in the hour
 AI_ALERT_ERROR_PCT=20                    hourly alert when more than this % of AI calls fail or fail validation
 AI_ALERT_REFUSAL_PCT=10                  hourly alert when more than this % of AI calls end in a refusal
+RAG_MIN_SIMILARITY=0.35                  research library (Supabase legal_documents): passages below this similarity are not sent as citable sources
 AI_CONCURRENCY=8                         parallel AI jobs (in-process or BullMQ)
 AI_JOB_TIMEOUT_MS=45000                  per-AI-job timeout
 AI_DRAIN_TIMEOUT_MS=10000                graceful shutdown waits this long for in-flight AI jobs

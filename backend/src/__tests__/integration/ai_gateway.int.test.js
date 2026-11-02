@@ -101,11 +101,12 @@ describeIntegration('AI gateway (real Postgres, documented-API mock)', () => {
   it('stream: a refusal mid-answer tells the app to discard the partial text and saves nothing', async () => {
     process.env.AI_FALLBACK = 'off';
     ctx.anthropic.mode = 'refusal_mid';
-    ctx.anthropic.replyText = 'one two three four five six seven eight nine ten';
+    ctx.anthropic.replyText = 'One. Two. Three. Four. Five. Six. Seven. Eight. Nine. Ten.';
     const sessionId = `${ctx.tag}-s1`;
     const r = await streamChat(user, { message: 'q', sessionId, clientMessageId: `${ctx.tag}s1`, mode: 'defender' });
     const f = frames(r.body);
-    expect(f.some((x) => x.type === 'token')).toBe(true);
+    expect(f.some((x) => x.type === 'segment')).toBe(true);     // checked sentences were shown…
+    expect(f.some((x) => x.type === 'token')).toBe(false);      // …never unchecked text
     expect(f.at(-1)).toMatchObject({ type: 'error', code: 'ai_refused', discard: true });
     expect(f.at(-1).message).toMatch(/^This request can't be answered here\./);
     expect(f.some((x) => x.type === 'done')).toBe(false);

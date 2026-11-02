@@ -1,4 +1,7 @@
 import { aiMessage } from './aiClient.js';
+import { sentences } from '../ai/legalCorpus.js';
+import { CITATION_RULES } from '../ai/citations.js';
+import { planSources, userTurn, historyMessages, sentInOrder, recordsFor, finishAnswer } from './sourcedAnswers.js';
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
 // Embedding model: Supabase gte-small (384 dimensions, no API key needed)
@@ -23,9 +26,12 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
  *   1. User asks a legal research question
  *   2. Generate embedding for query (Supabase gte-small, free, no API key)
  *   3. Hybrid search: semantic (pgvector cosine) + keyword (pg_trgm)
- *   4. Top-8 chunks passed to Claude as grounded context
- *   5. Claude answers citing ONLY retrieved documents
- *   6. Response includes citations with year, jurisdiction, source URL
+ *   4. The relevant chunks (similarity ≥ RAG_MIN_SIMILARITY, with a citation) plus the app's sourced
+ *      content (ai/legalCorpus.js) passed to Claude as citable search_result blocks
+ *   5. Claude answers citing ONLY those passages; every citation is checked against what was sent
+ *      and uncited legal statements are withheld (ai/citations.js)
+ *   6. Nothing relevant → no model call: the person is told no source was found
+ *   7. Response includes the verified citations with year, jurisdiction, source URL and the passage
  *
  * Uses Supabase Edge Functions for embeddings (no OpenAI key required):
  *   POST /functions/v1/embed  { input: string } → { embedding: float[] }
@@ -78,95 +84,109 @@ async function retrieveDocs(embedding, queryText, { practiceArea, jurisdiction }
   return res.json(); // [{citation, title, content, similarity, ...}]
 }
 
-// ── Step 3: Build grounded prompt for Claude ───────────────────────────────
-// The instructions are the stable (cacheable) system prompt; the retrieved documents and the
-// question are the user turn.
-export const RAG_SYSTEM_GROUNDED = `You are a legal research assistant with access to retrieved legal documents. Answer ONLY using the provided documents. Cite each source as [1], [2] etc. If the documents don't fully answer the question, say so — do not fabricate case law.
-
-Instructions:
-- Answer based on the retrieved documents only
-- Cite every claim with [number] matching the document list
-- If a retrieved document is from a different jurisdiction than asked, note that
-- End with: "This is legal information, not legal advice. Consult a licensed attorney."`;
-export const RAG_SYSTEM_UNGROUNDED = 'You are a legal research assistant. Answer the following question using your training knowledge, but note that no specific case law was retrieved for this query. Always remind the user to consult a licensed attorney.';
-
-export function buildRAGPrompt(userQuery, docs) {
-  if (!docs.length) return { system: RAG_SYSTEM_UNGROUNDED, user: `Question: ${userQuery}` };
-  const context = docs.map((d, i) =>
-    `[${i + 1}] ${d.citation} (${d.jurisdiction}, ${d.year})\n${d.content.slice(0, 800)}`
-  ).join('\n\n---\n\n');
-  return { system: RAG_SYSTEM_GROUNDED, user: `RETRIEVED DOCUMENTS:\n${context}\n\nUSER QUESTION: ${userQuery}` };
+// ── Step 3: library rows → citable passages ─────────────────────────────────
+/** RAG_MIN_SIMILARITY (default 0.35): library rows below it are not relevant enough to send. */
+export function minSimilarity() {
+  const n = Number(String(process.env.RAG_MIN_SIMILARITY ?? '').trim());
+  return Number.isFinite(n) && n > 0 && n < 1 ? n : 0.35;
 }
 
-// ── Step 4: Generate answer with Claude ───────────────────────────────────
-async function generateAnswer(prompt, userId) {
+/**
+ * legal_documents rows → passages (ai/legalCorpus.js shape). Only rows with a citation are
+ * citable (a legal statement must name its source); the text is split into sentences so a
+ * citation points at the exact sentence.
+ */
+export function libraryPassages(docs = []) {
+  return docs
+    .filter((d) => d && typeof d.citation === 'string' && d.citation.trim() && typeof d.content === 'string' && d.content.trim())
+    .filter((d) => d.similarity == null || Number(d.similarity) >= minSimilarity())
+    .map((d) => ({
+      id: `lib.${d.id ?? d.citation}`, kind: 'library', lang: 'en',
+      title: `${String(d.citation).trim()}${d.title ? ` — ${String(d.title).trim()}` : ''}`.slice(0, 300),
+      jurisdiction: d.jurisdiction || null, year: Number.isInteger(d.year) ? d.year : (Number(d.year) || null),
+      url: typeof d.source_url === 'string' && /^https?:\/\//.test(d.source_url) ? d.source_url : null,
+      publisher: String(d.citation).trim(), checked: null, app_link: null,
+      blocks: sentences(String(d.content).slice(0, 2400)), keywords: `${d.title || ''} ${d.practice_area || ''}`,
+      similarity: d.similarity ?? null,
+    }))
+    .filter((p) => p.blocks.length);
+}
+
+/** The research library's matches (Supabase legal_documents), or [] when it is not configured / down. */
+export async function findLibrary(query, opts = {}) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const embedding = await embedQuery(query);
+    return libraryPassages(await retrieveDocs(embedding, query, opts));
+  } catch (err) {
+    logger.warn('[rag] library search failed — answering from the app\'s sourced content only:', err?.message);
+    return [];
+  }
+}
+
+// ── Step 4: the sourced research answer ───────────────────────────────────
+/**
+ * One research question, answered only from sources.
+ *   sourcedResearch({ query, history, lang, context, jurisdiction, practiceArea, userId, task, route, system })
+ *   → { mode, answer (ai/citations.js sourced answer), sent: { text, sources }, docsUsed, libraryUsed }
+ * Library passages (when the library is configured) and the app's sourced content (legal tables,
+ * rights card, court guide, case steps — ai/legalCorpus.js) go to Claude as citable search
+ * results after the cached instructions. Nothing relevant → no model call (mode nothing_found).
+ */
+export async function sourcedResearch({ query, history = [], lang = 'en', context = '', jurisdiction = null, practiceArea = null, userId = null, task = 'research', route = task, system }) {
+  const library = await findLibrary(query, { practiceArea, jurisdiction });
+  const plan = planSources({ question: query, lang, state: jurisdiction, history, extra: library, limit: 8, legal: true });
+  const fresh = recordsFor(plan.fresh);
+  const text = (context ? `[Case: ${context}]\n\n` : '') + query;
+  const sent = { text, sources: fresh };
+  if (plan.mode === 'nothing_found') {
+    return { mode: plan.mode, answer: finishAnswer({ mode: plan.mode, lang, kind: 'research' }), sent, docsUsed: 0, libraryUsed: 0 };
+  }
+  const messages = [...historyMessages(history), userTurn(text, fresh)];
+  const records = [...plan.sentBefore, ...fresh];
+  const byId = new Map(records.map((r) => [`jg:${r.id}`, r]));
+  const order = sentInOrder(messages).map((b) => byId.get(b.source)).filter(Boolean);
   // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
   const out = await aiMessage({
-    task: 'research_rag',
-    system: [{ text: prompt.system, cache: '5m' }],
-    messages: [{ role: 'user', content: prompt.user }],
-    route: 'research_rag',
-    userId,
-    timeoutMs: 100_000,
+    task, system, messages, cacheConversation: true, route, userId, timeoutMs: 100_000, retries: 1,
   });
-  return out.text;
+  const answer = finishAnswer({ mode: plan.mode, content: out.content, text: out.text, sent: order, lang, kind: 'research' });
+  if (answer.dropped) logger.warn({ route, dropped: answer.dropped, reasons: answer.dropReasons }, '[rag] citations to sources we did not send were dropped');
+  return { mode: plan.mode, answer, sent, docsUsed: fresh.length, libraryUsed: fresh.filter((r) => r.kind === 'library').length };
 }
 
-// ── Main export: full RAG pipeline ────────────────────────────────────────
+/** The research instructions for POST /research/rag (the stable, cached part). */
+export const RAG_SYSTEM_GROUNDED = `You are a legal research assistant. Each question comes with search results: passages from a legal research library and from Justice Gavel's checked legal information, each titled with its citation and jurisdiction.
+
+Instructions:
+- Answer only from the search results, and cite every legal statement from them
+- If a search result is from a different jurisdiction than asked, note that
+- If the search results do not fully answer the question, say so plainly — do not fabricate or complete case law from memory
+- Do not add a disclaimer or a source list: the app shows them under every answer
+
+${CITATION_RULES}`;
+
 /**
- * @param {string} query        — user's legal research question
- * @param {object} opts
- * @param {string} opts.practiceArea — 'criminal'|'immigration'|'civil_rights'|'bail'
- * @param {string} opts.jurisdiction — 'federal'|'CA'|'NY' etc.
- * @returns {{ answer: string, citations: Array, docsUsed: number, fromRAG: boolean }}
+ * POST /research/rag — one stateless sourced answer.
+ * @returns {{ answer, citations, docsUsed, fromRAG, latencyMs, mode }}
  */
-
-// ── Build suggested follow-up questions based on query context ────────────
-
 export async function ragSearch(query, opts = {}) {
   const t0 = Date.now();
-
-  try {
-    // Try embedding + retrieval; fall back to plain Claude if embed service is down
-    let docs = [];
-    let embedding = null;
-
-    try {
-      embedding = await embedQuery(query);
-      docs      = await retrieveDocs(embedding, query, opts);
-    } catch (embedErr) {
-      logger.warn('[rag] embedding failed, falling back to plain Claude:', embedErr?.message);
-    }
-
-    const prompt = buildRAGPrompt(query, docs);
-    const answer = await generateAnswer(prompt, opts.userId ?? null);
-
-    const citations = docs.map(d => ({
-      citation:  d.citation,
-      title:     d.title,
-      year:      d.year,
-      source:    d.source_url,
-      relevance: Math.round((d.similarity || 0) * 100),
-    }));
-
-    logger.info('[rag] query complete', {
-      docsFound: docs.length,
-      latencyMs: Date.now() - t0,
-      fromRAG:   docs.length > 0,
-    });
-
-    return {
-      answer,
-      citations,
-      docsUsed:  docs.length,
-      fromRAG:   docs.length > 0,
-      latencyMs: Date.now() - t0,
-    };
-
-  } catch (err) {
-    logger.error('[rag] pipeline failed:', err?.message);
-    throw err;
-  }
+  const lang = opts.lang || 'en';
+  const r = await sourcedResearch({
+    query, lang, jurisdiction: opts.jurisdiction || null, practiceArea: opts.practiceArea || null,
+    userId: opts.userId ?? null, task: 'research_rag', route: 'research_rag',
+    system: [{ text: RAG_SYSTEM_GROUNDED, cache: '5m' }, { text: opts.languageLine || '' }],
+  });
+  logger.info('[rag] query complete', { docsSent: r.docsUsed, library: r.libraryUsed, mode: r.mode, cited: r.answer.sources.length, latencyMs: Date.now() - t0 });
+  return {
+    answer: r.answer,
+    citations: r.answer.sources,
+    docsUsed: r.docsUsed,
+    fromRAG: r.libraryUsed > 0,
+    mode: r.mode,
+    latencyMs: Date.now() - t0,
+  };
 }
 
 // ── Seed utility: add a legal document to the index ─────────────────────

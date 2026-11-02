@@ -383,6 +383,10 @@ export async function purgeAccountData(tx, uid, { email = null } = {}) {
   // 2. firms the user owns
   const firms = await transferOrDeleteFirms(tx, uid);
 
+  // 2a. research messages (questions, answers and their saved citations / sent passages —
+  //     migration 45) are keyed by session, not by user: removed with the user's sessions.
+  await step(tx, 'DELETE FROM research_messages WHERE session_id::text IN (SELECT id::text FROM research_sessions WHERE user_id = ?)', [uid]);
+
   // 2b. listing reports stay in the admin queue, but their reporter_key is a
   //     hash of the user id (sequential, so trivially reversible): replace it
   //     before the reporter link is cleared, so the report cannot be tied
@@ -452,6 +456,16 @@ export async function exportAccount(db, uid) {
       }
       return out;
     })];
+  }
+  // Research messages hang off the user's research sessions (with their saved citations).
+  try {
+    let rows = await db.all(
+      `SELECT m.* FROM research_messages m WHERE m.session_id::text IN (SELECT id::text FROM research_sessions WHERE user_id = ?)
+        ORDER BY m.id DESC LIMIT ${EXPORT_LIMIT + 1}`, [uid]);
+    if (rows.length > EXPORT_LIMIT) { rows = rows.slice(0, EXPORT_LIMIT); truncated.push('research_messages'); }
+    if (rows.length) data.research_messages = rows;
+  } catch (e) {
+    if (!(MISSING.has(e.code) || /no such table|no such column/i.test(e.message))) throw e;
   }
   return { profile, data, truncated };
 }

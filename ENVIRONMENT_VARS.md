@@ -27,7 +27,8 @@ The AI gateway (November 2026, migration 44, docs/AI_PLATFORM.md) adds per-class
 (`AI_FALLBACK`, `AI_FALLBACK_MODEL`), prompt caching (`AI_CACHE`, `AI_CHAT_CACHE_TTL`), preflight limits
 (`AI_COUNT_TOKENS_THRESHOLD`, `AI_MAX_INPUT_TOKENS`, `AI_MAX_REQUEST_USD`), tracing (`AI_TRACE_PROPAGATION`) and the
 hourly AI alert (`AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`, `AI_ALERT_REFUSAL_PCT`). Every one has a working default;
-see DEPLOY_ENV_SETUP.md.
+see DEPLOY_ENV_SETUP.md. Verified citations (step 2, migration 45, docs/AI_PLATFORM.md §8) add only
+`RAG_MIN_SIMILARITY` (default 0.35: research-library passages below it are not sent to the AI).
 
 ## Settings that wait for counsel (⚖)
 

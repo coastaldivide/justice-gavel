@@ -1,10 +1,13 @@
 /**
  * chatStream.ts — one AI chat question, answered as a stream (web) or a job.
  *
- *   askChat(body, { signal, onToken }) → Promise<ChatAnswer>
+ *   askChat(body, { signal, onToken, onSourced }) → Promise<ChatAnswer>
  *
- * Web: POST /chat/stream (Server-Sent Events). Tokens are handed to onToken as
- * they arrive. Native (React Native fetch cannot read a streamed body) and any
+ * Web: POST /chat/stream (Server-Sent Events). The server sends the answer in
+ * checked parts (`segment` frames: a cited part with its source numbers, or
+ * "no source found for this part" — backend ai/citations.js); each part is
+ * added to the answer so far and handed to onSourced, and its words to onToken.
+ * The `done` frame's `sourced` is the final answer (also what history returns). Native (React Native fetch cannot read a streamed body) and any
  * web request whose stream never started: POST /chat/ask, then the job is
  * polled. `body.clientMessageId` makes a retry safe: the server replays an
  * answer it already finished instead of asking (and counting) the question
@@ -23,6 +26,7 @@ import { API_BASE_URL, api, deviceTimeZone } from './api';
 import { pollJob, JobError } from './jobPoller';
 import { getToken } from '../utils/secureStorage';
 import { getLang, t } from '../i18n';
+import { appendSegment, readSourced, type SourcedAnswer } from './sourced';
 
 export interface RightsRef { key: string; heading: string; source: string; last_reviewed: string | null }
 export interface ChatAnswer {
@@ -31,6 +35,8 @@ export interface ChatAnswer {
   suggestLawyerSearch?: boolean;
   rightsRefs?: RightsRef[];
   replayed?: boolean;
+  /** The answer with its verified citations (null for answers saved before citations). */
+  sourced?: SourcedAnswer | null;
 }
 export interface ChatRequest {
   message: string;
@@ -93,15 +99,19 @@ function toAnswer(d: Record<string, unknown>, text: string): ChatAnswer {
     suggestLawyerSearch: !!d.suggestLawyerSearch,
     rightsRefs: Array.isArray(d.rights_refs) ? (d.rights_refs as RightsRef[]) : undefined,
     replayed: !!d.replayed,
+    sourced: readSourced(d.sourced),
   };
 }
 
+type Handlers = { onToken: (s: string) => void; onSourced?: (a: SourcedAnswer) => void };
+
 /** Read the SSE body. Resolves with the final answer; rejects with ChatError. */
-async function readStream(response: Response, onToken: (s: string) => void): Promise<ChatAnswer> {
+async function readStream(response: Response, { onToken, onSourced }: Handlers): Promise<ChatAnswer> {
   const reader = (response.body as ReadableStream<Uint8Array>).getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let text = '';
+  let sofar: SourcedAnswer | null = null;
   for (;;) {
     let chunk: ReadableStreamReadResult<Uint8Array>;
     try {
@@ -121,6 +131,11 @@ async function readStream(response: Response, onToken: (s: string) => void): Pro
       if (ev.type === 'token' && typeof ev.text === 'string') {
         text += ev.text;
         onToken(ev.text);
+      } else if (ev.type === 'segment') {
+        sofar = appendSegment(sofar, ev.segment, ev.sources);
+        const seg = ev.segment as { text?: unknown } | undefined;
+        if (typeof seg?.text === 'string') { text += seg.text; onToken(seg.text); }
+        onSourced?.(sofar);
       } else if (ev.type === 'done') {
         return toAnswer(ev, typeof ev.full_text === 'string' ? ev.full_text : text);
       } else if (ev.type === 'error') {
@@ -134,7 +149,7 @@ async function readStream(response: Response, onToken: (s: string) => void): Pro
   throw new ChatError('connection_lost', chatErrorText('connection_lost'), { partial: text });
 }
 
-async function viaStream(body: ChatRequest, signal: AbortSignal, onToken: (s: string) => void): Promise<ChatAnswer | null> {
+async function viaStream(body: ChatRequest, signal: AbortSignal, handlers: Handlers): Promise<ChatAnswer | null> {
   const token = await getToken();
   const tz = deviceTimeZone();
   let response: Response;
@@ -161,7 +176,7 @@ async function viaStream(body: ChatRequest, signal: AbortSignal, onToken: (s: st
     }
     return null;
   }
-  return readStream(response, onToken);
+  return readStream(response, handlers);
 }
 
 async function viaJob(body: ChatRequest, signal: AbortSignal): Promise<ChatAnswer> {
@@ -190,10 +205,10 @@ async function viaJob(body: ChatRequest, signal: AbortSignal): Promise<ChatAnswe
 }
 
 /** Streams on web; the job path on native or when the stream cannot start. */
-export async function askChat(body: ChatRequest, { signal, onToken }: { signal: AbortSignal; onToken: (s: string) => void }): Promise<ChatAnswer> {
+export async function askChat(body: ChatRequest, { signal, onToken, onSourced }: { signal: AbortSignal } & Handlers): Promise<ChatAnswer> {
   const canStream = Platform.OS === 'web' && typeof ReadableStream !== 'undefined' && typeof TextDecoder !== 'undefined';
   if (canStream) {
-    const streamed = await viaStream(body, signal, onToken);
+    const streamed = await viaStream(body, signal, { onToken, onSourced });
     if (streamed) return streamed;
   }
   return viaJob(body, signal);

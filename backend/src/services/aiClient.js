@@ -40,6 +40,12 @@
  *   thinking            https://platform.claude.com/docs/en/build-with-claude/thinking
  *   token counting      https://platform.claude.com/docs/en/build-with-claude/token-counting
  *   refusals/fallback   https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
+ *   citations           https://platform.claude.com/docs/en/build-with-claude/citations
+ *   search results      https://platform.claude.com/docs/en/build-with-claude/search-results
+ *     (read 2026-11-02 — `search_result` blocks with `citations: { enabled: true }` in the user turn,
+ *     no beta header; responses carry text blocks with `citations` / streams `citations_delta`;
+ *     citations + output_config.format is a 400, so buildRequest() refuses to combine them.
+ *     Parsing and verification: ai/citations.js.)
  * Privacy: prompts and documents are never logged — only ids, sizes, token counts.
  */
 import { randomBytes } from 'crypto';
@@ -216,6 +222,18 @@ export function responseFacts(data, requestedModel = null) {
 }
 
 // ── Request building ──────────────────────────────────────────────────────────
+/** Does any user message carry search results / documents with citations enabled? */
+export function hasCitableBlocks(messages) {
+  const on = (b) => (b?.type === 'search_result' || b?.type === 'document') && b.citations?.enabled === true;
+  for (const m of Array.isArray(messages) ? messages : []) {
+    for (const b of Array.isArray(m?.content) ? m.content : []) {
+      if (on(b)) return true;
+      if (b?.type === 'tool_result' && Array.isArray(b.content) && b.content.some(on)) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * system: a string, or parts [{ text, cache?: '1h' | '5m' }]. A part with `cache` ends with a
  * cache_control breakpoint (prompt-caching page: max 4 breakpoints, 1h ones before 5m ones,
@@ -266,6 +284,10 @@ export function buildRequest({ task, system, messages, maxTokens, schema, cacheC
   };
   if (thinking) body.thinking = thinking;
   const schemaName = schema ?? def.schema ?? null;
+  const citations = hasCitableBlocks(messages);
+  // The citations page: enabling citations together with output_config.format is a 400. A cited
+  // answer is prose; structured output is used only where nothing needs a citation.
+  if (citations && schemaName) throw new AiError('ai_failed', 'citations cannot be combined with structured outputs');
   const output = {};
   if (effort) output.effort = effort;
   if (schemaName) output.format = outputFormat(schemaName);
@@ -278,7 +300,7 @@ export function buildRequest({ task, system, messages, maxTokens, schema, cacheC
     body.fallbacks = 'default';
     headers['anthropic-beta'] = FALLBACK_BETA;
   }
-  return { body, headers, task: def.task, cls: def.cls, model, schemaName, serverFallback: useServerFallback };
+  return { body, headers, task: def.task, cls: def.cls, model, schemaName, citations, serverFallback: useServerFallback };
 }
 
 // ── Preflight: token counting + caps ──────────────────────────────────────────
@@ -287,7 +309,13 @@ const textLen = (c) => {
   let chars = 0, heavy = 0;
   for (const b of Array.isArray(c) ? c : []) {
     if (b?.type === 'text') chars += String(b.text || '').length;
-    else if (b?.type === 'image') heavy += 1600;                 // vision: ≤ ~1,600 tokens per image
+    else if (b?.type === 'search_result') {
+      // title + every text block (the docs: citations add a little input for chunking — errs high with ÷3)
+      chars += String(b.title || '').length + String(b.source || '').length + 40;
+      for (const c of Array.isArray(b.content) ? b.content : []) chars += String(c?.text || '').length + 8;
+    } else if (b?.type === 'tool_result') {
+      const r = textLen(b.content); chars += r.chars; heavy += r.heavy;
+    } else if (b?.type === 'image') heavy += 1600;                 // vision: ≤ ~1,600 tokens per image
     else if (b?.type === 'document') heavy += Math.max(3000, Math.ceil(String(b.source?.data || '').length * 0.75 / 30));
   }
   return { chars, heavy };
@@ -467,7 +495,7 @@ async function attempt(req, { route, userId, signal, timeoutMs, retries, fetchIm
   return {
     kind: 'ok',
     result: {
-      text, json, model: f.model, requestedModel: meta.requestedModel, stopReason: f.stopReason, usage: data.usage,
+      text, json, content: Array.isArray(data.content) ? data.content : [], model: f.model, requestedModel: meta.requestedModel, stopReason: f.stopReason, usage: data.usage,
       costUsd: cost, durationMs, fallbackModel, task: req.task, cls: req.cls, requestId,
     },
   };
@@ -477,7 +505,10 @@ async function attempt(req, { route, userId, signal, timeoutMs, retries, fetchIm
 /**
  * A streamed answer. Throws AiError before streaming (budget, too large, upstream HTTP error).
  *   const s = await aiStream({ task, system, messages, route, userId, signal, cacheConversation });
- *   const out = await s.read((text) => …);   // { text, refused, category, stopReason, model, error }
+ *   const out = await s.read((text) => …, { onBlock });   // { text, blocks, refused, category, stopReason, model, error }
+ *     onBlock(block) — called when a text block is complete: { type: 'text', text, citations: [...] }
+ *     (citations_delta events are collected into the block; a cited answer is shown block by block
+ *     only after its citations were verified — ai/citations.js)
  *   await s.record(status)                    // meters the call (once)
  * Text deltas from thinking blocks never reach onText. With server-side fallback the fallback
  * model continues the same stream (a `fallback` content block marks the hand-off).
@@ -508,12 +539,16 @@ export async function aiStream(opts) {
   return {
     meter,
     request: req,
-    async read(onText) {
+    async read(onText = () => {}, { onBlock } = {}) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let pending = '';
       let text = '';
       let error = null;
+      const blocks = [];
+      const open = new Map();   // content block index → text block being built
+      // A delta for a block whose start we did not see (a lenient proxy / stub) still builds a block.
+      const blockAt = (i) => { if (!open.has(i)) open.set(i, { type: 'text', text: '', citations: [] }); return open.get(i); };
       const handleLine = (line) => {
         if (!line.startsWith('data:')) return;
         const raw = line.slice(5).trim();
@@ -522,11 +557,22 @@ export async function aiStream(opts) {
         try { ev = JSON.parse(raw); } catch { return; }
         if (!ev || typeof ev !== 'object') return;
         meter.onEvent(ev);
+        if (ev.type === 'content_block_start' && ev.content_block?.type === 'text') {
+          open.set(ev.index, { type: 'text', text: String(ev.content_block.text || ''), citations: [...(ev.content_block.citations || [])] });
+        } else if (ev.type === 'content_block_stop' && open.has(ev.index)) {
+          const blk = open.get(ev.index);
+          open.delete(ev.index);
+          blocks.push(blk);
+          if (onBlock) onBlock(blk);
+        }
         // Only text_delta is answer text (thinking blocks stream thinking_delta / signature_delta).
         if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
           const t = ev.delta.text ?? '';
           text += t;
+          blockAt(ev.index).text += t;
           onText(t);
+        } else if (ev.type === 'content_block_delta' && ev.delta?.type === 'citations_delta') {
+          if (ev.delta.citation) blockAt(ev.index).citations.push(ev.delta.citation);
         } else if (ev.type === 'error') {
           error = ev.error?.type === 'overloaded_error' || ev.error?.type === 'rate_limit_error' ? 'ai_busy' : 'ai_failed';
           logger.warn({ route, error: ev.error?.type }, '[ai] upstream stream error');
@@ -542,8 +588,11 @@ export async function aiStream(opts) {
       }
       pending += decoder.decode();
       if (pending) handleLine(pending);
+      // blocks the stream never closed (cut off, or no content_block_stop) end here
+      for (const blk of open.values()) { blocks.push(blk); if (onBlock) onBlock(blk); }
+      open.clear();
       const s = meter.state();
-      return { text, error, refused: s.refused, category: s.category, stopReason: s.stopReason, model: s.model };
+      return { text, blocks, error, refused: s.refused, category: s.category, stopReason: s.stopReason, model: s.model };
     },
     async record(status) {
       if (recorded) return 0;

@@ -7,8 +7,17 @@
  * `message` in the request language. After that the response is an event
  * stream of `data: {json}` frames:
  *   { type: 'disclaimer', required: true }
- *   { type: 'token', text }                       — repeated
- *   { type: 'done', full_text, replayed, partial, intent, suggestLawyerSearch, rights_refs }
+ *   { type: 'segment', segment, sources }         — repeated: one checked part of the answer —
+ *                                                   { text, cites: [n] } or { withheld: true }
+ *                                                   ("no source found for this part"), plus the
+ *                                                   sources first cited by it. Grounded answers
+ *                                                   arrive block by block (citations verified
+ *                                                   first), others sentence by sentence: nothing
+ *                                                   unchecked is ever sent (ai/citations.js).
+ *   { type: 'token', text }                       — a replayed answer (already checked), as text
+ *   { type: 'done', full_text, sourced, replayed, partial, intent, suggestLawyerSearch, rights_refs }
+ *                                                   sourced = the final answer (segments + sources) —
+ *                                                   the app renders it in place of the segments
  *   { type: 'error', code, message, discard? }     — ai_unavailable | ai_busy | ai_timeout | ai_failed |
  *                                                   ai_refused | ai_too_large. discard: true (ai_refused) —
  *                                                   the model declined; the app drops any text already shown.
@@ -30,9 +39,11 @@ import { rightsRefsFor }  from '../../services/rightsContent.js';
 import { msg, resolveLang } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
 import { chatBurstLimiter } from './ask.js';
+import { streamAnswer, finishAssembled } from '../../services/sourcedAnswers.js';
+import { nothingFoundAnswer } from '../../ai/citations.js';
 import {
   chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
-  getHistory, detectLawyerHandoff, classifyIntent,
+  getHistory, detectLawyerHandoff, classifyIntent, sourcedOf, sentOf, replayOf,
 } from './_helpers.js';
 
 export const STREAM_TIMEOUT_MS = 120_000;
@@ -53,7 +64,7 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
   }
   const userId = req.user.id;
   const meta = (text, extra = {}) => ({
-    type: 'done', full_text: text, partial: false, replayed: false,
+    type: 'done', full_text: text, sourced: null, partial: false, replayed: false,
     intent: classifyIntent(body.message),
     suggestLawyerSearch: detectLawyerHandoff(body.message, text),
     rights_refs: ctx.defender ? [] : rightsRefsFor(body.message, text, lang),
@@ -83,8 +94,9 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
   send({ type: 'disclaimer', required: true });
 
   if (replay != null) {
-    send({ type: 'token', text: replay });
-    send(meta(replay, { replayed: true }));
+    const r = replayOf(replay, lang);
+    send({ type: 'token', text: r.reply });
+    send(meta(r.reply, { replayed: true, sourced: r.answer }));
     return res.end();
   }
 
@@ -96,19 +108,32 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
   res.on('close', onClientClose);
 
   const route = ctx.defender ? 'chat_stream_defender' : 'chat_stream';
-  let fullText = '';
+  let fullText = '';          // the raw model text received (metering status only — never sent unchecked)
+  let shown = 0;              // checked parts already sent to the app
   let stream = null;
   let refused = false;
   let saved = false;
-  const save = async (status) => {
-    if (saved || !fullText || refused) return;
+  let request = null;
+  let assembler = null;
+  // Stop: only the checked parts the person already saw (the assembler's result so far).
+  const save = async (status, sourced = assembler && shown ? sourcedOf(assembler.result(), lang) : null) => {
+    if (saved || refused || !sourced) return;
     saved = true;
-    await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: fullText, clientMessageId: body.clientMessageId, status })
+    await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: sourced.content, clientMessageId: body.clientMessageId, status,
+      aiSent: sentOf(request), aiAnswer: sourced.answer })
       .catch((e) => logger.warn({ err: e.message }, '[chat/stream] could not save the exchange'));
   };
   try {
     const history = await getHistory(db, body.sessionId, 20, userId);
-    const request = buildChatRequest({ history, body, lang, defender: ctx.defender });
+    request = buildChatRequest({ history, body, lang, defender: ctx.defender });
+    if (request.mode === 'nothing_found') {
+      // A legal question with no source: no model call, the person is told so (never an answer from memory).
+      const r = sourcedOf(nothingFoundAnswer(lang, 'chat'), lang);
+      send({ type: 'segment', segment: r.answer.segments[0], sources: [] });
+      await save('complete', r);
+      return send(meta(r.reply, { sourced: r.answer }));
+    }
+    assembler = streamAnswer(request, (e) => { shown += 1; send({ type: 'segment', ...e }); });
     // Routing, caching, preflight, budget, server-side refusal fallback: services/aiClient.js.
     stream = await aiStream({
       task: request.task, system: request.system, messages: request.messages, maxTokens: request.max_tokens,
@@ -116,8 +141,8 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
     });
     const out = await stream.read((token) => {
       fullText += token;
-      send({ type: 'token', text: token });
-    });
+      assembler.onText(token);
+    }, { onBlock: assembler.onBlock });
     if (out.refused) {
       // The model declined (before or during the answer) and no fallback answered: nothing is
       // kept — the app removes the text it already showed.
@@ -130,10 +155,16 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
       return fail(out.error);
     }
     if (!fullText) return fail('ai_failed');
-    await save('complete');
-    send(meta(fullText));
+    assembler.end();
+    const r = sourcedOf(finishAssembled(assembler.result(), { mode: request.mode, lang, kind: 'chat' }), lang);
+    await save('complete', r);
+    send(meta(r.reply, { sourced: r.answer }));
   } catch (err) {
-    if (clientGone) { await save('stopped'); return; }
+    if (clientGone) {
+      // Stop: keep only the checked parts the person already saw.
+      await save('stopped');
+      return;
+    }
     logger.error({ err: err?.message, timedOut }, '[chat/stream]');
     fail(timedOut ? 'ai_timeout' : aiErrorCode(err));
   } finally {

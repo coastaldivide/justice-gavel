@@ -21,7 +21,7 @@ import { msg, resolveLang } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
 import {
   chatContext, limitBody, readChatBody, buildChatRequest, findReplay, saveExchange,
-  getHistory, detectLawyerHandoff, callClaude, classifyIntent,
+  getHistory, detectLawyerHandoff, callClaude, classifyIntent, sourcedReply, sentOf, replayOf,
 } from './_helpers.js';
 
 export const chatBurstLimiter = rateLimit({
@@ -44,8 +44,10 @@ router.post('/ask', chatBurstLimiter, authRequired, requireDisclaimer, requireAi
     const userId = req.user.id;
 
     const replay = await findReplay(db, userId, body.sessionId, body.clientMessageId);
-    const answerOf = (reply, replayed) => ({
-      role: 'assistant', reply, replayed,
+    // reply: the answer as plain text ([n] markers + a source list) for text-only callers;
+    // sourced: the verified answer (segments + citations) the chat bubble renders.
+    const answerOf = (reply, replayed, sourced) => ({
+      role: 'assistant', reply, replayed, sourced,
       suggestLawyerSearch: detectLawyerHandoff(body.message, reply),
       intent: classifyIntent(body.message),
       rights_refs: ctx.defender ? [] : rightsRefsFor(body.message, reply, lang),
@@ -55,10 +57,13 @@ router.post('/ask', chatBurstLimiter, authRequired, requireDisclaimer, requireAi
     const history = replay == null ? await getHistory(db, body.sessionId, 20, userId) : [];
     const request = buildChatRequest({ history, body, lang, defender: ctx.defender });
     const jobId = await enqueue('chat', async () => {
-      if (replay != null) return answerOf(replay, true);
-      const reply = await callClaude({ ...request, defender: ctx.defender, userId });
-      await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: reply, clientMessageId: body.clientMessageId });
-      return answerOf(reply, false);
+      if (replay != null) { const r = replayOf(replay, lang); return answerOf(r.reply, true, r.answer); }
+      // nothing_found: a legal question with no source → no model call (services/sourcedAnswers.js)
+      const out = request.mode === 'nothing_found' ? null : await callClaude({ ...request, defender: ctx.defender, userId });
+      const r = sourcedReply(request, out ?? {}, lang);
+      await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: r.content, clientMessageId: body.clientMessageId,
+        aiSent: sentOf(request), aiAnswer: r.answer });
+      return answerOf(r.reply, false, r.answer);
     }, userId);
 
     res.json({ jobId, status: 'pending', async: true, not_legal_advice: true });

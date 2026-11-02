@@ -148,9 +148,21 @@ Legal tables (expungement rules, penalties, bail law, deadlines) are shown only 
 source checked on a date; unchecked rows are withheld. Everything is labelled "not reviewed by a lawyer".
 Details: docs/LEGAL_ACCURACY_REVIEW.md.
 
+**AI answers are sourced (Nov 2 2026, docs/AI_PLATFORM.md §8, LEGAL_ACCURACY_REVIEW §3b).** The chat and
+legal research answer legal questions only from the app's own sourced content (rights card, court guide, case
+steps, the checked legal tables; research also its case-law library when configured). Every statement is tied to
+the exact passage it rests on, shown with its title, jurisdiction, year, the date the source was checked and a
+link to the official page. A legal statement without a verified citation is not shown ("No source found for this
+part — not shown"); with no relevant source the AI is not asked and the person is pointed to legal aid and the
+rights card. Nothing is answered from the model's memory.
+
 **Questions.**
 5.1 Is the disclaimer and its placement adequate to avoid UPL in Tennessee and to avoid an FTC
-"deceptive AI legal services" claim (cf. FTC v. DoNotPay, 2024–2025)?
+"deceptive AI legal services" claim (cf. FTC v. DoNotPay, 2024–2025)? *Note (Nov 2 2026):* the answers
+now cite their sources as described above — does sourcing every legal statement (and withholding the
+unsourced ones) change your view of the disclaimer, the "AI legal guide" wording, or the label "General
+information — not legal advice — not reviewed by a lawyer" under each answer? Is showing a passage from
+another state's or a federal page (marked with its jurisdiction) acceptable for a Tennessee user?
 5.2 AI-drafted documents (motions, letters) say they must be reviewed by a licensed attorney before
 filing. Enough?
 5.3 Sign-off on a sample of each legal table (we will send 20 rows per table with their sources), and on

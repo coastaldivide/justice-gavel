@@ -593,7 +593,8 @@ async function langJourney(browser, base, lang, locale) {
     const box = page.getByPlaceholder('Ask anything -- What should I do? How do I get out?');
     await box.fill('What should I say if police ask me questions?');
     await page.getByText('↑', { exact: true }).last().click();
-    await page.getByText(/MOCK REPLY/).first().waitFor({ timeout: 20000 });
+    // a legal question: answered with verified citations (the mock cites the passages it was sent)
+    await page.getByText(/Here is what I found|MOCK REPLY/).first().waitFor({ timeout: 20000 });
     const sorry = await page.getByText(/Sorry, I had trouble responding/i).count();
     await page.screenshot({ path: path.join(OUT, 'M6-chat.png') });
     let headerErr = 0;
