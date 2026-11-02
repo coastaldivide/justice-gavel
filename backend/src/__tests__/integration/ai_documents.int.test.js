@@ -292,4 +292,63 @@ describeIntegration('AI step 4 — court papers, Files API, surety-form suggesti
     for (let i = 0; i < 50 && ctx.anthropic.files.files.has(fr.file_id); i += 1) await new Promise((x) => setTimeout(x, 20));
     expect(ctx.anthropic.files.files.has(fr.file_id)).toBe(false);
   });
+
+  // Review findings #7 and #8: parallel requests.
+  test('D5 parallel: limits are claimed atomically (25 reads, 20 allowed); two field accepts at once both stick', async () => {
+    if (!ctx.app) return;
+    const { readCourtPaper } = await import('../../services/courtPaper.js');
+    const { suggestMapping } = await import('../../services/bondDesk/formMapping.js');
+    const solo = await ctx.register({ displayName: 'Doc P' });
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM ai_document_reads WHERE user_id = ?', [solo.user.id]); });
+    process.env.COURT_PAPER_READS_PER_DAY = '20';
+    process.env.COURT_PAPER_READS_PER_HOUR = '100';
+    process.env.AI_FILES_API = 'off';
+    try {
+      ctx.anthropic.json = READ;
+      const m0 = msgs().length;
+      const res = await Promise.allSettled(Array.from({ length: 25 }, () => readCourtPaper(ctx.db, { userId: solo.user.id, buffer: jpeg(), source: 'upload' })));
+      const ok = res.filter((r) => r.status === 'fulfilled').length;
+      const limited = res.filter((r) => r.status === 'rejected' && r.reason?.code === 'daily_limit').length;
+      expect([ok, limited]).toEqual([20, 5]);
+      expect(msgs().length - m0).toBe(20);                                  // at most 20 AI calls
+      expect((await ctx.db.get(`SELECT COUNT(*)::int AS n FROM ai_document_reads WHERE user_id = ? AND kind = 'court_paper'`, [solo.user.id])).n).toBe(20);
+
+      // surety-form suggestions: 25 at once for one staff member, 20 per hour
+      const { getAttachmentStorage } = await import('../../services/attachmentStorage.js');
+      const { putFile } = await import('../../services/bondDesk/packets.js');
+      const storage = await getAttachmentStorage();
+      const buf = await pdf();
+      const rq = (await ctx.db.get(`SELECT id FROM bd_setup_requests WHERE agent_id = ? ORDER BY id DESC LIMIT 1`, [agency.user.id]))
+        || await ctx.db.get(`INSERT INTO bd_setup_requests (agent_id, status, started_at) VALUES (?, 'in_progress', NOW()) RETURNING id`, [agency.user.id]);
+      const fields = [{ name: 'DefendantName', type: 'text' }, { name: 'BondAmt', type: 'text' }, { name: 'OfficeUse', type: 'text' }, { name: 'Married', type: 'checkbox' }];
+      const form = await ctx.db.get(
+        `INSERT INTO bd_forms (agent_id, name, storage_key, sha256, size_bytes, page_count, fields, setup_request_id, setup_pending)
+         VALUES (?, 'Parallel form', ?, 'x', ?, 1, ?::jsonb, ?, TRUE) RETURNING *`,
+        [agency.user.id, await putFile(storage, buf), buf.length, JSON.stringify(fields), rq.id]);
+      ctx.anthropic.json = { suggestions: [
+        { field: 'DefendantName', data_key: 'bond.defendant_name', confidence: 'high', reason: 'label' },
+        { field: 'BondAmt', data_key: 'bond.bond_amount', confidence: 'high', reason: 'label' },
+        { field: 'OfficeUse', data_key: 'bond.charges', confidence: 'low', reason: 'label' },
+      ] };
+      const m1 = msgs().length;
+      const sres = await Promise.allSettled(Array.from({ length: 25 }, () => suggestMapping(ctx.db, { form: { ...form, id: Number(form.id), agent_id: Number(form.agent_id) }, buffer: buf, staffId: solo.user.id })));
+      expect(sres.filter((r) => r.status === 'fulfilled').length).toBe(20);
+      expect(sres.filter((r) => r.status === 'rejected' && r.reason?.code === 'ai_suggest_limit').length).toBe(5);
+      expect(msgs().length - m1).toBe(20);
+
+      // two (three) accepts on different fields at the same time: every one is kept
+      const sug = sres.find((r) => r.status === 'fulfilled').value;
+      const base = `/api/admin/bd-setup/${rq.id}/forms/${form.id}/map-suggestions/${sug.id}/decide`;
+      const rs = await Promise.all(['DefendantName', 'BondAmt', 'OfficeUse'].map((field) => ctx.request().post(base).set(admin.headers).send({ field, action: 'accept' })));
+      expect(rs.map((r) => r.status)).toEqual([200, 200, 200]);
+      const after = await ctx.db.get('SELECT field_map FROM bd_forms WHERE id = ?', [form.id]);
+      expect(after.field_map).toEqual({ DefendantName: 'bond.defendant_name', BondAmt: 'bond.bond_amount', OfficeUse: 'bond.charges' });
+      const dec = await ctx.db.get('SELECT decisions, status FROM bd_form_map_suggestions WHERE id = ?', [sug.id]);
+      expect(Object.keys(dec.decisions).sort()).toEqual(['BondAmt', 'DefendantName', 'OfficeUse']);
+      expect(dec.status).toBe('done');
+    } finally {
+      delete process.env.COURT_PAPER_READS_PER_HOUR;
+      process.env.AI_FILES_API = 'on';
+    }
+  });
 });

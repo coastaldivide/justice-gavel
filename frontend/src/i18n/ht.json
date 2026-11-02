@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "Paj la se yon PDF, kidonk nou pa t ka verifye sitasyon an otomatikman.",
   "asc_reason_source_page_not_fetched": "Nou pa t kapab louvri paj sous la.",
   "asc_reason_fetched_page_not_allowed": "Yon paj ki pa sou sit ofisyèl yo te tounen, e nou pa konte l.",
+  "asc_reason_quote_not_supporting": "Mo yo ki site yo sou paj la, men yo pa di règ ki anrejistre a klèman (mo kle yo oswa chif yo diferan).",
   "asc_reason_generic": "Yon moun dwe deside.",
   "asc_stored": "Tèks ki anrejistre",
   "asc_quote": "Sitasyon ki soti nan paj la",

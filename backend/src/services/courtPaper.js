@@ -130,6 +130,28 @@ export async function checkQuota(db, userId, kind = 'court_paper') {
   if ((r?.hour ?? 0) >= lim.perHour) throw new CourtPaperError(429, 'hourly_limit', { n: lim.perHour });
 }
 
+/**
+ * Claim one AI document read atomically (review fix #8): a per-person advisory lock is taken for
+ * the transaction, the hour / day counts are read, and the ai_document_reads row is inserted
+ * before the lock is released — so parallel requests are counted one after another and never
+ * all see a count under the limit. → the inserted row ({ id }). Calls onLimit('day' | 'hour', n),
+ * which must throw, when a limit is reached (nothing is inserted then).
+ *   values: { source, mime, size, pages }
+ */
+export async function claimDocumentRead(db, { userId, kind, perDay, perHour, values, onLimit }) {
+  return db.transaction(async (tx) => {
+    await tx.get(`SELECT pg_advisory_xact_lock(hashtextextended(?, 0)) AS ok`, [`ai_document_reads:${kind}:${userId}`]);
+    const r = await tx.get(
+      `SELECT COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour')::int AS hour, COUNT(*)::int AS day
+         FROM ai_document_reads WHERE user_id = ? AND kind = ? AND created_at > NOW() - INTERVAL '1 day'`, [userId, kind]);
+    if ((r?.day ?? 0) >= perDay) onLimit('day', perDay);
+    if ((r?.hour ?? 0) >= perHour) onLimit('hour', perHour);
+    return tx.get(
+      `INSERT INTO ai_document_reads (user_id, kind, source, mime_type, size_bytes, page_count) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+      [userId, kind, values.source, values.mime, values.size, values.pages]);
+  });
+}
+
 const MEDIA_STATUS = { too_large: 413, unsupported_type: 415, heic: 415 };
 
 /**
@@ -148,10 +170,10 @@ export async function readCourtPaper(db, { userId, buffer, source = 'upload', su
     if (e instanceof MediaError) throw new CourtPaperError(MEDIA_STATUS[e.code] || 400, `file_${e.code}`, { mb: e.maxMb, pages: e.maxPages });
     throw e;
   }
-  await checkQuota(db, userId);
-  const row = await db.get(
-    `INSERT INTO ai_document_reads (user_id, kind, source, mime_type, size_bytes, page_count) VALUES (?, 'court_paper', ?, ?, ?, ?) RETURNING id`,
-    [userId, source, info.mime, buffer.length, info.pages]);
+  // Count and record the read in one step (parallel requests cannot all pass the limit).
+  const row = await claimDocumentRead(db, { userId, kind: 'court_paper', perDay: lim.perDay, perHour: lim.perHour,
+    values: { source, mime: info.mime, size: buffer.length, pages: info.pages },
+    onLimit: (which, n) => { throw new CourtPaperError(429, which === 'day' ? 'daily_limit' : 'hourly_limit', { n }); } });
   const finishRow = (outcome, extra = {}) => db.run('UPDATE ai_document_reads SET outcome = ?, error_code = ?, via_file_id = ? WHERE id = ?',
     [outcome, extra.error ?? null, !!extra.viaFile, row.id]).catch(logIgnored('services/courtPaper'));
 

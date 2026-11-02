@@ -33,6 +33,7 @@ import { IMAGE_TYPES, PDF_TYPE } from '../ai/media.js';
 import { getAttachmentStorage } from '../services/attachmentStorage.js';
 import { decryptBuffer } from '../services/encryption.js';
 import { todayInZone, stateTimeZone } from '../utils/timezone.js';
+import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
 const router = Router();
 const HARD_MAX = 20 * MB;   // COURT_PAPER_MAX_MB is checked on the bytes; this only bounds the parser
@@ -54,6 +55,10 @@ const paperUpload = uploadGuard({
     ? res.status(413).json({ error: 'file_too_large', code: 'file_too_large', message: say(req, 'cpr.err.file_too_large', { mb: Math.round(courtPaperLimits().maxBytes / MB) }) })
     : res.status(400).json({ error: 'invalid_upload', code: 'invalid_upload', message: say(req, err instanceof multer.MulterError ? 'cpr.err.file_empty' : 'cpr.err.file_unsupported_type') })),
 });
+
+// A burst limit per person on top of the hour / day limits (those are counted atomically in
+// services/courtPaper.js claimDocumentRead; this one stops a flood of uploads before parsing).
+const burstLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req) => say(req, 'cpr.err.too_fast') });
 
 function requireOn(req, res, next) {
   if (!courtPaperEnabled()) return res.status(503).json({ error: 'feature_unavailable', code: 'feature_unavailable', message: say(req, 'cpr.err.unavailable') });
@@ -85,7 +90,7 @@ router.get('/status', authRequired, async (req, res) => {
   } catch (e) { sendError(req, res, e); }
 });
 
-router.post('/read', authRequired, requireDisclaimer, requireOn, paperUpload, async (req, res) => {
+router.post('/read', authRequired, requireDisclaimer, requireOn, burstLimiter, paperUpload, async (req, res) => {
   try {
     if (!req.file?.buffer?.length) throw new CourtPaperError(400, 'file_empty');
     const db = await getDb();
@@ -95,7 +100,7 @@ router.post('/read', authRequired, requireDisclaimer, requireOn, paperUpload, as
   } catch (e) { sendError(req, res, e); }
 });
 
-router.post('/read-attachment', authRequired, requireDisclaimer, requireOn, async (req, res) => {
+router.post('/read-attachment', authRequired, requireDisclaimer, requireOn, burstLimiter, async (req, res) => {
   try {
     const raw = req.body?.attachment_id;
     if (!/^\d{1,15}$/.test(String(raw ?? ''))) throw new CourtPaperError(400, 'bad_attachment');

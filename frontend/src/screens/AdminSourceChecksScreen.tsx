@@ -37,6 +37,9 @@ type Withheld = { dataset: string; row_key: string; withheld_reason: string | nu
 
 const STATUSES: Status[] = ['pending', 'approved', 'edited', 'withheld'];
 const REASONS = new Set(['quote_not_on_page', 'pdf_not_verifiable', 'source_page_not_fetched', 'fetched_page_not_allowed']);
+// The quote is on the page but does not support the stored text (sourceChecks supportsStored).
+const NOT_SUPPORTING = new Set(['stored_claim_missing', 'stored_claim_not_in_row', 'claim_numbers_not_in_quote', 'claim_terms_not_in_quote',
+  'row_numbers_not_on_page', 'row_terms_not_on_page']);
 const VERDICTS = new Set(['still_matches', 'changed', 'page_gone', 'cant_tell', 'source_found']);
 const DATASETS = new Set(['expungement', 'juvenile', 'recording', 'court_rules', 'transit', 'guide', 'tn_report', 'rights_card', 'deadlines',
   'bail_schedules', 'dui_laws', 'drug_penalties', 'statute_of_limitations', 'victim_compensation', 'specialty_courts', 'rights_cards']);
@@ -120,7 +123,8 @@ function AdminSourceChecksScreen(_props: ScreenProps): React.JSX.Element {
   };
 
   const open = (url: string | null) => { if (url) Linking.openURL(url).catch(() => {}); };
-  const reasonText = (r: Review) => (r.reason && REASONS.has(r.reason) ? t(`asc_reason_${r.reason}`) : t('asc_reason_generic'));
+  const reasonText = (r: Review) => (r.reason && REASONS.has(r.reason) ? t(`asc_reason_${r.reason}`)
+    : r.reason && NOT_SUPPORTING.has(r.reason) ? t('asc_reason_quote_not_supporting') : t('asc_reason_generic'));
 
   return (
     <ScrollView style={st.screen} contentContainerStyle={st.scroll} testID="admin-source-checks-screen" keyboardShouldPersistTaps="handled">

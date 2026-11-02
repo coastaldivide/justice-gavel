@@ -272,4 +272,39 @@ describeIntegration('AI step 5 — long chats (recap) and Word / PDF drafts (rea
     expect(pdf.body.subarray(0, 5).toString()).toBe('%PDF-');
     expect((await ctx.request().get(`/api/motions/history/${m.lastID}/document?format=pdf`).set(other.headers)).status).toBe(404);
   });
+
+  // Review finding #9: the AI clean-up PDF and the saved-motion PDF use the same withholding.
+  test('P6 motion PDF export (AI clean-up and saved draft): unsourced citations withheld, no /s/ signature', async () => {
+    if (!ctx.app) return;
+    const { extractPdfText } = await import('../helpers/pdfText.js');
+    const pdfWords = async (b64OrBuf) => (await extractPdfText(Buffer.isBuffer(b64OrBuf) ? b64OrBuf : Buffer.from(b64OrBuf, 'base64'))).pages.join(' ');
+    const m = await ctx.db.run(`INSERT INTO motion_history (user_id, motion_type, draft, case_fields, filing_status, status) VALUES (?, ?, ?, ?, 'draft', 'active') RETURNING id`,
+      [user.user.id, 'dismiss', 'MOTION TO DISMISS\n\nThe defendant moves to dismiss.\n\nRelief under 42 U.S.C. § 1983 is due.\n\nKRS 431.073 also applies.\n\nBy: /s/ Saved Counsel',
+        JSON.stringify({ defendant_name: 'Pat Doe', case_number: 'CR-2026-78' })]);
+    ctx.anthropic.replyText = [
+      'MOTION TO DISMISS',
+      'The defendant respectfully moves the Court to dismiss the charge.',
+      'Under 42 U.S.C. § 1983 the defendant is entitled to relief.',
+      'By: /s/ Refined Counsel',
+    ].join('\n\n');
+    const r = await ctx.request().post(`/api/motions/export/${m.lastID}/refine`).set(user.headers).send({});
+    expect(r.status).toBe(200);
+    const job = await ctx.pollJob(user, r.body.jobId);
+    expect(job.body.status).toBe('done');
+    const text = await pdfWords(job.body.result.pdf_base64);
+    expect(text).toContain('respectfully moves the Court to dismiss');
+    expect(text).toContain('No source found for this part');
+    expect(text).not.toContain('1983');
+    expect(text).not.toContain('/s/');
+    expect(text).not.toContain('Refined Counsel');
+    // the saved-draft PDF: the same rule
+    const saved = await binary(ctx.request().get(`/api/motions/export/${m.lastID}/pdf`).set(user.headers));
+    expect(saved.status).toBe(200);
+    const t2 = await pdfWords(saved.body);
+    expect(t2).toContain('The defendant moves to dismiss.');
+    expect(t2).toContain('No source found for this part');
+    expect(t2).not.toContain('1983');
+    expect(t2).not.toContain('431.073');
+    expect(t2).not.toContain('Saved Counsel');
+  });
 });

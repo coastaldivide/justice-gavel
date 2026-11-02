@@ -37,8 +37,9 @@ const pdfPage = (url) => ({ type: 'web_fetch_tool_result', tool_use_id: 'srvtool
   content: { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: 'JVBERi0=' } }, retrieved_at: '2026-11-02T00:00:00Z' } });
 const msgOf = (...blocks) => ({ content: [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_fetch', input: { url: 'x' } }, ...blocks, { type: 'text', text: '{}' }] });
 const ROW = { dataset: 'court_rules', key: 'tn-x', label: 'X court — Dress Code', state: 'TN', jurisdiction: 'TN',
-  source_url: 'https://gscourt.nashville.gov/coming-to-court/dress-code/', text: 'The court posts rules on: dress.', checked: '2026-11-01', shown: true, storage: 'code' };
+  source_url: 'https://gscourt.nashville.gov/coming-to-court/dress-code/', text: 'The court dress code: shorts, tank tops and hats are not allowed in the courtroom.', checked: '2026-11-01', shown: true, storage: 'code' };
 const QUOTE = 'Shorts, tank tops and hats are not allowed in the courtroom.';
+const CLAIM = 'shorts, tank tops and hats are not allowed in the courtroom';
 
 describe('allow-list (ai/sourceDomains.js)', () => {
   test('official hosts only; the never-list wins; ASCII only', () => {
@@ -123,10 +124,44 @@ describe('web fetch tool in the mock (documented shapes)', () => {
 describe('verdict handling (pure)', () => {
   const ok = (json, ...blocks) => sc.decideRecheck(ROW, json, msgOf(...blocks));
   test('still matches + quote on the row\'s own official page → the only automatic change (date)', () => {
-    const d = ok({ verdict: 'still_matches', quote: QUOTE, fetched_url: ROW.source_url }, page(ROW.source_url, `Dress code. ${QUOTE} Thank you.`));
+    const d = ok({ verdict: 'still_matches', quote: QUOTE, stored_claim: CLAIM, fetched_url: ROW.source_url }, page(ROW.source_url, `Dress code. ${QUOTE} Thank you.`));
     expect(d).toMatchObject({ outcome: 'verified', quoteVerified: true, reason: 'quote_on_page' });
     // whitespace / curly quotes / dashes normalised
-    expect(ok({ verdict: 'still_matches', quote: 'Shorts,  tank tops and hats are not allowed in the courtroom.' }, page(ROW.source_url, `x ${QUOTE.replace(/ /g, '\n ')} y`)).outcome).toBe('verified');
+    expect(ok({ verdict: 'still_matches', quote: 'Shorts,  tank tops and hats are not allowed in the courtroom.', stored_claim: CLAIM }, page(ROW.source_url, `Dress code: x ${QUOTE.replace(/ /g, '\n ')} y`)).outcome).toBe('verified');
+  });
+  // Review finding #1: the quote must support the STORED text, not just be some sentence on the page.
+  describe('the quote must support the stored rule (48 hours → 12 hours)', () => {
+    const R48 = { dataset: 'court_rules', key: 'tn-48', label: 'TN — first appearance', state: 'TN', jurisdiction: 'TN',
+      source_url: 'https://www.tncourts.gov/first-appearance', text: 'A person who is arrested must be brought before a judge within 48 hours.', checked: '2026-01-01', shown: true, storage: 'code' };
+    const NEW_PAGE = 'Welcome to the Tennessee courts website. A person who is arrested must be brought before a judge within 12 hours under the 2026 amendment.';
+    const OLD_PAGE = 'Welcome to the Tennessee courts website. A person who is arrested must be brought before a judge within 48 hours after the arrest.';
+    const dec = (json, text) => sc.decideRecheck(R48, { verdict: 'still_matches', fetched_url: R48.source_url, what_changed: null, ...json }, msgOf(page(R48.source_url, text)));
+    const CL = 'must be brought before a judge within 48 hours';
+    test('the welcome line (on the page, unrelated) never renews the date', () => {
+      expect(dec({ quote: 'Welcome to the Tennessee courts website.', stored_claim: null }, NEW_PAGE)).toMatchObject({ outcome: 'queue', reason: 'stored_claim_missing' });
+      expect(dec({ quote: 'Welcome to the Tennessee courts website.', stored_claim: CL }, NEW_PAGE)).toMatchObject({ outcome: 'queue', reason: 'claim_numbers_not_in_quote' });
+      expect(dec({ quote: 'Welcome to the Tennessee courts website.', stored_claim: 'A person who is arrested' }, OLD_PAGE)).toMatchObject({ outcome: 'queue', reason: 'claim_terms_not_in_quote' });
+    });
+    test('a quote whose numbers differ from the stored text → queued', () => {
+      const q = 'A person who is arrested must be brought before a judge within 12 hours under the 2026 amendment.';
+      expect(dec({ quote: q, stored_claim: CL }, NEW_PAGE)).toMatchObject({ outcome: 'queue', reason: 'claim_numbers_not_in_quote', quoteVerified: true });
+      // the model "quoting" a stored claim that the row does not have
+      expect(dec({ quote: q, stored_claim: 'must be brought before a judge within 12 hours' }, NEW_PAGE)).toMatchObject({ outcome: 'queue', reason: 'stored_claim_not_in_row' });
+    });
+    test('every number of the whole row must be on the page', () => {
+      const two = { ...R48, text: `${R48.text} A bail hearing must be held within 72 hours.` };
+      const d = sc.decideRecheck(two, { verdict: 'still_matches', quote: 'A person who is arrested must be brought before a judge within 48 hours after the arrest.', stored_claim: CL, fetched_url: R48.source_url },
+        msgOf(page(R48.source_url, OLD_PAGE)));
+      expect(d).toMatchObject({ outcome: 'queue', reason: 'row_numbers_not_on_page' });
+    });
+    test('the page still says 48 hours and the quote carries it → verified', () => {
+      expect(dec({ quote: 'A person who is arrested must be brought before a judge within 48 hours after the arrest.', stored_claim: CL }, OLD_PAGE))
+        .toMatchObject({ outcome: 'verified', reason: 'quote_on_page' });
+    });
+    test('helpers: numbers and key words', () => {
+      expect([...sc.numberTokens('$1,500 fine, 48-hour hold, § 40-32-101, 2.5 days')]).toEqual(['1500', '48', '40-32-101', '2.5']);
+      expect(sc.supportsStored(R48, 'A person who is arrested must be brought before a judge within 48 hours.', CL, OLD_PAGE).ok).toBe(true);
+    });
   });
   test('still matches but the quote is not on the page / too short / page is a PDF → queued, never dated', () => {
     expect(ok({ verdict: 'still_matches', quote: 'An invented sentence that the page does not contain.' }, page(ROW.source_url, `Dress code. ${QUOTE}`)))
@@ -204,7 +239,7 @@ describe('batch layer (pure parts)', () => {
   test('readResult: succeeded (schema-checked) / errored (nested) / expired / pause_turn / invalid / refusal', () => {
     const it = { params: batch.itemRequest(sc.recheckItem(ROW)).params };
     const m = (content, extra = {}) => ({ type: 'succeeded', message: { model: 'claude-sonnet-5-5', content, stop_reason: 'end_turn', usage: { input_tokens: 1000, output_tokens: 100 }, ...extra } });
-    const good = batch.readResult(it, m([{ type: 'text', text: 'Let me look.' }, page(ROW.source_url, QUOTE), { type: 'text', text: JSON.stringify({ verdict: 'still_matches', quote: QUOTE, what_changed: null, fetched_url: ROW.source_url }) }]));
+    const good = batch.readResult(it, m([{ type: 'text', text: 'Let me look.' }, page(ROW.source_url, QUOTE), { type: 'text', text: JSON.stringify({ verdict: 'still_matches', quote: QUOTE, stored_claim: CLAIM, what_changed: null, fetched_url: ROW.source_url }) }]));
     expect(good).toMatchObject({ status: 'succeeded', json: { verdict: 'still_matches' } });
     expect(good.cost).toBeCloseTo((1000 * 1 + 100 * 5) / 1e6, 9);
     expect(batch.readResult(it, m([{ type: 'text', text: '{"verdict":"maybe"}' }])).status).toBe('invalid');

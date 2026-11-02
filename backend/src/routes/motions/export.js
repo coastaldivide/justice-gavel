@@ -26,9 +26,21 @@ import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../../services/aiQueue.js';
 import { MOTION_PDF_SYSTEM_PROMPT } from '../chat/_prompts.js';
 import logger              from '../../utils/logger.js';
+import { checkDraft }      from '../../services/draftDocs/index.js';
+import { resolveLang }     from '../../i18n/index.js';
 
 const router      = Router();
 const MAX_MOTION_CHARS = 100_000;   // ~40 pages
+/**
+ * AI-written motion text → the text a PDF may carry: the same rule as the Word / PDF downloads
+ * (routes/motions/history.js → draftDocs): every paragraph that names a statute, rule or case is
+ * withheld (the app has no checked source for motion citations, allowed = []) and shows the
+ * "No source found for this part — not shown" marker, and any "/s/ name" signature mark becomes a
+ * blank line. Used for the saved-motion PDF and the AI clean-up PDF.
+ */
+export function checkedMotionText(text, lang = 'en') {
+  return checkDraft(String(text || ''), [], lang).text;
+}
 const pdfLimiter  = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'PDF export limit reached.' });
 
 // ── POST /api/motions/export/preview — render any motion text to PDF ──────────
@@ -91,7 +103,7 @@ router.get('/:id/pdf', authRequired, pdfLimiter, async (req, res) => {
       bar_number:     fields.bar_number || null,
     };
 
-    const pdfBuffer = await generateMotionPDF(motion.draft, meta);
+    const pdfBuffer = await generateMotionPDF(checkedMotionText(motion.draft, resolveLang(req)), meta);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition',
@@ -112,6 +124,7 @@ router.post('/:id/refine', authRequired, requireAi, pdfLimiter, async (req, res)
       [safeInt(req.params.id), req.user.id]
     );
     if (!motion) return err404(res, 'Motion not found.');
+    const lang = resolveLang(req);
 
     const jobId = await enqueue('motion_refine', async () => {
       // Ask Claude to clean up the draft for PDF (remove markdown, fix formatting). The
@@ -147,7 +160,8 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
         bar_number:     fields.bar_number || null,
       };
 
-      const pdfBuffer = await generateMotionPDF(refined, meta);
+      // The clean-up output is AI text: withhold unsourced citations and fake signatures first.
+      const pdfBuffer = await generateMotionPDF(checkedMotionText(refined, lang), meta);
       return { pdf_base64: pdfBuffer.toString('base64'), pdf_size_kb: Math.round(pdfBuffer.length / 1024) };
     }, req.user.id);
 

@@ -147,6 +147,19 @@ async function dbRows(db) {
   return out;
 }
 
+/**
+ * A database row as it is NOW, read inside a transaction with FOR UPDATE (so it cannot change
+ * until the transaction ends), in the registry shape (same text / source_url as dbRows). null
+ * when the row is gone.
+ */
+export async function lockedDbRow(tx, row) {
+  const def = DB_DATASETS[row?.table];
+  if (!def) return null;
+  const r = await tx.get(`SELECT * FROM ${row.table} WHERE id = ? FOR UPDATE`, [row.id]);
+  if (!r) return null;
+  return { ...row, source_url: ok(r.source_url) ? r.source_url.trim() : null, text: clean(def.text(r)) };
+}
+
 /** How a row can be checked: recheck (shown, official source) | propose | not_official | no_url. */
 export function checkMode(row) {
   if (!row.shown) return 'propose';                          // withheld: only ever a proposal for a human

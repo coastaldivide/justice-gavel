@@ -140,9 +140,13 @@ export const SCHEMAS = Object.freeze({
   // Source re-check (services/sourceChecks, AI step 3): compare one stored row with its official
   // page fetched by the web fetch tool. `quote` must be copied word for word from the fetched page;
   // the server checks it is really there before a "still_matches" verdict changes anything.
+  // `stored_claim` must be copied word for word from the stored text: the part of it the quote
+  // supports. A "still_matches" date renewal also needs the quote to carry that claim's key terms
+  // and numbers (sourceChecks decideRecheck); otherwise it goes to an admin.
   source_check: obj({
     verdict: en('still_matches', 'changed', 'page_gone', 'cant_tell'),
     quote: NS,
+    stored_claim: NS,
     what_changed: NS,
     fetched_url: NS,
   }),

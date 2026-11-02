@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "The page is a PDF, so the quote could not be checked automatically.",
   "asc_reason_source_page_not_fetched": "The source page could not be opened.",
   "asc_reason_fetched_page_not_allowed": "A page from outside the official sites came back and was ignored.",
+  "asc_reason_quote_not_supporting": "The quoted words are on the page, but they do not clearly state the stored rule (its key words or numbers differ).",
   "asc_reason_generic": "A person needs to decide.",
   "asc_stored": "Stored text",
   "asc_quote": "Quote from the page",

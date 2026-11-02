@@ -52,6 +52,69 @@ describe('legal references', () => {
   });
 });
 
+// Review finding #2: citations without "§" or a known marker are references too.
+describe('citations without § (review fix #2)', () => {
+  const allowed = ['Tenn. Code Ann. § 40-32-101'];
+  const FORMS = [
+    'Under Tennessee Code Annotated 40-32-105 the court may seal the record.',
+    'The petitioner relies on N.J.S.A. 2C:52-2 for relief.',
+    'Relief is available under ORS 137.225.',
+    'KRS 431.073 allows a petition to vacate.',
+    'See A.R.S. 13-905 for setting aside a judgment.',
+    'Under C.R.S. 24-72-705 the record may be sealed.',
+    'RSA 651:5 provides for annulment.',
+    'Wis. Stat. 973.015 allows expunction at sentencing.',
+    'NRS 179.245 sets the waiting periods.',
+    'MCA 46-18-1110 applies to misdemeanors.',
+    'Under 40-32-105 the court may act.',
+    'The court relies on Tennessee Code 40-32-105.',
+    // "§" forms
+    'Relief under § 40-32-105.',
+    'See 42 U.S.C. § 1983.',
+    'Tenn. Code Ann. § 40-32-105(a).',
+  ];
+  test.each(FORMS)('withheld when not in the allowed list: %s', (t) => {
+    expect(hasLegalRef(t)).toBe(true);
+    expect(paragraphCovered(t, allowed)).toBe(false);
+    expect(checkDraft(`CAPTION\n\n${t}`, allowed).withheld).toBe(1);
+  });
+  test('the same forms are kept when their section is the checked one', () => {
+    expect(paragraphCovered('Under Tennessee Code Annotated 40-32-101 the court may seal the record.', allowed)).toBe(true);
+    expect(paragraphCovered('Under 40-32-101 the court may act.', allowed)).toBe(true);
+    expect(paragraphCovered('KRS 431.073 allows it.', ['KRS 431.073'])).toBe(true);
+    expect(paragraphCovered('RSA 651:5 provides for annulment.', ['N.H. Rev. Stat. Ann. § 651:5'])).toBe(true);
+  });
+  test.each([
+    'My court date is 2026-11-02 at 10:30 a.m.',
+    'Call 615-555-1234 or 1-800-555-1234 for help.',
+    'The fine was $1,500.00 and my BAC was 0.08.',
+    'Filed 11/02/2026 in case 2026-CR-1234, room 2.14, 9:45 AM.',
+    'In the 2025-26 school year I missed 3 of 12 days; ages 18-25.',
+    'I moved on 3.15.2024 to Apt 4B, and worked 10.5 years.',
+    'My SSN ends in 123-45-6789 (do not share).',
+    'IN THE CIRCUIT COURT OF KNOX COUNTY\nPetitioner: [FULL NAME]',
+  ])('ordinary numbers and dates are not citations: %s', (t) => {
+    expect(hasLegalRef(t)).toBe(false);
+    expect(checkDraft(t, []).withheld).toBe(0);
+  });
+});
+
+// Review finding #3: "/s/" anywhere on a line.
+describe('electronic signature marks anywhere on a line (review fix #3)', () => {
+  test.each(['By: /s/ Jane Doe', 'Signature: /s/ Jane Doe', '/s/ Jane Doe', 'Respectfully submitted, /S/ Jane Doe, Esq.', 'By:/s/Jane Doe', 'By: / s / Jane Doe'])('%s → blank line, no name', (t) => {
+    const out = unsign(t);
+    expect(out).not.toMatch(/\/\s*s\s*\//i);
+    expect(out).not.toContain('Jane');
+    expect(out).toContain('______________________________');
+  });
+  test('the label before the mark is kept; other slashes are not touched', () => {
+    expect(unsign('By: /s/ Jane Doe\nDate: today')).toBe('By: ______________________________\nDate: today');
+    expect(unsign('see https://www.tn.gov/s/form and/or the clerk')).toBe('see https://www.tn.gov/s/form and/or the clerk');
+    const m = buildModel({ title: 'T', draft: 'Body.\n\nBy: /s/ Jane Doe', signerName: '' });
+    expect(JSON.stringify(m)).not.toContain('Jane');
+  });
+});
+
 describe('the recap', () => {
   const said = 'I was arrested in Knox County on March 3. My email is a@b.co and phone 615-555-1234.';
   test('only what the person said; contact details scrubbed; legal references dropped; capped', () => {

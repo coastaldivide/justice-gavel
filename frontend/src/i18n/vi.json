@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "Trang là một tệp PDF, nên không thể tự động kiểm tra câu trích dẫn.",
   "asc_reason_source_page_not_fetched": "Không thể mở trang nguồn.",
   "asc_reason_fetched_page_not_allowed": "Có một trang ngoài các trang chính thức được trả về và đã bị bỏ qua.",
+  "asc_reason_quote_not_supporting": "Câu trích dẫn có trên trang, nhưng không nêu rõ quy định đã lưu (các từ chính hoặc con số khác nhau).",
   "asc_reason_generic": "Cần một người quyết định.",
   "asc_stored": "Văn bản đã lưu",
   "asc_quote": "Câu trích từ trang",

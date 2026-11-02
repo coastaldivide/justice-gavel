@@ -30,6 +30,7 @@ import { fileIdFor, forgetFile } from '../aiFiles.js';
 import { DATA_KEYS, SIGNATURE_KEYS } from './core.js';
 import { FORM_MAP_KEYS } from '../../ai/schemas/index.js';
 import { logIgnored } from '../../utils/ignored.js';
+import { claimDocumentRead } from '../courtPaper.js';
 import logger from '../../utils/logger.js';
 
 /** Same shape as routes/bondDesk/_common.js BdError (fail() renders `bdError: true` errors as bd.err.<code>). */
@@ -126,12 +127,6 @@ export const pubSuggestion = (r) => r && ({
   suggestions: r.suggestions || [], decisions: r.decisions || {}, created_at: r.created_at, via_file_id: !!r.via_file_id,
 });
 
-async function checkStaffQuota(db, userId) {
-  const r = await db.get(
-    `SELECT COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour')::int AS hour, COUNT(*)::int AS day
-       FROM ai_document_reads WHERE user_id = ? AND kind = 'form_mapping' AND created_at > NOW() - INTERVAL '1 day'`, [userId]);
-  if ((r?.day ?? 0) >= PER_DAY || (r?.hour ?? 0) >= PER_HOUR) throw new BdError(429, 'ai_suggest_limit');
-}
 
 /**
  * Ask for suggestions for one form. → the stored suggestion row (public shape).
@@ -148,11 +143,11 @@ export async function suggestMapping(db, { form, buffer, staffId, fetchImpl } = 
     return { ...pubSuggestion(row), other_fields: desc.other };
   }
   if (desc.pageCount > API_MAX_PDF_PAGES) throw new BdError(409, 'form_problem', { form: form.name, reason: 'too_many_pages' });
-  await checkStaffQuota(db, staffId);
   const listed = desc.text.slice(0, MAX_FIELDS_PER_REQUEST);
-  const log = await db.get(
-    `INSERT INTO ai_document_reads (user_id, kind, source, mime_type, size_bytes, page_count) VALUES (?, 'form_mapping', 'form', 'application/pdf', ?, ?) RETURNING id`,
-    [staffId, buffer.length, desc.pageCount]);
+  // Count and record the request in one step (parallel requests cannot all pass the limit).
+  const log = await claimDocumentRead(db, { userId: staffId, kind: 'form_mapping', perDay: PER_DAY, perHour: PER_HOUR,
+    values: { source: 'form', mime: 'application/pdf', size: buffer.length, pages: desc.pageCount },
+    onLimit: () => { throw new BdError(429, 'ai_suggest_limit'); } });
   let file = await fileIdFor(db, { subject: { type: 'bd_form', id: Number(form.id), userId: Number(form.agent_id) }, buffer, mime: 'application/pdf', fetchImpl });
   const fieldList = listed.map((f) => JSON.stringify({ name: f.name, page: f.page, position: f.rect, tooltip: f.tooltip, max_length: f.max_length })).join('\n');
   const ask = (fileId) => aiMessage({
@@ -191,24 +186,33 @@ export async function suggestMapping(db, { form, buffer, staffId, fetchImpl } = 
  * → { suggestion, field_map }
  */
 export async function decideField(db, { form, suggestionId, field, action, dataKey, staffId }) {
-  const s = await db.get('SELECT * FROM bd_form_map_suggestions WHERE id = ? AND form_id = ?', [suggestionId, form.id]);
-  if (!s) throw new BdError(404, 'not_found');
-  const item = (s.suggestions || []).find((x) => x.field === field);
-  if (!item) throw new BdError(400, 'bad_field_map', { field: String(field ?? '').slice(0, 100) });
-  const textFields = new Set((form.fields || []).filter((x) => x.type === 'text').map((x) => x.name));
-  if (!textFields.has(field)) throw new BdError(400, 'bad_field_map', { field });
-  if (!['accept', 'reject'].includes(action)) throw new BdError(400, 'invalid', { field: 'action' });
-  let map = { ...(form.field_map || {}) };
-  let key = null;
-  if (action === 'accept') {
-    key = dataKey ?? item.data_key;
-    if (!key || !DATA_KEYS.includes(key)) throw new BdError(400, 'bad_field_map', { field });
-    map = { ...map, [field]: key };
-    await db.run('UPDATE bd_forms SET field_map = ?::jsonb, updated_at = NOW() WHERE id = ?', [JSON.stringify(map), form.id]);
-  }
-  const decisions = { ...(s.decisions || {}), [field]: { action, data_key: key, by: staffId, at: new Date().toISOString(), edited: action === 'accept' && key !== item.data_key } };
-  const open = (s.suggestions || []).some((x) => !decisions[x.field]);
-  const row = await db.get('UPDATE bd_form_map_suggestions SET decisions = ?::jsonb, status = ?, updated_at = NOW() WHERE id = ? RETURNING *',
-    [JSON.stringify(decisions), open ? 'open' : 'done', s.id]);
-  return { suggestion: pubSuggestion(row), field_map: map, signature_key: SIGNATURE_KEYS.includes(key) };
+  // Atomic (review fix #7): staff may decide several fields at once. The suggestion row is locked
+  // for the decision, and the form's field_map / the decisions are merged key by key in SQL
+  // (jsonb ||), so two accepts at the same time never overwrite each other's field.
+  return db.transaction(async (tx) => {
+    const s = await tx.get('SELECT * FROM bd_form_map_suggestions WHERE id = ? AND form_id = ? FOR UPDATE', [suggestionId, form.id]);
+    if (!s) throw new BdError(404, 'not_found');
+    const item = (s.suggestions || []).find((x) => x.field === field);
+    if (!item) throw new BdError(400, 'bad_field_map', { field: String(field ?? '').slice(0, 100) });
+    const textFields = new Set((form.fields || []).filter((x) => x.type === 'text').map((x) => x.name));
+    if (!textFields.has(field)) throw new BdError(400, 'bad_field_map', { field });
+    if (!['accept', 'reject'].includes(action)) throw new BdError(400, 'invalid', { field: 'action' });
+    let key = null;
+    let map;
+    if (action === 'accept') {
+      key = dataKey ?? item.data_key;
+      if (!key || !DATA_KEYS.includes(key)) throw new BdError(400, 'bad_field_map', { field });
+      const f = await tx.get(`UPDATE bd_forms SET field_map = COALESCE(field_map, '{}'::jsonb) || jsonb_build_object(?::text, ?::text), updated_at = NOW()
+                               WHERE id = ? RETURNING field_map`, [field, key, form.id]);
+      map = f?.field_map || {};
+    } else {
+      map = (await tx.get('SELECT field_map FROM bd_forms WHERE id = ?', [form.id]))?.field_map || {};
+    }
+    const decision = { action, data_key: key, by: staffId, at: new Date().toISOString(), edited: action === 'accept' && key !== item.data_key };
+    const decisions = { ...(s.decisions || {}), [field]: decision };
+    const open = (s.suggestions || []).some((x) => !decisions[x.field]);
+    const row = await tx.get(`UPDATE bd_form_map_suggestions SET decisions = COALESCE(decisions, '{}'::jsonb) || jsonb_build_object(?::text, ?::jsonb), status = ?, updated_at = NOW()
+                               WHERE id = ? RETURNING *`, [field, JSON.stringify(decision), open ? 'open' : 'done', s.id]);
+    return { suggestion: pubSuggestion(row), field_map: typeof map === 'string' ? JSON.parse(map) : map, signature_key: SIGNATURE_KEYS.includes(key) };
+  });
 }

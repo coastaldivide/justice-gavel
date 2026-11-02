@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "الصفحة ملف PDF، لذلك تعذّر التحقق من الاقتباس تلقائيًا.",
   "asc_reason_source_page_not_fetched": "تعذّر فتح صفحة المصدر.",
   "asc_reason_fetched_page_not_allowed": "عادت صفحة من خارج المواقع الرسمية وتم تجاهلها.",
+  "asc_reason_quote_not_supporting": "الكلمات المقتبسة موجودة في الصفحة، لكنها لا تذكر القاعدة المحفوظة بوضوح (الكلمات الأساسية أو الأرقام مختلفة).",
   "asc_reason_generic": "يجب أن يقرر شخص.",
   "asc_stored": "النص المحفوظ",
   "asc_quote": "اقتباس من الصفحة",

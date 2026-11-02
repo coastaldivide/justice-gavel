@@ -378,14 +378,18 @@ row label, the source URL (web fetch only opens URLs that appeared in the user t
 fetch result) and the stored text. Tool: `web_fetch_20250910`, `max_uses` 2 (proposals 4),
 `max_content_tokens` 20,000, **no tool citations** (citations + `output_config.format` is a 400;
 the quote check below uses the fetched text itself). Claude answers `{ verdict: still_matches |
-changed | page_gone | cant_tell, quote, what_changed, fetched_url }` — "decide only from the fetched
-page, never from your own knowledge", the quote word for word.
+changed | page_gone | cant_tell, quote, stored_claim, what_changed, fetched_url }` — "decide only from the fetched
+page, never from your own knowledge", the quote word for word from the page, and `stored_claim`
+word for word from the stored text (the part of the stored rule the quote was compared with).
+Each item's `ref` also holds a hash of the row's stored text and source URL (`rowHash`).
 
 **What a verdict may do** (`decideRecheck`, pure, unit-tested):
 
 | Result | Effect |
 |---|---|
-| `still_matches` + a quote of ≥ 5 words / 25 characters found (whitespace, quote marks, dashes normalised) in the text of a page fetched from the row's own official host | **automatic**: `checked_on` = today (`legal_source_checks`, `checked_how = auto_quote`); DB rows: `last_reviewed_at` (or `content_verified_at`) = now. Text, source and verifier untouched. |
+| `still_matches` + a quote of ≥ 5 words / 25 characters found (whitespace, quote marks, dashes normalised) in the text of a page fetched from the row's own official host, **and the quote supports the stored text** (`supportsStored`, below), **and the row is unchanged since the batch was built** | **automatic**: `checked_on` = today (`legal_source_checks`, `checked_how = auto_quote`); DB rows: `last_reviewed_at` (or `content_verified_at`) = now. Text, source and verifier untouched. |
+| `still_matches`, the quote is on the page but does not support the stored text: no `stored_claim`, a claim that is not word for word in the stored row, a number of the claim missing from the quote, fewer than 60 % of the claim's key words in the quote, a number of the whole row missing from the page, or fewer than 50 % of the row's key words on the page | review queue (`stored_claim_missing` / `stored_claim_not_in_row` / `claim_numbers_not_in_quote` / `claim_terms_not_in_quote` / `row_numbers_not_on_page` / `row_terms_not_on_page`; shown as "the quote does not clearly state the stored rule") |
+| the row's text or source changed between the batch and its results (a deploy, an admin edit) | nothing changes; `last_outcome = row_changed`, the attempt is cleared so the row is due on the next run. DB rows are re-read under a row lock before the date moves. |
 | `still_matches` but the quote is not on the page, or the page is a PDF (we cannot read PDF text locally), or the source page was not fetched | review queue (`quote_not_on_page` / `pdf_not_verifiable` / `source_page_not_fetched`) |
 | `changed`, `page_gone`, `cant_tell` | review queue with the model's quote and "what changed" |
 | a fetched page on any non-allowed host (even if the API returned one) | ignored; never counts as the source |
@@ -393,10 +397,18 @@ page, never from your own knowledge", the quote word for word.
 | proposal: `found` + a URL on the allowed domains that was actually fetched + the quote on that page (or a PDF) | review queue as "proposed source" — **never published without a person** |
 | proposal not found / URL not allowed / not fetched / quote not on the page | nothing queued (`no_source_found`) |
 
+Why the support check (review fix #1, November 2 2026): a quote that is merely *on* the page —
+the site's welcome line, or a sentence an injected instruction asked for — used to be enough to
+renew the date of a rule the page no longer states (stored "48 hours", page now "12 hours"). Now
+the quote has to carry the stored claim's numbers and key words, and every number of the stored
+row has to be on the fetched page; anything less goes to a person. Numbers are compared as
+written (`$1,500` = `1500`; "48" ≠ "forty-eight"), which errs towards the review queue.
+
 **Admin review queue** (Admin → Source checks; `GET/POST /api/admin/source-checks/*`, admin role,
 every decision in `audit_log` — `resource_type 'legal_source'`): each item shows the row, the stored
 text, the verdict, the quote (found on the page or not), what changed and links to the stored /
-checked / proposed page. **Approve** — a re-check: the row as stored is confirmed, dated today; a
+checked / proposed page. **Approve** — only if the row still has the text that was checked (else 409 `row_changed`: the
+review is superseded and the row is due for a new check); a re-check: the row as stored is confirmed, dated today; a
 proposal: DB rows get the official `source_url` and `verified_by "Source-checked <date> — source
 approved by an admin …"` (so a withheld row is shown from now on — a human approved it); code rows
 record the approved source (shown by the rights card, deadline calculator, record clearing and
@@ -451,9 +463,25 @@ both; server-side fallback is therefore off for batch tasks and a refusal is rec
 * **Retries**: transient errors (`overloaded_error`, `api_error`, `rate_limit_error`, `timeout_error`),
   `pause_turn` (a server-tool loop that paused) and `expired` requests are sent again in ONE new batch
   (same custom_id, `attempt + 1`, `parent_id`), up to `AI_BATCH_MAX_ATTEMPTS` (3); others (e.g.
-  `invalid_request_error`) are final. Processing a batch twice changes nothing.
+  `invalid_request_error`) are final. Processing a batch twice changes nothing. A retry batch passes
+  **the same caps as a first send** (`checkCaps`): its worst case — including the stored web-fetch
+  worst case per item (`ai_batch_items.extra_input_tokens`, migration 49) — must be under
+  `AI_BATCH_MAX_USD` and under what is left of today's budget; otherwise nothing is sent and the
+  items are marked failed (`retry not sent: ai_too_large`). Both checks also set aside the worst case
+  of batches still open (sent, results not yet metered), so two batches on the same day are not
+  both checked against the same remaining budget. A `pause_turn` retry still resends the request
+  from the start (continuing the paused turn is a live-key item; it is counted at full worst case).
 * **Handlers** (by kind, after the retries are sent): `source_check` (§9), `eval_answer` → starts the
-  grading batch, `eval_grade` → stores the scores, `translate_keys` → the review file.
+  grading batch, `eval_grade` → stores the scores, `translate_keys` → the review file. The results
+  file is downloaded again on every pass, so the handler's input can always be rebuilt: it gets
+  **every final item not applied yet** (`ai_batch_items.applied_at`, migration 49). A per-item
+  handler (source checks) uses `ctx.each()`: one item's error is recorded on that item
+  (`handler_attempts`, `handler_error`) and does not stop the others; that item is handed over again
+  on the next pass (about 5 minutes later), and after `AI_BATCH_HANDLER_ATTEMPTS` (3) it is recorded
+  as failed. A batch is marked `processed` only when every final item is applied or recorded as
+  failed. A whole-pass failure (e.g. the database) is retried the same way and, after
+  `AI_BATCH_HANDLER_ATTEMPTS` passes, the batch is marked `failed` with the error so an admin sees it.
+  Usage is metered once per item (when it first finishes), never again on a later pass.
 
 **Uses:**
 
@@ -540,7 +568,10 @@ dropped; dates must be real `YYYY-MM-DD` (2000–2100), times `HH:MM`; lengths c
 converts photos to JPEG and resizes them to a 1568-px long edge first, as the vision page recommends);
 `COURT_PAPER_MAX_MB` (8, max 20), `COURT_PAPER_MAX_PAGES` (10, max 100), no encrypted PDFs, images ≤ 8000 px
 and not tiny; per person `COURT_PAPER_READS_PER_HOUR` (10) and `COURT_PAPER_READS_PER_DAY` (20) counted in
-`ai_document_reads` (429 `hourly_limit` / `daily_limit`); then the gateway's daily budget, per-request cap
+`ai_document_reads` (429 `hourly_limit` / `daily_limit`) — **claimed atomically** (review fix #8:
+`claimDocumentRead` takes a per-person advisory lock, counts and inserts the read in one transaction, so
+parallel uploads cannot all pass the limit), plus a burst limit of 30 requests a minute per person on both
+routes (429 `cpr.err.too_fast`); then the gateway's daily budget, per-request cap
 and the count_tokens preflight (every image / PDF request is counted). `COURT_PAPER_READER=off` → 503
 `feature_unavailable` and the app shows "add by hand".
 
@@ -571,7 +602,10 @@ ever drawn); suggestions for unknown, non-text or repeated fields are dropped; a
 **Nothing is applied** until staff accept a field (as suggested, or with another key from the picker); an
 accepted field is written to `bd_forms.field_map` — the existing fill path (preview, packets). Rejections
 are recorded. Every suggestion and decision is in `audit_log` (`admin.bd_setup_form_suggested`,
-`admin.bd_setup_form_mapped` with `via: 'ai_suggestion'`). Staff limit: 20 an hour / 100 a day.
+`admin.bd_setup_form_mapped` with `via: 'ai_suggestion'`). Staff limit: 20 an hour / 100 a day, claimed atomically
+like the court-paper limit. Accepting fields is atomic (review fix #7): the suggestion row is locked and
+`field_map` / `decisions` are merged key by key in SQL (`jsonb ||`), so staff deciding several fields at once never
+lose one.
 
 ### 11.3 Files API for documents read more than once
 
@@ -720,7 +754,8 @@ file is stored.
   official page and "checked <date>".
 * **The person's own words as typed** in their own section (petition: full name, state, county, case number, charge,
   year; motion: defendant, case number, court, state, county, attorney, bar number, facts, notes) — verbatim.
-* **No drawn or fake signature**: any "/s/ …" line in the draft becomes a blank line; the document ends with a blank
+* **No drawn or fake signature**: any "/s/ …" mark in the draft — at the start of a line or after a label such as
+  "By:" or "Signature:" (review fix #3) — becomes a blank line from the mark on (the label stays); the document ends with a blank
   signature line, a date line and the printed name as typed (blank line if none).
 
 **Petition (changed in this step).** The petition request now gives the model the one checked record-clearing rule for
@@ -731,6 +766,17 @@ screen and the downloads match; the checked draft (withheld paragraphs stored as
 typed fields and the source are kept in `draft_documents` (the last 20 per person; deleted with the account) so the
 download is what was shown. **Motions**: the draft in the app is unchanged; in the downloads every paragraph that cites a
 case or statute is withheld (no checked source exists for those) — the attorney adds authorities from a primary source.
+The older motion PDF exports use the same rule (review fix #9): `GET /api/motions/export/:id/pdf` (the saved draft) and
+`POST /api/motions/export/:id/refine` (the AI clean-up, then the PDF) run the text through `checkDraft(text, [], lang)`
+(`checkedMotionText` in routes/motions/export.js) before the PDF is drawn. `POST /api/motions/export/preview` renders
+text the person sends as they typed it.
+
+**What counts as a reference** (review fix #2): "§", "Code Ann." / "Code Annotated", "U.S.C.", "C.F.R.", "Rule 32",
+case citations, **and** a section number after a state code abbreviation (2–6 capitals: ORS, KRS, N.J.S.A., A.R.S.,
+C.R.S., RSA, MCA, NRS, TCA …) or after a code word ("Code", "Stat.", "Laws", "Act", "Title", "Chapter"), **and** any
+statute-shaped number on its own ("40-32-105", "2C:52-2", "651:5"). Dates (2026-11-02, 11/02/2026), times, money,
+phone numbers, SSN shapes and year ranges are not section numbers, so ordinary text is not withheld. The same helper
+is used by the petition check, both download routes and the recap filter.
 
 ### 13.2 Word (`docx.js`, `zip.js`)
 
@@ -782,12 +828,17 @@ All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDA
 `AI_CACHE`, `AI_CHAT_CACHE_TTL`, `AI_COUNT_TOKENS_THRESHOLD`, `AI_MAX_INPUT_TOKENS`,
 `AI_MAX_REQUEST_USD`, `AI_TRACE_PROPAGATION`, `AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`,
 `AI_ALERT_REFUSAL_PCT`, `RAG_MIN_SIMILARITY` (step 2), `AI_BATCHES`, `AI_BATCH_MAX_USD`,
-`AI_BATCH_MAX_ATTEMPTS`, `SOURCE_CHECK_ENABLED`, `SOURCE_CHECK_MAX_ROWS`, `SOURCE_CHECK_SKIP_DAYS`,
+`AI_BATCH_MAX_ATTEMPTS`, `AI_BATCH_HANDLER_ATTEMPTS` (review fixes), `SOURCE_CHECK_ENABLED`, `SOURCE_CHECK_MAX_ROWS`, `SOURCE_CHECK_SKIP_DAYS`,
 `SOURCE_CHECK_MAX_FETCHES`, `SOURCE_CHECK_PROPOSAL_FETCHES`, `SOURCE_CHECK_MAX_CONTENT_TOKENS` (step 3), `AI_FILES_API`, `AI_FILES_TTL_DAYS`,
 `COURT_PAPER_READER`, `COURT_PAPER_MAX_MB`, `COURT_PAPER_MAX_PAGES`, `COURT_PAPER_READS_PER_HOUR`,
 `COURT_PAPER_READS_PER_DAY` (step 4), `AI_MEMORY`, `AI_MEMORY_THRESHOLD_TOKENS`, `AI_MEMORY_KEEP_TURNS` (step 5)
 (plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
 `AI_BUDGET_ALERT_PCT`, `AI_PRICE_*`).
+
+## Review fixes (November 2 2026)
+
+An independent review of steps 1–5 found 9 issues; all are fixed with regression tests — see
+docs/REVIEW_FIXES_AI_2026-11-02.md (migration 49). Changes are described in §9, §10, §11 and §13 above.
 
 ## Tests
 

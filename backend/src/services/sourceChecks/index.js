@@ -26,7 +26,13 @@
  *     is not official is never fetched. A fetched page on any other host is ignored.
  *   - A "still_matches" verdict changes ONE thing — the row's "checked on" date — and only when
  *     its quote (≥ 5 words) is found, word for word, in the text of the page that was fetched from
- *     the row's own official host. Everything else (changed, page gone, can't tell, a quote that
+ *     the row's own official host, AND the quote supports the STORED text (supportsStored): the
+ *     model's `stored_claim` is word for word in the stored row, every number in that claim is in
+ *     the quote, most of its key words are in the quote, every number of the whole stored row is
+ *     on the fetched page, and most of the row's key words are on the page. A quote that is merely
+ *     "some sentence on the page" (a site header, a changed rule) goes to an admin. The verdict is
+ *     applied only if the row's text and source are unchanged since the batch was built
+ *     (rowHash in the item's ref; else `row_changed`, re-queued for the next run). Everything else (changed, page gone, can't tell, a quote that
  *     is not on the page, a PDF page whose text we cannot read) goes to the admin review queue and
  *     the row stays exactly as it is.
  *   - Withheld rows are never published by the job: it may PROPOSE an official page (quote found
@@ -38,11 +44,12 @@
 import { createBatch } from '../aiBatch.js';
 import { sourceCheckSettings, sourceChecksEnabled } from './settings.js';
 import { AiError } from '../aiClient.js';
-import { allRows, checkMode, DB_DATASETS } from './registry.js';
+import { allRows, checkMode, DB_DATASETS, lockedDbRow } from './registry.js';
 import { fetchDomainFor, hostOf, isAllowedUrl, proposalSourcesFor } from '../../ai/sourceDomains.js';
 import { reloadOverlay } from './overlayStore.js';
 import { stalenessScore } from '../contentStaleness.js';
 import logger from '../../utils/logger.js';
+import { createHash } from 'node:crypto';
 
 export const WEB_FETCH_TOOL = 'web_fetch_20250910';
 const str = (v) => String(v ?? '').trim();
@@ -62,7 +69,8 @@ Answer in the JSON format you were given:
 - verdict "changed": the page now says something different from the stored text. Say exactly what changed in what_changed (old → new, in plain words).
 - verdict "page_gone": the page cannot be opened, is a "not found" / error page, or no longer covers this topic.
 - verdict "cant_tell": the page is about the topic but you cannot confirm or deny the stored text from it (it is incomplete, too general, or unclear).
-- quote: copy one or two complete sentences from the fetched page, word for word, exactly as they appear (no paraphrase, no "...", no added words), that best support your verdict. For page_gone use null.
+- quote: copy one or two complete sentences from the fetched page, word for word, exactly as they appear (no paraphrase, no "...", no added words), that state the same fact as the stored text (with the same numbers, days, amounts and terms when they match) and best support your verdict. For page_gone use null.
+- stored_claim: copy, word for word from the stored text, the sentence (or part of a sentence) of the stored text that your quote supports or contradicts — the fact you compared, with its numbers. For page_gone use null.
 - fetched_url: the exact URL of the page the quote comes from (null for page_gone).
 - what_changed: null unless the verdict is "changed".
 
@@ -90,6 +98,11 @@ const userTurn = (row, extra) => [
   row.text,
 ].join('\n');
 
+/** A short hash of what a verdict is about: the row's stored text and source URL. */
+export function rowHash(row) {
+  return createHash('sha256').update(`${row?.source_url ?? ''}\n${row?.text ?? ''}`).digest('hex').slice(0, 32);
+}
+
 /** A batch item for a re-check of a shown row on an official source, or null. */
 export function recheckItem(row, s = sourceCheckSettings()) {
   if (checkMode(row) !== 'recheck') return null;
@@ -97,7 +110,7 @@ export function recheckItem(row, s = sourceCheckSettings()) {
   if (!domain) return null;
   return {
     customId: customIdFor('r', row), logicalKey: `src:${row.dataset}:${row.key}`,
-    ref: { mode: 'recheck', dataset: row.dataset, key: row.key }, task: 'source_check',
+    ref: { mode: 'recheck', dataset: row.dataset, key: row.key, hash: rowHash(row) }, task: 'source_check',
     system: [{ text: RECHECK_SYSTEM, cache: '1h' }],
     messages: [{ role: 'user', content: userTurn(row, `Source URL: ${row.source_url}`) }],
     tools: [{ type: WEB_FETCH_TOOL, name: 'web_fetch', max_uses: s.maxFetches, allowed_domains: [domain], max_content_tokens: s.maxContentTokens }],
@@ -115,7 +128,7 @@ export function proposalItem(row, s = sourceCheckSettings()) {
   const domains = [...new Set([...conf.domains, ...(row.source_url && isAllowedUrl(row.source_url) ? [fetchDomainFor(row.source_url)] : [])])].filter(Boolean);
   return {
     customId: customIdFor('p', row), logicalKey: `src:${row.dataset}:${row.key}`,
-    ref: { mode: 'propose', dataset: row.dataset, key: row.key, domains }, task: 'source_propose',
+    ref: { mode: 'propose', dataset: row.dataset, key: row.key, domains, hash: rowHash(row) }, task: 'source_propose',
     system: [{ text: PROPOSE_SYSTEM, cache: '1h' }],
     messages: [{ role: 'user', content: userTurn(row, `Official pages to start from:\n${start.map((u) => `- ${u}`).join('\n')}`) }],
     tools: [{ type: WEB_FETCH_TOOL, name: 'web_fetch', max_uses: s.proposalFetches, allowed_domains: domains, max_content_tokens: s.maxContentTokens }],
@@ -157,6 +170,53 @@ export function quoteOnPage(quote, text) {
   if (q.length < 25 || q.split(' ').length < 5) return false;
   return !!text && norm(text).includes(q);
 }
+// ── Does the quote support the STORED text? (review finding #1) ─────────────────
+const STOP = new Set(('the and for are was were with that this from have has had not but any all can may must will shall would could should '
+  + 'been being into onto upon than then them they their there these those what when where which while who whom whose why how its it\'s '
+  + 'also only more most other some such each per under over about after before within without between page own posts '
+  + 'stored text').split(' '));
+/** Numbers in a text, normalised ("$1,500" → "1500", "48-hour" → "48", "40-32-101" stays whole). */
+export function numberTokens(text) {
+  const out = new Set();
+  for (const m of norm(text).matchAll(/\d[\d,]*(?:[.:-]\d+)*/g)) {
+    const t = m[0].replace(/,(?=\d{3}\b)/g, '').replace(/[.:-]+$/, '');
+    if (t) out.add(t);
+  }
+  return out;
+}
+const stem = (w) => w.replace(/(?:'s|ies|es|s|ed|ing)$/, '');
+/** Key words of a text: letters only, ≥ 4 characters, not a stop word, lightly stemmed. */
+export function keyWords(text) {
+  const out = new Set();
+  for (const w of norm(text).split(/[^a-z\u00c0-\u024f]+/)) if (w.length >= 4 && !STOP.has(w)) out.add(stem(w));
+  return out;
+}
+const share = (need, have) => { if (!need.size) return 1; let n = 0; for (const w of need) if (have.has(w)) n += 1; return n / need.size; };
+const hasAllNumbers = (need, haveText) => { const have = numberTokens(haveText); for (const n of need) if (!have.has(n)) return false; return true; };
+
+/**
+ * Pure. Does a quote found on the page support the row's stored text?
+ *   - stored_claim (the model's word-for-word copy of the part of the stored text it compared) is
+ *     really in the stored text (≥ 3 words);
+ *   - every number of that claim is in the quote, and ≥ 60 % of its key words are in the quote;
+ *   - every number of the whole stored text is on the fetched page, and ≥ 50 % of the stored
+ *     text's key words are on the page.
+ * → { ok, reason }   reason: stored_claim_missing | stored_claim_not_in_row | claim_numbers_not_in_quote |
+ *   claim_terms_not_in_quote | row_numbers_not_on_page | row_terms_not_on_page
+ */
+export function supportsStored(row, quote, storedClaim, pageText) {
+  const claim = norm(storedClaim).replace(/^["']|["']$/g, '');
+  if (!claim || claim.split(' ').length < 3) return { ok: false, reason: 'stored_claim_missing' };
+  if (!norm(row?.text).includes(claim)) return { ok: false, reason: 'stored_claim_not_in_row' };
+  const claimWords = keyWords(claim);
+  if (!claimWords.size && !numberTokens(claim).size) return { ok: false, reason: 'stored_claim_missing' };
+  if (!hasAllNumbers(numberTokens(claim), quote)) return { ok: false, reason: 'claim_numbers_not_in_quote' };
+  if (claimWords.size && share(claimWords, keyWords(quote)) < 0.6) return { ok: false, reason: 'claim_terms_not_in_quote' };
+  if (!hasAllNumbers(numberTokens(row.text), pageText)) return { ok: false, reason: 'row_numbers_not_on_page' };
+  if (share(keyWords(row.text), keyWords(pageText)) < 0.5) return { ok: false, reason: 'row_terms_not_on_page' };
+  return { ok: true, reason: 'quote_supports_stored_text' };
+}
+
 const sameSite = (a, b) => { const x = fetchDomainFor(a); const y = fetchDomainFor(b); return !!x && !!y && (x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`)); };
 
 /**
@@ -169,12 +229,18 @@ export function decideRecheck(row, json, message) {
   const verdict = json?.verdict;
   const quote = str(json?.quote) || null;
   const claimed = str(json?.fetched_url) || null;
-  const base = { verdict, quote, whatChanged: str(json?.what_changed) || null, fetchedUrl: claimed && isAllowedUrl(claimed) ? claimed : null };
+  const storedClaim = str(json?.stored_claim) || null;
+  const base = { verdict, quote, storedClaim, whatChanged: str(json?.what_changed) || null, fetchedUrl: claimed && isAllowedUrl(claimed) ? claimed : null };
   if (verdict !== 'still_matches') return { ...base, outcome: 'queue', quoteVerified: false, reason: verdict || 'cant_tell' };
   const own = pages.filter((p) => sameSite(p.url, row.source_url));
   if (!own.length) return { ...base, outcome: 'queue', quoteVerified: false, reason: disallowed ? 'fetched_page_not_allowed' : 'source_page_not_fetched' };
   const hit = own.find((p) => p.text && quoteOnPage(quote, p.text));
-  if (hit) return { ...base, outcome: 'verified', quoteVerified: true, reason: 'quote_on_page', fetchedUrl: hit.url };
+  if (hit) {
+    // The quote is on the page; it must also support the stored text, or a person decides.
+    const sup = supportsStored(row, quote, storedClaim, hit.text);
+    if (sup.ok) return { ...base, outcome: 'verified', quoteVerified: true, reason: 'quote_on_page', fetchedUrl: hit.url };
+    return { ...base, outcome: 'queue', quoteVerified: true, reason: sup.reason, fetchedUrl: hit.url };
+  }
   if (own.every((p) => p.pdf || !p.text)) return { ...base, outcome: 'queue', quoteVerified: false, reason: 'pdf_not_verifiable', fetchedUrl: own[0].url };
   return { ...base, outcome: 'queue', quoteVerified: false, reason: 'quote_not_on_page', fetchedUrl: own[0].url };
 }
@@ -295,31 +361,52 @@ async function queue(db, row, r, batch, itemId) {
      r.whatChanged || r.explanation || null, r.fetchedUrl || null, r.proposedUrl || null, batch.id, itemId]);
 }
 
-/** aiBatch handler for kind 'source_check'. Returns the run summary (stored as the batch output). */
-export async function onBatchProcessed(db, batch, handled) {
+/**
+ * aiBatch handler for kind 'source_check'. Returns the run summary (stored as the batch output).
+ * Each item is applied on its own (ctx.each: one item's error does not stop the others; it is
+ * tried again on the next pass). A verdict is applied only to the text it was about: when the
+ * row's text or source changed since the batch was built (ref.hash), nothing changes and the row
+ * is due again on the next run (`row_changed`).
+ */
+export async function onBatchProcessed(db, batch, handled, ctx = null) {
   const rows = await allRows(db);
   const byKey = new Map(rows.map((r) => [`${r.dataset}|${r.key}`, r]));
-  const sum = { verified: 0, queued: 0, proposed: 0, no_source_found: 0, failed: 0, row_missing: 0 };
-  for (const h of handled) {
+  const prev = (typeof batch.output === 'object' && batch.output?.applied) || {};
+  const sum = { verified: 0, queued: 0, proposed: 0, no_source_found: 0, failed: 0, row_missing: 0, row_changed: 0, handler_errors: 0 };
+  const changed = async (row) => {
+    sum.row_changed += 1;
+    // due again on the next run (the new text has never been compared with the page)
+    await record(db, row, { last_outcome: 'row_changed', last_verdict: 'row_changed', last_batch_id: batch.id, last_attempt_at: null });
+  };
+  const applyOne = async (h) => {
     const ref = typeof h.item.ref === 'string' ? JSON.parse(h.item.ref) : h.item.ref;
     const row = ref && byKey.get(`${ref.dataset}|${ref.key}`);
-    if (!row) { sum.row_missing += 1; continue; }
+    if (!row) { sum.row_missing += 1; return; }
     if (h.item.status !== 'succeeded' || !h.outcome?.json) {
       sum.failed += 1;
       await record(db, row, { last_outcome: 'failed', last_verdict: h.item.status, last_batch_id: batch.id });
-      continue;
+      return;
     }
+    // Fail closed: a ref without a hash (built before this check existed) counts as changed.
+    if (!ref.hash || ref.hash !== rowHash(row)) { await changed(row); return; }
     if (ref.mode === 'recheck') {
       const d = decideRecheck(row, h.outcome.json, h.message);
       if (d.outcome === 'verified') {
+        if (row.storage === 'db' && DB_DATASETS[row.table]) {
+          // Only the date moves — the row's own text, source and verifier stay as they are — and
+          // only if the row (locked) still has the text the verdict was about.
+          const col = row.table === 'rights_cards' ? 'content_verified_at' : 'last_reviewed_at';
+          const same = await db.transaction(async (tx) => {
+            const now = await lockedDbRow(tx, row);
+            if (!now || rowHash(now) !== ref.hash) return false;
+            await tx.run(`UPDATE ${row.table} SET ${col} = NOW() WHERE id = ?`, [row.id]);
+            return true;
+          });
+          if (!same) { await changed(row); return; }
+        }
         sum.verified += 1;
         await record(db, row, { checked_on: new Date().toISOString().slice(0, 10), checked_how: 'auto_quote', last_outcome: 'verified',
           last_verdict: d.verdict, last_quote: d.quote, last_fetched_url: d.fetchedUrl, last_batch_id: batch.id });
-        if (row.storage === 'db' && DB_DATASETS[row.table]) {
-          // Only the date moves — the row's own text, source and verifier stay as they are.
-          const col = row.table === 'rights_cards' ? 'content_verified_at' : 'last_reviewed_at';
-          await db.run(`UPDATE ${row.table} SET ${col} = NOW() WHERE id = ?`, [row.id]);
-        }
       } else {
         sum.queued += 1;
         await record(db, row, { last_outcome: 'queued', last_verdict: d.verdict, last_quote: d.quote, last_fetched_url: d.fetchedUrl, last_batch_id: batch.id });
@@ -337,10 +424,19 @@ export async function onBatchProcessed(db, batch, handled) {
         await record(db, row, { last_outcome: 'no_source_found', last_verdict: d.reason, last_batch_id: batch.id });
       }
     }
+  };
+  if (ctx?.each) {
+    const r = await ctx.each(handled, applyOne);
+    sum.handler_errors = r.failed;
+  } else {
+    for (const h of handled) await applyOne(h);
   }
+  // Counts add up across passes (a pass after a handler error applies only the items left).
+  for (const k of Object.keys(sum)) if (k !== 'handler_errors') sum[k] += Number(prev[k] || 0);
   await reloadOverlay(db);
   logger.info({ batchId: batch.id, ...sum }, '[source-checks] run applied');
-  return { ...(typeof batch.meta === 'object' && batch.meta ? { counts: batch.meta.counts, trigger: batch.meta.trigger } : {}), applied: sum, retry_batch_id: batch.retried_batch_id ?? null };
+  const meta = typeof batch.meta === 'string' ? JSON.parse(batch.meta) : batch.meta;
+  return { ...(meta && typeof meta === 'object' ? { counts: meta.counts, trigger: meta.trigger } : {}), applied: sum, retry_batch_id: batch.retried_batch_id ?? null };
 }
 
 /** The 'source-check' weekly job. */

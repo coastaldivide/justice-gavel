@@ -17,7 +17,7 @@
  *   withhold  the row stops being shown (database and code rows alike) until restored.
  *   restore   (per row) lifts a withhold / clears an applied correction.
  */
-import { allRows, findRowIn, DB_DATASETS, CODE_DATASETS, DATASETS } from './registry.js';
+import { allRows, findRowIn, DB_DATASETS, CODE_DATASETS, DATASETS, lockedDbRow } from './registry.js';
 import { isAllowedUrl } from '../../ai/sourceDomains.js';
 import { refreshOverlayRow } from './overlayStore.js';
 
@@ -26,6 +26,7 @@ export class ReviewError extends Error {
 }
 export const REVIEW_STATUSES = ['pending', 'approved', 'edited', 'withheld', 'superseded'];
 const today = () => new Date().toISOString().slice(0, 10);
+const sameText = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
 const clamp = (v, d, lo, hi) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(Math.max(n, lo), hi) : d; };
 
 export async function listReviews(db, q = {}) {
@@ -88,10 +89,21 @@ export async function decideReview(db, id, body = {}, { userId = null } = {}) {
     const r = await tx.get('SELECT * FROM legal_source_reviews WHERE id = ? FOR UPDATE', [rid]);
     if (!r) throw new ReviewError(404, 'not_found');
     if (r.status !== 'pending') throw new ReviewError(409, 'not_pending');
-    const row = findRowIn(rows, r.dataset, r.row_key);
+    const found = findRowIn(rows, r.dataset, r.row_key);
+    if (!found) throw new ReviewError(409, 'row_missing');
+    const db_ = found.storage === 'db' ? DB_DATASETS[found.table] : null;
+    // A database row is locked until the decision is saved, and read again now.
+    const row = db_ ? await lockedDbRow(tx, found) : found;
     if (!row) throw new ReviewError(409, 'row_missing');
-    const db_ = row.storage === 'db' ? DB_DATASETS[row.table] : null;
     const result = { id: rid, dataset: r.dataset, row_key: r.row_key };
+    // Approve applies to the text that was checked: if the row changed since (a deploy, another
+    // admin edit), this review is superseded and the row is due for a new check (review fix #4).
+    if (action === 'approve' && sameText(r.old_text) !== sameText(row.text)) {
+      await tx.run(`UPDATE legal_source_reviews SET status = 'superseded', decided_by = ?, decided_at = NOW(), decision_note = 'the row changed after this check' WHERE id = ?`, [userId, rid]);
+      await upsertCheck(tx, r.dataset, r.row_key, row.source_url, { last_attempt_at: null, last_outcome: 'row_changed' });
+      await audit(tx, userId, 'admin.source_check_row_changed', r, { note: note || undefined });
+      return { ...result, status: 'superseded', rowChanged: true };
+    }
 
     if (action === 'approve') {
       if (r.kind === 'proposal') {
@@ -153,6 +165,7 @@ export async function decideReview(db, id, body = {}, { userId = null } = {}) {
     return { ...result, status: 'withheld', withheld: true };
   });
   await refreshOverlayRow(db, out.dataset, out.row_key);
+  if (out.rowChanged) throw new ReviewError(409, 'row_changed');
   return out;
 }
 

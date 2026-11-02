@@ -141,6 +141,92 @@ describeIntegration('AI step 3 — batches, source re-checks, admin queue (real 
       expect(r.retried).toBeNull();
       expect((await ctx.db.get('SELECT status, error_type FROM ai_batch_items WHERE batch_id = ?', [b.id]))).toEqual({ status: 'failed', error_type: 'overloaded_error' });
     });
+
+    // Review finding #5: a handler error never loses the rest of the results.
+    const stale = (id) => ctx.db.run(`UPDATE ai_batches SET updated_at = NOW() - INTERVAL '31 minutes' WHERE id = ?`, [id]);
+    it('a handler that throws once: the next pass gets ALL items again; processed only after it succeeds', async () => {
+      const calls = [];
+      let fail = true;
+      ab.registerBatchHandler('it_throw', async (db, batch, list) => {
+        calls.push(list.map((h) => h.item.custom_id).sort());
+        if (fail) { fail = false; throw new Error('database went away'); }
+        return { n: list.length };
+      });
+      const tag = `${ctx.tag.slice(-5)}t`;
+      const b = track((await ab.createBatch(ctx.db, { kind: 'it_throw', items: items(tag).slice(0, 3), idempotencyKey: `it-throw:${ctx.tag}` })).batch);
+      const r1 = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b.id]));
+      expect(r1.processed).toBe(false);
+      expect((await ctx.db.get('SELECT status FROM ai_batches WHERE id = ?', [b.id])).status).toBe('processing');
+      await stale(b.id);
+      const r2 = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b.id]));
+      expect(r2.processed).toBe(true);
+      expect(calls).toEqual([[`a_${tag}`, `b_${tag}`, `c_${tag}`], [`a_${tag}`, `b_${tag}`, `c_${tag}`]]);
+      const row = await ctx.db.get('SELECT status, output FROM ai_batches WHERE id = ?', [b.id]);
+      expect(row).toMatchObject({ status: 'processed', output: { n: 3 } });
+      expect((await ctx.db.get('SELECT COUNT(*)::int AS n FROM ai_batch_items WHERE batch_id = ? AND applied_at IS NULL', [b.id])).n).toBe(0);
+      // metered once, not again on the second pass
+      expect((await ctx.db.get('SELECT COUNT(*)::int AS n FROM ai_usage_log WHERE batch_id = ?', [b.id])).n).toBe(3);
+    });
+
+    it('per-item handler errors are isolated: other items apply; the failed one is retried, then recorded as failed', async () => {
+      process.env.AI_BATCH_HANDLER_ATTEMPTS = '2';
+      const seen = [];
+      ab.registerBatchHandler('it_each', async (db, batch, list, hctx) => {
+        const r = await hctx.each(list, async (h) => { seen.push(h.item.custom_id); if (h.item.custom_id.startsWith('b_')) throw new Error('bad row'); });
+        return { failed: r.failed, gaveUp: r.gaveUp };
+      });
+      const tag = `${ctx.tag.slice(-5)}e`;
+      const b = track((await ab.createBatch(ctx.db, { kind: 'it_each', items: items(tag).slice(0, 3), idempotencyKey: `it-each:${ctx.tag}` })).batch);
+      const r1 = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b.id]));
+      expect(r1).toMatchObject({ processed: false, left: 1 });
+      const applied = await ctx.db.all('SELECT custom_id, applied_at IS NOT NULL AS done, handler_attempts, handler_error FROM ai_batch_items WHERE batch_id = ? ORDER BY custom_id', [b.id]);
+      expect(applied.map((x) => [x.custom_id, x.done])).toEqual([[`a_${tag}`, true], [`b_${tag}`, false], [`c_${tag}`, true]]);
+      expect(applied[1]).toMatchObject({ handler_attempts: 1, handler_error: 'bad row' });
+      await stale(b.id);
+      const r2 = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b.id]));
+      expect(r2.processed).toBe(true);                                   // b recorded as failed after 2 tries
+      expect(seen).toEqual([`a_${tag}`, `b_${tag}`, `c_${tag}`, `b_${tag}`]);
+      expect(await ctx.db.get('SELECT handler_attempts, handler_error, applied_at IS NOT NULL AS done FROM ai_batch_items WHERE batch_id = ? AND custom_id = ?', [b.id, `b_${tag}`]))
+        .toEqual({ handler_attempts: 2, handler_error: 'bad row', done: true });
+      delete process.env.AI_BATCH_HANDLER_ATTEMPTS;
+    });
+
+    // Review finding #6: retries pass the same caps (per-batch and daily budget, incl. web fetch).
+    it('retry batches: no POST when the daily budget is exhausted or the per-batch cap would be passed; items failed', async () => {
+      const tag = `${ctx.tag.slice(-5)}r`;
+      ctx.anthropic.extra = { batchErrors: { [`a_${tag}`]: { type: 'overloaded_error', times: 1 } } };
+      const b = track((await ab.createBatch(ctx.db, { kind: 'it_echo', items: items(tag).slice(0, 2), idempotencyKey: `it-budget:${ctx.tag}` })).batch);
+      const before = batchPosts().length;
+      const prev = process.env.AI_DAILY_BUDGET_USD;
+      process.env.AI_DAILY_BUDGET_USD = '0.0000001';
+      try {
+        const r = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b.id]));
+        expect(r.processed).toBe(true);
+        expect(r.retried).toBeNull();
+      } finally { if (prev === undefined) delete process.env.AI_DAILY_BUDGET_USD; else process.env.AI_DAILY_BUDGET_USD = prev; }
+      expect(batchPosts().length).toBe(before);                          // nothing sent
+      expect(await ctx.db.get('SELECT status, error FROM ai_batch_items WHERE batch_id = ? AND custom_id = ?', [b.id, `a_${tag}`]))
+        .toMatchObject({ status: 'failed', error: expect.stringContaining('retry not sent: ai_too_large') });
+
+      // the per-batch cap counts the stored web fetch worst case (extra_input_tokens)
+      const R0 = { dataset: 'court_rules', key: `it-wf-${tag}`, label: 'IT row', state: 'TN', jurisdiction: 'TN', source_url: 'https://www.tncourts.gov/jgtest/wf',
+        text: 'A stored rule used only by this test.', checked: null, shown: true, storage: 'code' };
+      const wf = sc.recheckItem(R0);
+      const tag2 = `${ctx.tag.slice(-5)}w`;
+      const item = { ...wf, customId: `w_${tag2}`, logicalKey: `w:${tag2}` };
+      ctx.anthropic.extra = { batchErrors: { [`w_${tag2}`]: { type: 'overloaded_error', times: 1 } } };
+      const b2 = track((await ab.createBatch(ctx.db, { kind: 'it_echo', items: [item], idempotencyKey: `it-wf:${ctx.tag}` })).batch);
+      const stored = await ctx.db.get('SELECT extra_input_tokens, params FROM ai_batch_items WHERE batch_id = ?', [b2.id]);
+      expect(stored.extra_input_tokens).toBe(wf.extraInputTokens);
+      // a cap between the request without and with the fetched pages
+      const p = typeof stored.params === 'string' ? JSON.parse(stored.params) : stored.params;
+      process.env.AI_BATCH_MAX_USD = String((ab.worstCaseUsd(p, 0) + ab.worstCaseUsd(p, wf.extraInputTokens)) / 2);
+      const before2 = batchPosts().length;
+      const r2 = await ab.pollBatch(ctx.db, await ctx.db.get('SELECT * FROM ai_batches WHERE id = ?', [b2.id]));
+      expect(r2.retried).toBeNull();
+      expect(batchPosts().length).toBe(before2);
+      expect((await ctx.db.get('SELECT status FROM ai_batch_items WHERE batch_id = ?', [b2.id])).status).toBe('failed');
+    });
   });
 
   describe('source re-check run + admin queue', () => {
@@ -161,17 +247,18 @@ describeIntegration('AI step 3 — batches, source re-checks, admin queue (real 
       const solQuote = 'Murder can be charged at any time under Tennessee law.';
       ctx.anthropic.extra = {
         pages: {
-          [R.sol.source_url]: `Statutes of limitation. ${solQuote} Other offenses have limits.`,
+          [R.sol.source_url]: `Statutes of limitation. ${R.sol.text} ${solQuote} Other offenses have limits.`,
           [R.sol2.source_url]: 'Misdemeanor prosecutions must begin within twelve months of the offense.',
-          [R.dress.source_url]: 'Dress Code. Shorts, tank tops and hats are not allowed in the courtroom. Thank you.',
+          // the mock answers like the model is asked to: the page sentence that states the stored text
+          [R.dress.source_url]: 'Dress Code. The General Sessions Court of Metropolitan Nashville & Davidson County posts these dress code rules. Shorts, tank tops and hats are not allowed in the courtroom. Thank you.',
           [R.tnDhs.source_url]: { pdf: true },
         },
         batchJson: {
-          [sc.customIdFor('r', R.sol)]: { verdict: 'still_matches', quote: solQuote, what_changed: null, fetched_url: R.sol.source_url },
-          [sc.customIdFor('r', R.sol2)]: { verdict: 'changed', quote: 'Misdemeanor prosecutions must begin within twelve months of the offense.', what_changed: 'wording only', fetched_url: R.sol2.source_url },
-          [sc.customIdFor('r', R.knox)]: { verdict: 'changed', quote: 'Official page at https://katbus.com/buses. This page states the rule exactly as the office published it today.', what_changed: 'The agency has a new website address.', fetched_url: R.knox.source_url },
-          [sc.customIdFor('r', R.nyTips)]: { verdict: 'still_matches', quote: 'This sentence was never on the court page at all.', what_changed: null, fetched_url: R.nyTips.source_url },
-          [sc.customIdFor('r', R.tnDhs)]: { verdict: 'still_matches', quote: 'Arrive early and bring your papers to court.', what_changed: null, fetched_url: R.tnDhs.source_url },
+          [sc.customIdFor('r', R.sol)]: { verdict: 'still_matches', quote: solQuote, stored_claim: 'Murder can be charged at any time', what_changed: null, fetched_url: R.sol.source_url },
+          [sc.customIdFor('r', R.sol2)]: { verdict: 'changed', quote: 'Misdemeanor prosecutions must begin within twelve months of the offense.', stored_claim: 'Misdemeanors must be charged within 12 months', what_changed: 'wording only', fetched_url: R.sol2.source_url },
+          [sc.customIdFor('r', R.knox)]: { verdict: 'changed', quote: 'Official page at https://katbus.com/buses. This page states the rule exactly as the office published it today.', stored_claim: null, what_changed: 'The agency has a new website address.', fetched_url: R.knox.source_url },
+          [sc.customIdFor('r', R.nyTips)]: { verdict: 'still_matches', quote: 'This sentence was never on the court page at all.', stored_claim: null, what_changed: null, fetched_url: R.nyTips.source_url },
+          [sc.customIdFor('r', R.tnDhs)]: { verdict: 'still_matches', quote: 'Arrive early and bring your papers to court.', stored_claim: null, what_changed: null, fetched_url: R.tnDhs.source_url },
         },
       };
       const before = { notes: (await ctx.db.get('SELECT notes, verified_by FROM statute_of_limitations WHERE id = ?', [fixtures.sol])) };
@@ -228,7 +315,7 @@ describeIntegration('AI step 3 — batches, source re-checks, admin queue (real 
       const rogue = 'https://law.justia.com/codes/tennessee/x';
       const row = rows.find((r) => r.dataset === 'tn_report');
       ctx.anthropic.extra = { rogueFetch: rogue,
-        batchJson: { [sc.customIdFor('r', row)]: { verdict: 'still_matches', quote: `Commercial copy of the rule at ${rogue}.`, what_changed: null, fetched_url: rogue } } };
+        batchJson: { [sc.customIdFor('r', row)]: { verdict: 'still_matches', quote: `Commercial copy of the rule at ${rogue}.`, stored_claim: null, what_changed: null, fetched_url: rogue } } };
       const out = await sc.startSourceCheckRun(ctx.db, { rows: [row], createdBy: admin.user.id });
       expect(out).toMatchObject({ created: true, counts: { sent: 1 } });
       track(out.batch);
@@ -305,6 +392,64 @@ describeIntegration('AI step 3 — batches, source re-checks, admin queue (real 
       expect(ov.status).toBe(200);
       expect(ov.body.datasets.find((d) => d.dataset === 'expungement')).toMatchObject({ rows: 306 });
       expect(ov.body.runs.length).toBeGreaterThan(0);
+    });
+
+    // Review finding #4: a verdict is applied only to the text it was about.
+    it('row changed between the batch and its results → no date change, row_changed, due again (DB row and code row)', async () => {
+      const id = Number((await ctx.db.get(`INSERT INTO statute_of_limitations (state, crime_type, years, notes, source, source_url, verified_by, last_reviewed_at)
+        VALUES ('TN', ?, 2, 'Felony theft must be charged within 2 years.', 'test', 'https://www.tncourts.gov/jgtest/sol3', 'Source-checked 2026-10-26 (test fixture)', '2026-10-26') RETURNING id`, [`${ctx.tag}-ftheft`])).id);
+      ctx.addCleanup(async (db) => {
+        await db.run(`DELETE FROM legal_source_reviews WHERE dataset = 'statute_of_limitations' AND row_key = ?`, [String(id)]);
+        await db.run(`DELETE FROM legal_source_checks WHERE dataset = 'statute_of_limitations' AND row_key = ?`, [String(id)]);
+        await db.run('DELETE FROM statute_of_limitations WHERE id = ?', [id]);
+      });
+      const row = (await reg.allRows(ctx.db)).find((r) => r.dataset === 'statute_of_limitations' && r.key === String(id));
+      // a code row whose text in this deploy differs from the text the batch was built with
+      const dressOld = { ...R.dress, text: 'The court page posts rules on: dress, phones and food.' };
+      const quote = 'Felony theft must be charged within 2 years of the offense.';
+      ctx.anthropic.extra = {
+        pages: { [row.source_url]: `Statute of limitations. ${row.text} ${quote}`, [R.dress.source_url]: `Dress Code. ${R.dress.text} The court posts rules on: dress, phones and food today.` },
+        batchJson: {
+          [sc.customIdFor('r', row)]: { verdict: 'still_matches', quote, stored_claim: 'Felony theft must be charged within 2 years', what_changed: null, fetched_url: row.source_url },
+          [sc.customIdFor('r', dressOld)]: { verdict: 'still_matches', quote: 'The court posts rules on: dress, phones and food today.', stored_claim: 'posts rules on: dress, phones and food', what_changed: null, fetched_url: R.dress.source_url },
+        },
+      };
+      const overlayBefore = (await ctx.db.get(`SELECT checked_on FROM legal_source_checks WHERE dataset = 'court_rules' AND row_key = ?`, [R.dress.key]))?.checked_on ?? null;
+      const out = await sc.startSourceCheckRun(ctx.db, { rows: [row, dressOld], createdBy: admin.user.id, skipDays: 0 });
+      track(out.batch);
+      expect(out.counts.sent).toBe(2);
+      // an admin edits the DB row while the batch runs
+      await ctx.db.run(`UPDATE statute_of_limitations SET years = 3, notes = 'Felony theft must be charged within 3 years.' WHERE id = ?`, [id]);
+      await drain();
+      const b = await ctx.db.get('SELECT status, output FROM ai_batches WHERE id = ?', [out.batch.id]);
+      expect(b.status).toBe('processed');
+      expect(b.output.applied).toMatchObject({ verified: 0, row_changed: 2 });
+      expect(new Date((await ctx.db.get('SELECT last_reviewed_at FROM statute_of_limitations WHERE id = ?', [id])).last_reviewed_at).toISOString().slice(0, 10)).toBe('2026-10-26');
+      const c = await ctx.db.get(`SELECT last_outcome, last_attempt_at, checked_on FROM legal_source_checks WHERE dataset = 'statute_of_limitations' AND row_key = ?`, [String(id)]);
+      expect(c).toMatchObject({ last_outcome: 'row_changed', last_attempt_at: null, checked_on: null });
+      expect((await ctx.db.get(`SELECT checked_on FROM legal_source_checks WHERE dataset = 'court_rules' AND row_key = ?`, [R.dress.key]))?.checked_on ?? null).toEqual(overlayBefore);
+      // due again on the next run
+      const due = await sc.dueRows(ctx.db, { rows: (await reg.allRows(ctx.db)).filter((r) => r.dataset === 'statute_of_limitations' && r.key === String(id)) });
+      expect(due.counts.sent).toBe(1);
+    });
+
+    it('approving a review whose row changed since the check → 409 row_changed, review superseded, nothing dated', async () => {
+      const id = Number((await ctx.db.get(`INSERT INTO statute_of_limitations (state, crime_type, years, notes, source, source_url, verified_by, last_reviewed_at)
+        VALUES ('TN', ?, 4, 'Old note.', 'test', 'https://www.tncourts.gov/jgtest/sol4', 'Source-checked 2026-10-26 (test fixture)', '2026-10-26') RETURNING id`, [`${ctx.tag}-x4`])).id);
+      ctx.addCleanup(async (db) => {
+        await db.run(`DELETE FROM legal_source_reviews WHERE dataset = 'statute_of_limitations' AND row_key = ?`, [String(id)]);
+        await db.run(`DELETE FROM legal_source_checks WHERE dataset = 'statute_of_limitations' AND row_key = ?`, [String(id)]);
+        await db.run('DELETE FROM statute_of_limitations WHERE id = ?', [id]);
+      });
+      const row = (await reg.allRows(ctx.db)).find((r) => r.dataset === 'statute_of_limitations' && r.key === String(id));
+      const rv = await ctx.db.get(`INSERT INTO legal_source_reviews (dataset, row_key, kind, label, state, source_url, old_text, verdict, quote, quote_verified, reason)
+        VALUES ('statute_of_limitations', ?, 'recheck', ?, 'TN', ?, ?, 'cant_tell', NULL, FALSE, 'cant_tell') RETURNING id`, [String(id), row.label, row.source_url, row.text]);
+      await ctx.db.run(`UPDATE statute_of_limitations SET notes = 'New note.' WHERE id = ?`, [id]);
+      const r = await ctx.request().post(`/api/admin/source-checks/reviews/${rv.id}`).set(admin.headers).send({ action: 'approve' });
+      expect(r.status).toBe(409);
+      expect(r.body.code).toBe('row_changed');
+      expect((await ctx.db.get('SELECT status FROM legal_source_reviews WHERE id = ?', [rv.id])).status).toBe('superseded');
+      expect(new Date((await ctx.db.get('SELECT last_reviewed_at FROM statute_of_limitations WHERE id = ?', [id])).last_reviewed_at).toISOString().slice(0, 10)).toBe('2026-10-26');
     });
   });
 

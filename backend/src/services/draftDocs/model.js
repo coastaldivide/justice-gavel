@@ -12,7 +12,7 @@
  *     "No source found for this part — not shown"; the checked sources are listed with their
  *     official page and the date they were checked;
  *   - the person's own words are kept exactly as typed (their own section, verbatim);
- *   - no drawn or fake signatures: any "/s/ …" line in the draft becomes a blank line, and the
+ *   - no drawn or fake signatures: any "/s/ …" mark in the draft (at the start of a line or after "By:" / "Signature:") becomes a blank line, and the
  *     document ends with a blank signature line, date line and the printed name as typed.
  *
  * Model: { title, lang, notice, blocks: [
@@ -26,12 +26,15 @@ import { msg } from '../../i18n/index.js';
 export const MAX_DRAFT_CHARS = 100_000;
 /** How a withheld paragraph is stored (draft_documents.draft): never the original words. */
 export const WITHHELD_MARK = '[[jg:withheld]]';
-const SIGNED = /^[ \t]*\/s\/.*$/gim;          // "/s/ Jane Doe" — an electronic signature mark
+// "/s/ Jane Doe", "By: /s/ Jane Doe", "Signature: /s/ Jane Doe" — an electronic signature mark
+// anywhere on a line: the mark and everything after it on that line become the blank line
+// (what comes before it, such as "By:", is kept).
+const SIGNED = /(?<![\w/.~%-])\/ ?s ?\/.*$/gim;
 const BLANK_LINE = '______________________________';
 
 /** The draft text with any "/s/ name" line replaced by a blank signature line. */
 export function unsign(text) {
-  return String(text || '').replace(SIGNED, BLANK_LINE);
+  return String(text || '').replace(SIGNED, BLANK_LINE).replace(/^[ \t]+(?=_{30}$)/gm, '');
 }
 
 /**

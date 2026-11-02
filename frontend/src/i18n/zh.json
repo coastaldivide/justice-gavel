@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "该网页是 PDF 文件，所以无法自动核对引用。",
   "asc_reason_source_page_not_fetched": "无法打开来源网页。",
   "asc_reason_fetched_page_not_allowed": "返回了一个不属于官方网站的网页，已被忽略。",
+  "asc_reason_quote_not_supporting": "引用的文字在页面上，但没有清楚说明已存储的规则（关键词或数字不同）。",
   "asc_reason_generic": "需要由人来决定。",
   "asc_stored": "保存的文字",
   "asc_quote": "网页上的引用",

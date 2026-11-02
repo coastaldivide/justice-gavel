@@ -355,6 +355,13 @@ web-fetch docs; these checks confirm the real API.
   `node backend/scripts/apply-translation-drafts.mjs <file>` (dry run). Do not apply on staging.
 - [ ] N9 **pause_turn**: count `error_type = 'pause_turn'` items over a few runs (they are retried; many would mean
   `max_uses` is too low).
+- [ ] N10 **stored_claim** (review fix #1): in a real run, look at a few verified rows and a few queued with
+  `claim_numbers_not_in_quote` / `claim_terms_not_in_quote`. Claude's `stored_claim` should be copied word for word
+  from the stored text, and its quote should state the same fact. If most correct rows land in the queue, the
+  prompt needs tuning; the rule itself is not relaxed.
+- [ ] N11 **pause_turn continuation**: check whether a paused web-fetch request can be continued by resending the
+  assistant content (the docs' advice) in a batch with `output_config.format`. Today it is resent from the start
+  and counted at full worst case.
 
 ## O. Court papers, surety-form suggestions, Files API with a real key (migration 47, 30 min)
 Staging with a real `ANTHROPIC_API_KEY`, `AI_FILES_API=on`, a consumer test account (disclaimer accepted) and an

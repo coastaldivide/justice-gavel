@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "PDF ang pahina, kaya hindi awtomatikong masuri ang sipi.",
   "asc_reason_source_page_not_fetched": "Hindi mabuksan ang pahina ng source.",
   "asc_reason_fetched_page_not_allowed": "May bumalik na pahina mula sa labas ng mga opisyal na site, at hindi ito pinansin.",
+  "asc_reason_quote_not_supporting": "Nasa pahina ang mga sinipi na salita, pero hindi malinaw na sinasabi ng mga ito ang naka-save na tuntunin (iba ang mga pangunahing salita o numero).",
   "asc_reason_generic": "Kailangang magpasya ng isang tao.",
   "asc_stored": "Naka-save na teksto",
   "asc_quote": "Sipi mula sa pahina",

@@ -237,14 +237,25 @@ export function runWebFetch(body, state = {}) {
   return { blocks, pages, fetches: n, extraTokens: extra };
 }
 
-/** The default structured answer to a web-fetch request (source_check / source_proposal shapes). */
-function webFetchAnswer(schema, wf) {
+/**
+ * The default structured answer to a web-fetch request (source_check / source_proposal shapes).
+ * Like the model is asked to: the quote is the page sentence that best states the stored text
+ * (most shared words), and stored_claim is copied word for word from the stored text.
+ */
+function webFetchAnswer(schema, wf, body = {}) {
   const props = schema?.properties || {};
   const page = wf.pages.find((p) => p.text) || wf.pages[0] || null;
-  const firstSentence = page?.text ? page.text.split(/(?<=\.)\s+/).find((x) => x.split(' ').length >= 5) || page.text : null;
+  const userText = (body.messages || []).filter((m) => m.role === 'user').map((m) => contentText(m.content)).join('\n');
+  const stored = (userText.split('Stored text:\n')[1] || '').trim();
+  const words = (t) => new Set(String(t || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 || /\d/.test(w)));
+  const overlap = (a, b) => { const B = words(b); let n = 0; for (const w of words(a)) if (B.has(w)) n += 1; return n; };
+  const sentences = (t) => String(t || '').split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  const long = page?.text ? sentences(page.text).filter((x) => x.split(' ').length >= 5) : [];
+  const firstSentence = page?.text ? (long.slice().sort((a, b) => overlap(b, stored) - overlap(a, stored))[0] || page.text) : null;
+  const claim = stored ? (sentences(stored).sort((a, b) => overlap(b, firstSentence) - overlap(a, firstSentence))[0] || stored) : null;
   if ('verdict' in props) {
-    return page ? { verdict: 'still_matches', quote: firstSentence, what_changed: null, fetched_url: page.url }
-      : { verdict: 'page_gone', quote: null, what_changed: null, fetched_url: null };
+    return page ? { verdict: 'still_matches', quote: firstSentence, stored_claim: claim, what_changed: null, fetched_url: page.url }
+      : { verdict: 'page_gone', quote: null, stored_claim: null, what_changed: null, fetched_url: null };
   }
   if ('found' in props) return page ? { found: true, url: page.url, quote: firstSentence, explanation: 'The page states the rule.' } : { found: false, url: null, quote: null, explanation: null };
   return null;
@@ -472,7 +483,7 @@ export function messageResponse(body, state, headers = {}) {
   const wf = runWebFetch(body, state);
   if (wf) {
     const schema = body.output_config?.format?.schema;
-    const ans = schema ? JSON.stringify(state.json ?? webFetchAnswer(schema, wf) ?? sampleFor(schema)) : text;
+    const ans = schema ? JSON.stringify(state.json ?? webFetchAnswer(schema, wf, body) ?? sampleFor(schema)) : text;
     content.push({ type: 'text', text: 'I will open the page first.' }, ...wf.blocks, { type: 'text', text: maxed ? ans.slice(0, Math.floor(ans.length / 2)) : ans });
     const u = usageFor(body, ans.split(/(?<=\s)/).length + 20);
     if (state.mode === 'pause_turn') content.splice(content.length - 1, 1);

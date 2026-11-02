@@ -6894,6 +6894,7 @@
   "asc_reason_pdf_not_verifiable": "A página é um PDF, então a citação não pôde ser conferida automaticamente.",
   "asc_reason_source_page_not_fetched": "Não foi possível abrir a página da fonte.",
   "asc_reason_fetched_page_not_allowed": "Voltou uma página de fora dos sites oficiais, e ela foi ignorada.",
+  "asc_reason_quote_not_supporting": "As palavras citadas estão na página, mas não dizem claramente a regra salva (as palavras-chave ou os números são diferentes).",
   "asc_reason_generic": "Uma pessoa precisa decidir.",
   "asc_stored": "Texto salvo",
   "asc_quote": "Citação da página",

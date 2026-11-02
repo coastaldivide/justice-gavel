@@ -34,8 +34,15 @@
  *   retries        errored items whose error is transient (overloaded / api / rate limit /
  *                  timeout), `pause_turn` results and expired items are sent again in a new batch
  *                  (attempt + 1, up to AI_BATCH_MAX_ATTEMPTS, default 3); others are final.
- *   handlers       the kind's module gets the handled items once (source checks, eval, translation
- *                  drafts); a handler's own writes are idempotent too.
+ *                  A retry batch passes the same caps as a first send (AI_BATCH_MAX_USD and the
+ *                  remaining daily budget, with the stored web-fetch worst case per item); when it
+ *                  would pass a cap its items are marked failed and nothing is sent.
+ *   handlers       the kind's module gets every final item not applied yet (source checks, eval,
+ *                  translation drafts). The results are downloaded again on every pass, so a
+ *                  handler that fails part-way (or a restart) loses nothing: the next pass hands it
+ *                  the items still unapplied. Per-item handlers use ctx.each() (one item's error
+ *                  does not stop the others; after AI_BATCH_HANDLER_ATTEMPTS it is recorded as
+ *                  failed); a batch is `processed` only when every final item is applied.
  * Privacy: only non-personal content is batched (legal rows, eval questions, app strings); the
  * stored params never hold a person's data. Prompts are not logged.
  */
@@ -46,6 +53,7 @@ import { validate } from '../ai/schemas/index.js';
 import { aiConfigured, ANTHROPIC_BASE_URL } from '../utils/ai.js';
 import { taskDef } from '../ai/tasks.js';
 import logger from '../utils/logger.js';
+import { logIgnored } from '../utils/ignored.js';
 
 export const BATCH_PATH = '/v1/messages/batches';
 export const CUSTOM_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -123,6 +131,30 @@ async function apiJson(res) {
 }
 
 /**
+ * The caps every batch — first sends and retries alike — must pass before anything is sent:
+ * its worst case under AI_BATCH_MAX_USD, and under what is left of today's AI budget after the
+ * worst case of the batches still open (sent, not yet metered) is set aside. Throws ai_too_large.
+ */
+export async function checkCaps(db, { kind, items, worst }) {
+  const lim = batchLimits();
+  if (worst > lim.maxUsd) {
+    logger.warn({ kind, items, worst, cap: lim.maxUsd }, '[ai-batch] not sent — over the per-batch cost cap');
+    throw new AiError('ai_too_large', 'batch over AI_BATCH_MAX_USD', { worstUsd: worst, reason: 'max_batch_usd' });
+  }
+  const b = await budgetStatus();
+  let reserved = 0;
+  if (b.remaining_usd != null) {
+    const open = await db.get(`SELECT COALESCE(SUM(GREATEST(COALESCE(worst_case_usd, 0) - cost_usd, 0)), 0)::float AS usd FROM ai_batches
+                                WHERE status IN ('creating', 'in_progress', 'canceling', 'ended') AND created_at > NOW() - INTERVAL '1 day'`);
+    reserved = Number(open?.usd || 0);
+  }
+  if (b.exhausted || (b.remaining_usd != null && worst > b.remaining_usd - reserved)) {
+    logger.warn({ kind, worst, remaining: b.remaining_usd, reserved }, '[ai-batch] not sent — larger than what is left of today\'s AI budget');
+    throw new AiError('ai_too_large', 'batch over the remaining daily budget', { worstUsd: worst, reason: 'daily_budget_remaining' });
+  }
+}
+
+/**
  * Create (or find) a batch. → { batch, created }
  *   { kind, items: [spec…], idempotencyKey?, createdBy?, meta?, parentId?, rootId?, fetchImpl? }
  * Throws AiError ai_too_large (caps), ai_unavailable (no key / switched off), or the upstream code.
@@ -140,16 +172,7 @@ export async function createBatch(db, { kind, items, idempotencyKey = null, crea
   const ids = new Set();
   for (const r of reqs) { if (ids.has(r.customId)) throw new AiError('ai_failed', `duplicate custom_id ${r.customId}`); ids.add(r.customId); }
   const worst = reqs.reduce((s, r) => s + worstCaseUsd(r.params, r.extraInputTokens), 0);
-  const lim = batchLimits();
-  if (worst > lim.maxUsd) {
-    logger.warn({ kind, items: reqs.length, worst, cap: lim.maxUsd }, '[ai-batch] not sent — over the per-batch cost cap');
-    throw new AiError('ai_too_large', 'batch over AI_BATCH_MAX_USD', { worstUsd: worst, reason: 'max_batch_usd' });
-  }
-  const b = await budgetStatus();
-  if (b.exhausted || (b.remaining_usd != null && worst > b.remaining_usd)) {
-    logger.warn({ kind, worst, remaining: b.remaining_usd }, '[ai-batch] not sent — larger than what is left of today\'s AI budget');
-    throw new AiError('ai_too_large', 'batch over the remaining daily budget', { worstUsd: worst, reason: 'daily_budget_remaining' });
-  }
+  await checkCaps(db, { kind, items: reqs.length, worst });
 
   const row = await db.get(
     `INSERT INTO ai_batches (kind, status, idempotency_key, parent_id, root_id, item_count, worst_case_usd, meta, created_by)
@@ -164,9 +187,9 @@ export async function createBatch(db, { kind, items, idempotencyKey = null, crea
   for (const r of reqs) {
     const prev = await db.get('SELECT MAX(attempt)::int AS a FROM ai_batch_items WHERE logical_key = ?', [r.logicalKey]);
     await db.run(
-      `INSERT INTO ai_batch_items (batch_id, custom_id, logical_key, attempt, task, ref, params)
-       VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)`,
-      [batchId, r.customId, r.logicalKey, parentId ? (prev?.a || 0) + 1 : 1, r.task, JSON.stringify(r.ref), JSON.stringify(r.params)]);
+      `INSERT INTO ai_batch_items (batch_id, custom_id, logical_key, attempt, task, ref, params, extra_input_tokens)
+       VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?)`,
+      [batchId, r.customId, r.logicalKey, parentId ? (prev?.a || 0) + 1 : 1, r.task, JSON.stringify(r.ref), JSON.stringify(r.params), r.extraInputTokens || 0]);
   }
   // One attempt for the create (plus one retry of a 429 / 5xx, which means nothing was created):
   // a network failure after sending is "unconfirmed" — recorded, never silently re-sent.
@@ -278,6 +301,14 @@ export async function pollBatch(db, batchIn, { fetchImpl } = {}) {
   return processBatch(db, batch, data, { fetchImpl });
 }
 
+/** A stored item row in the shape handlers get (numbers, parsed params). */
+const normItem = (row) => ({ ...row, id: Number(row.id), attempt: Number(row.attempt), params: withSchema(row).params, ref: row.ref });
+
+/** How many times a handler may fail on one item (or as a whole) before it is recorded as failed. */
+export function handlerAttempts() {
+  return Math.max(1, Math.round(num(process.env.AI_BATCH_HANDLER_ATTEMPTS, 3)));
+}
+
 async function processBatch(db, batch, data, { fetchImpl }) {
   // Claim: ended → processing (or a stale processing claim after 30 minutes).
   const claimed = await db.get(
@@ -285,44 +316,110 @@ async function processBatch(db, batch, data, { fetchImpl }) {
       WHERE id = ? AND (status = 'ended' OR (status = 'processing' AND updated_at < NOW() - INTERVAL '30 minutes')) RETURNING id`, [batch.id]);
   if (!claimed) return { status: 'processing', processed: false };
   try {
+    // The results are downloaded again on every pass (they stay available for 29 days), so the
+    // handler's input can always be re-derived: items still pending are finished from their line;
+    // items finished on an earlier pass whose handler did not complete are rebuilt from theirs.
     const res = await anthropicApi('GET', resultsPath(batch, data), { retries: 2, timeoutMs: 120_000, fetchImpl });
     const out = await apiJson(res);
     if (!out.ok) throw new Error(`results http_${out.status}`);
     const { lines, bad } = parseJsonl(out.text);
     if (bad) logger.warn({ batchId: batch.id, bad }, '[ai-batch] unreadable result lines skipped');
-    const items = await db.all(`SELECT * FROM ai_batch_items WHERE batch_id = ? AND status = 'pending' ORDER BY id LIMIT ${MAX_REQUESTS}`, [batch.id]);
-    const byId = new Map(items.map((it) => [it.custom_id, it]));
-    const handled = [];
-    const seen = new Set();
+    const lineById = new Map();
+    for (const line of lines) if (!lineById.has(line.custom_id)) lineById.set(line.custom_id, line);   // a duplicate line is ignored
+    const pending = await db.all(`SELECT * FROM ai_batch_items WHERE batch_id = ? AND status = 'pending' ORDER BY id LIMIT ${MAX_REQUESTS}`, [batch.id]);
+    const fresh = new Map();
     let cost = 0;
-    for (const line of lines) {
-      const item = byId.get(line.custom_id);
-      if (!item || seen.has(line.custom_id)) continue;     // unknown id (never ours) or a duplicate line
-      seen.add(line.custom_id);
-      const h = await finishItem(db, batch, item, readResult(withSchema(item), line.result));
-      if (h) { handled.push(h); cost += h.cost || 0; }
+    for (const item of pending) {
+      const line = lineById.get(item.custom_id);
+      const r = line ? readResult(withSchema(item), line.result) : { status: 'errored', errorType: 'missing_result', error: 'no result line for this custom_id', cost: 0 };
+      const h = await finishItem(db, batch, item, r);
+      if (h) { fresh.set(h.item.id, h); cost += h.cost || 0; }
     }
-    for (const item of items) {
-      if (seen.has(item.custom_id)) continue;
-      const h = await finishItem(db, batch, item, { status: 'errored', errorType: 'missing_result', error: 'no result line for this custom_id', cost: 0 });
-      if (h) handled.push(h);
-    }
-    await db.run('UPDATE ai_batches SET cost_usd = cost_usd + ?, updated_at = NOW() WHERE id = ?', [cost, batch.id]);
-    const retried = await retryItems(db, batch, handled.map((h) => h.item), { fetchImpl });
+    if (cost) await db.run('UPDATE ai_batches SET cost_usd = cost_usd + ?, updated_at = NOW() WHERE id = ?', [cost, batch.id]);
+    // Retries: every item of this batch marked for a retry (idempotent per batch). A retry that
+    // cannot be sent (caps, budget, API) marks its items failed, and they go to the handler below.
+    const toRetry = (await db.all(`SELECT * FROM ai_batch_items WHERE batch_id = ? AND status = 'retried' ORDER BY id LIMIT ${MAX_REQUESTS}`, [batch.id])).map(normItem);
+    const retried = await retryItems(db, batch, toRetry, { fetchImpl });
+    // The handler's input: every final item not applied yet.
+    const todo = await db.all(`SELECT * FROM ai_batch_items WHERE batch_id = ? AND status NOT IN ('pending', 'retried') AND applied_at IS NULL ORDER BY id LIMIT ${MAX_REQUESTS}`, [batch.id]);
+    const handled = todo.map((row) => {
+      const item = normItem(row);
+      const f = fresh.get(item.id);
+      if (f) return { ...f, item, willRetry: false };
+      const line = lineById.get(item.custom_id);
+      const r = line ? readResult(item, line.result) : { status: 'errored', errorType: item.error_type || 'missing_result', error: item.error || null, cost: 0 };
+      return { item, outcome: r, message: r.message || null, willRetry: false, cost: 0 };
+    });
     const fn = await handlerFor(batch.kind);
+    const ctx = handlerContext(db, batch);
     let output = null;
-    if (fn) output = await fn(db, { ...batch, retried_batch_id: retried?.batch?.id ?? null }, handled.filter((h) => !h.willRetry));
-    await db.run(`UPDATE ai_batches SET status = 'processed', processed_at = NOW(), updated_at = NOW()${output !== undefined && output !== null ? ', output = ?::jsonb' : ''} WHERE id = ?`,
-      output !== undefined && output !== null ? [JSON.stringify(output), batch.id] : [batch.id]);
+    if (fn && (handled.length || batch.output == null)) output = await fn(db, { ...batch, retried_batch_id: retried?.batch?.id ?? null }, handled, ctx);
+    if (!ctx.perItem && handled.length) {
+      // A handler that works on the whole list (eval, translation drafts) finished: all applied.
+      await db.run(`UPDATE ai_batch_items SET applied_at = NOW() WHERE batch_id = ? AND status NOT IN ('pending', 'retried') AND applied_at IS NULL`, [batch.id]);
+    }
+    const left = await db.get(`SELECT COUNT(*)::int AS n FROM ai_batch_items WHERE batch_id = ? AND status NOT IN ('pending', 'retried') AND applied_at IS NULL`, [batch.id]);
+    const withOutput = output !== undefined && output !== null;
     const counts = handled.reduce((a, h) => { a[h.item.status] = (a[h.item.status] || 0) + 1; return a; }, {});
+    if (left.n > 0) {
+      // Some items hit a handler error and will be tried again: stay claimed; the claim goes stale
+      // in ~5 minutes and the next poll hands the handler those items only.
+      await db.run(`UPDATE ai_batches SET error = ?, updated_at = NOW() - INTERVAL '25 minutes'${withOutput ? ', output = ?::jsonb' : ''} WHERE id = ?`,
+        withOutput ? [`handler_partial: ${left.n} item(s) to retry`, JSON.stringify(output), batch.id] : [`handler_partial: ${left.n} item(s) to retry`, batch.id]);
+      logger.warn({ batchId: batch.id, kind: batch.kind, left: left.n }, '[ai-batch] handler failed on some items — will retry them');
+      return { status: 'processing', processed: false, counts, retried: retried?.batch?.id ?? null, left: left.n };
+    }
+    await db.run(`UPDATE ai_batches SET status = 'processed', processed_at = NOW(), error = NULL, updated_at = NOW()${withOutput ? ', output = ?::jsonb' : ''} WHERE id = ?`,
+      withOutput ? [JSON.stringify(output), batch.id] : [batch.id]);
     logger.info({ batchId: batch.id, kind: batch.kind, counts, costUsd: Number(cost.toFixed(6)), retryBatch: retried?.batch?.id ?? null }, '[ai-batch] processed');
     return { status: 'processed', processed: true, counts, retried: retried?.batch?.id ?? null };
   } catch (e) {
-    // Leave it claimed; the claim goes stale after 30 minutes and the next poll tries again.
+    // Leave it claimed; the claim goes stale and the next poll tries again (the unapplied items
+    // are re-derived then). After AI_BATCH_HANDLER_ATTEMPTS whole-pass failures the batch is
+    // marked failed so it is visible to an admin (its items keep their results).
+    const row = await db.get(`UPDATE ai_batches SET handler_attempts = handler_attempts + 1, error = ?, updated_at = NOW() - INTERVAL '25 minutes'
+                                WHERE id = ? RETURNING handler_attempts`, [String(e.message).slice(0, 200), batch.id]).catch((err) => { logIgnored('services/aiBatch')(err); return null; });
+    if (row && Number(row.handler_attempts) >= handlerAttempts()) {
+      await db.run(`UPDATE ai_batches SET status = 'failed', error = ?, updated_at = NOW() WHERE id = ?`, [`processing_failed: ${String(e.message).slice(0, 180)}`, batch.id]).catch(logIgnored('services/aiBatch'));
+      logger.error({ batchId: batch.id, err: e.message }, '[ai-batch] processing failed too many times — batch marked failed');
+      return { status: 'failed', processed: false, error: e.message };
+    }
     logger.error({ batchId: batch.id, err: e.message }, '[ai-batch] processing failed — will retry');
-    await db.run(`UPDATE ai_batches SET error = ?, updated_at = NOW() - INTERVAL '25 minutes' WHERE id = ?`, [String(e.message).slice(0, 200), batch.id]);
     return { status: 'processing', processed: false, error: e.message };
   }
+}
+
+/**
+ * What a handler gets as its 4th argument. `each(list, fn)` runs fn per item with its own error
+ * isolation: an item whose fn succeeds is marked applied; one that throws gets its error recorded
+ * (handler_attempts + 1) and is handed over again on the next pass, until AI_BATCH_HANDLER_ATTEMPTS,
+ * when it is recorded as failed (applied_at set, handler_error kept). → { ok, failed, gaveUp }
+ */
+function handlerContext(db, batch) {
+  const ctx = {
+    perItem: false,
+    async each(list, fn) {
+      ctx.perItem = true;
+      const res = { ok: 0, failed: 0, gaveUp: 0 };
+      for (const h of list) {
+        try {
+          await fn(h);
+          await db.run('UPDATE ai_batch_items SET applied_at = NOW(), handler_error = NULL WHERE id = ?', [h.item.id]);
+          res.ok += 1;
+        } catch (e) {
+          res.failed += 1;
+          const r = await db.get(
+            `UPDATE ai_batch_items SET handler_attempts = handler_attempts + 1, handler_error = ?,
+                    applied_at = CASE WHEN handler_attempts + 1 >= ? THEN NOW() ELSE NULL END
+              WHERE id = ? RETURNING applied_at`, [String(e.message || e).slice(0, 300), handlerAttempts(), h.item.id]);
+          if (r?.applied_at) res.gaveUp += 1;
+          logger.error({ batchId: batch.id, itemId: h.item.id, err: String(e.message || e).slice(0, 200), gaveUp: !!r?.applied_at }, '[ai-batch] handler failed on one item');
+        }
+      }
+      return res;
+    },
+  };
+  return ctx;
 }
 
 const classOf = (task) => { try { return taskDef(task).cls; } catch { return null; } };
@@ -359,7 +456,7 @@ export async function retryItems(db, batch, items, { fetchImpl } = {}) {
     return out;
   } catch (e) {
     logger.error({ batchId: batch.id, items: again.length, err: e.message }, '[ai-batch] retry batch could not be created — items marked failed');
-    for (const it of again) await db.run(`UPDATE ai_batch_items SET status = 'failed', error = COALESCE(error, '') || ' (retry not sent)' WHERE id = ?`, [it.id]);
+    for (const it of again) await db.run(`UPDATE ai_batch_items SET status = 'failed', error = COALESCE(error, '') || ' (retry not sent: ' || ? || ')' WHERE id = ? AND status = 'retried'`, [e.code || 'error', it.id]);
     return null;
   }
 }
@@ -369,8 +466,14 @@ async function createBatchFromParams(db, batch, items, { fetchImpl }) {
   if (!batchesEnabled()) throw new AiError('ai_unavailable', 'batches are off');
   const idem = `retry:${batch.id}`;
   const existing = await db.get('SELECT * FROM ai_batches WHERE idempotency_key = ?', [idem]);
-  if (existing) return { batch: batchRow(existing), created: false };
-  const worst = items.reduce((s, it) => s + worstCaseUsd(it.params), 0);
+  if (existing) {
+    // A retry batch that was never sent (create refused / interrupted): its items are failed now.
+    if (existing.status === 'failed' && !existing.anthropic_batch_id) throw new AiError('ai_busy', 'retry batch was not sent');
+    return { batch: batchRow(existing), created: false };
+  }
+  // The same caps as a first send, with the same worst case (incl. the web fetch content).
+  const worst = items.reduce((s, it) => s + worstCaseUsd(it.params, Number(it.extra_input_tokens) || 0), 0);
+  await checkCaps(db, { kind: batch.kind, items: items.length, worst });
   const row = await db.get(
     `INSERT INTO ai_batches (kind, status, idempotency_key, parent_id, root_id, item_count, worst_case_usd, meta, created_by)
      VALUES (?, 'creating', ?, ?, ?, ?, ?, ?::jsonb, NULL)
@@ -378,10 +481,16 @@ async function createBatchFromParams(db, batch, items, { fetchImpl }) {
     [batch.kind, idem, batch.id, batch.root_id || batch.id, items.length, worst, JSON.stringify({ ...(typeof batch.meta === 'object' ? batch.meta : {}), retry_of: batch.id })]);
   if (!row) return { batch: batchRow(await db.get('SELECT * FROM ai_batches WHERE idempotency_key = ?', [idem])), created: false };
   for (const it of items) {
-    await db.run(`INSERT INTO ai_batch_items (batch_id, custom_id, logical_key, attempt, task, ref, params) VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)`,
-      [row.id, it.custom_id, it.logical_key, Number(it.attempt) + 1, it.task, JSON.stringify(it.ref ?? null), JSON.stringify(it.params)]);
+    await db.run(`INSERT INTO ai_batch_items (batch_id, custom_id, logical_key, attempt, task, ref, params, extra_input_tokens) VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?)`,
+      [row.id, it.custom_id, it.logical_key, Number(it.attempt) + 1, it.task, JSON.stringify(it.ref ?? null), JSON.stringify(it.params), Number(it.extra_input_tokens) || 0]);
   }
-  const res = await anthropicApi('POST', BATCH_PATH, { body: { requests: items.map((it) => ({ custom_id: it.custom_id, params: it.params })) }, retries: 1, timeoutMs: 120_000, fetchImpl });
+  let res;
+  try {
+    res = await anthropicApi('POST', BATCH_PATH, { body: { requests: items.map((it) => ({ custom_id: it.custom_id, params: it.params })) }, retries: 1, timeoutMs: 120_000, fetchImpl });
+  } catch (e) {
+    await db.run(`UPDATE ai_batches SET status = 'failed', error = ? WHERE id = ?`, ['create_unconfirmed', row.id]);
+    throw new AiError('ai_busy', 'retry batch create failed (no answer from the API)');
+  }
   const out = await apiJson(res);
   if (!out.ok || !out.data?.id) {
     await db.run(`UPDATE ai_batches SET status = 'failed', error = ? WHERE id = ?`, [`http_${out.status}`, row.id]);
