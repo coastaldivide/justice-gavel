@@ -25,17 +25,21 @@
  *   Message Batches: POST /v1/messages/batches, GET /v1/messages/batches/{id}, GET …/{id}/results,
  *        POST …/{id}/cancel (scripts/anthropic-mock-lib.mjs createBatchStore; __mode also takes
  *        batchPolls, batchErrors, batchJson, pages, fetchUrls, rogueFetch)
- *   POST /__reset      mode back to ok, request log and prompt cache cleared
+ *   Files API: POST /v1/files (multipart), GET /v1/files, GET /v1/files/{id}, GET …/{id}/content,
+ *        DELETE /v1/files/{id} (scripts/anthropic-mock-lib.mjs createFileStore); image / document
+ *        blocks with file_id sources are resolved against it (404 for an unknown id)
+ *   POST /__reset      mode back to ok, request log, prompt cache, batches and files cleared
  * Every other POST is answered as POST /v1/messages (JSON, or SSE when the body has
  * stream: true), except POST /v1/messages/count_tokens.
  */
 import http from 'node:http';
-import { freshState, resetCaches, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute } from './anthropic-mock-lib.mjs';
+import { freshState, resetCaches, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute, createFileStore, filesRoute } from './anthropic-mock-lib.mjs';
 
 const PORT = Number(process.argv[2] || process.env.ANTHROPIC_MOCK_PORT || 4399);
 let state = freshState();
 let requests = [];
 let batches = createBatchStore();
+let files = createFileStore();
 
 const sleep = (ms) => new Promise(r => { setTimeout(r, ms); });
 
@@ -46,7 +50,7 @@ function errorBody(status) {
 
 async function answer(req, res, body, url) {
   if (url.endsWith('/count_tokens')) {
-    const r = countTokensResponse(body);
+    const r = countTokensResponse(body, { files });
     res.writeHead(r.status, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(r.body));
   }
@@ -58,7 +62,7 @@ async function answer(req, res, body, url) {
     return res.end(errorBody(status));
   }
   if (!body?.stream) {
-    const r = messageResponse(body, state, req.headers);
+    const r = messageResponse(body, { ...state, files }, req.headers);
     const words = String(r.body?.content?.find?.(b => b.type === 'text')?.text || '').split(/\s+/).length;
     if (mode === 'slow') await sleep((Number(state.delayMs) || 30) * words);
     if (mode === 'drop') { req.socket.destroy(); return; }
@@ -82,9 +86,11 @@ async function answer(req, res, body, url) {
 }
 
 const server = http.createServer((req, res) => {
-  let data = '';
-  req.on('data', c => { data += c; });
+  const chunks = [];
+  req.on('data', c => { chunks.push(c); });
   req.on('end', () => {
+    const raw = Buffer.concat(chunks);
+    const data = String(req.headers['content-type'] || '').startsWith('multipart/') ? '' : raw.toString('utf8');
     let body = null;
     try { body = data ? JSON.parse(data) : null; } catch { /* not JSON */ }
     const url = req.url.split('?')[0];
@@ -98,7 +104,7 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify(requests));
     }
     if (url === '/__reset') {
-      state = freshState(); requests = []; resetCaches(); batches = createBatchStore();
+      state = freshState(); requests = []; resetCaches(); batches = createBatchStore(); files = createFileStore();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end('{"ok":true}');
     }
@@ -109,6 +115,13 @@ const server = http.createServer((req, res) => {
       if (requests.length > 500) requests = requests.slice(-500);
       if (br.text !== undefined) { res.writeHead(br.status, { 'Content-Type': 'application/binary' }); return res.end(br.text); }
       res.writeHead(br.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(br.json));
+    }
+    // Files API: POST /v1/files (multipart), GET /v1/files[/{id}[/content]], DELETE /v1/files/{id}
+    const fr = filesRoute(files, req.method, url, raw, req.headers);
+    if (fr) {
+      requests.push({ path: url, method: req.method, headers: (({ 'x-api-key': _k, ...h }) => h)(req.headers), body: null, bytes: raw.length });
+      if (requests.length > 500) requests = requests.slice(-500);
+      res.writeHead(fr.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(fr.json));
     }
     if (req.method !== 'POST') { res.writeHead(404); return res.end(); }
     const { 'x-api-key': _key, ...headers } = req.headers;

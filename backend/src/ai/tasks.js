@@ -103,6 +103,11 @@ export const TASKS = Object.freeze({
   source_check:          { cls: 'standard', maxTokens: 1200, schema: 'source_check',      fallback: false },
   source_propose:        { cls: 'standard', maxTokens: 1200, schema: 'source_proposal',   fallback: false },
   translate_keys:        { cls: 'standard', maxTokens: 8000, schema: 'translation_draft', fallback: false },
+  // AI step 4 — documents (vision / PDF): a court paper read into a court date the person checks and
+  // confirms (services/courtPaper.js), and field-mapping suggestions for an agency's surety PDF that
+  // staff accept field by field (services/bondDesk/formMapping.js).
+  court_paper_read:      { cls: 'standard', maxTokens: 1500, schema: 'court_paper' },
+  form_field_map:        { cls: 'standard', maxTokens: 6000, schema: 'form_field_map' },
 });
 
 export function taskDef(task) {

@@ -57,6 +57,7 @@ import familyRouter       from './routes/family.js';
 import rightsRouter       from './routes/rights.js';
 import helpRouter         from './routes/help.js';
 import courtDatesRouter   from './routes/courtDates.js';
+import courtPapersRouter  from './routes/courtPapers.js';
 import followingRouter    from './routes/following.js';
 import caseStepsRouter    from './routes/caseSteps.js';
 import expungementRouter   from './routes/expungement/index.js';
@@ -529,6 +530,7 @@ app.use('/api/family', familyRouter);
 app.use('/api/rights',      rightsRouter);      // core path step 1 (public)
 app.use('/api/help',        helpRouter);        // core path step 2 (public)
 app.use('/api/court-dates', courtDatesRouter);  // core path step 3
+app.use('/api/court-papers', courtPapersRouter); // AI step 4: read a court paper into proposed court-date fields
 app.use('/api/following',   followingRouter);   // family followers
 app.use('/api/case-steps',  caseStepsRouter);   // "Your case, step by step" progress (owner only)
 app.use('/api/checkins',      checkinsRouter);

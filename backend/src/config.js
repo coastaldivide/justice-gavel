@@ -269,6 +269,14 @@ export const ALL_ENV_VARS = {
   SOURCE_CHECK_MAX_FETCHES: process.env.SOURCE_CHECK_MAX_FETCHES || '2',  // web fetches allowed per re-check request (web fetch max_uses)
   SOURCE_CHECK_PROPOSAL_FETCHES: process.env.SOURCE_CHECK_PROPOSAL_FETCHES || '4',  // web fetches allowed per proposal request (withheld / unofficial rows)
   SOURCE_CHECK_MAX_CONTENT_TOKENS: process.env.SOURCE_CHECK_MAX_CONTENT_TOKENS || '20000',  // max_content_tokens per fetched page (caps the cost of a long page)
+  // AI step 4 — documents (docs/AI_PLATFORM.md §11)
+  AI_FILES_API:               process.env.AI_FILES_API               || '',       // on | off; unset = on, except NODE_ENV=production → off (Files API is not ZDR / HIPAA eligible)
+  AI_FILES_TTL_DAYS:          process.env.AI_FILES_TTL_DAYS          || '30',     // expires_in_seconds of each upload (1 hour … 90 days)
+  COURT_PAPER_READER:         process.env.COURT_PAPER_READER         || 'on',     // "Read my court paper" (off = 503 feature_unavailable, the app hides it)
+  COURT_PAPER_MAX_MB:         process.env.COURT_PAPER_MAX_MB         || '8',      // largest photo / PDF accepted (max 20)
+  COURT_PAPER_MAX_PAGES:      process.env.COURT_PAPER_MAX_PAGES      || '10',     // most PDF pages accepted (max 100, the API's limit)
+  COURT_PAPER_READS_PER_HOUR: process.env.COURT_PAPER_READS_PER_HOUR || '10',     // per person
+  COURT_PAPER_READS_PER_DAY:  process.env.COURT_PAPER_READS_PER_DAY  || '20',     // per person
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',

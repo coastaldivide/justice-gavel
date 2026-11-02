@@ -35,7 +35,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import request from 'supertest';
-import { freshState, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute } from '../../../scripts/anthropic-mock-lib.mjs';
+import { freshState, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute, createFileStore, filesRoute } from '../../../scripts/anthropic-mock-lib.mjs';
 
 export const PG_URL = process.env.TEST_DATABASE_URL || '';
 
@@ -79,7 +79,9 @@ export function initSuite({ anthropicMock = false } = {}) {
     attachmentsDir: null,
     anthropic: { server: null, port: null, requests: [], replyText: 'MOCK REPLY: general legal information, not legal advice.', status: 200, mode: 'ok', json: null,
       // Message Batches + web fetch (AI step 3): a batch store and the web-fetch / batch steering fields
-      batches: createBatchStore(), extra: {} },
+      batches: createBatchStore(), extra: {},
+      // Files API (AI step 4): an in-memory file store; image / document file_id blocks resolve against it
+      files: createFileStore() },
     _cleanups: [],
     /** Register extra cleanup SQL to run before the generic user purge. */
     addCleanup(fn) { ctx._cleanups.push(fn); },
@@ -99,12 +101,18 @@ export function initSuite({ anthropicMock = false } = {}) {
 
     if (anthropicMock) {
       ctx.anthropic.server = http.createServer((req, res) => {
-        let data = '';
-        req.on('data', c => { data += c; });
+        const chunks = [];
+        req.on('data', c => { chunks.push(c); });
         req.on('end', () => {
+          const raw = Buffer.concat(chunks);
+          const data = String(req.headers['content-type'] || '').startsWith('multipart/') ? '' : raw.toString('utf8');
           let body = null;
           try { body = JSON.parse(data); } catch { /* keep null */ }
-          ctx.anthropic.requests.push({ path: req.url, method: req.method, headers: req.headers, body });
+          ctx.anthropic.requests.push({ path: req.url, method: req.method, headers: req.headers, body, bytes: raw.length });
+          {
+            const fr = filesRoute(ctx.anthropic.files, req.method, req.url, raw, req.headers);
+            if (fr) { res.writeHead(fr.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(fr.json)); }
+          }
           {
             const a0 = ctx.anthropic;
             const st = freshState({ text: a0.replyText, mode: a0.mode || 'ok', json: a0.json ?? null, ...(a0.extra || {}) });
@@ -115,7 +123,7 @@ export function initSuite({ anthropicMock = false } = {}) {
             }
           }
           if (req.url.endsWith('/count_tokens')) {
-            const r = countTokensResponse(body);
+            const r = countTokensResponse(body, { files: ctx.anthropic.files });
             res.writeHead(r.status, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify(r.body));
           }
@@ -126,7 +134,7 @@ export function initSuite({ anthropicMock = false } = {}) {
           const a = ctx.anthropic;
           const state = freshState({ text: a.replyText, mode: a.mode || 'ok', json: a.json ?? null,
             category: a.category ?? 'general_harms', refuseModels: a.refuseModels ?? null,
-            citeMode: a.citeMode || 'auto', blocks: a.blocks ?? null, ...(a.extra || {}) });
+            citeMode: a.citeMode || 'auto', blocks: a.blocks ?? null, ...(a.extra || {}), files: a.files });
           if (body?.stream) {
             const problem = requestProblem(body, req.headers);
             if (problem) {

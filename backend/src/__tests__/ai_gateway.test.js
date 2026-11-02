@@ -308,7 +308,7 @@ describe('preflight (token counting + caps)', () => {
   test('small text requests use the local estimate (no count call); documents and big ones are counted', async () => {
     await gw.aiMessage({ task: 'chat', messages: [{ role: 'user', content: 'short' }] });
     expect(mock.requests.filter((r) => r.path.endsWith('/count_tokens'))).toHaveLength(0);
-    const pdf = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: 'JVBERi0x' } };
+    const pdf = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Buffer.from('%PDF-1.7\n1 0 obj\n%%EOF\n').toString('base64') } };
     await gw.aiMessage({ task: 'discovery_analysis', messages: [{ role: 'user', content: [pdf, { type: 'text', text: 'analyze' }] }] });
     const counts = mock.requests.filter((r) => r.path.endsWith('/count_tokens'));
     expect(counts).toHaveLength(1);

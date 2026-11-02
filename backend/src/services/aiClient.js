@@ -56,6 +56,7 @@ import {
 } from './aiBudget.js';
 import { taskDef, classConfig, normalizeEffort, normalizeThinking, serverFallbackSupported, fallbackMode, clientFallbackModel } from '../ai/tasks.js';
 import { outputFormat, parseStructured } from '../ai/schemas/index.js';
+import { hasFileSources } from '../ai/media.js';
 import { costUsd, ratesFor, responseCostUsd, tokensOf } from '../ai/pricing.js';
 import logger from '../utils/logger.js';
 import { msg } from '../i18n/index.js';
@@ -64,6 +65,14 @@ export const AI_TIMEOUT_MS = 60_000;
 export const AI_MAX_RETRIES = 2;
 export const COUNT_TOKENS_URL = `${ANTHROPIC_MESSAGES_URL}/count_tokens`;
 export const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+/**
+ * Files API (AI step 4) — https://platform.claude.com/docs/en/build-with-claude/files (read 2026-11-02):
+ * the Files page says the API is out of beta and the header is optional (with it, list responses
+ * keep the legacy shape); the vision page (same date) still says image `file` sources need it. A
+ * request that references a file_id therefore sends it (harmless per the Files page); the Files
+ * endpoints themselves are called without it (services/aiFiles.js). Live check: LIVE_TEST.md §O.
+ */
+export const FILES_BETA = 'files-api-2025-04-14';
 
 /** Codes a person can be shown (worded in i18n ai.job.<code>). */
 export const AI_ERROR_CODES = Object.freeze(['ai_unavailable', 'ai_busy', 'ai_timeout', 'ai_failed', 'ai_refused', 'ai_too_large', 'ai_invalid_output']);
@@ -210,11 +219,13 @@ export async function anthropicFetch(init = {}, {
 export async function anthropicApi(method, path, { body, timeoutMs = AI_TIMEOUT_MS, retries = AI_MAX_RETRIES, headers: extra = {}, fetchImpl } = {}) {
   const url = /^https?:\/\//.test(path) ? path : `${ANTHROPIC_BASE_URL}${path}`;
   const headers = { 'anthropic-version': ANTHROPIC_VERSION };
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  // A FormData body (Files API upload, multipart) sets its own content-type with the boundary.
+  const multipart = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !multipart) headers['content-type'] = 'application/json';
   for (const [k, v] of Object.entries(extra || {})) headers[k.toLowerCase()] = v;
   headers['x-api-key'] = process.env.ANTHROPIC_API_KEY ?? '';
   return fetchWithTimeout(url, {
-    method, headers, ...(body !== undefined ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}),
+    method, headers, ...(body !== undefined ? { body: multipart || typeof body === 'string' ? body : JSON.stringify(body) } : {}),
   }, { timeoutMs, retries, ...(fetchImpl ? { fetchImpl } : {}) });
 }
 
@@ -329,10 +340,13 @@ export function buildRequest({ task, system, messages, maxTokens, schema, cacheC
   const headers = {};
   // Message Batches reject `fallbacks` (batch-processing page), so a batch request never carries it.
   const useServerFallback = !batch && fallback && def.fallback !== false && fallbackMode() === 'auto' && serverFallbackSupported(model);
+  const betas = [];
   if (useServerFallback) {
     body.fallbacks = 'default';
-    headers['anthropic-beta'] = FALLBACK_BETA;
+    betas.push(FALLBACK_BETA);
   }
+  if (hasFileSources(messages)) betas.push(FILES_BETA);
+  if (betas.length) headers['anthropic-beta'] = betas.join(',');
   return { body, headers, task: def.task, cls: def.cls, model, schemaName, citations, serverFallback: useServerFallback };
 }
 
@@ -377,7 +391,7 @@ export async function countTokens(body, { fetchImpl, timeoutMs = 10_000 } = {}) 
     if (body[k] !== undefined) payload[k] = body[k];
   }
   try {
-    const res = await post(COUNT_TOKENS_URL, payload, {}, { timeoutMs, retries: 1, fetchImpl });
+    const res = await post(COUNT_TOKENS_URL, payload, hasFileSources(body.messages) ? { 'anthropic-beta': FILES_BETA } : {}, { timeoutMs, retries: 1, fetchImpl });
     if (!res.ok) { await res.text().catch(() => ''); return null; }
     const data = await res.json();
     return Number.isFinite(Number(data?.input_tokens)) ? Number(data.input_tokens) : null;

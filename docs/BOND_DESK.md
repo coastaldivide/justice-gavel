@@ -521,6 +521,19 @@ already in.
   preview with sample data) acting on the agency's forms of that request only, while in progress. The PDFs stay hidden from the
   agency's library until "ready"; then the agency gets a push and an e-mail. Every step is in `audit_log`
   (`bond_desk.forms_setup_requested`, `admin.bd_setup_started`, `admin.bd_setup_form_uploaded|mapped|archived`, `admin.bd_setup_ready`).
+- **AI field-mapping suggestions (staff, AI step 4 — docs/AI_PLATFORM.md §11.2):** in the forms tool of a request in
+  progress, "Suggest fields with AI" — `POST /api/admin/bd-setup/:id/forms/:formId/map-suggestions` (`GET` = the latest) →
+  `{ suggestion: { id, no_fields, suggestions: [{ field, data_key | null, confidence: high|medium|low, reason, page }], decisions } }`.
+  The AI reads the blank PDF (pages as images + text) and the AcroForm text fields (name, page, position, tooltip, max length).
+  A PDF with no fillable fields → `no_fields: true`, no AI call (we never invent boxes or coordinates). Only text fields;
+  check boxes / signature widgets are never mapped; the signature keys are never suggested (a signature line is mapped by
+  hand and gets the typed "/s/ Full Name" on the signed copy only — no drawn signatures). **Nothing is applied** until staff
+  `POST …/map-suggestions/:sid/decide { field, action: 'accept' | 'reject', data_key? }` — accept writes that one field into
+  `field_map` (the same path as `PATCH /forms/:id`; `data_key` lets staff pick another key), reject records the decision.
+  Audit: `admin.bd_setup_form_suggested`, `admin.bd_setup_form_mapped` (`via: 'ai_suggestion'`). Limits: 20 an hour, 100 a day
+  per staff member, plus the daily AI budget; `bd.err.ai_suggest_limit` / `ai_unavailable`. The agency's own mount
+  (`/api/bond-desk/forms/:id/map-suggestions`) answers 404. With `AI_FILES_API` on, the PDF is uploaded to the Files API once
+  and reused (deleted when the form is archived or the agency deletes its account, and by the daily `ai-files-cleanup` job).
 
 ## Import open bonds (A12 step 3)
 

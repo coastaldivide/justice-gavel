@@ -347,6 +347,16 @@ SOURCE_CHECK_SKIP_DAYS=30                skip rows a re-check already attempted 
 SOURCE_CHECK_MAX_FETCHES=2               web fetches allowed per re-check request (web fetch max_uses)
 SOURCE_CHECK_PROPOSAL_FETCHES=4          web fetches allowed per proposal request (withheld / unofficial rows)
 SOURCE_CHECK_MAX_CONTENT_TOKENS=20000    max_content_tokens per fetched page (caps the cost of a long page)
+# AI step 4 — documents (docs/AI_PLATFORM.md §11)
+AI_FILES_API=                            on | off. Upload a document read more than once (case documents read for a court date, surety forms) to the
+                                         Anthropic Files API once and send its file_id. Unset: on, except NODE_ENV=production → off (the Files API is
+                                         not ZDR / HIPAA eligible — owner decision before turning it on in production). Off or failing → inline base64.
+AI_FILES_TTL_DAYS=30                     expires_in_seconds sent with each upload (1 hour … 90 days); the daily ai-files-cleanup job deletes earlier
+COURT_PAPER_READER=on                    "Read my court paper" (photo / PDF → proposed court-date fields the person checks); off → 503, the app hides it
+COURT_PAPER_MAX_MB=8                     largest photo or PDF accepted (max 20)
+COURT_PAPER_MAX_PAGES=10                 most PDF pages accepted (max 100 — the API's limit under a 1M-token context)
+COURT_PAPER_READS_PER_HOUR=10            reads per person per hour (429 hourly_limit)
+COURT_PAPER_READS_PER_DAY=20             reads per person per day (429 daily_limit); the daily AI budget still applies
 AI_CONCURRENCY=8                         parallel AI jobs (in-process or BullMQ)
 AI_JOB_TIMEOUT_MS=45000                  per-AI-job timeout
 AI_DRAIN_TIMEOUT_MS=10000                graceful shutdown waits this long for in-flight AI jobs

@@ -5,7 +5,10 @@
  * GET    /api/court-dates/guidance        — court-day checklist + missed-date guidance (public)
  * GET    /api/court-dates?case_id=        — { upcoming: [...], past: [...] } (past = archive)
  * POST   /api/court-dates                 — add a hearing { case_id | case_title, court_date,
- *                                           court_time?, hearing_type?, courthouse_id?, location?, state? }
+ *                                           court_time?, hearing_type?, courthouse_id?, location?, state?,
+ *                                           courtroom?, case_number?, judge?, bring?, source?: 'manual'|'paper' }
+ *                                           (source 'paper' = read by AI from the person's court paper and
+ *                                           confirmed by them — routes/courtPapers.js; saved only here)
  *                                           → plans the 7d / 3d / 1d / morning-of reminders
  * GET    /api/court-dates/:id             — one hearing with courthouse, reminders, guidance
  * PATCH  /api/court-dates/:id             — move it / change details / mark attended|missed|cancelled
@@ -59,8 +62,11 @@ const writeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: (req)
 export const HEARING_TYPES = Object.freeze(['arraignment', 'preliminary_hearing', 'pretrial', 'motion', 'trial', 'sentencing', 'probation', 'status', 'other']);
 const STATUSES = new Set(['scheduled', 'attended', 'missed', 'rescheduled', 'cancelled']);
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** Max lengths of the extra court-paper lines (migration 47). */
+export const EXTRA_MAX = Object.freeze({ courtroom: 60, case_number: 60, judge: 120, bring: 1000 });
 
 const COURT_COLS = `cd.id, cd.case_id, cd.court_date, cd.court_time, cd.hearing_type, cd.courthouse_id, cd.location, cd.status,
+  cd.courtroom, cd.case_number, cd.judge, cd.bring, cd.source,
   cd.created_at, cd.updated_at, cd.plan, cd.plan_updated_at, c.title AS case_title, c.state AS case_state,
   ch.name AS ch_name, ch.address AS ch_address, ch.phone AS ch_phone, ch.hours AS ch_hours, ch.lat AS ch_lat, ch.lng AS ch_lng,
   ch.url AS ch_url, ch.city AS ch_city, ch.state AS ch_state, ch.county AS ch_county`;
@@ -79,6 +85,8 @@ export function serializeCourtDate(r, today, lang = 'en') {
     id: Number(r.id), case_id: Number(r.case_id), case_title: r.case_title, case_state: r.case_state || null,
     court_date: date, court_time: timeOnly(r.court_time), court_time_label: formatCourtTime(r.court_time, lang),
     hearing_type: r.hearing_type || null, hearing_label: r.hearing_type ? msg(lang, `hearing.${r.hearing_type}`) : null, status: r.status, location: r.location || null, courthouse,
+    // lines a court paper carries (AI step 4: read from a paper, checked and confirmed by the person — or typed)
+    courtroom: r.courtroom || null, case_number: r.case_number || null, judge: r.judge || null, bring: r.bring || null, source: r.source || 'manual',
     is_past: !!(date && today && date < today),
     archived: !!(date && today && date < today) || ['attended', 'missed', 'cancelled'].includes(r.status),
   };
@@ -116,6 +124,17 @@ function parseFields(b, { partial }, lang = 'en') {
   }
   if (b.location !== undefined) {
     out.location = b.location == null || b.location === '' ? null : truncateStr(sanitizeStr(String(b.location), 200), 200);
+  }
+  // Extra lines (AI step 4 "Read my court paper" fills them for the person to check; also typed by hand).
+  for (const [k, max] of Object.entries(EXTRA_MAX)) {
+    if (b[k] === undefined) continue;
+    if (b[k] === null || b[k] === '') { out[k] = null; continue; }
+    if (typeof b[k] !== 'string') { errors.push(msg(lang, 'cd.err.bad_text', { field: k })); continue; }
+    out[k] = truncateStr(sanitizeStr(b[k], max), max).trim() || null;
+  }
+  if (!partial && b.source !== undefined) {
+    if (['manual', 'paper'].includes(b.source)) out.source = b.source;
+    else errors.push(msg(lang, 'cd.err.bad_text', { field: 'source' }));
   }
   if (b.courthouse_id !== undefined) {
     if (b.courthouse_id === null || b.courthouse_id === '') out.courthouse_id = null;
@@ -285,9 +304,10 @@ router.post('/', authRequired, writeLimiter, async (req, res) => {
         [caseId, out.court_date, out.court_time ?? null]);
       if (dup) return { status: 409, body: { error: msg(lang, 'cd.err.duplicate'), code: 'duplicate', existing_id: Number(dup.id) } };
       const ins = await tx.get(
-        `INSERT INTO court_dates (case_id, user_id, court_date, court_time, hearing_type, courthouse_id, location)
-         VALUES (?, ?, CAST(? AS date), CAST(? AS time), ?, ?, ?) RETURNING id`,
-        [caseId, req.user.id, out.court_date, out.court_time ?? null, out.hearing_type ?? null, out.courthouse_id ?? null, out.location ?? null]);
+        `INSERT INTO court_dates (case_id, user_id, court_date, court_time, hearing_type, courthouse_id, location, courtroom, case_number, judge, bring, source)
+         VALUES (?, ?, CAST(? AS date), CAST(? AS time), ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        [caseId, req.user.id, out.court_date, out.court_time ?? null, out.hearing_type ?? null, out.courthouse_id ?? null, out.location ?? null,
+          out.courtroom ?? null, out.case_number ?? null, out.judge ?? null, out.bring ?? null, out.source ?? 'manual']);
       return { id: Number(ins.id) };
     });
     if (result.status) return res.status(result.status).json(result.body);
@@ -370,7 +390,7 @@ router.patch('/:id', authRequired, writeLimiter, async (req, res) => {
     const plan = await scheduleForCourtDate(db, id);
     // Followers hear about changes to the date itself (day, time, place, cancellation) —
     // not about the owner marking it attended / missed.
-    const courtChange = ['court_date', 'court_time', 'location', 'courthouse_id'].some(k => k in out)
+    const courtChange = ['court_date', 'court_time', 'location', 'courthouse_id', 'courtroom'].some(k => k in out)
       || (out.status && ['cancelled', 'rescheduled'].includes(out.status));
     if (courtChange) {
       notifyFollowersCourtDateChanged(db, Number(before.case_id), out.status === 'cancelled' ? 'cancelled' : 'changed')

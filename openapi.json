@@ -1447,6 +1447,168 @@
         ]
       }
     },
+    "/api/admin/bd-setup/{id}/forms/{id}/map-suggestions": {
+      "get": {
+        "operationId": "get_api_admin_bd-setup_id_forms_id_map-suggestions",
+        "summary": "GET /api/admin/bd-setup/{id}/forms/{id}/map-suggestions",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_admin_bd-setup_id_forms_id_map-suggestions",
+        "summary": "POST /api/admin/bd-setup/{id}/forms/{id}/map-suggestions",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/admin/bd-setup/{id}/forms/{id}/map-suggestions/{sid}/decide": {
+      "post": {
+        "operationId": "post_api_admin_bd-setup_id_forms_id_map-suggestions_sid_decide",
+        "summary": "POST /api/admin/bd-setup/{id}/forms/{id}/map-suggestions/{sid}/decide",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/admin/bd-setup/{id}/forms/{id}/preview.pdf": {
       "get": {
         "operationId": "get_api_admin_bd-setup_id_forms_id_preview.pdf",
@@ -10444,6 +10606,144 @@
         ]
       }
     },
+    "/api/bond-desk/forms/{id}/map-suggestions": {
+      "get": {
+        "operationId": "get_api_bond-desk_forms_id_map-suggestions",
+        "summary": "GET /api/bond-desk/forms/{id}/map-suggestions",
+        "tags": [
+          "bond-desk"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_bond-desk_forms_id_map-suggestions",
+        "summary": "POST /api/bond-desk/forms/{id}/map-suggestions",
+        "tags": [
+          "bond-desk"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/bond-desk/forms/{id}/map-suggestions/{sid}/decide": {
+      "post": {
+        "operationId": "post_api_bond-desk_forms_id_map-suggestions_sid_decide",
+        "summary": "POST /api/bond-desk/forms/{id}/map-suggestions/{sid}/decide",
+        "tags": [
+          "bond-desk"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/bond-desk/forms/{id}/preview.pdf": {
       "get": {
         "operationId": "get_api_bond-desk_forms_id_preview.pdf",
@@ -16174,6 +16474,114 @@
         ],
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/court-papers/read": {
+      "post": {
+        "operationId": "post_api_court-papers_read",
+        "summary": "POST /api/court-papers/read",
+        "tags": [
+          "court-papers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/court-papers/read-attachment": {
+      "post": {
+        "operationId": "post_api_court-papers_read-attachment",
+        "summary": "POST /api/court-papers/read-attachment",
+        "tags": [
+          "court-papers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/court-papers/status": {
+      "get": {
+        "operationId": "get_api_court-papers_status",
+        "summary": "GET /api/court-papers/status",
+        "tags": [
+          "court-papers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
         }
       }
     },

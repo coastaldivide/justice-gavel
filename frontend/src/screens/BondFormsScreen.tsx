@@ -25,6 +25,7 @@ import { FONTS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { Btn, Card, Chips, Field, Line, Notice, Pill } from '../components/bondDesk/ui';
 import { AccessGate } from './BondDeskScreen';
+import { FormMapSuggestions } from '../components/bondDesk/FormMapSuggestions';
 import { type Access, type Bond, type BondForm, type SetupRequest, DATA_KEYS, dataKeyLabelKey, fmtDay, setupTone } from '../services/bondDesk';
 
 const MAX_PDF = 10 * 1024 * 1024;
@@ -213,6 +214,8 @@ function BondFormsScreen({ navigation, route }: ScreenProps) {
           ))}
           {otherFields.length > 0 && <Line muted>{t('bdk_form_other_fields', { n: otherFields.length })}</Line>}
           <Line muted>{t('bdk_signature_fields_help')}</Line>
+          {/* AI step 4: staff setting forms up get field-mapping suggestions they accept one by one */}
+          {setupId && <FormMapSuggestions base={base} form={editing} onForm={setEditing} />}
           <Btn label={t('bdk_save')} onPress={save} busy={saving} testID="form-save" />
           <Btn kind="ghost" label={t('bdk_view_original')} onPress={() => open(`${base}/forms/${editing.id}/file`, `${editing.name}.pdf`)} testID="form-original" />
           {setupId ? <Btn kind="ghost" label={t('bdk_preview_sample')} onPress={() => open(`${base}/forms/${editing.id}/preview.pdf`, `${editing.name}-preview.pdf`)} testID="form-preview-sample" /> : bonds === null ? <Btn kind="ghost" label={t('bdk_preview')} onPress={loadBonds} testID="form-preview" /> : !bonds.length ? <Line muted>{t('bdk_preview_no_bonds')}</Line> : (

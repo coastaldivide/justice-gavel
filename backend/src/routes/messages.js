@@ -38,6 +38,7 @@ import { sendPushToUser } from '../services/pushDelivery.js';
 import { encrypt, decrypt, encryptBuffer, decryptBuffer } from '../services/encryption.js';
 import { resolveLang, msg, userLang } from '../i18n/index.js';
 import { getAttachmentStorage, newStorageKey } from '../services/attachmentStorage.js';
+import { releaseFor } from '../services/aiFiles.js';
 
 const router = Router();
 
@@ -659,6 +660,10 @@ router.delete('/:id', authRequired, async (req, res) => {
     if (Number(row.sender_id) !== Number(req.user.id)) return fail(req, res, 403, 'msgs.err.cannot_delete');
 
     await db.run(`UPDATE case_messages SET deleted_at = NOW() WHERE id = ?`, [row.id]);
+    // A taken-back case document is not read again: its Files API copy goes too (AI step 4).
+    db.all('SELECT id FROM message_attachments WHERE message_id = ? LIMIT 100', [row.id])
+      .then((rows) => rows.length && releaseFor(db, 'message_attachment', rows.map((r) => Number(r.id))))
+      .catch(logIgnored('routes/messages'));
     return res.json({ deleted: true });
   } catch (e) {
     logger.warn('[messages/delete]', e?.message);

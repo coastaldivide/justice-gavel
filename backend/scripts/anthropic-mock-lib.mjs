@@ -48,6 +48,23 @@
  *     { custom_id: { type, times } } (errored the first `times` attempts; type 'expired' → expired),
  *     state.batchJson { custom_id: json } (the structured answer for that request).
  *
+ *   - images and PDFs (build-with-claude/vision + pdf-support + files, read 2026-11-02): `image` blocks
+ *     with source base64 (media_type image/jpeg|png|gif|webp, and the bytes must BE that type —
+ *     400 otherwise), url, or file { file_id }; `document` blocks with base64 application/pdf (the
+ *     bytes must start %PDF-), text/plain `text` sources, url, or file. More than 100 PDF pages
+ *     (pages counted from the PDF's /Type /Page objects), more than 100 images, a request over 32 MB
+ *     (413 request_too_large), a file block whose file is the wrong type for the block (400) are
+ *     refused like the API; a file_id the store does not have → 404 not_found_error; an expired
+ *     file → 400 (requests referencing it fail before inference). count_tokens / usage price an image
+ *     at width × height / 750 (scaled to a 1568-px long edge, as the API resizes) and a PDF page at
+ *     ~2,300 tokens (text + page image).
+ *   - Files API (build-with-claude/files): createFileStore() — POST /v1/files (multipart `file` +
+ *     optional `expires_in_seconds` 3,600–7,776,000; filename 1–255 chars without < > : " | ? * \ /
+ *     or control characters; 500 MB max → 413), GET /v1/files (newest first), GET /v1/files/{id},
+ *     GET …/{id}/content (400: uploaded files are not downloadable), DELETE …/{id} → { id, type:
+ *     'file_deleted' }; unknown id → 404 not_found_error. No beta header required (the API is out of
+ *     beta; `files-api-2025-04-14` is accepted too). state.files = the store, for /v1/messages.
+ *
  * Modes (state.mode): ok | slow | long | 429 | 500 | 529 | 401 | drop | error_event | hang |
  *   refusal (declines; served by the fallback model when the request has `fallbacks`) |
  *   refusal_mid (streams some text, then declines — or hands off to the fallback model) |
@@ -55,6 +72,7 @@
  * state.refuseModels: only these models decline (default: every model) — lets a test show the
  *   client-side retry on another model succeeding.
  */
+import zlib from 'node:zlib';
 import { sampleFor } from '../src/ai/schemas/index.js';
 
 export const DEFAULT_TEXT = 'MOCK REPLY: this is general legal information, not legal advice.';
@@ -69,18 +87,19 @@ let seq = 0;
 export function resetCaches() { caches.clear(); }
 
 const est = (s) => Math.ceil(String(s || '').length / 3);
+let mediaTokens = () => 1600;   // defined with the media checks below
 const blockText = (b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text
   : b?.type === 'search_result' ? `${b.title || ''} ${(b.content || []).map((c) => c?.text || '').join(' ')}`
   : b?.type ? JSON.stringify(b).slice(0, 4000) : '');
 const contentText = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.map(blockText).join('') : '');
 
-/** Rough input tokens of a request body (chars ÷ 3; images 1,600). */
-export function countInputTokens(body = {}) {
+/** Rough input tokens of a request body (chars ÷ 3; images w × h / 750; PDF pages ~2,300). */
+export function countInputTokens(body = {}, files = null) {
   let n = 0;
   const sys = body.system;
   n += typeof sys === 'string' ? est(sys) : (sys || []).reduce((a, b) => a + est(b?.text), 0);
   for (const m of body.messages || []) {
-    if (Array.isArray(m.content)) for (const b of m.content) n += b?.type === 'image' ? 1600 : b?.type === 'document' ? 3000 : est(blockText(b));
+    if (Array.isArray(m.content)) for (const b of m.content) n += b?.type === 'image' || b?.type === 'document' ? mediaTokens(b, files) : est(blockText(b));
     else n += est(m.content);
   }
   for (const t of body.tools || []) n += est(JSON.stringify(t));
@@ -381,6 +400,8 @@ export function messageResponse(body, state, headers = {}) {
   const problem = requestProblem(body, headers);
   const reqId = `req_mock_${++seq}`;
   if (problem) return { status: 400, headers: { 'request-id': reqId }, body: { type: 'error', error: { type: 'invalid_request_error', message: problem } } };
+  const mp = mediaProblem(body, state.files);
+  if (mp) return { status: mp.status, headers: { 'request-id': reqId }, body: { type: 'error', error: { type: mp.type, message: mp.message }, request_id: reqId } };
   const model = body.model;
   const text = answerText(body, state);
   const parts = text.split(/(?<=\s)/);
@@ -514,11 +535,13 @@ export function streamEvents(body, state) {
   return ev;
 }
 
-/** POST /v1/messages/count_tokens */
-export function countTokensResponse(body) {
+/** POST /v1/messages/count_tokens (state.files: the Files API store, for file_id blocks) */
+export function countTokensResponse(body, state = {}) {
   const b = body || {};
   if (!b.model || !Array.isArray(b.messages)) return { status: 400, body: { type: 'error', error: { type: 'invalid_request_error', message: 'model and messages are required' } } };
-  return { status: 200, body: { input_tokens: countInputTokens(b) } };
+  const mp = mediaProblem(b, state.files);
+  if (mp) return { status: mp.status, body: { type: 'error', error: { type: mp.type, message: mp.message } } };
+  return { status: 200, body: { input_tokens: countInputTokens(b, state.files) } };
 }
 
 // ── Message Batches ───────────────────────────────────────────────────────────
@@ -621,4 +644,178 @@ export function batchRoute(store, method, url, body, headers, state, base) {
   if (id && sub === 'results' && method === 'GET') { const r = store.results(id); return { status: r.status, text: r.text }; }
   if (id && sub === 'cancel' && method === 'POST') { const r = store.cancel(id, state); return { status: r.status, json: r.body }; }
   return { status: 405, json: { type: 'error', error: { type: 'invalid_request_error', message: 'method not allowed' } } };
+}
+
+// ── Images, PDFs and the Files API (AI step 4) ───────────────────────────────
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const B64 = /^[A-Za-z0-9+/]+={0,2}$/;
+function sniff(buf) {
+  if (!buf || buf.length < 12) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  const h6 = buf.subarray(0, 6).toString('latin1');
+  if (h6 === 'GIF87a' || h6 === 'GIF89a') return 'image/gif';
+  if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (buf.subarray(0, 5).toString('latin1') === '%PDF-') return 'application/pdf';
+  return null;
+}
+/** Pages of a PDF: its /Type /Page objects (not /Pages), also inside compressed object streams. */
+export function pdfPages(buf) {
+  const PAGE = /\/Type\s*\/Page(?![a-zA-Z])/g;
+  const text = buf.toString('latin1');
+  let n = (text.match(PAGE) || []).length;
+  const re = /(?<!end)stream\r?\n/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const start = m.index + m[0].length;
+    const end = text.indexOf('endstream', start);
+    if (end < 0) break;
+    try { n += (zlib.inflateSync(buf.subarray(start, end)).toString('latin1').match(PAGE) || []).length; } catch { /* not deflate */ }
+    re.lastIndex = end;
+  }
+  return Math.max(1, n);
+}
+function pngSize(buf) { try { return sniff(buf) === 'image/png' ? { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) } : null; } catch { return null; } }
+function bytesOf(block, files) {
+  const src = block?.source || {};
+  if (src.type === 'base64') { try { return Buffer.from(String(src.data || ''), 'base64'); } catch { return null; } }
+  if (src.type === 'file' && files) return files.files.get(src.file_id)?.bytes || null;
+  return null;
+}
+mediaTokens = (block, files) => {
+  const buf = bytesOf(block, files);
+  if (block.type === 'image') {
+    const d = buf && pngSize(buf);
+    if (!d) return 1600;
+    const scale = Math.min(1, 1568 / Math.max(d.w, d.h));
+    return Math.min(1600, Math.max(1, Math.round((d.w * scale) * (d.h * scale) / 750)));
+  }
+  if (block.source?.type === 'text') return est(block.source.data);
+  return buf ? pdfPages(buf) * 2300 : 3000;
+};
+
+/** Checks the API makes on image / document blocks. → { status, type, message } | null */
+export function mediaProblem(body, files = null) {
+  const bad = (message, status = 400, type = 'invalid_request_error') => ({ status, type, message });
+  if (Buffer.byteLength(JSON.stringify(body || {})) > 32 * 1024 * 1024) return bad('request exceeds the maximum size of 32 MB', 413, 'request_too_large');
+  let images = 0; let pages = 0;
+  for (const m of body?.messages || []) {
+    for (const b of Array.isArray(m.content) ? m.content : []) {
+      if (b?.type !== 'image' && b?.type !== 'document') continue;
+      const src = b.source || {};
+      if (src.type === 'file') {
+        if (typeof src.file_id !== 'string' || !src.file_id) return bad(`${b.type}.source.file_id: field required`);
+        const f = files?.files.get(src.file_id);
+        if (!f) return bad(`File \`${src.file_id}\` not found.`, 404, 'not_found_error');
+        if (f.expiresAt && Date.parse(f.expiresAt) <= Date.now()) return bad(`File \`${src.file_id}\` has expired.`);
+        if (b.type === 'image' && !IMAGE_TYPES.includes(f.mime)) return bad(`File \`${src.file_id}\` (${f.mime}) cannot be used in an image block`);
+        if (b.type === 'document' && !['application/pdf', 'text/plain'].includes(f.mime)) return bad(`File \`${src.file_id}\` (${f.mime}) cannot be used in a document block`);
+        if (b.type === 'image') images += 1; else if (f.mime === 'application/pdf') pages += pdfPages(f.bytes);
+        continue;
+      }
+      if (src.type === 'url') { if (!/^https?:\/\//.test(String(src.url || ''))) return bad(`${b.type}.source.url: invalid URL`); if (b.type === 'image') images += 1; continue; }
+      if (b.type === 'document' && src.type === 'text') { if (src.media_type !== 'text/plain' || typeof src.data !== 'string') return bad('document.source: text sources need media_type text/plain and data'); continue; }
+      if (b.type === 'document' && src.type === 'content') continue;
+      if (src.type !== 'base64') return bad(`${b.type}.source.type: must be one of base64, url, file${b.type === 'document' ? ', text, content' : ''}`);
+      if (typeof src.data !== 'string' || !src.data || !B64.test(src.data)) return bad(`${b.type}.source.data: invalid base64 data`);
+      const buf = Buffer.from(src.data, 'base64');
+      if (b.type === 'image') {
+        if (!IMAGE_TYPES.includes(src.media_type)) return bad(`image.source.media_type: must be one of ${IMAGE_TYPES.join(', ')}`);
+        if (sniff(buf) !== src.media_type) return bad(`Image does not match the provided media type ${src.media_type}`);
+        const d = pngSize(buf);
+        if (d && (d.w > 8000 || d.h > 8000)) return bad('image dimensions exceed max allowed size: 8000 pixels');
+        images += 1;
+      } else {
+        if (src.media_type !== 'application/pdf') return bad('document.source.media_type: must be application/pdf for base64 documents');
+        if (sniff(buf) !== 'application/pdf') return bad('The PDF specified was not valid.');
+        pages += pdfPages(buf);
+      }
+    }
+  }
+  if (images > 100) return bad('too many images: at most 100 per request');
+  if (pages > 100) return bad('A maximum of 100 PDF pages may be provided.');
+  return null;
+}
+
+/** Split a multipart/form-data body. → [{ name, filename, contentType, data: Buffer }] */
+export function parseMultipart(buf, contentType) {
+  const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(String(contentType || ''));
+  if (!m || !Buffer.isBuffer(buf)) return null;
+  const boundary = Buffer.from(`--${m[1] || m[2]}`);
+  const parts = [];
+  let pos = buf.indexOf(boundary);
+  while (pos !== -1) {
+    const start = pos + boundary.length;
+    if (buf.subarray(start, start + 2).toString() === '--') break;
+    const next = buf.indexOf(boundary, start);
+    if (next === -1) break;
+    const part = buf.subarray(start + 2, next - 2);   // skip CRLF after boundary, CRLF before the next
+    const sep = part.indexOf('\r\n\r\n');
+    if (sep !== -1) {
+      const head = part.subarray(0, sep).toString('utf8');
+      const name = /name="([^"]*)"/i.exec(head)?.[1] ?? null;
+      const filename = /filename="([^"]*)"/i.exec(head)?.[1] ?? null;
+      const ct = /content-type:\s*([^\r\n]+)/i.exec(head)?.[1]?.trim() ?? null;
+      parts.push({ name, filename, contentType: ct, data: part.subarray(sep + 4) });
+    }
+    pos = next;
+  }
+  return parts;
+}
+
+/** A small in-memory Files API. */
+export function createFileStore() {
+  const files = new Map();
+  let n = 0;
+  const view = (f) => ({ id: f.id, type: 'file', filename: f.filename, mime_type: f.mime, size_bytes: f.bytes.length, created_at: f.createdAt, downloadable: false, expires_at: f.expiresAt });
+  const err = (status, type, message) => ({ status, body: { type: 'error', error: { type, message }, request_id: `req_mock_f${++seq}` } });
+  return {
+    files,
+    deleted: [],
+    upload(raw, headers = {}) {
+      const parts = parseMultipart(raw, headers['content-type']);
+      if (!parts) return err(400, 'invalid_request_error', 'request must be multipart/form-data');
+      const file = parts.find((p) => p.name === 'file' && p.filename != null);
+      if (!file) return err(400, 'invalid_request_error', 'file: field required');
+      const name = file.filename;
+      if (!name.length || name.length > 255 || /[<>:"|?*\\/\u0000-\u001f]/.test(name)) return err(400, 'invalid_request_error', 'Invalid file name');
+      if (file.data.length > 500 * 1024 * 1024) return err(413, 'request_too_large', 'File exceeds the maximum size of 500 MB');
+      const exp = parts.find((p) => p.name === 'expires_in_seconds');
+      let expiresAt = null;
+      if (exp) {
+        const s = Number(exp.data.toString());
+        if (!Number.isInteger(s) || s < 3600 || s > 7_776_000) return err(400, 'invalid_request_error', 'expires_in_seconds must be an integer between 3600 and 7776000');
+        expiresAt = new Date(Date.now() + s * 1000).toISOString();
+      }
+      const id = `file_mock_${String(++n).padStart(6, '0')}`;
+      const f = { id, filename: name, mime: file.contentType || 'application/octet-stream', bytes: Buffer.from(file.data), createdAt: new Date().toISOString(), expiresAt };
+      files.set(id, f);
+      return { status: 200, body: view(f) };
+    },
+    get(id) { const f = files.get(id); return f ? { status: 200, body: view(f) } : err(404, 'not_found_error', `File \`${id}\` not found.`); },
+    list() { return { status: 200, body: { data: [...files.values()].reverse().map(view) } }; },
+    content(id) { return files.has(id) ? err(400, 'invalid_request_error', 'This file is not downloadable') : err(404, 'not_found_error', `File \`${id}\` not found.`); },
+    remove(id) {
+      if (!files.has(id)) return err(404, 'not_found_error', `File \`${id}\` not found.`);
+      files.delete(id); this.deleted.push(id);
+      return { status: 200, body: { id, type: 'file_deleted' } };
+    },
+  };
+}
+
+/** Route a /v1/files request: → null (not a files path) or { status, json }. `raw` = the body bytes. */
+export function filesRoute(store, method, url, raw, headers = {}) {
+  const path = String(url || '').split('?')[0];
+  if (!path.startsWith('/v1/files')) return null;
+  const m = /^\/v1\/files(?:\/([^/]+))?(?:\/(content))?$/.exec(path);
+  if (!m) return { status: 404, json: { type: 'error', error: { type: 'not_found_error', message: 'unknown path' } } };
+  const [, id, sub] = m;
+  let r;
+  if (!id && method === 'POST') r = store.upload(raw, headers);
+  else if (!id && method === 'GET') r = store.list();
+  else if (id && !sub && method === 'GET') r = store.get(decodeURIComponent(id));
+  else if (id && sub === 'content' && method === 'GET') r = store.content(decodeURIComponent(id));
+  else if (id && !sub && method === 'DELETE') r = store.remove(decodeURIComponent(id));
+  else r = { status: 405, body: { type: 'error', error: { type: 'invalid_request_error', message: 'method not allowed' } } };
+  return { status: r.status, json: r.body };
 }

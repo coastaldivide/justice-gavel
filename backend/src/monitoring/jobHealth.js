@@ -23,6 +23,7 @@ import { autopayEnabled } from '../services/bondDesk/autopay.js';
 import { publicDefenderEnabled, custodyAlertsEnabled } from '../utils/counselFlags.js';
 import { batchesEnabled } from '../services/aiBatch.js';
 import { sourceChecksEnabled } from '../services/sourceChecks/settings.js';
+import { aiConfigured } from '../utils/ai.js';
 
 const H = 3600_000;
 /** job → { everyMs, when() } — `when` false = the job is not expected to run now. */
@@ -42,6 +43,7 @@ export const EXPECTED = Object.freeze({
   'arrest-feeds': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH && arrestFeedsConfigured() },
   'ai-batches': { everyMs: H / 6, when: () => batchesEnabled() },
   'source-check': { everyMs: 7 * 24 * H, when: () => sourceChecksEnabled() },
+  'ai-files-cleanup': { everyMs: 24 * H, when: () => aiConfigured() },
 });
 const GRACE = 0.5;   // an interval and a half before "stale"
 

@@ -356,6 +356,44 @@ web-fetch docs; these checks confirm the real API.
 - [ ] N9 **pause_turn**: count `error_type = 'pause_turn'` items over a few runs (they are retried; many would mean
   `max_uses` is too low).
 
+## O. Court papers, surety-form suggestions, Files API with a real key (migration 47, 30 min)
+Staging with a real `ANTHROPIC_API_KEY`, `AI_FILES_API=on`, a consumer test account (disclaimer accepted) and an
+admin. The mock follows the vision, PDF-support, Files and structured-outputs pages (read 2026-11-02); these checks
+confirm the real API. Use made-up papers only (a printed sample notice with a fake name), never a real person's.
+- [ ] O1 **Photo**: Court dates → "Read it from my court paper" → take a photo of a sample hearing notice → the review
+  screen shows the date, time, court, address, courtroom, case number, each with "On the paper: “…”" matching the
+  printed words, and a confidence pill. In the server log: one `court_paper_read` call, no 400; `ai_usage_log` row with
+  `preflight = 'counted'` (count_tokens accepted the image).
+- [ ] O2 **Nothing saved before confirm**: `SELECT COUNT(*) FROM court_dates WHERE user_id = <id>` is unchanged after
+  O1; tap "Save court date" → one row with `source = 'paper'`, courtroom / case number / bring set, reminders planned.
+- [ ] O3 **PDF**: the same notice as a 2-page PDF → read; a 15-page PDF → "too many pages (10)"; a password-protected
+  PDF → the password message; a photo of a grocery receipt → "does not look like a court paper", nothing saved.
+- [ ] O4 **Accuracy spot check** (10 sample papers, mixed English / Spanish): count lines where the value differs from
+  the paper. Any wrong value with confidence "high" is a finding — note it in docs/AI_PLATFORM.md §11.
+- [ ] O5 **Files API**: attach a sample PDF to a case (Case → documents), then "Or use a document already in this case"
+  twice → `SELECT file_id, expires_at, uses FROM ai_files ORDER BY id DESC LIMIT 1;` → one row, `uses = 2`; in the
+  console (Files) the file exists with `expires_at` ≈ 30 days ahead. The second Messages request carried
+  `{ type: 'document', source: { type: 'file', file_id } }` and was accepted **with** the `anthropic-beta:
+  files-api-2025-04-14` header (the Files page says the header is optional now; the vision page still lists it —
+  if the API rejects the header on Messages, drop FILES_BETA in services/aiClient.js).
+- [ ] O6 **Upload shape**: `POST /v1/files` without a beta header was accepted (multipart `file` + `expires_in_seconds`)
+  and the response had `id`, `mime_type`, `size_bytes`, `expires_at` (compare with services/aiFiles.js).
+- [ ] O7 **Deletion**: delete that case message → within a minute the console no longer lists the file and
+  `ai_files.deleted_at` is set; delete a test account that had a read case document → its file is gone too;
+  run the clean-up by hand: `cd backend && node --input-type=module -e "const { getDb } = await import('./src/db/index.js'); const m = await import('./src/services/aiFiles.js'); console.log(await m.cleanupFiles(await getDb())); process.exit(0)"`
+  → `failed: 0`; `GET /api/admin/diagnostics/jobs` shows `ai-files-cleanup` ok after 05:20.
+- [ ] O8 **Expired file**: set `AI_FILES_TTL_DAYS=0.05` (≈ 1 h 12 min), read a case document, wait until it expires,
+  read it again → the read still works (the server logs the 4xx and resends the bytes inline) and a new `ai_files` row
+  is created — confirm the real status code the API returns for an expired file_id (404 or 400).
+- [ ] O9 **Surety-form suggestions**: Admin → Forms set-up → a request in progress → open a sample fillable surety PDF
+  → "Suggest fields with AI" → every text field listed with a suggestion and the printed label as the reason; the
+  form's field map is unchanged until "Accept"; Preview shows the accepted fields filled with sample data; a flat
+  (scanned) PDF says it has no fillable fields and makes no AI call (`ai_usage_log` has no new `bd_form_map` row).
+- [ ] O10 **Signatures**: no suggestion ever names `signature.name` / `signature.date`; the preview / signed copy never
+  shows a drawn signature.
+- [ ] O11 **Cost**: a 1-page photo read ≈ 1.6k image tokens + ~1.5k prompt ≈ $0.01 on Sonnet 5.5; a 2-page PDF
+  ≈ 5–8k tokens ≈ $0.02; compare `ai_usage_log.cost_usd` with the console.
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

@@ -18,6 +18,9 @@ import { premiumCentsFor } from '../../services/bondDesk/payments.js';
 import { putFile, getFile } from '../../services/bondDesk/packets.js';
 import { loadBond } from './bonds.js';
 import { audit } from '../../utils/audit.js';
+import { suggestMapping, decideField, pubSuggestion } from '../../services/bondDesk/formMapping.js';
+import { releaseFor } from '../../services/aiFiles.js';
+import { logIgnored } from '../../utils/ignored.js';
 
 const router = Router({ mergeParams: true });
 const ROLES = ['defendant', 'indemnitor'];
@@ -113,7 +116,43 @@ router.post('/forms/:id/archive', handle(async (req, res, db) => {
   const archived = body(req).archived !== false;
   await db.run('UPDATE bd_forms SET archived = ?, updated_at = NOW() WHERE id = ?', [archived, f.id]);
   await auditAdmin(req, 'admin.bd_setup_form_archived', f.id, { archived });
+  // An archived form is not read again: its Files API copy (if any) goes now (AI step 4).
+  if (archived) releaseFor(db, 'bd_form', [f.id], 'form_archived').catch(logIgnored('routes/bondDesk/forms'));
   res.json({ ok: true, archived });
+}));
+
+// ── AI field-mapping suggestions (AI step 4) — staff only, inside a "set up my forms" request ──
+// POST suggests (AI reads the blank PDF + its AcroForm text fields), GET the latest, POST …/decide
+// accepts (optionally with another data key) or rejects ONE field; only accepted fields reach
+// field_map (services/bondDesk/formMapping.js). Never on the agency's own mount.
+const staffOnly = (req) => { if (!req.setupRequestId) throw new BdError(404, 'not_found'); };
+
+router.get('/forms/:id/map-suggestions', handle(async (req, res, db) => {
+  staffOnly(req);
+  const f = await loadForm(db, req, id(req.params.id));
+  const row = await db.get('SELECT * FROM bd_form_map_suggestions WHERE form_id = ? ORDER BY id DESC LIMIT 1', [f.id]);
+  res.json({ suggestion: row ? pubSuggestion(row) : null });
+}));
+
+router.post('/forms/:id/map-suggestions', requireStorage, handle(async (req, res, db) => {
+  staffOnly(req);
+  const f = await loadForm(db, req, id(req.params.id));
+  const form = await db.get('SELECT id, agent_id, name, page_count, fields, field_map, storage_key FROM bd_forms WHERE id = ?', [f.id]);
+  const suggestion = await suggestMapping(db, { form, buffer: await getFile(req.storage, form.storage_key), staffId: req.user.id });
+  await auditAdmin(req, 'admin.bd_setup_form_suggested', f.id, { suggestion_id: suggestion.id, fields: suggestion.suggestions.length, no_fields: suggestion.no_fields });
+  res.status(201).json({ suggestion });
+}));
+
+router.post('/forms/:id/map-suggestions/:sid/decide', handle(async (req, res, db) => {
+  staffOnly(req);
+  const f = await loadForm(db, req, id(req.params.id));
+  const b = body(req);
+  if (typeof b.field !== 'string' || !b.field) throw new BdError(400, 'invalid', { field: 'field' });
+  if (b.data_key != null && typeof b.data_key !== 'string') throw new BdError(400, 'bad_field_map', { field: b.field.slice(0, 100) });
+  const out = await decideField(db, { form: f, suggestionId: id(req.params.sid), field: b.field, action: b.action, dataKey: b.data_key ?? null, staffId: req.user.id });
+  await auditAdmin(req, 'admin.bd_setup_form_mapped', f.id, { via: 'ai_suggestion', suggestion_id: out.suggestion.id, action: b.action, edited: !!out.suggestion.decisions[b.field]?.edited });
+  const row = await db.get(`SELECT ${FORM_COLS} FROM bd_forms WHERE id = ?`, [f.id]);
+  res.json({ suggestion: out.suggestion, form: pubForm(row) });
 }));
 
 router.get('/forms/:id/file', requireStorage, handle(async (req, res, db) => {

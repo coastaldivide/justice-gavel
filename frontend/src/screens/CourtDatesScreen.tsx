@@ -438,6 +438,10 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
         <TouchableOpacity accessibilityRole="button" testID="court-date-add" style={[styles.primaryBtn, phase === 'offline' && { opacity: 0.5 }]} onPress={openAdd} disabled={phase === 'offline'}>
           <IconLabel center icon={ICONS.add} color={colors.white} textStyle={styles.primaryBtnText} maxFontSizeMultiplier={1.3}>{t('cd_add')}</IconLabel>
         </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" testID="court-paper-open" style={[styles.secondaryBtn, phase === 'offline' && { opacity: 0.5 }]}
+          onPress={() => (navigation as any).navigate('CourtPaper', onlyCase ? { caseId: onlyCase } : undefined)} disabled={phase === 'offline'}>
+          <IconLabel center icon={ICONS.camera} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cpr_entry')}</IconLabel>
+        </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cd_remind_note')}</Text>
         {!!delivery && phase === 'ok' && (
           <View style={styles.box} testID="reminder-delivery-prompt">
@@ -560,6 +564,11 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)} accessibilityViewIsModal>
         <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" testID="court-date-form">
           <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('cd_add')}</Text>
+          <TouchableOpacity accessibilityRole="button" testID="court-form-read-paper" style={styles.secondaryBtn}
+            onPress={() => { setAdding(false); (navigation as any).navigate('CourtPaper', caseId ? { caseId } : undefined); }}>
+            <IconLabel center icon={ICONS.camera} color={colors.textPrimary} textStyle={styles.secondaryBtnText} maxFontSizeMultiplier={1.3}>{t('cpr_entry')}</IconLabel>
+          </TouchableOpacity>
+          <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cpr_entry_help')}</Text>
           {cases.length > 0 && (
             <>
               <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_case')}</Text>

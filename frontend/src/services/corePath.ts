@@ -155,6 +155,8 @@ export interface CourtDate {
   id: number; case_id: number; case_title: string; case_state?: string | null; court_date: string; court_time: string | null;
   court_time_label: string | null; hearing_type: string | null; status: string; location: string | null;
   courthouse: CourtHouse | null; is_past: boolean; archived: boolean;
+  /** Lines a court paper carries (AI step 4) — read from a paper and confirmed, or typed. */
+  courtroom?: string | null; case_number?: string | null; judge?: string | null; bring?: string | null; source?: 'manual' | 'paper';
 }
 export interface ReminderDelivery {
   undeliverable: number; last_undeliverable_at: string | null;

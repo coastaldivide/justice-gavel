@@ -32,6 +32,7 @@ import RightsCardScreen from '../screens/RightsCardScreen';
 import CourtDatesScreen from '../screens/CourtDatesScreen';
 import HelpNowScreen from '../screens/HelpNowScreen';
 import CourtDateDetailScreen from '../screens/CourtDateDetailScreen';
+import CourtPaperScreen from '../screens/CourtPaperScreen';
 import CourtGuideScreen from '../screens/CourtGuideScreen';
 import CaseStepsScreen from '../screens/CaseStepsScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
@@ -243,6 +244,7 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: t('rc_page_title') }} />
       <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: t('ja_my_court_dates') }} />
       <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: t('nav_title_court_date') }} />
+      <MoreStack.Screen name="CourtPaper"            component={CourtPaperScreen}            options={{ title: t('cpr_title') }} />
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: t('x_nav_daily_check'), headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: t('x_nav_check_manager') }} />
       <MoreStack.Screen name="BondDesk"              component={BondDeskScreen}              options={{ title: t('bdk_title') }} />

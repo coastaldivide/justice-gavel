@@ -85,6 +85,7 @@ export const linking: LinkingOptions<any> = {
               RightsCard:         'rights',
               CourtDates:         'court-dates',
               CourtDateDetail:    'court-dates/:id',
+              CourtPaper:         'court-paper',
               CourtGuide:         'court-guide',
               CaseSteps:          'case-steps',
               DUILaws:            'dui-laws',

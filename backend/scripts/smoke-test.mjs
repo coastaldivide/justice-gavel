@@ -542,6 +542,16 @@ async function main() {
     assert(r.status === 503 && r.json?.error === 'payments_unavailable', `expected 503 payments_unavailable, got ${brief(r)}`);
   });
 
+  await check('read my court paper (AI step 4): private; status says on/off; off → 503, on → the attachment must be the person\'s', async () => {
+    const anon = await call('GET', '/api/court-papers/status');
+    assert(anon.status === 401, `expected 401 without sign-in, got ${brief(anon)}`);
+    const st = await call('GET', '/api/court-papers/status', { token });
+    assert(st.status === 200 && typeof st.json?.enabled === 'boolean' && st.json?.max_mb > 0, `expected { enabled, max_mb }, got ${brief(st)}`);
+    const r = await call('POST', '/api/court-papers/read-attachment', { token, body: { attachment_id: 999999999 } });
+    if (st.json.enabled) assert(r.status === 404 && r.json?.code === 'attachment_not_found', `expected 404 attachment_not_found, got ${brief(r)}`);
+    else assert(r.status === 503 && r.json?.code === 'feature_unavailable', `expected 503 feature_unavailable, got ${brief(r)}`);
+  });
+
   await check('⚖ custody alerts and recovery sharing: private, and 503 feature_unavailable while their setting is off', async () => {
     const anon = await call('GET', '/api/custody/status');
     assert(anon.status === 401, `expected 401 without sign-in, got ${brief(anon)}`);

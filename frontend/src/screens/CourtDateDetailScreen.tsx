@@ -239,6 +239,15 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
       <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
         {[d.hearing_type ? hearingLabel(d.hearing_type) : null, d.location, d.status !== 'scheduled' ? t('cdd_status', { status: statusLabel(d.status) }) : null].filter(Boolean).join(' · ')}
       </Text>
+      {(d.courtroom || d.case_number || d.judge || d.bring) && (
+        <View style={styles.box} testID="court-date-paper-lines">
+          {!!d.courtroom && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_courtroom', { v: d.courtroom })}</Text>}
+          {!!d.case_number && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_case_number', { v: d.case_number })}</Text>}
+          {!!d.judge && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_judge', { v: d.judge })}</Text>}
+          {!!d.bring && <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{t('cdd_bring', { v: d.bring.split('\n').join(', ') })}</Text>}
+          {d.source === 'paper' && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cdd_from_paper')}</Text>}
+        </View>
+      )}
 
       {phase === 'ok' && d.status === 'scheduled' && (d.is_past || d.court_date <= localToday() || asked) && (
         <View style={[styles.box, { borderColor: colors.legalDark }]} testID="court-date-made-it">

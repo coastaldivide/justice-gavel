@@ -73,6 +73,7 @@ let arrestFeedsTask = null;
 let custodyHeldTask = null;
 let bdAutopayTask = null;
 let aiBatchesTask = null;
+let aiFilesCleanupTask = null;
 let sourceCheckTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
@@ -425,6 +426,11 @@ export function startScheduler() {
     (ctx) => runScheduled('ai-batches', ctx, async () => (await import('./aiBatch.js')).pollBatches(await getDb())));
   sourceCheckTask = scheduleGuarded('40 4 * * 0', 'source-check',
     (ctx) => runScheduled('source-check', ctx, async () => (await import('./sourceChecks/index.js')).runWeeklySourceCheck(await getDb())), { timezone: tz });
+  // AI step 4: daily Files API clean-up (05:20) — deletes the remote copy of every uploaded document
+  // that expired, whose local document or owner is gone, or whose earlier delete failed
+  // (services/aiFiles.js). Runs even with AI_FILES_API=off so copies made earlier still go.
+  aiFilesCleanupTask = scheduleGuarded('20 5 * * *', 'ai-files-cleanup',
+    (ctx) => runScheduled('ai-files-cleanup', ctx, async () => (await import('./aiFiles.js')).cleanupFiles(await getDb())), { timezone: tz });
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
     (ctx) => runScheduled('refresh-token-cleanup', ctx, cleanupExpiredTokens), { timezone: tz });
@@ -475,8 +481,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask, custodyHeldTask, aiBatchesTask, sourceCheckTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = custodyHeldTask = aiBatchesTask = sourceCheckTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask, custodyHeldTask, aiBatchesTask, sourceCheckTask, aiFilesCleanupTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = custodyHeldTask = aiBatchesTask = sourceCheckTask = aiFilesCleanupTask = null;
   stopHealthScanScheduler();
 }
 

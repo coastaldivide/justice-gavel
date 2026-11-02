@@ -27,6 +27,21 @@ const obj = (properties) => ({ type: 'object', properties, required: Object.keys
 const arr = (items) => ({ type: 'array', items });
 const en = (...values) => ({ type: 'string', enum: values });
 
+const CONFIDENCE = en('high', 'medium', 'low', 'not_found');
+const PAPER_FIELD = obj({ value: S, source_text: S, confidence: CONFIDENCE });
+/** routes/courtDates.js HEARING_TYPES + "none" (kept here so the schema has no import cycle; a test checks they match). */
+export const HEARING_VALUES = Object.freeze(['arraignment', 'preliminary_hearing', 'pretrial', 'motion', 'trial', 'sentencing', 'probation', 'status', 'other', 'none']);
+/** services/bondDesk/core.js DATA_KEYS without the signature keys (a test checks they match). */
+export const FORM_MAP_KEYS = Object.freeze([
+  'bond.defendant_name', 'bond.defendant_dob', 'bond.defendant_address', 'bond.defendant_phone', 'bond.defendant_email',
+  'bond.case_number', 'bond.court_name', 'bond.county', 'bond.state', 'bond.court_date', 'bond.charges', 'bond.bond_amount',
+  'bond.premium', 'bond.power_number', 'bond.surety_name', 'agent.name', 'agent.agency', 'agent.license', 'agent.phone',
+  'agent.email', 'signer.full_name', 'signer.role', 'signer.relationship', 'signer.phone', 'signer.email', 'signer.address',
+  'signer.dob', 'signer.employer', 'signer.employer_phone', 'signer.job_title', 'signer.monthly_income',
+  'signer.years_at_address', 'signer.drivers_license', 'signer.vehicle', 'signer.reference_1', 'signer.reference_2',
+  'date.today',
+]);
+
 export const SCHEMAS = Object.freeze({
   motion_review: obj({
     score: en('pass', 'warn', 'fail'),
@@ -141,6 +156,32 @@ export const SCHEMAS = Object.freeze({
   // "Translate new keys" (services/translationDrafts.js): drafts for review, never applied automatically.
   translation_draft: obj({
     translations: arr(obj({ key: S, text: S })),
+  }),
+
+  // AI step 4 — a court paper (photo or PDF) read into proposed court-date fields
+  // (services/courtPaper.js). Every field carries the exact words it was read from and a
+  // confidence; "" + not_found when the paper does not say it. No type arrays / anyOf (the
+  // 16-parameter limit), no PHI in the schema itself.
+  court_paper: obj({
+    kind: en('court_paper', 'not_court_paper', 'unreadable'),
+    fields: obj({
+      court_date: PAPER_FIELD,
+      court_time: PAPER_FIELD,
+      court_name: PAPER_FIELD,
+      court_address: PAPER_FIELD,
+      courtroom: PAPER_FIELD,
+      case_number: PAPER_FIELD,
+      judge: PAPER_FIELD,
+      hearing_type: obj({ value: en(...HEARING_VALUES), source_text: S, confidence: CONFIDENCE }),
+    }),
+    bring: arr(obj({ text: S, source_text: S, confidence: CONFIDENCE })),
+  }),
+
+  // AI step 4 — which case-file value fills each fillable text field of a blank surety PDF
+  // (services/bondDesk/formMapping.js). data_key is one of the app's data keys or "none"; the
+  // signature keys are not offered (staff map those by hand; nothing is ever drawn).
+  form_field_map: obj({
+    suggestions: arr(obj({ field: S, data_key: en(...FORM_MAP_KEYS, 'none'), confidence: en('high', 'medium', 'low'), reason: S })),
   }),
 });
 

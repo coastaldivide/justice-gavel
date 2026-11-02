@@ -61,6 +61,7 @@ export const USER_REFS = {
   'consultation_bookings.user_id': 'delete',
   'consultations.user_id': 'delete',
   'court_dates.user_id': 'delete',
+  'ai_document_reads.user_id': 'delete',   // AI document-read log for the per-person limits (AI step 4; no content)
   'idempotency_keys.user_id': 'delete',   // cached create responses (migration 21)
   'listing_claims.user_id': 'delete',
   'contract_executions.user_id': 'delete',
@@ -132,6 +133,8 @@ export const USER_REFS = {
   'account_deletion_log.user_id': 'nullify',
   'ai_token_usage.user_id': 'nullify',          // cost ledger, anonymised
   'ai_usage_log.user_id': 'nullify',            // cost ledger, anonymised
+  'ai_files.user_id': 'nullify',                // Files API registry (AI step 4): rows are marked for remote deletion first (purgeAccountData), the cleanup job finishes any that fail
+  'bd_form_map_suggestions.created_by': 'nullify',   // the staff member who asked for suggestions on an agency's form
   'arrest_takedown_log.requested_by': 'nullify',
   'arrest_takedown_log.reviewed_by': 'nullify',
   'arrest_takedown_log.taken_down_by': 'nullify',
@@ -226,6 +229,7 @@ export const USER_REFS = {
   'bd_powers.agent_id': 'delete',
   'bd_bonds.agent_id': 'delete',        // the agent's own bond book (indemnitors, ledger, packets cascade)
   'bd_forms.agent_id': 'delete',
+  'bd_form_map_suggestions.agent_id': 'delete',   // AI field-mapping suggestions on the agency's forms (AI step 4)
   'bd_counters.agent_id': 'delete',
   'bd_packets.agent_id': 'delete',
   'bd_payments.agent_id': 'delete',
@@ -368,11 +372,19 @@ async function transferOrDeleteFirms(tx, uid) {
 /**
  * Delete everything that belongs to the account, inside `tx`
  * (db.transaction); the caller then deletes the users row in the same
- * transaction. Returns { attachmentKeys, firms } — the caller removes the
- * attachment files after commit.
+ * transaction. Returns { attachmentKeys, aiFiles, firms } — the caller removes the
+ * attachment files and the Files API copies (services/aiFiles.js deleteRemoteFiles) after commit.
  */
 export async function purgeAccountData(tx, uid, { email = null } = {}) {
   const attachmentKeys = await stepAll(tx, 'SELECT storage, storage_key FROM message_attachments WHERE uploader_id = ? OR case_id IN (SELECT id FROM cases WHERE user_id = ?)', [uid, uid]);
+  // 0. Files API copies of the user's documents (AI step 4): marked for deletion and unlinked
+  //    while the documents still exist to be matched; deleted remotely after commit.
+  const aiFiles = await stepAll(tx,
+    `UPDATE ai_files SET delete_requested_at = COALESCE(delete_requested_at, NOW()), delete_reason = COALESCE(delete_reason, 'account_deleted'), user_id = NULL
+      WHERE deleted_at IS NULL AND (user_id = ?
+         OR (subject_type = 'message_attachment' AND subject_id IN (SELECT id FROM message_attachments WHERE uploader_id = ? OR case_id IN (SELECT id FROM cases WHERE user_id = ?)))
+         OR (subject_type = 'bd_form' AND subject_id IN (SELECT id FROM bd_forms WHERE agent_id = ?)))
+      RETURNING file_id`, [uid, uid, uid, uid]);
 
   // 1. rows hanging off the user's own cases
   for (const [table, action] of Object.entries(CASE_CHILDREN)) {
@@ -415,7 +427,7 @@ export async function purgeAccountData(tx, uid, { email = null } = {}) {
   // 5. pending invitations addressed to the user's e-mail
   if (email) await step(tx, 'DELETE FROM firm_invites WHERE LOWER(email) = LOWER(?)', [email]);
 
-  return { attachmentKeys, firms };
+  return { attachmentKeys, aiFiles, firms };
 }
 
 // ── Export ──────────────────────────────────────────────────────────────────

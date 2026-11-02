@@ -475,8 +475,9 @@ router.delete('/account', authRequired, async (req, res) => {
     // (services/accountDeletion.js): own rows deleted, other people's records
     // de-linked, owned firms handed to a remaining member — no orphans.
     let attachmentKeys = [];
+    let aiFiles = [];
     await db.transaction(async (tx) => {
-      ({ attachmentKeys } = await purgeAccountData(tx, uid, { email: user.email }));
+      ({ attachmentKeys, aiFiles = [] } = await purgeAccountData(tx, uid, { email: user.email }));
       await tx.run('DELETE FROM users WHERE id = ?', [uid]);
       await tx.run('SAVEPOINT deletion_log');
       try {
@@ -496,6 +497,11 @@ router.delete('/account', authRequired, async (req, res) => {
           if (storage && storage.kind === a.storage) await storage.remove(a.storage_key).catch(logIgnored('routes/auth'));
         }
       }).catch(logIgnored('routes/auth'));
+    }
+    // Files API copies of the user's documents (AI step 4): best effort now, the daily
+    // ai-files-cleanup job retries any that fail.
+    if (aiFiles.length) {
+      import('../services/aiFiles.js').then(({ deleteRemoteFiles }) => deleteRemoteFiles(db, aiFiles)).catch(logIgnored('routes/auth'));
     }
     res.json({ ok: true, message: m('auth.deleted') });
   } catch (e) {

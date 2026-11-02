@@ -34,6 +34,12 @@ Source re-checks and batches (step 3, migration 46, docs/AI_PLATFORM.md §9–§
 `SOURCE_CHECK_MAX_ROWS` (100 per run), `SOURCE_CHECK_SKIP_DAYS` (30), `SOURCE_CHECK_MAX_FETCHES` (2),
 `SOURCE_CHECK_PROPOSAL_FETCHES` (4) and `SOURCE_CHECK_MAX_CONTENT_TOKENS` (20,000). All have working defaults and do
 nothing without `ANTHROPIC_API_KEY`. The official-domain allow-list is code, not env: `backend/src/ai/sourceDomains.js`.
+Documents (step 4, migration 47, docs/AI_PLATFORM.md §11) add `AI_FILES_API` (unset: **on in development, off when
+`NODE_ENV=production`** — the Anthropic Files API is not ZDR / HIPAA eligible, so turning it on in production is an owner
+decision; off means documents are sent inline, which always works), `AI_FILES_TTL_DAYS` (30 — expiry of each uploaded copy,
+1 hour … 90 days; the daily `ai-files-cleanup` job deletes copies earlier when their document goes), `COURT_PAPER_READER`
+(on — "Read my court paper"; off → 503 and the app offers "add by hand"), `COURT_PAPER_MAX_MB` (8), `COURT_PAPER_MAX_PAGES`
+(10), `COURT_PAPER_READS_PER_HOUR` (10) and `COURT_PAPER_READS_PER_DAY` (20) per person.
 
 ## Settings that wait for counsel (⚖)
 
