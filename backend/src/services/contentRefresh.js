@@ -9,6 +9,10 @@ import logger from '../utils/logger.js';
  *
  * Every content record carries content_verified_at + law_effective_date.
  * Frontend surfaces: "Last verified: 14 days ago" per ABA/LawHelp standard.
+ *
+ * This job only FLAGS staleness (dates, no AI). The checking itself is the weekly source re-check
+ * (services/sourceChecks — one Message Batch, web fetch on official domains, stalest rows first);
+ * a date moves only when a check verified the row or an admin approved it.
  */
 import { getDb } from '../db/index.js';
 
@@ -87,18 +91,31 @@ export async function refreshLegalContent() {
       ).catch(logIgnored('services/contentRefresh'));
       results.warnings.push(`crisis_resources: ${staleRes.length} need phone verification`);
     } else {
-      try {
-        await db.run(`UPDATE crisis_resources SET last_verified=NOW()`);
-        results.updated.push('crisis_resources: all verified');
-      } catch (e) {
-        // Failure means next run will re-verify all resources (wasted work, not data loss)
-        logger.warn('[contentRefresh] crisis_resources timestamp update failed:', e.message);
-        results.warnings.push('crisis_resources: last_verified update failed — will re-check next run');
-      }
+      // Nothing is marked "verified" here: a date only moves when someone (or the source re-check
+      // job, services/sourceChecks) actually checked the entry. (This used to stamp every row as
+      // verified whenever none was stale — a check that never happened.)
+      results.updated.push('crisis_resources: none older than 30 days');
     }
   } catch (err) { results.errors.push('crisis_resources: ' + err.message); }
 
-  // ── 4. Log run ────────────────────────────────────────────────────────────
+  // ── 4. Sourced legal rows (AI step 3) ─────────────────────────────────────
+  // The rows the app shows with a source (registry: expungement, recording, court rules, transit,
+  // guide, TN report, the gated legal tables …): how many were not verified against their source
+  // in REVIEW_THRESHOLD_DAYS. They are checked by the weekly source re-check batch (stalest first),
+  // never re-dated here.
+  try {
+    const { allRows, checkMode } = await import('./sourceChecks/registry.js');
+    const { checkedOn } = await import('../ai/sourceOverlay.js');
+    const { REVIEW_THRESHOLD_DAYS } = await import('./contentStaleness.js');
+    const rows = (await allRows(db)).filter((r) => r.shown);
+    const cutoff = Date.now() - REVIEW_THRESHOLD_DAYS * 86_400_000;
+    const stale = rows.filter((r) => { const d = checkedOn(r.dataset, r.key, r.checked); return !d || Date.parse(`${d}T00:00:00Z`) < cutoff; });
+    const auto = stale.filter((r) => checkMode(r) === 'recheck').length;
+    if (stale.length) results.warnings.push(`sourced legal rows: ${stale.length} of ${rows.length} not verified in ${REVIEW_THRESHOLD_DAYS} days (${auto} re-checkable automatically; the rest need a person — Admin → Source checks)`);
+    else results.updated.push(`sourced legal rows: all ${rows.length} verified within ${REVIEW_THRESHOLD_DAYS} days`);
+  } catch (err) { results.errors.push('sourced legal rows: ' + err.message); }
+
+  // ── 5. Log run ────────────────────────────────────────────────────────────
   try {
     await db.run(
       `INSERT INTO content_refresh_log

@@ -11,6 +11,8 @@
  * Federal Transit Administration (transit.dot.gov), which lists the agency's website.
  * Re-check yearly (addresses change); remove a row rather than keep a broken link.
  */
+import { isWithheld, checkedOn } from '../ai/sourceOverlay.js';
+
 export const TRANSIT_CHECKED = '2026-10-27';
 
 export const TRANSIT_AGENCIES = Object.freeze([
@@ -72,5 +74,9 @@ const norm = (s) => String(s ?? '').trim().toLowerCase().replace(/\s+county$/, '
 export function transitAgencyFor(county, state) {
   const c = norm(county); const st = String(state ?? '').trim().toUpperCase();
   if (!c || !st) return null;
-  return TRANSIT_AGENCIES.find((a) => a.state === st && norm(a.county) === c) || null;
+  const a = TRANSIT_AGENCIES.find((x) => x.state === st && norm(x.county) === c);
+  // Source re-checks (ai/sourceOverlay.js): withheld → no agency shown; the date follows the latest verified check.
+  if (!a || isWithheld('transit', `${a.state}-${a.county}`)) return null;
+  const checked = checkedOn('transit', `${a.state}-${a.county}`, a.checked);
+  return checked === a.checked ? a : { ...a, checked };
 }

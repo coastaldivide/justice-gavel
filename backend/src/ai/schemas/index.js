@@ -121,6 +121,27 @@ export const SCHEMAS = Object.freeze({
   eval_refusal_correctness: obj({ score: { type: 'integer' }, rationale: S, refused: B, correct_to_refuse: B }),
   eval_calibration: obj({ score: { type: 'integer' }, rationale: S, overconfident: B, underconfident: B }),
   eval_state_specificity: obj({ score: { type: 'integer' }, rationale: S, state_specific_citations: arr(S) }),
+
+  // Source re-check (services/sourceChecks, AI step 3): compare one stored row with its official
+  // page fetched by the web fetch tool. `quote` must be copied word for word from the fetched page;
+  // the server checks it is really there before a "still_matches" verdict changes anything.
+  source_check: obj({
+    verdict: en('still_matches', 'changed', 'page_gone', 'cant_tell'),
+    quote: NS,
+    what_changed: NS,
+    fetched_url: NS,
+  }),
+  // Proposal for a withheld row: an official page (on the allowed domains) that states the rule.
+  source_proposal: obj({
+    found: B,
+    url: NS,
+    quote: NS,
+    explanation: NS,
+  }),
+  // "Translate new keys" (services/translationDrafts.js): drafts for review, never applied automatically.
+  translation_draft: obj({
+    translations: arr(obj({ key: S, text: S })),
+  }),
 });
 
 export function schemaFor(name) {

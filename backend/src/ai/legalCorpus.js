@@ -26,6 +26,7 @@ import { GUIDE_CORPUS } from '../data/guideCorpus.js';
 import { STATE_RULES_DATA } from '../routes/expungement/rules_data.js';
 import { citationOf } from '../routes/expungement/rules.js';
 import { RECORDING_LAWS } from '../routes/recordingLaws_data.js';
+import { isWithheld, checkedOn, approvedSource } from './sourceOverlay.js';
 
 export const LANGS = Object.freeze(['en', 'es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl']);
 
@@ -260,7 +261,12 @@ export function retrieve(query, { lang = 'en', state = null, limit = 6, kinds = 
       matchedIdf += idf;
       score += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * (e.len / idx.avgLen)));
     }
-    if (matched) scored.push({ ...d, score, coverage: matchedIdf / totalIdf });
+    if (!matched) continue;
+    // Source re-checks (ai/sourceOverlay.js): a row an admin withheld is never a passage; the
+    // checked date / an admin-approved official source follow the latest check.
+    const ov = overlayKey(d.id);
+    if (ov && isWithheld(ov[0], ov[1])) continue;
+    scored.push({ ...d, ...(ov ? { checked: checkedOn(ov[0], ov[1], d.checked), url: approvedSource(ov[0], ov[1]) || d.url } : {}), score, coverage: matchedIdf / totalIdf });
   }
   scored.sort((a, b2) => b2.score - a.score);
   // Relevant = the best passage carries a fair share of the question's known words (by rarity)
@@ -268,6 +274,12 @@ export function retrieve(query, { lang = 'en', state = null, limit = 6, kinds = 
   if (!scored.length || scored[0].score < MIN_SCORE || scored[0].coverage < MIN_COVERAGE) return [];
   const floor = Math.max(MIN_SCORE, scored[0].score * RELATIVE_FLOOR);
   return scored.filter((d) => d.score >= floor && d.coverage >= MIN_COVERAGE / 2).slice(0, limit);
+}
+
+/** passage id → [dataset, key] in the source-check overlay (expungement / recording rows). */
+function overlayKey(id) {
+  const m = /^(expungement)\.([A-Z]{2}\.[a-z]+)$/.exec(String(id || '')) || /^(recording)\.([A-Z]{2})$/.exec(String(id || ''));
+  return m ? [m[1], m[2]] : null;
 }
 
 /** Drop the cached index (tests that change the data). */

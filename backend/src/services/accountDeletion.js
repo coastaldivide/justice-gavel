@@ -201,6 +201,10 @@ export const USER_REFS = {
   'privilege_log.reviewed_by': 'nullify',
   'provider_update_log.updated_by': 'nullify',
   'provider_update_proposals.decided_by': 'nullify',
+  // AI step 3 (migration 46): the admin who started a batch / decided a source review / approved a source
+  'ai_batches.created_by': 'nullify',
+  'legal_source_reviews.decided_by': 'nullify',
+  'legal_source_checks.approved_by': 'nullify',
   'refund_requests.user_id': 'nullify',         // payment ledger
   'soc2_controls.reviewed_by': 'nullify',
   'sso_configurations.created_by': 'nullify',

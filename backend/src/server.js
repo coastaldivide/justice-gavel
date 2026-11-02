@@ -184,6 +184,10 @@ server.on('listening', () => {
     const t = startContentRefreshSchedule();
     if (t) { t.unref?.(); timers.push(t); }
   } catch (e) { logger.error({ err: e.message }, '[server] content refresh failed to start'); }
+  // Source re-check overlay (checked-on dates / withheld rows — AI step 3): load now, refresh every 5 minutes.
+  Promise.all([import('./services/sourceChecks/overlayStore.js'), import('./db/index.js')])
+    .then(([o, d]) => { const t = o.startOverlayRefresh(d.getDb); if (t) timers.push(t); })
+    .catch(e => logger.error({ err: e.message }, '[server] source-check overlay failed to start'));
 
   // Reminder delivery (scheduled_pushes) runs in startScheduler → reminderDispatcher.
 

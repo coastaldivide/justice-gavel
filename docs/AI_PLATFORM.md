@@ -1,4 +1,4 @@
-# AI platform — the gateway (step 1) and verified citations (step 2), November 2 2026
+# AI platform — the gateway (step 1), verified citations (step 2), source re-checks and batches (step 3), November 2 2026
 
 Justice Gavel gives legal **information**, never legal advice. Every AI feature keeps the
 disclaimer gate, the "general information — not reviewed by a lawyer" labels and the rule that
@@ -15,9 +15,11 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | Thinking | build-with-claude/thinking | `thinking: { type: "adaptive", display: "omitted" }` / `disabled` / `between_tools` |
 | Token counting | build-with-claude/token-counting | `POST /v1/messages/count_tokens` (free, own rate limit) |
 | Refusals + fallback | build-with-claude/refusals-and-fallback | `fallbacks: "default"` + `anthropic-beta: server-side-fallback-2026-07-01` |
-| Pricing | about-claude/pricing | — (table in `backend/src/ai/pricing.js`) |
+| Pricing | about-claude/pricing | — (table in `backend/src/ai/pricing.js`; batch = 50 %, `BATCH_DISCOUNT`) |
 | Search results (step 2) | build-with-claude/search-results | `search_result` blocks `{ source, title, content: [text…], citations: { enabled: true } }` in the user turn (no beta header) |
 | Citations (step 2) | build-with-claude/citations | response text blocks with `citations` (`search_result_location`); streams `citations_delta`; never with `output_config.format` |
+| Message Batches (step 3) | build-with-claude/batch-processing + api/cli/messages/batches | `POST /v1/messages/batches` `{ requests: [{ custom_id, params }] }`, `GET …/{id}`, `GET …/{id}/results` (.jsonl), `POST …/{id}/cancel`; no beta header; no `stream` / `fallbacks` in params |
+| Web fetch tool (step 3) | agents-and-tools/tool-use/web-fetch-tool + server-tools ("Domain filtering") | `tools: [{ type: "web_fetch_20250910", name: "web_fetch", max_uses, allowed_domains, max_content_tokens }]`; no beta header; no wildcards in domains |
 
 ## Where it lives
 
@@ -36,6 +38,15 @@ All request shapes come from the official docs, read on **2026-11-02**:
 | `backend/src/services/sourcedAnswers.js` | step 2: grounded / nothing_found / plain modes, history rebuild, streamed assembly |
 | `backend/src/data/guideCorpus.js` | step 2: generated copy of the court guide + case steps (8 languages, with sources) — `node backend/scripts/build-guide-corpus.mjs` |
 | `supabase/migrations/00000000000045_ai_citations.sql` | step 2: `ai_answer` / `ai_sent` on chat_sessions and research_messages |
+| `backend/src/services/aiBatch.js` | step 3: the batch layer (create / poll / results by custom_id / retries / metering at the batch price / kind handlers), job `ai-batches` |
+| `backend/src/ai/sourceDomains.js` | step 3: THE allow-list of official domains (the one config file) + proposal domains per jurisdiction |
+| `backend/src/ai/sourceOverlay.js` | step 3: the in-memory "checked on" / withheld / approved-source overlay the app reads |
+| `backend/src/services/sourceChecks/` | step 3: `registry.js` (every sourced row and where its URL + date live), `index.js` (the job, request builder, verdict rules), `reviews.js` (admin queue), `overlayStore.js`, `settings.js` |
+| `backend/src/services/evalBatch.js` | step 3: the evaluation as batches (prompts shared with `src/scripts/run_eval.js` / `grade_eval.js`) |
+| `backend/src/services/translationDrafts.js` + `backend/scripts/apply-translation-drafts.mjs` | step 3: "translate new keys" drafts and how a developer applies them |
+| `backend/src/routes/admin/sourceChecks.js`, `routes/admin/aiBatches.js`, `routes/legalSources.js` | step 3: admin queue + batch tools (admin role), public checked-on status |
+| `frontend/src/screens/AdminSourceChecksScreen.tsx` | step 3: Admin → Source checks (queue, withheld rows, batch tools) |
+| `supabase/migrations/00000000000046_source_checks_and_batches.sql` | step 3: `ai_batches`, `ai_batch_items`, `legal_source_checks`, `legal_source_reviews`, `ai_usage_log.batch_id` |
 
 No call site names a model; nothing calls the API outside the gateway (the evaluation scripts
 included — `run_eval.js --model` overrides the model on purpose, for comparisons).
@@ -45,7 +56,7 @@ included — `run_eval.js --model` overrides the model on purpose, for compariso
 | Class | Default model | Effort | Thinking | Tasks |
 |---|---|---|---|---|
 | quick | `claude-haiku-5-5` | low | disabled | `translate`, `note_structure`, `match_reports`, `eval_grade` |
-| standard | `CLAUDE_MODEL` (`claude-sonnet-5-5`) | medium | adaptive | `chat`, `chat_defender`, `bar_explain`, `queue_job`, `discovery_intake`, `speaker_tags`, `privilege_log`, `motion_refine`, `eval_answer` |
+| standard | `CLAUDE_MODEL` (`claude-sonnet-5-5`) | medium | adaptive | `chat`, `chat_defender`, `bar_explain`, `queue_job`, `discovery_intake`, `speaker_tags`, `privilege_log`, `motion_refine`, `eval_answer`, step 3 batch-only: `source_check`, `source_propose`, `translate_keys` |
 | deep | `claude-opus-5-5` | high | adaptive | `research`, `research_rag`, `motion_generate`, `motion_generate_appeal`, `motion_review`, `discovery_analysis`, `expungement_petition`, `contract_generate`, `contract_review`, `contract_redline`, `contract_negotiation` |
 
 * Settings per class: `AI_MODEL_<C>`, `AI_EFFORT_<C>`, `AI_THINKING_<C>`, `AI_THINKING_HEADROOM_<C>`
@@ -60,8 +71,11 @@ included — `run_eval.js --model` overrides the model on purpose, for compariso
   lowest setting `between_tools`, effort ≤ high, no other field); Haiku 5.5 accepts `disabled`
   at effort ≤ high; Haiku 4.5 / Sonnet 4.5 get no effort field.
 * Opus 5.5 and Sonnet 5.5 reject forced tool use and prefill, so structured output never uses
-  `tool_choice`. **No call site uses tools today**, so there are no tool definitions to cache or to
-  mark `strict`; when a later step adds tools they go in the cached prefix with `strict: true`.
+  `tool_choice`. Since step 3 the only tool is the **web fetch server tool** (source re-checks,
+  batch only); it goes first in the prefix (tools → system → messages). Server tools take no
+  `strict` (that is for custom tools' input schemas). The final answer is still structured
+  (`output_config.format` applies to Claude's direct output after the tool results — read with
+  `finalText()`, the text blocks after the last tool block).
 
 ## 2. Structured outputs
 
@@ -298,13 +312,185 @@ foreign | blocks) returns citation-bearing responses in the documented shapes, J
 real answer leaves legal sentences uncited (withheld rate), cache reads with search results in the
 history, and the 400 for citations + `output_config.format`.
 
+## 9. Source re-checks (step 3, November 2 2026)
+
+Every sourced legal row the app shows or withholds is re-checked against its official page on a
+schedule, with Claude and the **web fetch tool**, on official domains only. A row never changes by
+itself: the only automatic effect is a newer "checked on" date, and only when the check is verified.
+
+**What is checked** (`services/sourceChecks/registry.js` — where each URL and date lives):
+
+| Dataset | Rows | Source URL / "checked on" | Shown when |
+|---|---|---|---|
+| expungement (rules_data.js) | 306 | `source_url` / generated 2026-10-25 | `citationOf()` passes (295) |
+| juvenile (rules_data.js) | 51 | `source_url` / 2026-10-25 | verified + citation + URL |
+| recording (recordingLaws_data.js) | 51 | `source_url` / 2026-10-25 | verified + URL |
+| court_rules (data/court_rules.js) | 4 | `url` / `checked` | always |
+| transit (data/transit_agencies.js) | 10 | `source_url` / `checked` | always |
+| guide (data/guideCorpus.js ← constants/guideSources.ts) | 18 with a URL | `url` / `checked` | always |
+| tn_report (bondDesk/tnReport.js) | 1 | `sources[1]` (tn.gov page) / `checked_on` | always |
+| rights_card (rc_1–rc_3) | 3 | none recorded (constitutional source named) / April 2026 | always |
+| deadlines (routes/docket.js RULE_SETS) | 31 | none recorded / none | always (open item L7) |
+| bail_schedules, dui_laws, drug_penalties, statute_of_limitations, victim_compensation, specialty_courts | DB | `source_url` / `last_reviewed_at` (migration 46 adds it to the last two) | `isVerifiedRow()` |
+| rights_cards (state sections) | DB | `source_url` / `content_verified_at` | a source URL |
+
+Each row has a mode (`checkMode`): **recheck** (shown, source on an official domain — 161 rows in
+code today), **propose** (withheld — e.g. the Tennessee bail rows), **not_official** (shown, but the
+source is commercial / secondary: Justia, CCRC, RCFP … — 265 rows in code) and **no_url**. Rows in
+the last three modes get a *proposal* request when their jurisdiction has official domains
+configured (`PROPOSAL_SOURCES`: federal and Tennessee today); the rest are counted as "need a
+person" on the admin screen and never fetched.
+
+**The allow-list** (`ai/sourceDomains.js`, the one config file): `.gov` hosts; `state.<xx>.us`
+hosts; an explicit list of official bodies on other domains (Kansas Revisor, Maine Legislature,
+Oklahoma State Courts Network, Pennsylvania General Assembly, Allegheny and Knox County
+governments, and six public transit authorities — for the transit rows only); and a never-list that
+wins over everything (Justia, FindLaw, Lexis, Westlaw, Casetext, CourtListener, Cornell LII, Nolo,
+FastDemocracy, LegiScan, Squarespace / Wix / WordPress / Blogspot hosts, NCSL, CCRC, RCFP, archive.org…).
+ASCII only (punycode refused — the docs warn about homographs), no credentials in URLs. The web
+fetch docs forbid wildcards in `allowed_domains` (`*.gov` is a 400), so each request lists the exact
+official host of the row's source (`fetchDomainFor`: the host without `www.`, which also covers its
+subdomains), or for a proposal the jurisdiction's official domains. A test builds every request
+from every row and checks each domain against the allow-list.
+
+**Request** (task `source_check` / `source_propose`, standard class = Sonnet 5.5, structured output
+`source_check` / `source_proposal`, cached 1-hour system prompt): the user turn holds the dataset,
+row label, the source URL (web fetch only opens URLs that appeared in the user turn or an earlier
+fetch result) and the stored text. Tool: `web_fetch_20250910`, `max_uses` 2 (proposals 4),
+`max_content_tokens` 20,000, **no tool citations** (citations + `output_config.format` is a 400;
+the quote check below uses the fetched text itself). Claude answers `{ verdict: still_matches |
+changed | page_gone | cant_tell, quote, what_changed, fetched_url }` — "decide only from the fetched
+page, never from your own knowledge", the quote word for word.
+
+**What a verdict may do** (`decideRecheck`, pure, unit-tested):
+
+| Result | Effect |
+|---|---|
+| `still_matches` + a quote of ≥ 5 words / 25 characters found (whitespace, quote marks, dashes normalised) in the text of a page fetched from the row's own official host | **automatic**: `checked_on` = today (`legal_source_checks`, `checked_how = auto_quote`); DB rows: `last_reviewed_at` (or `content_verified_at`) = now. Text, source and verifier untouched. |
+| `still_matches` but the quote is not on the page, or the page is a PDF (we cannot read PDF text locally), or the source page was not fetched | review queue (`quote_not_on_page` / `pdf_not_verifiable` / `source_page_not_fetched`) |
+| `changed`, `page_gone`, `cant_tell` | review queue with the model's quote and "what changed" |
+| a fetched page on any non-allowed host (even if the API returned one) | ignored; never counts as the source |
+| refusal, invalid JSON, errored request | nothing changes; recorded (`last_outcome = failed`); the row is due again next run |
+| proposal: `found` + a URL on the allowed domains that was actually fetched + the quote on that page (or a PDF) | review queue as "proposed source" — **never published without a person** |
+| proposal not found / URL not allowed / not fetched / quote not on the page | nothing queued (`no_source_found`) |
+
+**Admin review queue** (Admin → Source checks; `GET/POST /api/admin/source-checks/*`, admin role,
+every decision in `audit_log` — `resource_type 'legal_source'`): each item shows the row, the stored
+text, the verdict, the quote (found on the page or not), what changed and links to the stored /
+checked / proposed page. **Approve** — a re-check: the row as stored is confirmed, dated today; a
+proposal: DB rows get the official `source_url` and `verified_by "Source-checked <date> — source
+approved by an admin …"` (so a withheld row is shown from now on — a human approved it); code rows
+record the approved source (shown by the rights card, deadline calculator, record clearing and
+recording law where they have a source link). **Edit** — DB rows: the table's text columns only (and
+optionally a new official source), dated today; code rows: a correction for a developer, and the
+row is withheld until the code is changed (`GET …/withheld` lists them; restore afterwards).
+**Withhold** — the row stops being shown everywhere (legaldata, record clearing, recording law,
+court rules, transit, the guide's source link, AI citations) until restored.
+
+**The overlay** (`ai/sourceOverlay.js`): rows in code cannot be edited at run time, so the app reads
+`legal_source_checks` through a synchronous in-memory overlay (loaded at start-up, every 5 minutes
+and after each change): `checkedOn()` (never moves a date back), `isWithheld()`, `approvedSource()`.
+The app's bundled guide sources merge `GET /api/legal-sources/status` (public, cached 5 min).
+
+**Schedule and caps:** job `source-check`, Sundays 04:40 (`REFRESH_TZ`), idempotent per ISO week,
+one run at a time (`run_in_progress` otherwise); admin "Run a check now" (`POST …/run`, idempotent per
+previous run). At most `SOURCE_CHECK_MAX_ROWS` (100) rows per run, never-attempted first, then the
+oldest attempt, then the stalest verified date; rows attempted in the last `SOURCE_CHECK_SKIP_DAYS`
+(30) days and rows with a pending review are skipped. One run = one batch (§10). Both jobs are in
+`jobHealth` (`source-check` weekly, `ai-batches` every 10 minutes). `contentRefresh.js` (daily, no AI)
+reports how many shown rows were not verified in 180 days; it no longer stamps crisis resources as
+verified when none is stale (that "verified" date was never a check).
+
+**Cost** (Sonnet 5.5 at the batch price, $1 / $5 per MTok): a re-check ≈ 1k system (cached after the
+first) + 2–25k fetched page tokens + ~300 output ≈ **$0.003–0.03 per row**; worst case per row (2
+pages × 20k tokens + max_tokens) ≈ $0.057, so a 100-row run is capped at ≈ $5.7 (and by
+`AI_BATCH_MAX_USD`, default $10, and what is left of the daily budget). Web fetch adds no charge.
+
+## 10. Message Batches (step 3)
+
+`services/aiBatch.js` — the gateway's batch layer; requests are built by the gateway
+(`buildRequest({ batch: true })`: never streams, never sends `fallbacks` — the batch docs reject
+both; server-side fallback is therefore off for batch tasks and a refusal is recorded instead).
+
+* **Create** (`createBatch`): custom_id `^[a-zA-Z0-9_-]{1,64}$`, unique per batch; idempotent by
+  `idempotency_key` (the same work returns the same batch — e.g. weekly per ISO week, eval per minute
+  + filters, a retry per parent batch); worst case (every input token uncached + tool pages +
+  `max_tokens`, at 50 %) over `AI_BATCH_MAX_USD` (10) or over what is left of today's budget → refused
+  before sending (`ai_too_large`). Items are stored first (`ai_batch_items.params` — only non-personal
+  content is batched), then one `POST /v1/messages/batches` (one retry of a 429 / 5xx; a network
+  failure after sending is marked `create_unconfirmed`, never silently re-sent).
+* **Poll** (job `ai-batches`, every 10 minutes; Admin → Batch tools → "Check batches now"): retrieve;
+  when `ended`, one instance claims the batch (`ended → processing`, stale claims retried after 30
+  minutes), reads `results_url` (only on the API host — the key is sent with it; else the documented
+  `/results` path), and maps each JSONL line to its item **by custom_id** (results come in any order;
+  unknown ids and duplicate lines are ignored; an item without a line is `missing_result`).
+* **Results**: `succeeded` → priced at the batch rate (`pricing.costUsd(…, { batch: true })`, 50 % of
+  every category, cache reads / writes included), metered in `ai_usage_log` (`route batch:<kind>`,
+  `batch_id`), structured output validated against the exact schema sent (an invalid answer is
+  `invalid`, never used); refusals follow the refusal billing rule; `errored` (nested
+  `error.error.type`), `canceled`, `expired` are not billed.
+* **Retries**: transient errors (`overloaded_error`, `api_error`, `rate_limit_error`, `timeout_error`),
+  `pause_turn` (a server-tool loop that paused) and `expired` requests are sent again in ONE new batch
+  (same custom_id, `attempt + 1`, `parent_id`), up to `AI_BATCH_MAX_ATTEMPTS` (3); others (e.g.
+  `invalid_request_error`) are final. Processing a batch twice changes nothing.
+* **Handlers** (by kind, after the retries are sent): `source_check` (§9), `eval_answer` → starts the
+  grading batch, `eval_grade` → stores the scores, `translate_keys` → the review file.
+
+**Uses:**
+
+| Use | Trigger | Stored |
+|---|---|---|
+| Source re-check (§9) | weekly job; admin "Run a check now" | `legal_source_checks`, `legal_source_reviews`, batch output (counts) |
+| Evaluation (data/eval/questions.json) | Admin → Batch tools → "Run the evaluation (10 questions)" (`POST /api/admin/ai-batches/eval { state?, category?, limit? }`); `node src/scripts/run_eval.js --batch`, `grade_eval.js --run … --batch` | answers in `ai_batch_items`, scores + per-question / per-state / per-dimension means and cost in the first batch's `output.eval` (`GET /api/admin/ai-batches/:id/eval`); the scripts also write `responses.json` / `grades.json` |
+| Content staleness | `contentRefresh.js` flags (no AI); the checking is the source re-check batch, stalest first | as §9 |
+| "Translate new keys" | Admin → Batch tools → "Draft translations for new text" (`POST /api/admin/ai-batches/translate`) | review file in the batch output (`GET /api/admin/ai-batches/:id/translation-draft`) |
+
+**Translate new keys.** Finds keys present in English but missing (or empty) in any of the seven
+other languages — app (`frontend/src/i18n/<lang>.json`) and server (`backend/src/i18n/messages/<lang>.js`)
+— one request per catalog × language × 60 keys, the translator brief as the cached system prompt,
+structured output `{ translations: [{ key, text }] }` (task `translate_keys`, standard class). Every
+draft is checked with the parity tests' rules (`checkDraft`: same `{placeholders}` / `{{x}}` / `%s` /
+`${…}` and emoji, not empty, not identical to English, not much shorter, STOP kept in text-message
+keys, only keys that were asked); failures are listed with the reason, never in the draft. **Nothing
+is applied.** A developer downloads the review file, has it reviewed (a native-speaker legal
+translator before launch — docs/TRANSLATIONS.md), then:
+
+```
+node backend/scripts/apply-translation-drafts.mjs translation-draft-<id>.json          # dry run: re-check + list
+node backend/scripts/apply-translation-drafts.mjs translation-draft-<id>.json --write  # write the catalogs
+cd frontend && npx jest --config jest.frontend.config.js src/__tests__/i18nParity.test.js
+cd backend && NODE_OPTIONS=--experimental-vm-modules npx jest src/__tests__/i18n_server_content.test.js
+```
+The script re-checks every draft against the current catalogs, skips keys translated meanwhile,
+rewrites the app JSON in English key order and inserts server lines after the nearest preceding key
+(comments kept). A server deployed without the app's files drafts the server catalog only.
+
+**Tests** (step 3): `ai_source_checks.test.js` (18: allow-list incl. every registry request, mock web
+fetch shapes and 400s, verdict and proposal rules incl. a page from a non-allowed host, overlay,
+batch params / result reading / JSONL / pricing, translation checks), `integration/ai_source_checks.int.test.js`
+(7, real Postgres: batch lifecycle with partial errors / retry / idempotency / metering / caps, a
+source-check run end to end, the non-allowed-host case, admin queue auth + audit + approve / edit /
+withhold / restore, eval through batches, translation drafts), frontend `render/sourceChecks.test.tsx`
+(5). The mock (`scripts/anthropic-mock-lib.mjs`) speaks the batch endpoints (results reversed on
+purpose), per-request errors (`batchErrors`), web fetch results / errors / PDFs and `rogueFetch`.
+
+**Live-key checks** (docs/LIVE_TEST.md section N): the real batch object / results shapes and the
+errored-line nesting; a web fetch inside a batch with `output_config.format` (does the final text
+block hold the JSON? does a pre-tool text block appear?); `allowed_domains` with a bare host
+accepted and a fetch outside it refused (`url_not_allowed`); `max_content_tokens` honoured; HTML
+pages arrive as `source.type: "text"` (the quote check depends on it); the batch price in the
+console matches `ai_usage_log`; `pause_turn` frequency.
+
 ## Settings
 
 All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDARD|DEEP`,
 `AI_EFFORT_*`, `AI_THINKING_*`, `AI_THINKING_HEADROOM_*`, `AI_FALLBACK`, `AI_FALLBACK_MODEL`,
 `AI_CACHE`, `AI_CHAT_CACHE_TTL`, `AI_COUNT_TOKENS_THRESHOLD`, `AI_MAX_INPUT_TOKENS`,
 `AI_MAX_REQUEST_USD`, `AI_TRACE_PROPAGATION`, `AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`,
-`AI_ALERT_REFUSAL_PCT`, `RAG_MIN_SIMILARITY` (step 2) (plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
+`AI_ALERT_REFUSAL_PCT`, `RAG_MIN_SIMILARITY` (step 2), `AI_BATCHES`, `AI_BATCH_MAX_USD`,
+`AI_BATCH_MAX_ATTEMPTS`, `SOURCE_CHECK_ENABLED`, `SOURCE_CHECK_MAX_ROWS`, `SOURCE_CHECK_SKIP_DAYS`,
+`SOURCE_CHECK_MAX_FETCHES`, `SOURCE_CHECK_PROPOSAL_FETCHES`, `SOURCE_CHECK_MAX_CONTENT_TOKENS` (step 3)
+(plus the existing `CLAUDE_MODEL`, `AI_DAILY_BUDGET_USD`,
 `AI_BUDGET_ALERT_PCT`, `AI_PRICE_*`).
 
 ## Tests
@@ -321,7 +507,7 @@ All in DEPLOY_ENV_SETUP.md and both `.env.example` files: `AI_MODEL_QUICK|STANDA
   prefill on Opus 5.5 / Sonnet 5.5, `fallbacks` without the beta header or on Haiku 5.5,
   unsupported schema keywords, more than 4 breakpoints or a 1h breakpoint after a 5m one.
 
-## Needs a live-key check (docs/LIVE_TEST.md sections L and M)
+## Needs a live-key check (docs/LIVE_TEST.md sections L, M and N)
 
 Nothing here was verified against the real API: the mock follows the docs. To check with a key:
 structured outputs on each model, cache write then read on the second chat question (1h TTL in

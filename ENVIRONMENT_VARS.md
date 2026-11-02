@@ -29,6 +29,11 @@ The AI gateway (November 2026, migration 44, docs/AI_PLATFORM.md) adds per-class
 hourly AI alert (`AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`, `AI_ALERT_REFUSAL_PCT`). Every one has a working default;
 see DEPLOY_ENV_SETUP.md. Verified citations (step 2, migration 45, docs/AI_PLATFORM.md §8) add only
 `RAG_MIN_SIMILARITY` (default 0.35: research-library passages below it are not sent to the AI).
+Source re-checks and batches (step 3, migration 46, docs/AI_PLATFORM.md §9–§10) add `AI_BATCHES` (on), `AI_BATCH_MAX_USD`
+(10 — per-batch worst-case cap), `AI_BATCH_MAX_ATTEMPTS` (3), `SOURCE_CHECK_ENABLED` (on — the Sunday run),
+`SOURCE_CHECK_MAX_ROWS` (100 per run), `SOURCE_CHECK_SKIP_DAYS` (30), `SOURCE_CHECK_MAX_FETCHES` (2),
+`SOURCE_CHECK_PROPOSAL_FETCHES` (4) and `SOURCE_CHECK_MAX_CONTENT_TOKENS` (20,000). All have working defaults and do
+nothing without `ANTHROPIC_API_KEY`. The official-domain allow-list is code, not env: `backend/src/ai/sourceDomains.js`.
 
 ## Settings that wait for counsel (⚖)
 

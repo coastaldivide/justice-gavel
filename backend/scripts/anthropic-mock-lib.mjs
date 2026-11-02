@@ -30,6 +30,24 @@
  *     without the beta header or on Haiku 5.5, unsupported schema keywords, > 4 cache breakpoints,
  *     a 1h breakpoint after a 5m one.
  *
+ *   - web fetch tool (agents-and-tools/tool-use/web-fetch-tool + server-tools "Domain filtering",
+ *     read 2026-11-02): a `web_fetch_*` tool makes the answer [text, server_tool_use, web_fetch_tool_result…,
+ *     final text]; URLs come from the user turns (or earlier fetched pages — url_not_in_prior_context
+ *     otherwise), allowed_domains / blocked_domains match the domain and its subdomains (never a path),
+ *     errors are web_fetch_tool_result_error { error_code } (url_not_allowed, url_not_accessible,
+ *     max_uses_exceeded …), usage.server_tool_use.web_fetch_requests counts the fetches; 400 for a
+ *     wildcard / scheme in a domain, allowed + blocked together, an unknown tool version.
+ *     state.pages { url: text | { pdf: true } | null (gone) }, state.fetchUrls (URLs to fetch, in order),
+ *     state.rogueFetch (a URL returned as fetched whatever the rules — to prove the app's own check);
+ *   - Message Batches (build-with-claude/batch-processing): createBatchStore() — POST /v1/messages/batches,
+ *     GET …/{id}, GET …/{id}/results (.jsonl, NOT in request order), POST …/{id}/cancel; custom_id
+ *     ^[a-zA-Z0-9_-]{1,64}$ unique per batch (400); params checked like /v1/messages, plus `stream` and
+ *     `fallbacks` rejected — per request, as an errored result (invalid_request_error); results
+ *     succeeded { message } | errored { error: { type: 'error', error: { type, message }, request_id } }
+ *     | canceled | expired. state.batchPolls (retrieves that still say in_progress), state.batchErrors
+ *     { custom_id: { type, times } } (errored the first `times` attempts; type 'expired' → expired),
+ *     state.batchJson { custom_id: json } (the structured answer for that request).
+ *
  * Modes (state.mode): ok | slow | long | 429 | 500 | 529 | 401 | drop | error_event | hang |
  *   refusal (declines; served by the fallback model when the request has `fallbacks`) |
  *   refusal_mid (streams some text, then declines — or hands off to the fallback model) |
@@ -122,6 +140,97 @@ function searchResultProblem(body) {
   return null;
 }
 
+export const WEB_FETCH_VERSIONS = ['web_fetch_20250910', 'web_fetch_20260209', 'web_fetch_20260309', 'web_fetch_20260318'];
+const webFetchToolOf = (body) => (body.tools || []).find((t) => /^web_fetch_/.test(String(t?.type || '')));
+function toolProblem(body) {
+  for (const t of body.tools || []) {
+    if (!/^web_fetch_/.test(String(t?.type || ''))) continue;
+    if (!WEB_FETCH_VERSIONS.includes(t.type)) return `tools: unknown tool type ${t.type}`;
+    if (t.name !== 'web_fetch') return 'tools: web fetch tool name must be "web_fetch"';
+    if (t.allowed_domains && t.blocked_domains) return 'tools: allowed_domains and blocked_domains cannot be used together';
+    for (const d of [...(t.allowed_domains || []), ...(t.blocked_domains || [])]) {
+      const dom = String(d).split('/')[0];
+      if (/:\/\//.test(String(d))) return `tools: domain "${d}" must not include a scheme`;
+      if (dom.includes('*')) return `tools: wildcards are not allowed in the domain ("${d}")`;
+      if (!/^[a-z0-9.-]+$/i.test(dom) || !dom.includes('.')) return `tools: invalid domain "${d}"`;
+    }
+    if ('max_uses' in t && !(Number.isInteger(t.max_uses) && t.max_uses > 0)) return 'tools: max_uses must be a positive integer';
+    if ('max_content_tokens' in t && !(Number.isInteger(t.max_content_tokens) && t.max_content_tokens > 0)) return 'tools: max_content_tokens must be a positive integer';
+    if ('use_cache' in t && t.type < 'web_fetch_20260309') return 'tools: use_cache requires web_fetch_20260309 or later';
+  }
+  return null;
+}
+
+const URL_RE = /https?:\/\/[^\s)>"'\]]+/g;
+const hostOfUrl = (u) => { try { return new URL(u).hostname.toLowerCase(); } catch { return null; } };
+const domainMatch = (host, d) => { const x = String(d).toLowerCase().split('/')[0]; return host === x || host.endsWith(`.${x}`); };
+/** The page text the mock serves for a URL (state.pages), null = gone, { pdf: true } = a PDF. */
+function pageFor(url, state) {
+  const pages = state.pages || {};
+  if (Object.prototype.hasOwnProperty.call(pages, url)) return pages[url];
+  return `Official page at ${url}. This page states the rule exactly as the office published it today. Contact the office for help.`;
+}
+/**
+ * Run the web fetch tool for a request: → { blocks, pages: [{ url, text, pdf }], fetches, extraTokens }
+ * (blocks = server_tool_use + web_fetch_tool_result pairs, in order).
+ */
+export function runWebFetch(body, state = {}) {
+  const tool = webFetchToolOf(body);
+  if (!tool) return null;
+  const userText = (body.messages || []).filter((m) => m.role === 'user').map((m) => contentText(m.content)).join('\n');
+  const prior = new Set(userText.match(URL_RE) || []);
+  const wanted = Array.isArray(state.fetchUrls) && state.fetchUrls.length ? state.fetchUrls : [...prior].slice(0, 1);
+  const blocks = []; const pages = []; let n = 0; let extra = 0;
+  const maxUses = Number.isInteger(tool.max_uses) ? tool.max_uses : Infinity;
+  for (const url of wanted) {
+    const id = `srvtoolu_mock_${++seq}`;
+    blocks.push({ type: 'server_tool_use', id, name: 'web_fetch', input: { url } });
+    n += 1;
+    const err = (code) => blocks.push({ type: 'web_fetch_tool_result', tool_use_id: id, content: { type: 'web_fetch_tool_result_error', error_code: code } });
+    if (n > maxUses) { err('max_uses_exceeded'); continue; }
+    if (String(url).length > 250) { err('url_too_long'); continue; }
+    const host = hostOfUrl(url);
+    if (!host) { err('invalid_tool_input'); continue; }
+    if (!prior.has(url)) { err('url_not_in_prior_context'); continue; }
+    if (tool.allowed_domains && !tool.allowed_domains.some((d) => domainMatch(host, d))) { err('url_not_allowed'); continue; }
+    if (tool.blocked_domains && tool.blocked_domains.some((d) => domainMatch(host, d))) { err('url_not_allowed'); continue; }
+    const page = pageFor(url, state);
+    if (page === null || page === undefined) { err('url_not_accessible'); continue; }
+    const pdf = typeof page === 'object' && page.pdf;
+    const text = pdf ? null : String(page);
+    const source = pdf ? { type: 'base64', media_type: 'application/pdf', data: Buffer.from('%PDF-1.4 mock').toString('base64') }
+      : { type: 'text', media_type: 'text/plain', data: text };
+    blocks.push({ type: 'web_fetch_tool_result', tool_use_id: id, content: { type: 'web_fetch_result', url,
+      content: { type: 'document', source, title: `Page ${url}` }, retrieved_at: new Date().toISOString() } });
+    pages.push({ url, text, pdf: !!pdf });
+    for (const u of (text || '').match(URL_RE) || []) prior.add(u);     // links on a fetched page may be fetched next
+    extra += pdf ? 3000 : est(text);
+  }
+  if (state.rogueFetch) {
+    const id = `srvtoolu_mock_${++seq}`;
+    const text = `Commercial copy of the rule at ${state.rogueFetch}. This page states the rule exactly as the office published it today.`;
+    blocks.push({ type: 'server_tool_use', id, name: 'web_fetch', input: { url: state.rogueFetch } });
+    blocks.push({ type: 'web_fetch_tool_result', tool_use_id: id, content: { type: 'web_fetch_result', url: state.rogueFetch,
+      content: { type: 'document', source: { type: 'text', media_type: 'text/plain', data: text }, title: 'Copy' }, retrieved_at: new Date().toISOString() } });
+    pages.push({ url: state.rogueFetch, text, pdf: false });
+    n += 1;
+  }
+  return { blocks, pages, fetches: n, extraTokens: extra };
+}
+
+/** The default structured answer to a web-fetch request (source_check / source_proposal shapes). */
+function webFetchAnswer(schema, wf) {
+  const props = schema?.properties || {};
+  const page = wf.pages.find((p) => p.text) || wf.pages[0] || null;
+  const firstSentence = page?.text ? page.text.split(/(?<=\.)\s+/).find((x) => x.split(' ').length >= 5) || page.text : null;
+  if ('verdict' in props) {
+    return page ? { verdict: 'still_matches', quote: firstSentence, what_changed: null, fetched_url: page.url }
+      : { verdict: 'page_gone', quote: null, what_changed: null, fetched_url: null };
+  }
+  if ('found' in props) return page ? { found: true, url: page.url, quote: firstSentence, explanation: 'The page states the rule.' } : { found: false, url: null, quote: null, explanation: null };
+  return null;
+}
+
 const fam = (m) => (/^claude-opus-5-5/.test(m) ? 'opus55' : /^claude-sonnet-5-5/.test(m) ? 'sonnet55' : /^claude-haiku-5-5/.test(m) ? 'haiku55' : 'other');
 
 /** null, or the message of the 400 the real API would return. */
@@ -160,6 +269,8 @@ export function requestProblem(body, headers = {}) {
     if (f === 'haiku55' && Array.isArray(body.fallbacks)) return 'fallbacks is not supported on claude-haiku-5-5';
     if (body.fallbacks !== 'default' && !Array.isArray(body.fallbacks)) return 'fallbacks must be "default" or a list';
   }
+  const tp = toolProblem(body);
+  if (tp) return tp;
   // cache breakpoints
   let bps = body.cache_control ? 1 : 0;
   let seen5m = false;
@@ -297,6 +408,18 @@ export function messageResponse(body, state, headers = {}) {
       ] } } };
   }
   const maxed = state.mode === 'max_tokens';
+  const wf = runWebFetch(body, state);
+  if (wf) {
+    const schema = body.output_config?.format?.schema;
+    const ans = schema ? JSON.stringify(state.json ?? webFetchAnswer(schema, wf) ?? sampleFor(schema)) : text;
+    content.push({ type: 'text', text: 'I will open the page first.' }, ...wf.blocks, { type: 'text', text: maxed ? ans.slice(0, Math.floor(ans.length / 2)) : ans });
+    const u = usageFor(body, ans.split(/(?<=\s)/).length + 20);
+    if (state.mode === 'pause_turn') content.splice(content.length - 1, 1);
+    return { status: 200, headers: { 'request-id': reqId }, body: {
+      id: `msg_mock_${seq}`, type: 'message', role: 'assistant', model, content,
+      stop_reason: state.mode === 'pause_turn' ? 'pause_turn' : maxed ? 'max_tokens' : 'end_turn', stop_sequence: null, stop_details: null,
+      usage: { ...u, input_tokens: u.input_tokens + wf.extraTokens, server_tool_use: { web_fetch_requests: wf.fetches } } } };
+  }
   const cited = citedBlocks(body, state);
   if (cited) content.push(...cited);
   else content.push({ type: 'text', text: maxed ? text.slice(0, Math.max(1, Math.floor(text.length / 2))) : text });
@@ -396,4 +519,106 @@ export function countTokensResponse(body) {
   const b = body || {};
   if (!b.model || !Array.isArray(b.messages)) return { status: 400, body: { type: 'error', error: { type: 'invalid_request_error', message: 'model and messages are required' } } };
   return { status: 200, body: { input_tokens: countInputTokens(b) } };
+}
+
+// ── Message Batches ───────────────────────────────────────────────────────────
+const CUSTOM_ID = /^[a-zA-Z0-9_-]{1,64}$/;
+const errorBodyOf = (message) => ({ type: 'error', error: { type: 'invalid_request_error', message } });
+
+/** A small in-memory Message Batches service. `base` = the mock's own URL (for results_url). */
+export function createBatchStore() {
+  const batches = new Map();
+  let n = 0;
+  const view = (b) => ({
+    id: b.id, type: 'message_batch', processing_status: b.status, request_counts: b.counts,
+    ended_at: b.endedAt, created_at: b.createdAt, expires_at: b.expiresAt, cancel_initiated_at: b.cancelAt, archived_at: null,
+    results_url: b.status === 'ended' ? `${b.base}/v1/messages/batches/${b.id}/results` : null,
+  });
+  const finish = (b, state) => {
+    if (b.lines) return;
+    const lines = [];
+    for (const r of b.requests) {
+      const errs = state.batchErrors || {};
+      const e = errs[r.custom_id];
+      if (b.canceled) { lines.push({ custom_id: r.custom_id, result: { type: 'canceled' } }); continue; }
+      if (e && (e.times ?? 1) > 0) {
+        e.times = (e.times ?? 1) - 1;
+        if (e.type === 'expired') { lines.push({ custom_id: r.custom_id, result: { type: 'expired' } }); continue; }
+        lines.push({ custom_id: r.custom_id, result: { type: 'errored', error: { type: 'error', error: { type: e.type || 'api_error', message: 'mock batch error' }, request_id: `req_mock_b${++seq}` } } });
+        continue;
+      }
+      const p = r.params || {};
+      if (p.stream) { lines.push({ custom_id: r.custom_id, result: { type: 'errored', error: { type: 'error', error: { type: 'invalid_request_error', message: 'stream is not supported in batches' }, request_id: `req_mock_b${++seq}` } } }); continue; }
+      if ('fallbacks' in p) { lines.push({ custom_id: r.custom_id, result: { type: 'errored', error: { type: 'error', error: { type: 'invalid_request_error', message: 'fallbacks is not supported in batches' }, request_id: `req_mock_b${++seq}` } } }); continue; }
+      const json = state.batchJson && Object.prototype.hasOwnProperty.call(state.batchJson, r.custom_id) ? state.batchJson[r.custom_id] : state.json;
+      const res = messageResponse(p, { ...state, json, mode: ['refusal', 'refusal_hard', 'invalid_json', 'max_tokens', 'pause_turn'].includes(state.mode) ? state.mode : 'ok' }, b.headers);
+      if (res.status !== 200) lines.push({ custom_id: r.custom_id, result: { type: 'errored', error: { type: 'error', error: res.body.error, request_id: res.headers['request-id'] } } });
+      else lines.push({ custom_id: r.custom_id, result: { type: 'succeeded', message: res.body } });
+    }
+    lines.reverse();   // the API returns results in any order — never rely on request order
+    b.lines = lines;
+    const c = { processing: 0, succeeded: 0, errored: 0, canceled: 0, expired: 0 };
+    for (const l of lines) c[l.result.type] += 1;
+    b.counts = c; b.status = 'ended'; b.endedAt = new Date().toISOString();
+  };
+  return {
+    batches,
+    /** POST /v1/messages/batches */
+    create(body, headers = {}, state = {}, base = '') {
+      const reqs = body?.requests;
+      if (!Array.isArray(reqs) || !reqs.length) return { status: 400, body: errorBodyOf('requests: at least one request is required') };
+      if (reqs.length > 100000) return { status: 400, body: errorBodyOf('requests: at most 100,000 requests') };
+      const ids = new Set();
+      for (const r of reqs) {
+        if (!CUSTOM_ID.test(String(r?.custom_id || ''))) return { status: 400, body: errorBodyOf(`custom_id must match ^[a-zA-Z0-9_-]{1,64}$ (got ${String(r?.custom_id).slice(0, 80)})`) };
+        if (ids.has(r.custom_id)) return { status: 400, body: errorBodyOf(`custom_id ${r.custom_id} is not unique in this batch`) };
+        ids.add(r.custom_id);
+        if (!r.params || typeof r.params !== 'object') return { status: 400, body: errorBodyOf('params: field required') };
+      }
+      const id = `msgbatch_mock_${++n}`;
+      const now = new Date();
+      const b = { id, base, headers, requests: reqs, status: 'in_progress', polls: Number(state.batchPolls) || 0, lines: null,
+        counts: { processing: reqs.length, succeeded: 0, errored: 0, canceled: 0, expired: 0 },
+        createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + 86_400_000).toISOString(), endedAt: null, cancelAt: null };
+      batches.set(id, b);
+      return { status: 200, body: view(b) };
+    },
+    /** GET /v1/messages/batches/{id} */
+    retrieve(id, state = {}) {
+      const b = batches.get(id);
+      if (!b) return { status: 404, body: { type: 'error', error: { type: 'not_found_error', message: 'batch not found' } } };
+      if (b.status !== 'ended') { if (b.polls > 0) b.polls -= 1; else finish(b, state); }
+      return { status: 200, body: view(b) };
+    },
+    /** GET /v1/messages/batches/{id}/results → .jsonl text */
+    results(id) {
+      const b = batches.get(id);
+      if (!b) return { status: 404, text: JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: 'batch not found' } }) };
+      if (b.status !== 'ended') return { status: 409, text: JSON.stringify(errorBodyOf('results are not available until the batch has ended')) };
+      return { status: 200, text: `${b.lines.map((l) => JSON.stringify(l)).join('\n')}\n` };
+    },
+    /** POST /v1/messages/batches/{id}/cancel */
+    cancel(id, state = {}) {
+      const b = batches.get(id);
+      if (!b) return { status: 404, body: { type: 'error', error: { type: 'not_found_error', message: 'batch not found' } } };
+      if (b.status === 'in_progress') { b.canceled = true; b.cancelAt = new Date().toISOString(); b.status = 'canceling'; b.polls = 0; finish(b, state); }
+      return { status: 200, body: view(b) };
+    },
+  };
+}
+
+/**
+ * Route a batch request to the store: → null (not a batch path) or { status, json?, text? }.
+ */
+export function batchRoute(store, method, url, body, headers, state, base) {
+  const path = String(url || '').split('?')[0];
+  if (!path.startsWith('/v1/messages/batches')) return null;
+  const m = /^\/v1\/messages\/batches(?:\/([^/]+))?(?:\/(results|cancel))?$/.exec(path);
+  if (!m) return { status: 404, json: { type: 'error', error: { type: 'not_found_error', message: 'unknown path' } } };
+  const [, id, sub] = m;
+  if (!id && method === 'POST') { const r = store.create(body, headers, state, base); return { status: r.status, json: r.body }; }
+  if (id && !sub && method === 'GET') { const r = store.retrieve(id, state); return { status: r.status, json: r.body }; }
+  if (id && sub === 'results' && method === 'GET') { const r = store.results(id); return { status: r.status, text: r.text }; }
+  if (id && sub === 'cancel' && method === 'POST') { const r = store.cancel(id, state); return { status: r.status, json: r.body }; }
+  return { status: 405, json: { type: 'error', error: { type: 'invalid_request_error', message: 'method not allowed' } } };
 }

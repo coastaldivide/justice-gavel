@@ -32,6 +32,7 @@
  *     - Habeas corpus (AEDPA): 365 days from final conviction
  */
 
+import { approvedSource } from '../ai/sourceOverlay.js';
 import { msg, resolveLang } from '../i18n/index.js';
 import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
@@ -99,7 +100,7 @@ function isPast(dateStr) {
 
 // ── Deadline Rule Sets ────────────────────────────────────────────────────────
 
-const RULE_SETS = {
+export const RULE_SETS = {
   frcp_complaint_served: {
     label: 'Federal — Complaint Served on Defendant',
     description: 'FRCP deadlines triggered when a defendant is served with a complaint.',
@@ -220,6 +221,8 @@ router.post('/calculate', authRequired, docketLimiter, async (req, res) => {
         due_date:       due,
         days_from_event: rule.days,
         rule_citation:  rule.rule,
+        // an official page an admin approved for this rule after a source check (AI step 3), else null
+        source_url:     approvedSource('deadlines', `${rule_set}.${rule.id}`),
         entry_type:     rule.type,
         priority:       rule.priority,
         is_past:        isPast(due),

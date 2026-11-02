@@ -93,12 +93,30 @@ export function tokensOf(usage = {}) {
   return { input, output, cacheRead: read, cacheWrite5m: w5m, cacheWrite1h: w1h, cacheWrite: w5m + w1h };
 }
 
-/** USD for one attempt's usage on one model. */
-export function costUsd(model, usage = {}) {
+/**
+ * Message Batches (https://platform.claude.com/docs/en/build-with-claude/batch-processing, read
+ * 2026-11-02): "All batch usage is charged at 50% of standard API prices" — input, output and
+ * special tokens; the discount stacks with prompt caching (cache reads / writes are halved too).
+ * The page's batch table matches: Opus 5.5 $2 / $10, Sonnet 5.5 $1 / $5, Haiku 5.5 $0.05 / $0.25
+ * (≤ 100k-token prompts; $0.25 / $1.25 above). Web fetch adds no charge beyond the tokens of the
+ * fetched content (web-fetch-tool page, "Pricing").
+ */
+export const BATCH_DISCOUNT = 0.5;
+
+/** USD for one attempt's usage on one model ({ batch: true } = Message Batches price). */
+export function costUsd(model, usage = {}, { batch = false } = {}) {
   const t = tokensOf(usage);
   const r = ratesFor(model, t.input + t.cacheRead + t.cacheWrite);
-  return (t.input * r.input + t.output * r.output + t.cacheWrite5m * r.write5m
+  const full = (t.input * r.input + t.output * r.output + t.cacheWrite5m * r.write5m
     + t.cacheWrite1h * r.write1h + t.cacheRead * r.read) / 1_000_000;
+  return batch ? full * BATCH_DISCOUNT : full;
+}
+
+/** Rates for a batch request (every category at 50 %). */
+export function batchRatesFor(model, promptTokens = 0) {
+  const r = ratesFor(model, promptTokens);
+  return { input: r.input * BATCH_DISCOUNT, output: r.output * BATCH_DISCOUNT, write5m: r.write5m * BATCH_DISCOUNT,
+    write1h: r.write1h * BATCH_DISCOUNT, read: r.read * BATCH_DISCOUNT };
 }
 
 /**
@@ -120,7 +138,8 @@ export function refusalBilled(category, outputTokens) {
  *     (Top-level usage covers only the serving attempt; models are never summed.)
  *   - a refused response is billed under the refusal rule.
  */
-export function responseCostUsd({ model, usage, stopReason, refusalCategory, triggerCategory } = {}) {
+export function responseCostUsd({ model, usage, stopReason, refusalCategory, triggerCategory, batch = false } = {}) {
+  const o = { batch };
   const its = Array.isArray(usage?.iterations) ? usage.iterations : null;
   if (its && its.length) {
     return its.reduce((sum, it, i) => {
@@ -128,11 +147,11 @@ export function responseCostUsd({ model, usage, stopReason, refusalCategory, tri
       const declined = it.type === 'message' && (!last || stopReason === 'refusal');
       if (declined) {
         const cat = last ? refusalCategory : triggerCategory ?? refusalCategory;
-        return sum + (refusalBilled(cat, it.output_tokens) ? costUsd(it.model || model, it) : 0);
+        return sum + (refusalBilled(cat, it.output_tokens) ? costUsd(it.model || model, it, o) : 0);
       }
-      return sum + costUsd(it.model || model, it);
+      return sum + costUsd(it.model || model, it, o);
     }, 0);
   }
   if (stopReason === 'refusal' && !refusalBilled(refusalCategory, usage?.output_tokens ?? usage?.outputTokens)) return 0;
-  return costUsd(model, usage);
+  return costUsd(model, usage, o);
 }

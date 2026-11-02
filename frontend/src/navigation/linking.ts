@@ -149,6 +149,7 @@ export const linking: LinkingOptions<any> = {
               PdInbox:            'pd/inbox',
               PdStaff:            'pd/staff',
               AdminPdOffices:     'admin-pd-offices',
+              AdminSourceChecks:  'admin-source-checks',
               FamilyConnect:      'family',
               Contacts:           'emergency-contacts',
 

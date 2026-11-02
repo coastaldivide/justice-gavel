@@ -403,11 +403,40 @@ idempotency_in_progress` = the same request is still running.
 | Health scan | `HEALTH_SCAN_CRON` (default 2 am) | scheduler on |
 | Bar re-verification sweep | daily tick, re-verifies attorneys whose verification is > 90 days old | scheduler on |
 | Bar-prep reminders (`bar-daily-7am`, `bar-streak-3pm`, `bar-countdown-8am`) | daily | `REDIS_URL` (BullMQ) |
+| Source re-check (`source-check`, one Message Batch, ≤ `SOURCE_CHECK_MAX_ROWS` rows) | Sundays 04:40 `REFRESH_TZ` | `ANTHROPIC_API_KEY`; `SOURCE_CHECK_ENABLED` / `AI_BATCHES` not `off` |
+| Batch poller (`ai-batches`: reads finished batches, retries, runs their handlers) | every 10 minutes | `ANTHROPIC_API_KEY`; `AI_BATCHES` not `off` |
 
 Manual bar-verification sweep: `POST /api/admin/bar-verification/sweep`
 (bearer token of a user whose role is `admin`, plus the `X-Admin-Key` header —
 the `/api/admin` guard applies to every `/api/admin/*` path). Manual nightly run:
 `node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"`.
+
+### Weekly source-check review (Mondays, ~20 minutes)
+
+The Sunday re-check (docs/AI_PLATFORM.md §9) never changes a rule: it only re-dates rows whose page
+still says the same thing (verified quote) and queues everything else. Each Monday:
+
+1. Admin → **Source checks**. Check the last run in the overview (or `GET /api/admin/source-checks`):
+   status `processed`, cost, `applied` counts. A run still `in_progress` on Monday is normal for up to
+   24 hours; `failed` → see "Batches" below.
+2. **To review** tab, oldest first. For each item open the page (link) and compare it with the stored
+   text and the quote:
+   - *Still matches, quote not on the page / PDF* → read the page; if it says the same → **Approve**.
+   - *Changed* → if the page really changed: database rows → **Edit** (corrected text, official source
+     if it moved); rows in code → **Edit** writes a correction and withholds the row → file a developer
+     ticket (`GET /api/admin/source-checks/withheld` lists corrections), then **Restore** after the
+     deploy. If the change is wording only → **Approve**.
+   - *Page gone* → find the agency's new page; if none → **Withhold**.
+   - *Proposed source* (withheld rows) → approve only if the page states the rule exactly as stored
+     (numbers, conditions); approving publishes the row.
+3. Withheld rows: once a developer has applied a correction, **Restore**.
+4. Anything legal you are unsure of → leave it pending and add it to the counsel packet (L3).
+
+Batches: `GET /api/admin/ai-batches` lists recent batches (status, items, cost); "Check batches now"
+polls at once. A batch `failed` with `create_unconfirmed` means the create call got no answer — check
+the Anthropic console for a batch at that time before starting another run. Items that errored
+transiently are retried automatically (up to `AI_BATCH_MAX_ATTEMPTS`); `ai_usage_log` rows with a
+`batch_id` carry the batch price. Job health: `GET /api/admin/diagnostics/jobs` (`ai-batches`, `source-check`).
 
 ---
 

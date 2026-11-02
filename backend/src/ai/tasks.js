@@ -69,8 +69,9 @@ export function classConfig(cls) {
 /**
  * Task registry. maxTokens = the visible answer's budget; thinking headroom is added on top.
  * `schema` names a JSON Schema in ai/schemas (structured output). `fallback: false` keeps a
- * task off the refusal fallback (none today: every task is legal information the app is
- * allowed to give, so a classifier false positive is retried on the fallback model).
+ * task off the refusal fallback: only the batch-only tasks (the Message Batches API rejects
+ * `fallbacks`); every interactive task is legal information the app is allowed to give, so a
+ * classifier false positive is retried on the fallback model.
  */
 export const TASKS = Object.freeze({
   chat:                  { cls: 'standard', maxTokens: 800 },
@@ -97,6 +98,11 @@ export const TASKS = Object.freeze({
   contract_review:       { cls: 'deep',     maxTokens: 3000, schema: 'contract_review' },
   contract_redline:      { cls: 'deep',     maxTokens: 3000, schema: 'contract_redline' },
   contract_negotiation:  { cls: 'deep',     maxTokens: 2500, schema: 'contract_negotiation' },
+  // AI step 3 — batch-only tasks (services/aiBatch.js; Message Batches reject `fallbacks`, so these
+  // never use server-side fallback: a refusal is recorded and the row goes to the review queue).
+  source_check:          { cls: 'standard', maxTokens: 1200, schema: 'source_check',      fallback: false },
+  source_propose:        { cls: 'standard', maxTokens: 1200, schema: 'source_proposal',   fallback: false },
+  translate_keys:        { cls: 'standard', maxTokens: 8000, schema: 'translation_draft', fallback: false },
 });
 
 export function taskDef(task) {

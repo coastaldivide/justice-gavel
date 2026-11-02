@@ -138,6 +138,7 @@ export type RootStackParamList = {
   PdJoin:                   { token: string };
   AdminPdOffices:           undefined;
   AdminResults:             undefined;
+  AdminSourceChecks:        undefined;
   VerifyPhone:              undefined;
   Results:                  undefined;
   SignPacket:               { token: string };

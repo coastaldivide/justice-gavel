@@ -21,6 +21,8 @@ import { remindersEnabled as remindersOn } from '../services/reminderDispatcher.
 import { arrestFeedsConfigured } from '../services/arrest_ingest.js';
 import { autopayEnabled } from '../services/bondDesk/autopay.js';
 import { publicDefenderEnabled, custodyAlertsEnabled } from '../utils/counselFlags.js';
+import { batchesEnabled } from '../services/aiBatch.js';
+import { sourceChecksEnabled } from '../services/sourceChecks/settings.js';
 
 const H = 3600_000;
 /** job → { everyMs, when() } — `when` false = the job is not expected to run now. */
@@ -38,6 +40,8 @@ export const EXPECTED = Object.freeze({
   nightly: { everyMs: 24 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'payment-link-expiry': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH },
   'arrest-feeds': { everyMs: 2 * H, when: () => !!CONFIG.LIVE_REFRESH && arrestFeedsConfigured() },
+  'ai-batches': { everyMs: H / 6, when: () => batchesEnabled() },
+  'source-check': { everyMs: 7 * 24 * H, when: () => sourceChecksEnabled() },
 });
 const GRACE = 0.5;   // an interval and a half before "stale"
 

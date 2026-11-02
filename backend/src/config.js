@@ -260,6 +260,15 @@ export const ALL_ENV_VARS = {
   AI_ALERT_MIN_CALLS: process.env.AI_ALERT_MIN_CALLS || '20',  // AI error / refusal alerts need at least this many calls in the hour
   AI_ALERT_ERROR_PCT: process.env.AI_ALERT_ERROR_PCT || '20',  // hourly alert when more than this % of AI calls fail or fail validation
   AI_ALERT_REFUSAL_PCT: process.env.AI_ALERT_REFUSAL_PCT || '10',  // hourly alert when more than this % of AI calls end in a refusal
+  AI_BATCHES: process.env.AI_BATCHES || 'on',  // Message Batches layer (eval, source checks, translation drafts): on | off (needs ANTHROPIC_API_KEY)
+  AI_BATCH_MAX_USD: process.env.AI_BATCH_MAX_USD || '10',  // refuse to create a batch whose worst case (all input uncached + fetched pages + max_tokens, at the batch price) is over this
+  AI_BATCH_MAX_ATTEMPTS: process.env.AI_BATCH_MAX_ATTEMPTS || '3',  // times one batch request is sent (transient errors, pause_turn and expired requests are retried in a new batch)
+  SOURCE_CHECK_ENABLED: process.env.SOURCE_CHECK_ENABLED || 'on',  // weekly source re-check of sourced legal rows (Sundays 04:40): on | off (admin "run now" still works)
+  SOURCE_CHECK_MAX_ROWS: process.env.SOURCE_CHECK_MAX_ROWS || '100',  // rows per source re-check run (one batch)
+  SOURCE_CHECK_SKIP_DAYS: process.env.SOURCE_CHECK_SKIP_DAYS || '30',  // skip rows a re-check already attempted in the last N days
+  SOURCE_CHECK_MAX_FETCHES: process.env.SOURCE_CHECK_MAX_FETCHES || '2',  // web fetches allowed per re-check request (web fetch max_uses)
+  SOURCE_CHECK_PROPOSAL_FETCHES: process.env.SOURCE_CHECK_PROPOSAL_FETCHES || '4',  // web fetches allowed per proposal request (withheld / unofficial rows)
+  SOURCE_CHECK_MAX_CONTENT_TOKENS: process.env.SOURCE_CHECK_MAX_CONTENT_TOKENS || '20000',  // max_content_tokens per fetched page (caps the cost of a long page)
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',

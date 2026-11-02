@@ -27,6 +27,7 @@
  */
 import { kit, row, UNICODE_NOTE } from './pdf.js';
 import { money, usDate } from './money.js';
+import { checkedOn } from '../../ai/sourceOverlay.js';
 
 export const TN_REPORT = Object.freeze({
   citation: 'Tenn. Pub. Ch. 396 (2025), T.C.A. § 40-11-314 (as cited by the Tennessee Department of Revenue, Important Notice #25-08)',
@@ -38,6 +39,11 @@ export const TN_REPORT = Object.freeze({
     'https://fastdemocracy.com/bill/tn/114/bills/TNB00055355',
   ],
 });
+
+/** The date the law was last checked: the bundled date, or a later verified source re-check (ai/sourceOverlay.js). */
+export function tnLawCheckedOn() {
+  return checkedOn('tn_report', 'tn_quarterly', TN_REPORT.checked_on);
+}
 
 /** '2026-Q3' → { quarter, from: '2026-07-01', to: '2026-09-30', due: '2026-10-25' } (null when malformed). */
 export function quarterRange(q) {
@@ -90,7 +96,7 @@ export async function tnQuarterlyReport(db, agentId, range) {
   const sum = (k) => rows.reduce((s, r) => s + r[k], 0);
   return {
     quarter: range.quarter, period_from: range.from, period_to: range.to, due_on: range.due,
-    citation: TN_REPORT.citation, checked_on: TN_REPORT.checked_on, form: TN_REPORT.form,
+    citation: TN_REPORT.citation, checked_on: tnLawCheckedOn(), form: TN_REPORT.form,
     totals: { bonds_issued: sum('bonds_issued'), liability_issued_cents: sum('liability_issued_cents'),
       open_bonds_at_end: sum('open_bonds_at_end'), liability_open_at_end_cents: sum('liability_open_at_end_cents') },
     counties: rows,
@@ -105,7 +111,7 @@ export function tnCsvRows(r, agency) {
   return [
     ['Tennessee bail bondsman quarterly report'],
     ['Required by', TN_REPORT.citation],
-    ['Law checked on', TN_REPORT.checked_on],
+    ['Law checked on', tnLawCheckedOn()],
     ['File with', `Tennessee Department of Revenue — ${TN_REPORT.form}`],
     ['Sources', TN_REPORT.sources.join(' ; ')],
     ['Bondsman / agency', [agency.agency, agency.agent_name, agency.license ? `License ${agency.license}` : ''].filter(Boolean).join(' — ')],
@@ -128,7 +134,7 @@ export async function tnReportPdf(r, agency) {
   const { doc, done } = kit('Tennessee bail bondsman quarterly report');
   doc.font('B').fontSize(15).text('Tennessee bail bondsman quarterly report');
   doc.font('R').fontSize(9).fillColor('#444')
-    .text(`Required by ${TN_REPORT.citation}. Law checked on ${usDate(TN_REPORT.checked_on)}. File with the Tennessee Department of Revenue: ${TN_REPORT.form}.`, { paragraphGap: 4 })
+    .text(`Required by ${TN_REPORT.citation}. Law checked on ${usDate(tnLawCheckedOn())}. File with the Tennessee Department of Revenue: ${TN_REPORT.form}.`, { paragraphGap: 4 })
     .text(`Sources: ${TN_REPORT.sources.join('  ')}`, { paragraphGap: 8 });
   doc.fillColor('#000');
   row(doc, 'Bondsman / agency', [agency.agency, agency.agent_name, agency.license ? `License ${agency.license}` : ''].filter(Boolean).join(' — ') || '—');

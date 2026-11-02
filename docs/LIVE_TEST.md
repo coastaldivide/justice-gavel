@@ -327,6 +327,35 @@ DESC LIMIT 2;`
 - [ ] M7 **400 kept away**: confirm no request ever combined citations with `output_config.format` (grep the server
   log for `citations cannot be combined` — expected: none).
 
+## N. Source re-checks and batches with a real key (migration 46, 30 min + up to 1 h waiting)
+Staging with a real `ANTHROPIC_API_KEY`, signed in as an admin. The mock follows the batch-processing and
+web-fetch docs; these checks confirm the real API.
+- [ ] N1 **Run a small check**: `SOURCE_CHECK_MAX_ROWS=5`, Admin → Source checks → "Run a check now" → 201; within
+  an hour (Batch tools → "Check batches now") the batch is `processed`. In the server log: no 400 for the batch create,
+  and no `invalid_request_error` result lines (the `web_fetch_20250910` tool, `allowed_domains` with a bare host,
+  `output_config.format` and the 1-hour cache_control are accepted inside a batch).
+- [ ] N2 **Result shapes**: `SELECT status, error_type, stop_reason, result FROM ai_batch_items ORDER BY id DESC LIMIT 5;`
+  → `succeeded` items have the parsed verdict JSON (the final text block after the tool result held the JSON — if
+  every item is `invalid`, the JSON is elsewhere: fix `finalText()` in services/aiClient.js). An errored line, if any,
+  has `error.error.type` (nested) — compare with the docs.
+- [ ] N3 **Fetched text**: for one verified row, the court-rules or .gov page came back as `source.type: "text"` and
+  the quote was found (`legal_source_checks.last_outcome = 'verified'`); a PDF source (e.g. a transit FTA profile)
+  arrived as `base64` → queued `pdf_not_verifiable`.
+- [ ] N4 **Allow-list holds**: temporarily add a row-free test (node REPL): a batch request whose user turn names
+  `https://law.justia.com/…` with `allowed_domains: ['tn.gov']` → the result holds a
+  `web_fetch_tool_result_error` with `url_not_allowed` (the API never fetched it).
+- [ ] N5 **Cost**: `SELECT SUM(cost_usd) FROM ai_usage_log WHERE batch_id = <id>;` matches the console's usage for the
+  batch (50 % of standard); `usage.server_tool_use.web_fetch_requests` ≤ `SOURCE_CHECK_MAX_FETCHES` per item.
+- [ ] N6 **Queue**: approve one item, withhold one, edit one database row → `audit_log` has
+  `admin.source_check_*` rows; the withheld row disappears from its screen; restore brings it back.
+- [ ] N7 **Evaluation**: Batch tools → "Run the evaluation (10 questions)" → after both batches end the list shows
+  "Score x/10 on 10 questions"; `GET /api/admin/ai-batches/<id>/eval` has per-question scores.
+- [ ] N8 **Translation drafts**: add one English key to `backend/src/i18n/messages/en.js` on staging, "Draft
+  translations for new text" → download the review file → 7 drafts, each passing
+  `node backend/scripts/apply-translation-drafts.mjs <file>` (dry run). Do not apply on staging.
+- [ ] N9 **pause_turn**: count `error_type = 'pause_turn'` items over a few runs (they are retried; many would mean
+  `max_uses` is too low).
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

@@ -70,6 +70,9 @@ import adminBdSetupRouter from './routes/admin/bdSetup.js';
 import adminPdOfficesRouter from './routes/admin/pdOffices.js';
 import adminResultsRouter from './routes/admin/results.js';
 import resultsRouter from './routes/results.js';
+import adminSourceChecksRouter from './routes/admin/sourceChecks.js';
+import adminAiBatchesRouter from './routes/admin/aiBatches.js';
+import legalSourcesRouter from './routes/legalSources.js';
 import bdPayRouter from './routes/bdPay.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -515,6 +518,9 @@ app.use('/api/admin/queue',    adminQueueRouter);   // in-app review screen (adm
 app.use('/api/admin/pd-offices', adminPdOfficesRouter); // public defender offices + annual invoices (admin role, ⚖)
 app.use('/api/admin/bd-setup', adminBdSetupRouter); // Bond Desk "set up my forms" queue (admin role, no ops key)
 app.use('/api/admin/results', adminResultsRouter);  // B11 published results: preview / publish (admin role, no ops key)
+app.use('/api/admin/source-checks', adminSourceChecksRouter); // AI step 3: source re-check review queue (admin role, no ops key)
+app.use('/api/admin/ai-batches', adminAiBatchesRouter);       // AI step 3: Message Batches — eval, translation drafts (admin role, no ops key)
+app.use('/api/legal-sources', legalSourcesRouter);            // AI step 3: checked-on dates of bundled sources (public)
 app.use('/api/results', resultsRouter);              // B11 the latest published results snapshot (public)
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);

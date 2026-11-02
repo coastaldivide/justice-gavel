@@ -15,6 +15,8 @@
  *   - Hamilton County: the posted guidelines found are for General Sessions CIVIL court only.
  * Re-check yearly; remove a row rather than keep a broken link.
  */
+import { isWithheld, checkedOn } from '../ai/sourceOverlay.js';
+
 export const COURT_RULES_CHECKED = '2026-11-01';
 
 export const COURT_RULES = Object.freeze([
@@ -53,7 +55,8 @@ export function courtRulesFor(ch) {
   if (!ch || !ch.state || !ch.county) return [];
   const st = String(ch.state).trim().toUpperCase();
   const co = norm(ch.county);
-  return COURT_RULES.filter(r => r.state === st && norm(r.county) === co).map(r => ({
-    id: r.id, court: r.court, title: r.title, covers: [...r.covers], url: r.url, checked: r.checked,
+  // Source re-checks (ai/sourceOverlay.js): a withheld row is not shown; the date follows the latest verified check.
+  return COURT_RULES.filter(r => r.state === st && norm(r.county) === co && !isWithheld('court_rules', r.id)).map(r => ({
+    id: r.id, court: r.court, title: r.title, covers: [...r.covers], url: r.url, checked: checkedOn('court_rules', r.id, r.checked),
   }));
 }

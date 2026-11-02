@@ -80,8 +80,8 @@ describe('Going to court: how to dress and act', () => {
     fireEvent.press(screen.getByTestId('court-guide-link-court_dates'));
     expect(nav.navigate).toHaveBeenCalledWith('CourtDates', { add: true });
     expect(screen.getByTestId('court-guide-jump-late')).toBeTruthy();
-    // signed out: no court-date request, no posted-rules box
-    expect(calls.length).toBe(0);
+    // signed out: no court-date request, no posted-rules box (only the public source re-check status, AI step 3)
+    expect(calls.filter((c) => c.url !== '/legal-sources/status').length).toBe(0);
     expect(screen.queryByTestId('court-rules')).toBeNull();
   });
 

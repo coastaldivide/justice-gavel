@@ -25,7 +25,9 @@
  * (scripts/anthropic-mock-lib.mjs: structured outputs, thinking blocks, cache
  * usage, refusals + server-side fallback, count_tokens, 400s for bad requests).
  * Tests steer it with ctx.anthropic.replyText / status / mode / json / category /
- * refuseModels / citeMode (auto | none | foreign | blocks) / blocks.
+ * refuseModels / citeMode (auto | none | foreign | blocks) / blocks, and (AI step 3) Message Batches
+ * through ctx.anthropic.batches with ctx.anthropic.extra = { batchPolls, batchErrors, batchJson,
+ * pages, fetchUrls, rogueFetch }.
  */
 import { randomBytes } from 'crypto';
 import http from 'http';
@@ -33,7 +35,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import request from 'supertest';
-import { freshState, messageResponse, streamEvents, countTokensResponse, requestProblem } from '../../../scripts/anthropic-mock-lib.mjs';
+import { freshState, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute } from '../../../scripts/anthropic-mock-lib.mjs';
 
 export const PG_URL = process.env.TEST_DATABASE_URL || '';
 
@@ -75,7 +77,9 @@ export function initSuite({ anthropicMock = false } = {}) {
     /** supertest agent factory: ctx.request().get('/api/...') */
     request: () => request(ctx.app),
     attachmentsDir: null,
-    anthropic: { server: null, port: null, requests: [], replyText: 'MOCK REPLY: general legal information, not legal advice.', status: 200, mode: 'ok', json: null },
+    anthropic: { server: null, port: null, requests: [], replyText: 'MOCK REPLY: general legal information, not legal advice.', status: 200, mode: 'ok', json: null,
+      // Message Batches + web fetch (AI step 3): a batch store and the web-fetch / batch steering fields
+      batches: createBatchStore(), extra: {} },
     _cleanups: [],
     /** Register extra cleanup SQL to run before the generic user purge. */
     addCleanup(fn) { ctx._cleanups.push(fn); },
@@ -100,7 +104,16 @@ export function initSuite({ anthropicMock = false } = {}) {
         req.on('end', () => {
           let body = null;
           try { body = JSON.parse(data); } catch { /* keep null */ }
-          ctx.anthropic.requests.push({ path: req.url, headers: req.headers, body });
+          ctx.anthropic.requests.push({ path: req.url, method: req.method, headers: req.headers, body });
+          {
+            const a0 = ctx.anthropic;
+            const st = freshState({ text: a0.replyText, mode: a0.mode || 'ok', json: a0.json ?? null, ...(a0.extra || {}) });
+            const br = batchRoute(a0.batches, req.method, req.url, body, req.headers, st, `http://127.0.0.1:${a0.port}`);
+            if (br) {
+              if (br.text !== undefined) { res.writeHead(br.status, { 'Content-Type': 'application/binary' }); return res.end(br.text); }
+              res.writeHead(br.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(br.json));
+            }
+          }
           if (req.url.endsWith('/count_tokens')) {
             const r = countTokensResponse(body);
             res.writeHead(r.status, { 'Content-Type': 'application/json' });
@@ -113,7 +126,7 @@ export function initSuite({ anthropicMock = false } = {}) {
           const a = ctx.anthropic;
           const state = freshState({ text: a.replyText, mode: a.mode || 'ok', json: a.json ?? null,
             category: a.category ?? 'general_harms', refuseModels: a.refuseModels ?? null,
-            citeMode: a.citeMode || 'auto', blocks: a.blocks ?? null });
+            citeMode: a.citeMode || 'auto', blocks: a.blocks ?? null, ...(a.extra || {}) });
           if (body?.stream) {
             const problem = requestProblem(body, req.headers);
             if (problem) {

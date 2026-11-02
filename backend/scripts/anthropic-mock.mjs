@@ -22,16 +22,20 @@
  *        citeMode: auto | none | foreign | blocks — answers to requests with citable search
  *          results (scripts/anthropic-mock-lib.mjs citedBlocks); blocks: [{ text, citations? }]
  *   GET  /__requests   the upstream requests received so far: [{ path, headers, body }]
+ *   Message Batches: POST /v1/messages/batches, GET /v1/messages/batches/{id}, GET …/{id}/results,
+ *        POST …/{id}/cancel (scripts/anthropic-mock-lib.mjs createBatchStore; __mode also takes
+ *        batchPolls, batchErrors, batchJson, pages, fetchUrls, rogueFetch)
  *   POST /__reset      mode back to ok, request log and prompt cache cleared
  * Every other POST is answered as POST /v1/messages (JSON, or SSE when the body has
  * stream: true), except POST /v1/messages/count_tokens.
  */
 import http from 'node:http';
-import { freshState, resetCaches, messageResponse, streamEvents, countTokensResponse, requestProblem } from './anthropic-mock-lib.mjs';
+import { freshState, resetCaches, messageResponse, streamEvents, countTokensResponse, requestProblem, createBatchStore, batchRoute } from './anthropic-mock-lib.mjs';
 
 const PORT = Number(process.argv[2] || process.env.ANTHROPIC_MOCK_PORT || 4399);
 let state = freshState();
 let requests = [];
+let batches = createBatchStore();
 
 const sleep = (ms) => new Promise(r => { setTimeout(r, ms); });
 
@@ -94,9 +98,17 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify(requests));
     }
     if (url === '/__reset') {
-      state = freshState(); requests = []; resetCaches();
+      state = freshState(); requests = []; resetCaches(); batches = createBatchStore();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end('{"ok":true}');
+    }
+    // Message Batches: POST /v1/messages/batches, GET …/{id}, GET …/{id}/results, POST …/{id}/cancel
+    const br = batchRoute(batches, req.method, url, body, req.headers, state, `http://127.0.0.1:${PORT}`);
+    if (br) {
+      requests.push({ path: url, method: req.method, headers: (({ 'x-api-key': _k, ...h }) => h)(req.headers), body });
+      if (requests.length > 500) requests = requests.slice(-500);
+      if (br.text !== undefined) { res.writeHead(br.status, { 'Content-Type': 'application/binary' }); return res.end(br.text); }
+      res.writeHead(br.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(br.json));
     }
     if (req.method !== 'POST') { res.writeHead(404); return res.end(); }
     const { 'x-api-key': _key, ...headers } = req.headers;

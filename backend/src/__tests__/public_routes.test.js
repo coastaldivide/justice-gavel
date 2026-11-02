@@ -60,6 +60,7 @@ const PUBLIC = {
   'POST /api/help/reports': 'report a wrong listing (guest core path, rate limited, never edits the listing)',
   'GET /api/help/report-reasons': 'static list of report reasons',
   'GET /api/results': 'the latest results snapshot an admin published (B11; aggregate counts only)',
+  'GET /api/legal-sources/status': 'checked-on dates / withheld flags of the court guide, court rules and transit sources (public reference data, AI step 3)',
   'GET /api/help/bail-schedule': 'typical bail ranges with sources (guest core path)',
   'GET /api/court-dates/guidance': 'static court-day checklist and missed-date guidance',
   'GET /api/courthouses': 'courthouse lookup by state / city / name (guest core path, no user data)',

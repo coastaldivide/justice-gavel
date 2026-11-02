@@ -66,3 +66,18 @@ seven languages; same review needed.
   shaped and set right to left, Arabic-only lines are right-aligned, mixed lines choose the font per run. The
   certificate text stays English. Only characters no bundled font has (emoji, Hebrew, Devanagari, rare CJK Extension
   characters) print as Unicode code points ("[U+1F44D]") with a note. Details: docs/BOND_DESK.md → "Letters in the PDFs".
+
+## Adding new text (draft translations for review)
+
+New English keys must exist in all eight languages before the parity tests pass. Admin → Source checks → Batch
+tools → **"Draft translations for new text"** asks Claude (as one Message Batch) for drafts of every key that is
+missing in any of the seven languages, checks them with the parity rules (placeholders, emoji, not empty / not
+English / not too short, STOP kept in text messages) and saves a **review file**; nothing is applied. Download it
+("Download the review file"), have it reviewed (native-speaker legal review before launch, as above), then:
+
+```
+node backend/scripts/apply-translation-drafts.mjs translation-draft-<id>.json          # dry run
+node backend/scripts/apply-translation-drafts.mjs translation-draft-<id>.json --write  # writes the catalogs
+```
+and run the i18n tests. Details: docs/AI_PLATFORM.md §10. Drafts are labelled "Translated by Claude" like the
+other machine translations.

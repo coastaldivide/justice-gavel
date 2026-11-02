@@ -26,6 +26,7 @@
  */
 
 import { msg, normalizeLang, stateName as localStateName } from '../i18n/index.js';
+import { approvedSource } from '../ai/sourceOverlay.js';
 
 export const CONTENT_LAST_REVIEWED = '2026-04';
 const STATE_SOURCE = msg('en', 'rights.source.state');
@@ -52,7 +53,8 @@ export function normalizeState(s) {
 }
 
 const section = (key, topic, heading, body, source) => ({
-  key, topic, heading, body, source, source_url: null,
+  // source_url: an official page an admin approved for this section after a source check (AI step 3)
+  key, topic, heading, body, source, source_url: approvedSource('rights_card', key),
   last_reviewed: CONTENT_LAST_REVIEWED, lawyer_reviewed: false, reviewed_by: null,
 });
 

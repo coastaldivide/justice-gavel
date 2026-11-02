@@ -27,6 +27,7 @@ import { apiLimiter }     from '../../middleware/rateLimiters.js';
 import { sanitizeStr }    from '../../utils/routeHelpers.js';
 import { msg, resolveLang, stateName } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
+import { isWithheld, approvedSource, checkedOn } from '../../ai/sourceOverlay.js';
 import { STATE_RULES, REVIEW_FLAGS, RULE_EFFECTIVE_DATES, JUVENILE_SEALING_DATA, classifyCharge, citationOf, getEligibility } from './rules.js';
 
 const router = Router();
@@ -71,10 +72,10 @@ router.get('/check', apiLimiter, (req, res) => {
     else {
       rule = getEligibility(state, chargeType, status);
       if (REVIEW_FLAGS[`${state}.${chargeType}`]) result = 'needs_review';
-      else if (!citationOf(rule)) result = 'unsourced';
+      else if (!citationOf(rule) || isWithheld('expungement', `${state}.${chargeType}`)) result = 'unsourced';   // withheld after a source check
       else result = rule.eligible === true ? 'eligible' : rule.eligible === 'conditional' ? 'conditional' : 'not_eligible';
     }
-    const citation = rule ? citationOf(rule) : null;
+    const citation = rule && result !== 'unsourced' ? citationOf(rule) : null;
     const verdict = ['eligible', 'conditional', 'not_eligible'].includes(result);
 
     res.setHeader('Vary', 'Accept-Language');
@@ -122,11 +123,12 @@ router.get('/juvenile', apiLimiter, (req, res) => {
   const states = want ? [want] : Object.keys(JUVENILE_SEALING_DATA).sort();
   const rows = states.map((st) => {
     const r = JUVENILE_SEALING_DATA[st] || {};
-    const ok = ['verified', 'corrected'].includes(r.status) && !!r.citation && /^https?:\/\//.test(String(r.source_url || ''));
+    const ok = ['verified', 'corrected'].includes(r.status) && !!r.citation && /^https?:\/\//.test(String(r.source_url || '')) && !isWithheld('juvenile', st);
     return {
       state: st, stateName: stateName(st, STATE_RULES[st]?.name || st, lang), verified: ok,
       automatic: ok ? !!r.automatic : null, when: ok ? r.when : null, notes: ok ? r.notes : null,
-      citation: ok ? r.citation : null, source_url: ok ? r.source_url : null,
+      citation: ok ? r.citation : null, source_url: ok ? approvedSource('juvenile', st) || r.source_url : null,
+      checked: ok ? checkedOn('juvenile', st, '2026-10-25') : null,
     };
   });
   res.setHeader('Vary', 'Accept-Language');

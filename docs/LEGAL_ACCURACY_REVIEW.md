@@ -218,6 +218,38 @@ Limits to tell counsel: the legal-statement check is a broad word / number test 
 none of the passages has been reviewed by a lawyer yet (open item L3), so every answer still
 carries "not reviewed by a lawyer".
 
+## 3c. How rows stay current (added November 2, 2026 — AI step 3)
+
+Every sourced row the app shows or withholds — record clearing, juvenile sealing, recording law,
+court rules, transit agencies, the court-guide / case-step sources, the Tennessee quarterly-report
+citation, the rights card, the deadline rules and the gated database tables (bail, DUI, drug
+penalties, limitations, victim compensation, specialty courts, state rights notes) — is re-checked
+against its official page every week (docs/AI_PLATFORM.md §9). The rules:
+
+- **Official sites only.** Claude opens pages only on government and court domains (`.gov`,
+  `state.<xx>.us`, and a short list of official bodies on other domains in
+  `backend/src/ai/sourceDomains.js`). Commercial and secondary references (Justia, FindLaw, CCRC,
+  NCSL, RCFP …) are never fetched or accepted as a source. Rows whose recorded source is one of those
+  (most of this review's records — see §1) cannot be re-checked automatically; for Tennessee and
+  federal rows the job looks for the official page instead and proposes it.
+- **Only the date can change by itself**, and only when Claude says the page still matches AND the
+  sentence it quotes is really, word for word, on the page fetched from the row's own official site.
+  The row's text, numbers and source never change automatically.
+- **Everything else goes to a person** (Admin → Source checks): "changed", "page gone", "can't tell",
+  a quote that is not on the page, a PDF page (its text cannot be checked automatically), and every
+  proposed source for a withheld row. The admin sees the stored text, the verdict, the quote and the
+  page, and approves, edits or withholds; each decision is in the audit log.
+- **Withheld rows stay withheld** (e.g. the Tennessee bail amounts) until an admin approves an
+  official source the job found — nothing is published without a human approving it.
+- An admin approval is **not a lawyer's review**: every row keeps "not reviewed by a lawyer" until
+  open item L3.
+
+Limits: PDF sources (FTA transit profiles, several court PDFs, the Alaska SIS FAQ) always need a
+person; rows with only a secondary source are re-checked only where official domains are configured
+(federal and Tennessee today — add a state's legislature / court domains in `PROPOSAL_SOURCES` to
+extend it); the comparison is Claude's reading of the page, which is why only a verified quote can
+move a date, never a rule.
+
 ## 4. Files changed
 
 - Expungement: `backend/src/routes/expungement/{rules.js,rules_data.js,check.js,index.js}` (+ `GET /api/expungement/juvenile`)

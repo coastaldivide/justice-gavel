@@ -115,6 +115,7 @@ const PdInboxScreen = withSuspense(React.lazy(() => import('../screens/PdInboxSc
 const PdStaffScreen = withSuspense(React.lazy(() => import('../screens/PdStaffScreen')));
 const AdminPdOfficesScreen = withSuspense(React.lazy(() => import('../screens/AdminPdOfficesScreen')));
 const AdminResultsScreen = withSuspense(React.lazy(() => import('../screens/AdminResultsScreen')));
+const AdminSourceChecksScreen = withSuspense(React.lazy(() => import('../screens/AdminSourceChecksScreen')));
 const VerifyPhoneScreen = withSuspense(React.lazy(() => import('../screens/VerifyPhoneScreen')));
 const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
 const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
@@ -262,6 +263,7 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="PdStaff"               component={PdStaffScreen}               options={{ title: t('pd_staff') }} />
       <MoreStack.Screen name="AdminPdOffices"        component={AdminPdOfficesScreen}        options={{ title: t('pd_adm_title') }} />
       <MoreStack.Screen name="AdminResults"          component={AdminResultsScreen}          options={{ title: t('ares_title') }} />
+      <MoreStack.Screen name="AdminSourceChecks"     component={AdminSourceChecksScreen}     options={{ title: t('asc_title') }} />
       <MoreStack.Screen name="VerifyPhone"           component={VerifyPhoneScreen}           options={{ title: t('vp_title') }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: t('x_nav_clear_my_record') }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: t('x_nav_attorney_inbox') }} />

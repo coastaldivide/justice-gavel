@@ -50,7 +50,7 @@
  */
 import { randomBytes } from 'crypto';
 import { fetchWithTimeout } from '../utils/http.js';
-import { ANTHROPIC_MESSAGES_URL, ANTHROPIC_VERSION, CLAUDE_MODEL } from '../utils/ai.js';
+import { ANTHROPIC_BASE_URL, ANTHROPIC_MESSAGES_URL, ANTHROPIC_VERSION, CLAUDE_MODEL } from '../utils/ai.js';
 import {
   assertAiBudget, recordAiUsage, budgetStatus, AI_BUDGET_BODY, AiBudgetExceededError,
 } from './aiBudget.js';
@@ -201,12 +201,41 @@ export async function anthropicFetch(init = {}, {
   return new Response(JSON.stringify(data), { status: res.status, headers: { 'content-type': 'application/json' } });
 }
 
+/**
+ * Any other Anthropic API call (Message Batches: create / retrieve / results / cancel — AI step 3,
+ * services/aiBatch.js). `path` is under the API base (e.g. '/v1/messages/batches') or an absolute
+ * results_url on the API host. Returns the Response; the caller reads it. Not metered here: batch
+ * usage is metered per result when the results are read (at the batch price).
+ */
+export async function anthropicApi(method, path, { body, timeoutMs = AI_TIMEOUT_MS, retries = AI_MAX_RETRIES, headers: extra = {}, fetchImpl } = {}) {
+  const url = /^https?:\/\//.test(path) ? path : `${ANTHROPIC_BASE_URL}${path}`;
+  const headers = { 'anthropic-version': ANTHROPIC_VERSION };
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  for (const [k, v] of Object.entries(extra || {})) headers[k.toLowerCase()] = v;
+  headers['x-api-key'] = process.env.ANTHROPIC_API_KEY ?? '';
+  return fetchWithTimeout(url, {
+    method, headers, ...(body !== undefined ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}),
+  }, { timeoutMs, retries, ...(fetchImpl ? { fetchImpl } : {}) });
+}
+
 // ── Response reading ──────────────────────────────────────────────────────────
 /** The visible answer: every `text` block joined (thinking / fallback blocks are skipped). */
 export function responseText(data) {
   return (Array.isArray(data?.content) ? data.content : [])
     .filter((b) => b?.type === 'text' && typeof b.text === 'string')
     .map((b) => b.text).join('');
+}
+
+/**
+ * The final answer of a response that used server tools (web fetch): the text blocks after the
+ * last server_tool_use / *_tool_result block (Claude may write a line before it calls the tool;
+ * structured output applies to its final answer). Without tool blocks: every text block.
+ */
+export function finalText(content) {
+  const blocks = Array.isArray(content) ? content : [];
+  let last = -1;
+  blocks.forEach((b, i) => { if (b?.type === 'server_tool_use' || /_tool_result$/.test(String(b?.type || ''))) last = i; });
+  return blocks.slice(last + 1).filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('');
 }
 
 /** Facts the gateway needs from a non-streamed response. */
@@ -268,7 +297,8 @@ export function chatCacheTtl() {
  *   { task, system, messages, maxTokens?, schema?, cacheConversation?, stream?, model? }
  * `model` is for the evaluation scripts only (they compare models on purpose).
  */
-export function buildRequest({ task, system, messages, maxTokens, schema, cacheConversation = false, stream = false, model: modelOverride = null, fallback = true }) {
+export function buildRequest({ task, system, messages, maxTokens, schema, cacheConversation = false, stream = false, model: modelOverride = null, fallback = true, tools = null, batch = false }) {
+  if (batch && stream) throw new AiError('ai_failed', 'a batch request cannot stream');
   const def = taskDef(task);
   const cfg = classConfig(def.cls);
   const model = modelOverride || cfg.model;
@@ -279,6 +309,8 @@ export function buildRequest({ task, system, messages, maxTokens, schema, cacheC
   const body = {
     model,
     max_tokens: visible + (thinkingOn ? cfg.headroom : 0),
+    // Server tools (web fetch — AI step 3) come first: the cache prefix order is tools → system → messages.
+    ...(Array.isArray(tools) && tools.length ? { tools } : {}),
     ...(systemBlocks(system) !== undefined ? { system: systemBlocks(system) } : {}),
     messages,
   };
@@ -295,7 +327,8 @@ export function buildRequest({ task, system, messages, maxTokens, schema, cacheC
   if (cacheConversation && str(process.env.AI_CACHE).toLowerCase() !== 'off') body.cache_control = { type: 'ephemeral' };
   if (stream) body.stream = true;
   const headers = {};
-  const useServerFallback = fallback && def.fallback !== false && fallbackMode() === 'auto' && serverFallbackSupported(model);
+  // Message Batches reject `fallbacks` (batch-processing page), so a batch request never carries it.
+  const useServerFallback = !batch && fallback && def.fallback !== false && fallbackMode() === 'auto' && serverFallbackSupported(model);
   if (useServerFallback) {
     body.fallbacks = 'default';
     headers['anthropic-beta'] = FALLBACK_BETA;
@@ -332,6 +365,7 @@ export function estimateInputTokens(body) {
   if (typeof sys === 'string') chars += sys.length;
   else for (const b of sys || []) chars += String(b?.text || '').length;
   for (const m of body.messages || []) { const r = textLen(m.content); chars += r.chars; heavy += r.heavy; }
+  for (const t of body.tools || []) chars += JSON.stringify(t).length;
   if (body.output_config?.format) chars += JSON.stringify(body.output_config.format).length;
   return { tokens: Math.ceil(chars / 3) + heavy, heavy: heavy > 0 };
 }

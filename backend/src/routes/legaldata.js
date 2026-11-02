@@ -16,6 +16,7 @@ import { getDb }   from "../db/index.js";
 import { apiLimiter } from '../middleware/rateLimiters.js';
 import { msg, resolveLang } from '../i18n/index.js';
 import logger from '../utils/logger.js';
+import { isWithheld } from '../ai/sourceOverlay.js';
 
 const router = Router();
 
@@ -107,7 +108,8 @@ router.get("/:type", apiLimiter, async (req, res) => {
     let withheld = 0;
     if (VERIFIED_ONLY.has(type)) {
       const before = rows.length;
-      rows = rows.filter(isVerifiedRow);
+      // …and not withheld by an admin after a source re-check (ai/sourceOverlay.js, AI step 3)
+      rows = rows.filter((r) => isVerifiedRow(r) && !isWithheld(cfg.table, r.id));
       withheld = before - rows.length;
     }
     // Free-text filter across the row's text columns (tables have different schemas)

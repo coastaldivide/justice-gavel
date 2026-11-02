@@ -72,6 +72,8 @@ let checkinMissedTask = null;
 let arrestFeedsTask = null;
 let custodyHeldTask = null;
 let bdAutopayTask = null;
+let aiBatchesTask = null;
+let sourceCheckTask = null;
 
 // Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
 // runRefresh is re-exported for the admin console and existing callers.
@@ -415,6 +417,14 @@ export function startScheduler() {
       const { sendHeldCustodyTexts } = await import('./custodyAlerts.js');
       return sendHeldCustodyTexts(await getDb());
     }));
+  // AI step 3 (docs/AI_PLATFORM.md §9–§10): poll Message Batches every 10 minutes (process ended
+  // ones once — results metered at the batch price, errored items retried, handlers run), and the
+  // weekly source re-check (Sundays 04:40, at most SOURCE_CHECK_MAX_ROWS rows, one batch). Both do
+  // nothing without an API key (AI_BATCHES=off / SOURCE_CHECK_ENABLED=off switch them off).
+  aiBatchesTask = scheduleGuarded('*/10 * * * *', 'ai-batches',
+    (ctx) => runScheduled('ai-batches', ctx, async () => (await import('./aiBatch.js')).pollBatches(await getDb())));
+  sourceCheckTask = scheduleGuarded('40 4 * * 0', 'source-check',
+    (ctx) => runScheduled('source-check', ctx, async () => (await import('./sourceChecks/index.js')).runWeeklySourceCheck(await getDb())), { timezone: tz });
   // Daily maintenance: expired sign-in tokens, idempotency keys, job records.
   tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup',
     (ctx) => runScheduled('refresh-token-cleanup', ctx, cleanupExpiredTokens), { timezone: tz });
@@ -465,8 +475,8 @@ export function startScheduler() {
 
 export function stopScheduler() {
   stopReminderDispatcher();
-  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask, custodyHeldTask]) t?.destroy?.();
-  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = custodyHeldTask = null;
+  for (const t of [consultReminderTask, receiptsTask, tokenCleanupTask, nightlyTask, linkExpiryTask, bdCourtTask, pdCourtTask, checkinTextsTask, checkinMissedTask, arrestFeedsTask, bdAutopayTask, custodyHeldTask, aiBatchesTask, sourceCheckTask]) t?.destroy?.();
+  consultReminderTask = receiptsTask = tokenCleanupTask = nightlyTask = linkExpiryTask = bdCourtTask = pdCourtTask = checkinTextsTask = checkinMissedTask = arrestFeedsTask = bdAutopayTask = custodyHeldTask = aiBatchesTask = sourceCheckTask = null;
   stopHealthScanScheduler();
 }
 

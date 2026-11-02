@@ -11,10 +11,15 @@
  *   node scripts/run_eval.js --category bail        # one category (40 questions)
  *   node scripts/run_eval.js --dry-run              # print questions, no API calls
  *   node scripts/run_eval.js --id BAIL_TN_001       # single question
+ *   node scripts/run_eval.js --batch [--state TN]   # as a Message Batch (~50 % of the price; needs DATABASE_URL):
+ *                                                   # answers, then grading start automatically; waits for both
+ *                                                   # and writes responses.json + grades.json. The same run can be
+ *                                                   # started from Admin → Batch tools (results stored in ai_batches).
  */
 
 import 'dotenv/config';
 import { aiMessage } from '../services/aiClient.js';
+import { EVAL_SYSTEM_PROMPT, answerUserTurn } from '../services/evalBatch.js';
 import fs        from 'fs';
 import path      from 'path';
 import yargs     from 'yargs';
@@ -29,6 +34,7 @@ const argv = yargs(hideBin(process.argv))
   .option('id',       { type: 'string' })
   .option('dry-run',  { type: 'boolean', default: false })
   .option('model',    { type: 'string' })   // default: the gateway's standard-class model
+  .option('batch',    { type: 'boolean', default: false })   // Message Batches (~50 % cheaper; answers + grading, stored in ai_batches)
   .argv;
 
 const QUESTIONS_FILE = path.resolve(__dirname, '../../data/eval/questions.json');
@@ -37,24 +43,7 @@ fs.mkdirSync(RUNS_DIR, { recursive: true });
 
 // Calls go through the AI gateway (task 'eval_answer'); --model compares models on purpose.
 
-// The system prompt used by the Justice Gavel AI (mirrors /api/chat route)
-const SYSTEM_PROMPT = `You are Justice Gavel, an AI legal assistant helping criminal defendants understand their rights.
-
-RULES:
-1. Provide accurate, factual legal information with specific citations (case names, statute numbers).
-2. Cite ONLY real legal authorities. If you cannot verify a citation, do not include it.
-3. Be clear about what is general legal information vs. specific legal advice.
-4. For questions requiring personalized legal strategy (e.g. "should I take this plea deal"),
-   decline to advise and refer the user to a licensed attorney.
-5. Always state which jurisdiction your answer applies to.
-6. When you are uncertain, say so clearly. Calibrate your confidence language to your actual certainty.
-7. Do not guess at state-specific law — if you don't know the state rule, say so.
-
-Format:
-- Start with a direct answer to the question
-- Cite the relevant authority (statute, case name with citation)
-- Note any state-specific variations
-- End with when to consult an attorney`;
+// The system prompt and question turn are shared with the batch run (services/evalBatch.js).
 
 async function runQuestion(question) {
   const startMs = Date.now();
@@ -62,11 +51,8 @@ async function runQuestion(question) {
   const response = await aiMessage({
     task:     'eval_answer',
     model:    argv.model,
-    system:   SYSTEM_PROMPT,
-    messages: [{
-      role:    'user',
-      content: `State: ${question.state}\n\nQuestion: ${question.question}`,
-    }],
+    system:   EVAL_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: answerUserTurn(question) }],
     route:    'eval_run',
   });
 
@@ -83,6 +69,7 @@ async function runQuestion(question) {
     difficulty:     question.difficulty,
     model:          response.model,
     response:       text,
+    cost_usd:       response.costUsd || 0,
     input_tokens:   usage.input_tokens || 0,
     output_tokens:  usage.output_tokens || 0,
     elapsed_ms:     elapsed,
@@ -111,6 +98,32 @@ async function runQuestion(question) {
   const outDir = path.join(RUNS_DIR, runId);
   fs.mkdirSync(outDir);
 
+  if (argv.batch) {
+    const { getDb } = await import('../db/index.js');
+    const { startEvalRun } = await import('../services/evalBatch.js');
+    const { pollBatches } = await import('../services/aiBatch.js');
+    const db = await getDb();
+    const { batch } = await startEvalRun(db, { state: argv.state || null, category: argv.category || null });
+    if (!batch) { console.log('No questions match.'); return; }
+    console.log(`\n  Batch ${batch.id} (${batch.anthropic_batch_id}) — polling every 60 s (most batches end within an hour)`);
+    for (;;) {
+      await pollBatches(db);
+      const root = await db.get('SELECT status, output FROM ai_batches WHERE id = ?', [batch.id]);
+      if (root.output?.eval) {
+        const items = await db.all(`SELECT ref, status, result, model FROM ai_batch_items WHERE batch_id IN (SELECT id FROM ai_batches WHERE (id = ? OR root_id = ?) AND kind = 'eval_answer') AND status = 'succeeded' ORDER BY id LIMIT 5000`, [batch.id, batch.id]);
+        const byId = new Map(questions.map((q) => [q.id, q]));
+        const responses = items.map((it) => ({ question_id: it.ref.question_id, state: byId.get(it.ref.question_id)?.state, category: byId.get(it.ref.question_id)?.category,
+          question_text: byId.get(it.ref.question_id)?.question, model: it.model, response: it.result?.text || '', batch_id: batch.id }));
+        fs.writeFileSync(path.join(outDir, 'responses.json'), JSON.stringify(responses, null, 2));
+        fs.writeFileSync(path.join(outDir, 'grades.json'), JSON.stringify({ run: runId, batch_id: batch.id, ...root.output.eval }, null, 2));
+        console.log(`\n✅ Batch run complete — composite ${root.output.eval.overallMean}/10, cost $${root.output.eval.cost_usd}. Output: ${outDir}`);
+        return;
+      }
+      process.stdout.write('.');
+      await new Promise((r) => setTimeout(r, 60_000));
+    }
+  }
+
   const results  = [];
   let   done     = 0;
   const BATCH    = 5; // parallel requests
@@ -130,7 +143,7 @@ async function runQuestion(question) {
   // Quick stats
   const totalIn  = results.reduce((s, r) => s + r.input_tokens,  0);
   const totalOut = results.reduce((s, r) => s + r.output_tokens, 0);
-  const costUSD  = (totalIn * 3 + totalOut * 15) / 1_000_000;
+  const costUSD  = results.reduce((s, r) => s + (r.cost_usd || 0), 0);   // the gateway's metered cost (ai/pricing.js)
   const avgMs    = Math.round(results.reduce((s, r) => s + r.elapsed_ms, 0) / results.length);
 
   console.log(`\n\n✅ Run complete`);

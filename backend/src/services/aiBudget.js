@@ -158,7 +158,8 @@ async function maybeAlert() {
  *     usage | inputTokens/outputTokens,      raw API usage (cache fields included) or flat counts
  *     costUsd,                               precomputed (refusal / fallback rules); else priced here
  *     durationMs, task, taskClass, requestedModel, stopReason, refusal, refusalCategory,
- *     fallbackModel, errorCode, requestId, traceId, inputTokensEstimated, preflightMethod }
+ *     fallbackModel, errorCode, requestId, traceId, inputTokensEstimated, preflightMethod,
+ *     batchId (a Message Batches result — costUsd is then the batch price) }
  * status: completed | failed | refused (final refusal) | declined (refused, retried on the
  * fallback model) | invalid (answer failed its schema — not shown).
  * Returns the cost in USD.
@@ -168,6 +169,7 @@ export async function recordAiUsage({
   costUsd: preCost = null, durationMs = null, status = 'completed', task = null, taskClass = null,
   requestedModel = null, stopReason = null, refusal = false, refusalCategory = null, fallbackModel = null,
   errorCode = null, requestId = null, traceId = null, inputTokensEstimated = null, preflightMethod = null,
+  batchId = null,
 } = {}) {
   rollDay();
   const t = tokensOf(usage || { input_tokens: inputTokens, output_tokens: outputTokens });
@@ -179,13 +181,14 @@ export async function recordAiUsage({
     await db.run(
       `INSERT INTO ai_usage_log (user_id, route, endpoint, model, input_tokens, output_tokens, cost_usd, duration_ms, status, completed_at,
          task, task_class, requested_model, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, stop_reason,
-         refusal, refusal_category, fallback_model, error_code, request_id, trace_id, input_tokens_estimated, preflight)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         refusal, refusal_category, fallback_model, error_code, request_id, trace_id, input_tokens_estimated, preflight, batch_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [Number.isFinite(Number(userId)) && userId != null ? Number(userId) : null, String(route).slice(0, 80), String(route).slice(0, 80),
        String(model || '').slice(0, 80), t.input, t.output, cost, durationMs == null ? null : Math.round(durationMs), status,
        s80(task), s80(taskClass), s80(requestedModel), t.cacheRead, t.cacheWrite5m, t.cacheWrite1h, s80(stopReason),
        !!refusal, s80(refusalCategory), s80(fallbackModel), s80(errorCode), s80(requestId), s80(traceId),
-       inputTokensEstimated == null ? null : Math.round(inputTokensEstimated), s80(preflightMethod)]
+       inputTokensEstimated == null ? null : Math.round(inputTokensEstimated), s80(preflightMethod),
+       Number.isFinite(Number(batchId)) && batchId != null ? Number(batchId) : null]
     );
   } catch (e) {
     logger.warn({ err: e.message, route }, '[ai_budget] usage log insert failed');

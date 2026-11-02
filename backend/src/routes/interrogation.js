@@ -40,6 +40,7 @@ const router = express.Router();
 // Connecticut, Michigan, Hawaii, Maine and Missouri have mixed rules; the Illinois note
 // cited a case that does not exist. Data: recordingLaws_data.js (checked per state).
 import { RECORDING_LAWS } from './recordingLaws_data.js';
+import { isWithheld, approvedSource, checkedOn } from '../ai/sourceOverlay.js';
 /** Back-compat: states where every party must consent to record a private conversation. */
 export const TWO_PARTY_LAWS = Object.fromEntries(
   Object.entries(RECORDING_LAWS).filter(([, v]) => v.consent === 'all-party').map(([k, v]) => [k, v.citation]));
@@ -60,7 +61,7 @@ export function recordingStateCode(state) {
 
 export function getRecordingLaw(state, lang = 'en') {
   const code = recordingStateCode(state);
-  const r = code ? RECORDING_LAWS[code] : null;
+  const r = code && !isWithheld('recording', code) ? RECORDING_LAWS[code] : null;   // withheld after a source check → "unknown"
   if (!r) {
     return { state: code, consent: 'unknown', law: null, warn: true, note: msg(lang, 'reclaw.note.unknown'), source_url: null, verified: false };
   }
@@ -75,7 +76,8 @@ export function getRecordingLaw(state, lang = 'en') {
   return {
     state: code, consent, law: r.citation, warn: consent !== 'one-party',
     note: lang === 'en' ? detail : generic,
-    note_detail_en: detail, source_url: r.source_url || null, verified,
+    note_detail_en: detail, source_url: approvedSource('recording', code) || r.source_url || null, verified,
+    checked: checkedOn('recording', code, '2026-10-25'),
   };
 }
 
