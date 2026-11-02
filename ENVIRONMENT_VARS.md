@@ -22,6 +22,13 @@ settings `TELNYX_VOICE_ENABLED` (default off), `TELNYX_VOICE_NUMBER`, the option
 `TELNYX_VOICE_EN` / `TELNYX_VOICE_ES`, `PHONE_LINE_TIME_ZONE`, and the optional `PHONE_CODE_SECRET`
 (phone-verification codes are stored only as an HMAC) — see DEPLOY_ENV_SETUP.md and docs/PHONE_LINE.md.
 
+The AI gateway (November 2026, migration 44, docs/AI_PLATFORM.md) adds per-class routing
+(`AI_MODEL_QUICK|STANDARD|DEEP`, `AI_EFFORT_*`, `AI_THINKING_*`, `AI_THINKING_HEADROOM_*`), refusal fallback
+(`AI_FALLBACK`, `AI_FALLBACK_MODEL`), prompt caching (`AI_CACHE`, `AI_CHAT_CACHE_TTL`), preflight limits
+(`AI_COUNT_TOKENS_THRESHOLD`, `AI_MAX_INPUT_TOKENS`, `AI_MAX_REQUEST_USD`), tracing (`AI_TRACE_PROPAGATION`) and the
+hourly AI alert (`AI_ALERT_MIN_CALLS`, `AI_ALERT_ERROR_PCT`, `AI_ALERT_REFUSAL_PCT`). Every one has a working default;
+see DEPLOY_ENV_SETUP.md.
+
 ## Settings that wait for counsel (⚖)
 
 These are built and tested, but stay **off in production** until the counsel question is answered

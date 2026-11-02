@@ -1,10 +1,9 @@
-import { CLAUDE_MODEL } from '../../utils/ai.js';
 /**
  * chat/_helpers.js — shared by POST /chat/ask (job) and POST /chat/stream (SSE)
  *
  * chatContext()           — who is asking: defender mode allowed?, unlimited?, quota left
  * readChatBody()          — validate the request body (400 messages in the request language)
- * buildChatRequest()      — system prompt + messages for the Anthropic call
+ * buildChatRequest()      — system prompt parts (cached) + messages for the AI gateway call
  * findReplay()            — a retry of a question that was already answered
  * saveExchange()          — persist the question + answer (complete | stopped)
  * callClaude()            — non-streamed call (job path)
@@ -12,12 +11,12 @@ import { CLAUDE_MODEL } from '../../utils/ai.js';
  * detectLawyerHandoff(), classifyIntent(), buildCaseNote(), buildJurisdictionNote()
  */
 import { safeJson } from '../../utils/routeHelpers.js';
-import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
+import { aiMessage } from '../../services/aiClient.js';
 import logger               from '../../utils/logger.js';
 import { hasFeature }       from '../../services/entitlements.js';
 import { FEATURES }         from '../billing/plans.js';
 import { randomUUID }       from 'crypto';
-import { rightsPromptBlock } from '../../services/rightsContent.js';
+import { rightsPromptParts } from '../../services/rightsContent.js';
 import { msg, resolveLang, LANG_NAMES } from '../../i18n/index.js';
 import { isValidTimeZone, todayInZone, zonedDateTimeToUtc, addDays, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT } from './_prompts.js';
@@ -116,7 +115,14 @@ export function languageInstruction(lang) {
     + '. Keep phone numbers, names of laws and courts, and any words they must say out loud exactly as given.';
 }
 
-/** System prompt + messages for one question. */
+/**
+ * System prompt parts + messages for one question (services/aiClient.js systemBlocks()).
+ * Prompt caching: the big stable part (rules + the verified rights card, identical for every
+ * person) is the first block and carries the chat cache breakpoint (AI_CHAT_CACHE_TTL, 1 hour
+ * by default — docs/AI_PLATFORM.md has the break-even); the small per-person part (state note,
+ * language) follows uncached. The conversation itself is cached automatically
+ * (cacheConversation), so a follow-up question re-reads the history from cache.
+ */
 export function buildChatRequest({ history, body, lang, defender }) {
   const contextParts = [];
   if (body.city) contextParts.push(`City: ${body.city}`);
@@ -126,13 +132,15 @@ export function buildChatRequest({ history, body, lang, defender }) {
   const jurisdictionNote = buildJurisdictionNote(body.user_state, body.user_state_name);
   // Consumer answers about rights are grounded in the verified rights card
   // (services/rightsContent.js) and cite it; "talk to a lawyer" otherwise.
-  const system = (defender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rightsPromptBlock(body.user_state))
-    + languageInstruction(lang);
+  const rights = rightsPromptParts(body.user_state);
+  const stable = defender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT + '\n\n' + rights.stable;
+  const perPerson = (!defender && rights.stateNote ? rights.stateNote + '\n' : '') + languageInstruction(lang).trim();
+  const system = [{ text: stable, cache: 'chat' }, { text: perPerson }];
   const messages = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: caseNote + body.message + contextNote + jurisdictionNote },
   ];
-  return { system, messages, max_tokens: defender ? 1500 : 800 };
+  return { task: defender ? 'chat_defender' : 'chat', system, messages, max_tokens: defender ? 1500 : 800 };
 }
 
 export async function getHistory(db, sessionId, limit = 20, userId = null) {
@@ -247,24 +255,18 @@ export function buildJurisdictionNote(user_state, user_state_name) {
 }
 
 /** Non-streamed answer (job path). Throws an AI error with a code (aiClient.aiErrorCode). */
-export async function callClaude({ system, messages, max_tokens, defender, userId }) {
-  // Per-attempt timeout, transient-failure retries, budget check and metering:
-  // services/aiClient.js. This AbortController is the overall 45 s deadline
-  // across all attempts (the queued job's own timeout is 45 s too).
+export async function callClaude({ task, system, messages, max_tokens, defender, userId }) {
+  // Routing, caching, refusal handling, per-attempt timeout, retries, budget and metering:
+  // services/aiClient.js. This AbortController is the overall 45 s deadline across all
+  // attempts (the queued job's own timeout is 45 s too).
   const route = defender ? 'chat_defender' : 'chat';
   const deadline = new AbortController();
   const deadlineTimer = setTimeout(() => deadline.abort(), 45_000);
-  const response = await anthropicFetch({
-    signal: deadline.signal,
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens, system, messages }),
-  }, { route, userId: userId ?? null, timeoutMs: 40_000 })
-    .finally(() => clearTimeout(deadlineTimer));
-
-  if (!response.ok) throw await aiHttpError(response, route);
-  const data = await response.json();
-  const text = data.content?.[0]?.text;
-  if (!text) throw Object.assign(new Error('empty AI answer'), { code: 'ai_failed' });
-  return text;
+  const out = await aiMessage({
+    task: task || route, system, messages, maxTokens: max_tokens, cacheConversation: true,
+    route, userId: userId ?? null, signal: deadline.signal, timeoutMs: 40_000,
+  }).finally(() => clearTimeout(deadlineTimer));
+  return out.text;
 }
 
 export function classifyIntent(message) {

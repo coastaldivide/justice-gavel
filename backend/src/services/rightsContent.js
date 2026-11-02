@@ -514,15 +514,26 @@ export async function getRightsCard(db, rawState, { lang = 'en' } = {}) {
  * keys to cite. The unreviewed per-state summaries are NOT included.
  */
 export function rightsPromptBlock(rawState) {
+  const { stable, stateNote } = rightsPromptParts(rawState);
+  return stateNote ? `${stable}\n${stateNote}` : stable;
+}
+
+/**
+ * The same block split for prompt caching: `stable` (the rights card and the answer rule —
+ * identical for every person) and `stateNote` (only when a state is chosen).
+ */
+export function rightsPromptParts(rawState) {
   const code = normalizeState(rawState);
   const parts = ['[VERIFIED RIGHTS CONTENT — Justice Gavel rights card]'];
   for (const s of GENERAL_SECTIONS) {
     parts.push(`(${s.key}) ${s.heading}: ${s.body.replace(/\s+/g, ' ').trim()}`);
   }
   parts.push('[END VERIFIED RIGHTS CONTENT]');
-  if (code) parts.push(`No reviewed state-specific rights content exists yet for ${STATE_NAMES[code]}. Do not state ${STATE_NAMES[code]}-specific rules (ID laws, deadlines, bail rules) as fact; say they vary by state and suggest asking a local lawyer or public defender.`);
   parts.push('When the question is about rights during a stop, search, questioning or arrest, answer ONLY from the verified content above and name the section you used, e.g. "(see your rights card: rc_1)". If the verified content does not answer the question, say that you are not sure and that they should talk to a lawyer or public defender — do not guess.');
-  return parts.join('\n');
+  const stateNote = code
+    ? `No reviewed state-specific rights content exists yet for ${STATE_NAMES[code]}. Do not state ${STATE_NAMES[code]}-specific rules (ID laws, deadlines, bail rules) as fact; say they vary by state and suggest asking a local lawyer or public defender.`
+    : '';
+  return { stable: parts.join('\n'), stateNote };
 }
 
 // Words for each section's topic in the app's eight languages (en, es, pt, vi, ht, zh, ar, tl).

@@ -70,7 +70,7 @@ describe('FLOW. 5 Runtime Flow Traces', () => {
     const generate = fs.readFileSync(__REPO + '/backend/src/routes/motions/generate.js','utf8');
     expect(generate).toContain('enqueue');
     // callClaude or direct anthropic call pattern
-    const hasAiCall = helpers.includes('callClaude') || helpers.includes('anthropic') || helpers.includes('claude');
+    const hasAiCall = helpers.includes('callClaude') || helpers.includes('anthropic') || helpers.includes('claude') || helpers.includes('aiMessage');   // aiMessage: the AI gateway
     expect(hasAiCall).toBe(true);
     expect(helpers).toContain('generateMotion');
     // generate.js route delegates to helper
@@ -93,7 +93,7 @@ describe('FLOW. 5 Runtime Flow Traces', () => {
       const src=fs.readFileSync(path.join(expDir,f),'utf8');
       if(src.includes('petition')) petSrc += src;
     }
-    expect(petSrc).toMatch(/enqueue|callClaude|anthropic/i);
+    expect(petSrc).toMatch(/enqueue|callClaude|anthropic|aiMessage/i);   // aiMessage: the AI gateway
     // rules.js is a pure data module (not a router — no auth needed)
     const rules = fs.readFileSync(path.join(expDir,'rules.js'),'utf8');
     expect(rules).toContain('STATE_RULES');

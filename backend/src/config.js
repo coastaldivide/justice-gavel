@@ -235,6 +235,30 @@ export const ALL_ENV_VARS = {
   AI_BUDGET_ALERT_PCT:      process.env.AI_BUDGET_ALERT_PCT        || '80',  // SEV-2 alert at this share of the cap; SEV-1 at 100 %
   AI_PRICE_INPUT_PER_MTOK:  process.env.AI_PRICE_INPUT_PER_MTOK    || '',    // override the USD/1M input-token price used for metering
   AI_PRICE_OUTPUT_PER_MTOK: process.env.AI_PRICE_OUTPUT_PER_MTOK   || '',    // override the USD/1M output-token price used for metering
+  // AI gateway (services/aiClient.js, ai/tasks.js; docs/AI_PLATFORM.md)
+  AI_MODEL_QUICK: process.env.AI_MODEL_QUICK || 'claude-haiku-5-5',  // model for the quick class (short translation, note tidy-up, match blurbs, eval grading)
+  AI_MODEL_STANDARD: process.env.AI_MODEL_STANDARD || '',  // model for the standard class (chat, explanations, extraction); empty = CLAUDE_MODEL
+  AI_MODEL_DEEP: process.env.AI_MODEL_DEEP || 'claude-opus-5-5',  // model for the deep class (motions, petitions, contracts, document review, research)
+  AI_EFFORT_QUICK: process.env.AI_EFFORT_QUICK || 'low',  // output_config.effort for the class: low | medium | high | xhigh | max | default (omit)
+  AI_EFFORT_STANDARD: process.env.AI_EFFORT_STANDARD || 'medium',  // output_config.effort for the standard class
+  AI_EFFORT_DEEP: process.env.AI_EFFORT_DEEP || 'high',  // output_config.effort for the deep class
+  AI_THINKING_QUICK: process.env.AI_THINKING_QUICK || 'disabled',  // thinking for the class: adaptive | disabled | default (omit); mapped onto what the model accepts
+  AI_THINKING_STANDARD: process.env.AI_THINKING_STANDARD || 'adaptive',  // thinking for the standard class (always display "omitted": never shown)
+  AI_THINKING_DEEP: process.env.AI_THINKING_DEEP || 'adaptive',  // thinking for the deep class
+  AI_THINKING_HEADROOM_QUICK: process.env.AI_THINKING_HEADROOM_QUICK || '0',  // extra max_tokens when thinking is on (thinking counts toward max_tokens)
+  AI_THINKING_HEADROOM_STANDARD: process.env.AI_THINKING_HEADROOM_STANDARD || '2000',  // extra max_tokens for the standard class when thinking is on
+  AI_THINKING_HEADROOM_DEEP: process.env.AI_THINKING_HEADROOM_DEEP || '6000',  // extra max_tokens for the deep class when thinking is on
+  AI_FALLBACK: process.env.AI_FALLBACK || 'auto',  // refusal fallback: auto (server-side fallbacks "default" where supported, else one retry on AI_FALLBACK_MODEL) | off
+  AI_FALLBACK_MODEL: process.env.AI_FALLBACK_MODEL || '',  // client-side refusal retry model (models without server-side fallback, e.g. Haiku 5.5); empty = the standard class model
+  AI_CACHE: process.env.AI_CACHE || 'on',  // prompt caching breakpoints: on | off
+  AI_CHAT_CACHE_TTL: process.env.AI_CHAT_CACHE_TTL || '1h',  // chat system-prompt cache lifetime: 1h | 5m (break-even in docs/AI_PLATFORM.md)
+  AI_COUNT_TOKENS_THRESHOLD: process.env.AI_COUNT_TOKENS_THRESHOLD || '20000',  // requests estimated at or above this many input tokens (or with documents / images) are counted with /v1/messages/count_tokens first
+  AI_MAX_INPUT_TOKENS: process.env.AI_MAX_INPUT_TOKENS || '150000',  // refuse a request over this many input tokens before sending it (ai_too_large)
+  AI_MAX_REQUEST_USD: process.env.AI_MAX_REQUEST_USD || '2',  // refuse a request whose worst-case cost (input + max_tokens output) is over this, before sending it
+  AI_TRACE_PROPAGATION: process.env.AI_TRACE_PROPAGATION || 'off',  // on = send a W3C traceparent header on every AI call and store the trace id in ai_usage_log
+  AI_ALERT_MIN_CALLS: process.env.AI_ALERT_MIN_CALLS || '20',  // AI error / refusal alerts need at least this many calls in the hour
+  AI_ALERT_ERROR_PCT: process.env.AI_ALERT_ERROR_PCT || '20',  // hourly alert when more than this % of AI calls fail or fail validation
+  AI_ALERT_REFUSAL_PCT: process.env.AI_ALERT_REFUSAL_PCT || '10',  // hourly alert when more than this % of AI calls end in a refusal
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',

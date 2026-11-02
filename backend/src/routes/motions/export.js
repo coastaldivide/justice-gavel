@@ -1,5 +1,5 @@
-import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
-import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { aiMessage } from '../../services/aiClient.js';
+import { requireAi } from '../../utils/ai.js';
 import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 /**
  * routes/motions/export.js — PDF Motion Export
@@ -114,29 +114,26 @@ router.post('/:id/refine', authRequired, requireAi, pdfLimiter, async (req, res)
     if (!motion) return err404(res, 'Motion not found.');
 
     const jobId = await enqueue('motion_refine', async () => {
-      // Ask Claude to clean up the draft for PDF (remove markdown, fix formatting)
-      const cleanPrompt = `${MOTION_PDF_SYSTEM_PROMPT}
+      // Ask Claude to clean up the draft for PDF (remove markdown, fix formatting). The
+      // instructions are the cached system prompt; the draft is the user turn.
+      const cleanSystem = `${MOTION_PDF_SYSTEM_PROMPT}
 
-The following motion draft was AI-generated and needs to be cleaned for court filing.
+The motion draft in the user turn was AI-generated and needs to be cleaned for court filing.
 Remove any markdown symbols (**, #, *, etc.), fix spacing, ensure all sections are properly
 numbered, and ensure the document reads as clean, professional legal text.
 Do NOT change the substance — only clean up formatting and remove AI meta-commentary.
 
-DRAFT:
-${String(motion.draft || "").slice(0, 8000)}
-
 OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
 
-      const resp = await anthropicFetch({
-        body: JSON.stringify({
-          model:       CLAUDE_MODEL,
-          max_tokens:  8000,
-          messages:    [{ role: 'user', content: cleanPrompt }],
-        }),
-      }, { route: 'motions_export', userId: req.user.id, timeoutMs: 180_000, retries: 1 });
-      if (!resp.ok) throw await aiHttpError(resp, 'motions_export');
-      const data    = await resp.json();
-      const refined = data.content?.[0]?.text || motion.draft;
+      // Routing (class 'standard'), caching, budget, timeout/retries, refusals, metering: aiClient.
+      // A failed or refused clean-up fails the job: the PDF is never made from unchecked text.
+      const out = await aiMessage({
+        task: 'motion_refine',
+        system: [{ text: cleanSystem, cache: '5m' }],
+        messages: [{ role: 'user', content: `DRAFT:\n${String(motion.draft || '').slice(0, 8000)}` }],
+        route: 'motions_export', userId: req.user.id, timeoutMs: 180_000, retries: 1,
+      });
+      const refined = out.text;
 
       const fields = safeJson(motion.case_fields, {});
 

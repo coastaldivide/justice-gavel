@@ -104,16 +104,18 @@ describe('daily cap', () => {
     }
   });
 
-  test('the SDK path (queued jobs, bar-prep explanations) is capped too', async () => {
-    const { sdkMessagesCreate } = await import('../services/aiClient.js');
+  test('the gateway path (aiMessage: queued jobs, bar-prep explanations, every routed task) is capped too', async () => {
+    const { aiMessage } = await import('../services/aiClient.js');
     const { _resetAiBudgetForTests, recordAiUsage } = await import('../services/aiBudget.js');
     _resetAiBudgetForTests();
     process.env.AI_DAILY_BUDGET_USD = '0.01';
     const warn = jest.spyOn(console, 'error').mockImplementation(() => {});
     try {
       await recordAiUsage({ route: 'x', model: 'claude-sonnet-4-6', outputTokens: 1000 });
-      await expect(sdkMessagesCreate({ model: 'claude-sonnet-4-6', max_tokens: 5, messages: [] }, { route: 'x' }))
+      const fetchImpl = jest.fn();
+      await expect(aiMessage({ task: 'queue_job', messages: [{ role: 'user', content: 'x' }], route: 'x', fetchImpl }))
         .rejects.toMatchObject({ code: 'ai_budget_exceeded', status: 503 });
+      expect(fetchImpl).not.toHaveBeenCalled();
     } finally { warn.mockRestore(); _resetAiBudgetForTests(); delete process.env.AI_DAILY_BUDGET_USD; }
   });
 

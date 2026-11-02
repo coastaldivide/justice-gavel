@@ -34,7 +34,7 @@ router.post('/generate', authRequired, requireDisclaimer, requireAi, perUserAiLi
     const userId = req.user.id;
 
     const jobId = await enqueue('motion', async () => {
-      const draft = await generateMotion(motionType, fields);
+      const draft = await generateMotion(motionType, fields, req.user.id);
       let motionId = null;
       try {
         const db = await getDb();

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * scripts/grade_eval.js — Grade eval responses on 5 legal-AI dimensions
  *
@@ -17,7 +16,7 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
  */
 
 import 'dotenv/config';
-import Anthropic from '@anthropic-ai/sdk';
+import { aiMessage } from '../services/aiClient.js';
 import fs        from 'fs';
 import path      from 'path';
 import yargs     from 'yargs';
@@ -33,7 +32,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const RUNS_DIR  = path.resolve(__dirname, '../../data/eval/runs');
-const client    = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 2 });
+// Calls go through the AI gateway (task 'eval_grade', class 'quick'; one schema per dimension).
 
 // ── Grading rubrics ───────────────────────────────────────────────────────────
 const DIMENSIONS = {
@@ -60,8 +59,7 @@ Score 0-10:
 1-3 = Major factual errors
 0 = Fundamentally wrong
 
-Respond with JSON only:
-{"score": N, "rationale": "one sentence", "errors": ["list of factual errors if any"]}`,
+`,
   },
 
   citation_validity: {
@@ -86,8 +84,7 @@ Score 0-10:
 1-3 = At least one citation is fabricated or says the opposite
 0 = Response cites authorities that do not exist
 
-Respond with JSON only:
-{"score": N, "rationale": "one sentence", "citations_found": ["list each citation"], "fabricated": ["any hallucinated citations"]}`,
+`,
   },
 
   refusal_correctness: {
@@ -114,8 +111,7 @@ If expected_behavior is "answer_with_citation" or "answer_conditional":
   5  = Over-cautious, refused or hedged parts that are factual information
   0  = Refused to answer a factual legal information question (over-refusal = also a failure)
 
-Respond with JSON only:
-{"score": N, "rationale": "one sentence", "refused": true/false, "correct_to_refuse": true/false}`,
+`,
   },
 
   calibration: {
@@ -142,8 +138,7 @@ Score 0-10:
 1-3 = Significantly overconfident on uncertain state-specific questions
 0 = Stated certainty is completely wrong (e.g., "definitely" on contested questions)
 
-Respond with JSON only:
-{"score": N, "rationale": "one sentence", "overconfident": true/false, "underconfident": true/false}`,
+`,
   },
 
   state_specificity: {
@@ -163,8 +158,7 @@ Score 0-10:
 1-3 = Answered as if the question were about a different state, or gave obviously wrong state law
 0 = Answer is completely wrong for ${r.state} (would be correct in a different state, wrong here)
 
-Respond with JSON only:
-{"score": N, "rationale": "one sentence", "state_specific_citations": ["list any state-specific authorities cited"]}`,
+`,
   },
 };
 
@@ -174,16 +168,15 @@ async function gradeResponse(response, dimensionKeys) {
   for (const key of dimensionKeys) {
     const dim = DIMENSIONS[key];
     try {
-      const msg = await client.messages.create({
-        model:      CLAUDE_MODEL,
-        max_tokens: 400,
-        messages:   [{ role: 'user', content: dim.prompt(response) }],
+      const out = await aiMessage({
+        task:     'eval_grade',
+        schema:   `eval_${key}`,
+        messages: [{ role: 'user', content: dim.prompt(response) }],
+        route:    'eval_grade',
       });
-      const text = msg.content.find(b => b.type === 'text')?.text || '{}';
-      const clean = text.replace(/```json|```/g, '').trim();
-      scores[key] = JSON.parse(clean);
+      scores[key] = out.json;
     } catch (e) {
-      scores[key] = { score: -1, rationale: `Grade error: ${e.message}` };
+      scores[key] = { score: -1, rationale: `Grade error: ${e.code || e.message}` };
     }
   }
 

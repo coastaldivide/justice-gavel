@@ -16,9 +16,9 @@
  *                         SEV-1 alert per day (monitoring/errorNotifier.js:
  *                         ONCALL_EMAIL / ALERT_WEBHOOK_URL / Sentry).
  *   AI_PRICE_INPUT_PER_MTOK / AI_PRICE_OUTPUT_PER_MTOK
- *                         override the per-million-token prices used for the
- *                         estimate (defaults follow the model family and err
- *                         on the high side).
+ *                         override the per-million-token input / output prices
+ *                         of every model (the table, with cache rates and the
+ *                         doc URL + date, is ai/pricing.js).
  *
  * Per-user limits live in middleware/sharedAiLimiter.js (60 AI calls / user /
  * hour across all AI routes) and the free-tier daily chat cap; this module is
@@ -27,6 +27,7 @@
 import { getDb } from '../db/index.js';
 import logger from '../utils/logger.js';
 import { CLAUDE_MODEL } from '../utils/ai.js';
+import { ratesFor, costUsd, tokensOf } from '../ai/pricing.js';
 
 const SYNC_MS = 60_000;
 
@@ -42,22 +43,18 @@ export function alertPct() {
   return Number.isFinite(n) && n > 0 && n < 100 ? n : 80;
 }
 
-/** USD per million tokens for a model id (conservative family defaults). */
+/**
+ * USD per million tokens (input / output) for a model id — ai/pricing.js holds the one table
+ * (with cache rates and the doc URL + date it was read).
+ */
 export function modelPrice(model = CLAUDE_MODEL) {
-  const m = String(model || '').toLowerCase();
-  let p = { input: 3, output: 15 };                       // Sonnet family
-  if (m.includes('opus'))  p = { input: 15, output: 75 };
-  if (m.includes('haiku')) p = { input: 1, output: 5 };
-  const inEnv = Number(process.env.AI_PRICE_INPUT_PER_MTOK);
-  const outEnv = Number(process.env.AI_PRICE_OUTPUT_PER_MTOK);
-  if (Number.isFinite(inEnv) && inEnv >= 0 && process.env.AI_PRICE_INPUT_PER_MTOK !== '') p.input = inEnv;
-  if (Number.isFinite(outEnv) && outEnv >= 0 && process.env.AI_PRICE_OUTPUT_PER_MTOK !== '') p.output = outEnv;
-  return p;
+  const r = ratesFor(model);
+  return { input: r.input, output: r.output };
 }
 
+/** Cost of plain (uncached) input + output tokens. Cached calls: ai/pricing.js costUsd(). */
 export function estimateCostUsd(model, inputTokens = 0, outputTokens = 0) {
-  const p = modelPrice(model);
-  return ((Number(inputTokens) || 0) * p.input + (Number(outputTokens) || 0) * p.output) / 1_000_000;
+  return costUsd(model, { input_tokens: inputTokens, output_tokens: outputTokens });
 }
 
 const utcDay = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
@@ -156,22 +153,39 @@ async function maybeAlert() {
 }
 
 /**
- * Meter one model call. Never throws (accounting must not break a reply).
- *   { route, userId, model, inputTokens, outputTokens, durationMs, status }
- * Returns the estimated cost in USD.
+ * Meter one model call (one attempt). Never throws (accounting must not break a reply).
+ *   { route, userId, model, status,
+ *     usage | inputTokens/outputTokens,      raw API usage (cache fields included) or flat counts
+ *     costUsd,                               precomputed (refusal / fallback rules); else priced here
+ *     durationMs, task, taskClass, requestedModel, stopReason, refusal, refusalCategory,
+ *     fallbackModel, errorCode, requestId, traceId, inputTokensEstimated, preflightMethod }
+ * status: completed | failed | refused (final refusal) | declined (refused, retried on the
+ * fallback model) | invalid (answer failed its schema — not shown).
+ * Returns the cost in USD.
  */
-export async function recordAiUsage({ route = 'unknown', userId = null, model = CLAUDE_MODEL, inputTokens = 0, outputTokens = 0, durationMs = null, status = 'completed' } = {}) {
+export async function recordAiUsage({
+  route = 'unknown', userId = null, model = CLAUDE_MODEL, inputTokens = 0, outputTokens = 0, usage = null,
+  costUsd: preCost = null, durationMs = null, status = 'completed', task = null, taskClass = null,
+  requestedModel = null, stopReason = null, refusal = false, refusalCategory = null, fallbackModel = null,
+  errorCode = null, requestId = null, traceId = null, inputTokensEstimated = null, preflightMethod = null,
+} = {}) {
   rollDay();
-  const cost = estimateCostUsd(model, inputTokens, outputTokens);
+  const t = tokensOf(usage || { input_tokens: inputTokens, output_tokens: outputTokens });
+  const cost = Number.isFinite(Number(preCost)) && preCost != null ? Number(preCost) : costUsd(model, usage || { input_tokens: inputTokens, output_tokens: outputTokens });
   state.spent += cost;
+  const s80 = (v) => (v == null ? null : String(v).slice(0, 80));
   try {
     const db = await getDb();
     await db.run(
-      `INSERT INTO ai_usage_log (user_id, route, endpoint, model, input_tokens, output_tokens, cost_usd, duration_ms, status, completed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      `INSERT INTO ai_usage_log (user_id, route, endpoint, model, input_tokens, output_tokens, cost_usd, duration_ms, status, completed_at,
+         task, task_class, requested_model, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, stop_reason,
+         refusal, refusal_category, fallback_model, error_code, request_id, trace_id, input_tokens_estimated, preflight)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [Number.isFinite(Number(userId)) && userId != null ? Number(userId) : null, String(route).slice(0, 80), String(route).slice(0, 80),
-       String(model || '').slice(0, 80), Math.max(0, Math.round(inputTokens) || 0), Math.max(0, Math.round(outputTokens) || 0),
-       cost, durationMs == null ? null : Math.round(durationMs), status]
+       String(model || '').slice(0, 80), t.input, t.output, cost, durationMs == null ? null : Math.round(durationMs), status,
+       s80(task), s80(taskClass), s80(requestedModel), t.cacheRead, t.cacheWrite5m, t.cacheWrite1h, s80(stopReason),
+       !!refusal, s80(refusalCategory), s80(fallbackModel), s80(errorCode), s80(requestId), s80(traceId),
+       inputTokensEstimated == null ? null : Math.round(inputTokensEstimated), s80(preflightMethod)]
     );
   } catch (e) {
     logger.warn({ err: e.message, route }, '[ai_budget] usage log insert failed');

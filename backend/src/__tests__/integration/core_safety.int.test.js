@@ -165,8 +165,17 @@ describeIntegration('section A: SOS, recording law, monitors, Quick Connect (rea
   test('5 typed note: a non-string is a 400', async () => {
     const r = await ctx.request().post('/api/transcribe/text').set(alice.headers).send({ text: { a: 1 } });
     expect(r.status).toBe(400);
+    // The AI tidy-up (structured output, ai/schemas note_structure) is used when it is valid …
+    ctx.anthropic.json = { summary: 'Call my lawyer. Court date is Friday.', next_steps: ['Call my lawyer.'], flags: ['Court date is Friday.'] };
     const ok = await ctx.request().post('/api/transcribe/text').set(alice.headers).send({ text: 'Call my lawyer. Court date is Friday.' });
     expect(ok.status).toBe(200);
-    expect(ok.body.note.summary).toContain('Call my lawyer.');
+    expect(ok.body.note).toMatchObject({ summary: 'Call my lawyer. Court date is Friday.', next_steps: ['Call my lawyer.'], flags: ['Court date is Friday.'], raw: 'Call my lawyer. Court date is Friday.' });
+    // … and an invalid answer falls back to the local structuring, never shown as is
+    ctx.anthropic.json = null; ctx.anthropic.mode = 'invalid_json';
+    const local = await ctx.request().post('/api/transcribe/text').set(alice.headers).send({ text: 'Call my lawyer. Court date is Friday.' });
+    ctx.anthropic.mode = 'ok';
+    expect(local.status).toBe(200);
+    expect(local.body.note.summary).toContain('Call my lawyer.');
+    expect(local.body.note.next_steps).toEqual(['Call my lawyer.']);
   });
 });

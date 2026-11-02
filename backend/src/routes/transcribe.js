@@ -3,13 +3,13 @@
  * POST /api/transcribe/audio
  */
 import { fetchWithTimeout } from '../utils/http.js';
-import { anthropicFetch } from '../services/aiClient.js';
+import { aiMessage } from '../services/aiClient.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { transcribeLimiter } from '../utils/rateLimiters.js';
 import { uploadGuard, fileStream, MB } from '../middleware/uploads.js';
 import logger from '../utils/logger.js';
-import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_VERSION } from '../utils/ai.js';
+import { aiConfigured } from '../utils/ai.js';
 import { getDb } from '../db/index.js';
 import { hasFeature } from '../services/entitlements.js';
 import { FEATURES } from './billing/plans.js';
@@ -108,35 +108,31 @@ function structureLocally(text) {
   };
 }
 
-async function structureNote(text) {
+async function structureNote(text, userId = null) {
   const base = structureLocally(text);
   if (!aiConfigured()) return base;
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 30_000);
-    const r = await anthropicFetch({
-      method: 'POST', signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': ANTHROPIC_VERSION },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL, max_tokens: 600,
-        system: 'You organise a person\'s personal notes about their legal case. Reply with ONLY a JSON object: '
-          + '{"summary": string (2-3 sentences), "next_steps": string[], "flags": string[] (deadlines, court dates, risks)}. '
-          + 'Do not give legal advice and do not invent facts.',
-        messages: [{ role: 'user', content: String(text).slice(0, 8000) }],
-      }),
-    }, { route: 'transcribe_summary' }).finally(() => clearTimeout(t));
-    if (!r.ok) throw new Error('Anthropic ' + r.status);
-    const data = await r.json();
-    const txt  = data.content?.[0]?.text || '';
-    const json = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    // Structured output (ai/schemas note_structure) — routing (class 'quick'), budget, refusals,
+    // metering: aiClient. Any failure (refusal, invalid answer) keeps the local structuring.
+    const out = await aiMessage({
+      task: 'note_structure',
+      system: 'You organise a person\'s personal notes about their legal case: a 2-3 sentence summary, '
+        + 'the next steps they wrote down, and flags (deadlines, court dates, risks). '
+        + 'Do not give legal advice and do not invent facts.',
+      messages: [{ role: 'user', content: String(text).slice(0, 8000) }],
+      route: 'transcribe_summary',
+      userId,
+      timeoutMs: 30_000,
+    });
+    const json = out.json;
     return {
       ...base,
-      summary:    typeof json.summary === 'string' ? json.summary : base.summary,
-      next_steps: Array.isArray(json.next_steps) ? json.next_steps.map(String).slice(0, 10) : base.next_steps,
-      flags:      Array.isArray(json.flags) ? json.flags.map(String).slice(0, 10) : base.flags,
+      summary:    json.summary || base.summary,
+      next_steps: json.next_steps.slice(0, 10),
+      flags:      json.flags.slice(0, 10),
     };
   } catch (e) {
-    logger.warn('[transcribe/structure] AI structuring failed, using fallback:', e.message);
+    logger.warn('[transcribe/structure] AI structuring failed, using fallback:', e.code || e.message);
     return base;
   }
 }
@@ -148,7 +144,7 @@ router.post('/text', authRequired, async (req, res) => {
   if (!text) return res.status(400).json({ error: 'text is required' });
   if (text.length > 20_000) return res.status(413).json({ error: 'Note too long (max 20,000 characters).' });
   try {
-    res.json({ note: await structureNote(text) });
+    res.json({ note: await structureNote(text, req.user.id) });
   } catch (e) {
     logger.error('[transcribe/text]', e.message);
     res.status(500).json({ error: 'Could not structure note' });
@@ -176,7 +172,7 @@ router.post('/note', authRequired, transcribeLimiter, requireWhisper, uploadAudi
       return res.status(502).json({ error: 'Transcription failed' });
     }
     const data = await resp.json();
-    res.json({ note: await structureNote(data.text || '') });
+    res.json({ note: await structureNote(data.text || '', req.user.id) });
   } catch (e) {
     logger.error('[transcribe/note]', e.message);
     res.status(500).json({ error: 'Transcription error' });

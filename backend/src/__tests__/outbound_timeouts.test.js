@@ -165,7 +165,10 @@ describe('static guard: no outbound call without a timeout', () => {
     expect(sdk).toEqual([]);
     expect(stripe).toEqual([]);
     const client = fs.readFileSync(path.join(SRC, 'services/aiClient.js'), 'utf8');
-    expect(client).toMatch(/new Anthropic\(\{[^}]*timeout: AI_TIMEOUT_MS, maxRetries: AI_MAX_RETRIES/);
+    // The gateway calls the API with fetchWithTimeout (per-attempt timeout + retries); no SDK client is built.
+    expect(client).not.toMatch(/new Anthropic\(/);
+    expect(client).toMatch(/return fetchWithTimeout\(url,/);
+    expect(client).toMatch(/timeoutMs = AI_TIMEOUT_MS, retries = AI_MAX_RETRIES/);
     const email = fs.readFileSync(path.join(SRC, 'services/email.js'), 'utf8');
     expect(email).toMatch(/signal: AbortSignal\.timeout\(EMAIL_TIMEOUT_MS\)/);
   });

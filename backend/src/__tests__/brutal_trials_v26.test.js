@@ -298,7 +298,7 @@ describe('6. i18n chat_ — AI Chat (35 keys)', () => {
   });
   test('6-05: chat_ total key count = 49 (+ streaming, stop, retry, crisis, sign-in keys)', async () => {
     const en = await getEn();
-    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(48);   // section G: chat_limit_upgrade ($9.99) removed
+    expect(Object.keys(en).filter(k => k.startsWith('chat_')).length).toBe(51);   // section G: chat_limit_upgrade ($9.99) removed; +3 AI gateway errors (refused, too large, invalid output)
   });
 });
 

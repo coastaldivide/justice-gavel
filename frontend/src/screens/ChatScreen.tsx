@@ -535,6 +535,10 @@ function ChatScreen({ navigation, route }: ScreenProps) {
       } else if (err.code === 'disclaimer_required') {
         notifyDisclaimerRequired();
         update(answerId, { text: chatErrorText(err.code), status: 'complete', question: undefined });
+      } else if (err.code === 'ai_refused') {
+        // The AI declined: nothing it started to write is kept, and asking the same words
+        // again would only be declined again, so no retry button.
+        update(answerId, { text: err.message || chatErrorText(err.code), status: 'complete', question: undefined, errorText: undefined });
       } else if (err.status === 401) {
         recheck();
         update(answerId, { text: '', status: 'error', errorText: t('chat_signin_body'), question: undefined });

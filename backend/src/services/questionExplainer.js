@@ -1,5 +1,5 @@
-import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
-import { sdkMessagesCreate } from './aiClient.js';
+import { aiConfigured } from '../utils/ai.js';
+import { aiMessage } from './aiClient.js';
 /**
  * services/questionExplainer.js — AI explanation pipeline via BullMQ
  * [I-04]
@@ -17,7 +17,6 @@ import Redis        from 'ioredis';
 import { db }       from '../db/index.js';
 import logger       from '../utils/logger.js';
 
-const CLAUDE = CLAUDE_MODEL;
 // BullMQ needs its own ioredis connection with maxRetriesPerRequest: null
 const connection = (process.env.REDIS_URL && process.env.NODE_ENV !== 'test')
   ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null, enableReadyCheck: false })
@@ -106,16 +105,17 @@ Provide:
 
 Be concise and bar-exam focused. Cite the specific rule, statute, or case.`;
 
-  // Budget check, timeout/retries and metering (ai_usage_log): aiClient.
-  const res = await sdkMessagesCreate({
-    model:      CLAUDE,
-    max_tokens: 600,
-    system:     'You are a bar exam expert. Give precise, cited explanations. No fluff.',
-    messages:   [{ role: 'user', content: prompt }],
-  }, { route: 'bar_explain', userId });
+  // Routing (class 'standard'), budget, timeout/retries, refusals, metering: aiClient.
+  const res = await aiMessage({
+    task:     'bar_explain',
+    system:   'You are a bar exam expert. Give precise, cited explanations. No fluff.',
+    messages: [{ role: 'user', content: prompt }],
+    route:    'bar_explain',
+    userId,
+  });
 
-  const explanation = res.content[0]?.text ?? '';
-  const costUsd     = res._cost_usd ?? 0;
+  const explanation = res.text;
+  const costUsd     = res.costUsd ?? 0;
 
   // Store permanently in DB
   await db.run(

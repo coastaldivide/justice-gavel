@@ -1,5 +1,4 @@
-import { CLAUDE_MODEL } from '../utils/ai.js';
-import { anthropicFetch } from './aiClient.js';
+import { aiMessage } from './aiClient.js';
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
 // Embedding model: Supabase gte-small (384 dimensions, no API key needed)
@@ -80,43 +79,37 @@ async function retrieveDocs(embedding, queryText, { practiceArea, jurisdiction }
 }
 
 // ── Step 3: Build grounded prompt for Claude ───────────────────────────────
-function buildRAGPrompt(userQuery, docs) {
-  if (!docs.length) {
-    return `You are a legal research assistant. Answer the following question using your training knowledge, but note that no specific case law was retrieved for this query. Always remind the user to consult a licensed attorney.\n\nQuestion: ${userQuery}`;
-  }
-
-  const context = docs.map((d, i) =>
-    `[${i + 1}] ${d.citation} (${d.jurisdiction}, ${d.year})\n${d.content.slice(0, 800)}`
-  ).join('\n\n---\n\n');
-
-  return `You are a legal research assistant with access to retrieved legal documents. Answer ONLY using the provided documents. Cite each source as [1], [2] etc. If the documents don't fully answer the question, say so — do not fabricate case law.
-
-RETRIEVED DOCUMENTS:
-${context}
-
-USER QUESTION: ${userQuery}
+// The instructions are the stable (cacheable) system prompt; the retrieved documents and the
+// question are the user turn.
+export const RAG_SYSTEM_GROUNDED = `You are a legal research assistant with access to retrieved legal documents. Answer ONLY using the provided documents. Cite each source as [1], [2] etc. If the documents don't fully answer the question, say so — do not fabricate case law.
 
 Instructions:
 - Answer based on the retrieved documents only
 - Cite every claim with [number] matching the document list
 - If a retrieved document is from a different jurisdiction than asked, note that
-- End with: "This is legal information, not legal advice. Consult a licensed attorney."
-`;
+- End with: "This is legal information, not legal advice. Consult a licensed attorney."`;
+export const RAG_SYSTEM_UNGROUNDED = 'You are a legal research assistant. Answer the following question using your training knowledge, but note that no specific case law was retrieved for this query. Always remind the user to consult a licensed attorney.';
+
+export function buildRAGPrompt(userQuery, docs) {
+  if (!docs.length) return { system: RAG_SYSTEM_UNGROUNDED, user: `Question: ${userQuery}` };
+  const context = docs.map((d, i) =>
+    `[${i + 1}] ${d.citation} (${d.jurisdiction}, ${d.year})\n${d.content.slice(0, 800)}`
+  ).join('\n\n---\n\n');
+  return { system: RAG_SYSTEM_GROUNDED, user: `RETRIEVED DOCUMENTS:\n${context}\n\nUSER QUESTION: ${userQuery}` };
 }
 
 // ── Step 4: Generate answer with Claude ───────────────────────────────────
-async function generateAnswer(prompt) {
-  // Budget check, timeout/retries and metering: services/aiClient.js
-  const res = await anthropicFetch({
-    body: JSON.stringify({
-      model:      CLAUDE_MODEL,
-      max_tokens: 2048,
-      messages:   [{ role: 'user', content: prompt }],
-    }),
-  }, { route: 'research_rag' });
-  if (!res.ok) throw new Error(`Claude error ${res.status}`);
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
+async function generateAnswer(prompt, userId) {
+  // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
+  const out = await aiMessage({
+    task: 'research_rag',
+    system: [{ text: prompt.system, cache: '5m' }],
+    messages: [{ role: 'user', content: prompt.user }],
+    route: 'research_rag',
+    userId,
+    timeoutMs: 100_000,
+  });
+  return out.text;
 }
 
 // ── Main export: full RAG pipeline ────────────────────────────────────────
@@ -146,7 +139,7 @@ export async function ragSearch(query, opts = {}) {
     }
 
     const prompt = buildRAGPrompt(query, docs);
-    const answer = await generateAnswer(prompt);
+    const answer = await generateAnswer(prompt, opts.userId ?? null);
 
     const citations = docs.map(d => ({
       citation:  d.citation,

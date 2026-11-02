@@ -89,7 +89,7 @@ describe('DISC7. Discrepancy Fixes — chat/stream + reviews + saved', () => {
       expect(src).toContain('Server-Sent Events streaming');
       expect(src).toContain("router.post('/stream'");
       // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
-      expect(src).toContain('anthropicFetch');
+      expect(src).toContain('aiStream');                // the AI gateway (services/aiClient.js)
       expect(src).toContain('chatContext');            // free-tier quota + defender gating
     });
   test('DISC7-02: chat/ask.js is POST /ask — main AI chat request/response fallback', async () => {

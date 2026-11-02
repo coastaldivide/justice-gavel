@@ -111,7 +111,7 @@ describe('CHH. chat/_helpers.js — AI Call + Context Builder Utilities', () => 
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/_helpers.js','utf8');
     expect(src).toContain('callClaude');
-    expect(src).toContain('Anthropic');
+    expect(src).toContain('aiMessage');             // the AI gateway (services/aiClient.js)
     expect(src).toContain('messages');
   });
   test('CHH-04: getHistory — fetch recent messages for AI context window', async () => {

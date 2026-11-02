@@ -69,7 +69,7 @@ router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, uplo
 
     // ── free case-intake scan (nothing stored) ─────────────────────────────
     if (docType === 'case_intake') {
-      const jobId = await enqueue('discovery', () => analyzeDocument(file, filename, 'case_intake', ''), req.user.id);
+      const jobId = await enqueue('discovery', () => analyzeDocument(file, filename, 'case_intake', '', req.user.id), req.user.id);
       return res.json({ jobId, status: 'pending', async: true });
     }
 
@@ -117,7 +117,7 @@ router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, uplo
 
     const userId = req.user.id;
     const jobId = await enqueue('discovery', async () => {
-      const result = await analyzeDocument(file, filename, docType, caseContext);
+      const result = await analyzeDocument(file, filename, docType, caseContext, userId);
       const db2 = await getDb();
       const row = await db2.get(
         `INSERT INTO discovery_analyses

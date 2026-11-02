@@ -216,8 +216,9 @@ server.on('listening', () => {
   firstBill.unref();
   timers.push(firstBill);
 
-  // Hourly watchdog: one alert per failing or silent job (monitoring/jobHealth.js) and when
-  // many texts stop arriving (monitoring/smsHealth.js).
+  // Hourly watchdog: one alert per failing or silent job (monitoring/jobHealth.js), when
+  // many texts stop arriving (monitoring/smsHealth.js) and when the AI error or refusal rate
+  // spikes (monitoring/aiHealth.js).
   const jobWatch = () => Promise.all([import('./monitoring/jobHealth.js'), import('./monitoring/errorNotifier.js'), import('./db/index.js')])
     .then(async ([jh, en, dbm]) => {
       const db = await dbm.getDb();
@@ -229,6 +230,14 @@ server.on('listening', () => {
       const sms = await (await import('./monitoring/smsHealth.js')).smsHealth(db);
       if (sms.alarm) {
         await en.notifyError(`Texts failing: ${sms.failed} of ${sms.total} in the last hour did not arrive`, { code: 'sms_delivery_failing', ...sms });
+      }
+      // AI gateway: error or refusal rate spiking (monitoring/aiHealth.js).
+      const ai = await (await import('./monitoring/aiHealth.js')).aiHealth(db);
+      if (ai.alarms.includes('ai_error_rate')) {
+        await en.notifyError(`AI errors: ${ai.errors} of ${ai.total} AI calls in the last hour failed`, { code: 'ai_error_rate', ...ai });
+      }
+      if (ai.alarms.includes('ai_refusal_rate')) {
+        await en.notifyError(`AI refusals: ${ai.refused} of ${ai.total} AI calls in the last hour were declined`, { code: 'ai_refusal_rate', ...ai });
       }
     })
     .catch(err => logger.error({ err: err.message }, '[jobs] watchdog run failed'));

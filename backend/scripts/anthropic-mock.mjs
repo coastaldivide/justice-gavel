@@ -1,44 +1,49 @@
 #!/usr/bin/env node
 /**
- * anthropic-mock.mjs — a scriptable stand-in for the Anthropic Messages API,
- * used by the web journeys (frontend/scripts/web-journeys-*.cjs) and CI.
+ * anthropic-mock.mjs — a scriptable stand-in for the Anthropic Messages API, used by the web
+ * journeys (frontend/scripts/web-journeys-*.cjs), the smoke test / route sweep and CI.
+ * The API behaviour (structured outputs, thinking blocks, prompt-cache usage, refusals and
+ * server-side fallback, count_tokens, 400s for requests the real API rejects) lives in
+ * scripts/anthropic-mock-lib.mjs, shared with the jest integration harness.
  *
  *   node scripts/anthropic-mock.mjs [port]        (default 4399, binds 127.0.0.1)
  *
  * Start the API with ANTHROPIC_API_KEY=<anything> ANTHROPIC_BASE_URL=http://127.0.0.1:<port>.
  *
  * Control API:
- *   POST /__mode {mode, text, delayMs, tokens}
- *        mode: ok | slow | long | 429 | 500 | 529 | 401 | drop | error_event | hang
+ *   POST /__mode {mode, text, json, delayMs, tokens, category, refuseModels}
+ *        mode: ok | slow | long | 429 | 500 | 529 | 401 | drop | error_event | hang |
+ *              refusal | refusal_mid | refusal_hard | invalid_json | max_tokens
  *        text: the answer (default: a short general-information reply)
+ *        json: the structured-output answer (default: a minimal instance of the request's schema)
  *        delayMs: pause between streamed words (slow / drop), default 30
  *        tokens: number of words for `long`, default 40
- *   GET  /__requests   the upstream requests received so far: [{ path, body }]
- *   POST /__reset      mode back to ok, request log cleared
- * Every other POST is answered as POST /v1/messages (JSON, or SSE when the
- * body has stream: true).
+ *        category: refusal category (default general_harms); refuseModels: only these decline
+ *   GET  /__requests   the upstream requests received so far: [{ path, headers, body }]
+ *   POST /__reset      mode back to ok, request log and prompt cache cleared
+ * Every other POST is answered as POST /v1/messages (JSON, or SSE when the body has
+ * stream: true), except POST /v1/messages/count_tokens.
  */
 import http from 'node:http';
+import { freshState, resetCaches, messageResponse, streamEvents, countTokensResponse, requestProblem } from './anthropic-mock-lib.mjs';
 
 const PORT = Number(process.argv[2] || process.env.ANTHROPIC_MOCK_PORT || 4399);
-const DEFAULT_TEXT = 'MOCK REPLY: this is general legal information, not legal advice.';
-const fresh = () => ({ mode: 'ok', text: null, delayMs: 30, tokens: 40 });
-let state = fresh();
+let state = freshState();
 let requests = [];
 
 const sleep = (ms) => new Promise(r => { setTimeout(r, ms); });
-const words = () => {
-  if (state.mode === 'long') return Array.from({ length: Number(state.tokens) || 40 }, (_, i) => `word${i}`);
-  return String(state.text || DEFAULT_TEXT).split(/(?<=\s)/);
-};
-const usage = (n) => ({ input_tokens: 10, output_tokens: n });
 
 function errorBody(status) {
   const type = { 401: 'authentication_error', 429: 'rate_limit_error', 500: 'api_error', 529: 'overloaded_error' }[status];
   return JSON.stringify({ type: 'error', error: { type, message: `mock ${status}` } });
 }
 
-async function answer(req, res, body) {
+async function answer(req, res, body, url) {
+  if (url.endsWith('/count_tokens')) {
+    const r = countTokensResponse(body);
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(r.body));
+  }
   const mode = state.mode;
   if (mode === 'hang') return;   // never answers; the caller's timeout must fire
   const status = Number(mode);
@@ -46,37 +51,27 @@ async function answer(req, res, body) {
     res.writeHead(status, { 'Content-Type': 'application/json', ...(status === 429 ? { 'retry-after': '1' } : {}) });
     return res.end(errorBody(status));
   }
-  const parts = words();
-  const model = body?.model || 'mock';
   if (!body?.stream) {
-    if (mode === 'slow') await sleep((Number(state.delayMs) || 30) * parts.length);
+    const r = messageResponse(body, state, req.headers);
+    const words = String(r.body?.content?.find?.(b => b.type === 'text')?.text || '').split(/\s+/).length;
+    if (mode === 'slow') await sleep((Number(state.delayMs) || 30) * words);
     if (mode === 'drop') { req.socket.destroy(); return; }
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({
-      id: 'msg_mock', type: 'message', role: 'assistant', model,
-      content: [{ type: 'text', text: parts.join('') }],
-      stop_reason: 'end_turn', stop_sequence: null, usage: usage(parts.length),
-    }));
+    res.writeHead(r.status, { 'Content-Type': 'application/json', ...r.headers });
+    return res.end(JSON.stringify(r.body));
   }
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  send('message_start', { type: 'message_start', message: {
-    id: 'msg_mock', type: 'message', role: 'assistant', model, content: [], stop_reason: null, stop_sequence: null, usage: usage(0) } });
-  send('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
-  const delay = mode === 'slow' || mode === 'drop' ? Number(state.delayMs) || 30 : 0;
-  for (let i = 0; i < parts.length; i++) {
+  const problem = requestProblem(body, req.headers);
+  if (problem) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: problem } }));
+  }
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'request-id': `req_mock_stream_${Date.now()}` });
+  for (const e of streamEvents(body, state)) {
     if (res.destroyed) return;
-    if (mode === 'drop' && i === Math.max(1, Math.floor(parts.length / 3))) { req.socket.destroy(); return; }
-    if (mode === 'error_event' && i === Math.max(1, Math.floor(parts.length / 2))) {
-      send('error', { type: 'error', error: { type: 'overloaded_error', message: 'mock overloaded' } });
-      return res.end();
-    }
-    send('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: parts[i] } });
-    if (delay) await sleep(delay);
+    if (e.drop) { req.socket.destroy(); return; }
+    if (e.error) { res.write(`event: error\ndata: ${JSON.stringify(e.error)}\n\n`); return res.end(); }
+    res.write(`event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
+    if (e.pauseMs) await sleep(e.pauseMs);
   }
-  send('content_block_stop', { type: 'content_block_stop', index: 0 });
-  send('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: parts.length } });
-  send('message_stop', { type: 'message_stop' });
   res.end();
 }
 
@@ -88,7 +83,7 @@ const server = http.createServer((req, res) => {
     try { body = data ? JSON.parse(data) : null; } catch { /* not JSON */ }
     const url = req.url.split('?')[0];
     if (url === '/__mode' && req.method === 'POST') {
-      state = { ...fresh(), ...(body || {}) };
+      state = freshState(body || {});
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(state));
     }
@@ -97,14 +92,15 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify(requests));
     }
     if (url === '/__reset') {
-      state = fresh(); requests = [];
+      state = freshState(); requests = []; resetCaches();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end('{"ok":true}');
     }
     if (req.method !== 'POST') { res.writeHead(404); return res.end(); }
-    requests.push({ path: url, body });
+    const { 'x-api-key': _key, ...headers } = req.headers;
+    requests.push({ path: url, headers, body });
     if (requests.length > 500) requests = requests.slice(-500);
-    answer(req, res, body).catch(() => { try { res.destroy(); } catch { /* gone */ } });
+    answer(req, res, body, url).catch(() => { try { res.destroy(); } catch { /* gone */ } });
   });
 });
 

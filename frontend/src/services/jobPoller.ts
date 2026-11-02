@@ -4,7 +4,8 @@
  *   const job = await pollJob(jobId, { signal, timeoutMs, onProgress });
  *
  * Rejects with JobError:
- *   code  ai_unavailable | ai_busy | ai_timeout | ai_failed — from the server
+ *   code  ai_unavailable | ai_busy | ai_timeout | ai_failed | ai_refused | ai_too_large |
+ *         ai_invalid_output — from the server
  *         (its `error` text is already in the app language);
  *         'timeout' — no answer within timeoutMs; 'lost' — the connection kept
  *         failing; 'expired' — the job is gone (server restarted / 15 min TTL);
@@ -44,6 +45,9 @@ export function jobErrorText(code: string): string {
     case 'ai_busy':        return t('chat_err_busy');
     case 'timeout':
     case 'ai_timeout':     return t('chat_err_timeout');
+    case 'ai_refused':     return t('chat_err_refused');
+    case 'ai_too_large':   return t('chat_err_too_large');
+    case 'ai_invalid_output': return t('chat_err_invalid_output');
     case 'lost':           return t('chat_err_connection_lost');
     case 'expired':        return t('job_err_expired');
     default:               return t('x_error_state_something_went_wrong_please');

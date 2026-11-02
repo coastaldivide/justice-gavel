@@ -1,6 +1,5 @@
-import { anthropicFetch } from '../services/aiClient.js';
+import { aiMessage } from '../services/aiClient.js';
 import { safeJson, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
-import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * /api/match — Two-stage Claude-powered lawyer matching
  * General guidance only, not legal advice.
@@ -91,12 +90,11 @@ Rules:
 - Lead with the most compelling reason they match this person's situation.
 - Use plain language. Warm but professional.
 - Do NOT invent information. Only use facts provided in the attorney profile.
-- Format your response as a JSON array of objects with keys: source_id (string, copied from the profile), report (string).
-- Return ONLY the JSON array. No preamble, no markdown fences.`;
+- Answer with one report per attorney: source_id (copied exactly from the profile) and report.`;
 
 const LANGUAGE_NAMES = { ...LANG_NAMES, es: 'Spanish (neutral Latin American, formal "usted")' };
 
-async function generateMatchReports(candidates, userSituation, caseType, language, lang) {
+async function generateMatchReports(candidates, userSituation, caseType, language, lang, userId = null) {
   const profiles = candidates.map(c => ({
     source_id: String(c.id),
     name: c.name,
@@ -119,36 +117,17 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
 
   const prompt = `User context:\n${userContext || 'Not specified'}\n\nAttorney profiles:\n${JSON.stringify(profiles, null, 2)}\n\nWrite match reports for each attorney, in ${LANGUAGE_NAMES[lang] || 'English'}.`;
 
-  const response = await anthropicFetch({
-    method: 'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 1000,
-      system: MATCH_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
-    })
-  }, { route: 'match' });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} — ${errText.slice(0, 200)}`);
-  }
-
-  const data = await response.json();
-  const text = data.content?.[0]?.text ?? '[]';
-
-  try {
-    const clean = text.replace(/```json|```/g, '').trim();
-    return safeJson(clean);
-  } catch (e) {
-    logger.warn('[match/parseAiReport] JSON parse:', e?.message);
-    return [];
-  }
+  // Structured output (ai/schemas match_reports) — routing (class 'quick'), budget, refusals,
+  // metering: aiClient. A failure throws; the caller falls back to the numeric reports.
+  const out = await aiMessage({
+    task: 'match_reports',
+    system: MATCH_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: prompt }],
+    route: 'match',
+    userId,
+  });
+  const known = new Set(profiles.map(p => p.source_id));
+  return out.json.reports.filter(r => known.has(String(r.source_id)));
 }
 
 // ── route ─────────────────────────────────────────────────────────────────────
@@ -190,7 +169,7 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
       const rmap = {};
       if (!apiKeyMissing) {
         try {
-          const rpts = await generateMatchReports(cands, situation, caseType, language, lang);
+          const rpts = await generateMatchReports(cands, situation, caseType, language, lang, req.user.id);
           for (const r of Array.isArray(rpts) ? rpts : []) {
             if (r?.source_id && r?.report) rmap[r.source_id] = String(r.report);
           }

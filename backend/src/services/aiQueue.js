@@ -1,5 +1,4 @@
-import { CLAUDE_MODEL } from '../utils/ai.js';
-import { sdkMessagesCreate, aiErrorCode } from './aiClient.js';
+import { aiMessage, aiErrorCode } from './aiClient.js';
 /**
  * services/aiQueue.js — BullMQ job queue for AI (Claude) calls
  *
@@ -47,8 +46,8 @@ export const aiDocumentQueue = connection ? new Queue('ai-document',      { conn
 export const aiMotionQueue   = connection ? new Queue('ai-motion-gen',    { connection }) : null;
 export const barVerifyQueue  = connection ? new Queue('bar-verification', { connection }) : null;
 
-// The Anthropic SDK client (lazy, 503 ai_unavailable without a key, timeout
-// and retry policy) lives in services/aiClient.js.
+// Every model call goes through the AI gateway (services/aiClient.js: routing,
+// budget, timeout/retry policy, refusal handling, metering).
 
 // ── In-process job store ────────────────────────────────────────────────────
 // Routes enqueue closures: enqueueAIJob('chat', async () => {...}, userId).
@@ -61,7 +60,12 @@ export const barVerifyQueue  = connection ? new Queue('bar-verification', { conn
 //   longer for the job types that write long documents (JOB_TIMEOUT_BY_TYPE).
 const JOB_TTL_MS      = 15 * 60 * 1000;
 const JOB_TIMEOUT_MS  = parseInt(process.env.AI_JOB_TIMEOUT_MS || '45000', 10);
-export const JOB_TIMEOUT_BY_TYPE = Object.freeze({ research: 120_000, motion: 200_000, motion_refine: 200_000 });
+// Deep-class tasks (ai/tasks.js: Opus, high effort, adaptive thinking) write long documents.
+export const JOB_TIMEOUT_BY_TYPE = Object.freeze({
+  research: 120_000, motion: 200_000, motion_refine: 200_000,
+  discovery: 150_000, contract_draft: 150_000, contract_review: 150_000, contract_redline: 150_000,
+  contract_negotiate: 150_000, privilege_generate: 120_000,
+});
 const jobTimeout = (type) => Math.max(JOB_TIMEOUT_MS, JOB_TIMEOUT_BY_TYPE[type] || 0);
 const MAX_CONCURRENCY = parseInt(process.env.AI_CONCURRENCY || '8', 10);
 const _jobs    = new Map();   // id → job
@@ -234,16 +238,18 @@ export async function executeAIJob(type, payload, userId) {
   const t0 = Date.now();
 
   try {
-    // Budget check, timeout/retries and metering (ai_usage_log): aiClient.
-    const response = await sdkMessagesCreate({
-      model:      CLAUDE_MODEL,
-      max_tokens: maxTokens,
-      system:     systemPrompt ?? 'You are a legal information assistant. Provide accurate legal information, not legal advice.',
-      messages:   [{ role: 'user', content: prompt }],
-    }, { route: `queue_${type}`, userId: userId ?? null });
+    // Routing (class 'standard'), budget, timeout/retries, refusals, metering: aiClient.
+    const response = await aiMessage({
+      task:      'queue_job',
+      maxTokens,
+      system:    systemPrompt ?? 'You are a legal information assistant. Provide accurate legal information, not legal advice.',
+      messages:  [{ role: 'user', content: prompt }],
+      route:     `queue_${type}`,
+      userId:    userId ?? null,
+    });
 
-    const content     = response.content[0]?.text ?? '';
-    const costUsd     = response._cost_usd ?? 0;
+    const content     = response.text;
+    const costUsd     = response.costUsd ?? 0;
     const durationMs  = Date.now() - t0;
 
     return { content, job_id: null, status: 'completed', cost_usd: costUsd, duration_ms: durationMs };

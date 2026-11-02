@@ -103,7 +103,7 @@ router.post('/draft', authRequired, requireAi, draftLimiter, perUserAiLimit, asy
     const _def   = def;
 
     const jobId = await enqueue('contract_draft', async () => {
-      const draft = await generateContract(_type, _flds);
+      const draft = await generateContract(_type, _flds, _uid);
 
       const db2 = await getDb();
       const row = await db2.run(

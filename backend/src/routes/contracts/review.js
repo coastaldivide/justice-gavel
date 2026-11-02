@@ -67,7 +67,7 @@ router.post('/review', authRequired, requireAi, reviewLimiter, perUserAiLimit,
     const _fn    = filename;
 
     const jobId = await enqueue('contract_review', async () => {
-      const result = await reviewContract(_text, _type, _party);
+      const result = await reviewContract(_text, _type, _party, _uid);
 
       const db2 = await getDb();
       const row = await db2.run(
@@ -171,7 +171,7 @@ router.post('/redline', authRequired, requireAi, redlineLimiter, perUserAiLimit,
     const _cid   = req.body.contract_id ? safeInt(req.body.contract_id) : null;
 
     const jobId = await enqueue('contract_redline', async () => {
-      const result = await redlineContracts(_orig, _rev);
+      const result = await redlineContracts(_orig, _rev, _uid);
 
       const db2 = await getDb();
       const row = await db2.run(
@@ -227,7 +227,7 @@ router.post('/:id/negotiate', authRequired, requireAi, negotiateLimiter, perUser
     const _prios  = Array.isArray(priorities) ? priorities.slice(0,10).map(p => sanitizeStr(String(p),100)) : [];
 
     const jobId = await enqueue('contract_negotiate', async () => {
-      return await negotiationPoints(_draft, _party, _prios);
+      return await negotiationPoints(_draft, _party, _prios, req.user.id);
     }, req.user.id);
 
     res.json({ jobId, status: 'pending', async: true,

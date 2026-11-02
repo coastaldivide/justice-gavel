@@ -9,7 +9,8 @@
  *   processing: { id, type, status: 'processing', queuedAt, startedAt }
  *   done:       { id, type, status: 'done',       result, completedAt }
  *   failed:     { id, type, status: 'failed',     code, error, completedAt }
- *               code: ai_unavailable | ai_busy | ai_timeout | ai_failed;
+ *               code: ai_unavailable | ai_busy | ai_timeout | ai_failed | ai_refused |
+ *                     ai_too_large | ai_invalid_output (services/aiClient.js AI_ERROR_CODES);
  *               error: the same, worded in the caller's language
  */
 import { err400 } from '../utils/routeHelpers.js';
@@ -20,8 +21,9 @@ import { getJobAsync, queueStats } from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
 import { requireStaff } from '../utils/staff.js';
 import { msg, resolveLang } from '../i18n/index.js';
+import { AI_ERROR_CODES } from '../services/aiClient.js';
 
-const JOB_ERROR_CODES = new Set(['ai_unavailable', 'ai_busy', 'ai_timeout', 'ai_failed']);
+const JOB_ERROR_CODES = new Set(AI_ERROR_CODES);
 
 const router = Router();
 

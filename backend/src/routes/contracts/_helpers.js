@@ -1,6 +1,4 @@
-import { CLAUDE_MODEL } from '../../utils/ai.js';
-import { anthropicFetch } from '../../services/aiClient.js';
-import { safeJson } from '../../utils/routeHelpers.js';
+import { aiMessage } from '../../services/aiClient.js';
 /**
  * contracts/_helpers.js — DB schema + core AI functions
  *
@@ -12,11 +10,9 @@ import { safeJson } from '../../utils/routeHelpers.js';
  *   negotiationPoints() — generate negotiation strategy from a draft
  */
 
-import logger      from '../../utils/logger.js';
 import { CONTRACT_TYPES } from './_contract_types.js';
 
 const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
-const MODEL = CLAUDE_MODEL;
 // contracts, contract_reviews, contract_redlines, contract_executions managed by db/index.js Year 2.
 // ensureTables kept as a no-op export to avoid import-side errors in legacy callers.
 export async function ensureTables(_db) { /* no-op — tables created at startup */ }
@@ -33,31 +29,27 @@ export async function hasContractPro(db, userId) {
 }
 
 // ── callClaude — shared AI call wrapper ───────────────────────────────────────
-async function callClaude({ system, userMessage, maxTokens = 4000 }) {
-  if (!ANTHROPIC_KEY) return null; // demo mode handled by caller
-
-  // Timeout + retries + budget + metering: services/aiClient.js
-  const res = await anthropicFetch({
-    body: JSON.stringify({
-      model:       MODEL,
-      max_tokens:  maxTokens,
-      system,
-      messages:    [{ role: 'user', content: userMessage }],
-    }),
-  }, { route: 'contracts', timeoutMs: 90_000 });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Claude API error ${res.status}: ${err}`);
-  }
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
+// Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
+// Tasks with a schema return the validated JSON; a refused / invalid answer throws
+// (the route answers with its code — nothing half-done is returned or saved).
+// (The system prompts here are short and per-request — under the 512-token cache minimum —
+// so they are not cache-marked; the contract text is the large part and differs every call.)
+async function callClaude({ task, system, userMessage, userId = null }) {
+  const out = await aiMessage({
+    task,
+    system,
+    messages: [{ role: 'user', content: userMessage }],
+    route: 'contracts',
+    userId,
+    timeoutMs: 120_000,
+  });
+  return out.json ?? out.text;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GENERATE CONTRACT
 // ─────────────────────────────────────────────────────────────────────────────
-export async function generateContract(contractType, fields) {
+export async function generateContract(contractType, fields, userId = null) {
   const def = CONTRACT_TYPES[contractType];
   if (!def) throw new Error(`Unknown contract type: ${contractType}`);
 
@@ -95,7 +87,7 @@ ${def.prompt_suffix}
 
 Generate the complete contract document now. Be thorough — cover all standard provisions for this contract type.`;
 
-  const draft = await callClaude({ system, userMessage, maxTokens: 6000 });
+  const draft = await callClaude({ task: 'contract_generate', system, userMessage, userId });
 
   return draft + '\n\n---\n*This AI-generated document requires review by a licensed attorney before execution. All citations and regulatory thresholds must be independently verified.*';
 }
@@ -130,7 +122,7 @@ ${def.prompt_suffix.trim().split('\n').filter(l => l.trim().startsWith('-')).sli
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. REVIEW CONTRACT — risk analysis of uploaded or drafted contract
 // ─────────────────────────────────────────────────────────────────────────────
-export async function reviewContract(contractText, contractType = null, partyRepresented = null) {
+export async function reviewContract(contractText, contractType = null, partyRepresented = null, userId = null) {
   if (!ANTHROPIC_KEY) {
     return buildDemoReview(contractText, contractType);
   }
@@ -147,51 +139,24 @@ export async function reviewContract(contractText, contractType = null, partyRep
 ${representation}
 
 CRITICAL: Do NOT fabricate statute numbers or case citations. Use [CITATION NEEDED] if uncertain.
-Respond ONLY with valid JSON matching the schema below. No preamble, no markdown.`;
+
+Answer with:
+- contract_type: the identified or provided type
+- risk_level: low | medium | high | critical
+- summary: 3-5 sentence executive summary of the contract and overall risk assessment
+- red_flags: clause (name or section), issue (the problem), severity (low | medium | high | critical)
+- missing_clauses: clause, reason (why it should be included)
+- recommendations: action (specific recommended change), priority (low | medium | high)
+- favorable_terms: clause, reason (why this term is favorable to the client)
+- one_sided_provisions: clause, favors (party name), issue (explanation)`;
 
   const userMessage = `${context}
-
-Analyze this contract and respond with JSON in this exact format:
-{
-  "contract_type": "string — identified or provided type",
-  "risk_level": "low | medium | high | critical",
-  "summary": "3-5 sentence executive summary of the contract and overall risk assessment",
-  "red_flags": [
-    { "clause": "clause name or section", "issue": "description of the problem", "severity": "low|medium|high|critical" }
-  ],
-  "missing_clauses": [
-    { "clause": "clause name", "reason": "why it should be included" }
-  ],
-  "recommendations": [
-    { "action": "specific recommended change", "priority": "low|medium|high" }
-  ],
-  "favorable_terms": [
-    { "clause": "clause name", "reason": "why this term is favorable to the client" }
-  ],
-  "one_sided_provisions": [
-    { "clause": "clause name", "favors": "party name", "issue": "explanation" }
-  ]
-}
 
 CONTRACT TEXT:
 ${contractText.slice(0, 12000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 3000 });
-
-  try {
-    const clean = raw.replace(/```json|```/g, '').trim();
-    return safeJson(clean);
-  } catch (e) {
-    logger.warn('[contracts/review] JSON parse failed — returning raw text', e?.message);
-    return {
-      risk_level: 'medium',
-      summary: raw.slice(0, 500),
-      red_flags: [],
-      missing_clauses: [],
-      recommendations: [],
-      favorable_terms: [],
-    };
-  }
+  // Structured output (ai/schemas contract_review); an invalid or refused answer throws.
+  return await callClaude({ task: 'contract_review', system, userMessage, userId });
 }
 
 function buildDemoReview(contractText, contractType) {
@@ -209,7 +174,7 @@ function buildDemoReview(contractText, contractType) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. REDLINE — compare two contract versions
 // ─────────────────────────────────────────────────────────────────────────────
-export async function redlineContracts(originalText, revisedText) {
+export async function redlineContracts(originalText, revisedText, userId = null) {
   if (!ANTHROPIC_KEY) {
     return {
       risk_delta: 'neutral',
@@ -218,48 +183,30 @@ export async function redlineContracts(originalText, revisedText) {
     };
   }
 
-  const system = `You are a senior attorney comparing two versions of a contract to identify all changes.
-Respond ONLY with valid JSON. No preamble, no markdown fences.`;
+  const system = `You are a senior attorney comparing two versions of a contract to identify every meaningful change.
 
-  const userMessage = `Compare these two contract versions and identify every meaningful change.
+Answer with:
+- risk_delta: improved | neutral | worsened — overall change in favorability to the signing party
+- summary: 2-3 sentence summary of the most significant changes and their combined impact
+- changes: one entry per change — section (section or clause name), type (addition | deletion |
+  modification | reordering), original (original text, or null for additions), revised (revised
+  text, or null for deletions), impact (favorable | unfavorable | neutral), explanation (1-2
+  sentences on the legal significance of the change)`;
 
-Respond with JSON in this exact format:
-{
-  "risk_delta": "improved | neutral | worsened — overall change in favorability to the signing party",
-  "summary": "2-3 sentence summary of the most significant changes and their combined impact",
-  "changes": [
-    {
-      "section": "section or clause name",
-      "type": "addition | deletion | modification | reordering",
-      "original": "original text (or null for additions)",
-      "revised": "revised text (or null for deletions)",
-      "impact": "favorable | unfavorable | neutral",
-      "explanation": "1-2 sentences explaining the legal significance of this change"
-    }
-  ]
-}
-
-ORIGINAL CONTRACT:
+  const userMessage = `ORIGINAL CONTRACT:
 ${originalText.slice(0, 6000)}
 
 REVISED CONTRACT:
 ${revisedText.slice(0, 6000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 3000 });
-
-  try {
-    const clean = raw.replace(/```json|```/g, '').trim();
-    return safeJson(clean);
-  } catch (e) {
-    logger.warn('[contracts/redline] JSON parse:', e?.message);
-    return { risk_delta: 'neutral', summary: raw.slice(0, 300), changes: [] };
-  }
+  // Structured output (ai/schemas contract_redline); an invalid or refused answer throws.
+  return await callClaude({ task: 'contract_redline', system, userMessage, userId });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. NEGOTIATION POINTS — generate talking points from a draft
 // ─────────────────────────────────────────────────────────────────────────────
-export async function negotiationPoints(contractText, partyRepresented, priorities = []) {
+export async function negotiationPoints(contractText, partyRepresented, priorities = [], userId = null) {
   if (!ANTHROPIC_KEY) {
     return {
       strategy: 'Demo mode: Add ANTHROPIC_API_KEY to enable negotiation strategy generation.',
@@ -273,40 +220,20 @@ export async function negotiationPoints(contractText, partyRepresented, prioriti
   const system = `You are a senior transactional attorney preparing negotiation strategy.
 You represent: ${partyRepresented}.
 ${priorities.length ? `Client priorities: ${priorities.join(', ')}.` : ''}
-Respond ONLY with valid JSON. No preamble, no markdown.`;
+
+Answer with:
+- strategy: 2-3 sentence overall negotiation strategy and tone recommendation
+- opening_position: clause, current_text (brief summary), our_ask (what to request), rationale (why we're asking)
+- must_haves: clause, requirement (what we need), reason (why it's non-negotiable)
+- trade_offs: give (what we can concede), get (what we want in return), rationale
+- walk_away_triggers: issue (that would kill the deal), threshold (the specific limit)
+- market_benchmarks: clause, market_standard (what is typical in this type of deal)`;
 
   const userMessage = `Based on this contract draft, generate a negotiation strategy for ${partyRepresented}.
-
-Respond with JSON in this exact format:
-{
-  "strategy": "2-3 sentence overall negotiation strategy and tone recommendation",
-  "opening_position": [
-    { "clause": "clause name", "current_text": "brief summary", "our_ask": "what to request", "rationale": "why we're asking" }
-  ],
-  "must_haves": [
-    { "clause": "clause name", "requirement": "what we need", "reason": "why it's non-negotiable" }
-  ],
-  "trade_offs": [
-    { "give": "what we can concede", "get": "what we want in return", "rationale": "why this trade makes sense" }
-  ],
-  "walk_away_triggers": [
-    { "issue": "issue that would kill the deal", "threshold": "the specific limit" }
-  ],
-  "market_benchmarks": [
-    { "clause": "clause name", "market_standard": "what is typical in this type of deal" }
-  ]
-}
 
 CONTRACT:
 ${contractText.slice(0, 8000)}`;
 
-  const raw = await callClaude({ system, userMessage, maxTokens: 2500 });
-
-  try {
-    const clean = raw.replace(/```json|```/g, '').trim();
-    return safeJson(clean);
-  } catch (e) {
-    logger.warn('[contracts/negotiation] JSON parse:', e?.message);
-    return { strategy: raw.slice(0, 300), opening_position: [], must_haves: [], trade_offs: [], walk_away_triggers: [] };
-  }
+  // Structured output (ai/schemas contract_negotiation); an invalid or refused answer throws.
+  return await callClaude({ task: 'contract_negotiation', system, userMessage, userId });
 }

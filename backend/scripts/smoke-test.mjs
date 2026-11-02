@@ -22,6 +22,7 @@
  */
 import http from 'node:http';
 import crypto from 'node:crypto';
+import { freshState, messageResponse, countTokensResponse } from './anthropic-mock-lib.mjs';
 
 // ── args ──────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
@@ -88,12 +89,10 @@ async function startMock(port) {
       let body = null;
       try { body = JSON.parse(data); } catch { /* ignore */ }
       mockRequests.push({ path: req.url, headers: req.headers, body });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        id: 'msg_mock', type: 'message', role: 'assistant', model: body?.model,
-        content: [{ type: 'text', text: 'MOCK REPLY: this is general legal information, not legal advice.' }],
-        stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 12 },
-      }));
+      // The documented API (scripts/anthropic-mock-lib.mjs): structured outputs, cache usage, 400s.
+      const r = req.url.endsWith('/count_tokens') ? countTokensResponse(body) : messageResponse(body, freshState(), req.headers);
+      res.writeHead(r.status, { 'Content-Type': 'application/json', ...(r.headers || {}) });
+      res.end(JSON.stringify(r.body));
     });
   });
   await new Promise((resolve, reject) => { mockServer.listen(Number(port), '127.0.0.1', resolve).on('error', reject); });

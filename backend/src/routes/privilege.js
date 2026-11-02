@@ -1,5 +1,5 @@
-import { anthropicFetch } from '../services/aiClient.js';
-import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
+import { aiMessage } from '../services/aiClient.js';
+import { requireAi } from '../utils/ai.js';
 /**
  * routes/privilege.js — Privilege Log Generator
  *
@@ -37,6 +37,26 @@ const privLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 100, message: 'P
 const aiLimiter   = makeUserLimiter({ windowMs: 3_600_000, max: 20,  message: 'AI privilege generation limit reached.' });
 
 const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
+
+// Privilege-log instructions (stable → prompt-cached). The entry shape is enforced by the schema.
+const PRIVILEGE_SYSTEM = `You are a senior litigation attorney preparing a privilege log for discovery.
+
+PRIVILEGE BASES AVAILABLE:
+- ACP (attorney_client): Confidential attorney-client communication for legal advice
+- WP (work_product): Prepared in anticipation of litigation
+- JDA (joint_defense): Shared under joint defense agreement
+- CIP (common_interest): Common legal interest
+
+For each document in the user turn, write one privilege log entry:
+- doc_number_suffix: the document's number in the list ("1", "2", …)
+- doc_type: email | memo | letter | draft | notes | other
+- privilege_basis: attorney_client | work_product | joint_defense | common_interest
+- withheld: true unless the document should be produced
+- description: non-privileged description (2-3 sentences max, no privileged content)
+- privilege_assertion: one sentence explaining why privilege applies
+- doc_date (YYYY-MM-DD), author, recipients, page_count_estimate: null when not given
+
+CRITICAL: The description must NOT reveal privileged content. It must only describe the general nature, date, author, recipient, and document type — never the substance of legal advice or litigation strategy.`;
 
 const PRIVILEGE_BASES = {
   attorney_client: {
@@ -196,60 +216,23 @@ router.post('/generate', authRequired, requireAi, aiLimiter, async (req, res) =>
           ? `\nPrimary privilege basis to apply: ${PRIVILEGE_BASES[privilege_basis].label} (${PRIVILEGE_BASES[privilege_basis].short})`
           : '\nAssign the most appropriate privilege basis to each document.';
 
-        const prompt = `You are a senior litigation attorney preparing a privilege log for discovery.
-
-${context ? `MATTER CONTEXT:\n${context}\n` : ''}
+        const user = `${context ? `MATTER CONTEXT:\n${context}\n` : ''}
 ${basisInfo}
 
-PRIVILEGE BASES AVAILABLE:
-- ACP (attorney_client): Confidential attorney-client communication for legal advice
-- WP (work_product): Prepared in anticipation of litigation
-- JDA (joint_defense): Shared under joint defense agreement
-- CIP (common_interest): Common legal interest
-
 DOCUMENTS TO LOG:
-${docList}
+${docList}`;
 
-For each document, generate a privilege log entry. Respond ONLY with valid JSON array, no preamble:
-[
-  {
-    "doc_number_suffix": "1",
-    "doc_type": "email|memo|letter|draft|notes|other",
-    "privilege_basis": "attorney_client|work_product|joint_defense|common_interest",
-    "withheld": true,
-    "description": "Non-privileged description (2-3 sentences max, no privileged content)",
-    "privilege_assertion": "One sentence explaining why privilege applies",
-    "doc_date": "YYYY-MM-DD or null",
-    "author": "name or null",
-    "recipients": "names or null",
-    "page_count_estimate": null
-  }
-]
-
-CRITICAL: The description must NOT reveal privileged content. It must only describe the general nature, date, author, recipient, and document type — never the substance of legal advice or litigation strategy.`;
-
-        const resp = await anthropicFetch({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_KEY,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model:       CLAUDE_MODEL,
-            max_tokens:  4000,
-            messages:    [{ role: 'user', content: prompt }],
-          }),
-        }, { route: 'privilege' });
-
-        const data = await resp.json();
-        const raw  = data.content?.[0]?.text || '[]';
-        try {
-          entries = JSON.parse(raw.replace(/```json|```/g, '').trim());
-        } catch (e) {
-          logger.warn('[privilege/generate] JSON parse failed — using fallback:', e?.message);
-          entries = buildFallbackEntries(documents, privilege_basis);
-        }
+        // Structured output (ai/schemas privilege_entries) — routing (class 'standard'), caching,
+        // budget, refusals, metering: aiClient. A failed / refused / invalid answer fails the job:
+        // nothing is saved and no placeholder entries are made up.
+        const out = await aiMessage({
+          task: 'privilege_log',
+          system: [{ text: PRIVILEGE_SYSTEM, cache: '5m' }],
+          messages: [{ role: 'user', content: user }],
+          route: 'privilege',
+          userId: req.user.id,
+        });
+        entries = out.json.entries;
       } else {
         entries = buildFallbackEntries(documents, privilege_basis);
       }

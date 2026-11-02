@@ -1,6 +1,5 @@
 import { fetchWithTimeout } from '../utils/http.js';
-import { anthropicFetch } from '../services/aiClient.js';
-import { CLAUDE_MODEL } from '../utils/ai.js';
+import { aiMessage } from '../services/aiClient.js';
 /**
  * interrogation.js — Police Encounter Recorder
  *
@@ -143,58 +142,28 @@ async function tagSpeakers(transcript, segments, context = {}) {
     }));
   }
 
-  const prompt = `You are a forensic transcription assistant reviewing a recorded police encounter.
-
-The following is a timestamped transcription of an audio recording made during a police encounter or questioning.
-Your task: identify who is speaking each segment — the PERSON BEING QUESTIONED or a LAW ENFORCEMENT OFFICER.
-
-Context provided:
+  const user = `Context provided:
 - User name: ${context.userName || 'Unknown'}
 - Date/time: ${context.dateTime || new Date().toISOString()}
 - Location: ${context.location || 'Unknown'}
 
 Transcript with timestamps:
-${segText}
+${segText}`;
 
-Rules for speaker identification:
-- Law enforcement typically: asks questions, states charges, gives Miranda warnings, uses command language ("step out", "do you understand")
-- Person questioned typically: answers questions, says "I don't know", "I want a lawyer", "I don't consent"
-- If genuinely unclear, mark as UNKNOWN
-- Preserve exact wording — do not paraphrase or correct
-
-Respond ONLY with a valid JSON array. No markdown. No explanation.
-Format:
-[
-  { "timestamp": "0:00", "speaker": "OFFICER", "text": "exact words" },
-  { "timestamp": "0:08", "speaker": "SUSPECT", "text": "exact words" },
-  { "timestamp": "0:12", "speaker": "UNKNOWN", "text": "unclear segment" }
-]
-
-Speaker labels MUST be exactly one of: OFFICER, SUSPECT, UNKNOWN
-The label SUSPECT is the legal term for the person being questioned — it carries no implication of guilt.`;
-
-  const res = await anthropicFetch({
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  }, { route: 'interrogation' });
-
-  if (!res.ok) throw new Error(`Claude ${res.status}`);
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '[]';
-
+  // Structured output (ai/schemas speaker_tags) — routing (class 'standard'), caching, budget,
+  // refusals, metering: aiClient. On any failure the transcript is kept as it was heard, with
+  // every speaker UNKNOWN (the words come from the transcription, never from the model).
   try {
-    return JSON.parse(text.replace(/```json\n?|```/g, '').trim());
-  } catch {
-    // Claude returned malformed JSON — build from raw segments
+    const out = await aiMessage({
+      task: 'speaker_tags',
+      system: [{ text: SPEAKER_SYSTEM, cache: '5m' }],
+      messages: [{ role: 'user', content: user }],
+      route: 'interrogation',
+      userId: context.userId ?? null,
+    });
+    return out.json.segments;
+  } catch (e) {
+    logger.warn('[interrogation] speaker tagging failed — keeping the untagged transcript:', e.code || e.message);
     return segments.map(s => ({
       timestamp: formatTime(s.start || 0),
       speaker: 'UNKNOWN',
@@ -202,6 +171,21 @@ The label SUSPECT is the legal term for the person being questioned — it carri
     }));
   }
 }
+
+const SPEAKER_SYSTEM = `You are a forensic transcription assistant reviewing a recorded police encounter.
+
+The user turn is a timestamped transcription of an audio recording made during a police encounter or questioning.
+Your task: identify who is speaking each segment — the PERSON BEING QUESTIONED or a LAW ENFORCEMENT OFFICER.
+
+Rules for speaker identification:
+- Law enforcement typically: asks questions, states charges, gives Miranda warnings, uses command language ("step out", "do you understand")
+- Person questioned typically: answers questions, says "I don't know", "I want a lawyer", "I don't consent"
+- If genuinely unclear, mark as UNKNOWN
+- Preserve exact wording — do not paraphrase or correct
+- Give each segment its timestamp in m:ss form (e.g. "0:08")
+
+Speaker labels MUST be exactly one of: OFFICER, SUSPECT, UNKNOWN
+The label SUSPECT is the legal term for the person being questioned — it carries no implication of guilt.`;
 
 // ── PDF generation ────────────────────────────────────────────────────────────
 function generatePDF(dialogue, meta) {
@@ -427,7 +411,7 @@ router.post('/transcribe', authRequired, perUserAiLimit, requireWhisper, uploadA
     // Step 2: Speaker tagging
     let dialogue;
     try {
-      dialogue = await tagSpeakers(text, segments, { userName, dateTime, location });
+      dialogue = await tagSpeakers(text, segments, { userName, dateTime, location, userId: req.user?.id ?? null });
     } catch (e) {
       logger.warn('[interrogation/tagSpeakers]', e?.message);
       dialogue = [{ timestamp: '0:00', speaker: 'UNKNOWN', text: text.trim() }];

@@ -8,7 +8,7 @@
  *
  * The backend runs with ANTHROPIC_API_KEY=<anything> ANTHROPIC_BASE_URL=<mock>.
  * The mock (any server with this control API works; see notes/debug_pass.md §E):
- *   POST /__mode {mode, text, delayMs, tokens}  mode: ok | slow | long | 429 | 500 | 529 | drop | error_event
+ *   POST /__mode {mode, text, delayMs, tokens}  mode: ok | slow | long | 429 | 500 | 529 | drop | error_event | refusal | refusal_mid | …
  *   GET  /__requests   recent upstream requests (body)   ·   POST /__reset
  * Journeys (ONLY=E1,E3 to run a subset):
  *   E1  chat streams in piece by piece (Spanish): the bubble grows before the
@@ -98,6 +98,8 @@ async function mock(mode, extra = {}) {
   await fetch(MOCK + '/__mode', { method: 'POST', body: JSON.stringify({ mode, text: null, delayMs: 30, tokens: 40, ...extra }) });
 }
 async function mockRequests() { return (await fetch(MOCK + '/__requests')).json(); }
+// The system prompt is a list of text blocks (prompt caching, docs/AI_PLATFORM.md) or a string.
+const sysText = (b) => (typeof b.system === 'string' ? b.system : (b.system || []).map((x) => x.text).join('\n'));
 
 const PASSWORD = 'CorrectHorse9!';
 const uniq = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -190,8 +192,8 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     if (!(await byTid(s.page, 'chat-rights-refs').count())) throw new Error('no rights-card reference under a search answer');
     const reqs = await mockRequests();
     const last = reqs[reqs.length - 1].body;
-    if (!/Write your whole answer in Spanish/.test(last.system)) throw new Error('system prompt does not ask for Spanish');
-    if (!/VERIFIED RIGHTS CONTENT/.test(last.system) || !/talk to a lawyer/.test(last.system)) throw new Error('system prompt is not grounded in the rights card');
+    if (!/Write your whole answer in Spanish/.test(sysText(last))) throw new Error('system prompt does not ask for Spanish');
+    if (!/VERIFIED RIGHTS CONTENT/.test(sysText(last)) || !/talk to a lawyer/.test(sysText(last))) throw new Error('system prompt is not grounded in the rights card');
     if ('temperature' in last) throw new Error('temperature sent to the API');
     if (last.model !== (process.env.CLAUDE_MODEL || 'claude-sonnet-5-5')) throw new Error(`model ${last.model}`);   // the server default (utils/ai.js)
     await shot(s.page, 'E1-done');
@@ -472,7 +474,7 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     await s.page.locator('[aria-label="' + tx('es', 'x_legal_research_run_legal_research') + '"]').click();
     await until(async () => (await bodyText(s.page)).includes('Terry v. Ohio'), 15000, 'research answer');
     const req = (await mockRequests()).slice(-1)[0].body;
-    if (!/Write the answer in Spanish/.test(req.system)) throw new Error('research not asked in Spanish');
+    if (!/Write the answer in Spanish/.test(sysText(req))) throw new Error('research not asked in Spanish');
     await mock('529');
     await s.page.getByRole('textbox').last().fill('¿Y en un registro de vehículo?');
     await s.page.locator('[aria-label="' + tx('es', 'x_legal_research_run_legal_research') + '"]').click();

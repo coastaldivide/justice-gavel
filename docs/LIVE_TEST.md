@@ -271,6 +271,37 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] K8 **Arabic**: Settings → Language → العربية → both screens read right to left (checkboxes and bullets on the
   right), all text in Arabic except court and publisher names (shown as published).
 
+## L. AI gateway with a real key (migration 44, 25 min)
+Staging with a real `ANTHROPIC_API_KEY`, `AI_TRACE_PROPAGATION=on`. After each step check the newest
+row: `SELECT task, task_class, model, requested_model, status, stop_reason, refusal, fallback_model, input_tokens,
+output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, cost_usd, request_id FROM ai_usage_log
+ORDER BY id DESC LIMIT 3;`
+- [ ] L1 **Chat, cached**: ask a question in the app (consumer) → answer streams, no thinking text anywhere. Row:
+  task `chat`, class `standard`, model `claude-sonnet-5-5`, `cache_write_1h_tokens` > 0, `request_id` filled. Ask a
+  follow-up within 5 minutes → `cache_read_tokens` ≥ the first row's 1h write, `cost_usd` lower. A new chat 10 minutes
+  later → still a cache read (1-hour entry).
+- [ ] L2 **Structured output, each class**: Motion review (attorney) → score / issues shown; row model
+  `claude-opus-5-5`, `stop_reason` `end_turn`. Voice note typed in → summary / next steps (class `quick`,
+  `claude-haiku-5-5`). Discovery analysis of a 3-page PDF → key facts and questions; a `preflight` = `counted` row and
+  `input_tokens_estimated` close to `input_tokens + cache_*`.
+- [ ] L3 **Settings accepted**: no 400 in the server log (`[ai] upstream error`) for any of the above — confirms
+  `output_config.effort`, `thinking: adaptive/omitted`, Haiku `disabled` + effort `low`, `fallbacks: "default"` with
+  the beta header `server-side-fallback-2026-07-01`, and every schema. Set `AI_THINKING_STANDARD=disabled` → chat
+  still works (sent as `between_tools` on Sonnet 5.5) → unset it.
+- [ ] L4 **Refusal wording**: if a question is ever declined (or force one with `AI_MODEL_STANDARD` set to a model
+  and a prompt the classifier declines) → the app shows "This request can't be answered here…", the partial text
+  disappears, no retry button, nothing in chat history; row `status` `refused`, `refusal` true, cost $0 for
+  `general_harms` / `cyber`. A declined chat answered by the fallback model shows `fallback_model` set and
+  `refusal` true with status `completed`.
+- [ ] L5 **Too large**: upload a 400-page PDF to Discovery analysis → "This request is too large…", and no new
+  `/v1/messages` call in the Anthropic console for it (only the free count).
+- [ ] L6 **Metrics + alert**: `GET /api/admin/metrics/ai?days=1` (admin + X-Admin-Key) lists chat / motions_review /
+  discovery rows with p50 / p95 and cost matching the console's usage page within a few cents.
+  `GET /api/admin/diagnostics/ai` shows the hour. Set `AI_ALERT_MIN_CALLS=1 AI_ALERT_ERROR_PCT=0.01`, cause one error
+  (bad key for a minute) → the next hourly watchdog sends "AI errors: …" to ONCALL_EMAIL / ALERT_WEBHOOK_URL. Reset.
+- [ ] L7 **Budget**: `AI_DAILY_BUDGET_USD` just above today's spend → the next large request (contract review) is
+  refused before sending ("too large … try again tomorrow"); a short chat still works until the cap.
+
 ## When everything is ticked
 Repeat sections A, C (one payment), E5 and E10 on **production** with a real card
 and a $1 test product or your own Case Pass, then refund it as "billing error".

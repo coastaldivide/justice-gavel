@@ -1,5 +1,5 @@
-import { anthropicFetch, aiHttpError, aiErrorCode } from '../../services/aiClient.js';
-import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { aiMessage, aiErrorCode, sendAiError } from '../../services/aiClient.js';
+import { requireAi } from '../../utils/ai.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 import { msg, resolveLang } from '../../i18n/index.js';
 /**
@@ -42,69 +42,53 @@ router.post('/review', authRequired, requireDisclaimer, requireAi, perUserAiLimi
     const { draft = '', motion_type = '', state = '' } = req.body || {};
     if (typeof draft !== 'string' || !draft.trim()) return refuse(res, req, 400, 'draft_required');
 
-    const REVIEW_PROMPT = `You are an experienced criminal defense attorney reviewing a motion draft for procedural correctness and completeness.
+    // Structured output (ai/schemas motion_review): the answer is schema-checked JSON; an
+    // answer that fails the schema is never shown (502 ai_invalid_output).
+    const out = await aiMessage({
+      task: 'motion_review',
+      system: [{ text: MOTION_REVIEW_SYSTEM, cache: '5m' }],
+      messages: [{ role: 'user', content: `Motion type: ${String(motion_type || 'Unknown').slice(0, 80)}
+Jurisdiction: ${String(state || 'Unknown state').slice(0, 40)}
 
-Motion type: ${motion_type || 'Unknown'}
-Jurisdiction: ${state || 'Unknown state'}
-
-Review the following motion draft and respond ONLY with a JSON object in this exact format:
-{
-  "score": "pass" | "warn" | "fail",
-  "issues": ["list of specific problems found, if any"],
-  "suggestions": ["list of specific improvements recommended"],
-  "missing_fields": ["list of required fields that appear to be blank or placeholder"]
-}
-
-Score guide:
-- "pass": motion is procedurally sound and ready for attorney review
-- "warn": motion has minor issues but could be filed with corrections
-- "fail": motion has significant issues that must be addressed before filing
-
-Check specifically for:
-1. Blank or [PLACEHOLDER] fields (case number, defendant name, county, court)
-2. Correct caption format for ${state || 'the jurisdiction'}
-3. Proper certificate of service if required
-4. Statute citations that appear complete (not truncated)
-5. Argument sections that are substantive (not just headings)
-6. Signature block completeness
+Check the caption format for ${String(state || 'the jurisdiction').slice(0, 40)}.
 
 Draft to review:
 ---
 ${draft.slice(0, 6000)}
----
-
-Respond ONLY with the JSON object. No other text.`;
-
-    const response = await anthropicFetch({
-      body: JSON.stringify({
-        model:       CLAUDE_MODEL,
-        max_tokens:  800,
-        messages: [{ role: 'user', content: REVIEW_PROMPT }],
-      }),
-    }, { route: 'motions_review', userId: req.user.id });
-    if (!response.ok) throw await aiHttpError(response, 'motions_review');
-    const data = await response.json();
-    const raw  = data.content?.[0]?.text || '{}';
-    let result;
-    try {
-      result = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    } catch (e) {
-      logger.warn('[motions/review] JSON parse:', e?.message);
-      return refuse(res, req, 502, 'review_unreadable');
-    }
+---` }],
+      route: 'motions_review',
+      userId: req.user.id,
+      timeoutMs: 120_000,
+    });
+    const result = out.json;
     return res.json({
-      score: ['pass', 'warn', 'fail'].includes(result?.score) ? result.score : 'warn',
-      issues: Array.isArray(result?.issues) ? result.issues.map(String) : [],
-      suggestions: Array.isArray(result?.suggestions) ? result.suggestions.map(String) : [],
-      missing_fields: Array.isArray(result?.missing_fields) ? result.missing_fields.map(String) : [],
+      score: result.score,
+      issues: result.issues,
+      suggestions: result.suggestions,
+      missing_fields: result.missing_fields,
     });
   } catch (e) {
     logger.error('[motions/review]', e.message);
-    const code = aiErrorCode(e);
-    return res.status(code === 'ai_failed' ? 500 : 503).json({ error: code, code, message: msg(resolveLang(req), `ai.job.${code}`) });
+    if (aiErrorCode(e) === 'ai_invalid_output') return refuse(res, req, 502, 'review_unreadable');
+    return sendAiError(res, resolveLang(req), e);
   }
 });
 
+// The review instructions (stable → prompt-cached). The JSON shape is enforced by the schema.
+const MOTION_REVIEW_SYSTEM = `You are an experienced criminal defense attorney reviewing a motion draft for procedural correctness and completeness.
 
+Answer with:
+- score: "pass" (procedurally sound and ready for attorney review), "warn" (minor issues, could be filed with corrections) or "fail" (significant issues that must be addressed before filing)
+- issues: specific problems found, if any
+- suggestions: specific improvements recommended
+- missing_fields: required fields that appear to be blank or placeholder
+
+Check specifically for:
+1. Blank or [PLACEHOLDER] fields (case number, defendant name, county, court)
+2. Correct caption format for the jurisdiction
+3. Proper certificate of service if required
+4. Statute citations that appear complete (not truncated)
+5. Argument sections that are substantive (not just headings)
+6. Signature block completeness`;
 
 export default router;

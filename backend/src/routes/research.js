@@ -1,6 +1,6 @@
-import { anthropicFetch, aiHttpError } from '../services/aiClient.js';
+import { aiMessage, aiErrorCode, sendAiError } from '../services/aiClient.js';
 import { isStaff } from '../utils/staff.js';
-import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
+import { requireAi } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
 import { asyncRoute, safeInt } from '../utils/routeHelpers.js';
 import { hasFeature } from '../services/entitlements.js';
@@ -17,7 +17,8 @@ import { msg, resolveLang, LANG_NAMES } from '../i18n/index.js';
  * DELETE /api/research/session/:id
  * GET  /api/research/status       — { has_access, plans } (plans that include research)
  *
- * Model: CLAUDE_MODEL (utils/ai.js, default claude-sonnet-5-5) with a legal research system prompt.
+ * Model: the gateway's 'deep' class (ai/tasks.js: AI_MODEL_DEEP, default claude-opus-5-5) with a
+ * legal research system prompt (prompt-cached, 5 minutes).
  * Optimised for:
  *   - Case law queries with jurisdiction awareness
  *   - Statutory interpretation
@@ -117,20 +118,24 @@ You are a comprehensive legal research partner for the full arc of criminal defe
 
 
 // ── Claude research call ──────────────────────────────────────────────────────
-async function callResearch(history, query, lang, context) {
+async function callResearch(history, query, lang, context, userId) {
   const messages = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: (context ? `[Case: ${context}]\n\n` : '') + query },
   ];
-  const language = lang === 'en' ? '' : `\n\nLANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`;
-  const res = await anthropicFetch({
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500, system: RESEARCH_SYSTEM + language, messages }),
-  }, { route: 'research', timeoutMs: 100_000, retries: 1 });
-  if (!res.ok) throw await aiHttpError(res, 'research');
-  const data = await res.json();
-  const text = data.content?.[0]?.text;
-  if (!text) throw Object.assign(new Error('empty answer'), { code: 'ai_failed' });
-  return text;
+  const language = lang === 'en' ? '' : `LANGUAGE: Write the answer in ${LANG_NAMES[lang]}. Keep case names, citations, statute numbers and quoted holdings exactly as published (do not translate them).`;
+  // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
+  const out = await aiMessage({
+    task: 'research',
+    system: [{ text: RESEARCH_SYSTEM, cache: '5m' }, { text: language }],
+    messages,
+    cacheConversation: true,
+    route: 'research',
+    userId,
+    timeoutMs: 100_000,
+    retries: 1,
+  });
+  return out.text;
 }
 
 // ── POST /api/research/ask ────────────────────────────────────────────────────
@@ -163,7 +168,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
     const q = query.trim();
     const lang = resolveLang(req);
     const jobId = await enqueue('research', async () => {
-      const answer = await callResearch(history, q, lang, ctx);
+      const answer = await callResearch(history, q, lang, ctx, req.user.id);
       const db2 = await getDb();
       await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'user', q]);
       await db2.run('INSERT INTO research_messages (session_id, role, content) VALUES (?,?,?)', [sessionId, 'assistant', answer]);
@@ -260,6 +265,7 @@ router.post('/rag', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
     const result = await ragSearch(query.trim(), {
       practiceArea: practice_area || null,
       jurisdiction: jurisdiction  || null,
+      userId:       req.user.id,
     });
 
     return res.json({
@@ -271,6 +277,7 @@ router.post('/rag', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
     });
   } catch (e) {
     logger?.warn('[research/rag]', e?.message);
+    if (['ai_refused', 'ai_too_large'].includes(aiErrorCode(e))) return sendAiError(res, resolveLang(req), e);
     return refuse(res, req, 503, 'unavailable');
   }
 });

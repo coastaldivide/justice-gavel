@@ -1,5 +1,4 @@
-import { anthropicFetch, aiHttpError } from '../../services/aiClient.js';
-import { CLAUDE_MODEL } from '../../utils/ai.js';
+import { aiMessage } from '../../services/aiClient.js';
 
 // UPL compliance: all AI responses include disclaimer metadata
  // ~12,500 words — covers any motion
@@ -19,7 +18,7 @@ export async function ensureTables(_db) { /* no-op — table created at startup 
 
 // ── Claude motion generation ──────────────────────────────────────────────────
 // Throws an AI error with a code (aiClient.aiErrorCode); routes/jobs.js words it.
-export async function generateMotion(motionType, fields) {
+export async function generateMotion(motionType, fields, userId = null) {
   const motionDef = MOTION_TYPES[motionType];
   if (!motionDef) throw new Error('Unknown motion type');
 
@@ -35,15 +34,69 @@ export async function generateMotion(motionType, fields) {
     ? `\n\nCRITICAL DEADLINE NOTICE: ${motionDef.deadline_warning}`
     : '';
 
-  const prompt = isAppellatMotion
-    ? `You are an experienced appellate defense attorney drafting a ${motionDef.label}.
-This is appellate-stage work. The stakes are high — this document must be precise, persuasive, and procedurally correct\n\nCRITICAL: Do NOT invent or fabricate statute numbers, case citations, or legal deadlines. If the specific citation is unknown, write [CITATION NEEDED] — never guess a citation. A fabricated statute number filed in court causes irreparable harm..
+  // The template (instructions that never change for a motion family) is the cached system
+  // prompt; the case facts and the motion-specific requirements are the user turn.
+  const system = isAppellatMotion ? APPELLATE_TEMPLATE : TRIAL_TEMPLATE;
+  const specific = {
+    bail_reduction: `- Address all statutory bail factors: nature of offense, weight of evidence, personal history, criminal record, flight risk, danger to community, length of pre-trial detention, and ability to pay.
+- Cite the relevant state bail statute by name and section.`,
+    speedy_trial: `- Apply the four-factor Barker v. Wingo, 407 U.S. 514 (1972) balancing test explicitly:
+  1. Length of delay (presumptively prejudicial threshold)
+  2. Reason for delay (attribute to prosecution or defense)
+  3. Defendant's assertion of the right (date and how asserted)
+  4. Prejudice to defendant (oppressive incarceration, anxiety, impaired defense)
+- State whether the delay meets the Doggett v. United States, 505 U.S. 647 (1992) threshold.`,
+    habeas_corpus: `- Frame every claim under 28 U.S.C. § 2254(d): the state court's decision must have been (1) contrary to, or an unreasonable application of, clearly established federal law as determined by the Supreme Court (Williams v. Taylor, 529 U.S. 362 (2000)), OR (2) based on an unreasonable determination of the facts.
+- Address AEDPA exhaustion requirement: all claims must have been presented to the highest available state court.
+- Address statute of limitations: one year from when conviction became final under 28 U.S.C. § 2244(d).
+- For ineffective assistance claims: apply Strickland v. Washington, 466 U.S. 668 (1984) two-prong test explicitly.`,
+    suppress: `- Identify the precise constitutional amendment and theory: 4th (unreasonable search/seizure), 5th (coerced statement), or 6th (interrogation without counsel).
+- Address the applicable exclusionary rule standard (Mapp v. Ohio for state; Weeks v. United States for federal).
+- If fruit of the poisonous tree is alleged, address whether independent source, inevitable discovery, or attenuation doctrine (Utah v. Strieff) applies.
+- If good faith exception is raised by prosecution, address United States v. Leon, 468 U.S. 897 (1984) and its exceptions.`,
+  }[motionType] || '';
+  const user = isAppellatMotion
+    ? `Draft a ${motionDef.label}.
 
 CASE INFORMATION:
 ${fieldSummary}${deadlineWarning}
 
+Use proper appellate court format for ${fields.state || 'US federal'} court.
+
+Generate the complete document now:`
+    : `Generate a complete, court-ready ${motionDef.label} based on the following case information.
+
+CASE INFORMATION:
+${fieldSummary}
+
+MOTION-SPECIFIC REQUIREMENTS:
+${specific}
+
+Use proper legal motion format for ${fields.state || 'US'} state court.
+
+Generate the complete motion now:`;
+
+  // Routing (class 'deep'), caching, budget, timeout/retries, refusals, metering: aiClient.
+  const out = await aiMessage({
+    task: isAppellatMotion ? 'motion_generate_appeal' : 'motion_generate',   // appellate briefs need more room
+    system: [{ text: system, cache: '5m' }],
+    messages: [{ role: 'user', content: user }],
+    route: 'motions_generate',
+    userId,
+    timeoutMs: 180_000,
+    retries: 1,
+  });
+  return out.text + '\n\n---\n*This AI-generated motion requires attorney review before filing. All citations must be independently verified. Not legal advice.*';
+}
+
+// ── Motion templates (stable → prompt-cached) ─────────────────────────────────
+export const APPELLATE_TEMPLATE = `You are an experienced appellate defense attorney drafting appellate-stage documents.
+This is appellate-stage work. The stakes are high — this document must be precise, persuasive, and procedurally correct.
+
+CRITICAL: Do NOT invent or fabricate statute numbers, case citations, or legal deadlines. If the specific citation is unknown, write [CITATION NEEDED] — never guess a citation. A fabricated statute number filed in court causes irreparable harm.
+
 REQUIREMENTS:
-- Use proper appellate court format for ${fields.state || 'US federal'} court
+- Use proper appellate court format for the court named in the case information
 - Include full caption with correct appellate court designation
 - For Notice of Appeal: include jurisdiction statement, timeliness statement, and specific judgments appealed
 - For Appellate Brief: include Table of Contents, Table of Authorities, Jurisdictional Statement, Statement of Issues Presented, Statement of the Case, Statement of Facts, Standard of Review for EACH issue, Argument (with point headings), Conclusion, and Certificate of Service
@@ -54,10 +107,9 @@ REQUIREMENTS:
 - Write in formal appellate legal language — persuasive but precise
 - End with signature block, bar number line, and certificate of service
 - Do NOT include any explanatory notes or meta-commentary — output the document only
-- Flag [ATTORNEY TO VERIFY] wherever specific local rules, recent case law, or jurisdiction-specific procedure must be confirmed
+- Flag [ATTORNEY TO VERIFY] wherever specific local rules, recent case law, or jurisdiction-specific procedure must be confirmed`;
 
-Generate the complete document now:`
-    : `You are a criminal defense attorney drafting a legal motion.
+export const TRIAL_TEMPLATE = `You are a criminal defense attorney drafting a legal motion.
 
 COURT FORMATTING REQUIREMENTS (apply to all generated motions):
 - Use proper legal caption: Case Name, Case Number, Court Name, Judge
@@ -66,33 +118,12 @@ COURT FORMATTING REQUIREMENTS (apply to all generated motions):
 - End with signature block: "Respectfully submitted, [ATTORNEY NAME], [BAR NUMBER], [ADDRESS]"
 - Use double-spacing and 1-inch margins (note these — the attorney's word processor handles it)
 - All case citations must follow Bluebook format or the applicable jurisdiction's citation rules
-- Flag every citation with [ATTORNEY TO VERIFY: cite] per the hallucination guard above
+- Flag every citation with [ATTORNEY TO VERIFY: cite] per the hallucination guard below
 
-Generate a complete, court-ready ${motionDef.label} based on the following case information.\n\nCRITICAL: Do NOT invent statute numbers, case citations, or legal deadlines. Use [CITATION NEEDED] for unknown citations — never fabricate.
-
-CASE INFORMATION:
-${fieldSummary}
-
-MOTION-SPECIFIC REQUIREMENTS:
-${motionType === 'bail_reduction' ? `- Address all statutory bail factors: nature of offense, weight of evidence, personal history, criminal record, flight risk, danger to community, length of pre-trial detention, and ability to pay.
-- Cite the relevant state bail statute by name and section.` : ''}
-${motionType === 'speedy_trial' ? `- Apply the four-factor Barker v. Wingo, 407 U.S. 514 (1972) balancing test explicitly:
-  1. Length of delay (presumptively prejudicial threshold)
-  2. Reason for delay (attribute to prosecution or defense)
-  3. Defendant's assertion of the right (date and how asserted)
-  4. Prejudice to defendant (oppressive incarceration, anxiety, impaired defense)
-- State whether the delay meets the Doggett v. United States, 505 U.S. 647 (1992) threshold.` : ''}
-${motionType === 'habeas_corpus' ? `- Frame every claim under 28 U.S.C. § 2254(d): the state court's decision must have been (1) contrary to, or an unreasonable application of, clearly established federal law as determined by the Supreme Court (Williams v. Taylor, 529 U.S. 362 (2000)), OR (2) based on an unreasonable determination of the facts.
-- Address AEDPA exhaustion requirement: all claims must have been presented to the highest available state court.
-- Address statute of limitations: one year from when conviction became final under 28 U.S.C. § 2244(d).
-- For ineffective assistance claims: apply Strickland v. Washington, 466 U.S. 668 (1984) two-prong test explicitly.` : ''}
-${motionType === 'suppress' ? `- Identify the precise constitutional amendment and theory: 4th (unreasonable search/seizure), 5th (coerced statement), or 6th (interrogation without counsel).
-- Address the applicable exclusionary rule standard (Mapp v. Ohio for state; Weeks v. United States for federal).
-- If fruit of the poisonous tree is alleged, address whether independent source, inevitable discovery, or attenuation doctrine (Utah v. Strieff) applies.
-- If good faith exception is raised by prosecution, address United States v. Leon, 468 U.S. 897 (1984) and its exceptions.` : ''}
+CRITICAL: Do NOT invent statute numbers, case citations, or legal deadlines. Use [CITATION NEEDED] for unknown citations — never fabricate.
 
 GENERAL REQUIREMENTS:
-- Use proper legal motion format for ${fields.state || 'US'} state court
+- Use proper legal motion format for the state court named in the request
 - Include caption (court, case number, parties)
 - Include proper legal headings (Introduction, Statement of Facts, Legal Standard, Argument, Conclusion)
 - Cite relevant case law with full citations — case name, volume, reporter, page, court, year
@@ -103,24 +134,7 @@ GENERAL REQUIREMENTS:
    NEVER be relied upon without verification. If uncertain of a citation,
    write [CASE CITATION NEEDED] rather than guessing. Real harm results
    from filing motions with fabricated case law.
-- Do NOT include explanatory notes or meta-commentary — output the motion only
-
-Generate the complete motion now:`;
-
-  const res = await anthropicFetch({
-    body: JSON.stringify({
-      model:      CLAUDE_MODEL,
-      max_tokens: isAppellatMotion ? 8000 : 2000, // appellate briefs need more room
-      messages:   [{ role: 'user', content: prompt }],
-    }),
-  }, { route: 'motions_generate', timeoutMs: 180_000, retries: 1 });
-
-  if (!res.ok) throw await aiHttpError(res, 'motions_generate');
-  const data = await res.json();
-  const motionText = data.content?.[0]?.text || '';
-  if (!motionText) throw Object.assign(new Error('empty motion'), { code: 'ai_failed' });
-  return motionText + '\n\n---\n*This AI-generated motion requires attorney review before filing. All citations must be independently verified. Not legal advice.*';
-}
+- Do NOT include explanatory notes or meta-commentary — output the motion only`;
 
 // ── POST /api/motions/generate ────────────────────────────────────────────────
 

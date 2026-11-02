@@ -21,7 +21,11 @@
  *
  * Anthropic is never called for real: initSuite() starts a local mock server
  * on 127.0.0.1:<random port> and points ANTHROPIC_BASE_URL at it BEFORE app.js
- * (and therefore utils/ai.js) is imported.
+ * (and therefore utils/ai.js) is imported. The mock speaks the documented API
+ * (scripts/anthropic-mock-lib.mjs: structured outputs, thinking blocks, cache
+ * usage, refusals + server-side fallback, count_tokens, 400s for bad requests).
+ * Tests steer it with ctx.anthropic.replyText / status / mode / json / category /
+ * refuseModels.
  */
 import { randomBytes } from 'crypto';
 import http from 'http';
@@ -29,6 +33,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import request from 'supertest';
+import { freshState, messageResponse, streamEvents, countTokensResponse, requestProblem } from '../../../scripts/anthropic-mock-lib.mjs';
 
 export const PG_URL = process.env.TEST_DATABASE_URL || '';
 
@@ -70,7 +75,7 @@ export function initSuite({ anthropicMock = false } = {}) {
     /** supertest agent factory: ctx.request().get('/api/...') */
     request: () => request(ctx.app),
     attachmentsDir: null,
-    anthropic: { server: null, port: null, requests: [], replyText: 'MOCK REPLY: general legal information, not legal advice.', status: 200 },
+    anthropic: { server: null, port: null, requests: [], replyText: 'MOCK REPLY: general legal information, not legal advice.', status: 200, mode: 'ok', json: null },
     _cleanups: [],
     /** Register extra cleanup SQL to run before the generic user purge. */
     addCleanup(fn) { ctx._cleanups.push(fn); },
@@ -96,13 +101,35 @@ export function initSuite({ anthropicMock = false } = {}) {
           let body = null;
           try { body = JSON.parse(data); } catch { /* keep null */ }
           ctx.anthropic.requests.push({ path: req.url, headers: req.headers, body });
-          res.writeHead(ctx.anthropic.status, { 'Content-Type': 'application/json' });
-          if (ctx.anthropic.status !== 200) return res.end(JSON.stringify({ error: { type: 'api_error', message: 'mock failure' } }));
-          res.end(JSON.stringify({
-            id: 'msg_mock', type: 'message', role: 'assistant', model: body?.model,
-            content: [{ type: 'text', text: ctx.anthropic.replyText }],
-            stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 12 },
-          }));
+          if (req.url.endsWith('/count_tokens')) {
+            const r = countTokensResponse(body);
+            res.writeHead(r.status, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify(r.body));
+          }
+          if (ctx.anthropic.status !== 200) {
+            res.writeHead(ctx.anthropic.status, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'mock failure' } }));
+          }
+          const a = ctx.anthropic;
+          const state = freshState({ text: a.replyText, mode: a.mode || 'ok', json: a.json ?? null,
+            category: a.category ?? 'general_harms', refuseModels: a.refuseModels ?? null });
+          if (body?.stream) {
+            const problem = requestProblem(body, req.headers);
+            if (problem) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: problem } }));
+            }
+            res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+            for (const e of streamEvents(body, state)) {
+              if (e.drop) { req.socket.destroy(); return; }
+              if (e.error) { res.write(`event: error\ndata: ${JSON.stringify(e.error)}\n\n`); break; }
+              res.write(`event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
+            }
+            return res.end();
+          }
+          const r = messageResponse(body, state, req.headers);
+          res.writeHead(r.status, { 'Content-Type': 'application/json', ...r.headers });
+          res.end(JSON.stringify(r.body));
         });
       });
       await new Promise((resolve, reject) => {

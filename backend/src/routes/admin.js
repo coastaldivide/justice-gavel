@@ -407,6 +407,36 @@ router.get('/diagnostics/jobs', async (req, res) => {
   }
 });
 
+// ── Diagnostics + metrics: the AI gateway (monitoring/aiHealth.js) ───────────
+// GET /api/admin/diagnostics/ai — the last hour (calls, error / refusal rates, alarm).
+router.get('/diagnostics/ai', async (req, res) => {
+  try {
+    const { aiHealth } = await import('../monitoring/aiHealth.js');
+    const { budgetStatus } = await import('../services/aiBudget.js');
+    res.set('Cache-Control', 'no-store');
+    const db = await getDb();
+    res.json({ ...(await aiHealth(db)), budget: await budgetStatus() });
+  } catch (e) {
+    logger.error({ msg: '[admin/diagnostics/ai]', error: e?.message });
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// GET /api/admin/metrics/ai?days=7 — per day × route × class: calls, cost, tokens (cache
+// read / write included), p50 / p95 latency, refusal and error rates; totals by class / route.
+router.get('/metrics/ai', async (req, res) => {
+  try {
+    const { aiMetrics } = await import('../monitoring/aiHealth.js');
+    const days = Number.parseInt(String(req.query.days ?? '7'), 10);
+    if (!Number.isFinite(days) || days < 1 || days > 90) return res.status(400).json({ error: 'days must be 1–90.', code: 'bad_days' });
+    res.set('Cache-Control', 'no-store');
+    res.json(await aiMetrics(await getDb(), { days }));
+  } catch (e) {
+    logger.error({ msg: '[admin/metrics/ai]', error: e?.message });
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
 // ── Metrics: "Did you make it to court?" (services/appearanceMetrics.js) ─────
 // GET /api/admin/metrics/appearance?from=YYYY-MM&to=YYYY-MM — counts per county (or state) and
 // month, app users and Bond Desk separately.

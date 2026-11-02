@@ -111,9 +111,11 @@ describeIntegration('duplicates, list bounds and AI budget (real Postgres)', () 
     expect(first.status).toBe(200);
     const done = await ctx.pollJob(asker, first.body.jobId);
     expect(done.body.status).toBe('done');
-    const row = await ctx.db.get(`SELECT route, input_tokens, output_tokens, cost_usd, status FROM ai_usage_log WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [asker.user.id]);
+    const row = await ctx.db.get(`SELECT route, input_tokens, output_tokens, cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens, cost_usd, status FROM ai_usage_log WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [asker.user.id]);
     expect(row).toMatchObject({ route: 'chat', status: 'completed' });
-    expect(Number(row.input_tokens)).toBe(10);
+    // input = uncached + cache reads + cache writes (the chat system prompt is prompt-cached)
+    expect(Number(row.input_tokens) + Number(row.cache_read_tokens) + Number(row.cache_write_5m_tokens) + Number(row.cache_write_1h_tokens)).toBeGreaterThan(500);
+    expect(Number(row.output_tokens)).toBeGreaterThan(0);
     expect(Number(row.cost_usd)).toBeGreaterThan(0);
 
     process.env.AI_DAILY_BUDGET_USD = '0.000001';

@@ -137,7 +137,7 @@ describe('CTRC2. contracts/ — Full Document Lifecycle', () => {
     const ct = fs.readFileSync(__REPO + '/backend/src/routes/contracts/_contract_types.js','utf8');
     const ch = fs.readFileSync(__REPO + '/backend/src/routes/contracts/_helpers.js','utf8');
     expect(ct.length).toBeGreaterThan(14000);
-    expect(ch.length).toBeGreaterThan(13000);
+    expect(ch.length).toBeGreaterThan(11000);   // Nov 2026: JSON templates + parse fallbacks replaced by schemas (ai/schemas)
     // _contract_types.js: standard contract templates (engagement, fee agreement, NDA)
     // _helpers.js: template variable injection, signature block generation
   });

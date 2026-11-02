@@ -69,7 +69,8 @@ describe('S1a. research.js — AI Legal Research ($49/mo)', () => {
       const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
       expect(src).toContain('RESEARCH_PLANS');
       expect(src).toContain('hasFeature(db, user.id, FEATURES.LEGAL_RESEARCH)');   // section G: the plan feature matrix
-      expect(src).toContain('model: CLAUDE_MODEL');                // pinned once in utils/ai.js
+      expect(src).toContain("task: 'research'");                // model chosen by the gateway's task class (ai/tasks.js)
+      expect(src).not.toContain('CLAUDE_MODEL');
       expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
       expect(src).toContain('legal research');
     });
@@ -264,7 +265,8 @@ describe('S12. UX — Architecture Depth', () => {
       const fs = await import('fs');
       const src = fs.readFileSync(__REPO + '/backend/src/routes/research.js', 'utf8');
       expect(src).toContain('RESEARCH_SYSTEM');
-      expect(src).toContain('model: CLAUDE_MODEL');                // pinned once in utils/ai.js
+      expect(src).toContain("task: 'research'");                // model chosen by the gateway's task class (ai/tasks.js)
+      expect(src).not.toContain('CLAUDE_MODEL');
       expect(src).not.toContain('claude-sonnet-4-20250514');       // retired model id
       expect(src).toContain('legal research');
     });

@@ -11,9 +11,11 @@
  * again.
  *
  * Failures reject with ChatError: `code` (chat_limit_reached, disclaimer_required,
- * ai_unavailable, ai_busy, ai_timeout, ai_failed, offline, …), `status` for HTTP
- * refusals, `message` already in the app language, and `partial` — the text
- * that had arrived before the stream broke. An abort (the person pressed
+ * ai_unavailable, ai_busy, ai_timeout, ai_failed, ai_refused, ai_too_large,
+ * ai_invalid_output, offline, …), `status` for HTTP refusals, `message` already
+ * in the app language, and `partial` — the text that had arrived before the
+ * stream broke. ai_refused (the AI declined the question) never keeps a partial:
+ * the server marks it `discard` and the text already shown is removed. An abort (the person pressed
  * Stop) rejects with ChatError code 'stopped'.
  */
 import { Platform } from 'react-native';
@@ -68,6 +70,9 @@ export function chatErrorText(code: string): string {
     case 'ai_unavailable': return t('x_ch_ai_chat_temporarily_unavailable');
     case 'ai_busy': return t('chat_err_busy');
     case 'ai_timeout': return t('chat_err_timeout');
+    case 'ai_refused': return t('chat_err_refused');
+    case 'ai_too_large': return t('chat_err_too_large');
+    case 'ai_invalid_output': return t('chat_err_invalid_output');
     case 'offline': return t('x_ch_no_connection_check_internet');
     case 'connection_lost': return t('chat_err_connection_lost');
     default: return t('x_ch_sorry_i_had_trouble');
@@ -120,7 +125,8 @@ async function readStream(response: Response, onToken: (s: string) => void): Pro
         return toAnswer(ev, typeof ev.full_text === 'string' ? ev.full_text : text);
       } else if (ev.type === 'error') {
         const code = String(ev.code || 'ai_failed');
-        throw new ChatError(code, typeof ev.message === 'string' ? ev.message : chatErrorText(code), { partial: text });
+        const discard = ev.discard === true || code === 'ai_refused';
+        throw new ChatError(code, typeof ev.message === 'string' ? ev.message : chatErrorText(code), { partial: discard ? '' : text });
       }
     }
   }

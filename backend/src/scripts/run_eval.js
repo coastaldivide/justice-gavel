@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * scripts/run_eval.js — Run 200 eval questions through the Justice Gavel AI
  *
@@ -15,7 +14,7 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
  */
 
 import 'dotenv/config';
-import Anthropic from '@anthropic-ai/sdk';
+import { aiMessage } from '../services/aiClient.js';
 import fs        from 'fs';
 import path      from 'path';
 import yargs     from 'yargs';
@@ -29,14 +28,14 @@ const argv = yargs(hideBin(process.argv))
   .option('category', { type: 'string' })
   .option('id',       { type: 'string' })
   .option('dry-run',  { type: 'boolean', default: false })
-  .option('model',    { type: 'string',  default: CLAUDE_MODEL })
+  .option('model',    { type: 'string' })   // default: the gateway's standard-class model
   .argv;
 
 const QUESTIONS_FILE = path.resolve(__dirname, '../../data/eval/questions.json');
 const RUNS_DIR       = path.resolve(__dirname, '../../data/eval/runs');
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 2 });
+// Calls go through the AI gateway (task 'eval_answer'); --model compares models on purpose.
 
 // The system prompt used by the Justice Gavel AI (mirrors /api/chat route)
 const SYSTEM_PROMPT = `You are Justice Gavel, an AI legal assistant helping criminal defendants understand their rights.
@@ -60,18 +59,19 @@ Format:
 async function runQuestion(question) {
   const startMs = Date.now();
 
-  const response = await client.messages.create({
-    model:      argv.model,
-    max_tokens: 1024,
-    system:     SYSTEM_PROMPT,
-    messages:   [{
+  const response = await aiMessage({
+    task:     'eval_answer',
+    model:    argv.model,
+    system:   SYSTEM_PROMPT,
+    messages: [{
       role:    'user',
       content: `State: ${question.state}\n\nQuestion: ${question.question}`,
     }],
+    route:    'eval_run',
   });
 
   const elapsed  = Date.now() - startMs;
-  const text     = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  const text     = response.text;
   const usage    = response.usage || {};
 
   return {
@@ -81,7 +81,7 @@ async function runQuestion(question) {
     question_text:  question.question,
     expected_behavior: question.expected_behavior,
     difficulty:     question.difficulty,
-    model:          argv.model,
+    model:          response.model,
     response:       text,
     input_tokens:   usage.input_tokens || 0,
     output_tokens:  usage.output_tokens || 0,
@@ -100,7 +100,7 @@ async function runQuestion(question) {
   if (argv.category) questions = questions.filter(q => q.category === argv.category);
   if (argv.id)       questions = questions.filter(q => q.id       === argv.id);
 
-  console.log(`\n🔍 Eval run — ${questions.length} questions | model: ${argv.model}`);
+  console.log(`\n🔍 Eval run — ${questions.length} questions | model: ${argv.model || 'gateway standard class'}`);
   if (argv['dry-run']) {
     console.log('\nDRY RUN — questions to process:');
     questions.forEach(q => console.log(`  [${q.state}][${q.category}] ${q.question.substring(0,60)}`));
