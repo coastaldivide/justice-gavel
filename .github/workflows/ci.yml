@@ -22,7 +22,7 @@ jobs:
   # ───────────────────────────────────────────────────────────────────────────
   backend:
     name: Backend (lint + Postgres + smoke + jest)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright does not support yet
     timeout-minutes: 45
 
     defaults:
@@ -146,7 +146,7 @@ jobs:
         # Skipped in the in-memory jest run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
-        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js src/__tests__/alerts_takedown_pg.test.js src/__tests__/final_pass_fixes.test.js
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci --runInBand src/__tests__/arrest_visibility.test.js src/__tests__/alerts_takedown_pg.test.js src/__tests__/final_pass_fixes.test.js
 
       - name: Postgres client tools present (backup/restore test must not skip)
         # integration/backup_restore.int.test.js runs scripts/db-backup.sh and
@@ -219,7 +219,7 @@ jobs:
   # ───────────────────────────────────────────────────────────────────────────
   journeys:
     name: Web journeys (production API + Chromium)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright does not support yet
     timeout-minutes: 60
 
     services:
@@ -338,7 +338,7 @@ jobs:
   # ───────────────────────────────────────────────────────────────────────────
   frontend:
     name: Frontend (types + lint + tests + export)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright does not support yet
     timeout-minutes: 30
 
     defaults:

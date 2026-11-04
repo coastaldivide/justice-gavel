@@ -45,7 +45,7 @@ concurrency:
 jobs:
   staging:
     name: Smoke test staging
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright does not support yet
     timeout-minutes: 75
     defaults:
       run:
