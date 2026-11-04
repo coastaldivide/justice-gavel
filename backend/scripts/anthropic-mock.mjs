@@ -19,7 +19,7 @@
  *        delayMs: pause between streamed words (slow / drop), default 30
  *        tokens: number of words for `long`, default 40
  *        category: refusal category (default general_harms); refuseModels: only these decline
- *        citeMode: auto | none | foreign | blocks — answers to requests with citable search
+ *        citeMode: auto | text | none | foreign | blocks — answers to requests with citable search
  *          results (scripts/anthropic-mock-lib.mjs citedBlocks); blocks: [{ text, citations? }]
  *   GET  /__requests   the upstream requests received so far: [{ path, headers, body }]
  *   Message Batches: POST /v1/messages/batches, GET /v1/messages/batches/{id}, GET …/{id}/results,

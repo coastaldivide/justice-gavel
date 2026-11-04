@@ -198,7 +198,11 @@ export function buildCitedAnswer(content, sent, opts = {}) {
   return a.result();
 }
 
-const SENTENCE = /[^.!?。！？؟\n]*(?:[.!?。！？؟]+["”»)]*\s+|\n+)/g;
+// Sentence ends: a run of . ! ? (and the CJK / Arabic forms), closing quotes, then whitespace;
+// or a run of line breaks.
+const SENT_END = new Set(['.', '!', '?', '。', '！', '？', '؟']);
+const CLOSERS = new Set(['"', '”', '»', ')']);
+const SPACE = /\s/;
 
 /**
  * An answer given without sources (no legal passage matched a non-legal question), sentence by
@@ -206,7 +210,7 @@ const SENTENCE = /[^.!?。！？؟\n]*(?:[.!?。！？؟]+["”»)]*\s+|\n+)/g;
  * push(text) / end() return what became visible: [{ segment, sources: [] }].
  */
 export class SentenceAssembler {
-  constructor() { this.buf = ''; this.segments = []; this.withheld = 0; }
+  constructor() { this.buf = ''; this.scan = 0; this.segments = []; this.withheld = 0; }
 
   take(p) {
     if (!p) return [];
@@ -222,17 +226,42 @@ export class SentenceAssembler {
     return [{ segment, sources: [] }];
   }
 
+  // One pass over the text not scanned yet (linear in the answer's length: a long answer with no
+  // sentence end must not re-scan the whole buffer on every token — that blocked the event loop).
+  // Every character ends up in exactly one sentence ("3.5 years." is one sentence, nothing dropped).
   push(text) {
     this.buf += String(text || '');
+    const buf = this.buf;
     const out = [];
-    let m, last = 0;
-    SENTENCE.lastIndex = 0;
-    while ((m = SENTENCE.exec(this.buf)) && m[0]) { out.push(...this.take(m[0])); last = SENTENCE.lastIndex; }
-    this.buf = this.buf.slice(last);
+    let start = 0, i = this.scan;
+    while (i < buf.length) {
+      const ch = buf[i];
+      if (ch === '\n') {
+        let j = i; while (j < buf.length && buf[j] === '\n') j += 1;
+        out.push(...this.take(buf.slice(start, j))); start = j; i = j;
+        continue;
+      }
+      if (SENT_END.has(ch)) {
+        let k = i; while (k < buf.length && SENT_END.has(buf[k])) k += 1;
+        while (k < buf.length && CLOSERS.has(buf[k])) k += 1;
+        if (k === buf.length) break;                     // the space after it has not arrived yet
+        if (SPACE.test(buf[k])) {
+          let w = k; while (w < buf.length && SPACE.test(buf[w]) && buf[w] !== '\n') w += 1;
+          while (w < buf.length && buf[w] === '\n') w += 1;
+          out.push(...this.take(buf.slice(start, w))); start = w; i = w;
+          continue;
+        }
+        i = k;                                           // "3.5", "e.g.x": not a sentence end
+        continue;
+      }
+      i += 1;
+    }
+    this.buf = buf.slice(start);
+    this.scan = i - start;
     return out;
   }
 
-  end() { const rest = this.buf; this.buf = ''; return this.take(rest); }
+  end() { const rest = this.buf; this.buf = ''; this.scan = 0; return this.take(rest); }
 
   result() {
     return { grounded: false, segments: this.segments, sources: [], dropped: 0, dropReasons: {}, withheld: this.withheld, cited: 0 };

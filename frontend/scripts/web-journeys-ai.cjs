@@ -94,8 +94,12 @@ async function apiCall(method, p, { token, body, lang } = {}) {
   let j = null; try { j = await r.json(); } catch { /* not json */ }
   return { status: r.status, body: j };
 }
+// citeMode 'text': a legal question is answered only from cited sources (AI step 2,
+// docs/AI_PLATFORM.md §8) — the server withholds uncited legal sentences — so the mock answers
+// grounded requests with the scripted text cut into cited sentence-sized blocks (each streamed as
+// a checked segment), like a model citing as it goes. Questions without sources get the text as is.
 async function mock(mode, extra = {}) {
-  await fetch(MOCK + '/__mode', { method: 'POST', body: JSON.stringify({ mode, text: null, delayMs: 30, tokens: 40, ...extra }) });
+  await fetch(MOCK + '/__mode', { method: 'POST', body: JSON.stringify({ mode, text: null, delayMs: 30, tokens: 40, citeMode: 'text', ...extra }) });
 }
 async function mockRequests() { return (await fetch(MOCK + '/__requests')).json(); }
 // The system prompt is a list of text blocks (prompt caching, docs/AI_PLATFORM.md) or a string.
@@ -193,7 +197,13 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
     const reqs = await mockRequests();
     const last = reqs[reqs.length - 1].body;
     if (!/Write your whole answer in Spanish/.test(sysText(last))) throw new Error('system prompt does not ask for Spanish');
-    if (!/VERIFIED RIGHTS CONTENT/.test(sysText(last)) || !/talk to a lawyer/.test(sysText(last))) throw new Error('system prompt is not grounded in the rights card');
+    // Grounded (AI step 2, docs/AI_PLATFORM.md §8): the rights card goes to the model as citable
+    // search_result passages in the user turn (no longer pasted into the system prompt), under the
+    // system prompt's sources rules; the answer shown is only the cited parts.
+    const passages = (Array.isArray(last.messages.at(-1).content) ? last.messages.at(-1).content : []).filter((b) => b.type === 'search_result');
+    if (!/SOURCES RULES/.test(sysText(last))) throw new Error('system prompt has no sources rules');
+    if (!passages.some((b) => /^jg:rights\./.test(b.source) && b.citations && b.citations.enabled)) throw new Error('the rights card was not sent as a citable passage');
+    if (!(await byTid(s.page, 'chat-cited-cite-1').count())) throw new Error('no source number shown under the streamed answer');
     if ('temperature' in last) throw new Error('temperature sent to the API');
     if (last.model !== (process.env.CLAUDE_MODEL || 'claude-sonnet-5-5')) throw new Error(`model ${last.model}`);   // the server default (utils/ai.js)
     await shot(s.page, 'E1-done');
@@ -365,7 +375,12 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
 
   await journey('E7 long answer streams without freezing', async () => {
     const acc = await newUser('e7');
-    await mock('long', { tokens: 3000 });
+    // 3,000 words in 300 sentences, no digits: an answer without sources shows its sentences as
+    // they complete, and a sentence with a number in it would be withheld (no source) — so the
+    // old "word0 … word2999" text could never be shown, and it froze the server's sentence scan.
+    const words = ['you', 'can', 'ask', 'the', 'clerk', 'what', 'happens', 'next', 'and', 'when'];
+    const longText = Array.from({ length: 299 }, () => `${words.join(' ')}. `).join('') + 'This is where the long answer finally ends.';
+    await mock('ok', { text: longText });
     const s = await open(browser, { account: acc });
     await go(s.page, '/chat');
     const t0 = Date.now();
@@ -378,7 +393,7 @@ const userBubbles = (page, text) => byTid(page, 'chat-msg-user').filter({ hasTex
       maxLag = Math.max(maxLag, Date.now() - a);
       await s.page.waitForTimeout(150);
     }
-    await until(async () => (await lastAnswer(s.page).innerText().catch(() => '')).includes('word2999'), 30000, 'full long answer');
+    await until(async () => (await lastAnswer(s.page).innerText().catch(() => '')).includes('long answer finally ends'), 30000, 'full long answer');
     const total = Date.now() - t0;
     if (maxLag > 1500) throw new Error(`frame lag ${maxLag} ms`);
     await shot(s.page, 'E7-long');

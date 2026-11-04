@@ -245,3 +245,37 @@ describe('Arabic (right to left)', () => {
     expect(src.match(/\b(marginLeft|marginRight|paddingLeft|paddingRight|borderLeft\w*|borderRight\w*|left:|right:)|textAlign:\s*'(left|right)'/g)).toBeNull();
   });
 });
+
+describe('citedLines — markdown blocks in a cited answer', () => {
+  test('headings, list items and gaps are drawn; numbers stay with their piece; nothing is lost', () => {
+    const { citedLines } = jest.requireActual('../../components/CitedAnswer');
+    const lines = citedLines([
+      { text: '## Your rights\n\n', cites: [1] },
+      { text: '- **Stay calm** and *be polite*\n', cites: [1] },
+      { withheld: true },
+      { text: '1. Say: `I want a lawyer`', cites: [2] },
+    ]);
+    expect(lines.map((l: { kind: string }) => l.kind)).toEqual(['h', 'gap', 'li', 'li']);
+    expect(lines[0]).toMatchObject({ level: 2, pieces: [{ text: 'Your rights', cites: [1] }] });
+    expect(lines[2]).toMatchObject({ marker: '•', pieces: [{ text: '**Stay calm** and *be polite*', cites: [1] }] });
+    expect(lines[3]).toMatchObject({ marker: '1.', pieces: [{ withheld: true }, { text: 'Say: `I want a lawyer`', cites: [2] }] });
+  });
+
+  test('numbers on a cited run of only line breaks go with the words before it', () => {
+    const { citedLines } = jest.requireActual('../../components/CitedAnswer');
+    const lines = citedLines([{ text: '## Standard\n', cites: [1] }, { text: '\n', cites: [2] }, { text: 'Terry v. Ohio', cites: [1] }]);
+    expect(lines.map((l: { kind: string }) => l.kind)).toEqual(['h', 'gap', 'p']);
+    expect(lines[0].pieces).toEqual([{ text: 'Standard', cites: [1, 2] }]);
+  });
+
+  test('a cited heading and list render without markdown signs, HTML stays text', () => {
+    wrap(<CitedAnswer answer={{ grounded: true, sources: SOURCED.sources, withheld: 0, dropped: 0, segments: [
+      { text: '## Your rights\n', cites: [1] }, { text: '- **Stay calm** <b>x</b>', cites: [2] },
+    ] }} />);
+    expect(screen.getByRole('header')).toBeTruthy();
+    expect(screen.queryByText(/##|\*\*/)).toBeNull();
+    expect(screen.getByText('Stay calm')).toBeTruthy();
+    expect(screen.getByText(/<b>x<\/b>/)).toBeTruthy();
+    expect(screen.getByTestId('cited-answer-cite-2')).toBeTruthy();
+  });
+});

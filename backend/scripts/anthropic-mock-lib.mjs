@@ -22,7 +22,8 @@
  *     and blocks with `citations: [{ type: 'search_result_location', source, title, cited_text,
  *     search_result_index, start_block_index, end_block_index }]` (index across every
  *     search_result in the request, in order); streams send `citations_delta` events inside
- *     the block. state.citeMode: auto (cite the newest results) | none (state.text, no
+ *     the block. state.citeMode: auto (cite the newest results) | text (state.text — or the
+ *     `long` words — cut into sentence / line / 8-word chunks, each one cited) | none (state.text, no
  *     citations) | foreign (citations to results that were never sent) | blocks (state.blocks
  *     verbatim: [{ text, citations? }]);
  *   - the request is checked like the real API (400 invalid_request_error): sampling params,
@@ -430,6 +431,21 @@ export function citedBlocks(body, state) {
   const newest = new Set((Array.isArray(lastUser?.content) ? lastUser.content : []).filter((b) => b?.type === 'search_result'));
   const picks = all.map((r, i) => ({ ...r, i })).filter((r) => newest.has(r.block)).slice(0, 3);
   const use = picks.length ? picks : all.map((r, i) => ({ ...r, i })).slice(-1);
+  const citeOf = (r) => ({ type: 'search_result_location', source: r.block.source, title: r.block.title, cited_text: r.block.content[0].text, search_result_index: r.i, start_block_index: 0, end_block_index: 1 });
+  if (mode === 'text') {
+    // state.text (or the `long` words), every chunk cited like a model citing sentence by sentence:
+    // chunks end at a line break, at a sentence end once they have 4+ words (so "Terry v. Ohio,
+    // 392 U.S. 1" stays whole), or after 8 words; joined they are the text exactly.
+    const src = state.mode === 'long' ? answerText({}, state) : String(state.text || DEFAULT_TEXT);
+    const chunks = [];
+    let cur = '', words = 0;
+    for (const w of src.split(/(?<=\s)(?=\S)/)) {
+      cur += w; words += 1;
+      if (/\n\s*$/.test(w) || (words >= 4 && /[.!?]["')\]]*\s+$/.test(w)) || words >= 8) { chunks.push(cur); cur = ''; words = 0; }
+    }
+    if (cur) chunks.push(cur);
+    return chunks.map((t, k) => ({ type: 'text', text: t, citations: [citeOf(use[k % use.length])] }));
+  }
   const out = [{ type: 'text', text: 'Here is what I found. ' }];
   for (const r of use) {
     const first = r.block.content[0].text;

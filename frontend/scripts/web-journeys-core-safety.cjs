@@ -50,6 +50,7 @@ const DIST = path.resolve(process.argv[2] || path.join(ROOT, 'dist'));
 const OUT = path.resolve(process.argv[3] || path.join(ROOT, 'web-journeys-core-safety-out'));
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
 const API = String(arg('--api', 'http://localhost:4300/api')).replace(/\/$/, '');
+const MOCK = String(arg('--mock', 'http://127.0.0.1:4399')).replace(/\/$/, '');
 const PORT = Number(arg('--port', 8300));
 const DB_URL = arg('--db-url', process.env.DATABASE_URL || null);
 fs.mkdirSync(OUT, { recursive: true });
@@ -410,6 +411,11 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
     await byTid(s.page, 'voice-note-toggle').click();
     const trr = await tr;
     if (!trr || trr.status() !== 503) throw new Error(`expected transcription unavailable, got ${trr && trr.status()}`);
+    // The AI organises the note as structured output (AI step 1, ai/schemas note_structure): the
+    // mock answers with a summary of what was typed, as a model would (its default sample summary
+    // says nothing about the note).
+    await fetch(MOCK + '/__mode', { method: 'POST', body: JSON.stringify({ mode: 'ok', json: {
+      summary: 'I need to call my lawyer tomorrow. Court date is next Tuesday.', next_steps: ['Call the lawyer tomorrow'], flags: [] } }) });
     await byTid(s.page, 'voice-note-text').fill('I need to call my lawyer tomorrow. Court date is next Tuesday.');
     await byTid(s.page, 'voice-note-structure').click();
     await byTid(s.page, 'voice-note-result').waitFor({ timeout: 15000 });

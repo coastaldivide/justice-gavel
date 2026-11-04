@@ -483,6 +483,8 @@ async function checkRecord(page, { state, status, type }) {
     await byTid(s.page, 'expungement-juvenile-link').click();
     await byTid(s.page, 'juvenile-justice-screen').waitFor();
     await byTid(s.page, 'juvenile-state').waitFor();
+    // the rows load after the screen: wait for them before counting (counting at once raced the fetch)
+    await byTid(s.page, 'juvenile-row-source').first().waitFor({ timeout: 10000 }).catch(() => {});
     const rows = await byTid(s.page, 'juvenile-row-source').count();
     if (rows !== 1 || !(await bodyText(s.page)).includes('Nevada')) throw new Error(`juvenile sealing rows ${rows}`);
     await pickState(s.page, 'juvenile-state', 'ALL');

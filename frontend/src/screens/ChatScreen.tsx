@@ -611,12 +611,12 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
   const header = (
     <View style={styles.header}>
-      <View style={{ flex: 1, minWidth: 0 }}>
+      <View style={styles.headerText}>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>{t('x_ch_legal_help')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>{t('x_ch_ai_powered_rights_guide')}</Text>
       </View>
       {messages.length > 0 && (
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <View style={styles.headerActions}>
           <ConversationMemory kind="chat" conversationId={sessionId} testID="chat-memory" />
           <TouchableOpacity accessibilityRole="button" onPress={exportConversation} style={styles.clearBtn}
             testID="chat-export-button" accessibilityLabel={t('x_ch_share_conversation')}>
@@ -754,7 +754,11 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 // T2-B: COLORS constant is defined at module scope above; all refs resolve correctly
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   screen:           { flex: 1, backgroundColor: 'transparent' },
-  header:           { backgroundColor: colors.navy, padding: 16, paddingTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // The title keeps at least 180 pt; when the actions (longer in pt / vi / es) do not fit beside
+  // it they wrap onto their own line instead of squeezing the title to one letter per line.
+  header:           { backgroundColor: colors.navy, padding: 16, paddingTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center' },
+  headerText:       { flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 0 },
+  headerActions:    { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 1, maxWidth: '100%' },
   headerTitle:      { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.white },
   headerSub:        { fontSize: 12, color: colors.white, marginTop: 1 },
   clearBtn:         { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8 },
