@@ -2,6 +2,13 @@
  * services/email.js — transactional email via Resend.
  *
  * Without RESEND_API_KEY (or with LIVE_EMAIL=false) emails are logged, not sent.
+ *
+ * Staging guard (docs/STAGING.md): when APP_ENV=staging an e-mail goes ONLY to addresses
+ * listed in STAGING_ALLOWED_EMAILS — comma-separated exact addresses (you@mail.example.org, which also
+ * allows its plus-addresses you+tag@mail.example.org) and/or whole domains (@yourcompany.com). Other recipients are dropped; when none is left the send
+ * resolves to { skipped: true, reason: 'staging_recipient_not_allowed' } (never throws).
+ * Unset list = nothing is e-mailed on staging. Production is unaffected. Every e-mail in the
+ * app goes through send() below.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -35,10 +42,52 @@ async function resendClient() {
   return _resend;
 }
 
+function appEnvNow(env = process.env) {
+  const nodeEnv = env.NODE_ENV || 'development';
+  return String(env.APP_ENV || (nodeEnv === 'production' ? 'production' : nodeEnv)).trim().toLowerCase();
+}
+
+/** STAGING_ALLOWED_EMAILS → { addresses: Set, domains: Set } (lower case; '@x.com' entries are domains). */
+export function stagingAllowedEmails(raw = process.env.STAGING_ALLOWED_EMAILS) {
+  const addresses = new Set(); const domains = new Set();
+  for (const part of String(raw || '').split(',')) {
+    const v = part.trim().toLowerCase();
+    if (/^@[a-z0-9.-]+\.[a-z]{2,}$/.test(v)) domains.add(v.slice(1));
+    else if (/^[^@\s]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(v)) addresses.add(v);
+  }
+  return { addresses, domains };
+}
+
+/** True when this address may be e-mailed: always outside staging; on staging only if listed. */
+export function emailRecipientAllowed(address, env = process.env) {
+  if (appEnvNow(env) !== 'staging') return true;
+  const a = String(address || '').trim().toLowerCase();
+  const at = a.lastIndexOf('@');
+  if (at < 1) return false;
+  const { addresses, domains } = stagingAllowedEmails(env.STAGING_ALLOWED_EMAILS);
+  // you+anything@mail.example.org is delivered to you@mail.example.org: allowed when the base address is listed.
+  const base = a.slice(0, at).split('+')[0] + a.slice(at);
+  return addresses.has(a) || addresses.has(base) || domains.has(a.slice(at + 1));
+}
+
+let stagingBlocked = 0;
+/** How many recipients the staging guard has dropped since start (tests, logs). */
+export function stagingBlockedEmailCount() { return stagingBlocked; }
+
 async function send({ to, subject, html, text }) {
   if (!to || !subject) {
     logger.warn('[email] missing to/subject — not sent');
     return { error: 'missing_fields' };
+  }
+  if (appEnvNow() === 'staging') {
+    const list = (Array.isArray(to) ? to : [to]).map(x => String(x));
+    const allowed = list.filter(x => emailRecipientAllowed(x));
+    if (allowed.length < list.length) {
+      stagingBlocked += list.length - allowed.length;
+      logger.info({ dropped: list.length - allowed.length, blocked_total: stagingBlocked }, '[email] staging: recipient(s) not in STAGING_ALLOWED_EMAILS — not sent to them');
+    }
+    if (!allowed.length) return { skipped: true, reason: 'staging_recipient_not_allowed' };
+    to = Array.isArray(to) ? allowed : allowed[0];
   }
   if (!emailLive()) {
     logger.info(`[email] (not sent — RESEND_API_KEY not set) "${subject}" → ${Array.isArray(to) ? to.join(',') : to}`);

@@ -21,6 +21,8 @@ services:
   - type: web
     name: justice-gavel-api
     runtime: docker
+    # Production deploys main ONLY. Promote to production by merging consumer-core-path into
+    # main after staging passes (docs/STAGING.md "Promote to production").
     branch: main
     region: oregon                 # immutable after creation
     plan: starter                  # 512 MB — matches MEMORY_LIMIT_MB below
@@ -143,7 +145,7 @@ services:
   - type: web
     name: justice-gavel-api-staging
     runtime: docker
-    branch: main                   # or a `staging` branch for staging-first promotion
+    branch: consumer-core-path     # all current work lands here first; production stays on main
     region: oregon
     plan: starter
     dockerContext: .
@@ -190,12 +192,33 @@ services:
         generateValue: true
       - key: METRICS_TOKEN
         generateValue: true
-      - key: ANTHROPIC_API_KEY
+      - key: ANTHROPIC_API_KEY       # a separate Claude key for staging (its own Console workspace / limit)
         sync: false
+      # Low global AI spend cap for staging (services/aiBudget.js). Production keeps its own value.
+      - key: AI_DAILY_BUDGET_USD
+        value: "5"
+      # AI_FILES_API is left unset: off under NODE_ENV=production (documents are sent inline), the
+      # same as production — see DEPLOY_ENV_SETUP.md before turning it on anywhere.
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      - key: RESEND_API_KEY          # Resend key (a separate key for staging is easiest to revoke)
+        sync: false
+      - key: APP_URL                 # where signing / payment links point (staging web app, if any)
+        sync: false
+      # ── Staging outbound guard + test client (docs/STAGING.md) ──
+      # Texts go ONLY to these numbers and e-mail ONLY to these addresses / @domains; every other
+      # recipient is skipped (staging_recipient_not_allowed). Empty = staging texts / e-mails nobody.
+      - key: STAGING_ALLOWED_PHONES  # e.g. +16155550123,+16155550124 (your own test phones, E.164)
+        sync: false
+      - key: STAGING_ALLOWED_EMAILS  # e.g. you@gmail.com,@yourcompany.com
+        sync: false
+      # Lets the smoke test / route sweep (GitHub "Staging check") use their own client IPs so
+      # rate limits do not block repeated runs. Copy the value into the GitHub secret
+      # STAGING_TEST_KEY. NEVER set this on production (scripts/check-env.js fails on it).
+      - key: STAGING_TEST_KEY
+        generateValue: true
       # ── Payments, texts, push (prompted once; each enables one feature) ──
       # Stripe: TEST-mode keys only (sk_test_…) — scripts/check-env.js refuses a live key on staging.
       # Webhook endpoint: <service URL>/api/billing/webhook (events: checkout.session.completed,

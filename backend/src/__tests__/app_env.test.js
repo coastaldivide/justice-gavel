@@ -21,8 +21,10 @@ describe('APP_ENV', () => {
   });
 
   test('staging = production hardening + its own label; clean config has no errors', () => {
-    const r = checkAppEnv({ NODE_ENV: 'production', APP_ENV: 'staging', STRIPE_SECRET_KEY: 'sk_test_abc123' });
+    const r = checkAppEnv({ NODE_ENV: 'production', APP_ENV: 'staging', STRIPE_SECRET_KEY: 'sk_test_abc123', STAGING_ALLOWED_PHONES: '+16155550100', STAGING_ALLOWED_EMAILS: '@example.org' });
     expect(r).toMatchObject({ appEnv: 'staging', errors: [], warnings: [] });
+    // Without the outbound allow-lists staging texts / e-mails nobody — said at boot (docs/STAGING.md).
+    expect(checkAppEnv({ NODE_ENV: 'production', APP_ENV: 'staging' }).warnings.join()).toMatch(/STAGING_ALLOWED_PHONES.*STAGING_ALLOWED_EMAILS/);
   });
 
   test('refuses NODE_ENV=staging, live Stripe keys on staging, the production DB on staging, unknown APP_ENV', () => {

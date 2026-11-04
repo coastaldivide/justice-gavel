@@ -19,9 +19,9 @@ export const REDACTED = '[REDACTED]';
 // Keys whose VALUE is a secret or credential — always replaced outright.
 // Matched on the END of the key so counters such as input_tokens / token_count
 // stay readable, while password, refreshToken, x-api-key, client_secret… do not.
-const SECRET_KEY = /(token|secret|password|passwd|passphrase|api[_-]?key|authorization|cookie|signature|ssn|social[_-]?security(_number)?|cvv|cvc|otp|jwt|private[_-]?key|card[_-]?number|admin[_-]?key|credentials?)$/i;
+const SECRET_KEY = /(token|secret|password|passwd|passphrase|api[_-]?key|authorization|cookie|signature|ssn|social[_-]?security(_number)?|cvv|cvc|otp|jwt|private[_-]?key|card[_-]?number|admin[_-]?key|staging[_-]?test[_-]?key|credentials?)$/i;
 // Keys whose value is personal data — replaced outright.
-const PII_KEY = /^(email|e_mail|to|from|recipient|recipients|phone|phone_number|mobile|sms_to|contact_phone|contact_email|defendant_phone|defendant_email|signer_email|customer_email|address|street|street_address|dob|date_of_birth|birth_date|ip|ip_address|lat|lng|latitude|longitude|location_lat|location_lng)$/i;
+const PII_KEY = /^(email|e_mail|to|from|recipient|recipients|phone|phone_number|mobile|sms_to|contact_phone|contact_email|defendant_phone|defendant_email|signer_email|customer_email|address|street|street_address|dob|date_of_birth|birth_date|ip|ip_address|x-test-client-ip|lat|lng|latitude|longitude|location_lat|location_lng)$/i;
 // Keys whose value is a person's own words about their case — replaced outright.
 const PRIVATE_TEXT_KEY = /^(notes?|case_notes|private_notes|outcome_notes|narrative|transcript|transcription|description|message_body|ai_intake_context|charges?)$/i;
 

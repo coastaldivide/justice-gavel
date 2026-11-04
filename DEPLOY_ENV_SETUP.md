@@ -282,7 +282,36 @@ LIVE_REFRESH=false                       keep nightly jobs off unless you are te
 JWT_SECRET / JWT_REFRESH_SECRET / ENCRYPTION_KEY / ADMIN_KEY
                                          render.yaml generates random values (generateValue) — fine
                                           for staging, never for production
+AI_DAILY_BUDGET_USD=5                    low global AI spend cap for staging (render.yaml)
+STAGING_ALLOWED_PHONES=+1615…,+1615…     staging only: texts go ONLY to these numbers (E.164, comma
+                                          list); every other number → skipped
+                                          (staging_recipient_not_allowed). Empty = no texts at all.
+                                          Ignored unless APP_ENV=staging.
+STAGING_ALLOWED_EMAILS=you@gmail.com,@yourcompany.com
+                                         staging only: e-mail goes ONLY to these exact addresses and
+                                          @domains; other recipients are dropped. Empty = no e-mail.
+STAGING_TEST_KEY=<≥32 random chars>      staging only (render.yaml generates it): a request with
+                                          X-Staging-Test-Key = this value may set the client IP the
+                                          rate limits see with X-Test-Client-Ip — used by the smoke
+                                          test / route sweep (--staging-key) so repeated runs from
+                                          one CI runner are not blocked by the sign-up limit. Inert
+                                          unless APP_ENV=staging; scripts/check-env.js FAILS if it is
+                                          set in production. Both headers are stripped before logs /
+                                          Sentry.
 ```
+
+Operator scripts on staging (not read by the server): `scripts/staging-setup.sh` refuses a
+target equal to `PROD_DATABASE_URL` or `PRODUCTION_DATABASE_URL` when set, and
+`scripts/seed-staging.mjs` uses `STAGING_DEMO_PASSWORD` (≥10 chars) for the demo logins when
+set (otherwise a new random password each run, printed).
+
+The outbound guard covers every text and e-mail the app sends (they all go
+through `services/sms.js` / `services/email.js`: court reminders, Bond Desk,
+check-ins, custody alerts, public defender texts, the phone line's "text me the
+date", phone verification, lead e-mails, on-call alerts). Push notifications
+are not filtered (they only reach devices signed in to staging accounts).
+`node scripts/check-env.js` on staging prints how many numbers / addresses are
+allowed. Full owner walkthrough: docs/STAGING.md.
 
 `PRODUCTION_DATABASE_URL` on staging is optional: it stores the production
 database credential in the staging service, so weigh that against the guard.

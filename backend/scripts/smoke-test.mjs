@@ -15,7 +15,14 @@
  *                           Without this flag the AI check expects 503 ai_unavailable
  *                           (server started WITHOUT ANTHROPIC_API_KEY).
  *   --expect-model <id>     model the mock must receive (default: CLAUDE_MODEL env, else the server default claude-sonnet-5-5)
+ *   --ai-live               the server has a REAL Anthropic key (staging): the AI chat check makes ONE
+ *                           real call and expects 200 + job done with a non-empty reply (no mock
+ *                           assertions). Mutually exclusive with --anthropic-mock.
  *   --payments-live         Stripe is configured: skip the 503 payments_unavailable check
+ *   --staging-key <key>     (default $STAGING_TEST_KEY) run against an APP_ENV=staging server behind a
+ *                           proxy: every request sends X-Staging-Test-Key and a per-run random client IP
+ *                           (X-Test-Client-Ip), and each rate-limit check uses its own random IP — so
+ *                           the run works from one CI runner and can be repeated (docs/STAGING.md).
  *   --keep-user             do not delete the smoke-test user at the end
  *
  * Exit code 0 when every check passes, 1 otherwise.
@@ -36,6 +43,14 @@ const EXPECT_DB_DOWN = !!opt('--expect-db-down', false);
 const MOCK_PORT = opt('--anthropic-mock', null);
 const EXPECT_MODEL = opt('--expect-model', process.env.CLAUDE_MODEL || 'claude-sonnet-5-5');
 const PAYMENTS_LIVE = !!opt('--payments-live', false);
+const AI_LIVE = !!opt('--ai-live', false);
+const STAGING_KEY = (() => { const v = opt('--staging-key', process.env.STAGING_TEST_KEY || null); return typeof v === 'string' && v ? v : null; })();
+if (AI_LIVE && MOCK_PORT) { console.error('--ai-live and --anthropic-mock cannot be combined'); process.exit(2); }
+if (STAGING_KEY && STAGING_KEY.length < 32) { console.error('--staging-key must be at least 32 characters (it must equal the server STAGING_TEST_KEY)'); process.exit(2); }
+// Per-run random client addresses (only sent with --staging-key): 10.<a>.<b>.<n>, a fresh /16 each run.
+const RUN_NET = `10.${crypto.randomInt(1, 250)}.${crypto.randomInt(0, 256)}`;
+const RUN_IP = `${RUN_NET}.1`;
+const testIp = (n) => `${RUN_NET}.${10 + n}`;
 const KEEP_USER = !!opt('--keep-user', false);
 
 // ── tiny test harness ─────────────────────────────────────────────────────────
@@ -54,7 +69,7 @@ async function check(name, fn) {
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 
 async function call(method, path, { body, token, headers = {}, raw } = {}) {
-  const h = { Accept: 'application/json', ...headers };
+  const h = { Accept: 'application/json', ...stagingHeaders(headers), ...headers };
   let payload;
   if (raw !== undefined) payload = raw;
   else if (body !== undefined) { h['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
@@ -64,6 +79,11 @@ async function call(method, path, { body, token, headers = {}, raw } = {}) {
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
   return { status: res.status, json, text, headers: res.headers };
+}
+/** --staging-key: the key + the run's client IP (unless the caller picked its own test IP). */
+function stagingHeaders(headers = {}) {
+  if (!STAGING_KEY) return {};
+  return { 'X-Staging-Test-Key': STAGING_KEY, ...(headers['X-Test-Client-Ip'] ? {} : { 'X-Test-Client-Ip': RUN_IP }) };
 }
 const brief = (r) => `${r.status} ${(r.text || '').slice(0, 200)}`;
 
@@ -100,7 +120,7 @@ async function startMock(port) {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`\nJustice Gavel smoke test → ${BASE}${DB_URL ? '  (DB checks on)' : '  (DB checks off)'}\n`);
+  console.log(`\nJustice Gavel smoke test → ${BASE}${DB_URL ? '  (DB checks on)' : '  (DB checks off)'}${STAGING_KEY ? `  (staging test client ${RUN_NET}.x)` : ''}${AI_LIVE ? '  (AI live)' : ''}\n`);
 
   if (EXPECT_DB_DOWN) {
     await check('GET /health returns 503 when the database is unreachable', async () => {
@@ -121,7 +141,9 @@ async function main() {
     // The DB probe is cached (~5 s): an immediate second call must not re-query.
     const r2 = await call('GET', '/health');
     assert(r2.status === 200 && r2.json?.db_cached === true, `second /health not served from cache: ${brief(r2)}`);
-    return `payments=${r.json?.features?.payments} ai=${r.json?.features?.ai}, cached probe ok`;
+    if (AI_LIVE) assert(r.json?.features?.ai === true, `--ai-live but the server reports ai=${r.json?.features?.ai} (ANTHROPIC_API_KEY not set?)`);
+    if (STAGING_KEY) assert(r.json?.env === 'staging', `--staging-key but the server reports env=${r.json?.env} — the key only works on APP_ENV=staging`);
+    return `env=${r.json?.env} payments=${r.json?.features?.payments} ai=${r.json?.features?.ai}, cached probe ok`;
   });
 
   // Exact payload shape sent by frontend RegisterScreen.tsx
@@ -198,7 +220,24 @@ async function main() {
     assert(s1.status === 200 && s1.json?.required === false, `still required: ${brief(s1)}`);
   });
 
-  if (!MOCK_PORT) {
+  if (AI_LIVE) {
+    await check('AI chat (live Anthropic key) → 200, job done with a non-empty reply', async () => {
+      const r = await call('POST', '/api/chat/ask', { token, body: { message: 'In one short paragraph: what are my rights if I am arrested?', sessionId: 'smoke-' + userId } });
+      assert(r.status === 200 && r.json?.jobId, `expected 200 + jobId, got ${brief(r)}`);
+      let job = null;
+      for (let i = 0; i < 120; i++) {            // a real model answer: allow up to 60 s
+        await new Promise(res => { setTimeout(res, 500); });
+        const j = await call('GET', `/api/jobs/${r.json.jobId}`, { token });
+        assert(j.status === 200, `job poll failed: ${brief(j)}`);
+        job = j.json;
+        if (job.status === 'done' || job.status === 'failed') break;
+      }
+      assert(job?.status === 'done', `job not done: ${JSON.stringify(job).slice(0, 300)}`);
+      const reply = String(job.result?.reply || '').trim();
+      assert(reply.length > 0, `empty reply: ${JSON.stringify(job.result).slice(0, 300)}`);
+      return `${reply.length} characters${job.result?.sourced?.grounded ? ', grounded' : ''}`;
+    });
+  } else if (!MOCK_PORT) {
     await check('AI chat after disclaimer, no ANTHROPIC_API_KEY → 503 ai_unavailable', async () => {
       const r = await call('POST', '/api/chat/ask', { token, body: { message: 'What are my rights?', sessionId: 'smoke-' + userId } });
       assert(r.status === 503 && r.json?.error === 'ai_unavailable', `expected 503 ai_unavailable, got ${brief(r)}`);
@@ -344,7 +383,8 @@ async function main() {
   });
 
   // ── "Just arrested?" core path ─────────────────────────────────────────────
-  const ipFrom = (ip) => ({ 'X-Forwarded-For': ip });
+  // --staging-key: X-Test-Client-Ip (the proxy's X-Forwarded-For entry is not ours to pick).
+  const ipFrom = (ip, n) => (STAGING_KEY ? { 'X-Test-Client-Ip': testIp(n) } : { 'X-Forwarded-For': ip });
   await check('core path 1: rights card is public, sourced and dated; unreviewed state notes never shown', async () => {
     const r = await call('GET', '/api/rights/TN');
     assert(r.status === 200 && r.json?.general?.length === 8, `rights TN: ${brief(r)}`);
@@ -365,9 +405,9 @@ async function main() {
     assert(f.status === 200 && [...f.json.lawyers, ...f.json.bail_agents].every(p => p.is_24_7), `24/7 filter: ${brief(f)}`);
     const target = r.json.bail_agents[0];
     const before = await q('SELECT md5(t::text) AS h FROM bail_agents t WHERE id = $1', [target.id]);
-    const rep = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours', details: 'smoke test' }, headers: ipFrom('10.250.1.1') });
+    const rep = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours', details: 'smoke test' }, headers: ipFrom('10.250.1.1', 1) });
     assert(rep.status === 201 && rep.json?.report_id, `report: ${brief(rep)}`);
-    const dup = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours' }, headers: ipFrom('10.250.1.1') });
+    const dup = await call('POST', '/api/help/reports', { body: { provider_type: 'bail_agent', provider_id: target.id, reason: 'wrong_hours' }, headers: ipFrom('10.250.1.1', 1) });
     assert(dup.status === 200 && dup.json?.duplicate === true, `duplicate report: ${brief(dup)}`);
     if (before) {
       const after = await q('SELECT md5(t::text) AS h FROM bail_agents t WHERE id = $1', [target.id]);
@@ -409,7 +449,7 @@ async function main() {
     const inv = await call('POST', `/api/cases/${coreCaseId}/followers`, { token, body: { consent: true, name: 'Smoke Mom' } });
     assert(inv.status === 201 && inv.json?.invite_code, `invite: ${brief(inv)}`);
     const famEmail = `smoke-family-${crypto.randomBytes(4).toString('hex')}@smoke.example.test`;
-    const fam = await call('POST', '/api/auth/register', { body: { identifier: famEmail, password, displayName: 'Smoke Family' }, headers: ipFrom('10.250.1.2') });
+    const fam = await call('POST', '/api/auth/register', { body: { identifier: famEmail, password, displayName: 'Smoke Family' }, headers: ipFrom('10.250.1.2', 5) });
     assert(fam.status === 201 || fam.status === 200, `family sign-up: ${brief(fam)}`);
     const famToken = fam.json.token;
     try {
@@ -479,14 +519,14 @@ async function main() {
     const r = await call('POST', '/api/messages/attachment', { token, raw: form });
     assert(r.status === 201 && r.json?.id && r.json?.attachment?.mime_type === 'image/png', `upload: ${brief(r)}`);
     assert(r.json.attachment.message_id, 'attachment not posted into the case thread');
-    const dl = await fetch(BASE + r.json.url, { headers: { Authorization: `Bearer ${token}` } });
+    const dl = await fetch(BASE + r.json.url, { headers: { ...stagingHeaders(), Authorization: `Bearer ${token}` } });
     const bytes = Buffer.from(await dl.arrayBuffer());
     assert(dl.status === 200 && bytes.equals(png), `download: ${dl.status}, ${bytes.length} bytes`);
     const bad = new FormData();
     bad.append('file', new Blob(['#!/bin/sh\necho hi\n'], { type: 'image/png' }), 'x.png');
     const rb = await call('POST', '/api/messages/attachment', { token, raw: bad });
     assert(rb.status === 415, `non-image should be 415, got ${brief(rb)}`);
-    const noauth = await fetch(BASE + r.json.url);
+    const noauth = await fetch(BASE + r.json.url, { headers: stagingHeaders() });
     assert(noauth.status === 401, `download without auth should be 401, got ${noauth.status}`);
     return `attachment ${r.json.id} (${r.json.attachment.size_bytes} B, round trip ok)`;
   });
@@ -596,7 +636,7 @@ async function main() {
   });
 
   await check('CORS: allowed origin preflight ok, unknown origin → 403', async () => {
-    const ok = await fetch(BASE + '/api/auth/login', { method: 'OPTIONS', headers: {
+    const ok = await fetch(BASE + '/api/auth/login', { method: 'OPTIONS', headers: { ...stagingHeaders(),
       Origin: 'https://justicegavel.app', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type,authorization' } });
     assert(ok.status === 204 || ok.status === 200, `preflight status ${ok.status}`);
     assert(ok.headers.get('access-control-allow-origin') === 'https://justicegavel.app', 'missing ACAO header');
@@ -605,7 +645,7 @@ async function main() {
   });
 
   await check('security headers: HSTS, nosniff, CSP frame-ancestors none, request id, no-store on /api', async () => {
-    const r = await fetch(BASE + '/api/health');
+    const r = await fetch(BASE + '/api/health', { headers: stagingHeaders() });
     const h = (k) => r.headers.get(k) || '';
     assert(/max-age=\d{7,}/.test(h('strict-transport-security')), `HSTS: ${h('strict-transport-security')}`);
     assert(h('x-content-type-options') === 'nosniff', 'nosniff missing');
@@ -615,15 +655,15 @@ async function main() {
   });
 
   // Each limiter is tripped from its own client address (trust proxy 1 →
-  // X-Forwarded-For), so the rest of the run is unaffected.
-  const fromIp = (ip) => ({ 'X-Forwarded-For': ip });
+  // X-Forwarded-For; with --staging-key a per-run X-Test-Client-Ip), so the rest of the run is unaffected.
+  const fromIp = (ip, n) => (STAGING_KEY ? { 'X-Test-Client-Ip': testIp(n) } : { 'X-Forwarded-For': ip });
   await check('rate limits: failed logins, sign-ups and password resets → 429', async () => {
     let last;
-    for (let i = 0; i < 11; i++) last = await call('POST', '/api/auth/login', { body: { identifier: `nobody-${i}@smoke.example.test`, password: 'Wrong123!' }, headers: fromIp('10.250.0.1') });
+    for (let i = 0; i < 11; i++) last = await call('POST', '/api/auth/login', { body: { identifier: `nobody-${i}@smoke.example.test`, password: 'Wrong123!' }, headers: fromIp('10.250.0.1', 2) });
     assert(last.status === 429, `11th failed login: expected 429, got ${last.status}`);
-    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/register', { body: {}, headers: fromIp('10.250.0.2') });
+    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/register', { body: {}, headers: fromIp('10.250.0.2', 3) });
     assert(last.status === 429, `6th sign-up attempt: expected 429, got ${last.status}`);
-    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/forgot-password', { body: { identifier: 'nobody@smoke.example.test' }, headers: fromIp('10.250.0.3') });
+    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/forgot-password', { body: { identifier: 'nobody@smoke.example.test' }, headers: fromIp('10.250.0.3', 4) });
     assert(last.status === 429, `6th reset request: expected 429, got ${last.status}`);
   });
 

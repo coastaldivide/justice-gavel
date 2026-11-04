@@ -182,3 +182,34 @@ describe('render.yaml — matches the code and the image', () => {
     }
   });
 });
+
+describe('staging-first deploys (docs/STAGING.md)', () => {
+  it('staging deploys consumer-core-path, production main; staging has the guard keys and a low AI cap', () => {
+    expect(prod.branch).toBe('main');
+    expect(staging.branch).toBe('consumer-core-path');
+    const e = envOf(staging);
+    expect(e.APP_ENV.value).toBe('staging');
+    expect(Number(e.AI_DAILY_BUDGET_USD.value)).toBeLessThanOrEqual(10);
+    expect(e.STAGING_ALLOWED_PHONES.sync).toBe(false);
+    expect(e.STAGING_ALLOWED_EMAILS.sync).toBe(false);
+    expect(e.STAGING_TEST_KEY.generateValue).toBe(true);
+    expect(envOf(prod).STAGING_TEST_KEY).toBeUndefined();     // never on production
+  });
+
+  it('the staging check workflow: push + nightly + manual, waits for the commit, sweep only on request', () => {
+    const w = yaml.load(read('.github/workflows/staging-check.yml'));
+    expect(w.on.push.branches).toEqual(['consumer-core-path']);
+    expect(w.on.schedule).toHaveLength(1);
+    expect(w.on.workflow_dispatch.inputs.sweep.type).toBe('boolean');
+    const steps = w.jobs.staging.steps;
+    const wait = steps.find(s => /Wait for the pushed commit/.test(s.name));
+    expect(wait.if).toMatch(/github.event_name == 'push'/);
+    expect(wait.run).toMatch(/25 \* 60/);
+    const smoke = steps.find(s => /^Smoke test/.test(s.name));
+    expect(smoke.run).toMatch(/--payments-live --ai-live/);
+    expect(smoke.run).toMatch(/--staging-key/);
+    const sweep = steps.find(s => /^Route sweep/.test(s.name));
+    expect(sweep.if).toMatch(/workflow_dispatch.*inputs.sweep/);
+    expect(steps[0].run).toMatch(/::notice/);                 // no STAGING_URL → notice, not failure
+  });
+});

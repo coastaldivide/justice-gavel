@@ -5,9 +5,15 @@ phone, real e-mail to your own inbox, on a real iPhone and a real Android phone.
 Every step says what must happen. Anything else is a bug: note the step number,
 the time, and a screenshot, and send it to the developer.
 
-Before you start: staging is deployed (backend/scripts/go-live-checklist.md steps 1–10),
-and on the staging server `node scripts/check-env.js --launch` ends "Environment OK"
-(it will warn that the Stripe key is a test key — expected on staging).
+Before you start: staging is set up and deployed (**docs/STAGING.md** steps 1–9:
+`sh scripts/staging-setup.sh` printed the demo logins, and the GitHub "Staging check"
+smoke test is green), and on the staging server `node scripts/check-env.js --launch` ends
+"Environment OK" (it will warn that the Stripe key is a test key — expected on staging).
+Staging texts and e-mails go ONLY to `STAGING_ALLOWED_PHONES` / `STAGING_ALLOWED_EMAILS`:
+put phone A, your phone and your inbox on those lists first, or the steps that expect a
+text or an e-mail will see nothing (the send is skipped with `staging_recipient_not_allowed`).
+The demo accounts from staging-setup.sh can stand in for the consumer / bail-agent accounts
+below; the public defender steps need `PUBLIC_DEFENDER_CHANNEL_ENABLED=true` on staging.
 
 Stripe test cards (any future expiry, any CVC, any ZIP):
 `4242 4242 4242 4242` succeeds · `4000 0000 0000 0002` is declined ·
@@ -21,6 +27,7 @@ an attorney account with bar verification approved by an admin, an admin account
 ## A. Health (5 min)
 - [ ] A1 `GET https://<staging-api>/health` → `"db":"ok"`, the expected version, `features` shows payments, texts, e-mail, storage on.
 - [ ] A2 Admin: `GET /api/admin/diagnostics/client-ip` from phone A → set `TRUST_PROXY` as RUNBOOK says.
+- [ ] A2b Staging guard: in the app, ask for a phone verification code for a phone that is NOT on `STAGING_ALLOWED_PHONES` (a friend's, with their permission) → no text arrives, and the server log shows `[sms] staging: recipient not in STAGING_ALLOWED_PHONES` with a count only (no number).
 - [ ] A3 Admin: `GET /api/admin/diagnostics/jobs` → every job `ok` or `not_expected` (check again the next day: all `ok`).
 
 ## B. Person in crisis — free path (phone A, 10 min)

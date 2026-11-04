@@ -1,0 +1,132 @@
+name: Staging check
+
+# Smoke-tests the STAGING service (render.yaml: justice-gavel-api-staging, branch
+# consumer-core-path) — docs/STAGING.md.
+#   push to consumer-core-path  wait until $STAGING_URL/health reports the pushed commit
+#                               (Render deploys after CI passes), then smoke-test it
+#   nightly / manual            smoke-test whatever is deployed now (no wait)
+#   manual with sweep: true     also run the route sweep (EVERY route × 6 callers — it makes
+#                               many real Claude calls on staging: a few dollars, capped by the
+#                               staging AI_DAILY_BUDGET_USD)
+# Secrets (Settings → Secrets and variables → Actions):
+#   STAGING_URL            https://justice-gavel-api-staging.onrender.com (no trailing slash)
+#   STAGING_TEST_KEY       the staging service's STAGING_TEST_KEY value
+#   STAGING_ADMIN_KEY      the staging service's ADMIN_KEY (route sweep admin caller)
+#   STAGING_DATABASE_URL   optional: the staging DB URL — turns on the smoke test's DB checks
+#                          and the sweep's checksum / role checks
+# Without STAGING_URL the job ends with a notice, not a failure.
+
+on:
+  push:
+    branches: [consumer-core-path]
+    paths:                        # the same files that trigger a staging deploy (render.yaml buildFilter)
+      - backend/**
+      - supabase/migrations/**
+      - render.yaml
+      - .dockerignore
+      - "!backend/src/__tests__/**"
+      - "!backend/**/*.md"
+  schedule:
+    - cron: "17 9 * * *"          # nightly, 09:17 UTC (≈ 3–4 AM Central)
+  workflow_dispatch:
+    inputs:
+      sweep:
+        description: "Also run the route sweep (many real AI calls on staging — costs a few dollars)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-check
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    name: Smoke test staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      STAGING_URL: ${{ secrets.STAGING_URL }}
+      STAGING_TEST_KEY: ${{ secrets.STAGING_TEST_KEY }}
+      STAGING_ADMIN_KEY: ${{ secrets.STAGING_ADMIN_KEY }}
+      STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+    steps:
+      - name: Is staging configured?
+        id: cfg
+        working-directory: .
+        run: |
+          if [ -z "$STAGING_URL" ]; then
+            echo "::notice title=Staging check skipped::STAGING_URL secret is not set — add it (docs/STAGING.md step 7) to smoke-test staging."
+            echo "on=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "on=true" >> "$GITHUB_OUTPUT"
+            if [ -z "$STAGING_TEST_KEY" ]; then
+              echo "::warning::STAGING_TEST_KEY secret is not set — repeated runs will hit the sign-up rate limit (docs/STAGING.md)."
+            fi
+          fi
+
+      - name: Checkout
+        if: steps.cfg.outputs.on == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        if: steps.cfg.outputs.on == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        if: steps.cfg.outputs.on == 'true'
+        run: npm ci
+
+      - name: Wait for the pushed commit on staging (up to 25 min)
+        if: steps.cfg.outputs.on == 'true' && github.event_name == 'push'
+        env:
+          WANT: ${{ github.sha }}
+        run: |
+          deadline=$(( $(date +%s) + 25 * 60 ))
+          while :; do
+            got=$(curl -fsS --max-time 15 "$STAGING_URL/health" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(String(j.commit||"")+" "+String(j.env||""))}catch{}})' || true)
+            commit=${got%% *}; envname=${got#* }
+            if [ -n "$commit" ] && [ "${WANT#"$commit"}" != "$WANT" ]; then
+              echo "staging runs $commit (env=$envname)"; break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::staging did not report commit ${WANT:0:12} within 25 minutes (last: '${commit:-no answer}'). Check the Render deploy log."
+              exit 1
+            fi
+            echo "waiting… staging reports '${commit:-no answer}', want ${WANT:0:12}"
+            sleep 30
+          done
+
+      - name: Smoke test (payments live, AI live, staging test client)
+        if: steps.cfg.outputs.on == 'true'
+        run: |
+          set -- "$STAGING_URL" --payments-live --ai-live
+          [ -n "$STAGING_TEST_KEY" ] && set -- "$@" --staging-key "$STAGING_TEST_KEY"
+          if [ -n "$STAGING_DATABASE_URL" ]; then set -- "$@" --db-url "$STAGING_DATABASE_URL"; else echo "STAGING_DATABASE_URL not set — DB checks off"; fi
+          DATABASE_URL= node scripts/smoke-test.mjs "$@"
+
+      - name: Route sweep (manual, sweep=true only)
+        if: steps.cfg.outputs.on == 'true' && github.event_name == 'workflow_dispatch' && inputs.sweep
+        run: |
+          set -- "$STAGING_URL" --json "$RUNNER_TEMP/route-sweep.json"
+          [ -n "$STAGING_TEST_KEY" ] && set -- "$@" --staging-key "$STAGING_TEST_KEY"
+          [ -n "$STAGING_ADMIN_KEY" ] && set -- "$@" --admin-key "$STAGING_ADMIN_KEY"
+          [ -n "$STAGING_DATABASE_URL" ] && set -- "$@" --db-url "$STAGING_DATABASE_URL"
+          DATABASE_URL= node scripts/route-sweep.mjs "$@"
+
+      - name: Upload route-sweep report
+        if: always() && steps.cfg.outputs.on == 'true' && github.event_name == 'workflow_dispatch' && inputs.sweep
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-route-sweep
+          path: ${{ runner.temp }}/route-sweep.json
+          if-no-files-found: ignore

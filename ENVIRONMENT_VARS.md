@@ -48,6 +48,12 @@ they can see and delete under "What the assistant remembers"; off = the last 20 
 `AI_MEMORY_KEEP_TURNS` (3 recent exchanges always sent word for word; 1–10). Word / PDF downloads of drafts (step 5,
 §13) need no setting.
 
+Staging (docs/STAGING.md) adds three staging-only settings, all ignored unless `APP_ENV=staging`:
+`STAGING_ALLOWED_PHONES` (the only numbers staging texts, E.164 comma list), `STAGING_ALLOWED_EMAILS` (the only
+addresses / `@domains` staging e-mails) and `STAGING_TEST_KEY` (≥32 chars; lets the smoke test / route sweep pick their
+own client IP for rate limits — `scripts/check-env.js` fails if it is set in production). The staging Render service also
+sets `AI_DAILY_BUDGET_USD=5`.
+
 ## Settings that wait for counsel (⚖)
 
 These are built and tested, but stay **off in production** until the counsel question is answered

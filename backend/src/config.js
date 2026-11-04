@@ -97,8 +97,13 @@ export function checkAppEnv(env = process.env) {
     if (env.DATABASE_URL && prodUrl && env.DATABASE_URL === prodUrl) {
       errors.push('DATABASE_URL equals PRODUCTION_DATABASE_URL — staging must never use the production database');
     }
+    if (!String(env.STAGING_ALLOWED_PHONES || '').trim()) warnings.push('STAGING_ALLOWED_PHONES not set — staging texts nobody (docs/STAGING.md)');
+    if (!String(env.STAGING_ALLOWED_EMAILS || '').trim()) warnings.push('STAGING_ALLOWED_EMAILS not set — staging e-mails nobody (docs/STAGING.md)');
     if (env.LIVE_REFRESH === 'true') warnings.push('LIVE_REFRESH=true on staging — nightly jobs (provider refresh, reminders) will run against the staging DB');
   }
+  // The staging test-client header is inert outside staging (middleware/stagingTestClient.js);
+  // scripts/check-env.js refuses the key in production, boot only warns.
+  if (appEnv === 'production' && String(env.STAGING_TEST_KEY || '').trim()) warnings.push('STAGING_TEST_KEY is set in production — remove it (it does nothing here; scripts/check-env.js fails on it)');
   return { appEnv, errors, warnings };
 }
 
@@ -220,6 +225,9 @@ export const ALL_ENV_VARS = {
   DATABASE_URL:             process.env.DATABASE_URL               || '',    // POSTGRES_URL accepted as alias
   PRODUCTION_DATABASE_URL:  process.env.PRODUCTION_DATABASE_URL    || '',    // staging only: the prod URL, so staging refuses to boot against it
   APP_ENV:                  process.env.APP_ENV                    || '',    // development | test | staging | production (default from NODE_ENV)
+  STAGING_ALLOWED_PHONES:   process.env.STAGING_ALLOWED_PHONES     || '',    // APP_ENV=staging only: the ONLY numbers texts go to (comma list, E.164)
+  STAGING_ALLOWED_EMAILS:   process.env.STAGING_ALLOWED_EMAILS     || '',    // APP_ENV=staging only: the ONLY e-mail addresses / @domains mail goes to
+  STAGING_TEST_KEY:         process.env.STAGING_TEST_KEY           || '',    // APP_ENV=staging only (≥32 chars): smoke/sweep X-Staging-Test-Key; never set in production
   POSTGRES_URL:             process.env.POSTGRES_URL               || '',    // alias of DATABASE_URL
   PGSSL:                    process.env.PGSSL                      || '',    // 'false' disables TLS to Postgres
   DB_LOG_ERRORS:            process.env.DB_LOG_ERRORS              || 'false',

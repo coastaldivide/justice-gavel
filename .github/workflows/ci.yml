@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, consumer-core-path]   # consumer-core-path deploys to staging (render.yaml, checksPass)
   # every pull request, whatever branch it targets (feature branches were never checked before)
   pull_request:
   workflow_dispatch:

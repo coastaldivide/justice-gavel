@@ -17,6 +17,11 @@
  * Usage (from backend/, server already running in production mode):
  *   node scripts/route-sweep.mjs http://localhost:4000 --db-url <postgres url> --admin-key <ADMIN_KEY>
  *     [--only /api/cases] [--concurrency 6] [--timeout 10000] [--json out.json] [--list]
+ *     [--staging-key <key>]   (default $STAGING_TEST_KEY) against an APP_ENV=staging server behind a
+ *                             proxy: every request sends X-Staging-Test-Key and its own client IP in
+ *                             X-Test-Client-Ip (from a per-run random 10.x/16 network) instead of
+ *                             X-Forwarded-For, which the proxy owns. NOTE: the sweep makes many real AI
+ *                             calls when the server has a real Anthropic key (docs/STAGING.md).
  *
  * Route discovery imports src/app.js in this process (lib/route-walker.mjs)
  * to read the router tree; requests go to <baseUrl>. The callers are created
@@ -42,6 +47,8 @@ const CONCURRENCY = Number(opt('--concurrency', 6));
 const TIMEOUT_MS = Number(opt('--timeout', 10000));
 const JSON_OUT = opt('--json', null);
 const LIST_ONLY = argv.includes('--list');
+const STAGING_KEY = opt('--staging-key', process.env.STAGING_TEST_KEY || null);
+if (STAGING_KEY && STAGING_KEY.length < 32) { console.error('--staging-key must be at least 32 characters (it must equal the server STAGING_TEST_KEY)'); process.exit(2); }
 
 // ── 1. Discover the mounted routes ────────────────────────────────────────────
 const { collectRoutes, toOpenApiPath } = await import('./lib/route-walker.mjs');
@@ -110,11 +117,18 @@ function fieldsOf(file) {
 // ── 2. HTTP ───────────────────────────────────────────────────────────────────
 let ipSeq = 0;
 const freshIp = () => { ipSeq++; return `10.${(ipSeq >> 16) & 255}.${(ipSeq >> 8) & 255}.${(ipSeq & 255) || 1}`; };
+// --staging-key: a random /16 per run (10.<a>.<b>.x), one address per request inside it.
+const RUN_A = crypto.randomInt(1, 250);
+const RUN_B = crypto.randomInt(0, 200);
+const stagingIp = () => { ipSeq++; return `10.${RUN_A}.${(RUN_B + ((ipSeq >> 8) & 255)) % 256}.${(ipSeq & 255) || 1}`; };
+const clientHeaders = () => (STAGING_KEY
+  ? { 'X-Staging-Test-Key': STAGING_KEY, 'X-Test-Client-Ip': stagingIp() }
+  : { 'X-Forwarded-For': freshIp() });
 let requestCount = 0;
 
 async function call(method, urlPath, { token, body, rawBody, lang, headers = {}, adminKey } = {}) {
   requestCount++;
-  const h = { Accept: 'application/json', 'X-Forwarded-For': freshIp(), 'X-Timezone': 'America/Chicago', ...headers };
+  const h = { Accept: 'application/json', ...clientHeaders(), 'X-Timezone': 'America/Chicago', ...headers };
   if (lang) h['Accept-Language'] = lang;
   if (token) h.Authorization = `Bearer ${token}`;
   if (adminKey) h['X-Admin-Key'] = adminKey;

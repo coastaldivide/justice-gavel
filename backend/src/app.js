@@ -20,6 +20,7 @@ import { APP_VERSION, GIT_COMMIT_SHORT } from './utils/version.js';
 import express from 'express';
 import helmet      from 'helmet';
 import morgan      from 'morgan';
+import { stagingTestClient } from './middleware/stagingTestClient.js';
 import responseTime from 'response-time';
 import compression from 'compression';
 import cors from 'cors';
@@ -139,6 +140,12 @@ export function trustProxySetting(raw = process.env.TRUST_PROXY) {
 }
 app.set('trust proxy', trustProxySetting());
 app.set('etag', 'strong');
+
+// ── Staging test client — APP_ENV=staging only: the smoke test / route sweep send
+// X-Staging-Test-Key + X-Test-Client-Ip so each run (and each limiter check) has its
+// own client IP. Inert in production; both headers are stripped here. Must run before
+// every rate limiter (docs/STAGING.md, middleware/stagingTestClient.js).
+app.use(stagingTestClient());
 
 // ── Express 5: make req.query a writable own property ─────────────────────────
 // Express 5 exposes req.query as a getter that re-parses on every access, so

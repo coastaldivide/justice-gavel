@@ -31,7 +31,7 @@ const SECURITY = {
 
 const has = (env, k) => typeof env[k] === 'string' && env[k].trim() !== '';
 
-/** → { appEnv, errors: [string], warnings: [string], features: [{ key, label, on, missing }] } */
+/** → { appEnv, errors: [string], warnings: [string], features: [{ key, label, on, missing }], staging: null | { allowedPhones, allowedEmails, testKey } } */
 export function envReport(env, { launch = false } = {}) {
   const errors = []; const warnings = [];
   const appEnv = String(env.APP_ENV || (env.NODE_ENV === 'production' ? 'production' : env.NODE_ENV || 'development')).toLowerCase();
@@ -63,6 +63,28 @@ export function envReport(env, { launch = false } = {}) {
   }
   if (has(env, 'APP_URL') && !/^https:\/\//.test(env.APP_URL) && appEnv !== 'development') errors.push('APP_URL must be https:// (signing links and payment returns use it)');
   if (!has(env, 'APP_URL') && appEnv !== 'development') warnings.push('APP_URL not set — signing links default to https://justicegavel.app');
+  // Staging safety (docs/STAGING.md): the test-client key is a staging-only tool, and staging texts /
+  // e-mails go only to the allow-lists.
+  if (has(env, 'STAGING_TEST_KEY')) {
+    if (appEnv === 'production') errors.push('STAGING_TEST_KEY is set in production — remove it (it is a staging-only test tool)');
+    else if (env.STAGING_TEST_KEY.trim().length < 32) errors.push('STAGING_TEST_KEY must be at least 32 characters (openssl rand -hex 24)');
+  }
+  if (appEnv === 'staging') {
+    for (const [k, what] of [['STAGING_ALLOWED_PHONES', 'texts'], ['STAGING_ALLOWED_EMAILS', 'e-mails']]) {
+      if (!has(env, k)) warnings.push(`${k} not set — staging sends no ${what} at all (list your own test ${k.endsWith('PHONES') ? 'numbers' : 'addresses'})`);
+    }
+    if (has(env, 'STAGING_ALLOWED_PHONES')) {
+      const bad = env.STAGING_ALLOWED_PHONES.split(',').map((x) => x.trim()).filter((x) => x && !/^\+\d{8,15}$/.test(x));
+      if (bad.length) errors.push(`STAGING_ALLOWED_PHONES has ${bad.length} entr${bad.length === 1 ? 'y' : 'ies'} not in E.164 form (+16155550123)`);
+    }
+    if (has(env, 'STAGING_ALLOWED_EMAILS')) {
+      const bad = env.STAGING_ALLOWED_EMAILS.split(',').map((x) => x.trim()).filter((x) => x && !/^([^@\s]+)?@[^@\s]+\.[a-z]{2,}$/i.test(x));
+      if (bad.length) errors.push(`STAGING_ALLOWED_EMAILS has ${bad.length} entr${bad.length === 1 ? 'y' : 'ies'} that are neither an address nor an @domain`);
+    }
+    if (!has(env, 'STAGING_TEST_KEY')) warnings.push('STAGING_TEST_KEY not set — the smoke test / route sweep cannot run against staging more than once an hour (sign-up limit)');
+    const budget = Number(env.AI_DAILY_BUDGET_USD);
+    if (has(env, 'ANTHROPIC_API_KEY') && !(budget > 0 && budget <= 25)) warnings.push('AI_DAILY_BUDGET_USD should be a low number on staging (e.g. 5)');
+  }
   // ⚖ settings that wait for counsel: on in production only by an explicit choice
   if (appEnv === 'production' && /^(true|1)$/i.test(String(env.CHECKIN_LOCATION_ALERTS_ENABLED || '').trim())) {
     warnings.push('CHECKIN_LOCATION_ALERTS_ENABLED is on — check-in location alerts need counsel question 2.4 answered first');
@@ -77,5 +99,9 @@ export function envReport(env, { launch = false } = {}) {
   ]) {
     if (appEnv === 'production' && /^(true|1)$/i.test(String(env[k] || '').trim())) warnings.push(`${k} is on — ${why}`);
   }
-  return { appEnv, errors, warnings, features };
+  const count = (k) => (has(env, k) ? env[k].split(',').map((x) => x.trim()).filter(Boolean).length : 0);
+  const staging = appEnv === 'staging'
+    ? { allowedPhones: count('STAGING_ALLOWED_PHONES'), allowedEmails: count('STAGING_ALLOWED_EMAILS'), testKey: has(env, 'STAGING_TEST_KEY') }
+    : null;
+  return { appEnv, errors, warnings, features, staging };
 }

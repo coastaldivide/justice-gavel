@@ -30,7 +30,7 @@ export function scrubSentryEvent(event) {
     if (r.headers) {
       const h = {};
       for (const [k, v] of Object.entries(r.headers)) {
-        if (/^(authorization|cookie|set-cookie|x-admin-key|x-api-key|proxy-authorization)$/i.test(k)) continue;
+        if (/^(authorization|cookie|set-cookie|x-admin-key|x-api-key|proxy-authorization|x-staging-test-key|x-test-client-ip)$/i.test(k)) continue;
         h[k] = redactString(String(v));
       }
       r.headers = h;
