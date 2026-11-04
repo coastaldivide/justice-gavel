@@ -17,7 +17,7 @@ import { msg } from '../../i18n/index.js';
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-const ARABIC = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
+const ARABIC = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
 /** XML text: escaped, characters XML 1.0 forbids removed. */
 export function xmlText(s) {
@@ -93,6 +93,7 @@ function footerXml(notice, lang) {
   // "Page {n} of {total}" in the person's language, with Word's PAGE / NUMPAGES fields in place of the numbers
   const tpl = msg(lang, 'docs.page', { n: '\u0001', total: '\u0002' });
   const field = (instr) => `<w:fldSimple w:instr=" ${instr} "><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple>`;
+  // eslint-disable-next-line no-control-regex -- \u0001 / \u0002 are our own page-number placeholders
   const pageRuns = tpl.split(/(\u0001|\u0002)/).map((part) => (part === '\u0001' ? field('PAGE') : part === '\u0002' ? field('NUMPAGES') : part ? runs(part, { size: 16, color: '444444' }) : '')).join('');
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:ftr xmlns:w="${W_NS}" xmlns:r="${R_NS}">${para(notice, { size: 16, color: '444444', spaceAfter: 60 })}<w:p><w:pPr>${ARABIC.test(tpl) ? '<w:bidi/>' : ''}<w:jc w:val="center"/></w:pPr>${pageRuns}</w:p></w:ftr>`;

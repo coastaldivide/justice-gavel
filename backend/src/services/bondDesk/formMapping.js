@@ -189,7 +189,7 @@ export async function decideField(db, { form, suggestionId, field, action, dataK
   // Atomic (review fix #7): staff may decide several fields at once. The suggestion row is locked
   // for the decision, and the form's field_map / the decisions are merged key by key in SQL
   // (jsonb ||), so two accepts at the same time never overwrite each other's field.
-  return db.transaction(async (tx) => {
+  return await db.transaction(async (tx) => {
     const s = await tx.get('SELECT * FROM bd_form_map_suggestions WHERE id = ? AND form_id = ? FOR UPDATE', [suggestionId, form.id]);
     if (!s) throw new BdError(404, 'not_found');
     const item = (s.suggestions || []).find((x) => x.field === field);

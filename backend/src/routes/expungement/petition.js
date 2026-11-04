@@ -7,7 +7,7 @@ import { checkedOn, isWithheld } from '../../ai/sourceOverlay.js';
 import { buildModel, checkDraft, storedText, sendDocument, FORMATS } from '../../services/draftDocs/index.js';
 import { getDb } from '../../db/index.js';
 import { safeInt } from '../../utils/routeHelpers.js';
-import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
+import { makeUserLimiter, perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 /**
  * expungement/petition.js
  *
@@ -24,7 +24,6 @@ import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
  */
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
-import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 
 const router = Router();
 export const MAX_DRAFTS_PER_USER = 20;

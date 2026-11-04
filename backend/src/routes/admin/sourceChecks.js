@@ -84,7 +84,7 @@ router.post('/rows/restore', handle(async (req, res, db) => {
   res.json(await restoreRow(db, String(dataset || ''), String(key ?? ''), { userId: req.user.id, note }));
 }));
 
-router.get('/allow-list', handle(async (req, res) => {
+router.get('/allow-list', handle((req, res) => {
   res.json({
     rules: ['.gov hosts', 'state.<xx>.us hosts', 'the explicit list below'],
     explicit: EXPLICIT_DOMAINS, never: NEVER_DOMAINS,

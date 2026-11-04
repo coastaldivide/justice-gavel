@@ -27,7 +27,6 @@ export interface GuideSource {
   checked: string;
 }
 
-/* eslint-disable max-len */
 export const GUIDE_SOURCES: Readonly<Record<SourceId, GuideSource>> = Object.freeze({
   // i18n-exempt: publisher and page names are proper names, shown as published
   tn_dhs:           { org: 'Tennessee Department of Human Services', page: 'What to Expect in Court', url: 'https://www.tn.gov/content/dam/tn/human-services/documents/Child%20Support%20What%20to%20Expect%20in%20Court.pdf', checked: GUIDE_CHECKED },
@@ -68,4 +67,3 @@ export const GUIDE_SOURCES: Readonly<Record<SourceId, GuideSource>> = Object.fre
   jg_rights:        { labelKey: 'cst_src_jg_rights', url: null, checked: GUIDE_CHECKED },
   jg_expungement:   { labelKey: 'cst_src_jg_expungement', url: null, checked: GUIDE_CHECKED },
 });
-/* eslint-enable max-len */

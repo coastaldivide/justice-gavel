@@ -224,7 +224,7 @@ export async function anthropicApi(method, path, { body, timeoutMs = AI_TIMEOUT_
   if (body !== undefined && !multipart) headers['content-type'] = 'application/json';
   for (const [k, v] of Object.entries(extra || {})) headers[k.toLowerCase()] = v;
   headers['x-api-key'] = process.env.ANTHROPIC_API_KEY ?? '';
-  return fetchWithTimeout(url, {
+  return await fetchWithTimeout(url, {
     method, headers, ...(body !== undefined ? { body: multipart || typeof body === 'string' ? body : JSON.stringify(body) } : {}),
   }, { timeoutMs, retries, ...(fetchImpl ? { fetchImpl } : {}) });
 }

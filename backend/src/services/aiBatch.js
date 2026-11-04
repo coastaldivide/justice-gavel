@@ -487,7 +487,7 @@ async function createBatchFromParams(db, batch, items, { fetchImpl }) {
   let res;
   try {
     res = await anthropicApi('POST', BATCH_PATH, { body: { requests: items.map((it) => ({ custom_id: it.custom_id, params: it.params })) }, retries: 1, timeoutMs: 120_000, fetchImpl });
-  } catch (e) {
+  } catch {
     await db.run(`UPDATE ai_batches SET status = 'failed', error = ? WHERE id = ?`, ['create_unconfirmed', row.id]);
     throw new AiError('ai_busy', 'retry batch create failed (no answer from the API)');
   }

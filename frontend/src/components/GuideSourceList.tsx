@@ -49,7 +49,7 @@ export default function GuideSourceList({ ids, styles, testID }: { ids: readonly
         const label = `${sourceName(id)} · ${st?.withheld ? t('cgd_source_rechecking') : t('cgd_checked', { date: recordedDate(later(s.checked, st?.checked_on)) })}`;
         return s.url && !st?.withheld ? (
           <TouchableOpacity key={id} accessibilityRole="link" accessibilityLabel={t('cgd_open_source_a11y', { source: sourceName(id) })}
-            testID={testID ? `${testID}-${id}` : undefined} style={{ minHeight: 32, justifyContent: 'center' }}
+            testID={testID ? `${testID}-${id}` : undefined} style={{ minHeight: 44, justifyContent: 'center' }}
             onPress={() => Linking.openURL(s.url as string).catch(() => {})}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.source, { textDecorationLine: 'underline' }]}>{label}</Text>
           </TouchableOpacity>

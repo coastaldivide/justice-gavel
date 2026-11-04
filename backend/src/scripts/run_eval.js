@@ -120,7 +120,7 @@ async function runQuestion(question) {
         return;
       }
       process.stdout.write('.');
-      await new Promise((r) => setTimeout(r, 60_000));
+      await new Promise((r) => { setTimeout(r, 60_000); });
     }
   }
 

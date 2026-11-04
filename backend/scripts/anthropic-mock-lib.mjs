@@ -829,6 +829,7 @@ export function createFileStore() {
       const file = parts.find((p) => p.name === 'file' && p.filename != null);
       if (!file) return err(400, 'invalid_request_error', 'file: field required');
       const name = file.filename;
+      // eslint-disable-next-line no-control-regex -- control characters are exactly what a file name may not contain
       if (!name.length || name.length > 255 || /[<>:"|?*\\/\u0000-\u001f]/.test(name)) return err(400, 'invalid_request_error', 'Invalid file name');
       if (file.data.length > 500 * 1024 * 1024) return err(413, 'request_too_large', 'File exceeds the maximum size of 500 MB');
       const exp = parts.find((p) => p.name === 'expires_in_seconds');

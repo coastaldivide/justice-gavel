@@ -139,7 +139,7 @@ export async function checkQuota(db, userId, kind = 'court_paper') {
  *   values: { source, mime, size, pages }
  */
 export async function claimDocumentRead(db, { userId, kind, perDay, perHour, values, onLimit }) {
-  return db.transaction(async (tx) => {
+  return await db.transaction(async (tx) => {
     await tx.get(`SELECT pg_advisory_xact_lock(hashtextextended(?, 0)) AS ok`, [`ai_document_reads:${kind}:${userId}`]);
     const r = await tx.get(
       `SELECT COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour')::int AS hour, COUNT(*)::int AS day
@@ -178,7 +178,7 @@ export async function readCourtPaper(db, { userId, buffer, source = 'upload', su
     [outcome, extra.error ?? null, !!extra.viaFile, row.id]).catch(logIgnored('services/courtPaper'));
 
   let file = source === 'attachment' && subject ? await fileIdFor(db, { subject, buffer, mime: info.mime, fetchImpl }) : null;
-  const ask = async (fileId) => aiMessage({
+  const ask = async (fileId) => await aiMessage({
     task: 'court_paper_read',
     system: [{ text: COURT_PAPER_SYSTEM, cache: '5m' }],
     messages: [{ role: 'user', content: [

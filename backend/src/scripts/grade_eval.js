@@ -88,7 +88,7 @@ async function gradeResponse(response, dimensionKeys) {
         return;
       }
       process.stdout.write('.');
-      await new Promise((r) => setTimeout(r, 60_000));
+      await new Promise((r) => { setTimeout(r, 60_000); });
     }
   }
 

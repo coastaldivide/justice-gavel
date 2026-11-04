@@ -39,7 +39,7 @@ export const CHUNK = 60;
 // The parity tests' rules (frontend/src/__tests__/i18nParity.test.js, backend i18n_server_content.test.js).
 const PLACEHOLDER = /\{\{?\w+\}?\}|%[sd]|\$\{[^}]*\}/g;
 const BRACE = /\{[a-zA-Z0-9_.]+\}/g;
-const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu;
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]|\u{FE0F}/gu;
 const MIN_RATIO = { zh: 0.15, ar: 0.4 };
 const sorted = (s, re) => JSON.stringify((String(s).match(re) || []).sort());
 

@@ -175,9 +175,9 @@ function AdminSourceChecksScreen(_props: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={st.boxText}>{r.what_changed}</Text>
             </>
           )}
-          {!!r.source_url && <TouchableOpacity accessibilityRole="link" style={{ minHeight: 40, justifyContent: 'center' }} onPress={() => open(r.source_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_source')}</Text></TouchableOpacity>}
-          {!!r.fetched_url && r.fetched_url !== r.source_url && r.fetched_url !== r.proposed_source_url && <TouchableOpacity accessibilityRole="link" style={{ minHeight: 40, justifyContent: 'center' }} onPress={() => open(r.fetched_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_fetched')}</Text></TouchableOpacity>}
-          {!!r.proposed_source_url && <TouchableOpacity accessibilityRole="link" testID="asc-proposed" style={{ minHeight: 40, justifyContent: 'center' }} onPress={() => open(r.proposed_source_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_proposed')}</Text></TouchableOpacity>}
+          {!!r.source_url && <TouchableOpacity accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => open(r.source_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_source')}</Text></TouchableOpacity>}
+          {!!r.fetched_url && r.fetched_url !== r.source_url && r.fetched_url !== r.proposed_source_url && <TouchableOpacity accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => open(r.fetched_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_fetched')}</Text></TouchableOpacity>}
+          {!!r.proposed_source_url && <TouchableOpacity accessibilityRole="link" testID="asc-proposed" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => open(r.proposed_source_url)}><Text maxFontSizeMultiplier={1.3} style={st.link}>{t('asc_open_proposed')}</Text></TouchableOpacity>}
           {r.status === 'pending' && (
             <>
               <TextInput accessibilityLabel={t('asc_note')} placeholder={t('asc_note')} placeholderTextColor={colors.textMuted} style={[st.inputFull, { marginTop: 10 }]}
@@ -247,7 +247,7 @@ function AdminSourceChecksScreen(_props: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={st.rowSub} testID="abt-eval-score">{t('abt_eval_score', { score: b.eval_mean, n: b.eval_questions ?? 0 })}</Text>
           )}
           {b.kind === 'translate_keys' && b.status === 'processed' && (
-            <TouchableOpacity accessibilityRole="button" testID="abt-download" style={{ minHeight: 40, justifyContent: 'center' }}
+            <TouchableOpacity accessibilityRole="button" testID="abt-download" style={{ minHeight: 44, justifyContent: 'center' }}
               onPress={() => fetchFile(`/admin/ai-batches/${b.id}/translation-draft`, `translation-draft-${b.id}.json`, 'application/json').catch((e) => showToast(apiErrorMessage(e, t('abt_failed')), 'error'))}>
               <Text maxFontSizeMultiplier={1.3} style={st.link}>{t('abt_download')}</Text>
             </TouchableOpacity>

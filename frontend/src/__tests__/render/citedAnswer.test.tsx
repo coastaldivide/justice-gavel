@@ -139,7 +139,8 @@ describe('CitedAnswer', () => {
       grounded: true,
       segments: [{ text: 'A', cites: [1, 7] }, { nope: 1 }, { withheld: true }],
       sources: [{ n: 1, title: 'T', url: 'javascript:alert(1)', app_link: 'Settings', passage: 'p' }],
-    })!;
+    });
+    if (!r) throw new Error('readSourced returned null');
     expect(r.segments).toEqual([{ text: 'A', cites: [1] }, { withheld: true }]);
     expect(r.sources[0]).toMatchObject({ url: null, app_link: null });
     expect(readSourced('text')).toBeNull();
@@ -210,7 +211,8 @@ describe('LegalResearchScreen with citations', () => {
     head.unmount();
     await main.findByText('Search of a car');
     const row = main.UNSAFE_getAllByProps({ accessibilityLabel: 'Search of a car' }).find((n: any) => typeof n.props.onPress === 'function');
-    await act(async () => { row!.props.onPress(); });
+    if (!row) throw new Error('no pressable row for Search of a car');
+    await act(async () => { row.props.onPress(); });
     expect(await main.findByTestId('research-cited')).toBeTruthy();
     expect(main.getByTestId('research-cited-cite-1')).toBeTruthy();
     expect(main.getByTestId('research-cited-withheld')).toBeTruthy();
