@@ -56,12 +56,13 @@ export async function recordCasePass(db, { userId, pi }) {
   const family = pi?.metadata?.family === '1';
   return await db.transaction(async (tx) => {
     // Serialise passes per person (row lock) so two payments never compute the same start.
+    // N days = N × 24 h in UTC, never shifted by a DST change in the session's zone.
     await tx.get('SELECT id FROM users WHERE id = ? FOR UPDATE', [userId]);
     const done = await tx.get('SELECT starts_at, ends_at FROM case_passes WHERE stripe_pi_id = ?', [pi.id]);
     if (done) return { pass: iso(done), created: false };
     const row = await tx.get(
       `INSERT INTO case_passes (user_id, stripe_pi_id, kind, amount_cents, starts_at, ends_at, family)
-       SELECT ?, ?, ?, ?, s.start, s.start + make_interval(days => ?), ?
+       SELECT ?, ?, ?, ?, s.start, ((s.start AT TIME ZONE 'UTC') + make_interval(days => ?)) AT TIME ZONE 'UTC', ?
          FROM (SELECT GREATEST(NOW(), COALESCE((SELECT MAX(ends_at) FROM case_passes WHERE user_id = ?), NOW())) AS start) s
        RETURNING starts_at, ends_at`,
       [userId, pi.id, kind, Number(pi.amount), CASE_PASS.days, family, userId]);
