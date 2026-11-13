@@ -9,3 +9,6 @@ backend/node_modules/
 .temp/
 backend/.env
 frontend/.env
+
+# Local MCP config holds a personal access token; copy .mcp.json.example
+.mcp.json

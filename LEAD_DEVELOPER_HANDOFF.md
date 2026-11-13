@@ -43,7 +43,7 @@ backend/    Node 22 · Express 5 (ESM) · PostgreSQL 16. 114 route files, about 
             Jobs: BullMQ with REDIS_URL, otherwise in-process; each scheduled run is claimed
             by one instance (utils/jobLock.js). Errors: one localized JSON shape
             (middleware/errorShape.js). Server strings: backend/src/i18n/messages/*.js.
-supabase/migrations/  00…28, plain SQL, idempotent, applied in filename order by
+supabase/migrations/  00…50, plain SQL, idempotent, applied in filename order by
             backend/scripts/migrate.sh (records applied files in jg_meta.schema_migrations).
             RLS on, deny-all: the Express server is the only database client.
 render.yaml Render blueprint: production + staging web services (Docker, Oregon, Starter),

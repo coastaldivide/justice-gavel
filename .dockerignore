@@ -31,3 +31,4 @@ backend/.prettierrc*
 # Operator scripts stay out of the image, except the pre-deploy migration runner
 backend/scripts/
 !backend/scripts/migrate.sh
+.mcp.json
