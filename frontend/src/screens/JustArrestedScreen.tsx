@@ -173,7 +173,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`${t('ja_step_a11y', { n, title: stepTitles[n - 1] })}${isDone ? t('ja_done_a11y') : ''}`}
-                style={[styles.stepPill, active && styles.stepPillActive]}
+                style={[styles.stepPill, isDone && styles.stepPillDone, active && styles.stepPillActive]}
                 onPress={() => goStep(n)}
               >
                 <Text maxFontSizeMultiplier={1.2} style={[styles.stepPillText, active && styles.stepPillTextActive]}>
@@ -347,6 +347,8 @@ const makeStyles = (c: any) => StyleSheet.create({
   stepOf: { color: c.white, fontSize: 14, fontWeight: '800', letterSpacing: 1.5, marginTop: 4 },
   stepRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   stepPill: { borderRadius: 18, paddingHorizontal: 12, paddingVertical: 10, minHeight: 44, justifyContent: 'center', backgroundColor: c.navy },
+  // A finished step is green, so it no longer looks like a step not yet started (UI clean-up Nov 13 2026).
+  stepPillDone: { backgroundColor: c.legalDark },
   stepPillActive: { backgroundColor: c.bgCard },
   stepPillText: { color: c.white, fontSize: 14, fontWeight: '700' },
   stepPillTextActive: { color: c.textPrimary },

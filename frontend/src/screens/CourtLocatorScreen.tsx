@@ -200,7 +200,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     {t('x_court_locator_county', { city: item.city, county: item.county, state: item.state })}
                   </Text>
                 </View>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: sub }}>{open ? '▲' : '▼'}</Text>
+                <AppIcon name={open ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
               </View>
 
               {/* Collapsed preview */}

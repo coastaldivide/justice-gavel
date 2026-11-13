@@ -485,7 +485,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           </View>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1.4} style={[{ color: colors.textMuted, marginLeft: 6 }]}>{expanded ? '▲' : '▼'}</Text>
+      <AppIcon name={expanded ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
     </TouchableOpacity>
   );
 }

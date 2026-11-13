@@ -26,7 +26,10 @@ function JTBLogo({ size = 80 }: Props) {
 
   return (
     <View style={{ width: s, height: s }}>
-      <Svg width={s} height={s} viewBox="0 0 680 680">
+      {/* Small sizes (headers, 32–50 px) show the octagon without the empty margin around
+          it, so the mark and its lettering render ~30% larger. Same design, tighter crop
+          (UI clean-up Nov 13 2026). */}
+      <Svg width={s} height={s} viewBox={s <= 56 ? '80 80 520 520' : '0 0 680 680'}>
         {/* Background */}
         <Rect x={0} y={0} width={680} height={680} fill={COLORS.navy} />
 

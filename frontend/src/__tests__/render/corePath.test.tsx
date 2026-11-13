@@ -256,8 +256,14 @@ describe('HelpNowScreen — lawyers and bail agents together', () => {
     wrap(<HelpNowScreen navigation={makeNavigation()} route={{} as any} />);
     await screen.findByTestId('help-lawyer-card');
     fireEvent.press(screen.getByTestId('help-filter-open'));
+    // Charge, language and distance sit behind "More filters" (UI clean-up Nov 13 2026).
+    expect(screen.queryByTestId('help-filter-charge-dui')).toBeNull();
+    fireEvent.press(screen.getByTestId('help-filter-more'));
     fireEvent.press(screen.getByTestId('help-filter-charge-dui'));
     await waitFor(() => expect(api.get).toHaveBeenLastCalledWith('/help/nearby', { params: expect.objectContaining({ state: 'TN', open_now: 1, charge: 'DUI' }) }));
+    // closing the extra rows keeps the filter on and says so on the chip
+    fireEvent.press(screen.getByTestId('help-filter-more'));
+    expect(screen.getByTestId('help-filter-more')).toHaveTextContent(/\(1\)/);
   });
 
   it('"Report a problem" sends the reason for the listing (the listing is not edited)', async () => {

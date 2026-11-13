@@ -6,10 +6,10 @@ import { View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, Activ
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
-import { useTheme, COLORS, themed } from '../constants/theme';
+import { useTheme, COLORS, themed, themeColors } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { helpLine, websiteUrl, websiteLabel, directionsUrl } from '../utils/contact';
-import { stateName } from '../utils/userState';
+import { stateName, getUserState } from '../utils/userState';
 
 
 const CATEGORIES = perLang(() => [
@@ -65,6 +65,13 @@ function ResourcesScreen(): React.JSX.Element {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
   const [refreshing,setRefreshing]= useState(false);
+  // Opens on the person's state + national rows when their state is known (it listed
+  // all 630 rows from every state; UI clean-up Nov 13 2026). "All states" shows everything.
+  const [myState,   setMyState]   = useState<string | null>(null);
+  const [stateOnly, setStateOnly] = useState(true);
+  useEffect(() => {
+    getUserState().then(s => { if (mountedRef.current && s?.code) setMyState(s.code); }).catch(() => {});
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -92,6 +99,7 @@ function ResourcesScreen(): React.JSX.Element {
   // Filter whenever category or search changes
   useEffect(() => {
     let list = allItems;
+    if (myState && stateOnly) list = (list ?? []).filter(i => !i.state || i.state === myState || i.state === 'US');
     if (category !== 'ALL') list = (list ?? []).filter(i => i.category === category);
     if (q.trim()) {
       const lower = q.toLowerCase();
@@ -102,7 +110,7 @@ function ResourcesScreen(): React.JSX.Element {
       );
     }
     setFiltered(list);
-  }, [allItems, category, q]);
+  }, [allItems, category, q, myState, stateOnly]);
 
   const bg   = colors.bg;
   const card = isDark ? colors.surface : colors.bgCard;
@@ -144,6 +152,17 @@ function ResourcesScreen(): React.JSX.Element {
         <ScrollView keyboardShouldPersistTaps="handled"
         horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
+        {!!myState && ([[true, t('res_my_state', { state: stateName(myState) })], [false, t('am_all_states')]] as [boolean, string][]).map(([only, label]) => {
+          const on = stateOnly === only;
+          return (
+            <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: on }} key={`st-${only}`}
+              testID={only ? 'resources-my-state' : 'resources-all-states'} onPress={() => setStateOnly(only)}
+              style={{ backgroundColor: on ? colors.blue : colors.bgCard, borderWidth: 1.5, borderColor: colors.blue,
+                borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, minHeight: 44, justifyContent: 'center' }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: on ? colors.white : colors.textPrimary }}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
         {CATEGORIES().map(cat => {
           const active = category === cat.key;
           const cc = CAT_COLORS[cat.key] || CAT_COLORS.ALL;
@@ -239,7 +258,7 @@ function ResourcesScreen(): React.JSX.Element {
                       </View>
                     )}
                   </View>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:16 }}>{isOpen ? '▲' : '▼'}</Text>
+                  <AppIcon name={isOpen ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
                 </View>
 
                 {/* Expanded */}

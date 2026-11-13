@@ -20,7 +20,7 @@ import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHasSession } from '../components/SignInNeeded';
 import { usePurchase, takePendingCheckout } from '../services/purchase';
-import { consumerPlansFrom, featureLabel, type ConsumerPlan, type SubscriptionView } from '../services/plans';
+import { consumerPlansFrom, featureLabel, shownFeatures, type ConsumerPlan, type SubscriptionView } from '../services/plans';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 
@@ -253,7 +253,8 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
           <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('cp_no_renewal')}</Text>
           {!!pass.active_until && <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { color: colors.legal }]} testID="case-pass-active">{t('cp_active_until', { date: fmtDay(pass.active_until) })}</Text>}
           <View style={{ marginVertical: 10 }}>
-            {(pass.features || []).map(f => (
+            {/* Same filter as the plan cards: no feature this build hides (bar prep, arrest monitor). */}
+            {shownFeatures(pass.features || []).map(f => (
               <View key={f} style={s.featureRow}>
                 <Text maxFontSizeMultiplier={1.4} style={[s.check, { color: colors.textBrand }]}>✓</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.featureText}>{featureLabel(f)}</Text>

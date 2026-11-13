@@ -13,11 +13,11 @@ import {
 } from 'react-native';
 import { ScreenParams } from '../navigation/NavigationTypes';
 import { ScreenProps } from '../types/navigation';
-import { COLORS, FONTS, RADIUS, useTheme, type ThemeColors } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 type Props = ScreenProps<'BarPrepResults'>;
 
@@ -78,7 +78,7 @@ function AnswerRow({
         <Text style={styles.ansStem} numberOfLines={expanded ? 0 : 2}>
           {q.stem ?? q.question_text ?? ''}
         </Text>
-        <Text style={styles.ansChevron}>{expanded ? '▲' : '▼'}</Text>
+        <AppIcon name={expanded ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
       </View>
 
       {expanded && (

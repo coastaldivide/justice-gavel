@@ -86,6 +86,8 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [resolving, setResolving] = useState(true); // working out GPS / saved state on first open
   const [cityInput, setCityInput] = useState('');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [moreFilters, setMoreFilters] = useState(false);
+  const extraOn = (filters.miles ? 1 : 0) + (filters.charge ? 1 : 0) + (filters.language ? 1 : 0);
   const [result, setResult] = useState<HelpResult | null>(null);
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -300,6 +302,13 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           <Chip label={t('hn_open_now')} active={filters.open} onPress={() => applyFilters({ open: !filters.open })} testID="help-filter-open" />
           <Chip label="24/7" active={filters.h24} onPress={() => applyFilters({ h24: !filters.h24 })} testID="help-filter-24" />
           <Chip label={t('hn_free_consult')} active={filters.free} onPress={() => applyFilters({ free: !filters.free })} testID="help-filter-free" />
+          {/* Distance, charge and language sit behind "More filters" so the results start
+              higher (they took three rows; UI clean-up Nov 13 2026). The chip counts any that are on. */}
+          <Chip label={moreFilters ? t('hn_fewer_filters') : (extraOn ? `${t('hn_more_filters')} (${extraOn})` : t('hn_more_filters'))}
+            active={false} onPress={() => setMoreFilters(v => !v)} testID="help-filter-more" />
+        </ScrollView>
+        {moreFilters && (<>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {DISTANCES.map(d => (
             <Chip key={d} label={t('hn_within', { n: d })} active={filters.miles === d} onPress={() => applyFilters({ miles: filters.miles === d ? null : d })} testID={`help-filter-mi-${d}`} />
           ))}
@@ -314,6 +323,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Chip key={l} label={t(key)} active={filters.language === l} onPress={() => applyFilters({ language: filters.language === l ? '' : l })} testID={`help-filter-lang-${l.toLowerCase()}`} />
           ))}
         </ScrollView>
+        </>)}
 
         {!where && !resolving && phase === 'idle' && (
           <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">{t('hn_need_location')}</Text>

@@ -8,10 +8,10 @@ import { getToken } from '../utils/secureStorage';
 import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
-import { COLORS, RADIUS, useTheme } from '../constants/theme';
+import { COLORS, RADIUS, useTheme, themeColors } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { t, useLang, getLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 /**
  * LessonsScreen — "Know your rights" lessons (public; GET /api/lessons).
@@ -154,7 +154,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                       <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>{t('x_lessons_pts', { points: item.points })}</Text>
                     </View>
                   </View>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>{open ? '▲' : '▼'}</Text>
+                  <AppIcon name={open ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
                 </View>
 
                 {open && (
