@@ -138,7 +138,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, [navigation]);
   useEffect(() => {
     consumePendingRoute().then(p => {
-      if (p && mountedRef.current) (navigation as any).navigate('MoreTab', { screen: p.screen, params: p.params });
+      if (p && mountedRef.current) (navigation as any).navigate(p.screen, p.params);
     }).catch(() => {});
     getUserState().then(st => prefetchRights(st?.code)).catch(() => {});
   }, [navigation]);
@@ -230,7 +230,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     const active = await activeContacts();
     if (active.length === 0) {
       confirm(t('home_sos_none_title'), t('home_sos_none_body'),
-        { confirmLabel: t('home_sos_add') }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
+        { confirmLabel: t('home_sos_add') }).then(ok => { if (ok) (navigation as any).navigate('Contacts'); });
       return;
     }
     const ok = await confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }), { confirmLabel: t('home_sos_send') });
@@ -243,7 +243,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const navigate = (nav: string) => {
     if (nav.startsWith('More:')) {
-      (navigation as any).navigate('MoreTab', { screen: nav.slice(5) });
+      (navigation as any).navigate(nav.slice(5));
     } else {
       (navigation as any).navigate(nav);
     }
@@ -281,7 +281,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
-            accessibilityLabel={t('home_settings_a11y')} onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
+            accessibilityLabel={t('home_settings_a11y')} onPress={() => (navigation as any).navigate('Settings')}
             style={styles.settingsBtn}
           >
             <AppIcon name={ICONS.settings} size={22} color={COLORS.steel} />
@@ -307,7 +307,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           testID="home-just-arrested"
           accessibilityLabel={`${t('ja_title')} ${coreStep > 1 ? t('home_core_continue_a11y', { n: coreStep }) : t('home_core_start_a11y')}`}
           style={styles.coreCard}
-          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'JustArrested' })}
+          onPress={() => (navigation as any).navigate('JustArrested')}
           activeOpacity={0.85}
         >
           <View style={styles.coreTitleRow}>
@@ -324,8 +324,8 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* "Your bail agent" — only when a bail agent's check-in enrollment is linked to this account */}
         <BailAgentCard refreshKey={bailCardKey}
-          onVerifyPhone={() => (navigation as any).navigate('MoreTab', { screen: 'VerifyPhone' })}
-          onCheckIn={(enrollmentId) => (navigation as any).navigate('MoreTab', { screen: 'CheckIn', params: { enrollmentId } })} />
+          onVerifyPhone={() => (navigation as any).navigate('VerifyPhone')}
+          onCheckIn={(enrollmentId) => (navigation as any).navigate('CheckIn', { enrollmentId })} />
 
         {/* Emergency banner -- prominent, always first */}
         <TouchableOpacity
@@ -333,7 +333,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={t('cp_double_tap')}
           testID="home-emergency-screen"
           style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Emergency' })}
+          onPress={() => (navigation as any).navigate('Emergency')}
           activeOpacity={0.85}
         >
           <View style={styles.rowIconWrap}>
@@ -352,7 +352,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={t('cp_double_tap')}
           testID="home-quick-connect"
           style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'QuickConnect' })}
+          onPress={() => (navigation as any).navigate('QuickConnect')}
           activeOpacity={0.85}
         >
           <View style={styles.quickConnectLeft}>
@@ -383,7 +383,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
                 : { backgroundColor: COLORS.navy, borderColor: COLORS.steel },
             ]}
             testID="home-court-countdown"
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'CourtDateDetail', params: { id: upcomingCase.id } })}
+            onPress={() => (navigation as any).navigate('CourtDateDetail', { id: upcomingCase.id })}
             activeOpacity={0.88}
             accessibilityLabel={t('home_court_a11y', { n: upcomingCase.daysLeft })}
           >
@@ -415,7 +415,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
               accessibilityRole="button"
               accessibilityHint={t('cp_double_tap')}
               testID="home-plans-card"
-              onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
+              onPress={() => (navigation as any).navigate('ConsumerSubscription')}
               style={{
                 backgroundColor: colors.bgCard,
                 borderRadius: 16, padding: 16,
@@ -441,7 +441,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             accessibilityRole="button"
           accessibilityHint={t('cp_double_tap')}
             style={styles.tipCard}
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
+            onPress={() => (navigation as any).navigate('Education', { category: tipCategory, query: tipQuery })}
             activeOpacity={0.85}
           >
             <View style={styles.tipLeft}>
@@ -507,7 +507,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={t('cp_double_tap')}
             style={styles.nudgeCard}
             testID="home-create-account"
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Register' })}
+            onPress={() => (navigation as any).navigate('Register')}
             activeOpacity={0.85}
           >
             <AppIcon name={ICONS.user} size={20} color={colors.textBrand} />
