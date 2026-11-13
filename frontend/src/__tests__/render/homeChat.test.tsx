@@ -83,7 +83,8 @@ describe('HomeScreen', () => {
     expect(await screen.findByText('State v. Me')).toBeTruthy();
     expect(screen.getByLabelText(/Court date in 5 days/)).toBeTruthy();
     fireEvent.press(screen.getByTestId('home-court-countdown'));
-    expect(navigation.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'CourtDateDetail', params: { id: 41 } });
+    // Home is its own stack now: its links open there, not on the Resources tab (sandbox review 2026-11-12).
+    expect(navigation.navigate).toHaveBeenCalledWith('CourtDateDetail', { id: 41 });
   });
 
   it('More menu: Custody alerts and Bonds shared with me appear only when the server features are on (and a bond is shared)', async () => {

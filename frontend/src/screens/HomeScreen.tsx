@@ -138,7 +138,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, [navigation]);
   useEffect(() => {
     consumePendingRoute().then(p => {
-      if (p && mountedRef.current) (navigation as any).navigate(p.screen, p.params);
+      // A queued start screen (an attorney's dashboard after sign-in, a core-path step) opens
+      // on the shared MoreTab stack as before; Home's own links stay in the Home stack.
+      if (p && mountedRef.current) (navigation as any).navigate('MoreTab', { screen: p.screen, params: p.params });
     }).catch(() => {});
     getUserState().then(st => prefetchRights(st?.code)).catch(() => {});
   }, [navigation]);

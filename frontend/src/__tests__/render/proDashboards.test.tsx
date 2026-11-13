@@ -110,7 +110,8 @@ describe('plans come from the server', () => {
     expect(screen.getByText('$34.99/mo')).toBeTruthy();
     expect(screen.queryByText(/Esquire/)).toBeNull();
     expect(screen.queryByText(/Intel tier|\$14\.99|24\/7/)).toBeNull();
-    expect(screen.getAllByText(t('plan_feat_arrest_monitor')).length).toBeGreaterThan(0);
+    // The core build parks the arrest monitor, so plan cards don't advertise it (sandbox review 2026-11-12).
+    expect(screen.queryAllByText(t('plan_feat_arrest_monitor'))).toHaveLength(0);
     fireEvent.press(screen.getByTestId('subscribe-legal_radar'));
     const notice = await screen.findByTestId('plan-notice');
     expect(notice).toHaveTextContent(t('x_common_payments_aren_t_available'));

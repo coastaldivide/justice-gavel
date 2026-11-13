@@ -28,8 +28,10 @@ describe('bottom tabs', () => {
     expect(nav).toMatch(/<MoreStack\.Screen name="Resources"\s+component=\{ResourcesScreen\}/);
   });
 
-  it('Home opens its screens in its own stack, never on the Resources tab', () => {
-    expect(home).not.toMatch(/navigate\(\s*'MoreTab'/);
+  it('Home opens its own links in its own stack (only a queued start screen goes to MoreTab)', () => {
+    const toMore = home.match(/navigate\(\s*'MoreTab'[^\n]*/g) || [];
+    expect(toMore).toHaveLength(1);
+    expect(toMore[0]).toContain('screen: p.screen');
   });
 
   it('tab buttons drop the web href (a link made every tap reload the app; Resources reloaded onto Home)', () => {
