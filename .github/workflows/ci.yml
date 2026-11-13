@@ -218,6 +218,10 @@ jobs:
       - name: Jest suite (in-memory store, no DATABASE_URL)
         # src/__tests__/env.js sets NODE_ENV=test and test secrets; DATABASE_URL is
         # deliberately not set so routes use the in-memory fallback.
+        # Runs in US Eastern time: a test that mixes local and UTC dates fails on US
+        # evenings, which UTC runners never see (sandbox review 2026-11-12).
+        env:
+          TZ: America/New_York
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci
 
   # ───────────────────────────────────────────────────────────────────────────

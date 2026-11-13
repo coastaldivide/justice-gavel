@@ -45,8 +45,10 @@ async function buildApp(db) {
   function generateSlots() {
     const slots=[], TIMES=['9:00 AM','10:00 AM','11:00 AM'];
     for (let d=1; d<=3; d++) {
-      const date=new Date(); date.setDate(date.getDate()+d);
-      if (date.getDay()===0) continue;
+      // UTC throughout: getDay() is local but toISOString() is UTC, so on a US
+      // evening the two disagreed and a Sunday slipped through (sandbox review 2026-11-12).
+      const date=new Date(); date.setUTCDate(date.getUTCDate()+d);
+      if (date.getUTCDay()===0) continue;
       slots.push({ date:date.toISOString().split('T')[0], times:TIMES.map(t=>({time:t,available:true})) });
     }
     return slots;
@@ -117,7 +119,7 @@ describe('GET /consultations/slots/:lawyerId', () => {
   test('no Sundays in slots', async () => {
     const r = await request(app).get('/consultations/slots/1');
     for (const slot of r.body.slots) {
-      expect(new Date(slot.date + 'T12:00:00').getDay()).not.toBe(0);
+      expect(new Date(slot.date + 'T12:00:00Z').getUTCDay()).not.toBe(0);
     }
   });
 });
