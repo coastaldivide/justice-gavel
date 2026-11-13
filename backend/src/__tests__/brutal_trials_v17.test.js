@@ -705,7 +705,9 @@ describe('15. JTBLogo — SVG Brand Mark', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/JTBLogo.tsx', 'utf8');
     expect(src).toContain('680');
-    expect(src).toContain('viewBox="0 0 680 680"');
+    // full 680×680 master; at ≤ 56 px the octagon is cropped tighter (UI clean-up Nov 13 2026)
+    expect(src).toContain("'0 0 680 680'");
+    expect(src).toMatch(/viewBox=\{s <= 56 \? '80 80 520 520' : '0 0 680 680'\}/);
   });
 
   test('15-06: memoized with React.memo', async () => {
