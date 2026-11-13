@@ -196,6 +196,24 @@ export const linking: LinkingOptions<any> = {
 };
 
 /**
+ * Home is a stack too (AppNavigator HomeNavigator, sandbox review 2026-11-12): its
+ * first screen is "/" and a screen opened from Home lives under "/home/…"
+ * ("/home/quick-connect"), so web history and reloads keep it on the Home tab.
+ * The Resources tab keeps the plain paths ("/quick-connect", "/resources").
+ */
+{
+  const tabs = (linking.config?.screens as any).MainTabs.screens;
+  const more: Record<string, any> = tabs.MoreTab.screens;
+  const home: Record<string, any> = { MoreHome: '' };
+  for (const [name, cfg] of Object.entries(more)) {
+    if (name === 'MoreHome') continue;
+    if (typeof cfg === 'string') home[name] = `home/${cfg}`;
+    else if (cfg && typeof cfg === 'object' && typeof cfg.path === 'string') home[name] = { ...cfg, path: `home/${cfg.path}` };
+  }
+  tabs.HomeTab = { path: '', screens: home };
+}
+
+/**
  * Signed out only GuestNav is mounted, so its screens own the shared paths
  * (/login, /register, /terms, /privacy …): the same path cannot point at two
  * screens in one config, which is why App.tsx picks the config for the state

@@ -351,6 +351,16 @@ function CourtNavigator()  { return <SectionStack initial="CourtDates" />; }
 // FirmVerticalScreen, MatterIntelligenceScreen, and DeadlineCalculatorScreen.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Bottom-tab button. React Navigation passes an `href` on web; a Touchable given an href
+ * renders an <a>, so every tab tap also followed the link and RELOADED the whole web app
+ * (losing anything typed), and the Resources tab, whose href is "/", reloaded onto Home
+ * (sandbox review 2026-11-12). Dropping href keeps it a button with role="tab".
+ */
+function TabButton({ href: _href, ...props }: any) {
+  return <TouchableOpacity {...props} />;
+}
+
 function MainTabs() {
   useLang();
   const { colors } = useTheme();
@@ -373,14 +383,14 @@ function MainTabs() {
         // On web the default tab button is an <a role="link">, which breaks the
         // tablist's required children (axe aria-required-children). A Touchable
         // keeps the accessibilityRole="tab" + selected state the item passes in.
-        tabBarButton: (props: any) => <TouchableOpacity {...props} />,
+        tabBarButton: (props: any) => <TabButton {...props} />,
       }}>
       {/* Core path tabs (Oct 26 2026): Home · My rights · Get help · Court dates · More. */}
-      <Tab.Screen name="HomeTab"    component={HomeNavigator}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
-      <Tab.Screen name="RightsTab"  component={RightsNavigator} options={{ tabBarButton: (props: any) => <TouchableOpacity testID="rights-tab" {...props} />, tabBarLabel: t('tab_rights'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.rights} color={color} focused={focused} /> }} />
-      <Tab.Screen name="HelpTab"    component={HelpNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="help-tab" {...props} />, tabBarLabel: t('tab_get_help'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
-      <Tab.Screen name="CourtTab"   component={CourtNavigator}  options={{ tabBarButton: (props: any) => <TouchableOpacity testID="court-tab" {...props} />, tabBarLabel: t('tab_court_dates'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.calendar} color={color} focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeNavigator}      options={{ tabBarButton: (props: any) => <TabButton testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
+      <Tab.Screen name="RightsTab"  component={RightsNavigator} options={{ tabBarButton: (props: any) => <TabButton testID="rights-tab" {...props} />, tabBarLabel: t('tab_rights'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.rights} color={color} focused={focused} /> }} />
+      <Tab.Screen name="HelpTab"    component={HelpNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="help-tab" {...props} />, tabBarLabel: t('tab_get_help'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
+      <Tab.Screen name="CourtTab"   component={CourtNavigator}  options={{ tabBarButton: (props: any) => <TabButton testID="court-tab" {...props} />, tabBarLabel: t('tab_court_dates'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.calendar} color={color} focused={focused} /> }} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
       {/* Still reachable from Get help / Home (navigate('LawyersTab') etc.), no longer in the bar. */}
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
       <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />

@@ -31,4 +31,12 @@ describe('bottom tabs', () => {
   it('Home opens its screens in its own stack, never on the Resources tab', () => {
     expect(home).not.toMatch(/navigate\(\s*'MoreTab'/);
   });
+
+  it('tab buttons drop the web href (a link made every tap reload the app; Resources reloaded onto Home)', () => {
+    expect(nav).toMatch(/function TabButton\(\{ href: _href, \.\.\.props \}: any\)/);
+    for (const id of ['home-tab', 'rights-tab', 'help-tab', 'court-tab', 'more-tab']) {
+      expect(nav).toContain(`<TabButton testID="${id}" {...props} />`);
+    }
+    expect(nav).not.toMatch(/tabBarButton: \(props: any\) => <TouchableOpacity/);
+  });
 });
