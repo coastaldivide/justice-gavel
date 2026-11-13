@@ -45,8 +45,9 @@ run('db-backup.sh / db-restore.sh (real Postgres)', () => {
   }, 60_000);   // dropping the scratch databases can take a few seconds on a loaded machine
 
   const sh = (script, args, env) => spawnSync('bash', [path.join(SCRIPTS, script), ...args], { env: { ...process.env, ...env }, encoding: 'utf8' });
+  // PGTZ=UTC: the fingerprint includes timestamps, printed in the session's zone.
   const md5 = (url) => execFileSync('psql', [url, '-Atc',
-    "select md5(coalesce((select string_agg(t::text,'|' order by id) from lawyers t),'') || coalesce((select string_agg(t::text,'|' order by id) from bail_agents t),''))"], { encoding: 'utf8' }).trim();
+    "select md5(coalesce((select string_agg(t::text,'|' order by id) from lawyers t),'') || coalesce((select string_agg(t::text,'|' order by id) from bail_agents t),''))"], { encoding: 'utf8', env: { ...process.env, PGTZ: 'UTC' } }).trim();
   const tables = (url) => execFileSync('psql', [url, '-Atc', "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'"], { encoding: 'utf8' }).trim();
 
   it('backs up the live DB and restores it into an empty database', () => {

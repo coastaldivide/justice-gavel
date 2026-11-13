@@ -10,6 +10,10 @@
 # it compares those counts and the md5 of the provider directory rows and
 # fails on any mismatch.
 set -euo pipefail
+# Compare source and target in one time zone: md5 of row text includes timestamps,
+# which psql prints in the session's zone, so two servers with different default
+# zones would never match (sandbox review 2026-11-12).
+export PGTZ=UTC
 
 DUMP="${1:?usage: db-restore.sh <dump-file>}"
 : "${TARGET_DATABASE_URL:?TARGET_DATABASE_URL must point at an empty database}"
@@ -26,6 +30,10 @@ if [ "$existing" != "0" ]; then
 fi
 
 pg_restore --dbname="$TARGET_DATABASE_URL" --no-owner --no-privileges --exit-on-error "$DUMP"
+# Database-level settings are not in the dump: give the restored database the UTC
+# default that migration 050 sets (best effort; skipped without the privilege).
+TZ_SQL="$(dirname "$0")/../../supabase/migrations/00000000000050_database_timezone_utc.sql"
+[ -f "$TZ_SQL" ] && psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$TZ_SQL" || true
 
 SQL="select 'users', count(*) from users union all select 'cases', count(*) from cases
      union all select 'lawyers', count(*) from lawyers union all select 'bail_agents', count(*) from bail_agents

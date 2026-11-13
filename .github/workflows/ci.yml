@@ -36,6 +36,9 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: jg_ci
+          # The server's default zone (initdb reads TZ): not UTC, so tests catch any
+          # date maths that depends on it (sandbox review 2026-11-12).
+          TZ: America/New_York
         ports:
           - 5432:5432
         options: >-
@@ -95,7 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "ALTER DATABASE jg_ci SET \"TimeZone\" = 'America/New_York'"
-          psql "$CI_DATABASE_URL" -Atc "show timezone"
+          echo "jg_ci: $(psql "$CI_DATABASE_URL" -Atc 'show timezone'); server default: $(psql "${CI_DATABASE_URL%/*}/postgres" -Atc 'show timezone')"
 
       - name: Generate production secrets
         run: |
