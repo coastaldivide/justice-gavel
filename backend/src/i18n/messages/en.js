@@ -250,6 +250,7 @@ export default {
   "validation.failed": "Some of the information you entered is not valid. Please check it and try again.",
   "auth.err.identifier_password_required": "Enter your email or phone number and your password.",
   "auth.err.password_short": "Your password must be at least 8 characters.",
+  "auth.err.password_weak": "That password is too easy to guess. Use 8 or more characters that aren't a repeated PIN or a common password.",
   "auth.err.identifier_invalid": "Enter a valid email address or phone number.",
   "auth.err.email_taken": "An account with this email already exists. Sign in instead.",
   "auth.err.phone_taken": "An account with this phone number already exists. Sign in instead.",

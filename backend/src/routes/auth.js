@@ -30,6 +30,7 @@ import { authRequired } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import { purgeAccountData, exportAccount } from '../services/accountDeletion.js';
 import logger from '../utils/logger.js';
+import { passwordProblem, passwordProblemKey, DOUBLED_PIN } from '../utils/passwordPolicy.js';
 import { msg, reqMsg, resolveLang, requestedLang, normalizeLang } from '../i18n/index.js';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -142,8 +143,43 @@ async function issueTokenPair(user, db) {
 }
 
 // ── Login lockout ─────────────────────────────────────────────────────────────
-const MAX_LOGIN_ATTEMPTS = 10;
-const LOCKOUT_MINUTES    = 15;
+// Two layers (sandbox review 2026-11-12, bug 3). A flat per-account lock after 10
+// failures let anyone who knew a phone number lock that person out (say, the night
+// before court). Now:
+//   • per account + client IP: 10 failures → that source waits LOCKOUT_MINUTES
+//     (in memory; the owner on another network can still sign in)
+//   • per account, any source: ACCOUNT_LOCK_THRESHOLD failures → the account locks
+//     (database), the backstop against guessing from many addresses
+// A successful sign-in or a password reset clears both.
+const MAX_LOGIN_ATTEMPTS     = 10;   // per account + source
+const ACCOUNT_LOCK_THRESHOLD = 50;   // per account, all sources
+const LOCKOUT_MINUTES        = 15;
+const sourceFailures = new Map();   // `${userId}|${ip}` → { n, until }
+const SOURCE_MAP_MAX = 50_000;
+const sourceKey = (userId, req) => `${userId}|${req.ip || req.socket?.remoteAddress || 'unknown'}`;
+function sourceLocked(userId, req) {
+  const e = sourceFailures.get(sourceKey(userId, req));
+  if (!e || !e.until) return 0;
+  if (e.until <= Date.now()) { sourceFailures.delete(sourceKey(userId, req)); return 0; }
+  return Math.ceil((e.until - Date.now()) / 60_000);
+}
+function recordSourceFailure(userId, req) {
+  const k = sourceKey(userId, req);
+  if (!sourceFailures.has(k) && sourceFailures.size >= SOURCE_MAP_MAX) {
+    const now = Date.now();
+    for (const [key, v] of sourceFailures) if (!v.until || v.until <= now) sourceFailures.delete(key);
+    if (sourceFailures.size >= SOURCE_MAP_MAX) sourceFailures.delete(sourceFailures.keys().next().value);
+  }
+  const e = sourceFailures.get(k) || { n: 0, until: 0 };
+  e.n += 1;
+  if (e.n >= MAX_LOGIN_ATTEMPTS) { e.until = Date.now() + LOCKOUT_MINUTES * 60_000; e.n = 0; }
+  sourceFailures.set(k, e);
+}
+const clearSourceFailures = (userId) => {
+  for (const k of sourceFailures.keys()) if (k.startsWith(`${userId}|`)) sourceFailures.delete(k);
+};
+/** Tests only. */
+export const _resetLoginSources = () => sourceFailures.clear();
 
 async function recordFailedLogin(db, userId) {
   const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60_000).toISOString();
@@ -152,7 +188,7 @@ async function recordFailedLogin(db, userId) {
         SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
             lock_until = CASE WHEN COALESCE(failed_login_attempts, 0) + 1 >= ? THEN ? ELSE lock_until END
       WHERE id = ?`,
-    [MAX_LOGIN_ATTEMPTS, lockUntil, userId]
+    [ACCOUNT_LOCK_THRESHOLD, lockUntil, userId]
   );
 }
 async function clearFailedLogins(db, userId) {
@@ -184,7 +220,7 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
     const isAttorney = acctType === 'attorney';
     const identifier = pickIdentifier(req.body);
     if (!identifier || !password) return err400(res, m('auth.err.identifier_password_required'));
-    if (String(password).length < 8) return err400(res, m('auth.err.password_short'));
+    { const why = passwordProblem(password); if (why) return err400(res, m(passwordProblemKey(why))); }
 
     const { type, value } = normalizeIdentifier(identifier);
     if (type === 'unknown') return err400(res, m('auth.err.identifier_invalid'));
@@ -265,16 +301,25 @@ router.post('/login', authLimiter, validate(schemas.auth.login), async (req, res
     if (isAccountLocked(found)) {
       return res.status(423).json({ error: m('auth.err.locked', { minutes: lockedMinutes(found) }), code: 'account_locked' });
     }
+    const srcMinutes = sourceLocked(found.id, req);
+    if (srcMinutes) {
+      return res.status(423).json({ error: m('auth.err.locked', { minutes: srcMinutes }), code: 'account_locked' });
+    }
 
     const ok = await bcrypt.compare(password, found.password_hash);
     if (!ok) {
+      recordSourceFailure(found.id, req);
       await recordFailedLogin(db, found.id).catch(e => logger.warn('[auth/login] lockout update:', e.message));
       return badCredentials();
     }
+    clearSourceFailures(found.id);
     if (found.failed_login_attempts || found.lock_until) await clearFailedLogins(db, found.id).catch(logIgnored('routes/auth'));
     db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), found.id]).catch(logIgnored('routes/auth'));
 
-    res.json(await issueTokenPair(await loadUser(db, found.id) || found, db));
+    const pair = await issueTokenPair(await loadUser(db, found.id) || found, db);
+    // Accounts made with the old Quick Sign Up have a doubled 4-digit PIN as password:
+    // sign them in, and tell the app to ask for a new one (POST /auth/change-password).
+    res.json(DOUBLED_PIN.test(String(password)) ? { ...pair, password_change_required: true } : pair);
   } catch (e) {
     logger.error('[auth/login]', e.message);
     res.status(500).json({ error: m('auth.err.login_failed') });
@@ -376,7 +421,7 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
   try {
     const { token, password } = req.body || {};
     if (!token || !password) return err400(res, m('auth.err.reset_fields_required'));
-    if (String(password).length < 8) return err400(res, m('auth.err.password_short'));
+    { const why = passwordProblem(password); if (why) return err400(res, m(passwordProblemKey(why))); }
     const db  = await getDb();
     const row = await db.get(
       'SELECT id, user_id FROM password_resets WHERE token = ? AND used_at IS NULL AND expires_at > NOW()',
@@ -389,6 +434,7 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
       await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [row.user_id]);
       await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.user_id]);   // sign out other sessions
     });
+    clearSourceFailures(row.user_id);
     res.json({ ok: true, message: m('auth.reset_done') });
   } catch (e) {
     logger.error('[auth/reset-password]', e.message);
@@ -549,6 +595,35 @@ router.get('/export', authRequired, sendExport);
 // { refreshToken?, pushToken?, allDevices? } — this device's push token stops
 // receiving the account's notifications (the next person on the phone must not
 // see them); with allDevices every session and device token is removed.
+// ── POST /change-password ─────────────────────────────────────────────────────
+// { currentPassword, newPassword } — signed-in users change their password. Used by
+// accounts the old Quick Sign Up made with a doubled PIN (login answers
+// password_change_required: true). Other sessions are signed out.
+router.post('/change-password', authRequired, authLimiter, async (req, res) => {
+  const m = reqMsg(req);
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) return err400(res, m('auth.err.identifier_password_required'));
+    const why = passwordProblem(newPassword);
+    if (why) return err400(res, m(passwordProblemKey(why)));
+    const db = await getDb();
+    const row = await db.get('SELECT id, password_hash FROM users WHERE id = ?', [req.user.id]);
+    if (!row || !row.password_hash || !(await bcrypt.compare(String(currentPassword), row.password_hash))) {
+      return res.status(401).json({ error: m('auth.err.invalid_credentials'), code: 'invalid_credentials' });
+    }
+    const hash = await bcrypt.hash(String(newPassword), 12);
+    await db.transaction(async (tx) => {
+      await tx.run('UPDATE users SET password_hash = ?, failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [hash, row.id]);
+      await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.id]);
+    });
+    clearSourceFailures(row.id);
+    res.json({ ok: true, ...(await issueTokenPair(await loadUser(db, row.id), db)) });
+  } catch (e) {
+    logger.error('[auth/change-password]', e.message);
+    res.status(500).json({ error: m('auth.err.server') });
+  }
+});
+
 router.post('/logout', authRequired, async (req, res) => {
   const m = reqMsg(req);
   try {

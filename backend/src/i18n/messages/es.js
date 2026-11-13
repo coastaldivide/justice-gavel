@@ -248,6 +248,7 @@ export default {
   "validation.failed": "Parte de la información que ingresó no es válida. Revísela e inténtelo de nuevo.",
   "auth.err.identifier_password_required": "Ingrese su correo electrónico o número de teléfono y su contraseña.",
   "auth.err.password_short": "Su contraseña debe tener al menos 8 caracteres.",
+  "auth.err.password_weak": "Esa contraseña es muy fácil de adivinar. Use 8 caracteres o más que no sean un PIN repetido ni una contraseña común.",
   "auth.err.identifier_invalid": "Ingrese un correo electrónico o número de teléfono válido.",
   "auth.err.email_taken": "Ya existe una cuenta con este correo electrónico. Inicie sesión.",
   "auth.err.phone_taken": "Ya existe una cuenta con este número de teléfono. Inicie sesión.",

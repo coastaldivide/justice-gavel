@@ -233,6 +233,7 @@ export default {
   "validation.failed": "Kèk enfòmasyon ou antre pa valab. Tanpri verifye yo epi eseye ankò.",
   "auth.err.identifier_password_required": "Antre imèl oswa nimewo telefòn ou ak modpas ou.",
   "auth.err.password_short": "Modpas ou dwe gen omwen 8 karaktè.",
+  "auth.err.password_weak": "Modpas sa a twò fasil pou devine. Sèvi ak 8 karaktè oswa plis ki pa yon PIN repete ni yon modpas komen.",
   "auth.err.identifier_invalid": "Antre yon adrès imèl oswa yon nimewo telefòn ki valab.",
   "auth.err.email_taken": "Gen yon kont ak imèl sa a deja. Konekte pito.",
   "auth.err.phone_taken": "Gen yon kont ak nimewo telefòn sa a deja. Konekte pito.",

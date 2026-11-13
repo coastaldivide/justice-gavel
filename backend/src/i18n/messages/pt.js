@@ -248,6 +248,7 @@ export default {
   "validation.failed": "Algumas informações que você digitou não são válidas. Confira e tente novamente.",
   "auth.err.identifier_password_required": "Digite seu e-mail ou número de telefone e sua senha.",
   "auth.err.password_short": "Sua senha precisa ter pelo menos 8 caracteres.",
+  "auth.err.password_weak": "Essa senha é fácil demais de adivinhar. Use 8 caracteres ou mais que não sejam um PIN repetido nem uma senha comum.",
   "auth.err.identifier_invalid": "Digite um e-mail ou número de telefone válido.",
   "auth.err.email_taken": "Já existe uma conta com este e-mail. Entre na sua conta.",
   "auth.err.phone_taken": "Já existe uma conta com este número de telefone. Entre na sua conta.",
