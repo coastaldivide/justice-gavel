@@ -29,6 +29,11 @@ import { PdHomeCard } from '../components/publicDefender/PdParts';
 const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
 // `flag`: shown only when that server feature is on for this person (custody alerts; shared bonds when at least one is shared).
 interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[]; flag?: 'custody' | 'recovery' }
+/** Quick-access tiles shown before "Show all tools". */
+const HOME_TILES_SHOWN = 8;
+/** Tiles that only repeat a bottom tab. */
+const TAB_TILES = new Set(['RightsTab', 'HelpTab', 'CourtTab']);
+
 const TILES = perLang((): Tile[] => {
   const c = themeColors();
   return [
@@ -124,6 +129,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [tipCategory, setTipCategory] = useState('');
   const [tipQuery, setTipQuery]       = useState('');
   const [visitCount, setVisitCount]   = useState(0);
+  const [showAllTiles, setShowAllTiles] = useState(false);
 
   const [coreStep, setCoreStep] = useState(1);
   // Core path: resume where the person left off; open a screen queued before the
@@ -251,6 +257,14 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     }
   };
 
+  // Quick access (UI clean-up Nov 13 2026): tiles that only repeat the tab bar are left out;
+  // the big primary tiles, then this person's own (role / server-feature tiles), then the rest;
+  // the first HOME_TILES_SHOWN show, "Show all tools" opens the others.
+  const allTiles = TILES()
+    .filter(tile => !TAB_TILES.has(tile.nav) && (!tile.roles || tile.roles.includes(role)) && (!tile.flag || flags[tile.flag]) && isScreenEnabled(tileScreen(tile.nav), role))
+    .sort((a, b) => (Number(b.primary) - Number(a.primary)) || (Number(!!(b.roles || b.flag)) - Number(!!(a.roles || a.flag))));
+  const shownTiles = showAllTiles ? allTiles : allTiles.slice(0, HOME_TILES_SHOWN);
+
   return (
     <View testID="home-screen" style={styles.screen}>
       {/* Header */}
@@ -329,45 +343,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           onVerifyPhone={() => (navigation as any).navigate('VerifyPhone')}
           onCheckIn={(enrollmentId) => (navigation as any).navigate('CheckIn', { enrollmentId })} />
 
-        {/* Emergency banner -- prominent, always first */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          testID="home-emergency-screen"
-          style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('Emergency')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.rowIconWrap}>
-            <AppIcon name={ICONS.notification} size={20} color={colors.textBrand} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
-          </View>
-          <AppIcon name={ICONS.chevronRight} size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-
-        {/* Quick Connect -- prominent package banner */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          testID="home-quick-connect"
-          style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('QuickConnect')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.quickConnectLeft}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('x_nav_quick_connect')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
-          </View>
-          <View style={styles.quickConnectRight}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPrice}>$20</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
-          </View>
-        </TouchableOpacity>
-
         {/* Public defender office members: their office (A11; hidden for everyone else and while the ⚖ setting is off) */}
         <PdHomeCard navigation={navigation as never} />
 
@@ -408,6 +383,90 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownArrow}>›</Text>
           </TouchableOpacity>
         )}
+
+        {/* Emergency banner -- prominent, always first */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+          testID="home-emergency-screen"
+          style={styles.rowCard}
+          onPress={() => (navigation as any).navigate('Emergency')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.rowIconWrap}>
+            <AppIcon name={ICONS.notification} size={20} color={colors.textBrand} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
+          </View>
+          <AppIcon name={ICONS.chevronRight} size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
+
+        {/* Section label */}
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('home_quick_access')}</Text>
+
+        {/* Tile grid */}
+        <View style={styles.grid}>
+          {shownTiles.map(tile => (
+            <TouchableOpacity
+              accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+              accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
+              key={tile.key}
+              testID={`tile-${tile.key}`}
+              style={[styles.tile, { backgroundColor: tile.bg }, tile.primary ? styles.tileLg : styles.tileSm]}
+              onPress={() => navigate(tile.nav)}
+              activeOpacity={0.75}
+            >
+              <AppIcon name={tile.icon} size={tile.primary ? 28 : 22} color={tile.color} />
+              <View style={styles.tileText}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, tile.primary ? styles.tileLabelLg : styles.tileLabelSm, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
+                {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
+                  </View>
+                )}
+                {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {allTiles.length > HOME_TILES_SHOWN && (
+          <TouchableOpacity accessibilityRole="button" testID="home-show-all-tools" style={styles.showAllBtn}
+            onPress={() => setShowAllTiles(v => !v)}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.showAllText}>
+              {showAllTiles ? t('home_show_fewer_tools') : t('home_show_all_tools', { n: allTiles.length })}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Paid options sit below the free tools (UI clean-up Nov 13 2026): help first, then offers. */}
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel} testID="home-more-options">{t('home_more_options')}</Text>
+        {/* Quick Connect -- prominent package banner */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+          testID="home-quick-connect"
+          style={styles.rowCard}
+          onPress={() => (navigation as any).navigate('QuickConnect')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.quickConnectLeft}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('x_nav_quick_connect')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
+          </View>
+          <View style={styles.quickConnectRight}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPrice}>$20</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
+          </View>
+        </TouchableOpacity>
 
           {/* Plans card for people without a paid plan (below the emergency cards, so
               an upsell never comes before help, and its late load can't push them down). Price and features come from
@@ -453,42 +512,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.tipArrow}>›</Text>
           </TouchableOpacity>
         )}
-
-        {/* Section label */}
-        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('home_quick_access')}</Text>
-
-        {/* Tile grid */}
-        <View style={styles.grid}>
-          {TILES().filter(tile => (!tile.roles || tile.roles.includes(role)) && (!tile.flag || flags[tile.flag]) && isScreenEnabled(tileScreen(tile.nav), role))
-            // the square primary tiles first, then the compact two-column rows
-            .sort((a, b) => Number(b.primary) - Number(a.primary)).map(tile => (
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
-              key={tile.key}
-              testID={`tile-${tile.key}`}
-              style={[styles.tile, { backgroundColor: tile.bg }, tile.primary ? styles.tileLg : styles.tileSm]}
-              onPress={() => navigate(tile.nav)}
-              activeOpacity={0.75}
-            >
-              <AppIcon name={tile.icon} size={tile.primary ? 28 : 22} color={tile.color} />
-              <View style={styles.tileText}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, tile.primary ? styles.tileLabelLg : styles.tileLabelSm, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
-                {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
-                  </View>
-                )}
-                {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* Sign-in nudge -- shown to browsing (guest) users */}
         {visitCount > 1 && !!displayName && (
@@ -585,7 +608,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sectionLabel: {
     fontSize: 12, ...FONTS.black, color: colors.textSecond,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  showAllBtn: { minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  showAllText: { fontSize: 14, ...FONTS.bold, color: colors.textBrand },
   // Quick access: two columns of icon + label rows. The four primary tiles
   // (bail, lawyer, rights, AI help) come first and are taller with a larger
   // icon; the rest are compact rows — no big squares. All use the theme's

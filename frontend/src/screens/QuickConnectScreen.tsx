@@ -509,12 +509,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   header: {
     backgroundColor: colors.navy,
-    paddingHorizontal: 24, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 20,
+    // The stack header is above this band, so no status-bar inset (it left a tall empty band).
+    paddingHorizontal: 24, paddingTop: 14, paddingBottom: 14,
     borderBottomWidth: 2, borderBottomColor: colors.steel + '50' },
   headerSuccess: { backgroundColor: colors.legalDark },
   successIcon: { fontSize: 36, textAlign: 'center', marginBottom: 6 },
   heading:    { fontSize: 22, ...FONTS.black, color: colors.white, textAlign: 'center' },
-  subheading: { fontSize: 12, lineHeight: 20, ...FONTS.medium, color: colors.white, marginTop: 4, textAlign: 'center' },
+  subheading: { fontSize: 14, lineHeight: 20, ...FONTS.medium, color: colors.white, textAlign: 'center' },
 
   preScroll:    { padding: 16 },
   resultsScroll:{ padding: 16 },

@@ -57,6 +57,24 @@ beforeEach(async () => {
 });
 
 describe('HomeScreen', () => {
+  it('Home layout (UI clean-up Nov 13 2026): 8 tiles + Show all, no tab duplicates, paid options after the tools', async () => {
+    on('get', '/push/tip', { tip: 'Tip', category: 'Criminal', lesson_query: 'rights' });
+    wrap(<HomeScreen navigation={makeNavigation()} />);
+    await screen.findByTestId('home-screen');
+    const tileIds = () => screen.queryAllByTestId(/^tile-/).map(n => n.props.testID);
+    expect(tileIds()).toHaveLength(8);
+    for (const dup of ['tile-Rights', 'tile-GetHelp', 'tile-CourtDates']) expect(tileIds()).not.toContain(dup);
+    fireEvent.press(screen.getByTestId('home-show-all-tools'));
+    expect(tileIds().length).toBeGreaterThan(8);
+    fireEvent.press(screen.getByTestId('home-show-all-tools'));
+    expect(tileIds()).toHaveLength(8);
+    // order in the tree: Just arrested → emergency → tiles → More options → Quick Connect
+    const order = ['home-just-arrested', 'home-emergency-screen', 'home-show-all-tools', 'home-more-options', 'home-quick-connect'];
+    const seen = screen.queryAllByTestId(new RegExp(`^(${order.join('|')})$`)).map(n => n.props.testID)
+      .filter((id, i, all) => all.indexOf(id) === i);   // tree order, each id once
+    expect(seen).toEqual(order);
+  });
+
   it('renders the brand, quick-access tiles and the daily legal tip', async () => {
     on('get', '/push/tip', { tip: 'You have the right to remain silent.', category: 'Criminal', lesson_query: 'rights' });
     wrap(<HomeScreen navigation={makeNavigation()} />);
