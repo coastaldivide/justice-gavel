@@ -68,7 +68,7 @@ export function DirectConversation({ who, onClose }: { who: { user_id: number; n
             ? { alignSelf: 'flex-end', backgroundColor: colors.navy }
             : { alignSelf: 'flex-start', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={{ color: m.direction === 'sent' ? colors.textOnNavy : colors.textPrimary, fontSize: 14, lineHeight: 20 }}>{m.content}</Text>
-            <Text maxFontSizeMultiplier={1.2} style={{ color: m.direction === 'sent' ? colors.textOnNavy : colors.textMuted, fontSize: 11, marginTop: 4 }}>{when(m.created_at)}</Text>
+            <Text maxFontSizeMultiplier={1.2} style={{ color: m.direction === 'sent' ? colors.textOnNavy : colors.textMuted, fontSize: 12, marginTop: 4 }}>{when(m.created_at)}</Text>
           </View>
         ))}
         <Text maxFontSizeMultiplier={1.3} style={[s.meta, { textAlign: 'center', marginTop: 12 }]}>{t('ai_privacy_note')}</Text>
@@ -89,12 +89,12 @@ export function DirectConversation({ who, onClose }: { who: { user_id: number; n
 const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 4 },
   backBtn: { minHeight: 44, minWidth: 64, paddingHorizontal: 8, justifyContent: 'center' },
-  backText: { fontSize: 15, ...FONTS.semi, color: colors.info },
-  title: { flex: 1, textAlign: 'center', fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
+  backText: { fontSize: 16, ...FONTS.semi, color: colors.info },
+  title: { flex: 1, textAlign: 'center', fontSize: 16, ...FONTS.heavy, color: colors.textPrimary },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
   bubble: { maxWidth: '85%', borderRadius: RADIUS.lg, padding: 10, marginTop: 8 },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bgCard },
   input: { flex: 1, minHeight: 44, maxHeight: 140, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 10, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14 },
   sendBtn: { minHeight: 44, paddingHorizontal: 16, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
-  sendText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy },
+  sendText: { color: colors.textOnNavy, fontSize: 16, ...FONTS.heavy },
 });

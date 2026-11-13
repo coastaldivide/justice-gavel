@@ -107,7 +107,7 @@ export function CaseDocumentList({ caseId, refreshKey }: { caseId: number; refre
 const makeStyles = (c: any) => StyleSheet.create({
   title: { color: c.textPrimary, fontSize: 16, fontWeight: '800', marginTop: 8, marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 8, minHeight: 52 },
-  rowText: { color: c.textPrimary, fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  muted: { color: c.textSecond, fontSize: 13, lineHeight: 18 },
+  rowText: { color: c.textPrimary, fontSize: 16, fontWeight: '700', flexShrink: 1 },
+  muted: { color: c.textSecond, fontSize: 14, lineHeight: 19 },
   link: { color: c.textBrand, fontSize: 14, fontWeight: '800' },
 });

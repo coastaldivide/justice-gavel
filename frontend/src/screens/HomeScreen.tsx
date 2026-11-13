@@ -525,7 +525,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.footerCard}>
           <JTBLogo size={32} />
           <View style={{ marginStart: 12, flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
               {t('home_footer_innocent')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.footerTitle}>{t('home_footer_title')}</Text>
@@ -545,9 +545,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   coreCard: { backgroundColor: colors.emergencyDark, borderRadius: 16, padding: 16, marginBottom: 14, minHeight: 56 },
   coreTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  coreTitle: { color: colors.white, fontSize: 24, fontWeight: '900', flexShrink: 1 },
+  coreTitle: { color: colors.white, fontSize: 22, fontWeight: '900', flexShrink: 1 },
   coreStep: { color: colors.white, fontSize: 16, fontWeight: '700', lineHeight: 23 },
-  coreCta: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
+  coreCta: { color: colors.white, fontSize: 16, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
   screen: { flex: 1, backgroundColor: colors.bg },
 
   header: {
@@ -558,11 +558,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
   headerText: { flex: 1, minWidth: 0 },
   logoMark: { width: 42, height: 42, borderRadius: RADIUS.sm, overflow: 'hidden' },
-  brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
+  brand: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginStart: 8 },
   settingsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  settingsIcon: { fontSize: 20 },
+  settingsIcon: { fontSize: 22 },
 
   // The SOS dock sits below the ScrollView (its own lane), so the content needs
   // no extra room for it; the column is capped so desktop is not stretched.
@@ -578,12 +578,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.bgSubtle,
     alignItems: 'center', justifyContent: 'center' },
-  emergencyTitle: { color: colors.textPrimary, ...FONTS.heavy, fontSize: 15,
-    lineHeight: 22 },
+  emergencyTitle: { color: colors.textPrimary, ...FONTS.heavy, fontSize: 16,
+    lineHeight: 23 },
   emergencySub:   { color: colors.textSecond, fontSize: 12, lineHeight: 17, marginTop: 2 },
 
   sectionLabel: {
-    fontSize: 11, ...FONTS.black, color: colors.textSecond,
+    fontSize: 12, ...FONTS.black, color: colors.textSecond,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   // Quick access: two columns of icon + label rows. The four primary tiles
@@ -599,20 +599,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tileLg: { minHeight: 76 },
   tileText:  { flex: 1, minWidth: 0 },
   tileLabel: { ...FONTS.black },
-  tileLabelLg: { fontSize: 15, lineHeight: 19 },
-  tileLabelSm: { fontSize: 13, lineHeight: 17 },
+  tileLabelLg: { fontSize: 16, lineHeight: 20 },
+  tileLabelSm: { fontSize: 14, lineHeight: 18 },
 
   countBadge: {
     alignSelf: 'flex-start', marginTop: 3, paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 8, backgroundColor: COLORS.navy },
-  countBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  countBadgeText: { color: colors.bg, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   quickConnectLeft:  { flex: 1 },
-  quickConnectTag:   { fontSize: 11, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
+  quickConnectTag:   { fontSize: 12, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
   quickConnectTitle: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
   quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: colors.textSecond },
   quickConnectRight: { alignItems: 'center', marginStart: 12 },
   quickConnectPrice: { fontSize: 22, ...FONTS.black, color: colors.textPrimary, lineHeight: 26 },
-  quickConnectPriceSub: { fontSize: 11, color: colors.textSecond, ...FONTS.medium },
+  quickConnectPriceSub: { fontSize: 12, color: colors.textSecond, ...FONTS.medium },
   footerCard: {
     backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, padding: 16,
@@ -630,9 +630,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowColor: COLORS.navy, shadowOpacity: 0.05,
     shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   tipLeft:  { flex: 1 },
-  tipLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.info, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
+  tipLabel: { fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.info, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
   tipText:  { fontSize: 12, color: colors.textBrand, lineHeight: 18, fontFamily: 'Inter_500Medium', fontWeight: '500' },
-  tipArrow: { fontSize: 20, color: colors.info, fontWeight: '300' },
+  tipArrow: { fontSize: 22, color: colors.info, fontWeight: '300' },
   nudgeCard: {
     backgroundColor: colors.bg,
     borderRadius: 14, padding: 16, marginBottom: 12,
@@ -642,24 +642,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   nudgeIcon:  { fontSize: 22 },
   nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 2 },
-  nudgeSub:   { fontSize: 11, color: colors.info },
+  nudgeSub:   { fontSize: 12, color: colors.info },
   nudgeArrow: { fontSize: 22, color: colors.textBrand, fontWeight: '300' },
   footerTitle: { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: colors.textOnNavy },
-  footerSub:   { fontSize: 11, color: COLORS.steel, marginTop: 2 },
+  footerSub:   { fontSize: 12, color: COLORS.steel, marginTop: 2 },
   courtCountdown: {
     borderRadius: RADIUS.xl, padding: 16, marginBottom: 14,
     flexDirection: 'row', alignItems: 'center', gap: 16,
     borderWidth: 1.5, ...SHADOW.md },
   courtCountdownLeft: { alignItems: 'center', minWidth: 44 },
-  courtCountdownNum:  { fontSize: 32, ...FONTS.black, color: colors.textOnNavy, lineHeight: 34 },
-  courtCountdownUnit: { fontSize: 11, ...FONTS.bold, color: colors.textOnNavy, textTransform: 'uppercase' },
+  courtCountdownNum:  { fontSize: 36, ...FONTS.black, color: colors.textOnNavy, lineHeight: 45 },
+  courtCountdownUnit: { fontSize: 12, ...FONTS.bold, color: colors.textOnNavy, textTransform: 'uppercase' },
   courtCountdownTitle:{ fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
-  courtCountdownCase: { fontSize: 11, color: colors.textOnNavy },
+  courtCountdownCase: { fontSize: 12, color: colors.textOnNavy },
   courtCountdownArrow:{ fontSize: 28, color: colors.textOnNavy, ...FONTS.medium },
   tileUnreadBadge:     { position: 'absolute', top: -4, end: -4, backgroundColor: colors.emergency,
     borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 3 },
-  tileUnreadBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  tileUnreadBadgeText: { color: colors.bg, fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900' },
   tileSm: { minHeight: 56 },
 
 });

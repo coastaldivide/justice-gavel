@@ -243,7 +243,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         >
           <IconLabel icon={[ICONS.bail, ICONS.money, ICONS.lawyer, ICONS.search][Math.min(activeIndex, 3)]} textStyle={styles.browseBtnText} maxFontSizeMultiplier={1.4}>{activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}</IconLabel>
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnSub}>{t('onboard_browse_sub')}</Text>
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, textAlign: 'center', lineHeight: 17, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
           {t('onb_terms_pre')}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
             onPress={() => navigation.navigate('TermsOfService')}>
@@ -282,7 +282,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 const makeStyles = (colors: any) => StyleSheet.create({
   justArrestedBtn: { backgroundColor: colors.emergencyDark, borderRadius: 14, padding: 16, marginHorizontal: 20, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 },
   justArrestedTitle: { color: colors.white, fontSize: 18, fontWeight: '900' },
-  justArrestedSub: { color: colors.white, fontSize: 13, marginTop: 2 },
+  justArrestedSub: { color: colors.white, fontSize: 14, marginTop: 2 },
   screen: {
     flex: 1, backgroundColor: colors.bg,
     alignItems: 'center', paddingBottom: 32 },
@@ -295,7 +295,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   carousel: { alignSelf: 'stretch', width: '100%', flex: 1 },
   statsRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', paddingHorizontal: 12, marginBottom: 8 },
   stat: { flex: 1, minWidth: 0, alignItems: 'center', paddingHorizontal: 4 },
-  statTitle: { fontSize: 15, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  statTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
   statSub: { fontSize: 12, color: colors.textMuted, marginTop: 1, textAlign: 'center' },
   statDivider: { width: 1, height: 28, backgroundColor: colors.border },
   slide: {
@@ -305,7 +305,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: 92, height: 92, borderRadius: 40,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5, marginBottom: 18 },
-  slideIcon:  { fontSize: 44 },
+  slideIcon:  { fontSize: 48 },
   slideTitle: {
     fontSize: 28, ...FONTS.black, color: colors.textPrimary,
     textAlign: 'center', lineHeight: 35, marginBottom: 12 },
@@ -327,7 +327,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.legal,
     ...SHADOW.md, shadowColor: colors.legal },
   browseBtnText: { color: colors.textOnAccent, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.2 },
-  browseBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3, ...FONTS.medium },
+  browseBtnSub:  { color: colors.textOnAccent, fontSize: 12, marginTop: 3, ...FONTS.medium },
 
   secondaryRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   nextBtn: {

@@ -342,7 +342,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sevLabel:  { fontSize: 16, lineHeight: 24, ...FONTS.black, marginBottom: 2 },
   sevSub:    { fontSize: 12 },
-  feeNote:   { fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
+  feeNote:   { fontSize: 12, textAlign: 'center', marginTop: 8, lineHeight: 17 },
 
   // Details step
   summaryBadge: {
@@ -356,7 +356,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 16, fontSize: 14, lineHeight: 21,
     minHeight: 160, marginBottom: 6,
   },
-  charCount:   { fontSize: 11, textAlign: 'right', marginBottom: 14 },
+  charCount:   { fontSize: 12, textAlign: 'right', marginBottom: 14 },
   fieldLabel:  { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 6 },
   pickerWrap:  { borderWidth: 1.5, borderRadius: RADIUS.md, overflow: 'hidden', marginBottom: 12 },
   cityInput:   { borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, lineHeight: 20, marginBottom: 14 },
@@ -368,11 +368,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   // Submitted
   successWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  successEmoji: { fontSize: 56, marginBottom: 16 },
+  successEmoji: { fontSize: 60, marginBottom: 16 },
   successTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 10 },
   successSub:   { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 28 },
   doneBtn:      { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center', ...SHADOW.md, marginBottom: 12 },
-  doneBtnText:  { color: colors.textOnNavy, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  doneBtnText:  { color: colors.textOnNavy, fontSize: 16, lineHeight: 23, ...FONTS.black },
   homeBtn:      { paddingVertical: 10 },
   homeBtnText:  { fontSize: 14,
     lineHeight: 21, },

@@ -160,11 +160,11 @@ function TermsOfServiceScreen(): React.JSX.Element {
       {SECTIONS()?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <AppIcon name={ICONS.inbox} size={32} color={colors.textBrand} style={{ fontSize: 32, marginBottom: 12 }} />
+          <AppIcon name={ICONS.inbox} size={32} color={colors.textBrand} style={{ fontSize: 36, marginBottom: 12 }} />
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
             {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
@@ -213,22 +213,22 @@ function TermsOfServiceScreen(): React.JSX.Element {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scroll:          { paddingBottom: 32 },
   header:          { padding: 28, paddingTop: 48 },
-  headerEyebrow:   { color: 'rgba(133,183,235,0.8)', fontSize: 11, fontWeight: '800',
+  headerEyebrow:   { color: 'rgba(133,183,235,0.8)', fontSize: 12, fontWeight: '800',
                      letterSpacing: 3, marginBottom: 6 },
   headerTitle:     { color: colors.white, fontSize: 28, fontWeight: '900', marginBottom: 8 },
   headerMeta:      { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
   noticeBox:       { margin: 16, borderRadius: 12, padding: 16, borderLeftWidth: 5 },
   noticeTitle:     { fontSize: 14, fontWeight: '800', marginBottom: 6 },
-  noticeBody:      { fontSize: 13, lineHeight: 20 },
+  noticeBody:      { fontSize: 14, lineHeight: 22 },
   section:         { marginHorizontal: 16, marginBottom: 12, borderRadius: 12,
                      padding: 18, borderLeftWidth: 4 },
   sectionHeading:  { fontSize: 14, fontWeight: '800', marginBottom: 10, lineHeight: 20 },
-  sectionBody:     { fontSize: 13, lineHeight: 21 },
+  sectionBody:     { fontSize: 14, lineHeight: 23 },
   footer:          { margin: 16, borderRadius: 14, padding: 24, alignItems: 'center', gap: 12 },
-  footerText:      { fontSize: 13 },
+  footerText:      { fontSize: 14 },
   footerBtn:       { borderWidth: 1, borderRadius: 10, paddingVertical: 12,
                      paddingHorizontal: 20 },
-  footerBtnText:   { fontSize: 13, fontWeight: '700' },
-  footerCopy:      { fontSize: 11, textAlign: 'center', lineHeight: 17 },
+  footerBtnText:   { fontSize: 14, fontWeight: '700' },
+  footerCopy:      { fontSize: 12, textAlign: 'center', lineHeight: 19 },
 });
 export default React.memo(TermsOfServiceScreen);

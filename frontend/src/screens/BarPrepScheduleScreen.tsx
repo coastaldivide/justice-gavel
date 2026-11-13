@@ -266,7 +266,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
 
         <View style={{ height: 30 }} />
         <Text maxFontSizeMultiplier={1.2} testID="bar-prep-disclaimer"
-          style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 16 }}>
+          style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 17 }}>
           {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
       </ScrollView>
@@ -280,7 +280,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
     </View>
   );
 }
@@ -306,20 +306,20 @@ function makeStyles(colors: any) {
     saveBtnText:     { fontSize: 14, ...FONTS.bold, color: colors.textOnAccent },
     countdownRow:    { flexDirection: 'row', alignItems: 'baseline', marginTop: 14 },
     countdownNum:    { fontSize: 36, ...FONTS.bold },
-    countdownLabel:  { fontSize: 15, color: colors.textMuted },
+    countdownLabel:  { fontSize: 16, color: colors.textMuted },
     goalCard:        { marginHorizontal: 16, marginTop: 4, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     goalHeader:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-    goalTitle:       { fontSize: 15, ...FONTS.bold, color: colors.text },
-    goalFraction:    { fontSize: 15, ...FONTS.bold, color: colors.textBrand },
+    goalTitle:       { fontSize: 16, ...FONTS.bold, color: colors.text },
+    goalFraction:    { fontSize: 16, ...FONTS.bold, color: colors.textBrand },
     goalTrack:       { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
     goalFill:        { height: '100%', borderRadius: 4 },
     goalMeta:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
     goalMetaText:    { fontSize: 12, color: colors.textMuted },
     overdueText:     { fontSize: 12, color: colors.bail, ...FONTS.semiBold },
     startBtn:        { paddingVertical: 13, borderRadius: RADIUS.lg, alignItems: 'center' },
-    startBtnText:    { fontSize: 15, ...FONTS.bold, color: colors.textOnAccent },
+    startBtnText:    { fontSize: 16, ...FONTS.bold, color: colors.textOnAccent },
     sectionTitle:    {
-      fontSize: 13, ...FONTS.bold, color: colors.text,
+      fontSize: 14, ...FONTS.bold, color: colors.text,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
     },
     recommendList:   { paddingHorizontal: 12, gap: 6 },
@@ -341,8 +341,8 @@ function makeStyles(colors: any) {
       width: 36, height: 36, borderRadius: 8,
       justifyContent: 'center', alignItems: 'center',
     },
-    calendarCount:   { fontSize: 11, ...FONTS.bold, color: colors.white },
-    calendarLabel:   { fontSize: 9, color: colors.textMuted, marginTop: 3, textAlign: 'center' },
+    calendarCount:   { fontSize: 12, ...FONTS.bold, color: colors.white },
+    calendarLabel:   { fontSize: 12, color: colors.textMuted, marginTop: 3, textAlign: 'center' },
     calendarLegendRow: {
       flexDirection: 'row', justifyContent: 'center', gap: 16,
       marginTop: 14,

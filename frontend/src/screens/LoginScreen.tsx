@@ -209,18 +209,18 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 12,
   },
   wordmark: {
-    fontSize: 30, ...FONTS.black, color: colors.textPrimary,
+    fontSize: 28, ...FONTS.black, color: colors.textPrimary,
     letterSpacing: 1, marginBottom: 4,
   },
   tagline: {
-    fontSize: 11, ...FONTS.semi, color: colors.info,
+    fontSize: 12, ...FONTS.semi, color: colors.info,
     letterSpacing: 5,
   },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: {
-    fontSize: 11, ...FONTS.bold, color: colors.info,
+    fontSize: 12, ...FONTS.bold, color: colors.info,
     letterSpacing: 3, marginHorizontal: 16,
   },
 
@@ -240,7 +240,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
     paddingHorizontal: 16,
   },
-  input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: colors.bgCard, ...FONTS.medium },
+  input: { flex: 1, paddingVertical: 16, fontSize: 16, lineHeight: 23, color: colors.bgCard, ...FONTS.medium },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
   showBtnText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
 
@@ -269,14 +269,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   orRow:       { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   orLine:      { flex: 1, height: 1, backgroundColor: 'rgba(133,183,235,0.2)' },
-  orText:      { fontSize: 11, color: colors.info, fontFamily: 'Inter_700Bold', fontWeight: '700', marginHorizontal: 12, letterSpacing: 2 },
+  orText:      { fontSize: 12, color: colors.info, fontFamily: 'Inter_700Bold', fontWeight: '700', marginHorizontal: 12, letterSpacing: 2 },
   browseBtn: {
     borderWidth: 1.5, borderColor: 'rgba(133,183,235,0.4)',
     borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20,
     alignItems: 'center', backgroundColor: 'rgba(133,183,235,0.07)',
   },
-  browseBtnText: { color: COLORS.steel, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  browseBtnSub:  { color: colors.info, fontSize: 11, marginTop: 3, fontWeight: '500' },
+  browseBtnText: { color: COLORS.steel, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  browseBtnSub:  { color: colors.info, fontSize: 12, marginTop: 3, fontWeight: '500' },
   topBrowseBtn: {
     backgroundColor: colors.legal,
     borderRadius: 14, paddingVertical: 15,
@@ -286,7 +286,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 8, elevation: 5,
   },
   topBrowseBtnText: { color: colors.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  topBrowseBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3 },
-  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 28, letterSpacing: 0.5 },
+  topBrowseBtnSub:  { color: colors.textOnAccent, fontSize: 12, marginTop: 3 },
+  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 12, marginTop: 28, letterSpacing: 0.5 },
 });
 export default React.memo(LoginScreen);

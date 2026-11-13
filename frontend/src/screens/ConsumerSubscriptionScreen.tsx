@@ -323,7 +323,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
       <Text maxFontSizeMultiplier={1.4} style={s.footer}>{t('plan_footer_card')}</Text>
       <TouchableOpacity accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 16 }}
         onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab' as never))}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.info, textDecorationLine: 'underline' }}>{t('x_consumer_subscription_continue_with_free_features_2')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.info, textDecorationLine: 'underline' }}>{t('x_consumer_subscription_continue_with_free_features_2')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -334,13 +334,13 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   scroll: { paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 20 },
-  heading: { fontSize: 26, ...FONTS.black, color: colors.textOnNavy },
-  subheading: { color: colors.textOnNavy, opacity: 0.85, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  heading: { fontSize: 28, ...FONTS.black, color: colors.textOnNavy },
+  subheading: { color: colors.textOnNavy, opacity: 0.85, fontSize: 14, lineHeight: 20, marginTop: 4 },
   notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
   card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5, borderColor: colors.border },
-  cardKicker: { fontSize: 11, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
-  cardTitle: { fontSize: 17, ...FONTS.heavy, color: colors.textPrimary },
-  cardLine: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 4 },
+  cardKicker: { fontSize: 12, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+  cardTitle: { fontSize: 18, ...FONTS.heavy, color: colors.textPrimary },
+  cardLine: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 4 },
   price: { fontSize: 22, ...FONTS.black, color: colors.textBrand, marginTop: 2 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
@@ -351,12 +351,12 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   toggleText: { fontSize: 14, ...FONTS.bold, color: colors.textMuted },
   toggleTextActive: { color: colors.textOnNavy },
   saveBadge: { backgroundColor: colors.legalDark, borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 2 },
-  saveBadgeText: { fontSize: 11, color: COLORS.white, ...FONTS.heavy },
+  saveBadgeText: { fontSize: 12, color: COLORS.white, ...FONTS.heavy },
   featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 },
-  check: { fontSize: 13, ...FONTS.black, marginRight: 8, lineHeight: 19 },
-  featureText: { fontSize: 13, lineHeight: 19, color: colors.textSecond, flex: 1 },
+  check: { fontSize: 14, ...FONTS.black, marginRight: 8, lineHeight: 20 },
+  featureText: { fontSize: 14, lineHeight: 20, color: colors.textSecond, flex: 1 },
   primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
-  primaryBtnText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  primaryBtnText: { color: colors.textOnNavy, fontSize: 16, ...FONTS.heavy, textAlign: 'center' },
   currentPill: { minHeight: 44, borderRadius: RADIUS.md, backgroundColor: colors.legalBg, alignItems: 'center', justifyContent: 'center' },
   currentPillText: { color: colors.legal, fontSize: 14, ...FONTS.heavy },
   footer: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 20, lineHeight: 17, marginTop: 16 },

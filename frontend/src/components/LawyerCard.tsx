@@ -67,7 +67,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.3}
-            style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }}>
+            style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
             {lawyer.name}
           </Text>
           {(lawyer.city || lawyer.state) && (
@@ -84,13 +84,13 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           {!!lawyer.jtb_verified && (
             <View style={{ backgroundColor: colors.navy, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>{t('x_lawyer_card_verified')}</Text>
+              <Text style={{ fontSize: 12, color: COLORS.white, fontWeight: '700' }}>{t('x_lawyer_card_verified')}</Text>
             </View>
           )}
           {!!lawyer.bar_verified && (
             <View style={{ backgroundColor: colors.legal, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: colors.textOnAccent, fontWeight: '700' }}>{t('x_lawyer_card_bar')}</Text>
+              <Text style={{ fontSize: 12, color: colors.textOnAccent, fontWeight: '700' }}>{t('x_lawyer_card_bar')}</Text>
             </View>
           )}
         </View>

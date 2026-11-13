@@ -100,9 +100,9 @@ function SavedCard({
           {lawyer.rating != null && (
             <IconLabel icon={ICONS.starFilled} textStyle={[styles.cardRating, { color: colors.goldText }]} maxFontSizeMultiplier={1.4}>{lawyer.rating.toFixed(1)}</IconLabel>
           )}
-          {lawyer.gavel_level === 1 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bail, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_bronze_gavel')}</IconLabel>}
-          {lawyer.gavel_level === 2 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textSecond, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_silver_gavel')}</IconLabel>}
-          {(lawyer.gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
+          {lawyer.gavel_level === 1 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bail, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_bronze_gavel')}</IconLabel>}
+          {lawyer.gavel_level === 2 && <IconLabel icon={ICONS.medal} textStyle={{ fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textSecond, marginTop: 3 }} maxFontSizeMultiplier={1.4}>{t('x_match_silver_gavel')}</IconLabel>}
+          {(lawyer.gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.goldText, marginTop: 3 }}>{t('x_nav_golden_gavel')}</Text>}
         </View>
         <TouchableOpacity accessibilityRole="button"
           style={styles.removeBtn}
@@ -339,24 +339,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   removeBtnText:  { fontSize: 16, lineHeight: 24 },
   tagRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 12 },
   tag:            { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-  tagText:        { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  tagText:        { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   profileBtn:     { borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center', marginTop: 8, marginBottom: 12, minHeight: 44, justifyContent: 'center' },
-  profileBtnText: { fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  profileBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   notesBlock:     { borderTopWidth: 1, paddingTop: 10 },
-  notesLabel:     { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  notesLabel:     { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   notesValue:     { fontSize: 12, lineHeight: 18, minHeight: 32 },
   notesInput:     { borderWidth: 1.5, borderRadius: RADIUS.md, padding: 10, fontSize: 14, lineHeight: 21, marginBottom: 8, minHeight: 72 },
   notesBtnRow:    { flexDirection: 'row', gap: 8 },
   notesBtn:       { flex: 1, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center' },
   notesBtnText:   { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  savedDate:      { fontSize: 11, marginTop: 8, textAlign: 'right' },
+  savedDate:      { fontSize: 12, marginTop: 8, textAlign: 'right' },
   empty:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon:      { fontSize: 48, marginBottom: 16 },
-  emptyTitle:     { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+  emptyTitle:     { fontSize: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center', marginBottom: 8 },
   emptySub:       { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 28 },
   findBtn:        { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32 },
-  findBtnText:    { color: colors.white, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  errorText:      { fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 16 },
+  findBtnText:    { color: colors.white, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  errorText:      { fontSize: 16, lineHeight: 23, textAlign: 'center', marginBottom: 16 },
   retryBtn:       { paddingVertical: 12, paddingHorizontal: 24, borderRadius: RADIUS.md, backgroundColor: colors.navy },
   retryBtnText:   { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700' } });
 export default React.memo(SavedLawyersScreen);

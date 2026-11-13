@@ -177,7 +177,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary }}>
         {t('x_interrogation_recorder_encounter_recorder_2')}
       </Text>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors.textMuted, lineHeight: 20 }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, color: colors.textMuted, lineHeight: 22 }}>
         {t('x_interrogation_recorder_records_interaction_with_law')}
       </Text>
 
@@ -186,13 +186,13 @@ function InterrogationRecorderScreen(): React.JSX.Element {
           <IconLabel icon={law.warn ? ICONS.statusWarn : ICONS.statusOk} maxFontSizeMultiplier={1.3} textStyle={{ fontSize: 14, fontWeight: '800', color: law.warn ? colors.warnDark : colors.legalDark }}>
             {law.consent === 'two-party' ? t('x_interrogation_recorder_all_party_consent_state') : law.consent === 'mixed' ? t('x_interrogation_recorder_mixed_consent_state') : law.consent === 'one-party' ? t('x_interrogation_recorder_one_party_consent_state') : t('x_interrogation_recorder_state_may_require_all')}
           </IconLabel>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, lineHeight: 19, color: colors.textPrimary }}>{law.note}</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, fontStyle: 'italic', color: colors.textMuted }}>{law.law}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, lineHeight: 20, color: colors.textPrimary }}>{law.note}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontStyle: 'italic', color: colors.textMuted }}>{law.law}</Text>
         </View>
       )}
 
       <View style={card}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>{t('x_interrogation_recorder_before_record_say_these')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>{t('x_interrogation_recorder_before_record_say_these')}</Text>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '800', color: colors.textBrand, lineHeight: 22 }}>{t('x_interrogation_recorder_i_am_invoking_my')}</Text>
       </View>
 
@@ -211,7 +211,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
       <View style={{ alignItems: 'center', paddingVertical: 16, gap: 16 }}>
         {step === 'recording' && (
-          <Text maxFontSizeMultiplier={1.3} testID="recorder-timer" style={{ fontSize: 40, fontWeight: '700', color: colors.emergency, fontVariant: ['tabular-nums'] }}>
+          <Text maxFontSizeMultiplier={1.3} testID="recorder-timer" style={{ fontSize: 48, fontWeight: '700', color: colors.emergency, fontVariant: ['tabular-nums'] }}>
             {fmt(seconds)}
           </Text>
         )}
@@ -229,7 +229,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             <AppIcon name={step === 'recording' ? ICONS.stop : ICONS.record} size={40} color={colors.white} />
           </TouchableOpacity>
         )}
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
           {step === 'idle' ? t('x_interrogation_recorder_tap_begin_recording')
             : step === 'recording' ? t('x_interrogation_recorder_recording_tap_stop_transcribe')
               : step === 'uploading' ? t('x_interrogation_recorder_processing_recording')
@@ -276,7 +276,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
               <IconLabel icon={ICONS.document} textStyle={btn.text} maxFontSizeMultiplier={1.3}>{t('x_interrogation_recorder_save_share_pdf_2')}</IconLabel>
             </TouchableOpacity>
           )}
-          <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: colors.textPrimary, fontSize: 15 }}>{t('disc_doc_transcript')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontWeight: '700', color: colors.textPrimary, fontSize: 16 }}>{t('disc_doc_transcript')}</Text>
           {dialogue.length > 0 ? dialogue.map((line, i) => (
             <Text key={`line-${i}`} maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, lineHeight: 21, fontSize: 14 }}>
               <Text style={{ color: colors.textMuted }}>{line.timestamp ? `${line.timestamp}  ` : ''}</Text>
@@ -291,7 +291,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         </View>
       )}
 
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 8 }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8 }}>
         {t('x_interrogation_recorder_important_recording_laws_vary')}
       </Text>
     </ScrollView>

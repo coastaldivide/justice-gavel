@@ -166,7 +166,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (loading) return <View style={[s.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.textBrand} size="large" /></View>;
   if (loadError || !info) return (
     <View style={[s.center, { backgroundColor: colors.bg, padding: 32 }]} testID="booking-error">
-      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', fontSize: 15 }}>{loadError || t('x_booking_could_not_complete_booking')}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', fontSize: 16 }}>{loadError || t('x_booking_could_not_complete_booking')}</Text>
       <TouchableOpacity accessibilityRole="button" style={[s.nextBtn, { paddingHorizontal: 24 }]} onPress={() => { setLoading(true); load(); }}>
         <Text maxFontSizeMultiplier={1.4} style={s.nextBtnText}>{t('try_again')}</Text>
       </TouchableOpacity>
@@ -349,31 +349,31 @@ const makeStyles = () => StyleSheet.create({
   durFee: { fontSize: 18, ...FONTS.black },
   dayChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1.5, minHeight: 44 },
   dayChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  timesLabel: { fontSize: 11, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+  timesLabel: { fontSize: 12, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
   timesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   timeChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.md, borderWidth: 1.5, minHeight: 44 },
   timeChipText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   noSlotsCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, alignItems: 'center', marginBottom: 16 },
   noSlotsTitle: { fontSize: 16, lineHeight: 24, ...FONTS.black, marginBottom: 6 },
   noSlotsSub: { fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 12 },
-  callbackInput: { width: '100%', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, lineHeight: 22, marginBottom: 10 },
+  callbackInput: { width: '100%', borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 16, lineHeight: 23, marginBottom: 10 },
   callbackBtn: { width: '100%', borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center' },
   callbackBtnText: { color: COLORS.white, fontSize: 14, lineHeight: 21, ...FONTS.black },
   summaryCard: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 16 },
-  summaryLine: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, marginBottom: 3 },
+  summaryLine: { fontSize: 16, lineHeight: 23, ...FONTS.heavy, marginBottom: 3 },
   summaryFee: { fontSize: 18, ...FONTS.black, marginTop: 6 },
   notesInput: { borderWidth: 1.5, borderRadius: RADIUS.lg, padding: 14, fontSize: 14, minHeight: 100, marginBottom: 14, lineHeight: 21 },
   confirmBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 10, minHeight: 52 },
   confirmBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
-  disclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 17 },
+  disclaimer: { fontSize: 12, textAlign: 'center', lineHeight: 19 },
   nextBtn: { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginTop: 6, minHeight: 50 },
-  nextBtnText: { color: COLORS.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  nextBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 23, ...FONTS.black },
   confirmedTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginTop: 12, marginBottom: 8 },
   confirmedSub: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 20 },
   receiptCard: { width: '100%', borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 20 },
   receiptRow: { fontSize: 14, lineHeight: 21, marginBottom: 6 },
   doneBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center', minWidth: 220 },
-  doneBtnText: { color: COLORS.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  doneBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 23, ...FONTS.black },
 });
 
 export default React.memo(BookingScreen);

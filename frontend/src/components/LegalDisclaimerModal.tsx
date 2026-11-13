@@ -220,10 +220,10 @@ const styles = (C: ThemeColors, F: typeof FONT) => StyleSheet.create({
     borderColor: C.border,
   },
   statementText: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: F.regular,
     color: C.textPrimary,
-    lineHeight: 23,
+    lineHeight: 25,
   },
   bold: {
     fontFamily: F.bold,
@@ -283,11 +283,11 @@ const styles = (C: ThemeColors, F: typeof FONT) => StyleSheet.create({
     color: C.textMuted,
   },
   fine: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: F.regular,
     color: C.textMuted,
     textAlign: 'center',
-    lineHeight: 17,
+    lineHeight: 19,
   },
 });
 export default React.memo(LegalDisclaimerModal);

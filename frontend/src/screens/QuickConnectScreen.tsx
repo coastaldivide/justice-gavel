@@ -512,7 +512,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 24, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 20,
     borderBottomWidth: 2, borderBottomColor: colors.steel + '50' },
   headerSuccess: { backgroundColor: colors.legalDark },
-  successIcon: { fontSize: 32, textAlign: 'center', marginBottom: 6 },
+  successIcon: { fontSize: 36, textAlign: 'center', marginBottom: 6 },
   heading:    { fontSize: 22, ...FONTS.black, color: colors.white, textAlign: 'center' },
   subheading: { fontSize: 12, lineHeight: 20, ...FONTS.medium, color: colors.white, marginTop: 4, textAlign: 'center' },
 
@@ -526,8 +526,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   priceCardTitle: { fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 },
   priceRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
   priceIcon:  { width: 44, height: 44, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  priceIconText: { fontSize: 20 },
-  priceItemLabel: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textPrimary },
+  priceIconText: { fontSize: 22 },
+  priceItemLabel: { fontSize: 16, lineHeight: 23, ...FONTS.heavy, color: colors.textPrimary },
   priceItemSub:   { fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
   priceAmount: { fontSize: 22, ...FONTS.black },
   priceDivider: { height: 1, backgroundColor: colors.border, marginVertical: 14 },
@@ -541,7 +541,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingTop: 14, borderTopWidth: 2, borderTopColor: colors.navy,
     marginTop: 4 },
   totalLabel:  { fontSize: 16, lineHeight: 24, ...FONTS.black, color: colors.textBrand },
-  totalAmount: { fontSize: 32, ...FONTS.black, color: colors.textBrand },
+  totalAmount: { fontSize: 36, ...FONTS.black, color: colors.textBrand },
 
   // How it works
   stepsCard: {
@@ -596,17 +596,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8,
     borderWidth: 1.5, borderColor: colors.steel + '60' },
   payNowBtnDisabled: { opacity: 0.55 },
-  payNowBtnText: { color: colors.white, fontSize: 20, ...FONTS.black, letterSpacing: 0.3 },
-  payNowBtnSub:  { color: colors.steel, fontSize: 11, ...FONTS.medium, marginTop: 4, letterSpacing: 0.2 },
+  payNowBtnText: { color: colors.white, fontSize: 22, ...FONTS.black, letterSpacing: 0.3 },
+  payNowBtnSub:  { color: colors.steel, fontSize: 12, ...FONTS.medium, marginTop: 4, letterSpacing: 0.2 },
 
   practiceAreaWrap: { backgroundColor: colors.bgCard, borderRadius: 14, marginBottom: 14, overflow: 'hidden' },
-  accountNote: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 6, marginBottom: -6, fontStyle: 'italic' },
-  footerNote: { textAlign: 'center', color: colors.textMuted, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  accountNote: { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 6, marginBottom: -6, fontStyle: 'italic' },
+  footerNote: { textAlign: 'center', color: colors.textMuted, fontSize: 12, lineHeight: 19, marginTop: 4 },
   freeNote:    { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8, marginBottom: 10 },
-  freeNoteText:{ textAlign: 'center', color: colors.textBrand, fontSize: 13, lineHeight: 19, textDecorationLine: 'underline', ...FONTS.medium },
+  freeNoteText:{ textAlign: 'center', color: colors.textBrand, fontSize: 14, lineHeight: 20, textDecorationLine: 'underline', ...FONTS.medium },
 
   // Results
-  callPrompt: { fontSize: 15, ...FONTS.bold, color: colors.textBrand, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
+  callPrompt: { fontSize: 16, ...FONTS.bold, color: colors.textBrand, textAlign: 'center', marginBottom: 16, lineHeight: 22 },
 
   resultCard: {
     backgroundColor: colors.bgCard, borderRadius: RADIUS.lg,
@@ -621,7 +621,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   contactRating: { fontSize: 12, color: colors.goldText, ...FONTS.bold, marginBottom: 6 },
   tagRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 8 },
   tag:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-  tagText:       { fontSize: 11, ...FONTS.medium },
+  tagText:       { fontSize: 12, ...FONTS.medium },
   freeConsultBadge: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, alignSelf: 'flex-start', marginBottom: 10 },
   freeConsultText:  { color: colors.legal, fontSize: 12, ...FONTS.bold },
   callBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
@@ -635,7 +635,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   // Receipt
   receiptCard: { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14 },
-  receiptTitle: { fontSize: 11, ...FONTS.black, color: colors.info, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
+  receiptTitle: { fontSize: 12, ...FONTS.black, color: colors.info, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   receiptRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   receiptItem: { fontSize: 12, lineHeight: 20, color: colors.textPrimary, ...FONTS.medium },
   receiptPrice:{ fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.bold },

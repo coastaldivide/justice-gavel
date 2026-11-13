@@ -83,9 +83,9 @@ export function ContactActions({ listing, testID, primaryColor }: { listing: Con
 const styles = StyleSheet.create({
   wrap:      { gap: 8, marginTop: 10 },
   call:      { borderRadius: 12, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center', minHeight: 48, justifyContent: 'center' },
-  callText:  { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  noPhone:   { fontSize: 13, lineHeight: 19, textAlign: 'center', borderRadius: 10, padding: 10 },
+  callText:  { fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  noPhone:   { fontSize: 14, lineHeight: 20, textAlign: 'center', borderRadius: 10, padding: 10 },
   row:       { flexDirection: 'row', gap: 8 },
   small:     { flex: 1, minWidth: 44, minHeight: 44, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
-  smallText: { fontSize: 13, lineHeight: 19, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  smallText: { fontSize: 14, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });

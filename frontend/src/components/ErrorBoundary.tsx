@@ -64,10 +64,10 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   container: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor:COLORS.navy, padding:24 },
   icon:      { marginBottom:16 },
-  title:     { color:COLORS.white, fontSize:20, fontWeight:'900', marginBottom:8, textAlign:'center' },
-  sub:       { color:COLORS.steel, fontSize:13, textAlign:'center', marginBottom:24, lineHeight:19 },
+  title:     { color:COLORS.white, fontSize:22, fontWeight:'900', marginBottom:8, textAlign:'center' },
+  sub:       { color:COLORS.steel, fontSize:14, textAlign:'center', marginBottom:24, lineHeight:20 },
   btn:       { backgroundColor:COLORS.blue, borderRadius:12, paddingVertical:13, paddingHorizontal:32 },
-  btnText:   { color:COLORS.white, fontWeight:'800', fontSize:15 },
+  btnText:   { color:COLORS.white, fontWeight:'800', fontSize:16 },
 });
 
 export default ErrorBoundary;

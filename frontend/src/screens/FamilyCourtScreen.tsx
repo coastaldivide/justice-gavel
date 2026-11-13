@@ -222,7 +222,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   headerSub:       { color: colors.steel, fontSize: 12, textAlign: 'center', lineHeight: 18 },
   tabs:            { flexDirection: 'row', borderRadius: RADIUS.md, borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
   tabBtn:          { flex: 1, alignItems: 'center', paddingVertical: 11 },
-  tabLabel:        { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  tabLabel:        { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   offlineNote:     { borderRadius: RADIUS.sm, borderWidth: 1, padding: 9, marginBottom: 12 },
   offlineNoteText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   card:            { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, marginBottom: 10 },
@@ -231,8 +231,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cardTitle:       { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
   cardBody:        { fontSize: 12, lineHeight: 20 },
   cta:             { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 10 },
-  ctaText:         { color: colors.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  ctaText:         { color: colors.bg, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   disclaimer:      { borderTopWidth: 1, paddingTop: 12 },
-  disclaimerText:  { fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  disclaimerText:  { fontSize: 12, lineHeight: 19, textAlign: 'center' },
 });
 export default React.memo(FamilyCourtScreen);

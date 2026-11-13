@@ -330,20 +330,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
   upsellCard:        { flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center' },
   upsellIcon:        { fontSize: 48, marginBottom: 16 },
   upsellTitle:       { fontSize: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 10, textAlign: 'center' },
-  upsellBody:        { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 20 },
+  upsellBody:        { fontSize: 16, color: colors.textMuted, textAlign: 'center', lineHeight: 23, marginBottom: 20 },
   upsellFeatures:    { width: '100%', gap: 8, marginBottom: 24 },
   upsellFeatureRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   upsellCheck:       { color: colors.legal, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18 },
   upsellFeatureText: { fontSize: 14, lineHeight: 21, color: colors.textBrand, flex: 1 },
   upsellBtn:         { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, paddingHorizontal: 24, width: '100%', alignItems: 'center', ...SHADOW.md },
-  upsellBtnText:     { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.heavy },
+  upsellBtnText:     { color: colors.white, fontSize: 16, lineHeight: 23, ...FONTS.heavy },
   upsellSkip:        { marginTop: 14 },
   upsellSkipText:    { color: colors.textMuted, fontSize: 12 },
 
   // Status
   statusBar:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.legalBg, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
-  statusDot:    { color: colors.legal, fontSize: 11 },
+  statusDot:    { color: colors.legal, fontSize: 12 },
   statusText:   { fontSize: 12, ...FONTS.heavy, color: colors.legal },
   statusCount:  { fontSize: 12, color: colors.textMuted, ...FONTS.semi },
 
@@ -355,9 +355,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Watch cards
   watchCard:    { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...SHADOW.sm, borderLeftWidth: 3, borderLeftColor: COLORS.navy },
-  watchName:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
+  watchName:    { fontSize: 16, lineHeight: 23, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
   watchLocation:{ fontSize: 12, color: colors.textMuted },
-  watchStatus:  { fontSize: 11, color: colors.info, marginTop: 2 },
+  watchStatus:  { fontSize: 12, color: colors.info, marginTop: 2 },
   matchBadge:   { backgroundColor: colors.infoBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: colors.steelMid },
   matchText:    { fontSize: 12, color: colors.info, ...FONTS.bold },
   removeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
@@ -365,8 +365,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Add form
   addForm:       { backgroundColor: colors.bgCard, borderRadius: RADIUS.xl, padding: 16, marginBottom: 12, ...SHADOW.sm },
-  addFormTitle:  { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 12 },
-  formInput:     { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, fontSize: 15, lineHeight: 22, color: colors.textPrimary, backgroundColor: colors.bg, marginBottom: 8 },
+  addFormTitle:  { fontSize: 16, lineHeight: 23, ...FONTS.heavy, color: colors.textBrand, marginBottom: 12 },
+  formInput:     { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 11, fontSize: 16, lineHeight: 23, color: colors.textPrimary, backgroundColor: colors.bg, marginBottom: 8 },
   addBtn:        { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
   addBtnText:    { color: colors.white, ...FONTS.heavy, fontSize: 14,
     lineHeight: 21},

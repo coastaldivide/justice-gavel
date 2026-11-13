@@ -60,7 +60,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll: { padding: 16 },
 
   sectionTitle: {
-    fontSize: 11, ...FONTS.black, textTransform: 'uppercase',
+    fontSize: 12, ...FONTS.black, textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 8, marginTop: 8 },
   card: {
     borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
@@ -72,7 +72,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 8, borderBottomWidth: 1, gap: 8 },
   infoIcon:  { fontSize: 18, width: 24, textAlign: 'center' },
-  infoLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoLabel: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   infoValue: { fontSize: 14, lineHeight: 21, marginTop: 2 },
 
   // Language
@@ -83,20 +83,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Switches
   switchRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   switchLabel: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  switchHint:  { fontSize: 11, marginTop: 1 },
+  switchHint:  { fontSize: 12, marginTop: 1 },
 
   // Sub-preferences panel
   subPrefs: { marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
   subPrefsLabel: {
-    fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
+    fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 6 },
 
   // Referral
   referralRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   codeBox:     { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
   creditBox:   { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
-  codeLabel:   { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-  codeText:    { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 3 },
+  codeLabel:   { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
+  codeText:    { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 3 },
   shareBtn:    { borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
   shareBtnText:{ color: colors.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 
@@ -110,19 +110,19 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Sign out
   logoutBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: colors.emergency },
-  logoutText: { color: colors.textSecond, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  logoutText: { color: colors.textSecond, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   rowLeft:      { flexDirection: 'row', alignItems: 'center', flex: 1 },
   rowIcon:      { fontSize: 18, marginRight: 12, width: 24, textAlign: 'center' },
-  rowLabel:     { fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_500Medium' },
+  rowLabel:     { fontSize: 16, color: colors.textPrimary, fontFamily: 'Inter_500Medium' },
   rowSub:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   rowArrow:     { fontSize: 16, color: colors.textMuted, marginLeft: 8 },
   navRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  navRowLabel:  { flex: 1, fontSize: 15, color: colors.textPrimary },
+  navRowLabel:  { flex: 1, fontSize: 16, color: colors.textPrimary },
   navRowArrow:  { fontSize: 16, color: colors.textFaint },
   testPushBtn:  { backgroundColor: colors.navy, borderRadius: 8, padding: 12, margin: 16, alignItems: 'center' },
   testPushText: { color: colors.bg, fontSize: 14, fontWeight: '700' },
-  menuHint: { fontSize: 11, marginTop: 1, color: colors.textMuted } });
+  menuHint: { fontSize: 12, marginTop: 1, color: colors.textMuted } });
 
 // Module-level fallback for helper components
 function SettingsScreen({ navigation }: any) {
@@ -458,7 +458,7 @@ function SettingsScreen({ navigation }: any) {
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <AppIcon name="document-text-outline" size={20} color={themeColors().textBrand} />
         <View style={{ flex:1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:colors.textBrand }}>{t('x_court_forms_official_court_forms')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, ...FONTS.semiBold, color:colors.textBrand }}>{t('x_court_forms_official_court_forms')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:colors.textMuted }}>{t('x_st_government_forms_all_50')}</Text>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:colors.textMuted }}>›</Text>
@@ -485,7 +485,7 @@ function SettingsScreen({ navigation }: any) {
                   style={{ paddingVertical: 12, paddingHorizontal: 16 }}
                   onPress={() => chooseState(item.code)}
                 >
-                  <Text style={{ fontSize: 15, color: item.code === userState ? COLORS.navy : colors.textPrimary, fontWeight: item.code === userState ? '700' : '400' }}>
+                  <Text style={{ fontSize: 16, color: item.code === userState ? COLORS.navy : colors.textPrimary, fontWeight: item.code === userState ? '700' : '400' }}>
                     {item.name}
                   </Text>
                 </TouchableOpacity>
@@ -765,14 +765,14 @@ function SettingsScreen({ navigation }: any) {
 
       {/* ── Danger Zone -- Account Deletion ──────────────────────────────── */}
       <View style={{ marginTop: 32, marginHorizontal: 16, marginBottom: 8 }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8,
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 0.8,
           textTransform: 'uppercase', color: colors.emergency,
           fontFamily: 'Inter_800ExtraBold', marginBottom: 12 }}>
           {t('x_st_danger_zone')}
         </Text>
         <View style={[{ borderRadius: 12, borderWidth: 1, padding: 16 },
           { backgroundColor: colors.emergencyBg, borderColor: colors.emergency + '44' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: colors.emergency, marginBottom: 6 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, lineHeight: 23, fontFamily: 'Inter_700Bold', color: colors.emergency, marginBottom: 6 }}>
             {t('x_st_delete_account')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 16 }}>
@@ -790,7 +790,7 @@ function SettingsScreen({ navigation }: any) {
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             onPress={() => { setDeleteError(''); setDeletePassword(''); setDeleteOpen(true); }}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: colors.white }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, lineHeight: 23, fontWeight: "600", color: colors.white }}>
               {t('x_st_delete_my_account')}
             </Text>
           </TouchableOpacity>
@@ -834,10 +834,10 @@ function SettingsScreen({ navigation }: any) {
       <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteOpen(false)}>
         <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.overlay }}>
           <View testID="account-delete-dialog" style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 20 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 }}>
               {t('x_st_delete_account_2')}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 20, color: colors.textMuted, marginBottom: 14 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, lineHeight: 22, color: colors.textMuted, marginBottom: 14 }}>
               {t('x_st_this_permanently_deletes_account')}
             </Text>
             <TextInput
@@ -857,7 +857,7 @@ function SettingsScreen({ navigation }: any) {
             />
             {!!deleteError && (
               <Text testID="account-delete-error" accessibilityLiveRegion="polite" maxFontSizeMultiplier={1.4}
-                style={{ color: colors.danger, fontSize: 13, marginTop: 8 }}>{deleteError}</Text>
+                style={{ color: colors.danger, fontSize: 14, marginTop: 8 }}>{deleteError}</Text>
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('case_cancel')} disabled={deleting}

@@ -137,11 +137,11 @@ export default function ConversationMemory({ kind, conversationId, testID = 'mem
 
 const styles = StyleSheet.create({
   openBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minHeight: 44, justifyContent: 'center' },
-  openText: { fontSize: 13 },
+  openText: { fontSize: 14 },
   bar: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 8 },
   title: { flex: 1, fontSize: 16, fontWeight: '700' },
   closeBtn: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
-  intro: { fontSize: 13, marginBottom: 12, lineHeight: 19 },
+  intro: { fontSize: 14, marginBottom: 12, lineHeight: 20 },
   covers: { fontSize: 12, marginBottom: 8 },
   section: { marginBottom: 12 },
   sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },

@@ -130,7 +130,7 @@ function ResourcesScreen(): React.JSX.Element {
           placeholderTextColor={sub}
           style={{
             backgroundColor: card, borderRadius:10, paddingHorizontal:14,
-            paddingVertical:10, color:text, fontSize:15,
+            paddingVertical:10, color:text, fontSize:16,
             borderWidth:1, borderColor: colors.border,
           }}
           returnKeyType="search" blurOnSubmit={true}
@@ -158,7 +158,7 @@ function ResourcesScreen(): React.JSX.Element {
                 borderRadius:20, paddingHorizontal:12, paddingVertical:7,
                 marginRight:8, flexDirection:'row', alignItems:'center', gap:5,
               }}>
-              <AppIcon name={cat.icon} size={13} color={colors.textBrand} style={{ fontSize:13 }} />
+              <AppIcon name={cat.icon} size={13} color={colors.textBrand} style={{ fontSize:14 }} />
               <Text maxFontSizeMultiplier={1.4} style={{
                 fontSize:12, fontWeight:'600',
                 color: active ? COLORS.white : cc.text,
@@ -221,7 +221,7 @@ function ResourcesScreen(): React.JSX.Element {
                     backgroundColor: cc.bg, borderRadius:8,
                     paddingHorizontal:8, paddingVertical:4, flexShrink:0,
                   }}>
-                    <IconLabel icon={cat?.icon ?? ICONS.library} maxFontSizeMultiplier={1.4} textStyle={{ fontSize:11, fontWeight:'700', color:cc.text }}>
+                    <IconLabel icon={cat?.icon ?? ICONS.library} maxFontSizeMultiplier={1.4} textStyle={{ fontSize:12, fontWeight:'700', color:cc.text }}>
                       {item.state ? stateName(item.state) : t('x_resources_national')}
                     </IconLabel>
                   </View>
@@ -235,7 +235,7 @@ function ResourcesScreen(): React.JSX.Element {
                         paddingHorizontal:6, paddingVertical:2,
                         alignSelf:'flex-start', marginTop:4,
                       }}>
-                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:10, fontWeight:'700' }}>{t('x_resources_free')}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:12, fontWeight:'700' }}>{t('x_resources_free')}</Text>
                       </View>
                     )}
                   </View>
@@ -245,7 +245,7 @@ function ResourcesScreen(): React.JSX.Element {
                 {/* Expanded */}
                 {isOpen && (
                   <View style={{ marginTop:12 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontSize:13, lineHeight:20 }}>{item.body}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontSize:14, lineHeight:22 }}>{item.body}</Text>
 
                     {/* Contact info grid */}
                     <View style={{ marginTop:12, gap:6 }}>
@@ -278,19 +278,19 @@ function ResourcesScreen(): React.JSX.Element {
                           onPress={() => Linking.openURL(directions).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
                           <AppIcon name={ICONS.location} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{item.address}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {item.hours ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name={ICONS.clock} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.hours}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{item.hours}</Text>
                         </View>
                       ) : null}
                       {item.income_limit ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name="cash-outline" size={20} color={colors.legal} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{t('x_resources_eligibility', { income_limit: item.income_limit })}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{t('x_resources_eligibility', { income_limit: item.income_limit })}</Text>
                         </View>
                       ) : null}
                     </View>

@@ -705,7 +705,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_nav_voice_note')}
           accessibilityHint={t('x_ch_opens_voice_recorder_transcribe')}>
-          <AppIcon name={ICONS.record} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
+          <AppIcon name={ICONS.record} size={20} color={colors.textBrand} style={{ fontSize: 22 }} />
         </TouchableOpacity>
 
         <TextInput
@@ -727,7 +727,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel={t('x_ch_open_interpreter')}
           accessibilityHint={t('x_ch_opens_real_time_translation')}>
-          <AppIcon name={ICONS.globe} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
+          <AppIcon name={ICONS.globe} size={20} color={colors.textBrand} style={{ fontSize: 22 }} />
         </TouchableOpacity>
 
         {busy ? (
@@ -759,18 +759,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header:           { backgroundColor: colors.navy, padding: 16, paddingTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center' },
   headerText:       { flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 0 },
   headerActions:    { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 1, maxWidth: '100%' },
-  headerTitle:      { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.white },
+  headerTitle:      { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.white },
   headerSub:        { fontSize: 12, color: colors.white, marginTop: 1 },
   clearBtn:         { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8 },
   clearBtnText:     { color: colors.white, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   messageList:      { padding: 12, paddingBottom: 4 },
   emptyState:       { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon:        { fontSize: 48, marginBottom: 12 },
-  emptyTitle:       { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
+  emptyTitle:       { fontSize: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
   emptySub:         { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   promptCatRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.bgSubtle, marginBottom: 8 },
   promptCatBtn:     { paddingHorizontal: 10, paddingVertical: 8, marginRight: 2, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  promptCatText:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textMuted, letterSpacing: 0.3 },
+  promptCatText:    { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textMuted, letterSpacing: 0.3 },
   quickPrompts:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   quickChip:        { backgroundColor: colors.bgSubtle, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: colors.bgSubtle },
   quickChipText:    { fontSize: 14, lineHeight: 20, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
@@ -778,7 +778,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   bubbleWrap:       { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
   bubbleWrapUser:   { justifyContent: 'flex-end' },
   avatarDot:        { width: 30, height: 30, borderRadius: 16, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 2, borderWidth: 1.5, borderColor: 'rgba(133,183,235,0.4)' },
-  avatarText:       { color: colors.white, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
+  avatarText:       { color: colors.white, fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
   bubble:           { maxWidth: '78%', borderRadius: 20, padding: 12 },
   bubbleAssistant:  { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4, elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 3 },
   bubbleUser:       { backgroundColor: colors.navy, borderBottomRightRadius: 4 },
@@ -786,8 +786,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   bubbleTextUser:   { color: colors.white },
   rightsRefs:       { marginTop: 10, gap: 6 },
   rightsRef:        { backgroundColor: colors.infoBg, borderRadius: 8, padding: 10, minHeight: 44 },
-  rightsRefText:    { fontSize: 13, lineHeight: 19, color: colors.textPrimary, fontWeight: '700' },
-  rightsRefSource:  { fontSize: 11, lineHeight: 15, color: colors.textSecond, marginTop: 2 },
+  rightsRefText:    { fontSize: 14, lineHeight: 20, color: colors.textPrimary, fontWeight: '700' },
+  rightsRefSource:  { fontSize: 12, lineHeight: 16, color: colors.textSecond, marginTop: 2 },
   lawyerCta:        { marginTop: 10, backgroundColor: colors.legal, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.legal },
   lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   upgradeCta:       { marginTop: 10, backgroundColor: colors.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.bgSubtle },
@@ -801,25 +801,25 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   crisisBtnAlt:     { borderWidth: 1, borderColor: colors.border, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   crisisBtnAltText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   statusNote:       { marginTop: 6, fontSize: 12, lineHeight: 18, color: colors.textMuted, fontStyle: 'italic' },
-  errorNote:        { marginTop: 8, fontSize: 13, lineHeight: 19, color: colors.textPrimary },
+  errorNote:        { marginTop: 8, fontSize: 14, lineHeight: 20, color: colors.textPrimary },
   retryBtn:         { marginTop: 8, alignSelf: 'flex-start', borderRadius: 10, borderWidth: 1, borderColor: colors.navy, minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
   retryBtnText:     { color: colors.textBrand, fontSize: 14, fontWeight: '700' },
   stopBtn:          { backgroundColor: colors.emergencyDark },
   disclaimerCard:   { borderRadius: 8, padding: 12, margin: 12, borderLeftWidth: 3 },
   disclaimerTitle:  { fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 },
-  disclaimerBody:   { fontSize: 11, lineHeight: 16 },
+  disclaimerBody:   { fontSize: 12, lineHeight: 17 },
   guestCrisis:      { alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 },
   guestCrisisText:  { color: colors.textBrand, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline', textAlign: 'center' },
   inputBar:         { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 10 : 10, backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
   textInput:        { flex: 1, backgroundColor: colors.bg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendBtn:          { width: 52, height: 52, borderRadius: 20, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled:  { backgroundColor: colors.bgSubtle },
-  sendBtnText:      { color: colors.textOnNavy, fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 22 },
+  sendBtnText:      { color: colors.textOnNavy, fontSize: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 28 },
   sendBtnTextDisabled: { color: colors.textMuted },
-  disclaimer:       { textAlign: 'center', fontSize: 11, color: colors.textMuted, paddingVertical: 10, backgroundColor: colors.bgCard },
+  disclaimer:       { textAlign: 'center', fontSize: 12, color: colors.textMuted, paddingVertical: 10, backgroundColor: colors.bgCard },
   defenderBanner:    { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)' },
   defenderBannerText:{ color: colors.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  defenderBannerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 },
+  defenderBannerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 2 },
   defenderPrompts:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 },
   defenderChip:      { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1.5 },
   defenderChipText:  { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },

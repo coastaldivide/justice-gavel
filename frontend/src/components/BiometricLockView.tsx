@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   screen:  { flex:1, alignItems:'center', justifyContent:'center', padding:32 },
   icon:    { marginBottom:20 },
   title:   { fontSize:22, lineHeight:33, fontWeight:'700', marginBottom:8 },
-  sub:     { fontSize:15, lineHeight:23, textAlign:'center', marginBottom:36 },
+  sub:     { fontSize:16, lineHeight:25, textAlign:'center', marginBottom:36 },
   btn:     { borderRadius:14, paddingHorizontal:40, paddingVertical:16,
              minWidth:160, alignItems:'center' },
   btnText: { color:COLORS.white, fontSize:16, lineHeight:24, fontWeight:'700' },

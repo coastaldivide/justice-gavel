@@ -379,7 +379,7 @@ function MainTabs() {
           paddingBottom:   8,
           paddingTop:      4,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
         // On web the default tab button is an <a role="link">, which breaks the
         // tablist's required children (axe aria-required-children). A Touchable
         // keeps the accessibilityRole="tab" + selected state the item passes in.
@@ -430,13 +430,13 @@ function SplashScreen() {
     <ErrorBoundary>
     <View style={{ flex: 1, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' }}>
       <JTBLogo size={110} />
-      <Text style={{ fontSize: 26, fontWeight: '900', color: COLORS.white, letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
+      <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.white, letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
         JUSTICE GAVEL
       </Text>
-      <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
+      <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
         {t('home_footer_title').toLocaleUpperCase(locale())}
       </Text>
-      <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
         {t('splash_innocent')}
       </Text>
       <ActivityIndicator color={COLORS.steel} size="large" />

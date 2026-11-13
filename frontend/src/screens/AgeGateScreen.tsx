@@ -98,10 +98,10 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         style={{ backgroundColor: colors.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
-          <IconLabel icon={ICONS.emergency} textStyle={{ color: colors.textOnAccent, fontWeight: '700', fontSize: 15 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
+          <IconLabel icon={ICONS.emergency} textStyle={{ color: colors.textOnAccent, fontWeight: '700', fontSize: 16 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
         </View>
-        <Text style={{ color: colors.textOnAccent, fontSize: 20 }}>→</Text>
+        <Text style={{ color: colors.textOnAccent, fontSize: 22 }}>→</Text>
       </TouchableOpacity>
 
       <View style={styles.centered}>
@@ -246,7 +246,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 2, borderColor: colors.border,
     borderRadius: RADIUS.lg,
     textAlign: 'center',
-    fontSize: 32, ...FONTS.black, color: colors.textBrand,
+    fontSize: 36, ...FONTS.black, color: colors.textBrand,
     backgroundColor: colors.bg,  // light bg fallback (AgeGateScreen is light-only)
     marginBottom: 8,
     letterSpacing: 3,
@@ -262,13 +262,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   continueBtnDisabled: { opacity: 0.5 },
   continueBtnText:     { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
 
-  legalNote: { fontSize: 11, color: colors.steel, textAlign: 'center', lineHeight: 17 },
+  legalNote: { fontSize: 12, color: colors.steel, textAlign: 'center', lineHeight: 19 },
   legalLink: { color: colors.steel, textDecorationLine: 'underline' },
 
   // Under-18 screen
   underageEmoji: { marginBottom: 16 },
   underageTitle: {
-    fontSize: 20, ...FONTS.black, color: colors.white,
+    fontSize: 22, ...FONTS.black, color: colors.white,
     textAlign: 'center', marginBottom: 12,
   },
   underageSub: {

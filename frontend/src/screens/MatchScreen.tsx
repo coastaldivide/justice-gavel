@@ -210,7 +210,7 @@ function MatchScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   header: { backgroundColor: COLORS.navy, padding: 20, paddingTop: 24 },
-  heading: { fontSize: 26, lineHeight: 32, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.white },
+  heading: { fontSize: 28, lineHeight: 35, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.white },
   subheading: { fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 4, lineHeight: 20 },
   section: { marginTop: 12, marginHorizontal: 12, borderRadius: 12, padding: 14 },
   sectionLabel: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 8 },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   toggle: { width: 44, height: 24, borderRadius: 12, padding: 2 },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.white },
   knobOn: { transform: [{ translateX: 20 }] },
-  toggleLabel: { fontSize: 13, lineHeight: 19, flex: 1 },
+  toggleLabel: { fontSize: 14, lineHeight: 20, flex: 1 },
   searchBtn: { backgroundColor: COLORS.navy, margin: 12, marginTop: 16, padding: 16, borderRadius: 14, alignItems: 'center', minHeight: 52 },
   searchBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   locLabel: { textAlign: 'center', fontSize: 12, lineHeight: 20, marginTop: 4 },
@@ -236,15 +236,15 @@ const styles = StyleSheet.create({
   cardBody: { padding: 14 },
   nameRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   name: { fontSize: 16, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
-  rating: { fontSize: 13, fontWeight: '700' },
+  rating: { fontSize: 14, fontWeight: '700' },
   address: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  badge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: '600', borderWidth: 1, overflow: 'hidden' },
+  badge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12, fontWeight: '600', borderWidth: 1, overflow: 'hidden' },
   reportBlock: { borderRadius: 8, padding: 12, marginTop: 10, borderLeftWidth: 3 },
-  reportLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  reportText: { fontSize: 13, lineHeight: 20 },
+  reportLabel: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  reportText: { fontSize: 14, lineHeight: 22 },
   profileBtn: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', marginTop: 8, minHeight: 44, justifyContent: 'center' },
-  profileBtnText: { fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  profileBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
 
 export default React.memo(MatchScreen);

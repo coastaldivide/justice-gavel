@@ -138,7 +138,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <AppIcon name={ICONS.housing} size={32} color={colors.textBrand} style={{ fontSize: 32 }} />
+        <AppIcon name={ICONS.housing} size={32} color={colors.textBrand} style={{ fontSize: 36 }} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>{t('tr_title')}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>{t('x_tenant_rights_housing_landlord_tenant_law')}</Text>
       </View>
@@ -221,7 +221,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   headerTitle: { fontSize: 22, ...FONTS.black, color: colors.bgCard, marginBottom: 4 },
   headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 18 },
 
-  sectionLabel: { fontSize: 11, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, paddingHorizontal: 16 },
+  sectionLabel: { fontSize: 12, ...FONTS.black, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, paddingHorizontal: 16 },
 
   sitCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.lg, padding: 14 },
   sitIcon:  { fontSize: 22, flexShrink: 0 },
@@ -229,7 +229,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sitCheck: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 
   deadlineBanner: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', margin: 16, marginTop: 8, borderRadius: RADIUS.lg, borderWidth: 2, padding: 12 },
-  deadlineIcon:   { fontSize: 20 },
+  deadlineIcon:   { fontSize: 22 },
   deadlineText:   { flex: 1, fontSize: 12, color: colors.textSecond, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 18 },
 
   stepRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
@@ -248,7 +248,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   legalAidBtn: { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center' },
   legalAidText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
-  disclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 17, paddingHorizontal: 20, marginBottom: 10 },
+  disclaimer: { fontSize: 12, textAlign: 'center', lineHeight: 19, paddingHorizontal: 20, marginBottom: 10 },
   card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },

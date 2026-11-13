@@ -127,8 +127,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   buttons:    { flexDirection: 'row', gap: 12 },
   cancel:     { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border,
                 alignItems: 'center' },
-  cancelText: { fontSize: 15, color: colors.textSecond },
+  cancelText: { fontSize: 16, color: colors.textSecond },
   submit:     { flex: 2, padding: 14, borderRadius: 8, backgroundColor: colors.navy,
                 alignItems: 'center' },
-  submitText: { fontSize: 15, color: colors.white, fontWeight: '700' },
+  submitText: { fontSize: 16, color: colors.white, fontWeight: '700' },
 });

@@ -226,7 +226,7 @@ export default function BarPrepExplanationScreen({
           </TouchableOpacity>
         </View>
         <Text maxFontSizeMultiplier={1.2} testID="bar-prep-disclaimer"
-          style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 16 }}>
+          style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16, paddingVertical: 12, lineHeight: 17 }}>
           {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
       </ScrollView>
@@ -252,7 +252,7 @@ const cardStyles = StyleSheet.create({
     borderRadius: RADIUS.lg, borderLeftWidth: 4,
     ...SHADOW.sm,
   },
-  title: { fontSize: 13, ...FONTS.bold, marginBottom: 10 },
+  title: { fontSize: 14, ...FONTS.bold, marginBottom: 10 },
 });
 
 function makeStyles(colors: any) {
@@ -261,29 +261,29 @@ function makeStyles(colors: any) {
     center:        { justifyContent: 'center', alignItems: 'center' },
     scroll:        { flex: 1 },
     scrollContent: { paddingBottom: 40 },
-    errorText:     { fontSize: 15, color: colors.textMuted, marginBottom: 12 },
-    backLink:      { fontSize: 15, color: colors.primary },
+    errorText:     { fontSize: 16, color: colors.textMuted, marginBottom: 12 },
+    backLink:      { fontSize: 16, color: colors.primary },
     questionCard:  {
       margin: 16, padding: 16, borderRadius: RADIUS.lg,
       backgroundColor: colors.card, ...SHADOW.sm,
     },
     questionMeta:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
     diffBadge:     { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    diffText:      { fontSize: 11, ...FONTS.bold },
+    diffText:      { fontSize: 12, ...FONTS.bold },
     categoryBadge: { fontSize: 12, color: colors.textMuted },
     stemText:      {
-      fontSize: 15, ...FONTS.medium, color: colors.text,
-      lineHeight: 22, marginBottom: 14,
+      fontSize: 16, ...FONTS.medium, color: colors.text,
+      lineHeight: 23, marginBottom: 14,
     },
     correctAnswerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     correctBadge:     {
       backgroundColor: colors.legal, paddingHorizontal: 10, paddingVertical: 4,
       borderRadius: 8, flexShrink: 0,
     },
-    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: colors.textOnAccent },
+    correctBadgeText: { fontSize: 14, ...FONTS.bold, color: colors.textOnAccent },
     correctAnswerText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     ruleText:      { fontSize: 14, ...FONTS.semiBold, color: colors.text },
-    citationText:  { fontSize: 13, color: colors.textMuted, marginTop: 8, fontStyle: 'italic' },
+    citationText:  { fontSize: 14, color: colors.textMuted, marginTop: 8, fontStyle: 'italic' },
     explanationText: { fontSize: 14, color: colors.text, lineHeight: 22 },
     studyText:     { fontSize: 14, color: colors.text, lineHeight: 21 },
     studyHighlight: { ...FONTS.semiBold, color: colors.primary },

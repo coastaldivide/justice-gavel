@@ -170,9 +170,9 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   item: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  itemTitle: { fontSize: 15, ...FONTS.bold, color: colors.textPrimary },
+  itemTitle: { fontSize: 16, ...FONTS.bold, color: colors.textPrimary },
 });
 
 export default React.memo(PowersScreen);

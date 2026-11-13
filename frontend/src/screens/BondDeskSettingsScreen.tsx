@@ -221,7 +221,7 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   fees: { marginTop: 8, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgSubtle },
   person: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
 });

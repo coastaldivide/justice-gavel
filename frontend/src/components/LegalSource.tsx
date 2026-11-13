@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
   notice: { borderRadius: 10, borderLeftWidth: 4, padding: 12, marginHorizontal: 12, marginTop: 12, marginBottom: 4 },
   flush: { marginHorizontal: 0 },
   noticeRow: { alignItems: 'flex-start' },
-  noticeText: { fontSize: 13, lineHeight: 19 },
+  noticeText: { fontSize: 14, lineHeight: 20 },
   source: { fontSize: 12, lineHeight: 17, marginTop: 6 },
 });

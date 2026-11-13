@@ -272,10 +272,10 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   fieldRow: { minHeight: 44, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   fieldName: { fontSize: 14, ...FONTS.bold, color: colors.textPrimary, flexShrink: 1 },
-  fieldKey: { fontSize: 13, color: colors.textBrand, flexShrink: 1, textAlign: 'right' },
+  fieldKey: { fontSize: 14, color: colors.textBrand, flexShrink: 1, textAlign: 'right' },
 });
 
 export default React.memo(BondFormsScreen);

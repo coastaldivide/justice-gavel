@@ -247,7 +247,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
       {lawyer.seed_data && (
         <View style={[s.notice, { backgroundColor: colors.warnBg, borderColor: colors.gold }]}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontWeight: '700', color: colors.warnDark }}>{t('x_lawyer_profile_profile_information_pending_verifica')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: colors.warnDark }}>{t('x_lawyer_profile_profile_information_pending_verifica')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.warnDark }}>{t('x_lawyer_profile_this_attorney_has_not')}</Text>
         </View>
       )}
@@ -380,12 +380,12 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
         {jtb?.is_jtb_registered && (
           <View style={[s.card, { backgroundColor: colors.legalBg, borderColor: colors.legal }]}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, fontWeight: '700', color: colors.legal, marginBottom: 6 }}>{t('x_lawyer_profile_responds_via_justice_gavel')}</Text>
-            {jtb.platform_rating != null && <IconLabel icon={ICONS.starFilled} textStyle={{ fontSize: 13, color: colors.textSecond }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_platform_rating', { value: Number(jtb.platform_rating).toFixed(1), value2: jtb.platform_review_count ? ' ' + t('x_lawyer_profile_consultations', { platform_review_count: jtb.platform_review_count }) : '' })}</IconLabel>}
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '700', color: colors.legal, marginBottom: 6 }}>{t('x_lawyer_profile_responds_via_justice_gavel')}</Text>
+            {jtb.platform_rating != null && <IconLabel icon={ICONS.starFilled} textStyle={{ fontSize: 14, color: colors.textSecond }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_platform_rating', { value: Number(jtb.platform_rating).toFixed(1), value2: jtb.platform_review_count ? ' ' + t('x_lawyer_profile_consultations', { platform_review_count: jtb.platform_review_count }) : '' })}</IconLabel>}
             {jtb.outcome_positive_pct != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textSecond }}>{t('lp_outcomes', { pct: jtb.outcome_positive_pct })}</Text>}
             {(jtb.next_slots?.length ?? 0) > 0 && (
               <View style={{ marginTop: 4 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted }}>{t('x_lawyer_profile_next_available')}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textMuted }}>{t('x_lawyer_profile_next_available')}</Text>
                 {(jtb.next_slots || []).map(sl => (
                   <Text key={sl.starts_at} maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.legal }}>
                     {new Date(sl.starts_at).toLocaleString(loc, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
@@ -398,9 +398,9 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
         <View style={s.section} testID="lp-reviews">
           <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('lp_app_reviews_title')}</Text>
-          {!!reviewNote && <Text testID="review-submitted" maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.legal, marginBottom: 10 }}>{reviewNote}</Text>}
+          {!!reviewNote && <Text testID="review-submitted" maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.legal, marginBottom: 10 }}>{reviewNote}</Text>}
           {mine && !reviewNote && (
-            <Text testID="review-mine" maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.textMuted, marginBottom: 10 }}>
+            <Text testID="review-mine" maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.textMuted, marginBottom: 10 }}>
               {mine.status === 'pending' ? t('lp_your_review_pending') : mine.status === 'hidden' ? t('lp_your_review_hidden') : t('lp_your_review_posted')}
             </Text>
           )}
@@ -430,7 +430,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             </View>
           ) : (
             <TouchableOpacity accessibilityRole="button" testID="write-review-button" onPress={() => requireAuth(() => setShowReview(true))} style={{ paddingVertical: 8, marginBottom: 8 }}>
-              <IconLabel icon={ICONS.edit} textStyle={{ fontSize: 13, fontWeight: '700', color: colors.textBrand }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_write_review_2')}</IconLabel>
+              <IconLabel icon={ICONS.edit} textStyle={{ fontSize: 14, fontWeight: '700', color: colors.textBrand }} maxFontSizeMultiplier={1.4}>{t('x_lawyer_profile_write_review_2')}</IconLabel>
             </TouchableOpacity>
           ))}
           {reviews.length === 0 ? (
@@ -441,12 +441,12 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                 <View accessible accessibilityRole="image" accessibilityLabel={t(r.rating === 1 ? 'x_lawyer_profile_star_one' : 'x_lawyer_profile_star_other', { n: r.rating })}>
                   <Stars value={r.rating} size={14} color={colors.goldText} />
                 </View>
-                <Text testID={Number(r.verified) === 1 ? 'review-verified' : 'review-unverified'} maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: Number(r.verified) === 1 ? colors.legal : colors.textMuted }}>
+                <Text testID={Number(r.verified) === 1 ? 'review-verified' : 'review-unverified'} maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: Number(r.verified) === 1 ? colors.legal : colors.textMuted }}>
                   {Number(r.verified) === 1 ? t('x_lawyer_profile_verified_client') : t('x_lawyer_profile_unverified_review')}
                 </Text>
-                {!!r.created_at && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted }}>{new Date(r.created_at).toLocaleDateString(loc, { month: 'short', year: 'numeric' })}</Text>}
+                {!!r.created_at && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color: colors.textMuted }}>{new Date(r.created_at).toLocaleDateString(loc, { month: 'short', year: 'numeric' })}</Text>}
               </View>
-              {!!r.comment && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19, color: colors.textSecond }}>{r.comment}</Text>}
+              {!!r.comment && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, lineHeight: 20, color: colors.textSecond }}>{r.comment}</Text>}
               {mine?.id !== r.id && (reportFor === r.id ? (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }} testID="review-report-reasons">
                   {REPORT_REASONS.map(reason => (
@@ -475,7 +475,7 @@ const makeStyles = () => StyleSheet.create({
   center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header:      { paddingTop: 28, paddingBottom: 20, paddingHorizontal: 20, alignItems: 'center' },
   avatar:      { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  avatarText:  { fontSize: 32, color: COLORS.white },
+  avatarText:  { fontSize: 36, color: COLORS.white },
   name:        { fontSize: TYPE['2xl'], lineHeight: 32, ...FONTS.black, color: COLORS.white, textAlign: 'center' },
   address:     { fontSize: TYPE.sm, lineHeight: 18, color: 'rgba(255,255,255,0.8)', marginTop: 4, textAlign: 'center' },
   badges:      { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap', justifyContent: 'center' },

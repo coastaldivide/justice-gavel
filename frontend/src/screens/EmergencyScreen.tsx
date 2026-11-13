@@ -297,14 +297,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1, borderRadius: 14, borderWidth: 1.5, paddingVertical: 12, paddingHorizontal: 8, minHeight: 52, justifyContent: 'center',
   },
   stripBtnText: {
-    fontSize: 15, fontWeight: '800', letterSpacing: 0.3,
+    fontSize: 16, fontWeight: '800', letterSpacing: 0.3,
   },
 
   sosPanel: {
     margin: 12, borderRadius: 20, padding: 24, alignItems: 'center', gap: 8,
   },
   panelTitle: {
-    color: colors.bgCard, fontSize: 20, fontWeight: '900', textAlign: 'center',
+    color: colors.bgCard, fontSize: 22, fontWeight: '900', textAlign: 'center',
   },
   panelSub: {
     color: 'rgba(255,255,255,0.85)', fontSize: 14, textAlign: 'center',
@@ -322,7 +322,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 14, width: '100%', alignItems: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
-  shareBtnText: { color: colors.bgCard, fontWeight: '700', fontSize: 13 },
+  shareBtnText: { color: colors.bgCard, fontWeight: '700', fontSize: 14 },
   addContactsBtn: { paddingVertical: 8 },
   addContactsText: {
     color: 'rgba(255,255,255,0.75)', fontSize: 12,
@@ -339,7 +339,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   bigCheck: { fontSize: 60, color: colors.bgCard },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '800', letterSpacing: 1.2,
+    fontSize: 12, fontWeight: '800', letterSpacing: 1.2,
     marginHorizontal: 16, marginTop: 8, marginBottom: 10,
   },
 
@@ -352,7 +352,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     elevation: 1, minHeight: 80, justifyContent: 'center',
   },
   quickIcon: { marginBottom: 6 },
-  quickLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 15 },
+  quickLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center', lineHeight: 16 },
 
   rightsCard: {
     flexDirection: 'row', gap: 12, padding: 16,

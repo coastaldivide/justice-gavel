@@ -95,17 +95,17 @@ function ConfidenceTag({ text }: { text: string }) {
   useLang();
   const { colors } = useTheme();
   if (text.startsWith('[STRONG]'))  return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency,
       backgroundColor: colors.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_strong')}</Text>
   );
   if (text.startsWith('[NOTABLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.warnDark,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.warnDark,
       backgroundColor: colors.warnBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_notable')}</Text>
   );
   if (text.startsWith('[POSSIBLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textSecond,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textSecond,
       backgroundColor: colors.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>{t('x_discovery_possible_verify')}</Text>
   );
@@ -767,7 +767,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
-        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }} maxFontSizeMultiplier={1.3}>{t('x_discovery_ai_document_analysis_not')}</IconLabel>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize:12, color:colors.textSecond, fontStyle:'italic', lineHeight:17 }} maxFontSizeMultiplier={1.3}>{t('x_discovery_ai_document_analysis_not')}</IconLabel>
       </View>
       <AIDisclaimer variant="banner" />
 
@@ -790,15 +790,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   dropZone: {
     borderWidth: 2, borderStyle: 'dashed', borderRadius: RADIUS.xl,
     padding: 32, alignItems: 'center', marginBottom: 16, ...SHADOW.sm },
-  dropIcon:     { fontSize: 40, marginBottom: 10 },
+  dropIcon:     { fontSize: 48, marginBottom: 10 },
   dropPrompt:   { fontSize: 16, lineHeight: 24, ...FONTS.heavy, marginBottom: 6 },
   dropSub:      { fontSize: 12, textAlign: 'center', lineHeight: 18 },
-  dropLimit:    { fontSize: 11, marginTop: 8 },
+  dropLimit:    { fontSize: 12, marginTop: 8 },
   dropFilename: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, textAlign: 'center', marginBottom: 4 },
   dropSize:     { fontSize: 12, marginBottom: 4 },
   dropChange:   { fontSize: 12, fontWeight: '600', marginTop: 4 },
 
-  fieldLabel:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
+  fieldLabel:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 8 },
   typeScroll:   { marginBottom: 16 },
   typeChip:     { paddingHorizontal: 13, paddingVertical: 8, borderRadius: RADIUS.pill,
@@ -820,18 +820,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   analyzeBtn:   { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 10, ...SHADOW.sm },
-  analyzeBtnText: { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
-  disclaimer:   { fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  analyzeBtnText: { color: colors.white, fontSize: 16, lineHeight: 23, ...FONTS.black },
+  disclaimer:   { fontSize: 12, textAlign: 'center', lineHeight: 17 },
 
   // Analyzing
   analyzingWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 36 },
   analyzingEmoji: { fontSize: 48, marginBottom: 16 },
-  analyzingTitle: { fontSize: 20, ...FONTS.black, textAlign: 'center', marginBottom: 6 },
+  analyzingTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 6 },
   analyzingFile:  { fontSize: 12, lineHeight: 20, maxWidth: 260, textAlign: 'center', marginBottom: 24 },
   progressBg:     { width: '100%', height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 16, overflow: 'hidden' },
   progressFill:   { height: 4, borderRadius: 2, backgroundColor: colors.navy },
   analyzingSteps: { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 12 },
-  analyzingTime:  { fontSize: 11, textAlign: 'center' },
+  analyzingTime:  { fontSize: 12, textAlign: 'center' },
 
   // Result
   resultScroll:   { padding: 16, paddingBottom: 40 },
@@ -840,14 +840,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   resultFilename: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, marginBottom: 6 },
   resultMeta:     { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   docTypeBadge:   { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
-  docTypeBadgeText: { color: colors.white, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  resultMetaText: { fontSize: 11 },
+  docTypeBadgeText: { color: colors.white, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  resultMetaText: { fontSize: 12 },
   shareBtn:       { paddingHorizontal: 12, paddingVertical: 10,
     borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: colors.navy + '55' },
   shareBtnText:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   summaryCard:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12 },
-  summaryLabel:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
+  summaryLabel:   { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 8 },
   summaryText:    { fontSize: 14, lineHeight: 22 },
 
@@ -860,23 +860,23 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 24 },
   sectionTitle:   { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
   sectionCount:   { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: 'center' },
-  sectionCountText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  sectionCountText: { color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   chevron:        { fontSize: 16, lineHeight: 24, fontWeight: '700' },
   sectionBody:    { paddingHorizontal: 16, paddingBottom: 12 },
   itemRow:        { flexDirection: 'row', gap: 8, marginBottom: 10, alignItems: 'flex-start' },
   itemBullet:     { width: 20, height: 20, borderRadius: 8, alignItems: 'center',
     justifyContent: 'center', flexShrink: 0, marginTop: 1 },
-  itemBulletText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  itemBulletText: { color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   itemText:       { flex: 1, fontSize: 14, lineHeight: 19 },
-  tapToCopy:      { fontSize: 11, marginTop: 4, textAlign: 'right' },
+  tapToCopy:      { fontSize: 12, marginTop: 4, textAlign: 'right' },
 
   // History
   histRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg,
     borderWidth: 1, padding: 16, marginBottom: 8 },
   histDocIcon:  { width: 42, height: 42, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   histFilename: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2 },
-  histMeta:     { fontSize: 11, marginBottom: 2 },
-  histDate:     { fontSize: 11 },
+  histMeta:     { fontSize: 12, marginBottom: 2 },
+  histDate:     { fontSize: 12 },
   histDelete:   { padding: 6 },
 
   // Empty
@@ -884,6 +884,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   emptyTitle:  { fontSize: 18, ...FONTS.heavy },
 
   discussBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
-  discussBtnText: { color: colors.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.3 },
-  inconsistNote:  { fontSize: 11, fontStyle: 'italic', marginBottom: 6, paddingHorizontal: 4 } });
+  discussBtnText: { color: colors.bgCard, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.3 },
+  inconsistNote:  { fontSize: 12, fontStyle: 'italic', marginBottom: 6, paddingHorizontal: 4 } });
 export default React.memo(DiscoveryScreen);

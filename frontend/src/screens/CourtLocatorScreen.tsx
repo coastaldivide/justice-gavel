@@ -127,7 +127,7 @@ function CourtLocatorScreen(): React.JSX.Element {
               borderWidth:1.5, borderColor: courtMode===mode ? colors.primary : (colors.border),
             }}>
             <IconLabel icon={mode==='state' ? ICONS.courthouse : ICONS.lawyer} textStyle={{ color: courtMode===mode ? colors.bgCard : text,
-              fontWeight:'700', fontSize:13 }} maxFontSizeMultiplier={1.4}>{mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}</IconLabel>
+              fontWeight:'700', fontSize:14 }} maxFontSizeMultiplier={1.4}>{mode==='state' ? t('x_court_locator_state_courts') : t('x_court_locator_federal_courts')}</IconLabel>
           </TouchableOpacity>
         ))}
       </View>
@@ -142,7 +142,7 @@ function CourtLocatorScreen(): React.JSX.Element {
           style={{
             backgroundColor: card, borderRadius: 10,
             paddingHorizontal: 14, paddingVertical: 11,
-            color: text, fontSize: 15,
+            color: text, fontSize: 16,
             borderWidth: 1, borderColor: colors.border,
           }}
           autoCapitalize="words"
@@ -219,10 +219,10 @@ function CourtLocatorScreen(): React.JSX.Element {
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <AppIcon name={ICONS.location} size={16} color={colors.textBrand} style={{ fontSize: 16 }} />
                     <View style={{ flex: 1 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
                         {item.address}
                       </Text>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>{t('x_court_locator_tap_directions')}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12 }}>{t('x_court_locator_tap_directions')}</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -233,7 +233,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       onPress={() => openPhone(item.phone)}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <AppIcon name="call-outline" size={20} color={colors.legal} />
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
                         {item.phone}
                       </Text>
                     </TouchableOpacity>
@@ -243,7 +243,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                   {item.hours ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <AppIcon name={ICONS.clock} size={16} color={colors.textBrand} style={{ fontSize: 16 }} />
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontSize: 13 }}>{item.hours}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontSize: 14 }}>{item.hours}</Text>
                     </View>
                   ) : null}
 
