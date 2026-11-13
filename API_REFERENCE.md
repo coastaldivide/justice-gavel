@@ -51,6 +51,14 @@ shows these as `bearer` + `x-staff-only`).
   all of that user's sessions (`401 token_reuse`). Without a `refreshToken`,
   a still-valid access token in `Authorization: Bearer` is exchanged for a
   fresh pair (the mobile app's path). `POST /api/auth/logout` revokes.
+- Passwords: 8+ characters, and not a doubled 4-digit PIN, one repeated
+  character, a digit run or a very common password (400 with
+  `auth.err.password_weak` wording). `POST /api/auth/change-password`
+  `{ currentPassword, newPassword }` (signed in) → `{ ok, token, refreshToken, user }`
+  and signs out other sessions. Login adds `password_change_required: true` for
+  accounts made with the old PIN sign-up.
+- Lock-out: 10 failed logins from one IP lock that account *for that IP* for
+  15 minutes (423 `account_locked`); 50 from anywhere lock the account.
 - Staff-only routes are flagged `x-staff-only: true` in the spec. Every role
   check — including `/api/admin/*` — uses the role read from the database
   (above), never a role claim in the token; `/api/admin/*` also requires
