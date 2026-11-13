@@ -367,7 +367,7 @@ function SettingsScreen({ navigation }: any) {
       <AppIcon name={icon} size={20} color={colors.textBrand} style={styles.infoIcon} />
       <View style={{ flex: 1 }}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.infoLabel, { color: colors.textMuted }]}>{label}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.infoValue, { color: colors.textPrimary }]}>{value || '--'}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.infoValue, { color: colors.textPrimary }]}>{value || t('x_cs_not_set')}</Text>
       </View>
     </View>
   );
@@ -503,12 +503,12 @@ function SettingsScreen({ navigation }: any) {
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.textPrimary }]}>
-              {isDark ? t('x_st_dark_mode') : t('x_st_light_mode')}
+              {/* One label: the switch says whether dark mode is on. It used to read
+                  "Dark Mode" (on) in dark and "Light Mode" (off) in light. */}
+              {t('x_st_dark_mode')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.switchHint, { color: colors.textMuted }]}>
-              {isDark
-                ? t('x_st_default_easier_eyes_low')
-                : t('x_st_high_contrast_white_better')}
+              {t('x_st_default_easier_eyes_low')}
             </Text>
           </View>
           <Switch

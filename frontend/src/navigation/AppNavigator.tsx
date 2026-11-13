@@ -302,7 +302,7 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: t('x_nav_specialty_courts') }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: t('x_nav_court_locator') }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: t('bail_calculator') }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerTitle: '', headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: t('x_nav_court_forms') }} />
       <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: t('x_nav_document_scanner') }} />

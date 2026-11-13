@@ -272,7 +272,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('qc_heading')}</Text>
+          {/* "Quick Connect" is already the top-bar title (UI clean-up Nov 13 2026). */}
           <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>{t('x_quick_connect_one_bondsman_one_lawyer')}</Text>
         </View>
 

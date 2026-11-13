@@ -42,27 +42,27 @@ describe('daysSince', () => {
 });
 
 describe('formatDate', () => {
-  it('returns -- for null', () => {
-    expect(formatDate(null)).toBe('--');
-    expect(formatDate(undefined)).toBe('--');
-    expect(formatDate('')).toBe('--');
+  it('returns — for null', () => {
+    expect(formatDate(null)).toBe('—');
+    expect(formatDate(undefined)).toBe('—');
+    expect(formatDate('')).toBe('—');
   });
 
-  it('returns -- for invalid date', () => {
-    expect(formatDate('garbage')).toBe('--');
+  it('returns — for invalid date', () => {
+    expect(formatDate('garbage')).toBe('—');
   });
 
   it('returns formatted string for valid date', () => {
     const result = formatDate('2025-01-15');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(3);
-    expect(result).not.toBe('--');
+    expect(result).not.toBe('—');
   });
 });
 
 describe('relativeDateLabel', () => {
-  it('returns -- for null', () => {
-    expect(relativeDateLabel(null)).toBe('--');
+  it('returns — for null', () => {
+    expect(relativeDateLabel(null)).toBe('—');
   });
 
   it('returns "Today" for today', () => {

@@ -148,7 +148,8 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         {[
           { k: 'private', title: t('onb_private'), sub: t('onb_private_sub') },
           { k: 'free', title: t('onb_free'), sub: t('onb_free_sub') },
-          { k: 'ai', title: '24/7', sub: t('onb_ai_sub') },
+          // Was "24/7 · AI Legal Help", shown even with AI switched off; the 8 languages are always true.
+          { k: 'langs', title: '8', sub: t('onb_languages_sub') },
         ].map((st, i) => (
           <React.Fragment key={st.k}>
             {i > 0 && <View style={styles.statDivider} />}

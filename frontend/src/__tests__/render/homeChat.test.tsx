@@ -139,10 +139,10 @@ describe('ChatScreen', () => {
   it('shows the AI disclaimer and the quick prompts on an empty session', async () => {
     on('get', '/chat/history/', []);
     wrap(<ChatScreen navigation={makeNavigation()} route={{ params: {} }} />);
-    expect(await screen.findByText(/AI Legal Information -- Not Legal Advice/)).toBeTruthy();
+    expect(await screen.findByText(/AI Legal Information — Not Legal Advice/)).toBeTruthy();
     expect(await screen.findByText('Know your rights')).toBeTruthy();
     // tapping the banner dismisses it and records consent
-    fireEvent.press(screen.getByText(/AI Legal Information -- Not Legal Advice/));
+    fireEvent.press(screen.getByText(/AI Legal Information — Not Legal Advice/));
     await waitFor(async () =>
       expect(await AsyncStorage.getItem('chat_consent_accepted')).toBe('1'));
     expect(screen.queryByText(/Tap to dismiss/)).toBeNull();

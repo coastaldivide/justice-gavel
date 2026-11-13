@@ -194,7 +194,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
       <AuthGateModal />
       <View style={s.header}>
-        <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_consumer_subscription_choose_plan')}</Text>
+        {/* "Choose Your Plan" is already the top-bar title (UI clean-up Nov 13 2026). */}
         <Text maxFontSizeMultiplier={1.4} style={s.subheading}>{t('plan_intro_consumer')}</Text>
       </View>
 

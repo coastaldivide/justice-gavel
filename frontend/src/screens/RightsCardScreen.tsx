@@ -159,7 +159,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
     <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} testID="rights-card-screen"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <EmergencyStrip compact />
-      <Text maxFontSizeMultiplier={1.4} style={styles.title} accessibilityRole="header">{t('rc_page_title')}</Text>
+      {/* The screen title is in the top bar (AppNavigator); not repeated here (UI clean-up Nov 13 2026). */}
       <TouchableOpacity accessibilityRole="button" testID="rights-state-picker" style={styles.stateBtn}
         accessibilityLabel={t('ja_state_a11y', { state: stateName || t('ja_choose_state') })} onPress={() => setPicker(true)}>
         <View style={styles.stateBtnRow}>
