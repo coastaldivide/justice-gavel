@@ -112,11 +112,17 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
 
   // When everything fits in the viewport there is nothing to scroll and no
   // scroll event will ever fire — the user has already seen it all.
+  // "Everything" ends at the last real element (the full-terms link): the spacing below it
+  // holds nothing to read. Counting it locked "I Agree" at 1280×900 once the text grew to
+  // the 12 px floor — the summary was all visible but 49 px of padding overflowed.
+  const [lastBottom, setLastBottom] = useState(0);
   React.useEffect(() => {
-    if (!scrolledToBottom && viewportH > 0 && contentH > 0 && contentFitsViewport(contentH, viewportH)) {
+    const seenAll = (contentH > 0 && contentFitsViewport(contentH, viewportH))
+      || (lastBottom > 0 && contentFitsViewport(lastBottom, viewportH));
+    if (!scrolledToBottom && viewportH > 0 && seenAll) {
       setScrolledToBottom(true);
     }
-  }, [viewportH, contentH, scrolledToBottom]);
+  }, [viewportH, contentH, lastBottom, scrolledToBottom]);
 
   const handleAccept = useCallback(async () => {
     if (!canAccept || submitting) return;
@@ -194,6 +200,7 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
           <TouchableOpacity
             accessibilityRole="link"
             style={s.fullTosLink}
+            onLayout={e => setLastBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
             onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
             accessibilityLabel={t('x_terms_acceptance_modal_read_full_terms_service')}
           >
