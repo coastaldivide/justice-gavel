@@ -264,7 +264,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   content: { padding: 20 },
 
   header:   { alignItems: 'center', marginBottom: 24 },
-  title:    { ...FONTS.bold, fontSize: 22, color: colors.surface, marginBottom: 4 },
+  title:    { ...FONTS.bold, fontSize: 22, color: colors.textOnNavy, marginBottom: 4 },
   subtitle: { ...FONTS.regular, fontSize: 13, color: colors.steel },
 
   // Score ring
@@ -291,7 +291,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ctaBtn:               { borderRadius: RADIUS?.md ?? 12, paddingVertical: 14, alignItems: 'center' },
   ctaPrimary:           { backgroundColor: colors.legal },
   ctaSecondary:         { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.steel },
-  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: colors.white },
+  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: colors.textOnAccent },
   ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: colors.info },
 
   // Section label

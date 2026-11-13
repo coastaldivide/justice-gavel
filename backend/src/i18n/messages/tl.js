@@ -233,6 +233,7 @@ export default {
   "validation.failed": "May impormasyong inilagay ninyo na hindi wasto. Pakitingnan ito at subukang muli.",
   "auth.err.identifier_password_required": "Ilagay ang inyong email o numero ng telepono at ang inyong password.",
   "auth.err.password_short": "Dapat hindi bababa sa 8 character ang inyong password.",
+  "auth.err.password_weak": "Masyadong madaling hulaan ang password na iyan. Gumamit ng 8 o higit pang character na hindi inulit na PIN o karaniwang password.",
   "auth.err.identifier_invalid": "Maglagay ng wastong email address o numero ng telepono.",
   "auth.err.email_taken": "May account na gamit ang email na ito. Mag-sign in na lang.",
   "auth.err.phone_taken": "May account na gamit ang numero ng teleponong ito. Mag-sign in na lang.",

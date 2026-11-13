@@ -348,20 +348,25 @@ function analyzeFile(file, countA11y = true) {
       }
     }
 
-    if (TEXTY.has(tag) && styleAcc.color && styleAcc.color.t !== 'uncertain') {
+    // <IconLabel textStyle={…}> draws its text with textStyle, not style (sandbox review
+    // 2026-11-12: two unreadable Quick Connect texts hid there).
+    const textAcc = tag === 'IconLabel'
+      ? (attrs.textStyle && attrs.textStyle !== true ? mergeStyleExpr(attrs.textStyle, {}) : {})
+      : styleAcc;
+    if ((TEXTY.has(tag) || tag === 'IconLabel') && textAcc.color && textAcc.color.t !== 'uncertain') {
       const backdrop = [...newStack].reverse().find(Boolean);
       if (backdrop && !backdrop.uncertain) {
-        const fontSize = styleAcc.fontSize && styleAcc.fontSize.t === 'num' ? styleAcc.fontSize.v : 14;
+        const fontSize = textAcc.fontSize && textAcc.fontSize.t === 'num' ? textAcc.fontSize.v : 14;
         let weight = 400;
-        if (styleAcc.fontWeight) {
-          if (styleAcc.fontWeight.t === 'num') weight = styleAcc.fontWeight.v;
-          else if (styleAcc.fontWeight.t === 'static') weight = parseInt(styleAcc.fontWeight.v, 10) || 400;
+        if (textAcc.fontWeight) {
+          if (textAcc.fontWeight.t === 'num') weight = textAcc.fontWeight.v;
+          else if (textAcc.fontWeight.t === 'static') weight = parseInt(textAcc.fontWeight.v, 10) || 400;
         }
         const large = fontSize >= 24 || (fontSize >= 18.5 && weight >= 700);
         const threshold = large ? 3.0 : 4.5;
         const per = {};
         for (const mode of ['light', 'dark']) {
-          const fg = resolveDesc(styleAcc.color, mode);
+          const fg = resolveDesc(textAcc.color, mode);
           const bg = backdrop[mode];
           if (!fg || !bg) continue;
           const ratio = contrast(fg, bg);
@@ -371,13 +376,13 @@ function analyzeFile(file, countA11y = true) {
         // explicit suppression for conditionally-rendered elements the static
         // walker cannot model (e.g. a checkmark only rendered on a dark fill)
         const srcLines = text.split('\n');
-        const suppressed = [pos(node), styleAcc.color.line].some(
+        const suppressed = [pos(node), textAcc.color.line].some(
           ln => ln && /design-audit-ignore/.test(srcLines[ln - 1] || ''));
         if (fails.length && !suppressed) {
           findings.push({
             kind: 'contrast', file: rel(file), line: pos(node), fails,
             light: per.light, dark: per.dark, threshold,
-            fgExpr: descToStr(styleAcc.color), fgLine: styleAcc.color.line, dynOk: !!styleAcc.color.dynOk,
+            fgExpr: descToStr(textAcc.color), fgLine: textAcc.color.line, dynOk: !!textAcc.color.dynOk,
             bgLine: backdrop.line, bgExpr: backdrop.expr, tag, staticLight,
           });
         }

@@ -634,12 +634,12 @@ describe('18. AuthGate + LegalDisclaimerModal — Auth UX', () => {
     expect(src).toContain('pendingFn');
   });
 
-  test('18-02: AuthGate has quick signup mode: phone + 4-digit PIN', async () => {
+  test('18-02: AuthGate has quick signup mode: phone + password (no PIN)', async () => {
     const src = feSource(__REPO + '/frontend/src/components/AuthGate.tsx');
     expect(src).toContain('quickMode');
-    expect(src).toContain('pin');
     expect(src).toContain('phone');
-    expect(src).toContain('4-digit PIN');
+    expect(src).toContain('password');
+    expect(src).not.toMatch(/setPin|maxLength=\{4\}/);
   });
 
   test('18-03: AuthGate quick signup posts to /auth/register', async () => {
@@ -649,10 +649,13 @@ describe('18. AuthGate + LegalDisclaimerModal — Auth UX', () => {
     expect(src).toContain('doQuickSignup');
   });
 
-  test('18-04: AuthGate double-PIN as password (pin + pin)', async () => {
+  // Was "double-PIN as password (pin + pin)": 10,000 possible passwords.
+  // Sandbox review 2026-11-12, bug 3 — the quick form now sends a real password.
+  test('18-04: AuthGate never builds the password from a PIN', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/AuthGate.tsx', 'utf8');
-    expect(src).toContain('pin + pin');
+    expect(src).not.toContain('pin + pin');
+    expect(src).toMatch(/password\.length < 8/);
   });
 
 

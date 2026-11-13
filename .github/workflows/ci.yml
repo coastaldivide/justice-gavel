@@ -36,6 +36,9 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: jg_ci
+          # The server's default zone (initdb reads TZ): not UTC, so tests catch any
+          # date maths that depends on it (sandbox review 2026-11-12).
+          TZ: America/New_York
         ports:
           - 5432:5432
         options: >-
@@ -86,6 +89,16 @@ jobs:
             echo "::endgroup::"
           done
           psql "$CI_DATABASE_URL" -Atc "select count(*) || ' tables in public' from information_schema.tables where table_schema='public'"
+
+      - name: Run the database in a non-UTC zone (the app must not depend on it)
+        # Sandbox review 2026-11-12, bug 4: Case Pass dates and AI day buckets were off
+        # by an hour / a day on a database not set to UTC. The backend now sets UTC per
+        # connection and its date maths is explicit; this keeps both honest.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "ALTER DATABASE jg_ci SET \"TimeZone\" = 'America/New_York'"
+          echo "jg_ci: $(psql "$CI_DATABASE_URL" -Atc 'show timezone'); server default: $(psql "${CI_DATABASE_URL%/*}/postgres" -Atc 'show timezone')"
 
       - name: Generate production secrets
         run: |
@@ -208,6 +221,10 @@ jobs:
       - name: Jest suite (in-memory store, no DATABASE_URL)
         # src/__tests__/env.js sets NODE_ENV=test and test secrets; DATABASE_URL is
         # deliberately not set so routes use the in-memory fallback.
+        # Runs in US Eastern time: a test that mixes local and UTC dates fails on US
+        # evenings, which UTC runners never see (sandbox review 2026-11-12).
+        env:
+          TZ: America/New_York
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci
 
   # ───────────────────────────────────────────────────────────────────────────

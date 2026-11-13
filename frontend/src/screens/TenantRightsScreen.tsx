@@ -244,7 +244,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   ctaBlock: { paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   ctaBtn:   { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', ...SHADOW.sm },
-  ctaBtnText: { color: colors.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  ctaBtnText: { color: colors.textOnNavy, fontSize: 14, lineHeight: 21, ...FONTS.black },
   legalAidBtn: { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center' },
   legalAidText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 

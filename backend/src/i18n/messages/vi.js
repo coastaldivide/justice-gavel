@@ -248,6 +248,7 @@ export default {
   "validation.failed": "Một số thông tin bạn nhập không hợp lệ. Vui lòng kiểm tra và thử lại.",
   "auth.err.identifier_password_required": "Vui lòng nhập email hoặc số điện thoại và mật khẩu của bạn.",
   "auth.err.password_short": "Mật khẩu phải có ít nhất 8 ký tự.",
+  "auth.err.password_weak": "Mật khẩu này quá dễ đoán. Hãy dùng từ 8 ký tự trở lên, không phải mã PIN lặp lại hay mật khẩu phổ biến.",
   "auth.err.identifier_invalid": "Vui lòng nhập địa chỉ email hoặc số điện thoại hợp lệ.",
   "auth.err.email_taken": "Đã có tài khoản dùng email này. Vui lòng đăng nhập.",
   "auth.err.phone_taken": "Đã có tài khoản dùng số điện thoại này. Vui lòng đăng nhập.",

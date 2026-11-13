@@ -79,7 +79,7 @@ export async function aiMetrics(db, { days = 7 } = {}) {
            COUNT(*) FILTER (WHERE refusal)::int AS declined,
            COUNT(*) FILTER (WHERE status IN ('failed', 'invalid'))::int AS errors
       FROM ai_usage_log
-     WHERE queued_at >= date_trunc('day', NOW()) - make_interval(days => ?)`;
+     WHERE queued_at >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC') - make_interval(days => ?)`;
   const shape = (r) => {
     const calls = Number(r.calls) || 0;
     const inTotal = Number(r.input_tokens) + Number(r.cache_read_tokens) + Number(r.cache_write_tokens);
@@ -97,7 +97,7 @@ export async function aiMetrics(db, { days = 7 } = {}) {
       error_rate: calls ? round(r.errors / calls, 4) : 0,
     };
   };
-  const rows = await db.all(`${select("date_trunc('day', queued_at) AS day, route, COALESCE(task_class, 'unclassified') AS task_class")}
+  const rows = await db.all(`${select("to_char(date_trunc('day', queued_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day, route, COALESCE(task_class, 'unclassified') AS task_class")}
      GROUP BY 1, 2, 3 ORDER BY 1 DESC, cost_usd DESC LIMIT 2000`, [d]);
   const byClass = await db.all(`${select("COALESCE(task_class, 'unclassified') AS task_class")} GROUP BY 1 ORDER BY cost_usd DESC LIMIT 20`, [d]);
   const byRoute = await db.all(`${select('route')} GROUP BY 1 ORDER BY cost_usd DESC LIMIT 200`, [d]);

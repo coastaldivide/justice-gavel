@@ -222,7 +222,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             accessibilityLabel={t('lawyers_call')} onPress={() => call(item.phone, item.name)}
             activeOpacity={0.85}
           >
-            <IconLabel icon={ICONS.phone} textStyle={styles.callBtnText} maxFontSizeMultiplier={1.2}>{t('lawyers_call')}</IconLabel>
+            <IconLabel icon={ICONS.phone} textStyle={[styles.callBtnText, { color: colors.white }]} maxFontSizeMultiplier={1.2}>{t('lawyers_call')}</IconLabel>
           </TouchableOpacity>
         ) : (
           <View style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}>

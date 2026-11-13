@@ -283,7 +283,8 @@ describe('Home links', () => {
     wrap(<HomeScreen navigation={navigation} route={{} as any} />);
     await screen.findByText(t('home_welcome_1', { name: 'Ana' }));
     fireEvent.press(screen.getByTestId('tile-Cases'));
-    expect(navigation.navigate).toHaveBeenCalledWith('MoreTab', { screen: 'Cases' });
+    // Home is its own stack now: its links open there, not on the Resources tab (sandbox review 2026-11-12).
+    expect(navigation.navigate).toHaveBeenCalledWith('Cases');
     expect(screen.queryByTestId('tile-AttyDash')).toBeNull();
   });
 

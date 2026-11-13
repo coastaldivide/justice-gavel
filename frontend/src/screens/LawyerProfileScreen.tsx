@@ -239,7 +239,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={s.badges}>
           {lawyer.source === 'google' && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_source_google')}</Text></View>}
           {lawyer.bar_verified && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_expungement_bar_verified')}</Text></View>}
-          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: colors.gold }]}><IconLabel icon={ICONS.lawyer} textStyle={[s.badgeText, { color: themeColors().textBrand }]} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_jtb_verified')}</IconLabel></View>}
+          {lawyer.jtb_verified && <View style={[s.badge, { backgroundColor: colors.gold }]}><IconLabel icon={ICONS.lawyer} textStyle={[s.badgeText, { color: themeColors().textOnGold }]} maxFontSizeMultiplier={1.3}>{t('x_lawyer_profile_jtb_verified')}</IconLabel></View>}
           {lawyer.golden_gavel && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('x_nav_golden_gavel')}</Text></View>}
           {lawyer.on_app && <View style={s.badge}><Text maxFontSizeMultiplier={1.3} style={s.badgeText}>{t('lp_on_app')}</Text></View>}
         </View>

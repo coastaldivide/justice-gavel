@@ -554,7 +554,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   saveBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 12, ...SHADOW.md },
-  saveBtnText: { color: colors.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  saveBtnText: { color: colors.textOnNavy, fontSize: 16, lineHeight: 24, ...FONTS.black },
   shareNoteBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11,
     alignItems: 'center', marginBottom: 10 },
   shareNoteBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },

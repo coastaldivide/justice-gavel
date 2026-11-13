@@ -29,9 +29,11 @@ export function useAuthGate(navigation: any, quickMode = false) {
   const [visible, setVisible]     = useState(false);
   const [pendingFn, setPendingFn] = useState<(() => void) | null>(null);
 
-  // Quick signup state (phone + PIN)
+  // Quick signup state (phone + password). It used a 4-digit PIN sent twice as the
+  // password: only 10,000 possible values (sandbox review 2026-11-12, bug 3).
   const [phone, setPhone]         = useState('');
-  const [pin, setPin]             = useState('');
+  const [password, setPassword]   = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError]     = useState('');
   const [showQuickForm, setShowQuickForm] = useState(false);
@@ -57,20 +59,20 @@ export function useAuthGate(navigation: any, quickMode = false) {
     navigation.navigate('MoreTab', { screen: 'Register' });
   };
 
-  // Quick phone+PIN signup — fewer fields = fewer drops
+  // Quick phone + password signup — still just two fields
   const doQuickSignup = async () => {
     if (!phone.trim() || phone.replace(/\D/g,'').length < 10) {
       setSignupError(t('x_auth_gate_enter_valid_phone_number')); return;
     }
-    if (pin.length < 4) {
-      setSignupError(t('x_auth_gate_enter_4_digit_pin')); return;
+    if (password.length < 8) {
+      setSignupError(t('x_rg_password_must_be_at')); return;
     }
     setSignupLoading(true);
     setSignupError('');
     try {
       const res = await api.post('/auth/register', {
         identifier: phone.trim(),
-        password: pin + pin, // double PIN as password (6+ chars)
+        password,
         displayName: undefined,
       });
       if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
@@ -96,11 +98,11 @@ export function useAuthGate(navigation: any, quickMode = false) {
           <View style={styles.handle} />
 
           {showQuickForm ? (
-            // ── Quick signup: phone + PIN only ──────────────────────────
+            // ── Quick signup: phone + password ──────────────────────────
             <>
               <Text style={styles.title}>{t('x_auth_gate_quick_sign_up')}</Text>
               <Text style={styles.body}>
-                {t('x_auth_gate_phone_number_4_digit')}
+                {t('x_auth_gate_phone_number_password')}
               </Text>
 
               <TextInput
@@ -114,14 +116,23 @@ export function useAuthGate(navigation: any, quickMode = false) {
               />
               <TextInput
                 style={styles.quickInput}
-                placeholder={t('x_auth_gate_4_digit_pin')}
+                placeholder={t('password')}
                 placeholderTextColor={themeColors().textLight}
-                value={pin}
-                onChangeText={tItem => setPin(tItem.replace(/\D/g,'').slice(0,4))}
-                keyboardType="number-pad"
-                secureTextEntry
-                maxLength={4}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                maxLength={200}
+                accessibilityLabel={t('password')}
               />
+              <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={styles.switchLink}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? t('x_lg_hide_password') : t('x_lg_show_password')}>
+                <Text style={styles.switchLinkText}>{showPassword ? t('x_lg_hide_password') : t('x_lg_show_password')}</Text>
+              </TouchableOpacity>
 
               {!!signupError && <Text style={styles.quickError}>{signupError}</Text>}
               <TouchableOpacity

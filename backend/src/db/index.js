@@ -163,8 +163,21 @@ async function initPostgres(url) {
     query_timeout:           25000,
   });
   pool.on('error', (e) => logger.error({ err: e.message }, '[db] idle client error'));
+  // Dates and day buckets are computed in UTC whatever the server's time zone is
+  // (sandbox review 2026-11-12, bug 4: on a New York-time database a Case Pass
+  // crossing a DST change ended an hour off). A SET per connection rather than a
+  // startup "options" parameter, which some poolers refuse.
+  pool.on('connect', (client) => {
+    client.query("SET TIME ZONE 'UTC'").catch(e => logger.warn({ err: e.message }, '[db] could not set time zone UTC'));
+  });
 
   await pool.query('SELECT 1'); // fail fast if unreachable
+  try {
+    const { rows: [tz] } = await pool.query("SELECT current_setting('TimeZone') AS session_tz, (SELECT setting FROM pg_settings WHERE name = 'TimeZone') AS server_tz");
+    if (tz && tz.session_tz !== 'UTC') {
+      logger.warn({ session_tz: tz.session_tz }, '[db] session time zone is not UTC — dates and day buckets may be off by the zone offset');
+    }
+  } catch { /* informational only */ }
 
   // Cache which tables have an `id` column so INSERTs get `RETURNING id` only
   // where it is valid.

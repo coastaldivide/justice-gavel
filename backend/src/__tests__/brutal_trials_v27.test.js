@@ -223,7 +223,11 @@ describe('6. i18n qc_ — Quick Connect (28 keys full)', () => {
     const en = await getEn();
     expect(en['qc_step2']).toContain('nearest bondsman and lawyer');
     expect(en['qc_step3']).toContain('phone numbers appear immediately');
-    expect(en['qc_step4']).toContain('real and available');
+    // Was 'real and available' — a promise the app can't keep (sandbox review 2026-11-12, item A).
+    expect(en['qc_step4']).toContain('public listings');
+    expect(en['qc_step4']).not.toMatch(/real and available/);
+    expect(en['qc_lawyer_sub']).not.toMatch(/verified/i);
+    expect(en['x_quick_connect_free_directory_note']).toContain('{tab}');
   });
   test('6-02: trust badge labels', async () => {
     const en = await getEn();

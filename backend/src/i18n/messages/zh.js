@@ -233,6 +233,7 @@ export default {
   "validation.failed": "您输入的部分信息无效。请检查后重试。",
   "auth.err.identifier_password_required": "请输入您的电子邮件或电话号码，以及您的密码。",
   "auth.err.password_short": "您的密码至少要有 8 个字符。",
+  "auth.err.password_weak": "这个密码太容易被猜到。请使用至少 8 个字符，不要用重复的 PIN 或常见密码。",
   "auth.err.identifier_invalid": "请输入有效的电子邮件地址或电话号码。",
   "auth.err.email_taken": "已经有账户使用这个电子邮件。请改为登录。",
   "auth.err.phone_taken": "已经有账户使用这个电话号码。请改为登录。",

@@ -182,12 +182,13 @@ const dayPlus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0
       const url = s.page.url().replace(base, '');
       if (url === '/' || url === '/home') dead.push(tid);
       if (/Something went wrong/i.test(await bodyText(s.page))) dead.push(`${tid}(boundary)`);
-      if (tid === 'tile-Cases' && url !== '/cases') dead.push(`tile-Cases→${url}`);
+      // Home is its own stack (sandbox review 2026-11-12): its links live under /home/…
+      if (tid === 'tile-Cases' && !/^\/(home\/)?cases$/.test(url)) dead.push(`tile-Cases→${url}`);
     }
     if (dead.length) throw new Error(`tiles that do not open a screen: ${dead.join(', ')}`);
     allErrors.push(...s.errors);
     await s.ctx.close();
-    return `${ids.length} tiles, each opens its screen; Cases → /cases; attorney tile hidden`;
+    return `${ids.length} tiles, each opens its screen; Cases → /home/cases; attorney tile hidden`;
   });
 
   // UI pass 1: the header no longer has its own "Help Now" button (the "Just

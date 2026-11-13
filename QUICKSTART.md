@@ -12,7 +12,7 @@ backend both honour them) or put them in the URL.
 ## 1. Database
 
 Schema **and** seed data ship as plain SQL in `supabase/migrations/`
-(13 files, `00…12`). Apply them in filename order; they are idempotent and
+(every `.sql` file in that folder — `00…50` as of Nov 12 2026). Apply them in filename order; they are idempotent and
 there is no separate seed script:
 
 ```bash
@@ -26,8 +26,8 @@ What gets seeded (counts from a fresh migrate):
 
 | Data | Rows | Notes |
 |---|---|---|
-| Lawyers | 2,055 | Seed directory — replace/extend with the operator scrapers |
-| Bail agents | 1,265 | Seed directory (DOI import adds license numbers) |
+| Lawyers | 2,046 | Seed directory — replace/extend with the operator scrapers |
+| Bail agents | 1,262 | Seed directory (DOI import adds license numbers) |
 | Recovery agents | 531 | Directory present but the screen is unregistered (legal hold) |
 | Courthouses | 404 | Verified addresses |
 | Bail schedules | 504 | All 51 jurisdictions |

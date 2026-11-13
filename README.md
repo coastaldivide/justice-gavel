@@ -28,7 +28,7 @@ backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             SMS: Telnyx (court reminders + SOS; off until TELNYX_API_KEY + TELNYX_FROM_NUMBER)
             Queue: BullMQ when REDIS_URL is set, in-process otherwise
 
-supabase/migrations/   PostgreSQL schema — plain-SQL files (00…28), applied
+supabase/migrations/   PostgreSQL schema — plain-SQL files (00…50 as of Nov 12 2026), applied
             in filename order with psql (backend/scripts/migrate.sh, the
             Render pre-deploy step); idempotent; RLS enabled deny-all
             (no policies — the Express backend is the only DB client)

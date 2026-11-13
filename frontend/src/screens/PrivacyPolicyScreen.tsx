@@ -384,7 +384,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rightsCard:       { margin: 16, borderRadius: 14, padding: 20, gap: 12 },
   rightsTitle:      { fontSize: 16, fontWeight: '800', marginBottom: 4 },
   rightsBtn:        { borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
-  rightsBtnText:    { color: colors.bg, fontSize: 14, fontWeight: '700' },
+  rightsBtnText:    { color: colors.white, fontSize: 14, fontWeight: '700' },
   rightsNote:       { fontSize: 12, textAlign: 'center' },
   footer:           { margin: 16, borderRadius: 12, padding: 20, alignItems: 'center' },
   footerText:       { fontSize: 12, textAlign: 'center' },

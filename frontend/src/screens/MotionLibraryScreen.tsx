@@ -1046,7 +1046,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                 : '' })}
             accessibilityLabel={t('x_motion_library_research_precedent_this_motion')}
             >
-            <IconLabel icon={ICONS.lawyer} textStyle={styles.resultActionText} maxFontSizeMultiplier={1.4}>{t('x_motion_library_research')}</IconLabel>
+            <IconLabel icon={ICONS.lawyer} textStyle={[styles.resultActionText, { color: colors.textOnAccent }]} maxFontSizeMultiplier={1.4}>{t('x_motion_library_research')}</IconLabel>
           </TouchableOpacity>
         </View>
 
