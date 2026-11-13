@@ -38,6 +38,15 @@ solicitation by bail agents; § 648.45 recruiting) and any other target state? I
 subscription for alerts different from a per-lead fee?
 1.3 Is any waiting period before contacting an arrested person required in our launch states?
 1.4 Is the app a "lawyer referral service" under Tennessee rules (registration, fee limits)?
+1.5 **Quick Connect (consumer pays).** A person pays the app $20 (shown as $10 for the nearest bail
+agent + $10 for the nearest criminal defense lawyer from our listings) and gets their phone numbers.
+The same listings are free to browse and call in Get Help; since Nov 12 2026 the screen says so before
+payment, and no longer calls the lawyer "verified" or promises they are "available"
+(`frontend/src/screens/QuickConnectScreen.tsx`). Is charging the *person* for a lawyer connection a
+payment for a recommendation or a lawyer-referral-service fee (ABA Model Rule 7.2(b); Tennessee RPC 7.2
+and any target-state referral-service rules)? Does charging for a bail-agent connection raise the bail
+solicitation issues in 1.2? Is a consumer-protection disclosure (or a refund rule when neither answers)
+required? *Owner decision pending:* keep, change what the $20 buys, or drop Quick Connect.
 
 ## 2. Electronic signatures for bail paperwork (Bond Desk)
 

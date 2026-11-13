@@ -178,7 +178,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
   // A payment that went through whose contacts could not be loaded yet (lost connection) — retried, never re-charged.
   const [paidPi, setPaidPi] = useState<string | null>(null);
 
-  const { requireAuth, AuthGateModal } = useAuthGate(navigation, true); // quick phone+PIN mode
+  const { requireAuth, AuthGateModal } = useAuthGate(navigation, true); // quick phone + password mode
 
   // Get GPS on mount
   useEffect(() => {
@@ -379,6 +379,17 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
           )}
 
           {/* PAY NOW button */}
+          {/* The same lawyers and bail agents are free to browse and call in Get Help; say so
+              before anyone pays (sandbox review 2026-11-12, review item A). */}
+          {!paidPi && (
+            <TouchableOpacity onPress={() => navigation.navigate('HelpTab')} style={styles.freeNote}
+              accessibilityRole="link" testID="qc-free-directory">
+              <Text maxFontSizeMultiplier={1.4} style={styles.freeNoteText}>
+                {t('x_quick_connect_free_directory_note', { tab: t('tab_get_help') })}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             accessibilityRole="button"
             style={[
@@ -591,6 +602,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   practiceAreaWrap: { backgroundColor: colors.bgCard, borderRadius: 14, marginBottom: 14, overflow: 'hidden' },
   accountNote: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 6, marginBottom: -6, fontStyle: 'italic' },
   footerNote: { textAlign: 'center', color: colors.textMuted, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  freeNote:    { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8, marginBottom: 10 },
+  freeNoteText:{ textAlign: 'center', color: colors.textBrand, fontSize: 13, lineHeight: 19, textDecorationLine: 'underline', ...FONTS.medium },
 
   // Results
   callPrompt: { fontSize: 15, ...FONTS.bold, color: colors.textBrand, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
