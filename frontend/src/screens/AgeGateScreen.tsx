@@ -47,7 +47,6 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
-  const { colors: COLORS } = useTheme();
   const styles = makeStyles(colors);
   const [year, setYear]   = useState('');
   const [phase, setPhase] = useState<Phase>('entry');
@@ -99,7 +98,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         style={{ backgroundColor: colors.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
-          <IconLabel icon={ICONS.emergency} textStyle={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
+          <IconLabel icon={ICONS.emergency} textStyle={{ color: colors.textOnAccent, fontWeight: '700', fontSize: 15 }} maxFontSizeMultiplier={1.3}>{t('x_age_gate_need_help_right_now')}</IconLabel>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 12, marginTop: 2 }}>{t('x_age_gate_emergency_access_no_setup')}</Text>
         </View>
         <Text style={{ color: colors.textOnAccent, fontSize: 20 }}>→</Text>

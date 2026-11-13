@@ -556,7 +556,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   locRow:      { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: RADIUS.md, marginBottom: 12 },
   locText:     { fontSize: 12, lineHeight: 20, color: colors.textMuted },
   locError:    { backgroundColor: colors.warnBg },
-  locErrorText:{ fontSize: 12, lineHeight: 20, color: colors.textOnGold, ...FONTS.medium },
+  locErrorText:{ fontSize: 12, lineHeight: 20, color: colors.warnDark, ...FONTS.medium },
   locReady:    { backgroundColor: colors.legalBg },
   locReadyText:{ fontSize: 12, lineHeight: 20, color: colors.legal, ...FONTS.bold },
 
@@ -605,7 +605,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   priceBadgeText:{ fontSize: 14, lineHeight: 21, ...FONTS.black },
   contactName:   { fontSize: 18, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 3 },
   contactAddress:{ fontSize: 12, color: colors.textMuted, marginBottom: 6, lineHeight: 16 },
-  contactRating: { fontSize: 12, color: colors.textOnGold, ...FONTS.bold, marginBottom: 6 },
+  contactRating: { fontSize: 12, color: colors.goldText, ...FONTS.bold, marginBottom: 6 },
   tagRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 8 },
   tag:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   tagText:       { fontSize: 11, ...FONTS.medium },

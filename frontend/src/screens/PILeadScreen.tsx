@@ -372,7 +372,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   successTitle: { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 10 },
   successSub:   { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 28 },
   doneBtn:      { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center', ...SHADOW.md, marginBottom: 12 },
-  doneBtnText:  { color: colors.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  doneBtnText:  { color: colors.textOnNavy, fontSize: 15, lineHeight: 22, ...FONTS.black },
   homeBtn:      { paddingVertical: 10 },
   homeBtnText:  { fontSize: 14,
     lineHeight: 21, },
