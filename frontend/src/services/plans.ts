@@ -8,6 +8,7 @@
  */
 import { unwrapList } from './api';
 import { t } from '../i18n';
+import { isScreenEnabled } from '../constants/features';
 
 export type Tier = {
   key: string; name: string; audience: 'consumer' | 'attorney'; billing: 'monthly' | 'annual';
@@ -35,6 +36,20 @@ const FEATURE_KEYS: Record<string, string> = {
   video_consultation: 'plan_feat_video_consultation',
   arrest_monitor: 'plan_feat_arrest_monitor',
 };
+/**
+ * The screen each feature lives on, where this build may hide it (constants/features.ts).
+ * A plan card never lists a feature whose screen nobody can open in this build: the
+ * consumer core build parks bar prep and the arrest monitor (sandbox review 2026-11-12,
+ * review item B). The server still grants them; only the advertising changes.
+ */
+const FEATURE_SCREEN: Record<string, string> = {
+  bar_prep: 'BarPrepHome',
+  arrest_monitor: 'ArrestMonitor',
+};
+/** Features worth showing on a plan card in this build. */
+export const shownFeatures = (features: string[]): string[] =>
+  features.filter(f => !FEATURE_SCREEN[f] || isScreenEnabled(FEATURE_SCREEN[f]));
+
 /** The person-facing name of a plan feature (server key). */
 export const featureLabel = (key: string): string => (FEATURE_KEYS[key] ? t(FEATURE_KEYS[key]) : key);
 
@@ -48,7 +63,7 @@ export function plansFrom(body: unknown, audience: 'consumer' | 'attorney' = 'co
     const saving = annual?.annual_cents ? m.monthly_cents * 12 - annual.annual_cents : 0;
     return {
       key: m.key, label: m.name, price: m.display_price, monthlyCents: m.monthly_cents,
-      trialDays: Number(m.trial_days) || 0, features: Array.isArray(m.features) ? m.features : [],
+      trialDays: Number(m.trial_days) || 0, features: shownFeatures(Array.isArray(m.features) ? m.features : []),
       annualKey: annual?.key ?? null,
       annualPrice: annual?.annual_cents ? t('x_consumer_subscription_price_per_year', { price: usd(annual.annual_cents) }) : null,
       annualCents: annual?.annual_cents ?? null,
