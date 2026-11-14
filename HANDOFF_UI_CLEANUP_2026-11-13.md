@@ -20,14 +20,26 @@ Branch **`ui-cleanup-2026-11-13`**: 7 commits on top of `sandbox-fixes-2026-11-1
 | **Plans** | The Case Pass card still listed "Bar exam prep" (missed in PR #3) | Filtered like the plan cards. |
 | **Terms modal (bug found by the journeys)** | — | Bigger text made the summary 49 px taller than its box at 1280×900, so "I Agree" stayed locked with everything visible. "Seen it all" now also counts when the last real element is in view. Phones still have to scroll to the end. |
 
-New strings, in all 8 languages, needing native-speaker review: `home_more_options`, `home_show_all_tools`, `home_show_fewer_tools`, `hn_more_filters`, `hn_fewer_filters`, `res_my_state`, `onb_languages_sub`, `onboard_slide2_body`, `onboard_slide3_body`. Also the Tagalog Resources tab is now **"Sanggunian"**, because "Mga Mapagkukunan" didn't fit.
+New strings, in all 8 languages: `home_more_options`, `home_show_all_tools`, `home_show_fewer_tools`, `hn_more_filters`, `hn_fewer_filters`, `res_my_state`, `onb_languages_sub`, `onboard_slide2_body`, `onboard_slide3_body`.
 
-## Left as is (your call)
+## Translation review (Nov 13)
 
-- The Call 911 / Crisis 988 / SOS bar stays on every Home view (a safety feature), as does the emergency card.
-- The Emergency screen's "Send Emergency Alert" button stays faded until contacts are added. That's intended as a disabled state.
-- A simplified small-size logo (the mark without lettering) is a branding decision.
-- The Home footer still says "Available 24/7 · All 50 states + DC".
+The owner chose not to use native-speaker reviewers, so I reviewed every string added or changed in both branches (16 frontend keys and the backend `auth.err.password_weak`) in all 7 languages, against each file's own terms and register. 29 strings fixed:
+- **Terminology** now matches each file: "criminal defense lawyer" in es / vi / ht / ar / tl, and "bail bondsman" in zh (保释担保人) and tl. The Haitian Creole "avoka kriminèl" could read as "a lawyer who is a criminal"; it's now "avoka defans kriminèl", the file's own term.
+- **Register:** Tagalog strings use the polite *kayo / inyo*, like the other 946 strings in that file.
+- **Clarity:**
+  - vi "Thêm bộ lọc" (could read "add a filter") → "Bộ lọc khác".
+  - ar "{state} + الوطنية" → "{state} + الموارد الوطنية".
+- **Honesty:** "many offer a free consultation" → "many list one", as in English.
+- **Chinese dashes:** the 158 strings that had "--" use the Chinese double dash "——" (no spaces) instead of " — ".
+- **Tagalog Resources tab:** back to the file's established word, as **"Mapag\u00adkukunan"**. The escaped soft hyphen lets it break as "Mapag- / kukunan" in the 78 px tab. "Sanggunian" means "reference" in that file, and the chat text tells people to open "Mapagkukunan".
+
+## Decisions (owner delegated, Nov 13)
+
+- **Call 911 / Crisis 988 / SOS bar: kept** on every Home view, with the emergency card. Someone in a crisis must never have to look for it.
+- **Logo: not redrawn.** The component says the design must not change, and the tighter crop at ≤ 56 px already makes it readable in headers.
+- **The Emergency screen's "Send Emergency Alert" button** stays faded until contacts are added, as intended for a disabled state.
+- **The Home footer** ("Available 24/7 · All 50 states + DC") stays: the app itself is available 24/7.
 
 ## Verification (machine and databases on America/New_York)
 
