@@ -405,7 +405,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   return (
       <View style={[styles.row, { backgroundColor: colors.bgCard, borderColor: colors.border, opacity: 0.5 }]}
         testID="deadline-calculator-screen">
-        <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
+        <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 22 }} />
         <View style={{ flex: 1, marginLeft: 10 }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: colors.textSecond }]}>{rule.label}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowSub, { color: colors.textSecond }]}>
@@ -437,7 +437,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
       activeOpacity={0.85}
       accessibilityLabel={`${rule.label}: ${formatDate(deadline)}`}
     >
-      <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 20 }} />
+      <AppIcon name={rule.icon} size={20} color={colors.textBrand} style={{ fontSize: 22 }} />
       <View style={{ flex: 1, marginLeft: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: colors.textPrimary }]}>{rule.label}</Text>
@@ -485,7 +485,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
           </View>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1.4} style={[{ color: colors.textMuted, marginLeft: 6 }]}>{expanded ? '▲' : '▼'}</Text>
+      <AppIcon name={expanded ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
     </TouchableOpacity>
   );
 }
@@ -664,7 +664,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, lineHeight: 16,
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 12, lineHeight: 17,
           color: colors.textSecond, fontStyle: 'italic' }} maxFontSizeMultiplier={1.3}>{t('x_deadline_calculator_critical_deadlines_shown_general')}</IconLabel>
       </View>
 
@@ -683,10 +683,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   sub:          { fontSize: 12, lineHeight: 19 },
 
   inputCard:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12, ...SHADOW.sm },
-  inputLabel:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+  inputLabel:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
   dateInput:    { borderWidth: 1.5, borderRadius: RADIUS.md, padding: 11, fontSize: 14,
     lineHeight: 21 },
-  parseError:   { fontSize: 11, marginTop: 4 },
+  parseError:   { fontSize: 12, marginTop: 4 },
 
   urgentBanner: { borderRadius: RADIUS.md, borderWidth: 2, padding: 12, marginBottom: 10 },
   urgentText:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', textAlign: 'center' },
@@ -695,19 +695,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   legendRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot:    { width: 10, height: 10, borderRadius: 4 },
-  legendText:   { fontSize: 11 },
+  legendText:   { fontSize: 12 },
 
   deadlineList: { gap: 8, marginBottom: 16 },
   row:          { borderRadius: RADIUS.md, borderWidth: 1.5, padding: 12,
     flexDirection: 'row', alignItems: 'flex-start', ...SHADOW.sm },
   rowLabel:     { fontSize: 12, lineHeight: 20, fontWeight: '700', flex: 1, marginRight: 6 },
   rowDate:      { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginTop: 2 },
-  rowDesc:      { fontSize: 11, marginTop: 3, lineHeight: 16 },
-  rowNote:      { fontSize: 11, marginTop: 8, lineHeight: 16, paddingTop: 8, borderTopWidth: 1 },
-  rowSub:       { fontSize: 11, marginTop: 2 },
+  rowDesc:      { fontSize: 12, marginTop: 3, lineHeight: 17 },
+  rowNote:      { fontSize: 12, marginTop: 8, lineHeight: 17, paddingTop: 8, borderTopWidth: 1 },
+  rowSub:       { fontSize: 12, marginTop: 2 },
 
   daysBadge:    { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
-  daysBadgeText:{ color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  daysBadgeText:{ color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
-  disclaimer:   { fontSize: 11, lineHeight: 17, textAlign: 'center', fontStyle: 'italic' } });
+  disclaimer:   { fontSize: 12, lineHeight: 19, textAlign: 'center', fontStyle: 'italic' } });
 export default React.memo(DeadlineCalculatorScreen);

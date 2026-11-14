@@ -727,7 +727,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, marginBottom: 12,
         borderLeftWidth: 4, borderLeftColor: colors.gold }}>
         <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.goldText, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }} maxFontSizeMultiplier={1.4}>{t('x_motion_library_ai_generated_drafts_attorney')}</IconLabel>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 17 }}>
           {t('x_motion_library_these_motions_ai_generated')}
         </Text>
       </View>
@@ -1087,7 +1087,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                       reviewResult.score==='fail' ? colors.emergencyDark : colors.warnDark }} maxFontSizeMultiplier={1.4}>{reviewResult.score==='pass' ? t('x_motion_library_looks_good') :
                      reviewResult.score==='fail' ? t('x_motion_library_issues_found') : t('x_motion_library_minor_issues')}</IconLabel>
                   {reviewResult.missing_fields?.length > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
+                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:20,
                       color:colors.emergencyDark, marginBottom:4 }}>
                       {t('x_motion_library_missing', { value: reviewResult.missing_fields.join(', ') })}
                     </Text>
@@ -1250,7 +1250,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 0, minHeight: 140, ...SHADOW.sm },
   motionIcon:  { fontSize: 28, marginBottom: 8 },
   motionLabel: { fontSize: 12, ...FONTS.black, marginBottom: 4, lineHeight: 17 },
-  motionDesc:  { fontSize: 11, lineHeight: 15, marginBottom: 12, flex: 1 },
+  motionDesc:  { fontSize: 12, lineHeight: 16, marginBottom: 12, flex: 1 },
 
   // Form
   formScroll: { padding: 16, paddingBottom: 40 },
@@ -1261,10 +1261,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   progressBg:   { height: 4, borderRadius: 2, marginBottom: 6, overflow: 'hidden' },
   progressFill: { height: 4, borderRadius: 2 },
-  progressLabel:{ fontSize: 11, fontWeight: '600', marginBottom: 16 },
+  progressLabel:{ fontSize: 12, fontWeight: '600', marginBottom: 16 },
 
   fieldWrap:     { marginBottom: 14 },
-  fieldLabel:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
+  fieldLabel:    { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
     letterSpacing: 0.6, marginBottom: 6 },
   fieldInput:    { borderWidth: 1.5, borderRadius: RADIUS.md, paddingHorizontal: 13,
     paddingVertical: 10, fontSize: 14,
@@ -1276,7 +1276,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   generateBtn:   { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',
     marginBottom: 10, ...SHADOW.sm },
-  generateBtnText: { color: colors.textOnAccent, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  generateBtnText: { color: colors.textOnAccent, fontSize: 16, lineHeight: 23, ...FONTS.black },
   backLink:      { paddingVertical: 10, alignItems: 'center' },
   backLinkText:  { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
@@ -1292,7 +1292,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   editChip:        { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 12 },
   editChipText:    { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_500Medium', fontWeight: '500' },
   draftInput:      { borderWidth: 1, borderRadius: RADIUS.lg, padding: 20,
-    fontSize: 15, lineHeight: 26, minHeight: 600,
+    fontSize: 16, lineHeight: 28, minHeight: 600,
     fontFamily: 'Inter_400Regular', letterSpacing: 0.1,
     textAlignVertical: 'top' },
 
@@ -1306,8 +1306,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   // a full-width row inside the wrapping card grid
   sectionHeader:     { width: '100%', paddingHorizontal: 4, paddingVertical: 10, marginTop: 8, marginBottom: 4,
     borderRadius: RADIUS.md, borderWidth: 1, paddingLeft: 12 },
-  sectionHeaderText: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 1.2 },
-  sectionHeaderSub:  { fontSize: 11, fontWeight: '600', marginTop: 2 },
+  sectionHeaderText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 1.2 },
+  sectionHeaderSub:  { fontSize: 12, fontWeight: '600', marginTop: 2 },
   deadlineBanner:    { marginHorizontal: 16, marginTop: 8, marginBottom: 4,
     borderRadius: RADIUS.md, padding: 12 },
   deadlineBannerText:{ color: colors.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 17 },
@@ -1319,7 +1319,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   histFilterText:    { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   statusBadgeBtn:    { paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12,
     borderWidth: 1, marginLeft: 8, flexShrink: 0 },
-  statusBadgeText:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  statusBadgeText:   { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   statusPicker:      { position: 'absolute', right: 0, top: 44, zIndex: 999,
     borderRadius: 12, borderWidth: 1, minWidth: 150, overflow: 'hidden' },
   statusPickerRow:   { flexDirection: 'row', alignItems: 'center',
@@ -1329,15 +1329,15 @@ const makeEgStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', padding:20 },
   card:       { backgroundColor:colors.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },
   title:      { fontSize:18, fontWeight:'700', color:colors.textBrand, marginBottom:12, textAlign:'center' },
-  body:       { fontSize:13, color:colors.info, lineHeight:20, marginBottom:12 },
+  body:       { fontSize:14, color:colors.info, lineHeight:22, marginBottom:12 },
   bold:       { fontWeight:'700', color:colors.textPrimary },
   reviewBtn:  { backgroundColor:colors.bgSubtle, borderRadius:8, padding:12, alignItems:'center', marginBottom:16 },
-  reviewBtnText: { fontSize:13, fontWeight:'600', color:colors.info },
+  reviewBtnText: { fontSize:14, fontWeight:'600', color:colors.info },
   checkRow:   { flexDirection:'row', alignItems:'flex-start', gap:10, marginBottom:16 },
   checkBox:   { marginTop:2, flexShrink:0 },
   checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:colors.textMuted, alignItems:'center', justifyContent:'center' },
   checkInnerChecked: { backgroundColor:colors.navy, borderColor:colors.navy },
-  checkMark:  { color:colors.textOnNavy, fontSize:13, fontWeight:'700' }, // design-audit-ignore: rendered only when checked (navy fill)
+  checkMark:  { color:colors.textOnNavy, fontSize:14, fontWeight:'700' }, // design-audit-ignore: rendered only when checked (navy fill)
   checkLabel: { flex:1, fontSize:12, color:colors.info, lineHeight:18 },
   btnRow:     { flexDirection:'row', gap:10 },
   cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:colors.border, padding:12, alignItems:'center' },

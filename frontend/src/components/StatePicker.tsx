@@ -56,13 +56,13 @@ export function StatePicker({ value, onChange, allowAll = false, remember = true
 
 const styles = StyleSheet.create({
   pick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 48, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1 },
-  pickText: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  change: { fontSize: 13, fontWeight: '700' },
+  pickText: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
+  change: { fontSize: 14, fontWeight: '700' },
   back: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 16 },
   card: { borderRadius: 16, padding: 16, maxHeight: '80%', width: '100%', maxWidth: 480, alignSelf: 'center' },
   title: { fontSize: 16, fontWeight: '800', marginBottom: 8 },
   row: { minHeight: 44, justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth },
-  rowText: { fontSize: 15 },
+  rowText: { fontSize: 16 },
   bold: { fontWeight: '800' },
   cancel: { minHeight: 44, paddingHorizontal: 20, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginTop: 12 },
   cancelText: { fontSize: 14, fontWeight: '700' },

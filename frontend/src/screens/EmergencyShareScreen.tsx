@@ -318,7 +318,7 @@ if (phase === 'ready') return (
             <Text maxFontSizeMultiplier={1.4} style={styles.whatItem}>{label}</Text>
             <TextInput accessibilityLabel={label} testID={`arrest-${k}`} value={arrest[k]} onChangeText={v => setArrestField(k, v)}
               placeholder={ph} placeholderTextColor={colors.textMuted} maxLength={120}
-              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, minHeight: 44, color: colors.textPrimary, fontSize: 15 }} />
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 10, minHeight: 44, color: colors.textPrimary, fontSize: 16 }} />
           </View>
         ))}
       </View>
@@ -588,13 +588,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   hero: {
     backgroundColor: colors.emergency, borderRadius: RADIUS.xl,
     padding: 20, marginBottom: 16, ...SHADOW.md },
-  heroTitle: { fontSize: 20, ...FONTS.black, color: colors.bgCard, marginBottom: 6 },
+  heroTitle: { fontSize: 22, ...FONTS.black, color: colors.bgCard, marginBottom: 6 },
   heroSub:   { fontSize: 12, color: colors.textOnAccent, lineHeight: 18 },
 
   noContactsCard: {
     backgroundColor: colors.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
     borderWidth: 1, borderColor: colors.steelMid },
-  noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 6 },
+  noContactsTitle: { fontSize: 16, lineHeight: 23, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 6 },
   noContactsBody:  { fontSize: 12, lineHeight: 20, color: colors.textSecond, marginBottom: 12 },
   addContactsBtn:  { backgroundColor: colors.warn, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
   addContactsBtnText: { color: colors.textOnGold, ...FONTS.heavy, fontSize: 12 },
@@ -624,15 +624,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   retryBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 28 },
   retryBtnText: { color: colors.white, ...FONTS.heavy },
 
-  doneIcon:  { fontSize: 72, marginBottom: 8 },
+  doneIcon:  { fontSize: 80, marginBottom: 8 },
   doneTitle: { fontSize: 22, ...FONTS.black, color: colors.legal, marginBottom: 4 },
   doneSub:   { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 24 },
   doneBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 40, alignItems: 'center' },
-  doneBtnText: { color: colors.white, ...FONTS.black, fontSize: 15,
-    lineHeight: 22 },
+  doneBtnText: { color: colors.white, ...FONTS.black, fontSize: 16,
+    lineHeight: 23 },
 
   confirmHeader: { backgroundColor: colors.emergency, borderRadius: RADIUS.xl, padding: 16, marginBottom: 14, ...SHADOW.md },
-  confirmTitle:  { fontSize: 20, ...FONTS.black, color: colors.bgCard, marginBottom: 2 },
+  confirmTitle:  { fontSize: 22, ...FONTS.black, color: colors.bgCard, marginBottom: 2 },
   confirmSub:    { fontSize: 12, color: colors.textOnAccent },
 
   messagePreview: {
@@ -644,13 +644,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   providerCard: {
     backgroundColor: colors.bgCard, borderRadius: RADIUS.md, padding: 12, marginBottom: 10,
     borderLeftWidth: 4, borderLeftColor: colors.bail, borderWidth: 1, borderColor: colors.border },
-  providerLabel: { fontSize: 11, ...FONTS.black, color: colors.bail, marginBottom: 2, letterSpacing: 0.5 },
+  providerLabel: { fontSize: 12, ...FONTS.black, color: colors.bail, marginBottom: 2, letterSpacing: 0.5 },
   providerName:  { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 4 },
-  providerPhone: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.bail },
+  providerPhone: { fontSize: 16, lineHeight: 23, ...FONTS.heavy, color: colors.bail },
 
   sendBtn:     { backgroundColor: colors.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginTop: 8, ...SHADOW.md },
   sendBtnText: { color: colors.bgCard, fontSize: 18, ...FONTS.black },
-  sendBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3 },
+  sendBtnSub:  { color: colors.textOnAccent, fontSize: 12, marginTop: 3 },
   cancelBtn:   { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
   cancelBtnText: { fontSize: 14, lineHeight: 21, color: colors.textMuted, ...FONTS.semi },
   crisisSection: {
@@ -662,8 +662,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.bgCard,
     overflow: 'hidden' },
   crisisSectionTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 23,
     ...FONTS.bold,
     color: colors.textPrimary,
     paddingHorizontal: 16,
@@ -692,7 +692,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexShrink: 0 },
   crisisInfo:     { flex: 1 },
   crisisName:     { fontSize: 12, ...FONTS.semiBold, color: colors.textPrimary },
-  crisisDetail:   { fontSize: 11, ...FONTS.regular, color: colors.textMuted, marginTop: 1 },
+  crisisDetail:   { fontSize: 12, ...FONTS.regular, color: colors.textMuted, marginTop: 1 },
   crisisArrow:    { fontSize: 18, color: colors.textMuted },
   quickExitBar: {
     flexDirection: 'row',
@@ -712,7 +712,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3 },
   quickExitHint: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.info,
     fontStyle: 'italic' } });
 export default React.memo(EmergencyShareScreen);

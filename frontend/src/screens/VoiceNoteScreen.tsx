@@ -507,7 +507,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   pulseRing: { position: 'absolute', width: 120, height: 120, borderRadius: 80 },
   micBtn:    { width: 100, height: 100, borderRadius: 40,
     alignItems: 'center', justifyContent: 'center', ...SHADOW.md },
-  micIcon:   { fontSize: 44 },
+  micIcon:   { fontSize: 48 },
   stopSquare:{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.bgCard },
 
   tapHint:   { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 20 },
@@ -530,7 +530,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   editArea:  { minHeight: 200, marginBottom: 16 },
   processBtn:{ borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
     marginBottom: 12, ...SHADOW.sm },
-  processBtnText: { color: colors.white, fontSize: 15, lineHeight: 22, ...FONTS.black },
+  processBtnText: { color: colors.white, fontSize: 16, lineHeight: 23, ...FONTS.black },
 
   typeLink:  { paddingVertical: 10, alignItems: 'center', marginBottom: 8 },
   typeLinkText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
@@ -538,18 +538,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   // Result
   resultScroll:  { padding: 16 },
   resultCard:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12 },
-  resultDate:    { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', textTransform: 'uppercase',
+  resultDate:    { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 8 },
-  resultSummary: { fontSize: 15, lineHeight: 22 },
+  resultSummary: { fontSize: 16, lineHeight: 23 },
   resultSection: { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 10 },
-  resultSectionTitle: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
+  resultSectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase',
     letterSpacing: 0.8, marginBottom: 8 },
   resultBulletRow: { flexDirection: 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   resultBullet:    { fontSize: 16,
     fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0, lineHeight: 20 },
   resultBulletText:{ flex: 1, fontSize: 12, lineHeight: 19 },
 
-  fieldLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
+  fieldLabel: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
     letterSpacing: 1, marginBottom: 8 },
 
   saveBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center',

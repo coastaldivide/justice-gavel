@@ -89,7 +89,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           backgroundColor: colors.primary, borderRadius: 14, padding: 16, marginBottom: 16,
         }}>
           <IconLabel icon={ICONS.money} textStyle={{ color: colors.bgCard, fontWeight: '800', fontSize: 18 }} maxFontSizeMultiplier={1.4}>{t('bc_title')}</IconLabel>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 13, marginTop: 4 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 14, marginTop: 4 }}>
             {t('bc_intro')}
           </Text>
         </View>
@@ -189,18 +189,18 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                   backgroundColor: typeColor.bg, borderRadius: 6,
                   paddingHorizontal: 7, paddingVertical: 3,
                 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color: typeColor.text, fontWeight: '700', fontSize: 10 }}>
+                  <Text maxFontSizeMultiplier={1.4} style={{ color: typeColor.text, fontWeight: '700', fontSize: 12 }}>
                     {typeLabel(s.charge_type || '')}
                   </Text>
                 </View>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '600', fontSize: 13, flex: 1 }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '600', fontSize: 14, flex: 1 }}>
                   {s.charge}
                 </Text>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12 }}>{s.severity}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>
                   {s.bail_min === 0 && !s.bail_max ? t('bc_no_bail')
                     : s.bail_max === null ? `${fmt(s.bail_min)}+`
                     : `${fmt(s.bail_min)} - ${fmt(s.bail_max)}`}
@@ -228,7 +228,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                   )}
 
                   {!!s.source && (
-                    <Text testID="bail-source" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>
+                    <Text testID="bail-source" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12 }}>
                       {t('rc_source')}: {s.source.replace(/_/g, ' ')}{s.last_reviewed ? ` · ${t('rc_last_reviewed')}: ${s.last_reviewed}` : ` · ${t('bc_no_review_date')}`}
                     </Text>
                   )}
@@ -266,7 +266,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         {!!selected && (
           <View style={{ backgroundColor: colors.bgCard, borderRadius: 12,
             padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
-            <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 13, fontWeight: '700',
+            <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 14, fontWeight: '700',
               color: colors.textPrimary, marginBottom: 4 }} maxFontSizeMultiplier={1.3}>{t('bc_not_convicted')}</IconLabel>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textSecond, lineHeight: 18 }}>
               {t('bc_not_convicted_body')}
@@ -284,7 +284,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
             onPress={() => navigation.navigate('BailTab')}
           >
             <IconLabel icon={ICONS.bail} textStyle={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }} maxFontSizeMultiplier={1.4}>{t('bc_find_bondsman')}</IconLabel>
-            <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
+            <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:12,
               textAlign:'center', marginTop:4 }}>
               {t('bc_find_bondsman_sub')}
             </Text>
@@ -304,9 +304,9 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
             activeOpacity={0.85}
           >
-            <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.textOnNavy, fontSize: 15, fontWeight: '800' }} maxFontSizeMultiplier={1.2}>{t('bc_find_attorneys')}</IconLabel>
+            <IconLabel icon={ICONS.lawyer} textStyle={{ color: colors.textOnNavy, fontSize: 16, fontWeight: '800' }} maxFontSizeMultiplier={1.2}>{t('bc_find_attorneys')}</IconLabel>
             <Text maxFontSizeMultiplier={1.3}
-              style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 3 }}>
+              style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 3 }}>
               {t('bc_find_attorneys_sub')}
             </Text>
           </TouchableOpacity>
@@ -316,7 +316,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
-        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, lineHeight: 16,
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 12, lineHeight: 17,
           color: colors.textSecond, fontStyle: 'italic' }} maxFontSizeMultiplier={1.3}>{t('bc_disclaimer')}</IconLabel>
       </View>
       </ScrollView>
@@ -332,7 +332,7 @@ function Row({ label, value, text, sub, highlight, testID }:
   return (
     <View testID={testID} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, flex: 1 }}>{label}</Text>
-      <Text maxFontSizeMultiplier={1.4} style={{ color: highlight || text, fontWeight: '600', fontSize: 13 }}>{value}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={{ color: highlight || text, fontWeight: '600', fontSize: 14 }}>{value}</Text>
     </View>
   );
 }

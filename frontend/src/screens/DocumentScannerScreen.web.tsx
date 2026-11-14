@@ -99,15 +99,15 @@ const makeStyles = (c: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.bg },
   scroll: { padding: 16, paddingBottom: 48, width: '100%', maxWidth: 720, alignSelf: 'center' },
   title: { color: c.textPrimary, fontSize: 22, fontWeight: '800', marginBottom: 8 },
-  label: { color: c.textPrimary, fontSize: 15, fontWeight: '700' },
+  label: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
   muted: { color: c.textSecond, fontSize: 14, lineHeight: 20 },
   center: { alignItems: 'center', gap: 8, paddingVertical: 12 },
   error: { color: c.textPrimary, backgroundColor: c.emergencyBg, borderRadius: 10, padding: 12, fontSize: 14, marginBottom: 10 },
   okBox: { backgroundColor: c.legalBg, borderRadius: 12, padding: 12, marginBottom: 12, gap: 8 },
   btn: { backgroundColor: c.navy, borderRadius: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  btnText: { color: c.textOnNavy, fontSize: 15, fontWeight: '800' },
+  btnText: { color: c.textOnNavy, fontSize: 16, fontWeight: '800' },
   secondary: { borderRadius: 12, borderWidth: 1.5, borderColor: c.border, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  secondaryText: { color: c.textPrimary, fontSize: 15, fontWeight: '700' },
+  secondaryText: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
 });
 
 export default React.memo(DocumentScannerScreen);

@@ -184,8 +184,8 @@ function JuvenileJusticeScreen({ route }: ScreenProps): React.JSX.Element {
     >
 {/* Heightened disclaimer for content involving minors */}
 <View style={{ backgroundColor: colors.legalBg, borderLeftWidth: 3, borderLeftColor: colors.legal, padding: 12, margin: 12, borderRadius: 6 }}>
-  <Text style={{ fontSize: 11, color: colors.legal, fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>{t('x_juvenile_justice_content_involving_minors')}</Text>
-  <Text style={{ fontSize: 11, color: colors.legal, lineHeight: 16 }} maxFontSizeMultiplier={1.4}>
+  <Text style={{ fontSize: 12, color: colors.legal, fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>{t('x_juvenile_justice_content_involving_minors')}</Text>
+  <Text style={{ fontSize: 12, color: colors.legal, lineHeight: 17 }} maxFontSizeMultiplier={1.4}>
     {t('x_juvenile_justice_this_information_general_education')}
   </Text>
 </View>
@@ -306,11 +306,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   rightCardTitle:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', flex: 1 },
   rightCardBody:    { fontSize: 12, lineHeight: 20 },
   ctaBtn:           { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 10, marginBottom: 6 },
-  ctaBtnText:       { color: colors.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  ctaBtnText:       { color: colors.bg, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   stepScroll:       { marginBottom: 12 },
   stepScrollContent:{ gap: 8, paddingBottom: 4 },
   stepPill:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.pill, borderWidth: 1, gap: 6 },
-  stepPillNum:      { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', width: 16, textAlign: 'center' },
+  stepPillNum:      { fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900', width: 16, textAlign: 'center' },
   stepPillLabel:    { fontSize: 12, fontWeight: '700', maxWidth: 90 },
   stepCard:         { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 12 },
   stepCardHeader:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
@@ -318,11 +318,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stepNumBadgeText: { color: colors.white, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' },
   stepCardTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
   stepTimeline:     { fontSize: 12 },
-  stepSectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 12 },
+  stepSectionLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 12 },
   stepBody:         { fontSize: 12, lineHeight: 20 },
   rightsBlock:      { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 4 },
   tipBlock:         { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginTop: 8 },
-  tipLabel:         { color: colors.legal, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
+  tipLabel:         { color: colors.legal, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
   stepNav:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
   stepNavBtn:       { padding: 8 },
   stepNavLabel:     { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
@@ -335,11 +335,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stateBadgeText:   { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_900Black', fontWeight: '900' },
   sealingRowTop:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   autoChip:         { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20 },
-  autoChipText:     { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  autoChipText:     { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   sealingWhen:      { fontSize: 12, fontWeight: '600', flex: 1 },
   sealingNotes:     { fontSize: 12, lineHeight: 17 },
   disclaimer:       { borderTopWidth: 1, paddingTop: 12, marginTop: 8, marginBottom: 8 },
-  disclaimerText:   { fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  disclaimerText:   { fontSize: 12, lineHeight: 19, textAlign: 'center' },
   card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },

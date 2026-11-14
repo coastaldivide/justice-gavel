@@ -13,11 +13,11 @@ import {
 } from 'react-native';
 import { ScreenParams } from '../navigation/NavigationTypes';
 import { ScreenProps } from '../types/navigation';
-import { COLORS, FONTS, RADIUS, useTheme, type ThemeColors } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, useTheme, type ThemeColors, themeColors } from '../constants/theme';
 import { t, useLang } from '../i18n';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 type Props = ScreenProps<'BarPrepResults'>;
 
@@ -78,7 +78,7 @@ function AnswerRow({
         <Text style={styles.ansStem} numberOfLines={expanded ? 0 : 2}>
           {q.stem ?? q.question_text ?? ''}
         </Text>
-        <Text style={styles.ansChevron}>{expanded ? '▲' : '▼'}</Text>
+        <AppIcon name={expanded ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
       </View>
 
       {expanded && (
@@ -108,8 +108,8 @@ function AnswerRow({
         {/* Supplemental study disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+          style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 17 }}
         >
           {t('x_bar_prep_results_supplemental_study_only_not')}
         </Text>
@@ -265,7 +265,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   header:   { alignItems: 'center', marginBottom: 24 },
   title:    { ...FONTS.bold, fontSize: 22, color: colors.textOnNavy, marginBottom: 4 },
-  subtitle: { ...FONTS.regular, fontSize: 13, color: colors.steel },
+  subtitle: { ...FONTS.regular, fontSize: 14, color: colors.steel },
 
   // Score ring
   ringWrapper: { alignItems: 'center', marginBottom: 24 },
@@ -275,8 +275,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard,
     ...Platform.select({ ios: { shadowColor: colors.black, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
   },
-  ringPct:    { ...FONTS.bold, fontSize: 38, fontVariant: ['tabular-nums'] },
-  ringLabel:  { ...FONTS.regular, fontSize: 13, color: colors.info, marginTop: 2 },
+  ringPct:    { ...FONTS.bold, fontSize: 36, fontVariant: ['tabular-nums'] },
+  ringLabel:  { ...FONTS.regular, fontSize: 14, color: colors.info, marginTop: 2 },
   passBadge:  { ...FONTS.bold, fontSize: 14, marginTop: 12 },
 
   // Stats row
@@ -291,8 +291,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ctaBtn:               { borderRadius: RADIUS?.md ?? 12, paddingVertical: 14, alignItems: 'center' },
   ctaPrimary:           { backgroundColor: colors.legal },
   ctaSecondary:         { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.steel },
-  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: colors.textOnAccent },
-  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: colors.info },
+  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 16, color: colors.textOnAccent },
+  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 16, color: colors.info },
 
   // Section label
   sectionLabel: { ...FONTS.bold, fontSize: 16, color: colors.white, marginBottom: 4 },
@@ -306,15 +306,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ansHeader:  { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8 },
   // rows sit on the light legalBg / bailBg tints: dark text
   ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: colors.textBrand, marginTop: 1 },
-  ansNum:     { ...FONTS.bold, fontSize: 13, color: colors.textBrand, width: 30 },
-  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: colors.textBrand, lineHeight: 18 },
-  ansChevron: { ...FONTS.regular, fontSize: 11, color: colors.steel, marginTop: 2 },
+  ansNum:     { ...FONTS.bold, fontSize: 14, color: colors.textBrand, width: 30 },
+  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 14, color: colors.textBrand, lineHeight: 19 },
+  ansChevron: { ...FONTS.regular, fontSize: 12, color: colors.steel, marginTop: 2 },
 
   ansDetail:     { paddingHorizontal: 12, paddingBottom: 12 },
   ansLine:       { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
-  ansLineLabel:  { ...FONTS.bold, fontSize: 13 },
-  ansLineVal:    { ...FONTS.regular, fontSize: 13, flex: 1 },
+  ansLineLabel:  { ...FONTS.bold, fontSize: 14 },
+  ansLineVal:    { ...FONTS.regular, fontSize: 14, flex: 1 },
   ansRule:       { ...FONTS.regular, fontStyle: 'italic' as const, fontSize: 12, color: colors.steel, marginTop: 6 },
   explainBtn:    { marginTop: 8, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: 'rgba(133,183,235,0.12)', borderRadius: 8, alignSelf: 'flex-start' },
-  explainBtnText:{ ...FONTS.bold, fontSize: 13, color: colors.steel },
+  explainBtnText:{ ...FONTS.bold, fontSize: 14, color: colors.steel },
 });

@@ -242,7 +242,7 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   centered:  { backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', padding: 32 },
 
   // Permission screen
-  permIcon:  { fontSize: 52, marginBottom: 20, textAlign: 'center' },
+  permIcon:  { fontSize: 48, marginBottom: 20, textAlign: 'center' },
   permTitle: { fontSize: TYPE.xl, lineHeight: 33, ...FONTS.bold, marginBottom: 8, textAlign: 'center' },
   permSub:   { fontSize: TYPE.base, lineHeight: 21, textAlign: 'center', marginBottom: 32 },
   btn:       { borderRadius: RADIUS.md, paddingHorizontal: 32, paddingVertical: 14, alignItems: 'center' },
@@ -257,7 +257,7 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   cornerBL:  { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 8 },
   cornerBR:  { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 8 },
   guideText: { position: 'absolute', top: '12%', alignSelf: 'center', color: C.textOnGold,
-               fontSize: 13, lineHeight: 19, fontWeight: '600', textAlign: 'center',
+               fontSize: 14, lineHeight: 20, fontWeight: '600', textAlign: 'center',
                backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6,
                borderRadius: 8 },
 

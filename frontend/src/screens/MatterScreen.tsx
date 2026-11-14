@@ -90,7 +90,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   content:  { padding: 20 },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title:    { fontSize: 22, fontWeight: '700', color: colors.textBrand, marginBottom: 4 },
-  subtitle: { fontSize: 15, color: colors.textMuted, marginBottom: 20 },
+  subtitle: { fontSize: 16, color: colors.textMuted, marginBottom: 20 },
   row:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   label:    { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
   value:    { fontSize: 14, color: colors.textPrimary, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },

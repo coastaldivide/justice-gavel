@@ -279,7 +279,7 @@ function BailSearchScreen(): React.JSX.Element {
         />
       )}
       <View style={[styles.footerNote, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, color: colors.textSecond, lineHeight: 16, textAlign: 'center' }}>{t('bc_fee_note')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textSecond, lineHeight: 17, textAlign: 'center' }}>{t('bc_fee_note')}</Text>
       </View>
     </View>
   );
@@ -303,14 +303,14 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12, lineHeight: 17, marginTop: 6 },
   card: { borderRadius: 14, padding: 14, marginBottom: 10 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  cardName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  cardName: { fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   cardSub: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   ratingBlock: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-  ratingNum: { fontSize: 15, fontWeight: '800' },
-  reviewCount: { fontSize: 11, marginLeft: 2 },
+  ratingNum: { fontSize: 16, fontWeight: '800' },
+  reviewCount: { fontSize: 12, marginLeft: 2 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   badge: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { fontSize: 11, lineHeight: 16, fontWeight: '700' },
+  badgeText: { fontSize: 12, lineHeight: 17, fontWeight: '700' },
   empty: { alignItems: 'center', padding: 28, gap: 12 },
   emptyText: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
   emptyBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20, minHeight: 44 },

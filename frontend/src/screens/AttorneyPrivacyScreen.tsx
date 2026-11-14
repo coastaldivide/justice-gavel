@@ -91,7 +91,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
           <Text style={{ fontSize: 16, fontWeight: '700', color: (colors as any).text, marginBottom: 6 }}>
             {t('empty_state_nothing')}
           </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
             {t('x_attorney_privacy_results_will_appear_here')}
           </Text>
         </View>
@@ -164,12 +164,12 @@ const s = StyleSheet.create({
   section:          { marginHorizontal: 16, marginTop: 12, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', padding: 16 },
   sectionIcon:      { marginRight: 12 },
-  sectionTitle:     { fontSize: 15, fontWeight: '700', lineHeight: 20 },
+  sectionTitle:     { fontSize: 16, fontWeight: '700', lineHeight: 21 },
   chevron:          { marginLeft: 8 },
   sectionBody:      { padding: 16, paddingTop: 12, borderTopWidth: 1 },
   bodyText:         { fontSize: 14, lineHeight: 22 },
   contactBlock:     { margin: 16, marginTop: 24, borderRadius: 12, borderWidth: 1, padding: 20 },
-  contactTitle:     { fontSize: 17, fontWeight: '700', marginBottom: 8 },
+  contactTitle:     { fontSize: 18, fontWeight: '700', marginBottom: 8 },
   contactBody:      { fontSize: 14, lineHeight: 20, marginBottom: 16 },
   contactBtn:       { paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
   contactBtnOutline:{ backgroundColor: 'transparent', borderWidth: 1.5 },

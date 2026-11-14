@@ -148,7 +148,7 @@ if (loading) return;
                 borderWidth: 1, borderColor: on ? colors.navy : colors.border,
               }}
             >
-              <Text maxFontSizeMultiplier={1.3} style={{ color: on ? colors.white : colors.textSecond, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: on ? colors.white : colors.textSecond, fontWeight: '700', fontSize: 14, textAlign: 'center' }}>
                 {t(opt.labelKey)}
               </Text>
             </TouchableOpacity>
@@ -277,8 +277,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: colors.border,
     paddingHorizontal: 16,
   },
-  input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: colors.bgCard, ...FONTS.medium },
-  proInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, padding: 12, fontSize: 15, color: colors.bgCard, backgroundColor: 'rgba(255,255,255,0.05)' },
+  input: { flex: 1, paddingVertical: 16, fontSize: 16, lineHeight: 23, color: colors.bgCard, ...FONTS.medium },
+  proInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: RADIUS.md, padding: 12, fontSize: 16, color: colors.bgCard, backgroundColor: 'rgba(255,255,255,0.05)' },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
   showBtnText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
   errorBox: {
@@ -296,7 +296,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   loginLink: { alignItems: 'center', marginTop: 16 },
   loginText: { fontSize: 14, lineHeight: 21, color: colors.textMuted },
   loginHighlight: { color: colors.info, ...FONTS.bold },
-  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 24, lineHeight: 18 },
+  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 12, marginTop: 24, lineHeight: 20 },
 });
 
 // Module-level fallback for helper components

@@ -8,10 +8,10 @@ import { getToken } from '../utils/secureStorage';
 import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
-import { COLORS, RADIUS, useTheme } from '../constants/theme';
+import { COLORS, RADIUS, useTheme, themeColors } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { t, useLang, getLang } from '../i18n';
-import { IconLabel, ICONS } from '../components/AppIcon';
+import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
 
 /**
  * LessonsScreen — "Know your rights" lessons (public; GET /api/lessons).
@@ -154,7 +154,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                       <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>{t('x_lessons_pts', { points: item.points })}</Text>
                     </View>
                   </View>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>{open ? '▲' : '▼'}</Text>
+                  <AppIcon name={open ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
                 </View>
 
                 {open && (
@@ -280,11 +280,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   doneCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.textMuted, alignItems: 'center', justifyContent: 'center' },
   doneCircleDone: { backgroundColor: colors.legal, borderColor: colors.legal },
   doneCheck: { color: colors.textOnAccent, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' }, // design-audit-ignore: rendered only when done (legal fill)
-  cardTitle: { fontSize: 15, lineHeight: 22, fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
+  cardTitle: { fontSize: 16, lineHeight: 23, fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
   cardTitleDone: { color: colors.info },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
-  catText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  catText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   ptsText: { fontSize: 12, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   chevron: { fontSize: 12, color: colors.info, marginLeft: 4 },
   contentArea: { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.bg, paddingTop: 10 },
@@ -307,8 +307,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.steelMid, borderRadius: RADIUS.lg, borderWidth: 1,
     borderColor: colors.steelMid, margin: 12, padding: 12 },
   streakFlame: { fontSize: 28 },
-  streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steelMid },
-  streakSub:   { fontSize: 11, color: colors.emergency },
+  streakCount: { fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steelMid },
+  streakSub:   { fontSize: 12, color: colors.emergency },
 });
 
 // Module-level fallback for helper components

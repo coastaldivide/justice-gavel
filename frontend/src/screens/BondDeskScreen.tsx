@@ -327,8 +327,8 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   screen: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
-  heading: { fontSize: 24, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginTop: 12 },
   tile: { flexGrow: 1, flexBasis: '30%', minWidth: 100, backgroundColor: colors.bgCard, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, padding: 10 },
   tileValue: { fontSize: 18, ...FONTS.black, color: colors.textPrimary },
@@ -336,7 +336,7 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12 },
   actionBtn: { flexGrow: 1, flexBasis: '45%' },
   item: { minHeight: 44, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  itemTitle: { fontSize: 15, ...FONTS.bold, color: colors.textPrimary },
+  itemTitle: { fontSize: 16, ...FONTS.bold, color: colors.textPrimary },
 });
 
 export default React.memo(BondDeskScreen);

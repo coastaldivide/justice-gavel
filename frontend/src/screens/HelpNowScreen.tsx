@@ -86,6 +86,8 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [resolving, setResolving] = useState(true); // working out GPS / saved state on first open
   const [cityInput, setCityInput] = useState('');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [moreFilters, setMoreFilters] = useState(false);
+  const extraOn = (filters.miles ? 1 : 0) + (filters.charge ? 1 : 0) + (filters.language ? 1 : 0);
   const [result, setResult] = useState<HelpResult | null>(null);
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -300,6 +302,13 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           <Chip label={t('hn_open_now')} active={filters.open} onPress={() => applyFilters({ open: !filters.open })} testID="help-filter-open" />
           <Chip label="24/7" active={filters.h24} onPress={() => applyFilters({ h24: !filters.h24 })} testID="help-filter-24" />
           <Chip label={t('hn_free_consult')} active={filters.free} onPress={() => applyFilters({ free: !filters.free })} testID="help-filter-free" />
+          {/* Distance, charge and language sit behind "More filters" so the results start
+              higher (they took three rows; UI clean-up Nov 13 2026). The chip counts any that are on. */}
+          <Chip label={moreFilters ? t('hn_fewer_filters') : (extraOn ? `${t('hn_more_filters')} (${extraOn})` : t('hn_more_filters'))}
+            active={false} onPress={() => setMoreFilters(v => !v)} testID="help-filter-more" />
+        </ScrollView>
+        {moreFilters && (<>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {DISTANCES.map(d => (
             <Chip key={d} label={t('hn_within', { n: d })} active={filters.miles === d} onPress={() => applyFilters({ miles: filters.miles === d ? null : d })} testID={`help-filter-mi-${d}`} />
           ))}
@@ -314,6 +323,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Chip key={l} label={t(key)} active={filters.language === l} onPress={() => applyFilters({ language: filters.language === l ? '' : l })} testID={`help-filter-lang-${l.toLowerCase()}`} />
           ))}
         </ScrollView>
+        </>)}
 
         {!where && !resolving && phase === 'idle' && (
           <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">{t('hn_need_location')}</Text>
@@ -481,33 +491,33 @@ const makeStyles = (c: any) => StyleSheet.create({
   locBtnText: { color: c.white, fontSize: 16, fontWeight: '800' },
   input: { flex: 1, minWidth: 0, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, paddingHorizontal: 12, minHeight: 48, color: c.textPrimary, fontSize: 16 },
   goBtn: { backgroundColor: c.navy, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', minHeight: 48, marginTop: 4, flexShrink: 0 },
-  goBtnText: { color: c.white, fontSize: 15, fontWeight: '800' },
+  goBtnText: { color: c.white, fontSize: 16, fontWeight: '800' },
   chips: { gap: 8, paddingVertical: 4 },
   chip: { backgroundColor: c.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: c.border, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' },
   chipOn: { backgroundColor: c.navy, borderColor: c.navy },
   chipText: { color: c.textPrimary, fontSize: 14, fontWeight: '700' },
   chipTextOn: { color: c.white },
-  hint: { color: c.textSecond, fontSize: 15, lineHeight: 21, marginVertical: 10 },
+  hint: { color: c.textSecond, fontSize: 16, lineHeight: 22, marginVertical: 10 },
   errorBox: { backgroundColor: c.bgCard, borderRadius: 12, padding: 14, marginVertical: 10, borderWidth: 1, borderColor: c.border },
-  errorText: { color: c.textPrimary, fontSize: 15, lineHeight: 21 },
+  errorText: { color: c.textPrimary, fontSize: 16, lineHeight: 22 },
   offline: { backgroundColor: c.warnBg, borderRadius: 10, padding: 10, marginVertical: 8 },
-  offlineText: { color: c.warnDark, fontSize: 13, lineHeight: 18 },
+  offlineText: { color: c.warnDark, fontSize: 14, lineHeight: 19 },
   meta: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 6 },
   group: { marginTop: 16, marginBottom: 8 },
   groupText: { color: c.textPrimary, fontSize: 18, fontWeight: '900' },
   groupRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 12, marginBottom: 6 },
   sortLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
-  sortLinkText: { color: c.textBrand, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
-  sortNote: { color: c.textSecond, fontSize: 13, lineHeight: 19, backgroundColor: c.bgSubtle, borderRadius: 10, padding: 10, marginBottom: 8 },
+  sortLinkText: { color: c.textBrand, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
+  sortNote: { color: c.textSecond, fontSize: 14, lineHeight: 20, backgroundColor: c.bgSubtle, borderRadius: 10, padding: 10, marginBottom: 8 },
   card: { backgroundColor: c.bgCard, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   kind: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8 },
   kindLawyer: { color: c.textBrand },
   kindBail: { color: c.textPrimary },
-  distance: { color: c.textSecond, fontSize: 13, fontWeight: '700' },
-  name: { color: c.textPrimary, fontSize: 17, fontWeight: '800', marginTop: 4 },
+  distance: { color: c.textSecond, fontSize: 14, fontWeight: '700' },
+  name: { color: c.textPrimary, fontSize: 18, fontWeight: '800', marginTop: 4 },
   org: { color: c.textSecond, fontSize: 14 },
-  address: { color: c.textMuted, fontSize: 13, marginTop: 2 },
+  address: { color: c.textMuted, fontSize: 14, marginTop: 2 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   badge: { fontSize: 12, fontWeight: '800', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   badgeOpen: { color: c.white, backgroundColor: c.legalDark },
@@ -516,19 +526,19 @@ const makeStyles = (c: any) => StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 10 },
   actionBtn: { flex: 1, backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   actionCall: { backgroundColor: c.legalDark, borderColor: c.legalDark },
-  actionCallText: { color: c.white, fontSize: 15, fontWeight: '900' },
+  actionCallText: { color: c.white, fontSize: 16, fontWeight: '900' },
   actionText: { color: c.textPrimary, fontSize: 14, fontWeight: '800' },
   actionDisabled: { opacity: 0.45 },
   reportLink: { marginTop: 8, minHeight: 44, justifyContent: 'center' },
-  reportText: { color: c.textSecond, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  reportText: { color: c.textSecond, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
   pdBox: { backgroundColor: c.infoBg, borderRadius: 14, padding: 14, marginVertical: 10 },
   pdTitle: { color: c.textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 4 },
-  pdName: { color: c.textPrimary, fontSize: 15, fontWeight: '700' },
-  pdBody: { color: c.textPrimary, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  pdName: { color: c.textPrimary, fontSize: 16, fontWeight: '700' },
+  pdBody: { color: c.textPrimary, fontSize: 14, lineHeight: 20, marginTop: 4 },
   lookupRow: { paddingVertical: 10, minHeight: 44, justifyContent: 'center' },
   lookupText: { color: c.textPrimary, fontSize: 14, fontWeight: '600' },
   calcBtn: { backgroundColor: c.bgCard, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 8 },
-  calcBtnText: { color: c.textPrimary, fontSize: 15, fontWeight: '800' },
+  calcBtnText: { color: c.textPrimary, fontSize: 16, fontWeight: '800' },
   loadingSlot: { minHeight: 560 },
   disclaimer: { color: c.textMuted, fontSize: 12, lineHeight: 17, marginTop: 16, fontStyle: 'italic' },
   moreRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -536,14 +546,14 @@ const makeStyles = (c: any) => StyleSheet.create({
   moreBtnWide: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
   sheet: { backgroundColor: c.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
-  sheetTitle: { color: c.textPrimary, fontSize: 20, fontWeight: '900' },
+  sheetTitle: { color: c.textPrimary, fontSize: 22, fontWeight: '900' },
   reasonRow: { paddingVertical: 12, paddingHorizontal: 8, minHeight: 44, borderBottomWidth: 1, borderBottomColor: c.border },
   reasonRowOn: { backgroundColor: c.infoBg },
-  reasonText: { color: c.textPrimary, fontSize: 15 },
+  reasonText: { color: c.textPrimary, fontSize: 16 },
   submitBtn: { backgroundColor: c.navy, borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 52, marginTop: 12 },
   submitText: { color: c.white, fontSize: 16, fontWeight: '900' },
   cancelBtn: { paddingVertical: 12, alignItems: 'center', minHeight: 44 },
-  cancelText: { color: c.textSecond, fontSize: 15, fontWeight: '700' },
+  cancelText: { color: c.textSecond, fontSize: 16, fontWeight: '700' },
 });
 
 export default React.memo(HelpNowScreen);

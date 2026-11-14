@@ -134,12 +134,12 @@ function ConflictCheckScreen({ navigation }: ScreenProps): React.JSX.Element {
 const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   h1: { fontSize: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 6 },
-  h2: { fontSize: 17, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 4 },
-  title: { fontSize: 15, ...FONTS.heavy, color: colors.textPrimary },
+  h2: { fontSize: 18, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 4 },
+  title: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary },
   line: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 2 },
   area: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, padding: 12, fontSize: 14, minHeight: 110, textAlignVertical: 'top', marginTop: 12, color: colors.inputText, backgroundColor: colors.inputBg },
   primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingHorizontal: 12 },
-  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  primaryText: { color: colors.textOnNavy, fontSize: 16, ...FONTS.heavy, textAlign: 'center' },
   ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 10, backgroundColor: colors.bgCard },
   ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
   error: { color: colors.danger, marginTop: 10, fontSize: 14 },
@@ -147,11 +147,11 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   bannerTitle: { fontSize: 16, ...FONTS.heavy, marginBottom: 2 },
   card: { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 14, marginTop: 10, borderWidth: 1, borderColor: colors.border },
   matchRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
-  badge: { color: COLORS.white, fontSize: 11, ...FONTS.heavy, paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.pill, overflow: 'hidden' },
+  badge: { color: COLORS.white, fontSize: 12, ...FONTS.heavy, paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.pill, overflow: 'hidden' },
   matchName: { fontSize: 14, ...FONTS.semi, color: colors.textPrimary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   chip: { minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.bgCard },
-  chipText: { fontSize: 13, ...FONTS.semi, color: colors.textSecond },
+  chipText: { fontSize: 14, ...FONTS.semi, color: colors.textSecond },
 });
 
 export default React.memo(ConflictCheckScreen);

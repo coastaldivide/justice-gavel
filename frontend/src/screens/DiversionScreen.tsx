@@ -154,18 +154,18 @@ const styles = StyleSheet.create({
     tabText:    { fontSize: 12, fontWeight: '700', textAlign: 'center' },
     tabLine:    { position: 'absolute', bottom: 0, left: 8, right: 8, height: 3, borderRadius: 1 },
     content:    { padding: 16, paddingBottom: 40, width: '100%', maxWidth: 760, alignSelf: 'center' },
-    intro:      { fontSize: 13, lineHeight: 19, marginVertical: 12 },
+    intro:      { fontSize: 14, lineHeight: 20, marginVertical: 12 },
     card:       { borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1 },
     rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
     question:   { fontSize: 14, lineHeight: 20, flex: 1 },
     resultCard: { borderRadius: 12, padding: 16, marginVertical: 12, borderWidth: 1, gap: 6 },
-    resultTitle:{ fontSize: 15, fontWeight: '700' },
-    resultSub:  { fontSize: 13, lineHeight: 19 },
+    resultTitle:{ fontSize: 16, fontWeight: '700' },
+    resultSub:  { fontSize: 14, lineHeight: 20 },
     ctaCard:    { borderRadius: 12, padding: 16, marginTop: 8, borderWidth: 1, gap: 10 },
-    ctaText:    { fontSize: 13, lineHeight: 19 },
+    ctaText:    { fontSize: 14, lineHeight: 20 },
     ctaBtn:     { borderRadius: 24, minHeight: 48, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
     ctaOutline: { borderWidth: 1.5 },
-    ctaBtnText: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
+    ctaBtnText: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
 });
 
 export default React.memo(DiversionScreen);

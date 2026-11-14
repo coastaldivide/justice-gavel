@@ -473,10 +473,10 @@ const styles = (c: ThemeColors) => StyleSheet.create({
   indSource:        { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 15 },
   confBox:          { alignItems: 'center', flex: 0 },
   confPct:          { fontSize: TYPE.lg, fontFamily: FONT.bold },
-  confLabel:        { fontSize: 10, color: c.textMuted },
+  confLabel:        { fontSize: 12, color: c.textMuted },
   // Error banner
   errorBanner:      { backgroundColor: c.warn, borderRadius: 8, padding: 12, margin: 8 },
-  errorBannerText:  { color: c.bg, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  errorBannerText:  { color: c.bg, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   // Analytics tab
   analyticsDisclaimer: { backgroundColor: c.surface, borderRadius: 10, padding: 14, margin: 8, borderLeftWidth: 3, borderLeftColor: c.gold },
   analyticsDTitle:  { fontSize: TYPE.lg, fontFamily: FONT.bold, color: c.gold, marginBottom: 6 },
@@ -487,16 +487,16 @@ const styles = (c: ThemeColors) => StyleSheet.create({
   analysisRange:    { fontSize: TYPE.sm, fontFamily: FONT.bold, color: c.gold },
   analysisTitle:    { fontSize: TYPE.sm, fontFamily: FONT.bold, color: c.text, marginBottom: 4 },
   analysisInterp:   { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 18, marginBottom: 4 },
-  factorItem:       { fontSize: 11, color: c.textMuted, marginBottom: 2 },
-  analysisSource:   { fontSize: 10, color: c.textMuted, fontStyle: 'italic', marginTop: 4 },
-  circuitSplitWarn: { fontSize: 11, color: c.warn, marginTop: 4, fontFamily: FONT.bold },
+  factorItem:       { fontSize: 12, color: c.textMuted, marginBottom: 2 },
+  analysisSource:   { fontSize: 12, color: c.textMuted, fontStyle: 'italic', marginTop: 4 },
+  circuitSplitWarn: { fontSize: 12, color: c.warn, marginTop: 4, fontFamily: FONT.bold },
   precedentCard:    { backgroundColor: c.surface, borderRadius: 8, padding: 12, margin: 8, borderLeftWidth: 2, borderLeftColor: c.textMuted },
   precedentTitle:   { fontSize: TYPE.xs, fontFamily: FONT.bold, color: c.text, marginBottom: 4 },
-  precedentHolding: { fontSize: 11, color: c.textMuted, lineHeight: 16 },
+  precedentHolding: { fontSize: 12, color: c.textMuted, lineHeight: 17 },
   warnItem:         { fontSize: TYPE.xs, color: c.warn, marginBottom: 4, marginHorizontal: 8 },
   // Signals
   signalRow:        { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
-  signalDot:        { fontSize: 10, marginTop: 1 },  // color set inline
+  signalDot:        { fontSize: 12, marginTop: 1 },  // color set inline
   signalKey:        { fontSize: TYPE.sm, color: c.text, flex: 1 },
   // Motions
   motionCard:       { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 2, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 12, marginBottom: 8 },

@@ -302,7 +302,7 @@ function SectionStack({ initial }: { initial: string }) {
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: t('x_nav_specialty_courts') }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: t('x_nav_court_locator') }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: t('bail_calculator') }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: t('nav_title_just_arrested'), headerTitle: '', headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: t('x_nav_court_forms') }} />
       <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: t('x_nav_encounter_recorder'), headerStyle: { backgroundColor: colors.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: t('x_nav_document_scanner') }} />
@@ -357,6 +357,16 @@ function CourtNavigator()  { return <SectionStack initial="CourtDates" />; }
  * (losing anything typed), and the Resources tab, whose href is "/", reloaded onto Home
  * (sandbox review 2026-11-12). Dropping href keeps it a button with role="tab".
  */
+/**
+ * Tab label that wraps to two lines instead of cutting off. At 12 px "Court Dates",
+ * "Fechas de corte" or "Mga Petsa sa Korte" do not fit one line of a 78 px tab
+ * (UI clean-up Nov 13 2026).
+ */
+const tabLabel = (text: string) => ({ color }: { color: string }) => (
+  <Text maxFontSizeMultiplier={1.2} numberOfLines={2}
+    style={{ fontSize: 12, lineHeight: 14, fontWeight: '700', color, textAlign: 'center', paddingHorizontal: 2 }}>{text}</Text>
+);
+
 function TabButton({ href: _href, ...props }: any) {
   return <TouchableOpacity {...props} />;
 }
@@ -375,22 +385,22 @@ function MainTabs() {
           backgroundColor: colors.tabBg,
           borderTopColor:  colors.tabBorder,
           borderTopWidth:  1.5,
-          height:          62,
-          paddingBottom:   8,
+          height:          68,
+          paddingBottom:   6,
           paddingTop:      4,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
         // On web the default tab button is an <a role="link">, which breaks the
         // tablist's required children (axe aria-required-children). A Touchable
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TabButton {...props} />,
       }}>
       {/* Core path tabs (Oct 26 2026): Home · My rights · Get help · Court dates · More. */}
-      <Tab.Screen name="HomeTab"    component={HomeNavigator}      options={{ tabBarButton: (props: any) => <TabButton testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
-      <Tab.Screen name="RightsTab"  component={RightsNavigator} options={{ tabBarButton: (props: any) => <TabButton testID="rights-tab" {...props} />, tabBarLabel: t('tab_rights'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.rights} color={color} focused={focused} /> }} />
-      <Tab.Screen name="HelpTab"    component={HelpNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="help-tab" {...props} />, tabBarLabel: t('tab_get_help'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
-      <Tab.Screen name="CourtTab"   component={CourtNavigator}  options={{ tabBarButton: (props: any) => <TabButton testID="court-tab" {...props} />, tabBarLabel: t('tab_court_dates'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.calendar} color={color} focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeNavigator}      options={{ tabBarButton: (props: any) => <TabButton testID="home-tab" {...props} />, tabBarLabel: tabLabel(t('tab_home')), tabBarAccessibilityLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.home} color={color} focused={focused} /> }} />
+      <Tab.Screen name="RightsTab"  component={RightsNavigator} options={{ tabBarButton: (props: any) => <TabButton testID="rights-tab" {...props} />, tabBarLabel: tabLabel(t('tab_rights')), tabBarAccessibilityLabel: t('tab_rights'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.rights} color={color} focused={focused} /> }} />
+      <Tab.Screen name="HelpTab"    component={HelpNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="help-tab" {...props} />, tabBarLabel: tabLabel(t('tab_get_help')), tabBarAccessibilityLabel: t('tab_get_help'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.lawyer} color={color} focused={focused} /> }} />
+      <Tab.Screen name="CourtTab"   component={CourtNavigator}  options={{ tabBarButton: (props: any) => <TabButton testID="court-tab" {...props} />, tabBarLabel: tabLabel(t('tab_court_dates')), tabBarAccessibilityLabel: t('tab_court_dates'), tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.calendar} color={color} focused={focused} /> }} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TabButton testID="more-tab" {...props} />, tabBarLabel: tabLabel(t('tab_resources')), tabBarAccessibilityLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused, color }) => <TabIcon name={ICONS.library} color={color} focused={focused} /> }} />
       {/* Still reachable from Get help / Home (navigate('LawyersTab') etc.), no longer in the bar. */}
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
       <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }} />
@@ -430,13 +440,13 @@ function SplashScreen() {
     <ErrorBoundary>
     <View style={{ flex: 1, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' }}>
       <JTBLogo size={110} />
-      <Text style={{ fontSize: 26, fontWeight: '900', color: COLORS.white, letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
+      <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.white, letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
         JUSTICE GAVEL
       </Text>
-      <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
+      <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
         {t('home_footer_title').toLocaleUpperCase(locale())}
       </Text>
-      <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
         {t('splash_innocent')}
       </Text>
       <ActivityIndicator color={COLORS.steel} size="large" />

@@ -259,32 +259,32 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   langRow:    { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, paddingBottom: 0 },
   langBtn:    { backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  langBtnTxt: { color: colors.textOnNavy, fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  langBtnTxt: { color: colors.textOnNavy, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   header:      { backgroundColor: colors.emergencyDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
-  headerEmoji: { fontSize: 44 },
-  headerTitle: { fontSize: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.bg, textAlign: 'center' },
-  headerSub:   { fontSize: 13, color: colors.white, textAlign: 'center', lineHeight: 19 },
+  headerEmoji: { fontSize: 48 },
+  headerTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.bg, textAlign: 'center' },
+  headerSub:   { fontSize: 14, color: colors.white, textAlign: 'center', lineHeight: 20 },
 
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 1.5,
+  sectionLabel: { fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 1.5,
     textTransform: 'uppercase', marginTop: 20, marginBottom: 8, paddingHorizontal: 16 },
 
   rightCard:      { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 2, padding: 14 },
   rightTop:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   rightIcon:      { fontSize: 22 },
-  rightTitle:     { fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900', flex: 1, lineHeight: 19 },
-  rightBody:      { fontSize: 13, lineHeight: 20 },
+  rightTitle:     { fontSize: 14, fontFamily: 'Inter_900Black', fontWeight: '900', flex: 1, lineHeight: 20 },
+  rightBody:      { fontSize: 14, lineHeight: 22 },
   rightBodyBold:  { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 22 },
 
   stepRow:       { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginHorizontal: 16,
     marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
   stepBubble:    { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stepBubbleTxt: { color: colors.textOnNavy, fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  stepTxt:       { flex: 1, fontSize: 13, lineHeight: 20 },
+  stepBubbleTxt: { color: colors.textOnNavy, fontSize: 14, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  stepTxt:       { flex: 1, fontSize: 14, lineHeight: 22 },
 
   locatorCard: { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 2, padding: 16 },
-  locatorDesc: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  locatorDesc: { fontSize: 14, lineHeight: 20, marginBottom: 14 },
   locatorBtn:  { backgroundColor: colors.legal, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
   locatorBtnTxt: { color: colors.textOnAccent, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
@@ -300,9 +300,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   shareBtn:    { marginHorizontal: 16, marginVertical: 16, backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center' },
-  shareBtnTxt: { color: colors.textOnNavy, fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  shareBtnTxt: { color: colors.textOnNavy, fontSize: 16, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer:    { marginHorizontal: 16, borderRadius: RADIUS.md, borderWidth: 1, padding: 14 },
-  disclaimerTxt: { fontSize: 11, lineHeight: 17 },
+  disclaimerTxt: { fontSize: 12, lineHeight: 19 },
 });
 export default React.memo(IceDetentionScreen);

@@ -36,8 +36,8 @@ function OfflineBanner({ visible, onPress }: Props): React.JSX.Element | null {
 const styles = StyleSheet.create({
   banner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8, borderBottomWidth: 1 },
   body: { flex: 1, minWidth: 0 },
-  title: { fontSize: 13, fontWeight: '700' },
-  sub: { fontSize: 11, lineHeight: 16 },
+  title: { fontSize: 14, fontWeight: '700' },
+  sub: { fontSize: 12, lineHeight: 17 },
   see: { fontSize: 12, fontWeight: '700', flexShrink: 0 },
 });
 

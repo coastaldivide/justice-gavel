@@ -169,7 +169,7 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   body: { width: '100%', maxWidth: 640, alignSelf: 'center' },
   call: { minHeight: 44, justifyContent: 'center', marginTop: 6 },
-  callText: { color: colors.textBrand, fontSize: 15, ...FONTS.semiBold, textDecorationLine: 'underline' },
+  callText: { color: colors.textBrand, fontSize: 16, ...FONTS.semiBold, textDecorationLine: 'underline' },
   consent: { fontSize: 14, lineHeight: 21, color: colors.textPrimary, marginTop: 6 },
 });
 

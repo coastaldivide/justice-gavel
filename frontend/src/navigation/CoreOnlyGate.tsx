@@ -65,8 +65,8 @@ export function CoreOnlyGate({ screen, children }: { screen: string; children: R
 
 const styles = StyleSheet.create({
   wrap:    { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
-  title:   { ...FONTS.black, fontSize: 20, textAlign: 'center' },
-  body:    { fontSize: 15, lineHeight: 21, textAlign: 'center', maxWidth: 420 },
+  title:   { ...FONTS.black, fontSize: 22, textAlign: 'center' },
+  body:    { fontSize: 16, lineHeight: 22, textAlign: 'center', maxWidth: 420 },
   btn:     { marginTop: 8, paddingVertical: 14, paddingHorizontal: 22, borderRadius: 12, minHeight: 48, justifyContent: 'center' },
   btnText: { ...FONTS.bold, fontSize: 16 },
 });

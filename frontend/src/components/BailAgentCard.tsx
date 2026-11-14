@@ -123,11 +123,11 @@ export default function BailAgentCard({ onCheckIn, onVerifyPhone, refreshKey = 0
 const makeStyles = (c: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
   card: { backgroundColor: c.bgCard, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: c.border, padding: 16, marginBottom: 14 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  title: { color: c.textBrand, fontSize: 17, ...FONTS.black },
+  title: { color: c.textBrand, fontSize: 18, ...FONTS.black },
   agency: { color: c.textPrimary, fontSize: 16, ...FONTS.semiBold },
   link: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
-  linkText: { color: c.textBrand, fontSize: 15, textDecorationLine: 'underline' },
+  linkText: { color: c.textBrand, fontSize: 16, textDecorationLine: 'underline' },
   line: { color: c.textSecond, fontSize: 14, lineHeight: 20, marginTop: 4 },
   btn: { backgroundColor: c.navy, borderRadius: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  btnText: { color: c.textOnNavy, fontSize: 15, ...FONTS.black },
+  btnText: { color: c.textOnNavy, fontSize: 16, ...FONTS.black },
 });

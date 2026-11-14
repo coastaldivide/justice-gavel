@@ -149,8 +149,8 @@ const textStyles = themed(colors => StyleSheet.create({
 }));
 
 const textSizes = StyleSheet.create({
-  sm:  { fontSize: 13, fontWeight: '600' },
-  md:  { fontSize: 15, fontWeight: '700' },
+  sm:  { fontSize: 14, fontWeight: '600' },
+  md:  { fontSize: 16, fontWeight: '700' },
   lg:  { fontSize: 16, fontWeight: '800' },
 });
 

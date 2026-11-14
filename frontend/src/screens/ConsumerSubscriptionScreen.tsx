@@ -20,7 +20,7 @@ import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHasSession } from '../components/SignInNeeded';
 import { usePurchase, takePendingCheckout } from '../services/purchase';
-import { consumerPlansFrom, featureLabel, type ConsumerPlan, type SubscriptionView } from '../services/plans';
+import { consumerPlansFrom, featureLabel, shownFeatures, type ConsumerPlan, type SubscriptionView } from '../services/plans';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 
@@ -194,7 +194,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
       <AuthGateModal />
       <View style={s.header}>
-        <Text maxFontSizeMultiplier={1.4} style={s.heading}>{t('x_consumer_subscription_choose_plan')}</Text>
+        {/* "Choose Your Plan" is already the top-bar title (UI clean-up Nov 13 2026). */}
         <Text maxFontSizeMultiplier={1.4} style={s.subheading}>{t('plan_intro_consumer')}</Text>
       </View>
 
@@ -253,7 +253,8 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
           <Text maxFontSizeMultiplier={1.4} style={s.cardLine}>{t('cp_no_renewal')}</Text>
           {!!pass.active_until && <Text maxFontSizeMultiplier={1.4} style={[s.cardLine, { color: colors.legal }]} testID="case-pass-active">{t('cp_active_until', { date: fmtDay(pass.active_until) })}</Text>}
           <View style={{ marginVertical: 10 }}>
-            {(pass.features || []).map(f => (
+            {/* Same filter as the plan cards: no feature this build hides (bar prep, arrest monitor). */}
+            {shownFeatures(pass.features || []).map(f => (
               <View key={f} style={s.featureRow}>
                 <Text maxFontSizeMultiplier={1.4} style={[s.check, { color: colors.textBrand }]}>✓</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.featureText}>{featureLabel(f)}</Text>
@@ -323,7 +324,7 @@ function ConsumerSubscriptionScreen({ navigation, route }: ScreenProps): React.J
       <Text maxFontSizeMultiplier={1.4} style={s.footer}>{t('plan_footer_card')}</Text>
       <TouchableOpacity accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 16 }}
         onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab' as never))}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.info, textDecorationLine: 'underline' }}>{t('x_consumer_subscription_continue_with_free_features_2')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.info, textDecorationLine: 'underline' }}>{t('x_consumer_subscription_continue_with_free_features_2')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -333,14 +334,14 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   screen: { flex: 1 },
   scroll: { paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 20 },
-  heading: { fontSize: 26, ...FONTS.black, color: colors.textOnNavy },
-  subheading: { color: colors.textOnNavy, opacity: 0.85, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
+  heading: { fontSize: 28, ...FONTS.black, color: colors.textOnNavy },
+  subheading: { color: colors.textOnNavy, opacity: 0.85, fontSize: 14, lineHeight: 20 },
   notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
   card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1.5, borderColor: colors.border },
-  cardKicker: { fontSize: 11, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
-  cardTitle: { fontSize: 17, ...FONTS.heavy, color: colors.textPrimary },
-  cardLine: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 4 },
+  cardKicker: { fontSize: 12, ...FONTS.black, color: colors.textMuted, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+  cardTitle: { fontSize: 18, ...FONTS.heavy, color: colors.textPrimary },
+  cardLine: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 4 },
   price: { fontSize: 22, ...FONTS.black, color: colors.textBrand, marginTop: 2 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
@@ -351,12 +352,12 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   toggleText: { fontSize: 14, ...FONTS.bold, color: colors.textMuted },
   toggleTextActive: { color: colors.textOnNavy },
   saveBadge: { backgroundColor: colors.legalDark, borderRadius: RADIUS.pill, paddingHorizontal: 7, paddingVertical: 2 },
-  saveBadgeText: { fontSize: 11, color: COLORS.white, ...FONTS.heavy },
+  saveBadgeText: { fontSize: 12, color: COLORS.white, ...FONTS.heavy },
   featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 },
-  check: { fontSize: 13, ...FONTS.black, marginRight: 8, lineHeight: 19 },
-  featureText: { fontSize: 13, lineHeight: 19, color: colors.textSecond, flex: 1 },
+  check: { fontSize: 14, ...FONTS.black, marginRight: 8, lineHeight: 20 },
+  featureText: { fontSize: 14, lineHeight: 20, color: colors.textSecond, flex: 1 },
   primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
-  primaryBtnText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  primaryBtnText: { color: colors.textOnNavy, fontSize: 16, ...FONTS.heavy, textAlign: 'center' },
   currentPill: { minHeight: 44, borderRadius: RADIUS.md, backgroundColor: colors.legalBg, alignItems: 'center', justifyContent: 'center' },
   currentPillText: { color: colors.legal, fontSize: 14, ...FONTS.heavy },
   footer: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 20, lineHeight: 17, marginTop: 16 },

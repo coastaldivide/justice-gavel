@@ -271,7 +271,7 @@ const makeStyles = (c: ReturnType<typeof useTheme>['colors']) => StyleSheet.crea
   sub: { color: c.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   line: { marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: c.border },
   source: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 },
-  sourceText: { color: c.textSecond, fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  sourceText: { color: c.textSecond, fontSize: 14, lineHeight: 19, flexShrink: 1 },
 });
 
 export default React.memo(CourtPaperScreen);
