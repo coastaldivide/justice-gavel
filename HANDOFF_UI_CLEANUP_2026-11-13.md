@@ -1,6 +1,6 @@
 # Hand-off: UI clean-up (November 13, 2026)
 
-Branch **`ui-cleanup-2026-11-13`**: 7 commits on top of `sandbox-fixes-2026-11-12` (PR #3). This branch is frontend-only, apart from two backend tests that read frontend source files. Before/after screenshots of 12 screens are in `UI_SCREENSHOTS/` at the top of the zip.
+Branch **`ui-cleanup-2026-11-13`**: the commits on top of `sandbox-fixes-2026-11-12` (PR #3). This branch is frontend-only, apart from two backend tests that read frontend source files. Before/after screenshots of 12 screens are in `UI_SCREENSHOTS/` at the top of the zip.
 
 ## What changed
 
