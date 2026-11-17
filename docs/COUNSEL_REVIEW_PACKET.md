@@ -87,7 +87,8 @@ Is that sufficient for 3.x below?
 **What the app does.** Three kinds of automated texts, all ending "Reply STOP to opt out", sent from our
 Telnyx number on a registered 10DLC campaign:
 - court-date reminders to app users who turned them on (consent text below; up to 4 per court date:
-  7 days and 3 days before at 9:00, the evening before at 18:00, the morning of at 6:30, local time);
+  7 days and 3 days before at 9:00, the evening before at 18:00, the morning of at 6:30 — or 2 hours
+  before a hearing that starts before 8:30 (a 7:00 hearing: 5:00) — local time);
 - Bond Desk signing links to defendants/indemnitors;
 - Bond Desk payment reminders, sent when the agent presses "remind".
 STOP from any number blocks every future text to it (accounts and Bond Desk); START unblocks Bond Desk
@@ -124,8 +125,11 @@ Stripe account. Each installment is charged on its due date; a declined card is 
 and agent are told; the payer can stop it on the same page. Justice Gavel's 99¢ fee is taken from each successful charge
 (Stripe application fee). Is this authorization adequate for recurring card charges, and does running these charges for the
 agency make Justice Gavel (or the agency) subject to debt-collection rules for payment-plan collection?
-3.3 Quiet hours: the morning-of reminder is at 6:30 local time. Do any launch states' laws (e.g., FL,
-OK, MD, WA mini-TCPA statutes) restrict informational texts before 8:00? If so we will move it.
+3.3 Quiet hours: the morning-of reminder is at 6:30 local time, and since 2026-11-17 two hours before a
+hearing that starts before 8:30 (a 7:00 hearing gets it at 5:00 — at 6:30 it came only 30 minutes before).
+Do any launch states' laws (e.g., FL, OK, MD, WA mini-TCPA statutes) restrict informational texts before
+8:00? If so we will move it (DAY_OF_LEAD_MINUTES in services/courtReminders.js), and an early hearing would
+then rely on the evening-before reminder.
 3.4 HELP keyword handling and the campaign's sample messages — anything to add?
 
 ## 4. Payments, renewals, "all sales final"

@@ -34,7 +34,7 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] B1 Install the staging build, open it signed out → "Just arrested?" → rights card for your state shows, with its sources.
 - [ ] B2 Search lawyers and bail agents near you → results with phone numbers; tapping a number starts a call.
 - [ ] B3 Sign up. Add a court date 2 days from now at 9:00. Turn on text reminders (tick the consent box).
-- [ ] B4 Within the next minute: nothing yet. The reminders are planned for 1 day before (18:00) and the morning of (6:30) in your time zone — check "Reminders" on the case shows them.
+- [ ] B4 Within the next minute: nothing yet. The reminders are planned for 1 day before (18:00) and the morning of (6:30, or 2 hours before a hearing that starts before 8:30) in your time zone — check "Reminders" on the case shows them.
 - [ ] B5 Admin shortcut to test now: set a court date for **today** at least 2 hours ahead → a push arrives and a **text** arrives ending "Reply STOP to opt out". The e-mail arrives too if e-mail reminders are on.
 - [ ] B6 Reply **STOP** to that text → Settings in the app shows text reminders off. Reply **START**, then turn texts on again in the app (it asks for consent again).
 - [ ] B7 Family Connect: enter a name and phone → contacts appear at once, labelled free; no card screen.
@@ -76,7 +76,7 @@ an attorney account with bar verification approved by an admin, an admin account
 - [ ] E17a **Court dates** tab on the bond (status Active): add a hearing **8 days out** at 10:30 with a court name and room. Tick the
   confirmation for the defendant (your phone) and the indemnitor (second phone). The texts list shows, for both numbers, 7 days
   before 9:00 AM, 3 days 9:00 AM, evening before 6:00 PM, morning of 6:30 AM (court's time zone), and for the defendant only
-  "Did you make it?" 3:00 PM on the day and "If you missed court" 9:00 AM the next day.
+  "Did you make it?" 3:00 PM on the day (a hearing after 1:00 PM is asked about 2 hours after it starts) and "If you missed court" 9:00 AM the next day.
 - [ ] E17b Over the next 8 days both phones get all four reminders (the indemnitor's says "You co-signed …"); each shows
   "Sent · Delivered" in the list, and Texts this month counts them at 5¢ each.
 - [ ] E17c Add a hearing for **tomorrow** in the evening → a text arrives within a minute on both phones. Delete it → its other texts show Cancelled.

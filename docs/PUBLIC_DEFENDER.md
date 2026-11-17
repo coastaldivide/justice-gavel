@@ -58,8 +58,8 @@ For every client court date (`pd_reminders`, unique per hearing + number + step 
 
 | Step | When (office's zone: county → state → America/Chicago) |
 |---|---|
-| reminder | 7 and 3 days before at 09:00, the evening before at 18:00, the morning of at 06:30 (`COURT_REMINDER_PLAN`); a date added too late for all of them gets one text right away |
-| "Did you make it?" | 15:00 on the court day: "Reply 1 = I went, 2 = it was rescheduled, 3 = I missed it" |
+| reminder | 7 and 3 days before at 09:00, the evening before at 18:00, the morning of at 06:30, or 2 hours before a hearing that starts before 08:30 (`COURT_REMINDER_PLAN`, `dayOfReminderAt`); a date added too late for all of them gets one text right away |
+| "Did you make it?" | 15:00 on the court day, or 2 hours after a hearing that starts after 13:00 (`attendanceAskAt`): "Reply 1 = I went, 2 = it was rescheduled, 3 = I missed it" |
 | morning after | 09:00 the next day, unless the date was marked attended / rescheduled / cancelled: "if you missed court, act today: call your public defender (office phone) or the court clerk" + the missed-court guide link; sent at once when the date is marked missed |
 
 - **Wording.** Every text starts with the office's name ("Metro Nashville Public Defender: …") and is in the client's
