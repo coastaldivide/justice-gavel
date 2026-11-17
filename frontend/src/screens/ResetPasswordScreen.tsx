@@ -4,13 +4,16 @@
  *
  * Registered in the root stack (App.tsx) so the link opens whether the person
  * is signed out, browsing or signed in. POST /auth/reset-password { token,
- * password }; the server signs the account out everywhere, so the next step is
- * always "Sign in".
+ * password }; the server signs the account out everywhere (this device too: every
+ * token carries the account's session version), so this device's session is
+ * cleared as well and the next step is always "Sign in".
  */
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
+import { signOut } from '../services/session';
+import { getToken } from '../utils/secureStorage';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang } from '../i18n';
 
@@ -43,6 +46,7 @@ function ResetPasswordScreen({ navigation, route }: ScreenProps<'ResetPassword'>
     setError(''); setBusy(true);
     try {
       await api.post('/auth/reset-password', { token, password });
+      if (await getToken().catch(() => null)) await signOut({ serverDone: true }).catch(() => undefined);
       setPhase('done');
     } catch (e) {
       setError(apiErrorMessage(e, t('rp_failed')));

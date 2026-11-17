@@ -209,7 +209,7 @@ function SectionStack({ initial }: { initial: string }) {
     <ErrorBoundary>
     <MoreStack.Navigator initialRouteName={initial} screenOptions={HDR()}
       screenLayout={({ children, route }) => <CoreOnlyGate screen={route.name}>{children}</CoreOnlyGate>}>
-      <MoreStack.Screen name="MoreHome"              component={HomeScreen}                 options={{ headerShown: false }} />
+      <MoreStack.Screen name="MoreHome"              component={HomeScreen}                 options={{ headerShown: false, title: t('tab_home') }} />
       <MoreStack.Screen name="Emergency"             component={EmergencyScreen}             options={{ title: t('x_nav_emergency_alert') }} />
       <MoreStack.Screen name="CaseTimeline"          component={CaseTimelineScreen}          options={{ title: t('x_nav_case_timeline') }} />
       <MoreStack.Screen name="MatterIntelligence"     component={MatterIntelligenceScreen}  options={{ title: t('x_nav_matter_intelligence') }} />

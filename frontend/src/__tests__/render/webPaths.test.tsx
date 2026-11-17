@@ -35,3 +35,23 @@ describe('web paths', () => {
     expect(getPathFromState(state, config)).toBe('/home/quick-connect');
   });
 });
+
+describe('web paths for the Rights, Get help and Court dates tabs (sandbox review 2026-11-17, finding 10)', () => {
+  it('each tab opens on its own path, and a screen opened inside it stays on that tab', () => {
+    expect(leaf(getStateFromPath('/my-rights', config))).toEqual(['MainTabs', 'RightsTab', 'RightsCard']);
+    expect(leaf(getStateFromPath('/get-help', config))).toEqual(['MainTabs', 'HelpTab', 'HelpNow']);
+    expect(leaf(getStateFromPath('/my-court-dates', config))).toEqual(['MainTabs', 'CourtTab', 'CourtDates']);
+    expect(leaf(getStateFromPath('/get-help/attorney/3', config))).toEqual(['MainTabs', 'HelpTab', 'LawyerProfile']);
+    expect(leaf(getStateFromPath('/my-court-dates/court-dates/5', config))).toEqual(['MainTabs', 'CourtTab', 'CourtDateDetail']);
+    // the shared paths still open the Resources tab (reminder texts link /court-dates/<id>)
+    expect(leaf(getStateFromPath('/court-dates/5', config))).toEqual(['MainTabs', 'MoreTab', 'CourtDateDetail']);
+  });
+
+  it('a screen opened inside a tab gets a URL under that tab, so reload and back keep it', () => {
+    const inCourt: any = { routes: [{ name: 'MainTabs', state: { routes: [{ name: 'CourtTab', state: { index: 1, routes: [{ name: 'CourtDates' }, { name: 'CourtDateDetail', params: { id: '5' } }] } }] } }] };
+    expect(getPathFromState(inCourt, config)).toBe('/my-court-dates/court-dates/5');
+    const rights: any = { routes: [{ name: 'MainTabs', state: { routes: [{ name: 'RightsTab', state: { index: 0, routes: [{ name: 'RightsCard' }] } }] } }] };
+    expect(getPathFromState(rights, config)).toBe('/my-rights');
+    expect(tabs.RightsTab.screens.MoreHome).toBeUndefined();      // Home's own screen belongs to the Home tab
+  });
+});

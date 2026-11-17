@@ -13,7 +13,7 @@ import { setAppAuth } from '../services/auth';
 import { startSession } from '../services/session';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t, useLang } from '../i18n';
-import { isEmail } from '../utils/identifier';
+import { isEmail, isValidIdentifier } from '../utils/identifier';
 import { IconLabel, ICONS } from '../components/AppIcon';
 
 
@@ -149,15 +149,16 @@ if (loading) return;
             onPress={() => {
               // forgot password
 
-              const email = identifier.trim();
-              if (!email) { showToast(t('x_lg_enter_email_first_then'), 'info'); return; }
-              // Reset links go by e-mail only (phone numbers cannot receive one).
-              if (!isEmail(email)) { setError(t('lg_reset_needs_email')); return; }
-              confirm(t('x_lg_reset_password'), t('x_lg_send_reset_link', { email }),
+              const id = identifier.trim();
+              if (!id) { showToast(t('x_lg_enter_email_first_then'), 'info'); return; }
+              if (!isValidIdentifier(id)) { setError(t('lg_reset_bad_identifier')); return; }
+              // The link goes by e-mail to an address, by text message to a phone number.
+              const byEmail = isEmail(id);
+              confirm(t('x_lg_reset_password'), byEmail ? t('x_lg_send_reset_link', { email: id }) : t('lg_send_reset_text', { phone: id }),
                 { confirmLabel: t('x_lg_send_link') }).then(ok => {
                 if (!ok) return;
-                api.post('/auth/forgot-password', { email })
-                  .then(() => showToast(t('x_lg_reset_link_sent_check'), 'success'))
+                api.post('/auth/forgot-password', { identifier: id })
+                  .then(() => showToast(byEmail ? t('x_lg_reset_link_sent_check') : t('lg_reset_text_sent'), 'success'))
                   .catch((e: unknown) => showToast(apiErrorMessage(e, t('x_lg_could_not_send_reset')), 'error'));
               });
             }}

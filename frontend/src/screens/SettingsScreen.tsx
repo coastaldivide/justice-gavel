@@ -111,6 +111,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Sign out
   logoutBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: colors.emergency },
   logoutText: { color: colors.textSecond, fontSize: 16, lineHeight: 23, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  logoutAllBtn: { alignItems: 'center', justifyContent: 'center', minHeight: 44, marginTop: 8, paddingVertical: 10 },
+  logoutAllText: { color: colors.textSecond, fontSize: 14, lineHeight: 20, textDecorationLine: 'underline' },
   row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   rowLeft:      { flexDirection: 'row', alignItems: 'center', flex: 1 },
   rowIcon:      { fontSize: 18, marginRight: 12, width: 24, textAlign: 'center' },
@@ -352,6 +354,20 @@ function SettingsScreen({ navigation }: any) {
     // Switching the root auth state swaps the navigator tree to the guest flow
     // (Login), so no manual navigation reset is needed.
     await signOut();
+  };
+
+  // Every session on every device ends, this one too (server: logout { allDevices: true } adds one
+  // to the account's session version, so stolen tokens stop working at once).
+  const logoutEverywhere = async () => {
+    const ok = await confirm(t('st_sign_out_all'), t('st_sign_out_all_body'), { confirmLabel: t('st_sign_out_all'), destructive: true });
+    if (!ok) return;
+    try {
+      await api.post('/auth/logout', { allDevices: true });
+    } catch (e) {
+      showToast(apiErrorMessage(e, t('st_sign_out_all_failed')), 'error');
+      return;
+    }
+    await signOut({ serverDone: true });
   };
 
   const openAbout = (item: { nav?: string; url?: string }) => {
@@ -744,13 +760,19 @@ function SettingsScreen({ navigation }: any) {
 
       {/* ── Sign out (signed in) / Sign in (guest) ───────────────────────── */}
       {signedIn ? (
-        <TouchableOpacity accessibilityRole="button" testID="settings-logout-button"
-          style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
-          onPress={logout}
-          accessibilityLabel={t('x_st_sign_out_2')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>{t('x_st_sign_out_2')}</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity accessibilityRole="button" testID="settings-logout-button"
+            style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
+            onPress={logout}
+            accessibilityLabel={t('x_st_sign_out_2')}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>{t('x_st_sign_out_2')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" testID="settings-logout-all-button"
+            style={styles.logoutAllBtn} onPress={logoutEverywhere} accessibilityLabel={t('st_sign_out_all')}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.logoutAllText}>{t('st_sign_out_all')}</Text>
+          </TouchableOpacity>
+        </>
       ) : (
         <TouchableOpacity accessibilityRole="button" testID="settings-sign-in-button"
           style={[styles.logoutBtn, { backgroundColor: colors.navy, borderColor: colors.navy }]}

@@ -43,6 +43,9 @@ import AgencyPayScreen from './src/screens/AgencyPayScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
 import StaffJoinScreen from './src/screens/StaffJoinScreen';
 import PdJoinScreen from './src/screens/PdJoinScreen';
+import { documentTitleFor } from './src/navigation/documentTitle';
+import FirmJoinScreen from './src/screens/FirmJoinScreen';
+import ConfirmEmailScreen from './src/screens/ConfirmEmailScreen';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
 import { AppIcon, ICONS } from './src/components/AppIcon';
@@ -340,6 +343,7 @@ function AppInner() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       <ToastProvider>
       <NavigationContainer linking={activeLinking} theme={navTheme}
+          documentTitle={{ formatter: (options) => documentTitleFor(options, t('app_name')) }}
           ref={navigationRef}
           onReady={installDesktopBridge}
           onStateChange={(state) => {
@@ -370,6 +374,8 @@ function AppInner() {
           )}
           {/* The password-reset e-mail link works signed out, browsing or signed in */}
           <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          {/* The "confirm your new e-mail address" link (confirm-email?token=…) — any auth state */}
+          <RootStack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
           {/* A bail agent's signing link (defendant / indemnitor) — no account needed */}
           <RootStack.Screen name="SignPacket" component={SignPacketScreen} />
           {/* "If you missed court, act today" — the link in the morning-after text; no account needed */}
@@ -385,6 +391,8 @@ function AppInner() {
           <RootStack.Screen name="StaffJoin" component={StaffJoinScreen} />
           {/* An invitation into a public defender office (pd/join/<token>) — any auth state */}
           <RootStack.Screen name="PdJoin" component={PdJoinScreen} />
+          {/* An invitation into a law firm's account (firm/join/<token>, e-mailed by the firm admin) — sign-in asked on the page */}
+          <RootStack.Screen name="FirmJoin" component={FirmJoinScreen} />
           {/* The published results page (B11) — shows only what an admin published; any auth state */}
           <RootStack.Screen name="Results" component={ResultsScreen} />
         </RootStack.Navigator>

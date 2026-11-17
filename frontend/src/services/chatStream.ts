@@ -25,7 +25,7 @@ import { Platform } from 'react-native';
 import { API_BASE_URL, api, deviceTimeZone } from './api';
 import { pollJob, JobError } from './jobPoller';
 import { getToken } from '../utils/secureStorage';
-import { getLang, t } from '../i18n';
+import { getLang, locale, t } from '../i18n';
 import { appendSegment, readSourced, type SourcedAnswer } from './sourced';
 
 export interface RightsRef { key: string; heading: string; source: string; last_reviewed: string | null }
@@ -85,10 +85,24 @@ export function chatErrorText(code: string): string {
   }
 }
 
+/**
+ * The free-question limit is a rolling 24 hours (backend chat/_helpers.js): say when the next
+ * question is free again (resets_at) — "tomorrow" would be wrong.
+ */
+export function chatLimitText(resetsAt?: unknown, now: Date = new Date()): string {
+  const at = typeof resetsAt === 'string' ? new Date(resetsAt) : null;
+  if (!at || Number.isNaN(at.getTime()) || at.getTime() <= now.getTime()) return t('x_ch_ve_used_free_ai');
+  const sameDay = at.toDateString() === now.toDateString();
+  const time = at.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
+  const when = sameDay ? time : `${at.toLocaleDateString(locale(), { weekday: 'long' })} ${time}`;
+  return t('ch_limit_until', { when });
+}
+
 function fromHttp(status: number, data: Record<string, unknown>): ChatError {
   const code = String(data?.code || data?.error || (status === 451 ? 'disclaimer_required' : status === 402 ? 'chat_limit_reached' : 'ai_failed'));
   const known = ['chat_limit_reached', 'disclaimer_required', 'ai_unavailable'].includes(code);
-  const message = known ? chatErrorText(code) : (typeof data?.message === 'string' ? data.message : chatErrorText(code));
+  const message = code === 'chat_limit_reached' ? chatLimitText(data?.resets_at)
+    : known ? chatErrorText(code) : (typeof data?.message === 'string' ? data.message : chatErrorText(code));
   return new ChatError(code, message, { status, data });
 }
 

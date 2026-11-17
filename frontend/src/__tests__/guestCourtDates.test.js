@@ -34,9 +34,13 @@ describe('planGuestReminders', () => {
     expect(p[2].at).toEqual(new Date(2026, 10, 19, 18, 0));
     expect(p[3].at).toEqual(new Date(2026, 10, 20, 6, 30));   // the server's 06:30 (courtReminders.js)
   });
-  it('moves the morning reminder to 1 hour before an early hearing', () => {
+  it('moves the morning reminder to 2 hours before an early hearing (same as the server)', () => {
     const p = g.planGuestReminders('2026-11-20', '07:00', NOW);
-    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 0));
+    expect(p[p.length - 1].at).toEqual(new Date(2026, 10, 20, 5, 0));
+    const q = g.planGuestReminders('2026-11-20', '08:30', NOW);
+    expect(q[q.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 30));   // exactly 2 h before: 06:30 either way
+    const r = g.planGuestReminders('2026-11-20', '08:00', NOW);
+    expect(r[r.length - 1].at).toEqual(new Date(2026, 10, 20, 6, 0));
   });
   it('keeps 06:30 for a later hearing', () => {
     const p = g.planGuestReminders('2026-11-20', '13:00', NOW);

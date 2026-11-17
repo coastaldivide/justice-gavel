@@ -545,7 +545,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
       if (err.code === 'stopped') {
         update(answerId, m => (m.text ? { status: 'stopped' } : { status: 'stopped', text: '' }));
       } else if (err.code === 'chat_limit_reached') {
-        update(answerId, { text: chatErrorText(err.code), status: 'complete', showUpgrade: true, question: undefined });
+        update(answerId, { text: err.message || chatErrorText(err.code), status: 'complete', showUpgrade: true, question: undefined });
       } else if (err.code === 'disclaimer_required') {
         notifyDisclaimerRequired();
         update(answerId, { text: chatErrorText(err.code), status: 'complete', question: undefined });

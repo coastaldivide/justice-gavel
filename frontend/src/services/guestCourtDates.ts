@@ -52,9 +52,10 @@ function at(day: Date, offsetDays: number, h: number, m = 0): Date {
 /**
  * The local instants to remind at, in the phone's time zone, skipping any that
  * have passed. Same times as the server (backend services/courtReminders.js COURT_REMINDER_PLAN):
- * 09:00 seven and three days before, 18:00 the evening before, 06:30 the morning of — or 1 hour
- * before a hearing that starts earlier than 07:30.
+ * 09:00 seven and three days before, 18:00 the evening before, 06:30 the morning of — or 2 hours
+ * before a hearing that starts earlier than 08:30 (server: dayOfReminderAt, DAY_OF_LEAD_MINUTES).
  */
+export const DAY_OF_LEAD_MS = 2 * 60 * 60 * 1000;
 export function planGuestReminders(courtDate: string, courtTime: string | null, now: Date = new Date()): PlannedLocal[] {
   const day = parseLocalDate(courtDate);
   if (!day) return [];
@@ -62,7 +63,7 @@ export function planGuestReminders(courtDate: string, courtTime: string | null, 
   if (courtTime && TIME_RE.test(courtTime)) {
     const [h, m] = courtTime.split(':').map(Number);
     const hearing = at(day, 0, h, m);
-    if (hearing.getTime() - 60 * 60 * 1000 < morning.getTime()) morning = new Date(hearing.getTime() - 60 * 60 * 1000);
+    if (hearing.getTime() - DAY_OF_LEAD_MS < morning.getTime()) morning = new Date(hearing.getTime() - DAY_OF_LEAD_MS);
   }
   const plan: PlannedLocal[] = [
     { at: at(day, -7, 9), kind: 'week' },
