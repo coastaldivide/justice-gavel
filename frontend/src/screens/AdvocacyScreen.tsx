@@ -131,7 +131,7 @@ function AdvocacyScreen(): React.JSX.Element {
         </>
       ) : null}
 
-        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>{t('x_advocacy_this_content_general_educational')}</IconLabel>
+        <IconLabel icon={ICONS.lawyer} textStyle={{ fontSize: 12, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>{t('x_advocacy_this_content_general_educational')}</IconLabel>
         </ScrollView>
   );
 }
@@ -147,14 +147,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   statCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   statIcon: { marginBottom: 6 },
   statValue: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: colors.info, fontWeight: '600', textAlign: 'center' },
+  statLabel: { fontSize: 12, color: colors.info, fontWeight: '600', textAlign: 'center' },
   coverageCard: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: colors.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   coverageRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   coverageRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.bg },
   coverageCity: { width: 130, fontSize: 12, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   coverageBar: { flex: 1, height: 6, backgroundColor: colors.bgSubtle, borderRadius: 4, overflow: 'hidden' },
   coverageFill: { height: '100%', backgroundColor: colors.navy, borderRadius: 4 },
-  coverageCount: { width: 60, fontSize: 11, color: colors.info, textAlign: 'right' },
+  coverageCount: { width: 60, fontSize: 12, color: colors.info, textAlign: 'right' },
   missionCard: { backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: colors.navy },
   missionTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
   missionText: { fontSize: 12, color: colors.textPrimary, lineHeight: 21 },

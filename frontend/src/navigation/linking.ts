@@ -5,20 +5,20 @@
  *
  *   RootStack
  *   ├─ MainTabs  (signed in or browsing)
- *   │   ├─ HomeTab · ChatTab · LawyersTab · BailTab
+ *   │   ├─ HomeTab · RightsTab · HelpTab · CourtTab
  *   │   └─ MoreTab (MoreStack: every secondary screen)
  *   ├─ GuestNav  (signed out: AgeGate · Onboarding · Login · Register · …)
- *   ├─ ResetPassword (reset-password?token=… from the e-mail; any auth state)
+ *   ├─ ResetPassword (reset-password?token=… from the e-mail or text; any auth state)
+ *   ├─ ConfirmEmail (confirm-email?token=… — the "confirm your new e-mail address" link; any auth state)
  *   ├─ SignPacket (sign/<token> — a bail agent's paperwork link; any auth state)
- *   └─ MissedCourt (missed-court[/es|pt|vi|ht|zh|ar|tl] — the morning-after text's link; any auth state)
- *   └─ CheckInLink (c/<token> — a bail agent's check-in text link; any auth state)
- *   └─ RecoveryInvite (recovery/<token> — a bail agent's "shared a forfeited bond" e-mail; any auth state)
+ *   ├─ MissedCourt (missed-court[/es|pt|vi|ht|zh|ar|tl] — the morning-after text's link; any auth state)
  *   ├─ CheckInLink (c/<token> — a bail agent's check-in text link; any auth state)
+ *   ├─ RecoveryInvite (recovery/<token> — a bail agent's "shared a forfeited bond" e-mail; any auth state)
  *   ├─ AutopayLink (autopay/<token> — a payer's automatic-payment link; any auth state)
  *   ├─ AgencyPay (pay/<slug> — a bail agency's public pay page; any auth state)
- *   └─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
- *   └─ PdJoin (pd/join/<token> — an invitation into a public defender office; sign-in asked on the page)
  *   ├─ StaffJoin (bond-desk/join/<token> — an invitation to an agency's Bond Desk; sign-in asked on the page)
+ *   ├─ PdJoin (pd/join/<token> — an invitation into a public defender office; sign-in asked on the page)
+ *   ├─ FirmJoin (firm/join/<token> — an invitation into a law firm's account; sign-in asked on the page)
  *   └─ Results (results — the published results page, B11; any auth state)
  *
  * Only one of MainTabs / GuestNav is mounted at a time: `linking` serves the
@@ -182,6 +182,7 @@ export const linking: LinkingOptions<any> = {
       },
       // Root level: the password-reset e-mail link, a bail agent's signing link and check-in text link (any auth state)
       ResetPassword: 'reset-password',
+      ConfirmEmail:  'confirm-email',
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
@@ -190,27 +191,46 @@ export const linking: LinkingOptions<any> = {
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
       PdJoin:        'pd/join/:token',
+      FirmJoin:      'firm/join/:token',
       Results:       'results',
     },
   },
 };
 
 /**
- * Home is a stack too (AppNavigator HomeNavigator, sandbox review 2026-11-12): its
- * first screen is "/" and a screen opened from Home lives under "/home/…"
- * ("/home/quick-connect"), so web history and reloads keep it on the Home tab.
- * The Resources tab keeps the plain paths ("/quick-connect", "/resources").
+ * Every tab is a stack with the full screen list (AppNavigator SectionStack). Each tab
+ * stack gets its own paths, so web history and a reload keep a screen on the tab it
+ * was opened from:
+ *   Home        "/"            · its screens "/home/…" ("/home/quick-connect")   (sandbox review 2026-11-12)
+ *   My rights   "/my-rights"   · its screens "/my-rights/…"                       (2026-11-17, finding 10)
+ *   Get help    "/get-help"    · its screens "/get-help/…"
+ *   Court dates "/my-court-dates" · its screens "/my-court-dates/…"
+ * The tab's first screen is the tab's own path. Before, these three tabs were a bare path:
+ * a screen opened inside them had no URL of its own, so a reload or the browser's back
+ * button lost it. The Resources tab keeps the plain paths ("/quick-connect", "/resources").
  */
+export const TAB_STACKS: Record<string, { first: string; prefix: string }> = {
+  HomeTab:   { first: 'MoreHome',   prefix: 'home' },
+  RightsTab: { first: 'RightsCard', prefix: 'my-rights' },
+  HelpTab:   { first: 'HelpNow',    prefix: 'get-help' },
+  CourtTab:  { first: 'CourtDates', prefix: 'my-court-dates' },
+};
 {
   const tabs = (linking.config?.screens as any).MainTabs.screens;
   const more: Record<string, any> = tabs.MoreTab.screens;
-  const home: Record<string, any> = { MoreHome: '' };
-  for (const [name, cfg] of Object.entries(more)) {
-    if (name === 'MoreHome') continue;
-    if (typeof cfg === 'string') home[name] = `home/${cfg}`;
-    else if (cfg && typeof cfg === 'object' && typeof cfg.path === 'string') home[name] = { ...cfg, path: `home/${cfg.path}` };
+  for (const [tab, { first, prefix }] of Object.entries(TAB_STACKS)) {
+    const screens: Record<string, any> = { [first]: '' };
+    // Nested paths are relative to the tab's path: Home's is "" so its screens carry the
+    // "home/" prefix themselves; the other tabs' path is the prefix.
+    const own = (p: string) => (tab === 'HomeTab' ? `${prefix}/${p}` : p);
+    for (const [name, cfg] of Object.entries(more)) {
+      if (name === first) continue;
+      if (name === 'MoreHome' && tab !== 'HomeTab') continue;   // Home's own screen belongs to the Home tab
+      if (typeof cfg === 'string') screens[name] = own(cfg);
+      else if (cfg && typeof cfg === 'object' && typeof cfg.path === 'string') screens[name] = { ...cfg, path: own(cfg.path) };
+    }
+    tabs[tab] = { path: tab === 'HomeTab' ? '' : prefix, screens };
   }
-  tabs.HomeTab = { path: '', screens: home };
 }
 
 /**
@@ -224,6 +244,7 @@ export const guestLinking: LinkingOptions<any> = {
   config: {
     screens: {
       ResetPassword: 'reset-password',
+      ConfirmEmail:  'confirm-email',
       SignPacket:    'sign/:token',
       MissedCourt:   'missed-court/:lang?',
       CheckInLink:   'c/:token',
@@ -232,6 +253,7 @@ export const guestLinking: LinkingOptions<any> = {
       AgencyPay:     'pay/:slug',
       StaffJoin:     'bond-desk/join/:token',
       PdJoin:        'pd/join/:token',
+      FirmJoin:      'firm/join/:token',
       Results:       'results',
       GuestNav: {
         screens: {

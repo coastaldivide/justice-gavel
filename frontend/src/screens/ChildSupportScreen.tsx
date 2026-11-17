@@ -61,14 +61,14 @@ function ChildSupportScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
 const makeStyles = (c: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
   content: { padding: 16, paddingBottom: 48, width: '100%', maxWidth: 760, alignSelf: 'center' },
   header: { borderRadius: RADIUS.lg, padding: 20, marginBottom: 8 },
-  title: { fontSize: 21, fontWeight: '800', marginBottom: 6 },
-  sub: { fontSize: 13, lineHeight: 19 },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 6 },
+  sub: { fontSize: 14, lineHeight: 20 },
   label: { fontSize: 14, fontWeight: '800', color: c.textBrand, marginTop: 16, marginBottom: 8 },
   card: { backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 14, marginTop: 14, gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
   body: { fontSize: 14, lineHeight: 20, color: c.textSecond },
   secondary: { minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: c.navy, alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingHorizontal: 12 },
-  secondaryText: { color: c.textBrand, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  secondaryText: { color: c.textBrand, fontSize: 16, fontWeight: '700', textAlign: 'center' },
 });
 
 export default React.memo(ChildSupportScreen);

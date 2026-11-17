@@ -45,20 +45,49 @@ shows these as `bearer` + `x-staff-only`).
   the database on every request (≤ 60 s cache), so they never outlive a
   demotion or ban. A deleted/disabled account gets 401; if the database cannot
   be reached the API answers 503 `auth_unavailable` (fail closed).
+- Session version (migration 51): every token carries the account's
+  `token_version` (`tv`). Changing or resetting the password, confirming a new
+  e-mail address, `POST /api/auth/logout { allDevices: true }` and a replayed
+  refresh token add one to it: every access AND refresh token issued before is
+  refused at once with `401 session_revoked`.
 - Refresh: `POST /api/auth/refresh` with `{ refreshToken }` → a new
   `{ token, refreshToken, user }`. Refresh tokens are single-use, stored
-  hashed server-side and rotated on every use; replaying a used one revokes
-  all of that user's sessions (`401 token_reuse`). Without a `refreshToken`,
+  hashed server-side and rotated on every use; replaying a rotated one ends
+  all of that user's sessions, access tokens included (`401 token_reuse`). A
+  signed-out or expired one is `401 invalid_refresh`. Without a `refreshToken`,
   a still-valid access token in `Authorization: Bearer` is exchanged for a
-  fresh pair (the mobile app's path). `POST /api/auth/logout` revokes.
-- Passwords: 8+ characters, and not a doubled 4-digit PIN, one repeated
-  character, a digit run or a very common password (400 with
-  `auth.err.password_weak` wording). `POST /api/auth/change-password`
-  `{ currentPassword, newPassword }` (signed in) → `{ ok, token, refreshToken, user }`
-  and signs out other sessions. Login adds `password_change_required: true` for
-  accounts made with the old PIN sign-up.
+  fresh pair (the mobile app's path). `POST /api/auth/logout { refreshToken }`
+  removes that refresh token; `{ allDevices: true }` ends every session.
+- Profile: `POST /api/auth/update-profile` `{ displayName?, email?, currentPassword? }`.
+  A new e-mail needs the current password (400 `password_required`, 403
+  `incorrect_password`), is e-mailed a confirmation link
+  (`/confirm-email?token=…`, 24 h) and is used only after
+  `POST /api/auth/confirm-email { token }`; the current address is told. A
+  phone number changes only through `POST /api/me/phone/verify` + `/confirm`
+  (a texted code); `phone` here (and in `PUT /api/court-dates/preferences`) is
+  400 `phone_needs_verification` unless it is the account's number already. One account
+  per phone number, sign-in identifier and e-mail (unique indexes; 409).
+- Passwords: 8+ characters, at most 72 bytes in UTF-8 (bcrypt's limit), and
+  not a doubled 4-digit PIN, one repeated character, a digit run or a very
+  common password (400 with `auth.err.password_*` wording).
+  `POST /api/auth/change-password` `{ currentPassword, newPassword }` (signed in)
+  → `{ ok, token, refreshToken, user }`; a wrong current password is 403
+  `incorrect_password`, the same password again 400 `password_same`; every
+  other session and every outstanding reset link stop working. Login adds
+  `password_change_required: true` for accounts made with the old PIN sign-up.
+- Forgot password: `POST /api/auth/forgot-password { identifier }` — an e-mail
+  address gets the link by e-mail, a phone number by text (503
+  `email_unavailable` / `sms_unavailable` when that provider is not set up);
+  otherwise always `{ sent: true }`. At most 3 links an hour, one a minute.
 - Lock-out: 10 failed logins from one IP lock that account *for that IP* for
-  15 minutes (423 `account_locked`); 50 from anywhere lock the account.
+  15 minutes (423 `account_locked`); 50 from anywhere within 15 minutes lock
+  the account for 15 minutes. Both counts start over after a lock.
+- Firm invitations: the invited address gets a link `/firm/join/<token>`;
+  `GET /api/firm-acquisition/invite/:token` shows it and
+  `POST /api/firm-acquisition/invite/accept { token }` joins — signed in with
+  the invited address. Only a hash of the token is stored.
+- Free AI chat: 3 questions per rolling 24 hours per free account (402
+  `chat_limit_reached` with `resets_at`: when the next one is free).
 - Staff-only routes are flagged `x-staff-only: true` in the spec. Every role
   check — including `/api/admin/*` — uses the role read from the database
   (above), never a role claim in the token; `/api/admin/*` also requires

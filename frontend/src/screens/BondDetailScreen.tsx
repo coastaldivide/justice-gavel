@@ -114,11 +114,11 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, marginTop: 12 },
   tab: { minHeight: 44, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, justifyContent: 'center' },
   tabOn: { backgroundColor: colors.navy, borderColor: colors.navy },
-  tabText: { fontSize: 13, ...FONTS.bold, color: colors.textSecond },
+  tabText: { fontSize: 14, ...FONTS.bold, color: colors.textSecond },
   tabTextOn: { color: colors.textOnNavy },
 });
 

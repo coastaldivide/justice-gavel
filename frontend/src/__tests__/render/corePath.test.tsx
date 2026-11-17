@@ -256,8 +256,14 @@ describe('HelpNowScreen — lawyers and bail agents together', () => {
     wrap(<HelpNowScreen navigation={makeNavigation()} route={{} as any} />);
     await screen.findByTestId('help-lawyer-card');
     fireEvent.press(screen.getByTestId('help-filter-open'));
+    // Charge, language and distance sit behind "More filters" (UI clean-up Nov 13 2026).
+    expect(screen.queryByTestId('help-filter-charge-dui')).toBeNull();
+    fireEvent.press(screen.getByTestId('help-filter-more'));
     fireEvent.press(screen.getByTestId('help-filter-charge-dui'));
     await waitFor(() => expect(api.get).toHaveBeenLastCalledWith('/help/nearby', { params: expect.objectContaining({ state: 'TN', open_now: 1, charge: 'DUI' }) }));
+    // closing the extra rows keeps the filter on and says so on the chip
+    fireEvent.press(screen.getByTestId('help-filter-more'));
+    expect(screen.getByTestId('help-filter-more')).toHaveTextContent(/\(1\)/);
   });
 
   it('"Report a problem" sends the reason for the listing (the listing is not edited)', async () => {
@@ -460,6 +466,27 @@ describe('CourtDateDetailScreen', () => {
     expect(screen.getByTestId('court-date-call-clerk')).toBeTruthy();
     fireEvent.press(screen.getByTestId('court-date-ics'));
     await waitFor(() => expect(mockExportIcs).toHaveBeenCalledWith(7));
+  });
+
+  it('texts on, no number yet: the number is verified first (no typing it in here); with a number, the switch saves without one', async () => {
+    on('get', '/court-dates/7', detail);
+    on('get', '/cases/3/followers', []);
+    on('get', '/court-dates/preferences', { sms_reminders: false, has_phone: false, sms_available: true });
+    const nav = makeNavigation();
+    const first = wrap(<CourtDateDetailScreen navigation={nav} route={route} />);
+    fireEvent.press(await screen.findByTestId('court-date-add-phone'));
+    expect(nav.navigate).toHaveBeenCalledWith('VerifyPhone');
+    expect(screen.queryByTestId('court-date-sms')).toBeNull();
+    expect(screen.queryByLabelText(/Mobile number/)).toBeNull();
+    reset();
+    on('get', '/court-dates/7', detail);
+    on('get', '/cases/3/followers', []);
+    on('get', '/court-dates/preferences', { sms_reminders: false, has_phone: true, sms_available: true });
+    on('put', '/court-dates/preferences', { ok: true, sms_reminders: true, sms_available: true });
+    first.unmount();
+    wrap(<CourtDateDetailScreen navigation={makeNavigation()} route={route} />);
+    fireEvent.press(await screen.findByTestId('court-date-sms'));
+    await waitFor(() => expect(calls.find(c => c.method === 'put')?.data).toEqual({ sms_reminders: true }));
   });
 
   it('"I missed this court date" marks it and shows guidance ending with "call your lawyer or the court clerk"', async () => {

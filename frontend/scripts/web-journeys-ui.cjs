@@ -348,6 +348,8 @@ async function scrollHome(page, where) {
         const s = await open(browser, { lang, theme });
         await go(s.page, '/');
         await byTid(s.page, 'tile-Bail').first().waitFor({ timeout: 15000 });
+        // Home shows 8 tiles; "Show all tools" opens the rest (UI clean-up Nov 13 2026).
+        await byTid(s.page, 'home-show-all-tools').first().click();
         await byTid(s.page, 'tile-Search').first().scrollIntoViewIfNeeded();
         const m = await s.page.evaluate(() => {
           const rgb = c => { const x = /rgba?\(([\d.]+), ([\d.]+), ([\d.]+)(?:, ([\d.]+))?/.exec(c); return x && (x[4] === undefined || +x[4] > 0.5) ? [+x[1], +x[2], +x[3]] : null; };

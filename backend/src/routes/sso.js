@@ -160,6 +160,7 @@ function issueJwt(user) {
     displayName: user.display_name || user.name || user.email,
     premium:     !!user.is_premium,
     sso:         true,
+    tv:          Number(user.token_version || 0),   // session version (middleware/auth.js)
   };
   return jwt.sign(
     payload,
@@ -305,7 +306,7 @@ router.post('/acs', ssoLimiter, async (req, res) => {
     const safeName  = truncateStr(name || safeEmail.split('@')[0], 100);
 
     // Find or create user — never take over an account outside this firm.
-    let user = await db.get('SELECT id, email, role, display_name, name, is_premium, account_status FROM users WHERE LOWER(email)=? LIMIT 1', [safeEmail]);
+    let user = await db.get('SELECT id, email, role, display_name, name, is_premium, account_status, token_version FROM users WHERE LOWER(email)=? LIMIT 1', [safeEmail]);
     let firmMember = null;
     if (user) {
       firmMember = await db.get(
@@ -326,7 +327,7 @@ router.post('/acs', ssoLimiter, async (req, res) => {
          VALUES (?,?,?,?,?,?)`,
         [safeEmail, safeName, safeName, 'sso_no_password', 'user', safeEmail]
       );
-      user = await db.get('SELECT id, email, role, display_name, name, is_premium FROM users WHERE id=? LIMIT 1', [r.lastID]);
+      user = await db.get('SELECT id, email, role, display_name, name, is_premium, token_version FROM users WHERE id=? LIMIT 1', [r.lastID]);
       const provisionedRole = SSO_PROVISIONABLE_ROLES.has(idpRole) ? idpRole : 'associate';
       await db.run(
         `INSERT INTO firm_members (firm_id, user_id, firm_role, role, status, active)

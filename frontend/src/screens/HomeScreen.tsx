@@ -29,6 +29,11 @@ import { PdHomeCard } from '../components/publicDefender/PdParts';
 const ATTORNEY_ROLES = ['attorney', 'defender', 'admin'];
 // `flag`: shown only when that server feature is on for this person (custody alerts; shared bonds when at least one is shared).
 interface Tile { key: string; icon: IconName; label: string; nav: string; bg: string; color: string; primary: boolean; roles?: string[]; flag?: 'custody' | 'recovery' }
+/** Quick-access tiles shown before "Show all tools". */
+const HOME_TILES_SHOWN = 8;
+/** Tiles that only repeat a bottom tab. */
+const TAB_TILES = new Set(['RightsTab', 'HelpTab', 'CourtTab']);
+
 const TILES = perLang((): Tile[] => {
   const c = themeColors();
   return [
@@ -124,6 +129,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [tipCategory, setTipCategory] = useState('');
   const [tipQuery, setTipQuery]       = useState('');
   const [visitCount, setVisitCount]   = useState(0);
+  const [showAllTiles, setShowAllTiles] = useState(false);
 
   const [coreStep, setCoreStep] = useState(1);
   // Core path: resume where the person left off; open a screen queued before the
@@ -251,6 +257,14 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     }
   };
 
+  // Quick access (UI clean-up Nov 13 2026): tiles that only repeat the tab bar are left out;
+  // the big primary tiles, then this person's own (role / server-feature tiles), then the rest;
+  // the first HOME_TILES_SHOWN show, "Show all tools" opens the others.
+  const allTiles = TILES()
+    .filter(tile => !TAB_TILES.has(tile.nav) && (!tile.roles || tile.roles.includes(role)) && (!tile.flag || flags[tile.flag]) && isScreenEnabled(tileScreen(tile.nav), role))
+    .sort((a, b) => (Number(b.primary) - Number(a.primary)) || (Number(!!(b.roles || b.flag)) - Number(!!(a.roles || a.flag))));
+  const shownTiles = showAllTiles ? allTiles : allTiles.slice(0, HOME_TILES_SHOWN);
+
   return (
     <View testID="home-screen" style={styles.screen}>
       {/* Header */}
@@ -329,45 +343,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           onVerifyPhone={() => (navigation as any).navigate('VerifyPhone')}
           onCheckIn={(enrollmentId) => (navigation as any).navigate('CheckIn', { enrollmentId })} />
 
-        {/* Emergency banner -- prominent, always first */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          testID="home-emergency-screen"
-          style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('Emergency')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.rowIconWrap}>
-            <AppIcon name={ICONS.notification} size={20} color={colors.textBrand} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
-          </View>
-          <AppIcon name={ICONS.chevronRight} size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-
-        {/* Quick Connect -- prominent package banner */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-          testID="home-quick-connect"
-          style={styles.rowCard}
-          onPress={() => (navigation as any).navigate('QuickConnect')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.quickConnectLeft}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('x_nav_quick_connect')}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
-          </View>
-          <View style={styles.quickConnectRight}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPrice}>$20</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
-          </View>
-        </TouchableOpacity>
-
         {/* Public defender office members: their office (A11; hidden for everyone else and while the ⚖ setting is off) */}
         <PdHomeCard navigation={navigation as never} />
 
@@ -408,6 +383,90 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownArrow}>›</Text>
           </TouchableOpacity>
         )}
+
+        {/* Emergency banner -- prominent, always first */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+          testID="home-emergency-screen"
+          style={styles.rowCard}
+          onPress={() => (navigation as any).navigate('Emergency')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.rowIconWrap}>
+            <AppIcon name={ICONS.notification} size={20} color={colors.textBrand} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
+          </View>
+          <AppIcon name={ICONS.chevronRight} size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
+
+        {/* Section label */}
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('home_quick_access')}</Text>
+
+        {/* Tile grid */}
+        <View style={styles.grid}>
+          {shownTiles.map(tile => (
+            <TouchableOpacity
+              accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+              accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
+              key={tile.key}
+              testID={`tile-${tile.key}`}
+              style={[styles.tile, { backgroundColor: tile.bg }, tile.primary ? styles.tileLg : styles.tileSm]}
+              onPress={() => navigate(tile.nav)}
+              activeOpacity={0.75}
+            >
+              <AppIcon name={tile.icon} size={tile.primary ? 28 : 22} color={tile.color} />
+              <View style={styles.tileText}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, tile.primary ? styles.tileLabelLg : styles.tileLabelSm, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
+                {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
+                  </View>
+                )}
+                {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {allTiles.length > HOME_TILES_SHOWN && (
+          <TouchableOpacity accessibilityRole="button" testID="home-show-all-tools" style={styles.showAllBtn}
+            onPress={() => setShowAllTiles(v => !v)}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.showAllText}>
+              {showAllTiles ? t('home_show_fewer_tools') : t('home_show_all_tools', { n: allTiles.length })}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Paid options sit below the free tools (UI clean-up Nov 13 2026): help first, then offers. */}
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel} testID="home-more-options">{t('home_more_options')}</Text>
+        {/* Quick Connect -- prominent package banner */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityHint={t('cp_double_tap')}
+          testID="home-quick-connect"
+          style={styles.rowCard}
+          onPress={() => (navigation as any).navigate('QuickConnect')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.quickConnectLeft}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('x_nav_quick_connect')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
+          </View>
+          <View style={styles.quickConnectRight}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPrice}>$20</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
+          </View>
+        </TouchableOpacity>
 
           {/* Plans card for people without a paid plan (below the emergency cards, so
               an upsell never comes before help, and its late load can't push them down). Price and features come from
@@ -454,42 +513,6 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           </TouchableOpacity>
         )}
 
-        {/* Section label */}
-        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('home_quick_access')}</Text>
-
-        {/* Tile grid */}
-        <View style={styles.grid}>
-          {TILES().filter(tile => (!tile.roles || tile.roles.includes(role)) && (!tile.flag || flags[tile.flag]) && isScreenEnabled(tileScreen(tile.nav), role))
-            // the square primary tiles first, then the compact two-column rows
-            .sort((a, b) => Number(b.primary) - Number(a.primary)).map(tile => (
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint={t('cp_double_tap')}
-              accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
-              key={tile.key}
-              testID={`tile-${tile.key}`}
-              style={[styles.tile, { backgroundColor: tile.bg }, tile.primary ? styles.tileLg : styles.tileSm]}
-              onPress={() => navigate(tile.nav)}
-              activeOpacity={0.75}
-            >
-              <AppIcon name={tile.icon} size={tile.primary ? 28 : 22} color={tile.color} />
-              <View style={styles.tileText}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, tile.primary ? styles.tileLabelLg : styles.tileLabelSm, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
-                {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
-                  </View>
-                )}
-                {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
-                  <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Sign-in nudge -- shown to browsing (guest) users */}
         {visitCount > 1 && !!displayName && (
           <View style={styles.returningCard}>
@@ -525,7 +548,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.footerCard}>
           <JTBLogo size={32} />
           <View style={{ marginStart: 12, flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
               {t('home_footer_innocent')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.footerTitle}>{t('home_footer_title')}</Text>
@@ -545,9 +568,9 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   coreCard: { backgroundColor: colors.emergencyDark, borderRadius: 16, padding: 16, marginBottom: 14, minHeight: 56 },
   coreTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  coreTitle: { color: colors.white, fontSize: 24, fontWeight: '900', flexShrink: 1 },
+  coreTitle: { color: colors.white, fontSize: 22, fontWeight: '900', flexShrink: 1 },
   coreStep: { color: colors.white, fontSize: 16, fontWeight: '700', lineHeight: 23 },
-  coreCta: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
+  coreCta: { color: colors.white, fontSize: 16, fontWeight: '900', marginTop: 8, textDecorationLine: 'underline' },
   screen: { flex: 1, backgroundColor: colors.bg },
 
   header: {
@@ -558,11 +581,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
   headerText: { flex: 1, minWidth: 0 },
   logoMark: { width: 42, height: 42, borderRadius: RADIUS.sm, overflow: 'hidden' },
-  brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
+  brand: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0, marginStart: 8 },
   settingsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  settingsIcon: { fontSize: 20 },
+  settingsIcon: { fontSize: 22 },
 
   // The SOS dock sits below the ScrollView (its own lane), so the content needs
   // no extra room for it; the column is capped so desktop is not stretched.
@@ -578,14 +601,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.bgSubtle,
     alignItems: 'center', justifyContent: 'center' },
-  emergencyTitle: { color: colors.textPrimary, ...FONTS.heavy, fontSize: 15,
-    lineHeight: 22 },
+  emergencyTitle: { color: colors.textPrimary, ...FONTS.heavy, fontSize: 16,
+    lineHeight: 23 },
   emergencySub:   { color: colors.textSecond, fontSize: 12, lineHeight: 17, marginTop: 2 },
 
   sectionLabel: {
-    fontSize: 11, ...FONTS.black, color: colors.textSecond,
+    fontSize: 12, ...FONTS.black, color: colors.textSecond,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  showAllBtn: { minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  showAllText: { fontSize: 14, ...FONTS.bold, color: colors.textBrand },
   // Quick access: two columns of icon + label rows. The four primary tiles
   // (bail, lawyer, rights, AI help) come first and are taller with a larger
   // icon; the rest are compact rows — no big squares. All use the theme's
@@ -599,20 +625,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tileLg: { minHeight: 76 },
   tileText:  { flex: 1, minWidth: 0 },
   tileLabel: { ...FONTS.black },
-  tileLabelLg: { fontSize: 15, lineHeight: 19 },
-  tileLabelSm: { fontSize: 13, lineHeight: 17 },
+  tileLabelLg: { fontSize: 16, lineHeight: 20 },
+  tileLabelSm: { fontSize: 14, lineHeight: 18 },
 
   countBadge: {
     alignSelf: 'flex-start', marginTop: 3, paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 8, backgroundColor: COLORS.navy },
-  countBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  countBadgeText: { color: colors.bg, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   quickConnectLeft:  { flex: 1 },
-  quickConnectTag:   { fontSize: 11, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
+  quickConnectTag:   { fontSize: 12, ...FONTS.bold, color: colors.textSecond, letterSpacing: 0.5, marginBottom: 2 },
   quickConnectTitle: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 2 },
   quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: colors.textSecond },
   quickConnectRight: { alignItems: 'center', marginStart: 12 },
   quickConnectPrice: { fontSize: 22, ...FONTS.black, color: colors.textPrimary, lineHeight: 26 },
-  quickConnectPriceSub: { fontSize: 11, color: colors.textSecond, ...FONTS.medium },
+  quickConnectPriceSub: { fontSize: 12, color: colors.textSecond, ...FONTS.medium },
   footerCard: {
     backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, padding: 16,
@@ -630,9 +656,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowColor: COLORS.navy, shadowOpacity: 0.05,
     shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   tipLeft:  { flex: 1 },
-  tipLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.info, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
+  tipLabel: { fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.info, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
   tipText:  { fontSize: 12, color: colors.textBrand, lineHeight: 18, fontFamily: 'Inter_500Medium', fontWeight: '500' },
-  tipArrow: { fontSize: 20, color: colors.info, fontWeight: '300' },
+  tipArrow: { fontSize: 22, color: colors.info, fontWeight: '300' },
   nudgeCard: {
     backgroundColor: colors.bg,
     borderRadius: 14, padding: 16, marginBottom: 12,
@@ -642,24 +668,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   nudgeIcon:  { fontSize: 22 },
   nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 2 },
-  nudgeSub:   { fontSize: 11, color: colors.info },
+  nudgeSub:   { fontSize: 12, color: colors.info },
   nudgeArrow: { fontSize: 22, color: colors.textBrand, fontWeight: '300' },
   footerTitle: { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: colors.textOnNavy },
-  footerSub:   { fontSize: 11, color: COLORS.steel, marginTop: 2 },
+  footerSub:   { fontSize: 12, color: COLORS.steel, marginTop: 2 },
   courtCountdown: {
     borderRadius: RADIUS.xl, padding: 16, marginBottom: 14,
     flexDirection: 'row', alignItems: 'center', gap: 16,
     borderWidth: 1.5, ...SHADOW.md },
   courtCountdownLeft: { alignItems: 'center', minWidth: 44 },
-  courtCountdownNum:  { fontSize: 32, ...FONTS.black, color: colors.textOnNavy, lineHeight: 34 },
-  courtCountdownUnit: { fontSize: 11, ...FONTS.bold, color: colors.textOnNavy, textTransform: 'uppercase' },
+  courtCountdownNum:  { fontSize: 36, ...FONTS.black, color: colors.textOnNavy, lineHeight: 45 },
+  courtCountdownUnit: { fontSize: 12, ...FONTS.bold, color: colors.textOnNavy, textTransform: 'uppercase' },
   courtCountdownTitle:{ fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
-  courtCountdownCase: { fontSize: 11, color: colors.textOnNavy },
+  courtCountdownCase: { fontSize: 12, color: colors.textOnNavy },
   courtCountdownArrow:{ fontSize: 28, color: colors.textOnNavy, ...FONTS.medium },
   tileUnreadBadge:     { position: 'absolute', top: -4, end: -4, backgroundColor: colors.emergency,
     borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 3 },
-  tileUnreadBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  tileUnreadBadgeText: { color: colors.bg, fontSize: 12, fontFamily: 'Inter_900Black', fontWeight: '900' },
   tileSm: { minHeight: 56 },
 
 });

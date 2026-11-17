@@ -412,17 +412,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   statePillText: { fontSize: 12, fontWeight: '700' },
   filterRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                    marginBottom: 10 },
-  filterLabel:   { fontSize: 13, fontWeight: '600' },
+  filterLabel:   { fontSize: 14, fontWeight: '600' },
   searchBtn:     { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-  searchBtnText: { fontSize: 15, fontWeight: '800' },
+  searchBtnText: { fontSize: 16, fontWeight: '800' },
 
   lawBanner:     { borderLeftWidth: 5, padding: 14, gap: 4 },
-  lawTitle:      { fontSize: 13, fontWeight: '800' },
-  lawCode:       { fontSize: 11, fontStyle: 'italic' },
+  lawTitle:      { fontSize: 14, fontWeight: '800' },
+  lawCode:       { fontSize: 12, fontStyle: 'italic' },
   lawNote:       { fontSize: 12, lineHeight: 18 },
 
   disclaimer:    { borderLeftWidth: 4, padding: 10 },
-  disclaimerText:{ fontSize: 11, lineHeight: 16, fontStyle: 'italic' },
+  disclaimerText:{ fontSize: 12, lineHeight: 17, fontStyle: 'italic' },
 
   center:        { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   loadingText:   { marginTop: 12, fontSize: 14 },
@@ -435,15 +435,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   agentCard:     { borderRadius: 14, padding: 16, marginBottom: 12, elevation: 1 },
   agentHeader:   { flexDirection: 'row', marginBottom: 8 },
-  agentName:     { fontSize: 15, fontWeight: '800', marginBottom: 2 },
+  agentName:     { fontSize: 16, fontWeight: '800', marginBottom: 2 },
   agentLocation: { fontSize: 12 },
   ratingBox:     { alignItems: 'flex-end' },
   rating:        { fontSize: 14, fontWeight: '800' },
-  reviews:       { fontSize: 11 },
+  reviews:       { fontSize: 12 },
 
   badgeRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
   badge:         { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
-  badgeText:     { fontSize: 11, fontWeight: '700' },
+  badgeText:     { fontSize: 12, fontWeight: '700' },
 
   address:       { fontSize: 12, lineHeight: 17, marginBottom: 6 },
   bio:           { fontSize: 12, lineHeight: 17, marginBottom: 8, fontStyle: 'italic' },
@@ -453,6 +453,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   callBtnText:   { color: colors.bg, fontWeight: '800', fontSize: 14 },
   webBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
                    borderWidth: 1 },
-  webBtnText:    { fontWeight: '700', fontSize: 13 },
+  webBtnText:    { fontWeight: '700', fontSize: 14 },
 });
 export default React.memo(RecoveryAgentsScreen);

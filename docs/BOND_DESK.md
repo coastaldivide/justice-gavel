@@ -258,9 +258,9 @@ county (split states such as east Tennessee, the Florida panhandle, El Paso), el
 |---|---|---|---|
 | d7, d3 | 7 and 3 days before, 09:00 | defendant + indemnitors | court reminder |
 | d1 | evening before, 18:00 | defendant + indemnitors | court reminder |
-| d0 | morning of, 06:30 | defendant + indemnitors | court reminder |
+| d0 | morning of, 06:30 (or 2 hours before a hearing that starts before 08:30 — `dayOfReminderAt`) | defendant + indemnitors | court reminder |
 | now | at once, when a hearing is added too late for all of the above | defendant + indemnitors | court reminder |
-| ask | 15:00 on the court day | defendant | "Did you make it to court today? Reply 1 = I went, 2 = it was rescheduled, 3 = I missed it" |
+| ask | 15:00 on the court day (or 2 hours after a hearing that starts after 13:00 — `attendanceAskAt`) | defendant | "Did you make it to court today? Reply 1 = I went, 2 = it was rescheduled, 3 = I missed it" |
 | missed | 09:00 the next day, unless marked attended / rescheduled / cancelled by then; at once when marked missed | defendant | "If you missed court, act today…" + link to `/missed-court` |
 
 The morning after (09:00) a hearing still not marked attended or rescheduled, the agent gets a push and an e-mail.

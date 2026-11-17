@@ -24,6 +24,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
+import { useFocusEffect } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
@@ -81,7 +82,6 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   const [missedOpen, setMissedOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sms, setSms] = useState<{ sms_reminders: boolean; has_phone: boolean; sms_available: boolean } | null>(null);
-  const [phone, setPhone] = useState('');
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [famName, setFamName] = useState('');
@@ -116,6 +116,11 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
   }, [id]);
   // (re)load on open and when the language changes (server text comes back in it)
   useEffect(() => { load(); }, [load, lang]);
+  // Back from VerifyPhone: the number may be on the account now, so the text switch can show.
+  useFocusEffect(useCallback(() => {
+    if (phase !== 'ok') return;
+    api.get('/court-dates/preferences').then(p => { if (mounted.current) setSms(p.data); }).catch(() => {});
+  }, [phase]));
 
   const patch = async (body: Record<string, unknown>, ok: string) => {
     if (busy) return;
@@ -183,7 +188,7 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
 
   const saveSms = async (on: boolean) => {
     try {
-      const r = await api.put('/court-dates/preferences', { sms_reminders: on, ...(phone.trim() ? { phone: phone.trim() } : {}) });
+      const r = await api.put('/court-dates/preferences', { sms_reminders: on });
       setSms(s => ({ ...(s || { has_phone: true, sms_available: false }), sms_reminders: on, has_phone: true, sms_available: !!r.data?.sms_available }));
       showToast(r.data?.note || (on ? t('cdd_sms_on') : t('cdd_sms_off')), 'success');
     } catch (e) { showToast(apiErrorMessage(e, t('cdd_save_failed')), 'error'); }
@@ -320,14 +325,24 @@ function CourtDateDetailScreen({ navigation, route }: ScreenProps): React.JSX.El
           <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t(sms?.sms_available ? 'cdd_channels_sms' : 'cdd_channels', { tz: d.time_zone || t('cdd_your_tz') })}</Text>
           {sms?.sms_available && (
             <View style={{ marginTop: 8 }}>
-              {!sms.has_phone && (
-                <TextInput accessibilityLabel={t('cdd_mobile_a11y')} style={styles.inputFull} value={phone} onChangeText={setPhone}
-                  placeholder={t('cdd_mobile')} placeholderTextColor={colors.textMuted} keyboardType="phone-pad" />
+              {/* The number is proven with a texted code first (VerifyPhone); it is never typed in here
+                  (sandbox review 2026-11-17: an unproven number here let a stolen session reset the password). */}
+              {!sms.has_phone ? (
+                <>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('cdd_add_phone_body')}</Text>
+                  <TouchableOpacity accessibilityRole="button" testID="court-date-add-phone" style={styles.secondaryBtn}
+                    onPress={() => navigation.navigate('VerifyPhone')}>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cdd_add_phone')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {!sms.sms_reminders && <Text maxFontSizeMultiplier={1.4} style={styles.source} testID="court-date-sms-consent">{t('cdd_sms_consent')}</Text>}
+                  <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: sms.sms_reminders }} testID="court-date-sms" style={styles.secondaryBtn} onPress={() => saveSms(!sms.sms_reminders)}>
+                    <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{sms.sms_reminders ? `✓ ${t('cdd_sms_on_btn')}` : t('cdd_sms_off_btn')}</Text>
+                  </TouchableOpacity>
+                </>
               )}
-              {!sms.sms_reminders && <Text maxFontSizeMultiplier={1.4} style={styles.source} testID="court-date-sms-consent">{t('cdd_sms_consent')}</Text>}
-              <TouchableOpacity accessibilityRole="switch" accessibilityState={{ checked: sms.sms_reminders }} testID="court-date-sms" style={styles.secondaryBtn} onPress={() => saveSms(!sms.sms_reminders)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{sms.sms_reminders ? `✓ ${t('cdd_sms_on_btn')}` : t('cdd_sms_off_btn')}</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>

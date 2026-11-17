@@ -11,10 +11,20 @@ import { validate, schemas } from '../validation/schemas.js';
  * POST /api/auth/refresh          { refreshToken }  — single-use rotation
  *                                  OR no body + "Authorization: Bearer <access token>" (mobile app)
  * GET  /api/auth/me               current user
- * POST /api/auth/update-profile   { displayName?, phone?, email? }
- * POST /api/auth/forgot-password  { email } — always 200; stores a hashed reset token
+ * POST /api/auth/update-profile   { displayName?, email?, currentPassword? }
+ *                                  a new email needs the current password and is used only after
+ *                                  the link sent to it is opened; a phone number changes only
+ *                                  through POST /api/me/phone/verify + /confirm (a texted code)
+ * POST /api/auth/confirm-email    { token } — the link in the "confirm your new e-mail" message
+ * POST /api/auth/forgot-password  { identifier } (email or phone; legacy { email }) — always 200
+ *                                  once sent; stores a hashed reset token; e-mail or text message
  * POST /api/auth/reset-password   { token, password }
- * POST /api/auth/logout           { refreshToken? }
+ * POST /api/auth/change-password  { currentPassword, newPassword }
+ * POST /api/auth/logout           { refreshToken?, pushToken?, allDevices? }
+ *
+ * Session version (migration 51): every token carries users.token_version ("tv"). A password
+ * change or reset, a confirmed new e-mail and logout { allDevices: true } add one to it
+ * (bumpTokenVersion), so every token issued before stops working at once.
  *
  * Responses for register/login/refresh: { token, refreshToken, user }
  */
@@ -26,11 +36,12 @@ import { getDb } from '../db/index.js';
 import bcrypt from 'bcryptjs';
 import { CONFIG } from '../config.js';
 import jwt from 'jsonwebtoken';
-import { authRequired } from '../middleware/auth.js';
+import { authRequired, invalidateUserCache, tokenVersionOf } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import { purgeAccountData, exportAccount } from '../services/accountDeletion.js';
 import logger from '../utils/logger.js';
 import { passwordProblem, passwordProblemKey, DOUBLED_PIN } from '../utils/passwordPolicy.js';
+import { sendSms, smsLive } from '../services/sms.js';
 import { msg, reqMsg, resolveLang, requestedLang, normalizeLang } from '../i18n/index.js';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -109,6 +120,8 @@ function publicUser(u) {
     createdAt:        u.created_at || null,
     accountType:      accountType(u),
     preferredLanguage: normalizeLang(u.preferred_language) || null,
+    // A new address waiting for its confirmation link (POST /auth/confirm-email).
+    pendingEmail:     u.pending_email && u.pending_email_expires_at && new Date(u.pending_email_expires_at) > new Date() ? u.pending_email : null,
   };
 }
 
@@ -120,15 +133,28 @@ function loadUser(db, id) {
 }
 
 // ── Token issuing ─────────────────────────────────────────────────────────────
+const tokenVersion = (user) => Number(user?.token_version || 0);
+
+/**
+ * Sign out every session of the account: a new session version (every access and
+ * refresh token issued before is refused from now on) and no stored refresh tokens.
+ * Run inside the caller's transaction; call invalidateUserCache(userId) after it commits.
+ */
+export async function bumpTokenVersion(tx, userId) {
+  await tx.run('UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = ?', [userId]);
+  await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [userId]);
+}
+
 async function issueTokenPair(user, db) {
   const pub = publicUser(user);
+  const tv = tokenVersion(user);
   const accessToken = jwt.sign(
-    { id: user.id, role: pub.role, email: pub.email, phone: pub.phone, displayName: pub.displayName, premium: pub.premium },
+    { id: user.id, role: pub.role, email: pub.email, phone: pub.phone, displayName: pub.displayName, premium: pub.premium, tv },
     JWT_SECRET(),
     { expiresIn: CONFIG.JWT_EXPIRES_IN, algorithm: 'HS256' }
   );
   const refreshToken = jwt.sign(
-    { id: user.id, type: 'refresh', jti: crypto.randomUUID() },
+    { id: user.id, type: 'refresh', jti: crypto.randomUUID(), tv },
     JWT_REFRESH_SECRET(),
     { expiresIn: CONFIG.JWT_REFRESH_EXPIRES_IN, algorithm: 'HS256' }
   );
@@ -151,9 +177,17 @@ async function issueTokenPair(user, db) {
 //   • per account, any source: ACCOUNT_LOCK_THRESHOLD failures → the account locks
 //     (database), the backstop against guessing from many addresses
 // A successful sign-in or a password reset clears both.
+//
+// Both counts are rolling 15-minute windows that start over after a lock (sandbox review
+// 2026-11-17, finding 4): before, the account count never went down, so once it reached the
+// threshold ONE wrong password after each lock locked the account again. Now a lock needs
+// ACCOUNT_LOCK_THRESHOLD failures within FAILURE_WINDOW_MINUTES, counted from zero again
+// after every lock. Someone locked out can always reset the password (e-mail or text).
 const MAX_LOGIN_ATTEMPTS     = 10;   // per account + source
 const ACCOUNT_LOCK_THRESHOLD = 50;   // per account, all sources
 const LOCKOUT_MINUTES        = 15;
+const FAILURE_WINDOW_MINUTES = 15;
+export const LOCKOUT = Object.freeze({ MAX_LOGIN_ATTEMPTS, ACCOUNT_LOCK_THRESHOLD, LOCKOUT_MINUTES, FAILURE_WINDOW_MINUTES });
 const sourceFailures = new Map();   // `${userId}|${ip}` → { n, until }
 const SOURCE_MAP_MAX = 50_000;
 const sourceKey = (userId, req) => `${userId}|${req.ip || req.socket?.remoteAddress || 'unknown'}`;
@@ -170,9 +204,12 @@ function recordSourceFailure(userId, req) {
     for (const [key, v] of sourceFailures) if (!v.until || v.until <= now) sourceFailures.delete(key);
     if (sourceFailures.size >= SOURCE_MAP_MAX) sourceFailures.delete(sourceFailures.keys().next().value);
   }
-  const e = sourceFailures.get(k) || { n: 0, until: 0 };
+  const now = Date.now();
+  let e = sourceFailures.get(k);
+  // a new window when there is none, the last one is older than FAILURE_WINDOW_MINUTES or a lock ran out
+  if (!e || (e.until && e.until <= now) || (!e.until && now - e.since > FAILURE_WINDOW_MINUTES * 60_000)) e = { n: 0, until: 0, since: now };
   e.n += 1;
-  if (e.n >= MAX_LOGIN_ATTEMPTS) { e.until = Date.now() + LOCKOUT_MINUTES * 60_000; e.n = 0; }
+  if (e.n >= MAX_LOGIN_ATTEMPTS) { e.until = now + LOCKOUT_MINUTES * 60_000; e.n = 0; }
   sourceFailures.set(k, e);
 }
 const clearSourceFailures = (userId) => {
@@ -181,18 +218,37 @@ const clearSourceFailures = (userId) => {
 /** Tests only. */
 export const _resetLoginSources = () => sourceFailures.clear();
 
+/**
+ * One more failure in the account's rolling window. The window starts at the first failure
+ * and lasts FAILURE_WINDOW_MINUTES; reaching ACCOUNT_LOCK_THRESHOLD inside it locks the
+ * account for LOCKOUT_MINUTES and empties the count, so after the lock the account starts
+ * from zero. → true when this failure locked the account.
+ */
 async function recordFailedLogin(db, userId) {
   const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60_000).toISOString();
-  await db.run(
-    `UPDATE users
-        SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
-            lock_until = CASE WHEN COALESCE(failed_login_attempts, 0) + 1 >= ? THEN ? ELSE lock_until END
-      WHERE id = ?`,
-    [ACCOUNT_LOCK_THRESHOLD, lockUntil, userId]
+  const row = await db.get(
+    `WITH cur AS (
+       SELECT id,
+              (failed_login_window_start IS NULL
+               OR failed_login_window_start <= NOW() - make_interval(mins => ?)) AS fresh,
+              COALESCE(failed_login_attempts, 0) AS n
+         FROM users WHERE id = ? FOR UPDATE
+     ), nxt AS (
+       SELECT id, fresh, CASE WHEN fresh THEN 1 ELSE n + 1 END AS n FROM cur
+     )
+     UPDATE users u
+        SET failed_login_attempts     = CASE WHEN nxt.n >= ? THEN 0 ELSE nxt.n END,
+            failed_login_window_start = CASE WHEN nxt.n >= ? THEN NULL WHEN nxt.fresh THEN NOW() ELSE u.failed_login_window_start END,
+            lock_until                = CASE WHEN nxt.n >= ? THEN ? ELSE u.lock_until END
+       FROM nxt
+      WHERE u.id = nxt.id
+  RETURNING (nxt.n >= ?) AS locked`,
+    [FAILURE_WINDOW_MINUTES, userId, ACCOUNT_LOCK_THRESHOLD, ACCOUNT_LOCK_THRESHOLD, ACCOUNT_LOCK_THRESHOLD, lockUntil, ACCOUNT_LOCK_THRESHOLD]
   );
+  return !!row?.locked;
 }
 async function clearFailedLogins(db, userId) {
-  await db.run('UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [userId]);
+  await db.run('UPDATE users SET failed_login_attempts = 0, failed_login_window_start = NULL, lock_until = NULL WHERE id = ?', [userId]);
 }
 function isAccountLocked(user) {
   if (!user.lock_until) return false;
@@ -209,6 +265,7 @@ async function findUserByIdentifier(db, type, value) {
 // ── POST /register ────────────────────────────────────────────────────────────
 router.post('/register', registerLimiter, validate(schemas.auth.register), async (req, res) => {
   const m = reqMsg(req);
+  let idType = null;
   try {
     const db = await getDb();
     const {
@@ -224,10 +281,14 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
 
     const { type, value } = normalizeIdentifier(identifier);
     if (type === 'unknown') return err400(res, m('auth.err.identifier_invalid'));
+    idType = type;
 
     const exists = await findUserByIdentifier(db, type, value);
+    // Every account, banned ones included: one account per e-mail, phone and sign-in identifier.
     const existsAny = exists || await db.get(
-      type === 'email' ? 'SELECT id FROM users WHERE LOWER(email) = ?' : 'SELECT id FROM users WHERE phone = ?', [value]);
+      type === 'email'
+        ? 'SELECT id FROM users WHERE LOWER(email) = ? OR LOWER(login_identifier) = ? LIMIT 1'
+        : 'SELECT id FROM users WHERE phone = ? OR LOWER(login_identifier) = ? LIMIT 1', [value, value]);
     if (existsAny) {
       return res.status(409).json({ error: m(type === 'email' ? 'auth.err.email_taken' : 'auth.err.phone_taken'), code: 'already_registered' });
     }
@@ -275,7 +336,10 @@ router.post('/register', registerLimiter, validate(schemas.auth.register), async
     }
     res.status(201).json(out);
   } catch (e) {
-    if (e.code === '23505') return res.status(409).json({ error: m('auth.err.email_taken'), code: 'already_registered' });
+    if (e.code === '23505') {
+      // Two sign-ups with the same identifier at the same moment: the unique index decides.
+      return res.status(409).json({ error: m(idType === 'phone' ? 'auth.err.phone_taken' : 'auth.err.email_taken'), code: 'already_registered' });
+    }
     logger.error('[auth/register]', e.message);
     res.status(500).json({ error: m('auth.err.register_failed') });
   }
@@ -340,37 +404,91 @@ router.get('/me', authRequired, async (req, res) => {
 });
 
 // ── POST /update-profile ──────────────────────────────────────────────────────
-router.post('/update-profile', authRequired, async (req, res) => {
+// { displayName?, email?, currentPassword? } (sandbox review 2026-11-17, finding 2).
+// Before, a signed-in session alone could replace the account's e-mail and phone: whoever held
+// a stolen token could move the account to their own address and then reset the password.
+//   • displayName  changes at once.
+//   • email        needs the current password and is NOT used until the link sent to the new
+//                  address is opened (POST /confirm-email). The current address is told.
+//   • phone        is refused here: a number is added or changed only by proving it with a
+//                  texted code (POST /api/me/phone/verify + /confirm).
+const EMAIL_CHANGE_HOURS = 24;
+const appBase = () => (process.env.APP_URL || process.env.FRONTEND_URL || 'https://justicegavel.app').split(',')[0].trim().replace(/\/+$/, '');
+const maskEmail = (addr) => {
+  const [local = '', domain = ''] = String(addr || '').split('@');
+  return `${local.slice(0, 1)}${'•'.repeat(Math.max(1, Math.min(local.length - 1, 6)))}@${domain}`;
+};
+
+router.post('/update-profile', authRequired, authLimiter, async (req, res) => {
   const m = reqMsg(req);
   try {
     const db = await getDb();
-    const { displayName: rawDN, phone, email } = req.body || {};
+    const { displayName: rawDN, phone, email, currentPassword } = req.body || {};
     const displayName = rawDN ? truncateStr(sanitizeStr(String(rawDN), 100), 100) : null;
-    const updates = [];
-    const vals = [];
-
-    if (displayName?.trim()) {
-      updates.push('display_name = ?', 'name = ?');
-      vals.push(displayName.trim(), displayName.trim());
-    }
-    if (phone) {
-      const { type, value } = normalizeIdentifier(phone);
-      if (type !== 'phone') return err400(res, m('auth.err.phone_invalid'));
-      updates.push('phone = ?');
-      vals.push(value);
-    }
-    if (email) {
-      if (!validateEmail(email)) return err400(res, m('auth.err.email_invalid'));
-      updates.push('email = ?');
-      vals.push(String(email).trim().toLowerCase());
-    }
-    if (updates.length === 0) return err400(res, m('auth.err.nothing_to_update'));
-
-    vals.push(req.user.id);
-    await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, vals);
     const user = await loadUser(db, req.user.id);
     if (!user) return res.status(404).json({ error: m('auth.err.account_not_found') });
-    res.json(publicUser(user));
+
+    // Phone: only through the texted-code flow. The same number again is not a change.
+    if (phone != null && String(phone).trim() !== '') {
+      const { type, value } = normalizeIdentifier(phone);
+      if (type !== 'phone') return err400(res, m('auth.err.phone_invalid'));
+      if (value !== user.phone) {
+        return res.status(400).json({ error: m('auth.err.phone_change_verify'), code: 'phone_needs_verification' });
+      }
+    }
+
+    // E-mail: password first, then a confirmation link to the new address.
+    let newEmail = null;
+    if (email != null && String(email).trim() !== '') {
+      const addr = String(email).trim().toLowerCase();
+      if (!validateEmail(addr)) return err400(res, m('auth.err.email_invalid'));
+      if (addr !== String(user.email || '').toLowerCase()) newEmail = addr;
+    }
+    if (newEmail) {
+      if (!currentPassword) return res.status(400).json({ error: m('auth.err.email_change_password'), code: 'password_required' });
+      // 403, not 401: the session is valid — a 401 would sign the person out of the app.
+      if (!user.password_hash || !(await bcrypt.compare(String(currentPassword), user.password_hash))) {
+        return res.status(403).json({ error: m('auth.err.wrong_password'), code: 'incorrect_password' });
+      }
+      const taken = await db.get(
+        'SELECT id FROM users WHERE (LOWER(email) = ? OR LOWER(login_identifier) = ?) AND id <> ? LIMIT 1',
+        [newEmail, newEmail, user.id]);
+      if (taken) return res.status(409).json({ error: m('auth.err.in_use'), code: 'in_use' });
+      const { emailLive } = await import('../services/email.js');
+      if (!emailLive()) return res.status(503).json({ error: m('auth.err.email_change_unavailable'), code: 'email_unavailable' });
+    }
+
+    if (!displayName?.trim() && !newEmail) return err400(res, m('auth.err.nothing_to_update'));
+
+    if (displayName?.trim()) {
+      await db.run('UPDATE users SET display_name = ?, name = ? WHERE id = ?', [displayName.trim(), displayName.trim(), user.id]);
+    }
+    if (newEmail) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const exp = new Date(Date.now() + EMAIL_CHANGE_HOURS * 3_600_000).toISOString();
+      await db.run('UPDATE users SET pending_email = ?, pending_email_token = ?, pending_email_expires_at = ? WHERE id = ?',
+        [newEmail, sha256(token), exp, user.id]);
+      const lang = requestedLang(req) || normalizeLang(user.preferred_language) || 'en';
+      const { sendEmailChangeConfirm, sendEmailChangeNotice } = await import('../services/email.js');
+      try {
+        await sendEmailChangeConfirm(newEmail, `${appBase()}/confirm-email?token=${token}`, lang, EMAIL_CHANGE_HOURS);
+      } catch (e) {
+        await db.run('UPDATE users SET pending_email = NULL, pending_email_token = NULL, pending_email_expires_at = NULL WHERE id = ?', [user.id]);
+        logger.warn('[auth/update-profile/confirm-email]', e?.message);
+        return res.status(502).json({ error: m('auth.err.email_change_send_failed'), code: 'email_send_failed' });
+      }
+      if (user.email) {
+        sendEmailChangeNotice(user.email, maskEmail(newEmail), lang)
+          .catch(e => logger.warn('[auth/update-profile/notice]', e?.message));
+      }
+      audit?.('auth.email_change_requested', { userId: user.id, req })?.catch?.(() => {});
+    }
+    invalidateUserCache(user.id);
+    const fresh = await loadUser(db, user.id);
+    res.json({
+      ...publicUser(fresh),
+      ...(newEmail ? { email_pending: newEmail, message: m('auth.email_change_sent', { email: newEmail }) } : {}),
+    });
   } catch (e) {
     if (e.code === '23505') return res.status(409).json({ error: m('auth.err.in_use'), code: 'in_use' });
     logger.error('[auth/update-profile]', e.message);
@@ -378,21 +496,89 @@ router.post('/update-profile', authRequired, async (req, res) => {
   }
 });
 
+// ── POST /confirm-email ───────────────────────────────────────────────────────
+// { token } — opened from the link sent to the new address. The new address becomes the
+// account's e-mail (and its sign-in identifier when it signed in with the old one), every
+// session is signed out, and outstanding password-reset links stop working.
+router.post('/confirm-email', resetLimiter, async (req, res) => {
+  const m = reqMsg(req);
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    if (!/^[0-9a-f]{64}$/.test(token)) return res.status(400).json({ error: m('auth.err.email_confirm_invalid'), code: 'invalid_email_token' });
+    const db = await getDb();
+    const result = await db.transaction(async (tx) => {
+      const u = await tx.get(
+        `SELECT id, email, login_identifier, pending_email FROM users
+          WHERE pending_email_token = ? AND pending_email_expires_at > NOW() FOR UPDATE`, [sha256(token)]);
+      if (!u || !u.pending_email) return { status: 400, code: 'invalid_email_token', key: 'auth.err.email_confirm_invalid' };
+      const addr = String(u.pending_email).toLowerCase();
+      const taken = await tx.get('SELECT id FROM users WHERE (LOWER(email) = ? OR LOWER(login_identifier) = ?) AND id <> ? LIMIT 1', [addr, addr, u.id]);
+      if (taken) {
+        await tx.run('UPDATE users SET pending_email = NULL, pending_email_token = NULL, pending_email_expires_at = NULL WHERE id = ?', [u.id]);
+        return { status: 409, code: 'in_use', key: 'auth.err.in_use' };
+      }
+      const signsInWithOld = !u.login_identifier || String(u.login_identifier).toLowerCase() === String(u.email || '').toLowerCase();
+      await tx.run(
+        `UPDATE users SET email = ?, login_identifier = CASE WHEN ? THEN ? ELSE login_identifier END,
+                pending_email = NULL, pending_email_token = NULL, pending_email_expires_at = NULL
+          WHERE id = ?`, [addr, signsInWithOld, addr, u.id]);
+      await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [u.id]);
+      await bumpTokenVersion(tx, u.id);
+      return { status: 200, userId: u.id };
+    });
+    if (result.status !== 200) return res.status(result.status).json({ error: m(result.key), code: result.code });
+    invalidateUserCache(result.userId);
+    audit?.('auth.email_changed', { userId: result.userId, req })?.catch?.(() => {});
+    res.json({ ok: true, message: m('auth.email_changed') });
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: m('auth.err.in_use'), code: 'in_use' });
+    logger.error('[auth/confirm-email]', e.message);
+    res.status(500).json({ error: m('auth.err.server') });
+  }
+});
+
 // ── POST /forgot-password ─────────────────────────────────────────────────────
-// Always 200 (prevents account enumeration). Stores only a SHA-256 of the token.
+// { identifier } — the e-mail address or phone number the person signs in with (legacy
+// { email }). Always 200 { sent: true } once a provider is configured (no account
+// enumeration); stores only a SHA-256 of the token.
+//   e-mail → the link by e-mail (503 email_unavailable without an e-mail provider)
+//   phone  → the link by text message (503 sms_unavailable without Telnyx). Before
+//            (finding 4) accounts made with a phone number had no way to reset at all.
+// At most RESET_PER_HOUR links an hour and one a minute per account; more requests answer
+// the same but send nothing.
+const RESET_PER_HOUR = 3;
 router.post('/forgot-password', resetLimiter, async (req, res) => {
   const m = reqMsg(req);
   try {
-    const email = String(req.body?.email || req.body?.identifier || '').trim().toLowerCase();
-    if (!email) return res.status(400).json({ error: m('auth.err.email_required'), code: 'email_required' });
-    if (!validateEmail(email)) return res.status(400).json({ error: m('auth.err.email_invalid'), code: 'email_invalid' });
-    // No e-mail provider configured: say so (the same for every address, so it
-    // reveals nothing about which accounts exist) instead of "sent".
+    const raw = String(req.body?.identifier || req.body?.email || req.body?.phone || '').trim();
+    if (!raw) return res.status(400).json({ error: m('auth.err.reset_identifier_required'), code: 'identifier_required' });
+    const { type, value } = normalizeIdentifier(raw);
+    if (type === 'unknown') {
+      return res.status(400).json({ error: m(raw.includes('@') ? 'auth.err.email_invalid' : 'auth.err.identifier_invalid'), code: raw.includes('@') ? 'email_invalid' : 'identifier_invalid' });
+    }
+    // No provider configured: say so (the same for every address/number, so it reveals
+    // nothing about which accounts exist) instead of "sent".
     const { emailLive } = await import('../services/email.js');
-    if (!emailLive()) return res.status(503).json({ error: m('auth.err.reset_email_unavailable'), code: 'email_unavailable' });
+    if (type === 'email' && !emailLive()) return res.status(503).json({ error: m('auth.err.reset_email_unavailable'), code: 'email_unavailable' });
+    if (type === 'phone' && !smsLive()) return res.status(503).json({ error: m('auth.err.reset_sms_unavailable'), code: 'sms_unavailable' });
+
     const db   = await getDb();
-    const user = await db.get('SELECT id, email, preferred_language FROM users WHERE LOWER(email) = ?', [email]);
+    const user = type === 'email'
+      ? await db.get('SELECT id, email, phone, preferred_language FROM users WHERE LOWER(email) = ?', [value])
+      : await db.get('SELECT id, email, phone, preferred_language FROM users WHERE phone = ? OR LOWER(login_identifier) = ? ORDER BY (phone = ?) DESC LIMIT 1', [value, value, value]);
     if (!user) return res.json({ sent: true });
+
+    const recent = await db.get(
+      `SELECT COUNT(*)::int AS n, MAX(created_at) AS last FROM password_resets
+        WHERE user_id = ? AND created_at > NOW() - INTERVAL '1 hour'`, [user.id]);
+    if (Number(recent?.n || 0) >= RESET_PER_HOUR || (recent?.last && Date.now() - new Date(recent.last).getTime() < 60_000)) {
+      logger.info({ userId: user.id }, '[auth/forgot-password] throttled — nothing sent');
+      return res.json({ sent: true });
+    }
+    if (type === 'phone' && await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [value]).catch(() => null)) {
+      logger.info({ userId: user.id }, '[auth/forgot-password] number opted out of texts — nothing sent');
+      return res.json({ sent: true });
+    }
 
     const token = crypto.randomBytes(32).toString('hex');
     const exp   = new Date(Date.now() + 3_600_000).toISOString();
@@ -401,13 +587,18 @@ router.post('/forgot-password', resetLimiter, async (req, res) => {
     await db.run('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
       [user.id, sha256(token), exp]);
 
-    const base = (process.env.APP_URL || process.env.FRONTEND_URL || 'https://justicegavel.app').split(',')[0].trim().replace(/\/+$/, '');
-    const url  = `${base}/reset-password?token=${token}`;
-    try {
-      const { sendPasswordReset } = await import('../services/email.js');
-      // In the language the person asked in, else the one saved on the account.
-      await sendPasswordReset(user.email, url, requestedLang(req) || normalizeLang(user.preferred_language) || 'en');
-    } catch (e) { logger.warn('[auth/forgot-password/email]', e?.message); }
+    const url  = `${appBase()}/reset-password?token=${token}`;
+    // In the language the person asked in, else the one saved on the account.
+    const lang = requestedLang(req) || normalizeLang(user.preferred_language) || 'en';
+    if (type === 'email') {
+      try {
+        const { sendPasswordReset } = await import('../services/email.js');
+        await sendPasswordReset(user.email, url, lang);
+      } catch (e) { logger.warn('[auth/forgot-password/email]', e?.message); }
+    } else {
+      const r = await sendSms({ to: value, body: msg(lang, 'auth.reset.sms', { link: url }) });
+      if (!r?.ok) logger.warn({ reason: r?.error || r?.reason }, '[auth/forgot-password/sms] not sent');
+    }
     res.json({ sent: true });
   } catch (e) {
     logger.error('[auth/forgot-password]', e.message);
@@ -430,10 +621,13 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
     if (!row) return res.status(400).json({ error: m('auth.err.reset_invalid'), code: 'invalid_reset_token' });
     const hash = await bcrypt.hash(password, 12);
     await db.transaction(async (tx) => {
-      await tx.run('UPDATE users SET password_hash = ?, failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [hash, row.user_id]);
+      // A pending e-mail change is cancelled too: whoever asked for it knew the old password.
+      await tx.run(`UPDATE users SET password_hash = ?, failed_login_attempts = 0, failed_login_window_start = NULL, lock_until = NULL,
+                           pending_email = NULL, pending_email_token = NULL, pending_email_expires_at = NULL WHERE id = ?`, [hash, row.user_id]);
       await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [row.user_id]);
-      await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.user_id]);   // sign out other sessions
+      await bumpTokenVersion(tx, row.user_id);   // sign out every session, access tokens included
     });
+    invalidateUserCache(row.user_id);
     clearSourceFailures(row.user_id);
     res.json({ ok: true, message: m('auth.reset_done') });
   } catch (e) {
@@ -459,20 +653,33 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
       if (decoded.type !== 'refresh') {
         return res.status(401).json({ error: 'Not a refresh token', code: 'invalid_refresh' });
       }
-      // 2. Single-use rotation: atomically mark this token used
+      const user = await loadUser(db, decoded.id);
+      if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
+        return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
+      }
+      // 2. Issued before a password change / reset / sign-out-everywhere: refused, and nothing
+      //    else happens — an old device refreshing must not sign out the session that made the
+      //    change (its refresh row was deleted by bumpTokenVersion, not "used").
+      if (tokenVersionOf(decoded) !== tokenVersion(user)) {
+        return res.status(401).json({ error: msg(resolveLang(req), 'auth.err.session_expired'), code: 'session_revoked' });
+      }
+      // 3. Single-use rotation: atomically mark this token used
       const marked = await db.run(
         `UPDATE refresh_tokens SET used = 1
           WHERE user_id = ? AND token_hash = ? AND used = 0 AND expires_at > NOW()`,
         [decoded.id, sha256(refreshToken)]
       );
       if (!marked.changes) {
-        // Reuse of a rotated token → possible theft: revoke every session
-        await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [decoded.id]).catch(logIgnored('routes/auth'));
-        return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
-      }
-      const user = await loadUser(db, decoded.id);
-      if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
-        return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
+        // A token that was already rotated (its row is there, used) → possible theft: revoke
+        // every session. A token whose row is gone (signed out) or expired is simply refused.
+        const rotated = await db.get('SELECT 1 AS x FROM refresh_tokens WHERE user_id = ? AND token_hash = ? AND used = 1', [decoded.id, sha256(refreshToken)]);
+        if (rotated) {
+          // every session ends, access tokens included (a thief may hold one)
+          await db.transaction((tx) => bumpTokenVersion(tx, decoded.id)).catch(logIgnored('routes/auth'));
+          invalidateUserCache(decoded.id);
+          return res.status(401).json({ error: 'Refresh token already used', code: 'token_reuse' });
+        }
+        return res.status(401).json({ error: 'Refresh token expired or signed out', code: 'invalid_refresh' });
       }
       return res.json(await issueTokenPair(user, db));
     }
@@ -492,6 +699,9 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
     // account must not be able to mint fresh tokens either.
     if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
       return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
+    }
+    if (claims.type === 'refresh' || tokenVersionOf(claims) !== tokenVersion(user)) {
+      return res.status(401).json({ error: msg(resolveLang(req), 'auth.err.session_expired'), code: 'session_revoked' });
     }
     res.json(await issueTokenPair(user, db));
   } catch (e) {
@@ -591,10 +801,6 @@ async function sendExport(req, res) {
 }
 router.get('/export', authRequired, sendExport);
 
-// ── POST /logout ──────────────────────────────────────────────────────────────
-// { refreshToken?, pushToken?, allDevices? } — this device's push token stops
-// receiving the account's notifications (the next person on the phone must not
-// see them); with allDevices every session and device token is removed.
 // ── POST /change-password ─────────────────────────────────────────────────────
 // { currentPassword, newPassword } — signed-in users change their password. Used by
 // accounts the old Quick Sign Up made with a doubled PIN (login answers
@@ -603,19 +809,28 @@ router.post('/change-password', authRequired, authLimiter, async (req, res) => {
   const m = reqMsg(req);
   try {
     const { currentPassword, newPassword } = req.body || {};
-    if (!currentPassword || !newPassword) return err400(res, m('auth.err.identifier_password_required'));
+    if (!currentPassword || !newPassword) return err400(res, m('auth.err.change_fields_required'));
     const why = passwordProblem(newPassword);
     if (why) return err400(res, m(passwordProblemKey(why)));
+    if (String(newPassword) === String(currentPassword)) {
+      return res.status(400).json({ error: m('auth.err.password_same'), code: 'password_same' });
+    }
     const db = await getDb();
     const row = await db.get('SELECT id, password_hash FROM users WHERE id = ?', [req.user.id]);
+    // 403, not 401: the session is valid — a 401 would sign the person out of the app.
     if (!row || !row.password_hash || !(await bcrypt.compare(String(currentPassword), row.password_hash))) {
-      return res.status(401).json({ error: m('auth.err.invalid_credentials'), code: 'invalid_credentials' });
+      return res.status(403).json({ error: m('auth.err.wrong_password'), code: 'incorrect_password' });
     }
     const hash = await bcrypt.hash(String(newPassword), 12);
     await db.transaction(async (tx) => {
-      await tx.run('UPDATE users SET password_hash = ?, failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [hash, row.id]);
-      await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.id]);
+      await tx.run(`UPDATE users SET password_hash = ?, failed_login_attempts = 0, failed_login_window_start = NULL, lock_until = NULL,
+                           pending_email = NULL, pending_email_token = NULL, pending_email_expires_at = NULL WHERE id = ?`, [hash, row.id]);
+      // Reset links sent before the change stop working, and every other session ends
+      // (the access tokens too — this request gets a new pair below).
+      await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [row.id]);
+      await bumpTokenVersion(tx, row.id);
     });
+    invalidateUserCache(row.id);
     clearSourceFailures(row.id);
     res.json({ ok: true, ...(await issueTokenPair(await loadUser(db, row.id), db)) });
   } catch (e) {
@@ -624,17 +839,27 @@ router.post('/change-password', authRequired, authLimiter, async (req, res) => {
   }
 });
 
+// ── POST /logout ──────────────────────────────────────────────────────────────
+// { refreshToken?, pushToken?, allDevices? } — this device's push token stops
+// receiving the account's notifications (the next person on the phone must not
+// see them); with allDevices every session (access tokens included) and device token is removed.
 router.post('/logout', authRequired, async (req, res) => {
   const m = reqMsg(req);
   try {
     const db = await getDb();
     const { refreshToken, allDevices, pushToken } = req.body || {};
-    if (allDevices) {
-      await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.user.id]);
-      await db.run('DELETE FROM push_tokens WHERE user_id = ?', [req.user.id]);
+    if (allDevices === true) {   // only a real yes ends every session (not "abc" or 1)
+      // Every session on every device ends now, access tokens included (session version).
+      await db.transaction(async (tx) => {
+        await bumpTokenVersion(tx, req.user.id);
+        await tx.run('DELETE FROM push_tokens WHERE user_id = ?', [req.user.id]);
+      });
+      invalidateUserCache(req.user.id);
     } else {
       if (refreshToken) {
-        await db.run('UPDATE refresh_tokens SET used = 1 WHERE user_id = ? AND token_hash = ?', [req.user.id, sha256(refreshToken)]);
+        // Removed, not marked used: a used row means "rotated", and presenting a rotated token
+        // again is treated as theft (every session ends) — a signed-out device must not do that.
+        await db.run('DELETE FROM refresh_tokens WHERE user_id = ? AND token_hash = ?', [req.user.id, sha256(refreshToken)]);
       }
       if (pushToken) {
         await db.run('DELETE FROM push_tokens WHERE user_id = ? AND token = ?', [req.user.id, String(pushToken).slice(0, 300)]);

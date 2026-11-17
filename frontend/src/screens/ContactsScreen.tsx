@@ -143,9 +143,9 @@ function ContactsScreen(): React.JSX.Element {
       {/* Empty state */}
       {contacts?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <AppIcon name={ICONS.family} size={40} color={colors.textBrand} style={{ fontSize: 40 }} />
+          <AppIcon name={ICONS.family} size={40} color={colors.textBrand} style={{ fontSize: 48 }} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>{t('x_contacts_no_contacts_saved')}</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>{t('x_contacts_add_attorneys_bondsmen_family')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 22 }}>{t('x_contacts_add_attorneys_bondsmen_family')}</Text>
         </View>
       )}
       </ScrollView>
@@ -163,11 +163,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sectionHint: { fontSize: 12, marginBottom: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, marginBottom: 10 },
   inputIcon: { fontSize: 16, lineHeight: 24, marginRight: 8 },
-  input: { flex: 1, paddingVertical: 13, fontSize: 15,
-    lineHeight: 22, },
+  input: { flex: 1, paddingVertical: 13, fontSize: 16,
+    lineHeight: 23, },
   numBadge: { width: 22, height: 22, borderRadius: 12, backgroundColor: COLORS.navy, color: colors.white, textAlign: 'center', lineHeight: 22, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 10 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  typeHint: { fontSize: 11, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 70 },
+  typeHint: { fontSize: 12, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 70 },
   saveBtn: { backgroundColor: COLORS.navy, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 12, marginBottom: 20 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },

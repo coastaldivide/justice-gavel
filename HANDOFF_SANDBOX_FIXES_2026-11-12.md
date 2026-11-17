@@ -28,7 +28,7 @@ Branch **`sandbox-fixes-2026-11-12`**, on top of `consumer-core-path` at `e07753
 - **Plan contents:** the server still *grants* bar prep and arrest monitoring to Legal Pro / Case Pass (`backend/src/routes/billing/plans.js`). The app just stops advertising them. Decide whether to remove them from the plans, then re-run `setup-stripe-products.js`.
 - **Quick sign-up method:** I chose a password. A one-time text code is the faster alternative once Telnyx is live.
 - **Home while payments are off:** the plan card and the $20 Quick Connect card still show, and tapping them says "Payments aren't available yet". That's the existing design, and the browser journeys test for it, so I left it.
-- **New and changed strings in 7 languages** need native-speaker review, as with the rest of the translations: `x_auth_gate_phone_number_password`, `x_quick_connect_free_directory_note`, `qc_bondsman_sub`, `qc_lawyer_sub`, `qc_step4`, `x_quick_connect_call_them_directly_they`, `x_quick_connect_call_them_now_they`, and on the backend `auth.err.password_weak`.
+- **New and changed strings in 7 languages:** reviewed and corrected on Nov 13 (see the UI hand-off, "Translation review"): `x_auth_gate_phone_number_password`, `x_quick_connect_free_directory_note`, `qc_bondsman_sub`, `qc_lawyer_sub`, `qc_step4`, `x_quick_connect_call_them_directly_they`, `x_quick_connect_call_them_now_they`, and on the backend `auth.err.password_weak`.
 
 ## Follow-ups not done
 

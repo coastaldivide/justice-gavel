@@ -284,8 +284,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   primaryBtnArrow: { fontSize: 28, color: 'rgba(255,255,255,0.6)', ...FONTS.medium },
 
   primaryNote: {
-    fontSize: 11, color: colors.textMuted, textAlign: 'center',
-    marginBottom: 20, lineHeight: 16, paddingHorizontal: 8,
+    fontSize: 12, color: colors.textMuted, textAlign: 'center',
+    marginBottom: 20, lineHeight: 17, paddingHorizontal: 8,
   },
 
   // Grounding exercises
@@ -294,7 +294,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, ...SHADOW.sm,
   },
   groundingLabel: {
-    fontSize: 11, ...FONTS.black, color: colors.textMuted,
+    fontSize: 12, ...FONTS.black, color: colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
   },
   groundingRow: {
@@ -307,7 +307,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   groundingBody:  { fontSize: 12, lineHeight: 18 },
 
   sectionLabel: {
-    fontSize: 11, ...FONTS.black, textTransform: 'uppercase',
+    fontSize: 12, ...FONTS.black, textTransform: 'uppercase',
     letterSpacing: 1.2, marginBottom: 10,
   },
 
@@ -325,12 +325,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
   lineName:      { fontSize: 12, lineHeight: 20, ...FONTS.heavy, marginBottom: 2 },
   lineNumber:    { fontSize: 14,
     lineHeight: 21, ...FONTS.black, marginBottom: 3 },
-  lineFor:       { fontSize: 11, lineHeight: 16 },
+  lineFor:       { fontSize: 12, lineHeight: 17 },
 
   // Divider
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 20 },
   divLine: { flex: 1, height: 1 },
-  divText: { fontSize: 11, ...FONTS.semi },
+  divText: { fontSize: 12, ...FONTS.semi },
 
   // Legal CTAs
   legalRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
@@ -341,7 +341,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   legalBtnText: { color: colors.white, fontSize: 12, lineHeight: 20, ...FONTS.black },
 
   footer: {
-    fontSize: 11, textAlign: 'center', lineHeight: 17, paddingHorizontal: 12,
+    fontSize: 12, textAlign: 'center', lineHeight: 19, paddingHorizontal: 12,
   },
 
 });

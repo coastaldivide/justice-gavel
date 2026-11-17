@@ -69,14 +69,14 @@ export function formatDate(
   opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
 ): string {
   const d = parseLocalDate(dateStr);
-  if (!d) return '--';
+  if (!d) return '—';
   return d.toLocaleDateString(locale(), opts);
 }
 
 /** "Today", "Tomorrow", "In X days", "X days ago", or a date string */
 export function relativeDateLabel(dateStr: string | null | undefined): string {
   const days = daysUntil(dateStr);
-  if (days === null) return '--';
+  if (days === null) return '—';
   if (days === 0)  return t('x_attorney_inbox_today');
   if (days === 1)  return t('x_date_utils_tomorrow');
   if (days === -1) return t('x_messages_yesterday');

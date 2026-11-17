@@ -48,6 +48,7 @@ export const USER_REFS = {
   'cases.user_id': 'delete',
   'chat_messages.user_id': 'delete',
   'chat_sessions.user_id': 'delete',
+  'chat_quota_log.user_id': 'delete',          // free AI questions counted (migration 51)
   'checkin_records.user_id': 'delete',
   'checkins.user_id': 'delete',
   'civil_attorney_profiles.user_id': 'delete',

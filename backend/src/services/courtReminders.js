@@ -189,22 +189,70 @@ export async function cancelFollowerReminders(db, followerUserId, caseId, reason
   );
 }
 
+/** 'HH:MM' / 'HH:MM:SS' → { hh, mm }, else null (no time known). */
+function clock(t) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t ?? ''));
+  if (!m) return null;
+  const hh = Number(m[1]); const mm = Number(m[2]);
+  return hh <= 23 && mm <= 59 ? { hh, mm } : null;
+}
+
+/** How long before / after the hearing the court-day messages go out when the court time is known. */
+export const DAY_OF_LEAD_MINUTES = 120;
+export const ASK_AFTER_MINUTES = 120;
+
+/**
+ * When the "Court date TODAY" reminder goes out (sandbox review 2026-11-17, finding 7):
+ * 06:30 local, or two hours before the hearing when that is earlier. A 07:00 hearing used to
+ * get its reminder at 06:30 — 30 minutes before. Without a court time: 06:30.
+ */
+export function dayOfReminderAt(date, tz, courtTime = null) {
+  const usual = zonedDateTimeToUtc(date, 6, 30, tz);
+  const c = clock(courtTime);
+  if (!usual || !c) return usual;
+  const lead = new Date(zonedDateTimeToUtc(date, c.hh, c.mm, tz).getTime() - DAY_OF_LEAD_MINUTES * 60_000);
+  return lead < usual ? lead : usual;
+}
+
+/**
+ * When "Did you make it to court?" is asked: ASK_AT (15:00 local), or two hours after the
+ * hearing when that is later — a 16:30 hearing used to be asked about at 15:00, before it
+ * started. (The latest hearing, 23:59, is asked about at 01:59 — still hours before the
+ * morning-after message at FOLLOWUP_AT.)
+ */
+export function attendanceAskAt(date, tz, courtTime = null) {
+  const usual = zonedDateTimeToUtc(date, ASK_AT.hh, ASK_AT.mm, tz);
+  const c = clock(courtTime);
+  if (!usual || !c) return usual;
+  const after = new Date(zonedDateTimeToUtc(date, c.hh, c.mm, tz).getTime() + ASK_AFTER_MINUTES * 60_000);
+  return after > usual ? after : usual;
+}
+
 /**
  * The steps of COURT_REMINDER_PLAN still ahead of `now` for a hearing on `date` ('YYYY-MM-DD')
- * at wall-clock times in `tz`: [{ days, hh, mm, at, immediate? }]. A date added too late for
- * every step (e.g. the evening before) gets one step right away instead of none; a past date
- * gets none. Shared with Bond Desk court reminders (services/bondDesk/courtDates.js).
+ * at wall-clock times in `tz`: [{ days, hh, mm, at, immediate? }]. With the hearing's time
+ * (`courtTime`, 'HH:MM') the court-day step goes out at dayOfReminderAt. A date added too
+ * late for every step (e.g. the evening before) gets one step right away instead of none; a
+ * past date gets none. Shared with Bond Desk and public defender court texts
+ * (services/bondDesk/courtDates.js, services/publicDefender/texts.js).
  */
-export function planSteps(date, tz, now = new Date()) {
+export function planSteps(date, tz, now = new Date(), { courtTime = null } = {}) {
   const today = todayInZone(tz, now);
   const daysLeft = daysBetween(today, date);
   if (daysLeft === null || daysLeft < 0) return [];
   const planned = [];
   for (const step of COURT_REMINDER_PLAN) {
-    const at = zonedDateTimeToUtc(addDays(date, -step.days), step.hh, step.mm, tz);
+    const at = step.days === 0
+      ? dayOfReminderAt(date, tz, courtTime)
+      : zonedDateTimeToUtc(addDays(date, -step.days), step.hh, step.mm, tz);
     if (at && at.getTime() > now.getTime()) planned.push({ days: step.days, hh: step.hh, mm: step.mm, at });
   }
-  if (!planned.length) planned.push({ days: daysLeft, at: now, immediate: true });
+  // Too late for every step — but a hearing that has already started gets nothing.
+  if (!planned.length) {
+    const c = clock(courtTime);
+    const started = daysLeft === 0 && c && zonedDateTimeToUtc(date, c.hh, c.mm, tz).getTime() <= now.getTime();
+    if (!started) planned.push({ days: daysLeft, at: now, immediate: true });
+  }
   return planned;
 }
 
@@ -236,8 +284,8 @@ export function courtPlanLink(courtDateId) {
 }
 
 /** The steps of the plan still ahead of `now` for a hearing on `date` in `tz`. */
-function plannedSteps(date, tz, now, lang = 'en') {
-  return planSteps(date, tz, now).map((p) => ({
+function plannedSteps(date, tz, now, lang = 'en', courtTime = null) {
+  return planSteps(date, tz, now, { courtTime }).map((p) => ({
     ...p, title: p.immediate ? titleForDaysLeft(p.days, lang) : titleForDaysLeft(p.days, lang, { planned: true }),
   }));
 }
@@ -306,7 +354,7 @@ async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDat
   const { tz } = await resolveReminderTimeZone(db, followerId, state);
   const lang = await userLang(db, followerId);
   const owner = await ownerFirstName(db, ownerId);
-  const steps = plannedSteps(date, tz, now, lang);
+  const steps = plannedSteps(date, tz, now, lang, courtTime);
   for (const p of steps) {
     await insertReminder(db, {
       userId: followerId, type: 'follower_court_reminder',
@@ -323,16 +371,17 @@ async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDat
 const attendanceKey = (caseId, courtDateId, date, step) => `court:${caseId}:${courtDateId}:${date}:${step}`;
 
 /**
- * The owner's "Did you make it to court?" (15:00 on the day, notification_type 'court_checkin')
+ * The owner's "Did you make it to court?" (attendanceAskAt: 15:00 on the day, or two hours after
+ * a later hearing; notification_type 'court_checkin')
  * and the morning-after message (09:00 the next day, 'court_missed_followup'), both local.
  * The dispatcher sends them by push and, when the person opted in to texts, by text too; it
  * re-checks the hearing at send time (the morning-after one never goes out once the hearing is
  * marked attended / rescheduled / cancelled).
  */
-async function planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now }) {
+async function planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now, courtTime = null }) {
   const label = String(caseTitle || msg(lang, 'reminder.default_case')).slice(0, 120);
   const base = { case_id: caseId, court_date_id: courtDateId, court_date: date, time_zone: tz, lang };
-  const ask = zonedDateTimeToUtc(date, ASK_AT.hh, ASK_AT.mm, tz);
+  const ask = attendanceAskAt(date, tz, courtTime);
   if (ask && ask.getTime() > now.getTime()) {
     await insertReminder(db, {
       userId, type: 'court_checkin', title: msg(lang, 'reminder.ask.title'), body: msg(lang, 'reminder.ask.body', { case: label }),
@@ -391,7 +440,7 @@ export async function scheduleCourtReminders(db, {
   if (!date) return { time_zone: tz, tz_source: source, reminders: [] };
   const lang = await userLang(db, userId);
 
-  const planned = plannedSteps(date, tz, now, lang);
+  const planned = plannedSteps(date, tz, now, lang, courtTime);
   for (const p of planned) {
     // The day-before reminder (app) points to "Going to court: how to dress and act": tapping it
     // opens the guide for this court date. Texts are built separately (reminderDispatcher
@@ -411,7 +460,7 @@ export async function scheduleCourtReminders(db, {
         : `court:${caseId}:${date}:${p.days}${p.immediate ? ':now' : ''}`,
     });
   }
-  if (courtDateId) await planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now });
+  if (courtDateId) await planAttendanceSteps(db, { userId, caseId, caseTitle, courtDateId, date, tz, lang, now, courtTime });
   if (courtDateId && planned.length) {
     for (const f of await reminderFollowers(db, caseId)) {
       await scheduleFollowerReminders(db, {

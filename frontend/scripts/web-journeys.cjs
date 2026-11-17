@@ -590,7 +590,7 @@ async function langJourney(browser, base, lang, locale) {
     await page.waitForTimeout(1500);
     const pick = page.getByText('Something Else', { exact: true });
     if (await pick.count()) await pick.first().click().catch(() => {});
-    const box = page.getByPlaceholder('Ask anything -- What should I do? How do I get out?');
+    const box = page.getByPlaceholder('Ask anything — What should I do? How do I get out?');
     await box.fill('What should I say if police ask me questions?');
     await page.getByText('↑', { exact: true }).last().click();
     // a legal question: answered with verified citations (the mock cites the passages it was sent)

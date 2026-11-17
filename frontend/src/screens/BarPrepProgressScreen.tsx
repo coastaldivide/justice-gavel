@@ -244,8 +244,8 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+          style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 17 }}
         >
           {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
@@ -265,11 +265,11 @@ function makeStyles(colors: any) {
       flex: 1, padding: 12, borderRadius: RADIUS.lg,
       backgroundColor: colors.card, alignItems: 'center', ...SHADOW.sm,
     },
-    heroLabel:     { fontSize: 10, color: colors.textMuted, textAlign: 'center', marginBottom: 4 },
+    heroLabel:     { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 4 },
     heroValue:     { fontSize: 22, ...FONTS.bold },
-    heroSub:       { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+    heroSub:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
     sectionTitle:  {
-      fontSize: 13, ...FONTS.bold, color: colors.text,
+      fontSize: 14, ...FONTS.bold, color: colors.text,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
     },
     categoryList:  { marginHorizontal: 12, gap: 6 },
@@ -284,7 +284,7 @@ function makeStyles(colors: any) {
     },
     categoryBarFill: { height: '100%', borderRadius: 3 },
     categoryPct:   { width: 38, fontSize: 12, ...FONTS.bold, textAlign: 'right' },
-    categorySub:   { width: 36, fontSize: 10, color: colors.textMuted, textAlign: 'right' },
+    categorySub:   { width: 36, fontSize: 12, color: colors.textMuted, textAlign: 'right' },
     calendarCard:  { marginHorizontal: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     calendarGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     calendarDot:   { width: 22, height: 22, borderRadius: 4 },
@@ -295,12 +295,12 @@ function makeStyles(colors: any) {
       padding: 12, borderRadius: RADIUS.md,
     },
     sessionLeft:   {},
-    sessionMode:   { fontSize: 13, ...FONTS.medium, color: colors.text },
-    sessionDate:   { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+    sessionMode:   { fontSize: 14, ...FONTS.medium, color: colors.text },
+    sessionDate:   { fontSize: 12, color: colors.textMuted, marginTop: 2 },
     sessionRight:  { alignItems: 'flex-end' },
     sessionScore:  { fontSize: 18, ...FONTS.bold },
-    sessionFraction: { fontSize: 11, color: colors.textMuted },
-    emptyText:     { color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: 20 },
+    sessionFraction: { fontSize: 12, color: colors.textMuted },
+    emptyText:     { color: colors.textMuted, fontSize: 14, textAlign: 'center', padding: 20 },
     ctaBtn:        {
       marginHorizontal: 16, marginTop: 24, paddingVertical: 15,
       borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm,

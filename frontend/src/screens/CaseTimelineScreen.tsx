@@ -323,8 +323,8 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
       {loading && !events.length && (
         <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
           <ActivityIndicator size="large" color={colors.textBrand} />
-          <Text maxFontSizeMultiplier={1.4} style={{ marginTop:12, fontSize:13,
-            lineHeight:19, color:colors.textMuted }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ marginTop:12, fontSize:14,
+            lineHeight:20, color:colors.textMuted }}>
             {t('x_case_timeline_loading_timeline')}
           </Text>
         </View>
@@ -332,7 +332,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
 
           {!!fetchError && (
             <View style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
-              <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 13 }}>
+              <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 14 }}>
                 {fetchError}
               </Text>
             </View>
@@ -406,7 +406,7 @@ function CaseTimelineScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
                   }]}
                 >
                   <IconLabel icon={EVENT_ICONS[tItem] || ICONS.dotRed} textStyle={{
-                    fontSize:11, lineHeight:18, fontWeight:'700',
+                    fontSize:12, lineHeight:20, fontWeight:'700',
                     color: newType===tItem ? colors.bgCard : colors.textMuted,
                   }}>
                     {EVENT_TYPE_LABELS()[tItem]}
@@ -505,7 +505,7 @@ const styles = (colors: ThemeColors) => StyleSheet.create({
   unavailable:  { alignItems:'center', padding:32, gap:10 },
   unavailableIcon: { fontSize:36 },
   unavailableTitle: { fontSize:18, fontWeight:'800', textAlign:'center' },
-  unavailableBody: { fontSize:15, lineHeight:22, textAlign:'center' },
+  unavailableBody: { fontSize:16, lineHeight:23, textAlign:'center' },
   list:         { padding:16, paddingBottom:100 },
   header:       { marginBottom:20 },
   headerTitle:  { fontSize:TYPE['2xl'], lineHeight:34, ...FONTS.black },

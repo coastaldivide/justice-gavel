@@ -108,8 +108,12 @@ describeIntegration('court-day plan, ride offers, phone verification, phone line
     const ok = await req('post', '/api/me/phone/confirm', owner).send({ code });
     expect([ok.status, ok.body.verified]).toEqual([200, true]);
     expect((await req('get', '/api/me/phone', owner)).body).toMatchObject({ phone: '+16155550201', phone_verified: true });
-    // changing the phone anywhere drops the verification (database trigger)
-    expect((await req('post', '/api/auth/update-profile', owner).send({ phone: '615-555-0299' })).status).toBe(200);
+    // the phone cannot be changed from update-profile (sandbox review 2026-11-17): only by a texted code
+    const viaProfile = await req('post', '/api/auth/update-profile', owner).send({ phone: '615-555-0299' });
+    expect([viaProfile.status, viaProfile.body.code]).toEqual([400, 'phone_needs_verification']);
+    expect((await req('get', '/api/me/phone', owner)).body).toMatchObject({ phone: '+16155550201', phone_verified: true });
+    // changing the phone anywhere else drops the verification (database trigger)
+    await ctx.db.run('UPDATE users SET phone = ? WHERE id = ?', ['+16155550299', owner.user.id]);
     expect((await req('get', '/api/me/phone', owner)).body.phone_verified).toBe(false);
     // 5 wrong tries lock the code
     await ctx.db.run(`UPDATE phone_verifications SET created_at = created_at - INTERVAL '2 minutes' WHERE user_id = ?`, [owner.user.id]);

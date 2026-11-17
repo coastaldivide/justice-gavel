@@ -155,7 +155,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Text testID="bar-prep-disclaimer" maxFontSizeMultiplier={1.4}
-            style={{ fontSize: 11, lineHeight: 16, color: colors.textMuted, marginBottom: 10 }}>
+            style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted, marginBottom: 10 }}>
             {BAR_PREP_DISCLAIMER}
           </Text>
           {/* ── Stats Banner ─────────────────────────────────────────── */}
@@ -323,8 +323,8 @@ function StatPill({ label, value, accent }: { label: string; value: string; acce
 const makePillStyles = (colors: ThemeColors) => StyleSheet.create({
   pill:       { alignItems: 'center', minWidth: 64, padding: 8 },
   accent:     { backgroundColor: colors.primary + '18', borderRadius: 10 },
-  label:      { fontSize: 10, color: colors.textMuted, marginBottom: 2 },
-  value:      { fontSize: 15, ...FONTS.bold, color: colors.textPrimary },
+  label:      { fontSize: 12, color: colors.textMuted, marginBottom: 2 },
+  value:      { fontSize: 16, ...FONTS.bold, color: colors.textPrimary },
   accentText: { color: colors.primary },
 });
 
@@ -354,13 +354,13 @@ function makeStyles(colors: any) {
     subjectCardActive: { borderColor: colors.primary },
     subjectName:       { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     subjectNameActive: { color: colors.textBrand },
-    subjectMeta:       { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+    subjectMeta:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
     progressBar:       {
       height: 4, backgroundColor: colors.border, borderRadius: 2,
       marginTop: 10, overflow: 'hidden',
     },
     progressFill:      { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
-    accuracyText:      { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+    accuracyText:      { fontSize: 12, color: colors.textMuted, marginTop: 4 },
     chipRow:           { paddingHorizontal: 12, marginBottom: 4 },
     chip:              {
       paddingHorizontal: 14, paddingVertical: 8, marginRight: 8,
@@ -368,7 +368,7 @@ function makeStyles(colors: any) {
       backgroundColor: colors.card,
     },
     chipActive:        { borderColor: colors.primary, backgroundColor: colors.primary + '18' },
-    chipText:          { fontSize: 13, color: colors.textMuted },
+    chipText:          { fontSize: 14, color: colors.textMuted },
     chipTextActive:    { color: colors.primary, ...FONTS.semiBold },
     modeRow:           { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
     modeBtn:           {
@@ -379,7 +379,7 @@ function makeStyles(colors: any) {
     modeBtnActive:     { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
     modeBtnText:       { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     modeBtnTextActive: { color: colors.primary },
-    modeSubtext:       { fontSize: 11, color: colors.textSecond, marginTop: 4 },
+    modeSubtext:       { fontSize: 12, color: colors.textSecond, marginTop: 4 },
     countRow:          { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
     countBtn:          {
       flex: 1, paddingVertical: 12, borderRadius: RADIUS.md,
@@ -387,7 +387,7 @@ function makeStyles(colors: any) {
       backgroundColor: colors.card,
     },
     countBtnActive:    { borderColor: colors.primary, backgroundColor: colors.primary + '18' },
-    countBtnText:      { fontSize: 15, ...FONTS.semiBold, color: colors.textMuted },
+    countBtnText:      { fontSize: 16, ...FONTS.semiBold, color: colors.textMuted },
     countBtnTextActive: { color: colors.primary },
     startBtn:          {
       marginHorizontal: 16, marginTop: 24, paddingVertical: 16,
@@ -400,6 +400,6 @@ function makeStyles(colors: any) {
       flexDirection: 'row', justifyContent: 'center', gap: 24,
       marginTop: 20, paddingBottom: 10,
     },
-    footerLink:        { fontSize: 13, color: colors.primary, ...FONTS.medium },
+    footerLink:        { fontSize: 14, color: colors.primary, ...FONTS.medium },
   });
 }

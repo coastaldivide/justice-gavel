@@ -224,9 +224,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 13, fontSize: 16, lineHeight: 24, color: colors.textPrimary,
     marginBottom: 10,
   },
-  quickError: { color: colors.emergency, fontSize: 13, lineHeight: 20, marginBottom: 8, textAlign: 'center' },
+  quickError: { color: colors.emergency, fontSize: 14, lineHeight: 22, marginBottom: 8, textAlign: 'center' },
   switchLink: { alignItems: 'center', paddingVertical: 8 },
-  switchLinkText: { fontSize: 13, lineHeight: 20, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  switchLinkText: { fontSize: 14, lineHeight: 22, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   cancelBtn: { alignItems: 'center', paddingVertical: 8 },
   cancelText: { fontSize: 14, lineHeight: 21, color: colors.textMuted },
 });

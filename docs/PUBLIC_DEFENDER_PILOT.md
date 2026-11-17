@@ -88,4 +88,4 @@ agreement. Any published figure states the period, the counts and this method.
   court dates and every text (bodies encrypted at rest), visible to the office's staff and exportable by them.
   - How long is it kept after the pilot?
   - What happens to the data if the office stops?
-- **3.3**: quiet hours. The morning-of reminder goes out at 06:30 local time.
+- **3.3**: quiet hours. The morning-of reminder goes out at 06:30 local time, or 2 hours before a hearing that starts before 08:30.

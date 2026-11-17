@@ -37,7 +37,9 @@ describe('1. auth.js — Forgot/Reset Password', () => {
     expect(src).toContain('/forgot-password');
     // messages come from the catalogs in the request's language
     expect(src).toContain('auth.err.email_invalid');
-    expect(src).toContain('auth.err.email_required');
+    // an e-mail address or (sandbox review 2026-11-17) a phone number: the link then goes by text
+    expect(src).toContain('auth.err.reset_identifier_required');
+    expect(src).toContain('auth.err.reset_sms_unavailable');
   });
   test('1-02: reset link goes to justicegavel.app/reset-password', async () => {
     const fs = await import('fs');

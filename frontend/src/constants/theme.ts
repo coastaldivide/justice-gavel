@@ -34,8 +34,11 @@ export const FONT_FALLBACK = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Type scale — 8 intentional steps, no one-offs
 // ─────────────────────────────────────────────────────────────────────────────
+// The app's text sizes (Nov 13 2026 clean-up): 12 · 14 · 16 · 18 · 22 · 28 for text,
+// 36 · 48 · 60 · 80 for display numbers. Nothing smaller than 12.
+// src/__tests__/typeScale.test.js fails on any other fontSize literal.
 export const TYPE = {
-  xs:   11,   // captions, tags, badges
+  xs:   12,   // captions, tags, badges (was 11: too small to read)
   sm:   12,   // hints, secondary labels
   base: 14,   // body text
   md:   16,   // list items, card text
@@ -46,8 +49,8 @@ export const TYPE = {
   '4xl': 48,  // hero numbers, bail amount display
   '5xl': 60,  // splash screen, onboarding hero
   '6xl': 80,  // full-screen countdown
-  hero:  30,  // large stat numbers
-  display: 42, // score / points / large metrics
+  hero:  28,  // large stat numbers
+  display: 48, // score / points / large metrics
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

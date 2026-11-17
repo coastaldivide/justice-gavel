@@ -130,23 +130,23 @@ export function Emphasis({ children, style, color }: TypographyProps) {
 }
 
 const makeT = (colors: ThemeColors) => StyleSheet.create({
-  h1:       { fontSize: 26, fontWeight: '800', fontFamily: 'Inter_800ExtraBold',
-               color: colors.textPrimary, lineHeight: 32, letterSpacing: -0.4 },
-  h2:       { fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold',
-               color: colors.textPrimary, lineHeight: 26, letterSpacing: -0.2 },
+  h1:       { fontSize: 28, fontWeight: '800', fontFamily: 'Inter_800ExtraBold',
+               color: colors.textPrimary, lineHeight: 35, letterSpacing: -0.4 },
+  h2:       { fontSize: 22, fontWeight: '700', fontFamily: 'Inter_700Bold',
+               color: colors.textPrimary, lineHeight: 29, letterSpacing: -0.2 },
   h3:       { fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold',
                color: colors.textPrimary, lineHeight: 22 },
-  body:     { fontSize: 15, fontWeight: '400', fontFamily: 'Inter_400Regular',
-               color: colors.textSecond, lineHeight: 23 },
-  bodySmall:{ fontSize: 13, fontWeight: '400', fontFamily: 'Inter_400Regular',
-               color: colors.textSecond, lineHeight: 19 },
-  label:    { fontSize: 11, fontWeight: '700', fontFamily: 'Inter_700Bold',
+  body:     { fontSize: 16, fontWeight: '400', fontFamily: 'Inter_400Regular',
+               color: colors.textSecond, lineHeight: 25 },
+  bodySmall:{ fontSize: 14, fontWeight: '400', fontFamily: 'Inter_400Regular',
+               color: colors.textSecond, lineHeight: 20 },
+  label:    { fontSize: 12, fontWeight: '700', fontFamily: 'Inter_700Bold',
                color: colors.textMuted, letterSpacing: 0.8,
                textTransform: 'uppercase' },
   caption:  { fontSize: 12, fontWeight: '400', fontFamily: 'Inter_400Regular',
                color: colors.textMuted, lineHeight: 17 },
-  emphasis: { fontSize: 15, fontWeight: '600', fontFamily: 'Inter_600SemiBold',
-               color: colors.textPrimary, lineHeight: 22 },
+  emphasis: { fontSize: 16, fontWeight: '600', fontFamily: 'Inter_600SemiBold',
+               color: colors.textPrimary, lineHeight: 23 },
 });
 
 export const Typography = { Heading1, Heading2, Heading3, Body, BodySmall, Label, Caption, Emphasis };

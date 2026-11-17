@@ -244,7 +244,7 @@ function signJwt(payload, secret) {
   });
 
   // ── B2 sign-in errors ─────────────────────────────────────────────────────
-  await journey('B2 Sign-in errors (es): server text in Spanish; reset needs an e-mail; honest when e-mail is off', async () => {
+  await journey('B2 Sign-in errors (es): server text in Spanish; reset by text for a phone, by e-mail for an address; honest when either is off', async () => {
     const acc = await newUser('b2');
     const s = await open(browser, { lang: 'es', browsed: false });
     await go(s.page, '/');
@@ -257,9 +257,13 @@ function signJwt(payload, secret) {
     const es = (await apiCall('POST', '/auth/login', { lang: 'es', body: { identifier: 'x@y.test', password: 'nope' } })).body.error;
     if (!(await err.innerText()).includes(es)) throw new Error(`login error not the Spanish server text: ${await err.innerText()}`);
     if (await s.page.locator('[data-testid="login-screen"]').count() !== 1) throw new Error('left the sign-in screen after a failed login');
+    // A phone number: the reset link goes by text (Telnyx is off here, so the server says so in Spanish)
     await byTid(s.page, 'login-email-input').fill('615 555 0100');
     await s.page.getByText(tx('es', 'x_lg_forgot_password')).click();
-    await until(async () => (await err.innerText().catch(() => '')).includes(tx('es', 'lg_reset_needs_email').slice(0, 40)), 5000, 'needs-email message');
+    await until(async () => s.dialogs.some(d => d.includes('615 555 0100')), 5000, 'text reset confirm dialog');
+    const smsOff = (await apiCall('POST', '/auth/forgot-password', { lang: 'es', body: { identifier: '615 555 0100' } })).body.error;
+    if (!smsOff) throw new Error('no answer for a phone reset');
+    await s.page.getByText(smsOff).first().waitFor({ timeout: 8000 });
     await byTid(s.page, 'login-email-input').fill(acc.email);
     // the confirm ("Send a reset link to …?") is the browser dialog on the web — accepted by open()
     await s.page.getByText(tx('es', 'x_lg_forgot_password')).click();
@@ -269,7 +273,7 @@ function signJwt(payload, secret) {
     await shot(s.page, 'B2-login-es');
     allErrors.push(...s.errors);
     await s.ctx.close();
-    return `"${es.slice(0, 40)}…" / needs e-mail / "${unavailable.slice(0, 40)}…"`;
+    return `"${es.slice(0, 40)}…" / "${smsOff.slice(0, 30)}…" / "${unavailable.slice(0, 40)}…"`;
   });
 
   // ── B3 register consumer (pt) ─────────────────────────────────────────────

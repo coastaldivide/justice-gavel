@@ -5,7 +5,7 @@
  *   POST /firm-acquisition/trial      attorney accounts: create the firm + the trial (no card)
  *   GET  /firm-acquisition/checklist  onboarding steps worked out from the firm's own data
  *   POST /firm-acquisition/invite     firm admin: invite a colleague (seat limit)
- *   GET  /firm-acquisition/invites    invitations for this account; accept to join
+ *   (an invited colleague joins from the e-mailed link: FirmJoinScreen, firm/join/<token>)
  *   POST /firm-acquisition/upgrade    ask for a paid firm plan (a request — nothing is charged)
  * There is no paid firm plan to convert to yet: the trial ends without a charge and the
  * firm keeps its data (the screen says so). Every message comes from the server in the
@@ -18,7 +18,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { SignInNeeded, useHasSession } from '../components/SignInNeeded';
 import { useStoredUser, isAttorneyUser } from '../hooks/useStoredUser';
-import { useConfirm } from '../hooks/useConfirm';
 import { FONTS, RADIUS, useTheme } from '../constants/theme';
 import { t, useLang, locale } from '../i18n';
 import { IconLabel, ICONS, AppIcon } from '../components/AppIcon';
@@ -35,7 +34,6 @@ type Status = {
   member_count?: number; matter_count?: number; pending_invites?: number;
   upgrade_request?: { target_tier: string; status: string; created_at: string } | null;
 };
-type Invite = { id: number; role: string; firm_name: string; invited_by_name: string | null; expires_at: string };
 type Step = { key: 'vertical_set' | 'team_invited' | 'first_matter'; done: boolean };
 const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { month: 'long', day: 'numeric', year: 'numeric' }) : '');
 const ADMIN_ROLES = new Set(['firm_admin', 'admin', 'owner']);
@@ -45,12 +43,11 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
   useLang();
   const { colors } = useTheme();
   const s = makeStyles(colors);
-  const { confirm } = useConfirm();
   const { hasSession, recheck } = useHasSession();
   const { user, ready } = useStoredUser();
   const [status, setStatus] = useState<Status | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
-  const [invites, setInvites] = useState<Invite[]>([]);
+  const [inviteLink, setInviteLink] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -62,14 +59,12 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const load = useCallback(async () => {
     try {
-      const [st, cl, inv] = await Promise.all([
+      const [st, cl] = await Promise.all([
         api.get<Status>('/firm-acquisition/status'),
         api.get('/firm-acquisition/checklist'),
-        api.get('/firm-acquisition/invites'),
       ]);
       setStatus(st.data);
       setSteps((cl.data?.checklist || []) as Step[]);
-      setInvites((inv.data?.invites || []) as Invite[]);
     } catch (e) { setNotice({ text: apiErrorMessage(e, t('fa_load_error')), tone: 'error' }); }
     finally { setRefreshing(false); }
   }, []);
@@ -85,9 +80,15 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
     if (firmName.trim().length < 2) { setNotice({ text: t('x_firm_acquisition_firm_name_must_be'), tone: 'error' }); return; }
     run('trial', () => api.post('/firm-acquisition/trial', { firm_name: firmName.trim(), vertical, org_type: orgType }), () => setFirmName(''));
   };
-  const invite = () => run('invite', () => api.post('/firm-acquisition/invite', { email: inviteEmail.trim(), role: inviteRole }), () => setInviteEmail(''));
-  const accept = (inv: Invite) => confirm(t('fa_join_title', { firm: inv.firm_name }), t('fa_join_body'), { confirmLabel: t('fa_join_cta') })
-    .then(ok => { if (ok) run(`inv${inv.id}`, () => api.post(`/firm-acquisition/invites/${inv.id}/accept`, {})); });
+  // Without e-mail set up the server sends nothing and returns the link for the admin to pass on.
+  const invite = () => {
+    setInviteLink('');
+    run('invite', async () => {
+      const r = await api.post<{ link?: string; message?: string }>('/firm-acquisition/invite', { email: inviteEmail.trim(), role: inviteRole });
+      setInviteLink(r.data?.link || '');
+      return r;
+    }, () => setInviteEmail(''));
+  };
   const requestPlan = (tier: (typeof PLAN_TIERS)[number]) => run(`plan-${tier}`, () => api.post('/firm-acquisition/upgrade', { target_tier: tier }));
 
   if (hasSession === false) return <View style={{ flex: 1, backgroundColor: colors.bg }}><SignInNeeded navigation={navigation} title={t('x_nav_start_firm_trial')} body={t('fa_signin_body')} onSignedIn={recheck} /></View>;
@@ -108,15 +109,6 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={{ color: notice.tone === 'ok' ? colors.legalDark : colors.danger, fontSize: 14, lineHeight: 20 }}>{notice.text}</Text>
         </View>
       )}
-      {invites.map(inv => (
-        <View key={inv.id} style={s.card} testID="fa-invite">
-          <Text maxFontSizeMultiplier={1.4} style={s.title}>{t('fa_invited', { firm: inv.firm_name })}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={s.line}>{t('fa_invited_by', { name: inv.invited_by_name || '', role: t(`fa_role_${inv.role}`), date: fmtDay(inv.expires_at) })}</Text>
-          <TouchableOpacity accessibilityRole="button" testID="fa-invite-accept" style={s.primaryBtn} disabled={busy !== null} onPress={() => accept(inv)}>
-            <Text maxFontSizeMultiplier={1.4} style={s.primaryText}>{t('fa_join_cta')}</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
 
       {!status.has_firm || !f ? (
         <View style={s.card} testID="fa-start">
@@ -196,6 +188,8 @@ function FirmAcquisitionScreen({ navigation }: ScreenProps): React.JSX.Element {
               <TouchableOpacity accessibilityRole="button" testID="fa-invite-send" style={[s.ghostBtn, (!inviteEmail.trim() || busy !== null) && { opacity: 0.5 }]} disabled={!inviteEmail.trim() || busy !== null} onPress={invite}>
                 <Text maxFontSizeMultiplier={1.4} style={s.ghostText}>{t('fa_invite_send')}</Text>
               </TouchableOpacity>
+              <Text maxFontSizeMultiplier={1.3} style={s.line}>{t('fa_invite_how')}</Text>
+              {!!inviteLink && <Text selectable testID="fa-invite-link" maxFontSizeMultiplier={1.3} style={[s.line, { color: colors.textPrimary }]}>{inviteLink}</Text>}
             </View>
           )}
 
@@ -231,20 +225,20 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notice: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: RADIUS.md, borderWidth: 1 },
   card: { backgroundColor: colors.bgCard, marginHorizontal: 12, marginTop: 12, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: colors.border },
-  h1: { fontSize: 20, ...FONTS.black, color: colors.textBrand, marginBottom: 4 },
+  h1: { fontSize: 22, ...FONTS.black, color: colors.textBrand, marginBottom: 4 },
   title: { fontSize: 16, ...FONTS.heavy, color: colors.textPrimary },
   line: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 4 },
-  label: { fontSize: 13, ...FONTS.semi, color: colors.textSecond, marginTop: 12, marginBottom: 4 },
+  label: { fontSize: 14, ...FONTS.semi, color: colors.textSecond, marginTop: 12, marginBottom: 4 },
   field: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: RADIUS.md, paddingHorizontal: 10, minHeight: 44, color: colors.inputText, backgroundColor: colors.inputBg, fontSize: 14 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chipsPadded: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginHorizontal: 12 },
   chip: { minHeight: 44, paddingHorizontal: 12, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', backgroundColor: colors.bgCard },
-  chipText: { fontSize: 13, ...FONTS.semi, color: colors.textSecond },
+  chipText: { fontSize: 14, ...FONTS.semi, color: colors.textSecond },
   primaryBtn: { minHeight: 48, borderRadius: RADIUS.md, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center', marginTop: 14, paddingHorizontal: 12 },
-  primaryText: { color: colors.textOnNavy, fontSize: 15, ...FONTS.heavy, textAlign: 'center' },
+  primaryText: { color: colors.textOnNavy, fontSize: 16, ...FONTS.heavy, textAlign: 'center' },
   ghostBtn: { minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignSelf: 'flex-start', marginTop: 10, backgroundColor: colors.bgCard },
   ghostText: { fontSize: 14, ...FONTS.semi, color: colors.info },
-  badge: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.pill, fontSize: 13, ...FONTS.bold, overflow: 'hidden' },
+  badge: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.pill, fontSize: 14, ...FONTS.bold, overflow: 'hidden' },
   statsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   stat: { flex: 1, backgroundColor: colors.bgSubtle, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
   statVal: { fontSize: 18, ...FONTS.black, color: colors.textBrand },

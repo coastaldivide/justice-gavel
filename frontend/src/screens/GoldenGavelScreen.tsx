@@ -249,7 +249,7 @@ function GoldenGavelScreen(): React.JSX.Element {
       {fetchError && (
         <View style={{ margin: 16, padding: 14, backgroundColor: colors.bgCard, borderRadius: 10, borderWidth: 1, borderColor: colors.emergency }}>
           <IconLabel icon={ICONS.statusWarn} iconColor={colors.warn} textStyle={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>{t('x_golden_gavel_unable_load')}</IconLabel>
-          <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 4 }}>{fetchError}</Text>
         </View>
       )}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -393,12 +393,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   headerSub:         { color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 20, textAlign: 'center' },
   card:              { borderRadius: 14, padding: 16, borderWidth: 1, marginBottom: 10 },
   cardBody:          { fontSize: 12, lineHeight: 20 },
-  sectionLabel:      { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 16 },
+  sectionLabel:      { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 16 },
   journeyRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
   journeyLine:       { flex: 1, height: 2, maxWidth: 48 },
   journeyStep:       { alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 8, minWidth: 76 },
   journeyEmoji:      { marginBottom: 3 },
-  journeyLabel:      { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  journeyLabel:      { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   nextHint:          { fontSize: 12, textAlign: 'center', marginTop: 10, lineHeight: 18 },
   dateRow:           { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.bg },
   dateEmoji:         { width: 26 },
@@ -410,7 +410,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   critSection:       { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   critSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   critSectionTitle:  { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  earnedTag:         { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, backgroundColor: colors.legalBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  earnedTag:         { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, backgroundColor: colors.legalBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   critRow:           { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.bg },
   critIcon:          { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18, marginTop: 1 },
   critLabel:         { fontSize: 12, flex: 1, lineHeight: 18 },
@@ -420,6 +420,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   hallMeta:          { fontSize: 12, marginTop: 2 },
   helpedBadge:       { alignItems: 'center', minWidth: 48 },
   helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.steelMid },
-  helpedLabel:       { fontSize: 11, color: colors.steel, fontWeight: '600' },
+  helpedLabel:       { fontSize: 12, color: colors.steel, fontWeight: '600' },
 });
 export default React.memo(GoldenGavelScreen);

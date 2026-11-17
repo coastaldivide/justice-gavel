@@ -43,7 +43,7 @@ import { streamAnswer, finishAssembled } from '../../services/sourcedAnswers.js'
 import { nothingFoundAnswer } from '../../ai/citations.js';
 import {
   chatContext, limitBody, readChatBody, prepareChatRequest, findReplay, saveExchange,
-  detectLawyerHandoff, classifyIntent, sourcedOf, sentOf, replayOf,
+  reserveQuestion, settleQuestion, detectLawyerHandoff, classifyIntent, sourcedOf, sentOf, replayOf,
 } from './_helpers.js';
 
 export const STREAM_TIMEOUT_MS = 120_000;
@@ -77,7 +77,9 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
   } catch (err) {
     logger.warn({ err: err?.message }, '[chat/stream] replay lookup failed');
   }
-  if (replay == null && !ctx.unlimited && ctx.limited) return res.status(402).json(limitBody(ctx));
+  // A new question takes one free question now; it is refunded below when nothing was kept.
+  const hold = replay == null ? await reserveQuestion(db, userId, ctx, body.clientMessageId) : null;
+  if (hold && !hold.ok) return res.status(402).json(limitBody(ctx));
 
   // ── SSE headers — flushed before the first frame ─────────────────────────
   res.status(200);
@@ -170,6 +172,8 @@ router.post('/stream', chatBurstLimiter, authRequired, requireDisclaimer, requir
   } finally {
     clearTimeout(stTimer);
     res.off('close', onClientClose);
+    // Counted only when an answer (complete or the part the person saw) was kept.
+    await settleQuestion(db, hold, saved ? 'used' : 'refunded');
     if (stream) {
       stream.record(fullText ? (clientGone ? 'stopped' : 'completed') : 'failed')
         .catch((e) => logger.warn({ err: e.message }, '[chat/stream] usage metering failed'));

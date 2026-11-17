@@ -132,12 +132,15 @@ describe('1. useAppSetup.ts — App Lifecycle Hooks', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('2. firm_acquisition.js — Firm Onboarding Funnel', () => {
 
-  test('2-01: firm_acquisition has 8 route handlers', async () => {
+  test('2-01: firm_acquisition has 11 route handlers', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/firm_acquisition.js', 'utf8');
     // Section G: plans, lead, trial, status, upgrade, checklist, invite, invites, invites/:id/accept
+    // + (sandbox review 2026-11-17) invite/:token preview and invite/accept — joining needs the e-mailed token
     const handlers = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
-    expect(handlers.length).toBe(9);
+    expect(handlers.length).toBe(11);
+    expect(src).toContain("router.get('/invite/:token'");
+    expect(src).toContain("router.post('/invite/accept'");
   });
 
   test('2-02: TRIAL_DAYS is 14 (single source of truth)', async () => {

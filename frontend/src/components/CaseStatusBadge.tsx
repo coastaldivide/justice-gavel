@@ -30,7 +30,7 @@ export const CaseStatusBadge = React.memo(function CaseStatusBadge({ status, siz
       alignSelf: 'flex-start',
     }}>
       <Text maxFontSizeMultiplier={1.2} style={{
-        fontSize:   size === 'sm' ? 10 : 12,
+        fontSize:   size === 'sm' ? 12 : 14,
         fontWeight: '700',
         color:      clr.text,
       }}>

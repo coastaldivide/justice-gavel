@@ -61,7 +61,7 @@ const s = StyleSheet.create({
   container:  { alignItems: 'center', justifyContent: 'center', padding: 32 },
   fullScreen: { flex: 1 },
   icon:       { marginBottom: 16 },
-  message:    { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 20, maxWidth: 280 },
+  message:    { fontSize: 16, textAlign: 'center', lineHeight: 23, marginBottom: 20, maxWidth: 280 },
   retryBtn:   { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 12, minHeight: 44 },
-  retryText:  { fontSize: 15, fontWeight: '700' },
+  retryText:  { fontSize: 16, fontWeight: '700' },
 });

@@ -19,6 +19,7 @@ export type RootStackParamList = {
   Login:                    undefined;
   Register:                 undefined;
   ResetPassword:            { token?: string };
+  ConfirmEmail:             { token?: string };
   Onboarding:               undefined;
   AgeGate:                  undefined;
   TermsOfService:           undefined;
@@ -137,6 +138,7 @@ export type RootStackParamList = {
   PdInbox:                  undefined;
   PdStaff:                  undefined;
   PdJoin:                   { token: string };
+  FirmJoin:                 { token: string };
   AdminPdOffices:           undefined;
   AdminResults:             undefined;
   AdminSourceChecks:        undefined;

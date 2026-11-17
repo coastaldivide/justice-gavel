@@ -168,17 +168,19 @@ router.put('/preferences', authRequired, writeLimiter, async (req, res) => {
     const b = req.body && typeof req.body === 'object' ? req.body : {};
     if (typeof b.sms_reminders !== 'boolean') return res.status(400).json({ error: msg(lang, 'cd.err.sms_bool') });
     const db = await getDb();
-    let phone;
+    // The account's number is never set here (sandbox review 2026-11-17, second agent pass):
+    // this route used to write any `phone` it was sent, so a stolen session could put its own
+    // number on the account and then reset the password by text. A number is added or changed
+    // only by proving it with a texted code (POST /api/me/phone/verify + /confirm). `phone` is
+    // still accepted when it is the account's number already (older app versions send it).
+    const current = toE164((await db.get('SELECT phone FROM users WHERE id = ?', [req.user.id]))?.phone);
     if (b.phone !== undefined && b.phone !== null && b.phone !== '') {
-      phone = toE164(b.phone);
+      const phone = toE164(b.phone);
       if (!phone) return res.status(400).json({ error: msg(lang, 'cd.err.bad_phone') });
+      if (phone !== current) return res.status(400).json({ error: msg(lang, 'auth.err.phone_change_verify'), code: 'phone_needs_verification' });
     }
-    if (b.sms_reminders && !phone) {
-      const u = await db.get('SELECT phone FROM users WHERE id = ?', [req.user.id]);
-      if (!toE164(u?.phone)) return res.status(400).json({ error: msg(lang, 'cd.err.need_phone') });
-    }
-    if (phone) await db.run('UPDATE users SET sms_reminders = ?, phone = ? WHERE id = ?', [b.sms_reminders ? 1 : 0, phone, req.user.id]);
-    else await db.run('UPDATE users SET sms_reminders = ? WHERE id = ?', [b.sms_reminders ? 1 : 0, req.user.id]);
+    if (b.sms_reminders && !current) return res.status(400).json({ error: msg(lang, 'cd.err.need_phone'), code: 'need_phone' });
+    await db.run('UPDATE users SET sms_reminders = ? WHERE id = ?', [b.sms_reminders ? 1 : 0, req.user.id]);
     // Consent record (migration 31): when, which number, which wording, which language.
     if (b.sms_reminders) {
       const u = await db.get('SELECT phone FROM users WHERE id = ?', [req.user.id]).catch(() => null);

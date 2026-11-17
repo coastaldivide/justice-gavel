@@ -12,7 +12,8 @@
  *      made the app sign the person out); the right password deletes it
  *   4  forgot-password without an e-mail provider says so (503 for every
  *      address, it used to answer "sent" while nothing was sent); a phone
- *      number is a translated 400; the reset e-mail is written in the language
+ *      number without Telnyx is a translated 503 (with Telnyx the link is texted:
+ *      account_security.int.test.js); the reset e-mail is written in the language
  *   5  logout revokes the refresh token and removes this device's push token
  *   6  Settings › Notifications › Arrest alerts off: no monitor-match push (it
  *      was sent regardless; the check-in reminder now filters on its switch too)
@@ -81,7 +82,7 @@ describeIntegration('section B: sign-up, sign-in & account (real Postgres)', () 
     expect(await ctx.db.get('SELECT id FROM users WHERE id = ?', [u.user.id])).toBeFalsy();
   });
 
-  test('4 forgot-password: honest without e-mail; phone → 400; reset mail in the language', async () => {
+  test('4 forgot-password: honest without e-mail or texts; bad address → 400; reset mail in the language', async () => {
     const u = await ctx.register();
     const off = await req().post('/api/auth/forgot-password').set('Accept-Language', 'es').send({ email: u.email });
     const offUnknown = await req().post('/api/auth/forgot-password').set('Accept-Language', 'es').send({ email: 'nobody@it.example.test' });
@@ -90,9 +91,12 @@ describeIntegration('section B: sign-up, sign-in & account (real Postgres)', () 
     expect(off.body).toEqual(offUnknown.body);
     expect(off.body.code).toBe('email_unavailable');
     expect(off.body.error).toMatch(/support@justicegavel\.app/);
+    // a phone number gets its link by text (sandbox review 2026-11-17); no Telnyx here: says so, translated
     const phone = await req().post('/api/auth/forgot-password?lang=pt').send({ email: '6155550100' });
-    expect(phone.status).toBe(400);
-    expect(phone.body).toEqual({ error: 'Digite um e-mail válido.', code: 'email_invalid', message: 'Digite um e-mail válido.' });
+    expect([phone.status, phone.body.code]).toEqual([503, 'sms_unavailable']);
+    expect(phone.body.error).toMatch(/SMS ainda não está disponível/);
+    const bad = await req().post('/api/auth/forgot-password?lang=pt').send({ email: 'ana@' });
+    expect(bad.body).toEqual({ error: 'Digite um e-mail válido.', code: 'email_invalid', message: 'Digite um e-mail válido.' });
 
   });
 

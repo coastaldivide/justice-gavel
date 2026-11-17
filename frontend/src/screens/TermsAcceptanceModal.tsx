@@ -14,6 +14,10 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
  *     (desktop web, tablets), because it is already fully visible. Requiring
  *     a scroll event that can never fire locked desktop users out (audit11 H10).
  *   ✓ Two separate checkboxes — ToS agreement AND specific "not legal advice" acknowledgment
+ *   ✓ Usable on every screen size (sandbox review 2026-11-17, finding 8): when the
+ *     checkboxes and button would leave less than MIN_SUMMARY_HEIGHT for the summary
+ *     (a 320×568 phone, a large text setting, a long translation), they scroll with the
+ *     summary instead of being pinned below it, so nothing is cut off.
  *   ✓ Timestamped, versioned, platform-logged acceptance sent to backend
  *   ✓ Shown again automatically when ToS version changes
  *   ✓ Cannot proceed into the app without accepting
@@ -29,7 +33,7 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import React, { useState, useRef, useCallback } from 'react';
 import {
   Modal, View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Platform, Linking, LayoutAnimation} from 'react-native';
+  StyleSheet, ActivityIndicator, Platform, Linking, LayoutAnimation, useWindowDimensions} from 'react-native';
 import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
 import { t, perLang, useLang } from '../i18n';
@@ -44,6 +48,18 @@ const BOTTOM_SLACK = 30;
 /** True when the whole summary is visible without scrolling. */
 export function contentFitsViewport(contentHeight: number, viewportHeight: number): boolean {
   return contentHeight <= viewportHeight + BOTTOM_SLACK;
+}
+
+/** The least room the summary keeps while the checkboxes and button stay pinned below it. */
+export const MIN_SUMMARY_HEIGHT = 200;
+
+/**
+ * Pinned footer, or footer inside the scroll? Inside when pinning it would leave the summary
+ * less than MIN_SUMMARY_HEIGHT. Before the layout is measured: inside on screens under 700 px.
+ */
+export function footerScrolls(containerH: number, headerH: number, footerH: number, windowH: number): boolean {
+  if (containerH > 0 && footerH > 0) return containerH - headerH - footerH < MIN_SUMMARY_HEIGHT;
+  return windowH < 700;
 }
 
 // ─── Summary sections shown in the modal ─────────────────────────────────────
@@ -104,19 +120,43 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
 
   const canAccept = scrolledToBottom && checkToS && checkNoAdvice;
 
-  const handleScroll = useCallback(({ nativeEvent }: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-    const atBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - BOTTOM_SLACK;
-    if (atBottom && !scrolledToBottom) setScrolledToBottom(true);
-  }, [scrolledToBottom]);
+  const { height: windowH } = useWindowDimensions();
+  const [containerH, setContainerH] = useState(0);
+  const [headerH, setHeaderH] = useState(0);
+  const [footerH, setFooterH] = useState(0);
+  // Decided once per screen height, from the first full measurement: the footer's own height
+  // changes while the person uses it (the "scroll to unlock" line goes, an error line comes),
+  // and switching layouts then would move the checkbox they just tapped. A real change of
+  // height (rotation, a resized window) decides again.
+  const [layout, setLayout] = useState<{ forH: number; compact: boolean } | null>(null);
+  React.useEffect(() => {
+    if (!(containerH > 0 && headerH > 0 && footerH > 0)) return;
+    if (layout && Math.abs(layout.forH - containerH) <= 40) return;
+    setLayout({ forH: containerH, compact: footerScrolls(containerH, headerH, footerH, windowH) });
+  }, [containerH, headerH, footerH, windowH, layout]);
+  const compact = layout ? layout.compact : footerScrolls(0, 0, 0, windowH);
 
   // When everything fits in the viewport there is nothing to scroll and no
   // scroll event will ever fire — the user has already seen it all.
+  // "Everything" ends at the last real element (the full-terms link): the spacing below it
+  // holds nothing to read. Counting it locked "I Agree" at 1280×900 once the text grew to
+  // the 12 px floor — the summary was all visible but 49 px of padding overflowed.
+  const [lastBottom, setLastBottom] = useState(0);
+  // "Read to the end" = the bottom of the summary (the full-terms link) has been on screen.
+  // With the checkboxes inside the scroll they come after it and do not need scrolling past.
+  const handleScroll = useCallback(({ nativeEvent }: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const end = lastBottom > 0 ? Math.min(lastBottom, contentSize.height) : contentSize.height;
+    const atBottom = layoutMeasurement.height + contentOffset.y >= end - BOTTOM_SLACK;
+    if (atBottom && !scrolledToBottom) setScrolledToBottom(true);
+  }, [scrolledToBottom, lastBottom]);
   React.useEffect(() => {
-    if (!scrolledToBottom && viewportH > 0 && contentH > 0 && contentFitsViewport(contentH, viewportH)) {
+    const seenAll = (contentH > 0 && !compact && contentFitsViewport(contentH, viewportH))
+      || (lastBottom > 0 && contentFitsViewport(lastBottom, viewportH));
+    if (!scrolledToBottom && viewportH > 0 && seenAll) {
       setScrolledToBottom(true);
     }
-  }, [viewportH, contentH, scrolledToBottom]);
+  }, [viewportH, contentH, lastBottom, scrolledToBottom, compact]);
 
   const handleAccept = useCallback(async () => {
     if (!canAccept || submitting) return;
@@ -142,77 +182,10 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
     }
   }, [canAccept, submitting, checkToS, checkNoAdvice, onAccepted]);
 
-  return (
-    <Modal
-      testID="terms-acceptance-modal"
-      accessibilityViewIsModal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => {/* cannot dismiss without accepting */}}>
-      <View style={s.container}>
-
-        {/* Header */}
-        <View style={s.header}>
-          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>{t('x_legal_disclaimer_before_continue')}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>
-            {t('x_terms_acceptance_modal_please_read_agree_our')}
-          </Text>
-        </View>
-
-        {/* Scrollable content — must scroll to bottom to unlock "I Agree" */}
-        <ScrollView
-          ref={scrollRef}
-          style={s.scroll}
-          contentContainerStyle={s.scrollContent}
-          onScroll={handleScroll}
-          onLayout={e => setViewportH(e.nativeEvent.layout.height)}
-          onContentSizeChange={(_w, h) => setContentH(h)}
-          scrollEventThrottle={100}
-          testID="tos-scroll"
-          showsVerticalScrollIndicator={true}>
-
-          {/* Key points in plain language */}
-          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>{t('x_terms_acceptance_modal_what_need_know')}</Text>
-          
-          {SUMMARY_POINTS().length === 0 && (
-            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
-            </View>
-          )}
-{SUMMARY_POINTS().map((pt, i) => (
-            <View key={`point-${i}`} style={s.point}>
-              <AppIcon name={pt.icon} size={22} color={colors.textBrand} style={s.pointIcon} />
-              <View style={s.pointBody}>
-                <Text maxFontSizeMultiplier={1.4} style={s.pointTitle}>{pt.title}</Text>
-                <Text maxFontSizeMultiplier={1.4} style={s.pointText}>{pt.body}</Text>
-              </View>
-            </View>
-          ))}
-
-          {/* Link to full ToS */}
-          <TouchableOpacity
-            accessibilityRole="link"
-            style={s.fullTosLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
-            accessibilityLabel={t('x_terms_acceptance_modal_read_full_terms_service')}
-          >
-            <IconLabel icon={ICONS.document} textStyle={s.fullTosLinkText} maxFontSizeMultiplier={1.4}>{t('x_terms_acceptance_modal_read_full_terms_service_2')}</IconLabel>
-          </TouchableOpacity>
-
-          {/* Scroll indicator */}
-          {!scrolledToBottom && (
-            <View style={s.scrollHint}>
-              <Text maxFontSizeMultiplier={1.4} style={s.scrollHintText}>{t('x_terms_acceptance_modal_scroll_continue')}</Text>
-            </View>
-          )}
-
-          {/* Spacer to ensure bottom is reachable */}
-          <View style={{ height: 24 }} />
-        </ScrollView>
-
-        {/* Checkboxes + Accept button */}
-        <View style={s.footer}>
+  // Checkboxes + Accept button: pinned below the summary, or (compact) at the end of the scroll.
+  const footer = (
+    <View style={compact ? [s.footer, s.footerInScroll] : s.footer} testID="tos-footer"
+      onLayout={e => setFooterH(e.nativeEvent.layout.height)}>
 
           {/* Checkbox 1: ToS agreement */}
           <TouchableOpacity
@@ -292,6 +265,81 @@ function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
             </TouchableOpacity>
           )}
         </View>
+  );
+
+  return (
+    <Modal
+      testID="terms-acceptance-modal"
+      accessibilityViewIsModal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => {/* cannot dismiss without accepting */}}>
+      <View style={s.container} testID="tos-container" onLayout={e => setContainerH(e.nativeEvent.layout.height)}>
+
+        {/* Header */}
+        <View style={s.header} testID="tos-header" onLayout={e => setHeaderH(e.nativeEvent.layout.height)}>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>{t('x_legal_disclaimer_before_continue')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>
+            {t('x_terms_acceptance_modal_please_read_agree_our')}
+          </Text>
+        </View>
+
+        {/* Scrollable content — must scroll to bottom to unlock "I Agree" */}
+        <ScrollView
+          ref={scrollRef}
+          style={compact ? s.scroll : [s.scroll, s.scrollPinned]}
+          contentContainerStyle={s.scrollContent}
+          onScroll={handleScroll}
+          onLayout={e => setViewportH(e.nativeEvent.layout.height)}
+          onContentSizeChange={(_w, h) => setContentH(h)}
+          scrollEventThrottle={100}
+          testID="tos-scroll"
+          showsVerticalScrollIndicator={true}>
+
+          {/* Key points in plain language */}
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>{t('x_terms_acceptance_modal_what_need_know')}</Text>
+          
+          {SUMMARY_POINTS().length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>{t('x_court_forms_no_results_yet')}</Text>
+            </View>
+          )}
+{SUMMARY_POINTS().map((pt, i) => (
+            <View key={`point-${i}`} style={s.point}>
+              <AppIcon name={pt.icon} size={22} color={colors.textBrand} style={s.pointIcon} />
+              <View style={s.pointBody}>
+                <Text maxFontSizeMultiplier={1.4} style={s.pointTitle}>{pt.title}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.pointText}>{pt.body}</Text>
+              </View>
+            </View>
+          ))}
+
+          {/* Link to full ToS */}
+          <TouchableOpacity
+            accessibilityRole="link"
+            style={s.fullTosLink}
+            onLayout={e => setLastBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast(t('action_failed'), 'error'))}
+            accessibilityLabel={t('x_terms_acceptance_modal_read_full_terms_service')}
+          >
+            <IconLabel icon={ICONS.document} textStyle={s.fullTosLinkText} maxFontSizeMultiplier={1.4}>{t('x_terms_acceptance_modal_read_full_terms_service_2')}</IconLabel>
+          </TouchableOpacity>
+
+          {/* Scroll indicator */}
+          {!scrolledToBottom && (
+            <View style={s.scrollHint}>
+              <Text maxFontSizeMultiplier={1.4} style={s.scrollHintText}>{t('x_terms_acceptance_modal_scroll_continue')}</Text>
+            </View>
+          )}
+
+          {/* Spacer to ensure bottom is reachable */}
+          <View style={{ height: compact ? 8 : 24 }} />
+          {compact && footer}
+        </ScrollView>
+
+        {/* Checkboxes + Accept button — pinned below the summary when there is room */}
+        {!compact && footer}
 
       </View>
     </Modal>
@@ -302,33 +350,35 @@ const styles = (colors: any, TYPE: Record<string, number>, FONT: Record<string, 
   container:          { flex: 1, backgroundColor: colors.bg, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
   header:             { paddingTop: 20, paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle:        { fontSize: 22, fontFamily: FONT.bold, color: colors.textPrimary, marginBottom: 6 },
-  headerSub:          { fontSize: 13, color: colors.textSecond, lineHeight: 18 },
+  headerSub:          { fontSize: 14, color: colors.textSecond, lineHeight: 19 },
   scroll:             { flex: 1 },
+  scrollPinned:       { minHeight: MIN_SUMMARY_HEIGHT },
   scrollContent:      { paddingHorizontal: 20, paddingTop: 16 },
   sectionLabel:       { fontSize: 12, fontFamily: FONT.bold, color: colors.goldText, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 },
   point:              { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-start' },
   pointIcon:          { fontSize: 22, marginRight: 12, marginTop: 2 },
   pointBody:          { flex: 1 },
   pointTitle:         { fontSize: 14, fontFamily: FONT.bold, color: colors.textPrimary, marginBottom: 3 },
-  pointText:          { fontSize: 13, color: colors.textSecond, lineHeight: 19 },
+  pointText:          { fontSize: 14, color: colors.textSecond, lineHeight: 20 },
   fullTosLink:        { marginTop: 8, marginBottom: 16, alignItems: 'center', padding: 12, borderWidth: 1, borderColor: colors.gold, borderRadius: 8 },
-  fullTosLinkText:    { fontSize: 13, color: colors.goldText, fontFamily: FONT.bold },
+  fullTosLinkText:    { fontSize: 14, color: colors.goldText, fontFamily: FONT.bold },
   scrollHint:         { alignItems: 'center', paddingVertical: 8 },
   scrollHintText:     { fontSize: 12, color: colors.textSecond, opacity: 0.7 },
   footer:             { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+  footerInScroll:     { marginHorizontal: -20, paddingBottom: 24 },   // full width under the summary's 20 px padding
   checkRow:           { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   checkbox:           { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.textSecond, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1, flexShrink: 0 },
   checkboxChecked:    { backgroundColor: colors.gold, borderColor: colors.gold },
-  checkmark:          { color: colors.textOnGold, fontSize: 13, fontFamily: FONT.bold }, // design-audit-ignore: rendered only when checked (gold fill)
-  checkLabel:         { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 19 },
+  checkmark:          { color: colors.textOnGold, fontSize: 14, fontFamily: FONT.bold }, // design-audit-ignore: rendered only when checked (gold fill)
+  checkLabel:         { flex: 1, fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   link:               { color: colors.goldText, textDecorationLine: 'underline' },
   bold:               { fontFamily: FONT.bold },
   scrollToUnlock:     { fontSize: 12, color: colors.textSecond, textAlign: 'center', marginBottom: 10 },
   errorText:          { fontSize: 12, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
-  acceptBtn:          { backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginBottom: 10 },
+  acceptBtn:          { backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 15, paddingHorizontal: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   acceptBtnDisabled:  { opacity: 0.4 },
-  acceptBtnText:      { color: colors.textOnGold, fontSize: 15, fontFamily: FONT.bold },
-  versionNote:        { fontSize: 10, color: colors.textSecond, textAlign: 'center', opacity: 0.7 },
+  acceptBtnText:      { color: colors.textOnGold, fontSize: 16, fontFamily: FONT.bold, textAlign: 'center', flexShrink: 1 },
+  versionNote:        { fontSize: 12, color: colors.textSecond, textAlign: 'center', opacity: 0.7 },
   declineBtn:         { alignSelf: 'center', marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
   declineText:        { fontSize: 12, color: colors.textSecond, textDecorationLine: 'underline' },
 });

@@ -538,7 +538,7 @@ function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           <View style={[styles.modalHeader, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
             <Text maxFontSizeMultiplier={1.3} style={[styles.modalTitle, { color: colors.textBrand }]}>{t('msg2_invite_attorney')}</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('close')} style={styles.closeBtn} onPress={() => setInviteOpen(false)}>
-              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 20 }}>✕</Text>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 22 }}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.pickerContent} testID="messages-invite-modal">
@@ -570,7 +570,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   listContent:  { padding: 12, paddingBottom: 8, flexGrow: 1, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%' },
 
   privacyNote:     { paddingVertical: 8, paddingHorizontal: 14, borderBottomWidth: 0.5, alignItems: 'center' },
-  privacyNoteText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', letterSpacing: 0.3 },
+  privacyNoteText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', letterSpacing: 0.3 },
 
   errorBanner: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
     paddingHorizontal: 14, gap: 10 },
@@ -580,19 +580,19 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Day divider
   dayDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14, gap: 8 },
   dayLine:    { flex: 1, height: 0.5 },
-  dayLabel:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', paddingHorizontal: 8, letterSpacing: 0.3 },
+  dayLabel:   { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', paddingHorizontal: 8, letterSpacing: 0.3 },
 
   // Message rows
   msgRow:     { flexDirection: 'row', marginTop: 8 },
   msgRowMine: { justifyContent: 'flex-end' },
   msgCol:     { maxWidth: '82%' },
-  senderName: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 3, marginLeft: 2 },
+  senderName: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginBottom: 3, marginLeft: 2 },
   bubble:        { borderRadius: RADIUS.xl, paddingHorizontal: 15, paddingVertical: 9 },
   bubbleMine:    { borderBottomRightRadius: 4 },
   bubbleTheirs:  { borderBottomLeftRadius: 4 },
-  bubbleText:    { fontSize: 15, lineHeight: 21, letterSpacing: 0.1 },
+  bubbleText:    { fontSize: 16, lineHeight: 22, letterSpacing: 0.1 },
   attachmentText:{ fontSize: 12, lineHeight: 18, marginTop: 6, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  metaText:      { fontSize: 11, fontWeight: '500', marginTop: 3, marginLeft: 2 },
+  metaText:      { fontSize: 12, fontWeight: '500', marginTop: 3, marginLeft: 2 },
   metaTextMine:  { textAlign: 'right', marginRight: 2 },
 
   // Case picker
@@ -601,13 +601,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   caseRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.lg,
     borderWidth: 1, paddingHorizontal: 16, paddingVertical: 15, marginBottom: 8, minHeight: 52 },
   caseRowTitle:   { flex: 1, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  caseRowStatus:  { fontSize: 11 },
-  caseRowChevron: { fontSize: 20 },
+  caseRowStatus:  { fontSize: 12 },
+  caseRowChevron: { fontSize: 22 },
 
   // Empty / auth states
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 36 },
-  emptyIcon:  { fontSize: 44, marginBottom: 14 },
-  emptyTitle: { fontSize: 19, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
+  emptyIcon:  { fontSize: 48, marginBottom: 14 },
+  emptyTitle: { fontSize: 18, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
   emptySub:   { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 18 },
   primaryBtn:     { borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 28,
     alignItems: 'center', minHeight: 44, justifyContent: 'center' },
@@ -618,16 +618,16 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 0.5 },
   input: { flex: 1, borderWidth: 1.5, borderRadius: 20,
     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
-    fontSize: 15, maxHeight: 120, lineHeight: 20 },
+    fontSize: 16, maxHeight: 120, lineHeight: 21 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  sendBtnText: { color: colors.bgCard, fontSize: 20, fontWeight: '300', lineHeight: 22, marginTop: -1 },
+  sendBtnText: { color: colors.bgCard, fontSize: 22, fontWeight: '300', lineHeight: 28, marginTop: -1 },
   unreadPill:  { borderRadius: 10, minWidth: 20, paddingHorizontal: 6, paddingVertical: 1, alignItems: 'center' },
-  unreadPillText: { color: colors.emergencyBg, fontSize: 11, fontWeight: '800' },
+  unreadPillText: { color: colors.emergencyBg, fontSize: 12, fontWeight: '800' },
   counselBar:  { paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0.5, gap: 6 },
   counselRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  counselText: { fontSize: 13, lineHeight: 18 },
+  counselText: { fontSize: 14, lineHeight: 19 },
   counselBtn:  { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center', alignSelf: 'flex-start', borderRadius: 10, borderWidth: 0 },
-  counselBtnText: { fontSize: 13, fontWeight: '800' },
+  counselBtnText: { fontSize: 14, fontWeight: '800' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, minHeight: 56, borderBottomWidth: 1 },
   modalTitle:  { flex: 1, fontSize: 18, fontWeight: '900' },
   closeBtn:    { minWidth: 56, minHeight: 48, alignItems: 'center', justifyContent: 'center' },

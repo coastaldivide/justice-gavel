@@ -46,7 +46,7 @@ export function useHasSession(): { hasSession: boolean | null; recheck: () => vo
 const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingHorizontal: 24, paddingVertical: 40, gap: 10, width: '100%', maxWidth: 520, alignSelf: 'center' },
   title: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  body: { fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  body: { fontSize: 16, lineHeight: 23, textAlign: 'center' },
   btn: { borderRadius: 12, minHeight: 48, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   btnText: { fontSize: 16, fontWeight: '800' },
 });

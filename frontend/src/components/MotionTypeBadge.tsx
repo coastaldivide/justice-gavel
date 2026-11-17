@@ -29,7 +29,7 @@ export const MotionTypeBadge = React.memo(function MotionTypeBadge({ motionType 
       paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
     }}>
       <Text maxFontSizeMultiplier={1.2}
-        style={{ fontSize: 11, fontWeight: '700', color: info.text }}>
+        style={{ fontSize: 12, fontWeight: '700', color: info.text }}>
         {info.label}
       </Text>
     </View>

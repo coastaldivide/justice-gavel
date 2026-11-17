@@ -19,6 +19,7 @@
  *      such notification exists); pull-to-refresh reads /auth/me's body
  */
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider } from '../../constants/theme';
@@ -250,6 +251,18 @@ describe('SettingsScreen — section B', () => {
     expect(screen.queryByTestId('settings-logout-button')).toBeNull();
     expect(screen.getByTestId('settings-notifs-signed-out')).toBeTruthy();
     expect(calls.filter(c => c.method === 'get')).toEqual([]);
+  });
+
+  it('signed in: "Sign out on all devices" asks first, ends every session on the server, then here', async () => {
+    on('get', '/push/preferences', { notif_court_reminders: 1, notif_arrest_alerts: 1, notif_checkin_reminders: 1, notif_marketing: 0 });
+    on('get', '/golden-gavel/status', { golden_gavel: false });
+    on('post', '/auth/logout', { ok: true });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => { buttons?.[buttons.length - 1]?.onPress?.(); });
+    wrap(<SettingsScreen navigation={makeNavigation()} route={route} />);
+    fireEvent.press(await screen.findByTestId('settings-logout-all-button'));
+    await waitFor(() => expect(calls.find(c => c.method === 'post' && c.url === '/auth/logout')?.data).toEqual({ allDevices: true }));
+    expect(alert.mock.calls[0][0]).toBe('Sign out on all devices');
+    alert.mockRestore();
   });
 
   it('signed in: About rows open their links; no legal-tip switch; arrest-alert switch is saved', async () => {

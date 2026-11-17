@@ -252,7 +252,8 @@ describe.each(['es', 'pt', 'vi', 'ht', 'zh', 'ar', 'tl'] as Lang[])('core path i
     const courtLabel = tx(lang, 'home_court_a11y', { n: 'NN' }).split('NN').sort((a, b) => b.length - a.length)[0];
     expect(screen.getAllByLabelText(new RegExp(courtLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).length).toBeGreaterThan(0);
     const text = expectNoEnglish(lang);
-    for (const k of ['home_tile_Bail', 'home_tile_Rights', 'home_qc_sub', 'home_emergency_title', 'ja_create', 'home_quick_access']) expect(text).toContain(tx(lang, k));
+    // home_tile_Rights left Home with the tab-duplicate tiles (UI clean-up Nov 13 2026)
+    for (const k of ['home_tile_Bail', 'home_tile_Lawyers', 'home_qc_sub', 'home_emergency_title', 'ja_create', 'home_quick_access', 'home_more_options']) expect(text).toContain(tx(lang, k));
   });
 });
 

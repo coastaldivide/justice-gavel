@@ -118,9 +118,9 @@ const s = StyleSheet.create({
   titleRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   title:        { fontSize: 22, fontWeight: '800', color: COLORS.white, fontFamily: 'Inter_800ExtraBold', letterSpacing: -0.3 },
   titleCompact: { fontSize: 18 },
-  subtitle:     { fontSize: 13, color: 'rgba(255,255,255,0.78)', marginTop: 3, lineHeight: 18, fontFamily: 'Inter_400Regular' },
+  subtitle:     { fontSize: 14, color: 'rgba(255,255,255,0.78)', marginTop: 3, lineHeight: 19, fontFamily: 'Inter_400Regular' },
   badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  badgeText:    { fontSize: 11, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
+  badgeText:    { fontSize: 12, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
   rightAction:  { position: 'absolute', end: 16, bottom: 18 },
   bottomLine:   { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
 });

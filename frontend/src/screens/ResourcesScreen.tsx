@@ -6,10 +6,10 @@ import { View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, Activ
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
-import { useTheme, COLORS, themed } from '../constants/theme';
+import { useTheme, COLORS, themed, themeColors } from '../constants/theme';
 import { t, perLang, useLang } from '../i18n';
 import { helpLine, websiteUrl, websiteLabel, directionsUrl } from '../utils/contact';
-import { stateName } from '../utils/userState';
+import { stateName, getUserState } from '../utils/userState';
 
 
 const CATEGORIES = perLang(() => [
@@ -65,6 +65,13 @@ function ResourcesScreen(): React.JSX.Element {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
   const [refreshing,setRefreshing]= useState(false);
+  // Opens on the person's state + national rows when their state is known (it listed
+  // all 630 rows from every state; UI clean-up Nov 13 2026). "All states" shows everything.
+  const [myState,   setMyState]   = useState<string | null>(null);
+  const [stateOnly, setStateOnly] = useState(true);
+  useEffect(() => {
+    getUserState().then(s => { if (mountedRef.current && s?.code) setMyState(s.code); }).catch(() => {});
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -92,6 +99,7 @@ function ResourcesScreen(): React.JSX.Element {
   // Filter whenever category or search changes
   useEffect(() => {
     let list = allItems;
+    if (myState && stateOnly) list = (list ?? []).filter(i => !i.state || i.state === myState || i.state === 'US');
     if (category !== 'ALL') list = (list ?? []).filter(i => i.category === category);
     if (q.trim()) {
       const lower = q.toLowerCase();
@@ -102,7 +110,7 @@ function ResourcesScreen(): React.JSX.Element {
       );
     }
     setFiltered(list);
-  }, [allItems, category, q]);
+  }, [allItems, category, q, myState, stateOnly]);
 
   const bg   = colors.bg;
   const card = isDark ? colors.surface : colors.bgCard;
@@ -130,7 +138,7 @@ function ResourcesScreen(): React.JSX.Element {
           placeholderTextColor={sub}
           style={{
             backgroundColor: card, borderRadius:10, paddingHorizontal:14,
-            paddingVertical:10, color:text, fontSize:15,
+            paddingVertical:10, color:text, fontSize:16,
             borderWidth:1, borderColor: colors.border,
           }}
           returnKeyType="search" blurOnSubmit={true}
@@ -144,6 +152,17 @@ function ResourcesScreen(): React.JSX.Element {
         <ScrollView keyboardShouldPersistTaps="handled"
         horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
+        {!!myState && ([[true, t('res_my_state', { state: stateName(myState) })], [false, t('am_all_states')]] as [boolean, string][]).map(([only, label]) => {
+          const on = stateOnly === only;
+          return (
+            <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: on }} key={`st-${only}`}
+              testID={only ? 'resources-my-state' : 'resources-all-states'} onPress={() => setStateOnly(only)}
+              style={{ backgroundColor: on ? colors.blue : colors.bgCard, borderWidth: 1.5, borderColor: colors.blue,
+                borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, minHeight: 44, justifyContent: 'center' }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, fontWeight: '700', color: on ? colors.white : colors.textPrimary }}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
         {CATEGORIES().map(cat => {
           const active = category === cat.key;
           const cc = CAT_COLORS[cat.key] || CAT_COLORS.ALL;
@@ -158,7 +177,7 @@ function ResourcesScreen(): React.JSX.Element {
                 borderRadius:20, paddingHorizontal:12, paddingVertical:7,
                 marginRight:8, flexDirection:'row', alignItems:'center', gap:5,
               }}>
-              <AppIcon name={cat.icon} size={13} color={colors.textBrand} style={{ fontSize:13 }} />
+              <AppIcon name={cat.icon} size={13} color={colors.textBrand} style={{ fontSize:14 }} />
               <Text maxFontSizeMultiplier={1.4} style={{
                 fontSize:12, fontWeight:'600',
                 color: active ? COLORS.white : cc.text,
@@ -221,7 +240,7 @@ function ResourcesScreen(): React.JSX.Element {
                     backgroundColor: cc.bg, borderRadius:8,
                     paddingHorizontal:8, paddingVertical:4, flexShrink:0,
                   }}>
-                    <IconLabel icon={cat?.icon ?? ICONS.library} maxFontSizeMultiplier={1.4} textStyle={{ fontSize:11, fontWeight:'700', color:cc.text }}>
+                    <IconLabel icon={cat?.icon ?? ICONS.library} maxFontSizeMultiplier={1.4} textStyle={{ fontSize:12, fontWeight:'700', color:cc.text }}>
                       {item.state ? stateName(item.state) : t('x_resources_national')}
                     </IconLabel>
                   </View>
@@ -235,17 +254,17 @@ function ResourcesScreen(): React.JSX.Element {
                         paddingHorizontal:6, paddingVertical:2,
                         alignSelf:'flex-start', marginTop:4,
                       }}>
-                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:10, fontWeight:'700' }}>{t('x_resources_free')}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:12, fontWeight:'700' }}>{t('x_resources_free')}</Text>
                       </View>
                     )}
                   </View>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:16 }}>{isOpen ? '▲' : '▼'}</Text>
+                  <AppIcon name={isOpen ? ICONS.chevronUp : ICONS.chevronDown} size={18} color={themeColors().textMuted} />
                 </View>
 
                 {/* Expanded */}
                 {isOpen && (
                   <View style={{ marginTop:12 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontSize:13, lineHeight:20 }}>{item.body}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontSize:14, lineHeight:22 }}>{item.body}</Text>
 
                     {/* Contact info grid */}
                     <View style={{ marginTop:12, gap:6 }}>
@@ -278,19 +297,19 @@ function ResourcesScreen(): React.JSX.Element {
                           onPress={() => Linking.openURL(directions).catch(() => showToast(t('action_failed'), 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8, minHeight:44 }}>
                           <AppIcon name={ICONS.location} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{item.address}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {item.hours ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name={ICONS.clock} size={16} color={colors.textBrand} style={{ fontSize:16 }} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.hours}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{item.hours}</Text>
                         </View>
                       ) : null}
                       {item.income_limit ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name="cash-outline" size={20} color={colors.legal} />
-                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{t('x_resources_eligibility', { income_limit: item.income_limit })}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:14 }}>{t('x_resources_eligibility', { income_limit: item.income_limit })}</Text>
                         </View>
                       ) : null}
                     </View>

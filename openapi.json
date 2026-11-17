@@ -5967,6 +5967,34 @@
         }
       }
     },
+    "/api/auth/confirm-email": {
+      "post": {
+        "operationId": "post_api_auth_confirm-email",
+        "summary": "POST /api/auth/confirm-email",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
     "/api/auth/data/export": {
       "get": {
         "operationId": "get_api_auth_data_export",
@@ -18090,6 +18118,83 @@
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
+      }
+    },
+    "/api/firm-acquisition/invite/accept": {
+      "post": {
+        "operationId": "post_api_firm-acquisition_invite_accept",
+        "summary": "POST /api/firm-acquisition/invite/accept",
+        "tags": [
+          "firm-acquisition"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Json"
+        }
+      }
+    },
+    "/api/firm-acquisition/invite/{token}": {
+      "get": {
+        "operationId": "get_api_firm-acquisition_invite_token",
+        "summary": "GET /api/firm-acquisition/invite/{token}",
+        "tags": [
+          "firm-acquisition"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "bearer",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/firm-acquisition/invites": {

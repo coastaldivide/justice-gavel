@@ -143,7 +143,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center', paddingHorizontal: 14, marginBottom: 8,
   },
   label:   { fontSize: 12, ...FONTS.black, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 },
-  seeAll:  { fontSize: 11, color: colors.textBrand, ...FONTS.semi },
+  seeAll:  { fontSize: 12, color: colors.textBrand, ...FONTS.semi },
   scroll:  { paddingHorizontal: 14, gap: 8, paddingRight: 24 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,

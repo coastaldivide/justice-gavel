@@ -317,8 +317,8 @@ const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
   sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   block: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  consent: { fontSize: 13, lineHeight: 19, color: colors.textSecond, marginTop: 4 },
-  typedSig: { fontSize: 20, ...FONTS.semiBold, color: colors.textPrimary, marginTop: 10, fontStyle: 'italic' },
+  consent: { fontSize: 14, lineHeight: 20, color: colors.textSecond, marginTop: 4 },
+  typedSig: { fontSize: 22, ...FONTS.semiBold, color: colors.textPrimary, marginTop: 10, fontStyle: 'italic' },
 });
 
 export default React.memo(SignPacketScreen);

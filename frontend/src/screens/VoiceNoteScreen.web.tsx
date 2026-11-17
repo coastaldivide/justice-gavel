@@ -162,7 +162,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           >
             <AppIcon name={phase === 'recording' ? ICONS.stop : ICONS.record} size={36} color={colors.white} />
           </TouchableOpacity>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 13 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>
             {phase === 'recording' ? t('x_voice_note_recording_tap_stop') : t('x_voice_note_tap_record_voice_note')}
           </Text>
           {phase === 'idle' && (
@@ -200,11 +200,11 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         <View style={{ gap: 12 }} testID="voice-note-result">
           {!!note?.summary && (
             <View style={{ backgroundColor: colors.bgCard, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border }}>
-              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700' }}>{note.date}</Text>
-              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 15, lineHeight: 22 }}>{note.summary}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>{note.date}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 16, lineHeight: 23 }}>{note.summary}</Text>
             </View>
           )}
-          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700' }}>{t('x_voice_note_edit_before_saving')}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700' }}>{t('x_voice_note_edit_before_saving')}</Text>
           <TextInput testID="voice-note-edit" multiline maxLength={2000} value={editText} onChangeText={setEditText} style={[input, { minHeight: 200 }]}
             accessibilityLabel={t('x_voice_note_edit_before_saving')} />
           <TouchableOpacity accessibilityRole="button" testID="voice-note-save" disabled={saving} style={[btn.primary, saving && { opacity: 0.6 }]} onPress={save}>

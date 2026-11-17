@@ -70,12 +70,12 @@ const styles = StyleSheet.create({
   scroll:     { padding: 16, paddingBottom: 40 },
   status:     { borderRadius: 12, padding: 14, marginBottom: 8 },
   statusText: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  section:    { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, marginTop: 18, marginBottom: 8 },
+  section:    { fontSize: 12, fontWeight: '800', letterSpacing: 0.8, marginTop: 18, marginBottom: 8 },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8 },
   icon:       { fontSize: 22 },
-  label:      { fontSize: 15, fontWeight: '600' },
+  label:      { fontSize: 16, fontWeight: '600' },
   hint:       { fontSize: 12, marginTop: 2 },
-  needs:      { fontSize: 13, lineHeight: 22 },
+  needs:      { fontSize: 14, lineHeight: 24 },
 });
 
 export default OfflineStatusScreen;

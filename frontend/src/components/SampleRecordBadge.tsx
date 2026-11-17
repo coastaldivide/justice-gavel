@@ -41,7 +41,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 2,
     marginBottom: 4,
   },
-  text: { fontSize: 11, fontWeight: '700', color: colors.warnDark },
+  text: { fontSize: 12, fontWeight: '700', color: colors.warnDark },
 });
 
 export default SampleRecordBadge;

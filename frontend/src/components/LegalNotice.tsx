@@ -72,10 +72,10 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   icon: { marginEnd: 4, marginTop: 1 },
   notice: {
     flexShrink: 1,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: F.regular,
     color: C.textMuted,
-    lineHeight: 16,
+    lineHeight: 17,
     textAlign: 'center',
   },
   link: {

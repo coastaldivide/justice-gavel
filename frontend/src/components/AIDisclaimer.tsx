@@ -120,17 +120,17 @@ export function AIDisclaimer({ variant = 'banner', feature = t('x_aidisclaimer_a
 
 const styles = StyleSheet.create({
   banner:        { paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1 },
-  bannerText:    { fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  bannerText:    { fontSize: 12, textAlign: 'center', lineHeight: 17 },
   inlineBanner:  { margin: 12, padding: 10, borderRadius: 8, borderWidth: 1, flexDirection: 'row' },
   inlineText:    { fontSize: 12, flex: 1, lineHeight: 17 },
   inlineIcon:    { marginEnd: 6, marginTop: 1 },
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
   modalCard:     { borderRadius: 16, padding: 24, shadowColor: COLORS.black, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
-  modalTitle:    { fontSize: 20, fontWeight: '800', marginBottom: 16, textAlign: 'center' },
+  modalTitle:    { fontSize: 22, fontWeight: '800', marginBottom: 16, textAlign: 'center' },
   modalBody:     { fontSize: 14, lineHeight: 22 },
   ackButton:     { marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  ackButtonText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
-  modalFooter:   { fontSize: 10, textAlign: 'center', marginTop: 12 },
+  ackButtonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  modalFooter:   { fontSize: 12, textAlign: 'center', marginTop: 12 },
 });
 
 export default AIDisclaimer;

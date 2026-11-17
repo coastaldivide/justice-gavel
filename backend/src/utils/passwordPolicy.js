@@ -8,10 +8,18 @@
  *
  * passwordProblem(pw) → null when acceptable, else a reason code:
  *   'short'  fewer than 8 characters
+ *   'long'   more than 72 bytes in UTF-8 (sandbox review 2026-11-17, finding 9): bcrypt
+ *            only uses the first 72 bytes, so anything after them was silently ignored
+ *            (two long passwords that start alike were the same password). 72 bytes is
+ *            72 plain letters, digits and symbols; accented letters and emoji take 2–4.
  *   'weak'   a doubled 4-digit PIN, one repeated character, a simple digit run,
  *            or a very common password
+ *
+ * Changing a password to the one already in use is refused in routes/auth.js
+ * (change-password: 'password_same').
  */
 export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_BYTES = 72;
 
 /** The pattern the old Quick Sign Up produced: a 4-digit PIN typed twice. */
 export const DOUBLED_PIN = /^(\d{4})\1$/;
@@ -33,6 +41,7 @@ const isDigitRun = (s) => {
 export function passwordProblem(password) {
   const pw = String(password ?? '');
   if (pw.length < MIN_PASSWORD_LENGTH) return 'short';
+  if (Buffer.byteLength(pw, 'utf8') > MAX_PASSWORD_BYTES) return 'long';
   const lower = pw.toLowerCase();
   if (DOUBLED_PIN.test(pw)) return 'weak';
   if (/^(.)\1+$/.test(pw)) return 'weak';
@@ -42,4 +51,5 @@ export function passwordProblem(password) {
 }
 
 /** i18n key for a reason code (backend messages: auth.err.*). */
-export const passwordProblemKey = (code) => (code === 'short' ? 'auth.err.password_short' : 'auth.err.password_weak');
+export const passwordProblemKey = (code) => (
+  code === 'short' ? 'auth.err.password_short' : code === 'long' ? 'auth.err.password_long' : 'auth.err.password_weak');

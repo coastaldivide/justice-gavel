@@ -168,7 +168,7 @@ function BondReportsScreen({ navigation }: ScreenProps) {
 const makeStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
   header: { backgroundColor: colors.navy, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   heading: { fontSize: 22, ...FONTS.black, color: colors.textOnNavy },
-  sub: { color: colors.textOnNavy, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  sub: { color: colors.textOnNavy, fontSize: 14, lineHeight: 20, marginTop: 4 },
   rowBlock: { paddingVertical: 6, borderBottomWidth: 2, borderBottomColor: colors.border },
 });
 

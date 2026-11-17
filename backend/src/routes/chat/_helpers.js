@@ -2,6 +2,7 @@
  * chat/_helpers.js — shared by POST /chat/ask (job) and POST /chat/stream (SSE)
  *
  * chatContext()           — who is asking: defender mode allowed?, unlimited?, quota left
+ * reserveQuestion()       — take one free question before answering (refund with settleQuestion)
  * readChatBody()          — validate the request body (400 messages in the request language)
  * buildChatRequest()      — system prompt parts (cached) + sourced passages (citable search results,
  *                           services/sourcedAnswers.js) + messages for the AI gateway call
@@ -21,12 +22,20 @@ import { rightsPromptParts } from '../../services/rightsContent.js';
 import { CITATION_RULES, plainText, publicAnswer } from '../../ai/citations.js';
 import { planSources, userTurn, historyMessages, sentInOrder, recordsFor, finishAnswer } from '../../services/sourcedAnswers.js';
 import { msg, resolveLang, LANG_NAMES } from '../../i18n/index.js';
-import { isValidTimeZone, todayInZone, zonedDateTimeToUtc, addDays, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT } from './_prompts.js';
 import { prepareConversation, recapPrompt } from '../../services/conversationMemory.js';
 
-/** Free accounts: AI chat questions per local calendar day (the app says "3 per day"). */
+/**
+ * Free accounts: AI chat questions per rolling 24 hours (sandbox review 2026-11-17, finding 6).
+ * Before, the count was "today" in the time zone the app sent (X-Timezone), read before the
+ * answer and written after it: changing the header started a new day, and several questions
+ * sent at once all passed the check. Now every question takes a row in chat_quota_log first
+ * (one at a time per account), counted over the last CHAT_QUOTA_WINDOW_HOURS whatever the
+ * time zone; a question that got no answer is refunded. Deleting chat history does not
+ * give questions back either (the log is separate from chat_sessions).
+ */
 export const FREE_CHAT_MESSAGES_PER_DAY = 3;
+export const CHAT_QUOTA_WINDOW_HOURS = 24;
 export const MAX_MESSAGE_CHARS = 4000;
 export const MAX_CASE_CONTEXT_CHARS = 8000;
 
@@ -37,12 +46,22 @@ export function isProfessional(user) {
   return PROFESSIONAL_ROLES.has(user?.role) || Number(user?.is_defender) === 1;
 }
 
-/** Start of the person's calendar day (their X-Timezone, else the default zone) as a UTC instant. */
-export function startOfLocalDay(req, now = new Date()) {
-  const raw = typeof req?.get === 'function' ? req.get('X-Timezone') : null;
-  const tz = isValidTimeZone(raw) ? raw : DEFAULT_TIME_ZONE;
-  const today = todayInZone(tz, now);
-  return { tz, start: zonedDateTimeToUtc(today, 0, 0, tz), next: zonedDateTimeToUtc(addDays(today, 1), 0, 0, tz) };
+/**
+ * Free questions counted in the window: { used, resetsAt } — resetsAt is when the next one
+ * becomes free again (the oldest counted question leaves the window), null while some are left.
+ */
+async function quotaUsage(db, userId) {
+  const rows = await db.all(
+    `SELECT created_at FROM chat_quota_log
+      WHERE user_id = ? AND state <> 'refunded' AND created_at > NOW() - make_interval(hours => ?)
+      ORDER BY created_at ASC LIMIT 100`, [userId, CHAT_QUOTA_WINDOW_HOURS]);
+  const used = rows.length;
+  let resetsAt = null;
+  if (used >= FREE_CHAT_MESSAGES_PER_DAY) {
+    const frees = rows[used - FREE_CHAT_MESSAGES_PER_DAY].created_at;
+    resetsAt = new Date(new Date(frees).getTime() + CHAT_QUOTA_WINDOW_HOURS * 3_600_000).toISOString();
+  }
+  return { used, resetsAt };
 }
 
 /**
@@ -57,17 +76,49 @@ export async function chatContext(db, req) {
   if (defender) return ctx;
   try {
     if (await hasFeature(db, req.user.id, FEATURES.AI_CHAT_UNLIMITED)) { ctx.unlimited = true; return ctx; }
-    const { start, next } = startOfLocalDay(req);
-    const row = await db.get(
-      `SELECT COUNT(*) AS n FROM chat_sessions WHERE user_id = ? AND role = 'user' AND created_at >= ?`,
-      [req.user.id, start.toISOString()]);
-    ctx.used = Number(row?.n || 0);
-    ctx.resetsAt = next.toISOString();
+    const u = await quotaUsage(db, req.user.id);
+    ctx.used = u.used;
+    ctx.resetsAt = u.resetsAt;
     ctx.limited = ctx.used >= FREE_CHAT_MESSAGES_PER_DAY;
   } catch (e) {
     logger.warn({ err: e.message }, '[chat] daily limit check failed — question allowed');
   }
   return ctx;
+}
+
+/**
+ * Take one free question before it is answered. One reservation at a time per account
+ * (row lock on the user), so questions sent at the same moment cannot all pass.
+ * → { ok: true, id } (id null when unlimited or the log could not be written) |
+ *   { ok: false } with ctx.used / ctx.resetsAt / ctx.limited updated for limitBody.
+ */
+export async function reserveQuestion(db, userId, ctx, clientMessageId = null) {
+  if (ctx.unlimited) return { ok: true, id: null };
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.get('SELECT id FROM users WHERE id = ? FOR UPDATE', [userId]);
+      const u = await quotaUsage(tx, userId);
+      if (u.used >= FREE_CHAT_MESSAGES_PER_DAY) {
+        Object.assign(ctx, { used: u.used, resetsAt: u.resetsAt, limited: true });
+        return { ok: false };
+      }
+      const row = await tx.get(
+        `INSERT INTO chat_quota_log (user_id, client_msg_id, state) VALUES (?, ?, 'held') RETURNING id`,
+        [userId, clientMessageId || null]);
+      Object.assign(ctx, { used: u.used + 1 });
+      return { ok: true, id: row?.id ?? null };
+    });
+  } catch (e) {
+    logger.warn({ err: e.message }, '[chat] quota reservation failed — question allowed');
+    return { ok: true, id: null };
+  }
+}
+
+/** The reserved question was answered ('used') or not ('refunded': nothing reached the person). */
+export async function settleQuestion(db, hold, state) {
+  if (!hold?.id) return;
+  await db.run(`UPDATE chat_quota_log SET state = ? WHERE id = ? AND state = 'held'`, [state, hold.id])
+    .catch((e) => logger.warn({ err: e.message }, '[chat] quota settle failed'));
 }
 
 /** The 402 body for a free account that used today's questions. */

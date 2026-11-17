@@ -21,10 +21,10 @@ export default function AmeelioCard({ testID = 'ameelio-card' }: { testID?: stri
   const s = StyleSheet.create({
     card: { backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border, padding: 14, marginVertical: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    title: { color: colors.textPrimary, fontSize: 15, ...FONTS.semiBold, flex: 1 },
+    title: { color: colors.textPrimary, fontSize: 16, ...FONTS.semiBold, flex: 1 },
     body: { color: colors.textSecond, fontSize: 14, lineHeight: 20, marginTop: 6 },
     note: { color: colors.textMuted, fontSize: 12, marginTop: 6 },
-    link: { color: colors.textBrand, fontSize: 15, textDecorationLine: 'underline', marginTop: 8, minHeight: 44, textAlignVertical: 'center' },
+    link: { color: colors.textBrand, fontSize: 16, textDecorationLine: 'underline', marginTop: 8, minHeight: 44, textAlignVertical: 'center' },
   });
   return (
     <View style={s.card} testID={testID}>

@@ -397,8 +397,8 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
-            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+          style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 17 }}
         >
           {t('x_bar_prep_explanation_supplemental_study_only_not')}
         </Text>
@@ -417,20 +417,20 @@ function makeStyles(colors: any) {
     },
     exitBtn:            { fontSize: 18, color: colors.textMuted, padding: 4 },
     headerCenter:       { alignItems: 'center' },
-    counter:            { fontSize: 15, ...FONTS.semiBold, color: colors.text },
-    timer:              { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+    counter:            { fontSize: 16, ...FONTS.semiBold, color: colors.text },
+    timer:              { fontSize: 14, color: colors.textMuted, marginTop: 2 },
     timerLow:           { color: colors.bail, ...FONTS.bold },
     diffBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    diffText:           { fontSize: 11, ...FONTS.bold },
+    diffText:           { fontSize: 12, ...FONTS.bold },
     progressTrack:      { height: 3, backgroundColor: colors.border },
     progressFill:       { height: '100%', backgroundColor: colors.primary },
     scroll:             { flex: 1 },
     scrollContent:      { padding: 20, paddingBottom: 120 },
     categoryLabel:      {
-      fontSize: 11, ...FONTS.semiBold, color: colors.textMuted,
+      fontSize: 12, ...FONTS.semiBold, color: colors.textMuted,
       textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
     },
-    stem:               { fontSize: 17, ...FONTS.medium, color: colors.text, lineHeight: 26, marginBottom: 24 },
+    stem:               { fontSize: 18, ...FONTS.medium, color: colors.text, lineHeight: 28, marginBottom: 24 },
     optionsContainer:   { gap: 10 },
     option:             {
       flexDirection: 'row', alignItems: 'flex-start', padding: 14,
@@ -447,8 +447,8 @@ function makeStyles(colors: any) {
     },
     optionLetterCorrect: { backgroundColor: colors.legal, borderColor: colors.legal },
     optionLetterWrong:   { backgroundColor: colors.bail, borderColor: colors.bail },
-    optionLetterText:   { fontSize: 13, ...FONTS.bold, color: colors.text },
-    optionText:         { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
+    optionLetterText:   { fontSize: 14, ...FONTS.bold, color: colors.text },
+    optionText:         { flex: 1, fontSize: 16, color: colors.text, lineHeight: 23 },
     optionTextCorrect:  { color: colors.legal, ...FONTS.semiBold },
     optionTextWrong:    { color: colors.bail },
     explanationCard:    { marginTop: 20, padding: 16, borderRadius: RADIUS.lg, borderLeftWidth: 4 },
@@ -457,12 +457,12 @@ function makeStyles(colors: any) {
     explanationIcon:    { fontSize: 14, ...FONTS.bold, color: colors.text, marginBottom: 8 },
     explanationText:    { fontSize: 14, color: colors.text, lineHeight: 21 },
     fullExplanationLink: { marginTop: 12 },
-    fullExplanationLinkText: { fontSize: 13, color: colors.primary, ...FONTS.semiBold },
+    fullExplanationLinkText: { fontSize: 14, color: colors.primary, ...FONTS.semiBold },
     timedNote:          {
       marginTop: 20, padding: 12, borderRadius: RADIUS.md,
       backgroundColor: colors.border + '50', alignItems: 'center',
     },
-    timedNoteText:      { fontSize: 13, color: colors.textMuted },
+    timedNoteText:      { fontSize: 14, color: colors.textMuted },
     bottomBar:          {
       position: 'absolute', bottom: 0, left: 0, right: 0,
       padding: 16, paddingBottom: Platform.OS === 'ios' ? 32 : 16,

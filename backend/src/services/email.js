@@ -145,6 +145,42 @@ export async function sendPasswordReset(to, resetUrl, lang = 'en') {
   });
 }
 
+/** "Confirm your new e-mail address" — sent to the NEW address (routes/auth.js update-profile). */
+export async function sendEmailChangeConfirm(to, confirmUrl, lang = 'en', hours = 24) {
+  const m = (k, p) => e(msg(lang, k, p));
+  return await send({
+    to, subject: msg(lang, 'email.change.subject'),
+    html: `
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
+        <h2 style="color:#042C53">${m('email.change.title')}</h2>
+        <p>${m('email.change.body', { hours })}</p>
+        <a href="${safeUrl(confirmUrl)}" style="display:inline-block;background:#042C53;color:#fff;
+           padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
+          ${m('email.change.button')}
+        </a>
+        <p style="color:#888;font-size:13px">${m('email.change.ignore')}</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="color:#888;font-size:12px">${m('email.footer')}</p>
+      </div>`,
+  });
+}
+
+/** "Someone asked to change your e-mail" — sent to the CURRENT address; `masked` is the new one, partly hidden. */
+export async function sendEmailChangeNotice(to, masked, lang = 'en') {
+  const m = (k, p) => e(msg(lang, k, p));
+  return await send({
+    to, subject: msg(lang, 'email.change_notice.subject'),
+    html: `
+      <div ${langAttrs(lang)} style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
+        <h2 style="color:#042C53">${m('email.change_notice.subject')}</h2>
+        <p>${m('email.change_notice.body', { email: masked })}</p>
+        <p>${m('email.change_notice.not_you')}</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="color:#888;font-size:12px">${m('email.footer')}</p>
+      </div>`,
+  });
+}
+
 /** Greeting line: "Hi Ana," / "Hola, Ana:" — or the plain form when no name is known. */
 const greeting = (lang, name) => (name ? msg(lang, 'email.greeting', { name }) : msg(lang, 'email.greeting_plain'));
 
@@ -195,7 +231,7 @@ export async function sendEmail(arg, subjectArg, textArg) {
   return await send({ to: o.to, subject: o.subject, html: o.html, text: o.text });
 }
 
-export default { sendPasswordReset, sendWelcome, sendCriticalAlert, sendEmail };
+export default { sendPasswordReset, sendEmailChangeConfirm, sendEmailChangeNotice, sendWelcome, sendCriticalAlert, sendEmail };
 
 const row = (label, value) => `<tr><td style="padding:8px 0;color:#6B7280;width:140px">${e(label)}</td>
               <td style="padding:8px 0;font-weight:600">${e(value)}</td></tr>`;

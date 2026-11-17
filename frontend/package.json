@@ -94,8 +94,8 @@
     "@testing-library/react-native": "13.3.3",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
-    "@typescript-eslint/eslint-plugin": "8.71.1",
-    "@typescript-eslint/parser": "8.71.1",
+    "@typescript-eslint/eslint-plugin": "8.73.0",
+    "@typescript-eslint/parser": "8.73.0",
     "babel-jest": "^29.7.0",
     "electron": "^42.3.0",
     "electron-builder": "^26.8.1",
@@ -113,6 +113,28 @@
     "markdown-it": "^15.0.3",
     "tmp": "^0.2.3",
     "uuid": "^11.1.0",
-    "fast-xml-parser": ">=5.7.0"
+    "fast-xml-parser": ">=5.7.0",
+    "@expo/fingerprint": {
+      "minimatch": "^11.0.9"
+    },
+    "app-builder-lib": {
+      "minimatch": "^11.0.9",
+      "@electron/asar": {
+        "minimatch": "^3.1.5"
+      },
+      "@electron/universal": {
+        "minimatch": "^11.0.9",
+        "dir-compare": {
+          "minimatch": "^3.1.5"
+        }
+      },
+      "ejs": {
+        "jake": {
+          "filelist": {
+            "minimatch": "^5.1.9"
+          }
+        }
+      }
+    }
   }
 }
