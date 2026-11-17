@@ -50,7 +50,8 @@ describeIntegration('password policy and login lock-out (real Postgres)', () => 
     const H = { Authorization: `Bearer ${login.body.token}` };
 
     expect((await post('/api/auth/change-password', { currentPassword: '48214821', newPassword: '99999999' }, null, H)).status).toBe(400);
-    expect((await post('/api/auth/change-password', { currentPassword: 'nope-nope', newPassword: 'Ferry-4821-blue' }, null, H)).status).toBe(401);
+    // a wrong current password is a 403 (sandbox review 2026-11-17): a 401 signs the app out
+    expect((await post('/api/auth/change-password', { currentPassword: 'nope-nope', newPassword: 'Ferry-4821-blue' }, null, H)).status).toBe(403);
     expect((await ctx.request().post('/api/auth/change-password').send({ currentPassword: '48214821', newPassword: 'Ferry-4821-blue' })).status).toBe(401);
 
     const ok = await post('/api/auth/change-password', { currentPassword: '48214821', newPassword: 'Ferry-4821-blue' }, null, H);

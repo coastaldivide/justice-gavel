@@ -432,7 +432,13 @@ describeIntegration('core path: rights → lawyer + bail → court dates → fam
       TELNYX_API_BASE: `http://127.0.0.1:${telnyx.server.address().port}`,
     });
     expect((await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true })).status).toBe(400); // no phone yet
-    const pref = await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true, phone: '(615) 555-0142' });
+    // a number is never set from here (sandbox review 2026-11-17): only through the texted-code flow
+    const unproven = await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true, phone: '(615) 555-0142' });
+    expect([unproven.status, unproven.body.code]).toEqual([400, 'phone_needs_verification']);
+    expect((await ctx.db.get('SELECT phone FROM users WHERE id = ?', [dave.user?.id ?? dave.id])).phone).toBeNull();
+    // (the number as /api/me/phone/confirm leaves it — that flow is tested in court_day_phone_line)
+    await ctx.db.run('UPDATE users SET phone = ?, phone_verified_phone = ?, phone_verified_at = NOW() WHERE id = ?', ['+16155550142', '+16155550142', dave.user?.id ?? dave.id]);
+    const pref = await ctx.request().put('/api/court-dates/preferences').set(dave.headers).send({ sms_reminders: true, phone: '(615) 555-0142' });   // its own number: fine
     expect(pref.body).toEqual(expect.objectContaining({ ok: true, sms_available: true }));
     const viaSms = await deliverNow(await pick());
     expect(viaSms).toEqual(expect.objectContaining({ status: 'sent', channel: 'sms' }));

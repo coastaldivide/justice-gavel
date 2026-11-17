@@ -9,9 +9,21 @@
  *   GET  /api/firm-acquisition/status         the caller's firm, trial days left / ended, seats, matters
  *   POST /api/firm-acquisition/upgrade        partner+: ask for a paid firm plan (a request, nothing changes)
  *   GET  /api/firm-acquisition/checklist      onboarding steps, worked out from the firm's real data
- *   POST /api/firm-acquisition/invite         firm admin: invite a colleague by e-mail (seat limit applies)
- *   GET  /api/firm-acquisition/invites        invites waiting for the caller's e-mail
- *   POST /api/firm-acquisition/invites/:id/accept   join that firm (seat limit applies)
+ *   POST /api/firm-acquisition/invite         firm admin: invite a colleague by e-mail (seat limit applies).
+ *                                             The invitation link (…/firm/join/<token>) is e-mailed to
+ *                                             them; without an e-mail provider the admin gets the link
+ *                                             to pass on.
+ *   GET  /api/firm-acquisition/invite/:token  what the link offers { firm, role, email, email_matches, expires_at }
+ *   POST /api/firm-acquisition/invite/accept  { token } join that firm (seat limit applies)
+ *   GET  /api/firm-acquisition/invites        always { invites: [] } (kept for older app versions)
+ *   POST /api/firm-acquisition/invites/:id/accept   { token } — older app versions; the token is required
+ *
+ * Joining needs the invitation token AND an account signed in with the invited address
+ * (sandbox review 2026-11-17, finding 1). Before, an invitation was accepted by whoever was
+ * signed in with an account whose e-mail matched — and e-mail addresses are not proven at
+ * sign-up, so anyone could sign up (or, before, change their e-mail) to the invited address
+ * and join the firm with its role. The token arrives only in the invited inbox; only its
+ * SHA-256 is stored (migration 51).
  *
  * The trial needs no card and nothing is charged when it ends: there is no paid
  * firm plan to convert to yet (owner item). An ended trial keeps the firm and its
@@ -19,7 +31,7 @@
  * Every message is in the request's language (i18n firm.*).
  */
 import { Router }       from 'express';
-import { randomBytes }  from 'crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'crypto';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
 import { loadFirmContext, hasMinRole } from '../middleware/rbac.js';
@@ -42,6 +54,15 @@ const PRO_ROLES       = new Set(['attorney', 'defender', 'admin', 'super_admin']
 const VALID_ORG_TYPES = ['nonprofit', 'public_defender', 'government', 'legal_aid', 'law_firm', 'solo', 'other'];
 const VALID_TIERS     = ['standard', 'mission', 'government', 'enterprise'];
 const INVITE_ROLES    = ['partner', 'associate', 'paralegal'];
+const INVITE_DAYS     = 7;
+const INVITE_TOKEN_RE = /^[A-Za-z0-9_-]{40,60}$/;
+const hashToken = (t) => createHash('sha256').update(String(t)).digest('hex');
+const sameHash = (a, b) => {
+  const x = Buffer.from(String(a || ''), 'utf8'); const y = Buffer.from(String(b || ''), 'utf8');
+  return x.length === y.length && timingSafeEqual(x, y);
+};
+const appUrl = () => String(process.env.APP_URL || process.env.FRONTEND_URL || 'https://justicegavel.app').split(',')[0].trim().replace(/\/+$/, '');
+export const firmInviteLink = (token) => `${appUrl()}/firm/join/${token}`;
 export const VALID_VERTICALS = [
   'criminal_defense', 'civil_rights', 'white_collar', 'family', 'immigration',
   'personal_injury', 'public_defense', 'appellate', 'military', 'juvenile', 'general',
@@ -241,57 +262,133 @@ router.post('/invite', authRequired, routeLimiter, async (req, res) => {
         WHERE fm.firm_id = ? AND LOWER(u.email) = ? AND COALESCE(fm.status, 'active') = 'active' AND COALESCE(fm.active, 1) = 1`, [ctx.firm_id, email]);
     if (already) return fail(req, res, 409, 'already_in_firm');
     if (await seatsLeft(db, ctx.firm_id) <= 0) return fail(req, res, 403, 'no_seats');
-    const token = randomBytes(24).toString('hex');
-    const expires = new Date(Date.now() + 7 * 86_400_000).toISOString();
-    await db.run(
-      `INSERT INTO firm_invites (firm_id, email, role, invited_by, token, expires_at, accepted) VALUES (?, ?, ?, ?, ?, ?, 0)
-       ON CONFLICT (firm_id, email) DO UPDATE SET role = excluded.role, invited_by = excluded.invited_by,
-         token = excluded.token, expires_at = excluded.expires_at, accepted = 0`,
-      [ctx.firm_id, email, role, req.user.id, token, expires]);
+    const { link, expires, emailStatus } = await createFirmInvite(db, { firmId: ctx.firm_id, email, role, invitedBy: req.user.id, lang: resolveLang(req) });
     await writeAuditLog(db, { user_id: req.user.id, firm_id: ctx.firm_id, action: 'invite', resource: 'firm_member', record_id: ctx.firm_id, new_value: { role }, ip: req.ip, ua: req.headers['user-agent'] });
-    res.status(201).json({ invited: true, email, role, expires_at: expires, message: say(req, 'msg.invited', { email }) });
+    res.status(201).json({
+      invited: true, email, role, expires_at: expires, email_status: emailStatus,
+      // Without a sent e-mail the admin passes the link on themselves.
+      ...(emailStatus === 'sent' ? {} : { link }),
+      message: say(req, emailStatus === 'sent' ? 'msg.invited' : 'msg.invited_link', { email }),
+    });
   } catch (e) {
     logger.error('[firm-acq/invite]', e.message);
     fail(req, res, 500, 'server');
   }
 });
 
-router.get('/invites', authRequired, async (req, res) => {
+/**
+ * Store an invitation and e-mail its link (…/firm/join/<token>) to the invited address.
+ * Only a SHA-256 of the token is stored; a new invitation to the same address replaces the
+ * old one (its link stops working). Shared by every route that invites someone into a firm
+ * (also routes/firms.js). → { token, link, expires, emailStatus: 'sent' | 'skipped' | 'failed' }
+ */
+export async function createFirmInvite(db, { firmId, email, role, invitedBy, lang = 'en' }) {
+  const token = randomBytes(32).toString('base64url');
+  const expires = new Date(Date.now() + INVITE_DAYS * 86_400_000).toISOString();
+  await db.run(
+    `INSERT INTO firm_invites (firm_id, email, role, invited_by, token, expires_at, accepted) VALUES (?, ?, ?, ?, ?, ?, 0)
+     ON CONFLICT (firm_id, email) DO UPDATE SET role = excluded.role, invited_by = excluded.invited_by,
+       token = excluded.token, expires_at = excluded.expires_at, accepted = 0`,
+    [firmId, email, role, invitedBy, hashToken(token), expires]);
+  const firm = await db.get('SELECT name FROM firms WHERE id = ?', [firmId]);
+  const link = firmInviteLink(token);
+  const p = { firm: firm?.name || '', link, days: INVITE_DAYS, role: msg(lang, `firm.role.${role}`) };
+  let emailStatus = 'skipped';
   try {
-    const db = await getDb();
-    const rows = await db.all(
-      `SELECT fi.id, fi.role, fi.expires_at, f.name AS firm_name, u.display_name AS invited_by_name
-         FROM firm_invites fi JOIN firms f ON f.id = fi.firm_id LEFT JOIN users u ON u.id = fi.invited_by
-        WHERE LOWER(fi.email) = LOWER(?) AND fi.accepted = 0 AND fi.expires_at > NOW()
-        ORDER BY fi.id DESC LIMIT 20`, [req.user.email || '']);
-    res.json({ invites: rows.map(r => ({ ...r, id: Number(r.id) })) });
+    const { emailLive, sendEmail } = await import('../services/email.js');
+    if (emailLive()) {
+      await sendEmail({ to: email, subject: msg(lang, 'firm.email.invite_subject', p), text: msg(lang, 'firm.email.invite_body', p) });
+      emailStatus = 'sent';
+    }
+  } catch (e) { emailStatus = 'failed'; logger.warn('[firm-invite/email]', e?.message); }
+  return { token, link, expires, emailStatus };
+}
+
+/** The pending, unexpired invitation a link token belongs to, else null. */
+export async function inviteByToken(db, token) {
+  if (!INVITE_TOKEN_RE.test(String(token || ''))) return null;
+  const inv = await db.get(
+    `SELECT fi.id, fi.firm_id, fi.email, fi.role, fi.invited_by, fi.token, fi.expires_at, f.name AS firm_name, u.display_name AS invited_by_name
+       FROM firm_invites fi JOIN firms f ON f.id = fi.firm_id LEFT JOIN users u ON u.id = fi.invited_by
+      WHERE fi.token = ? AND fi.accepted = 0 AND fi.expires_at > NOW()`, [hashToken(token)]);
+  return inv && sameHash(inv.token, hashToken(token)) ? inv : null;
+}
+
+const emailMatches = (req, inv) => !!req.user.email && String(req.user.email).toLowerCase() === String(inv.email).toLowerCase();
+
+/**
+ * Join the invitation's firm as req.user (the token was already checked with inviteByToken).
+ * → { ok: true } | { status, code } for the refusal. Shared with routes/firms.js accept-invite.
+ */
+export async function acceptFirmInvite(db, req, inv, { oneFirmOnly = true } = {}) {
+  if (!emailMatches(req, inv)) return { status: 403, code: 'invite_other_email' };
+  // The self-serve trial (this file) keeps one firm per person; the firm workspace routes
+  // (routes/firms.js, per-firm roles) allow several, as they always did.
+  const member = await db.get(
+    `SELECT firm_id FROM firm_members WHERE user_id = ? AND COALESCE(status, 'active') = 'active' AND COALESCE(active, 1) = 1
+      ORDER BY (firm_id = ?) DESC LIMIT 1`, [req.user.id, inv.firm_id]);
+  const inThisFirm = member && Number(member.firm_id) === Number(inv.firm_id);
+  if (oneFirmOnly && member && !inThisFirm) return { status: 409, code: 'already_member' };
+  if (!inThisFirm && await seatsLeft(db, inv.firm_id) <= 0) return { status: 403, code: 'no_seats' };
+  const joined = await db.transaction(async (tx) => {
+    // single use: only the request that flips accepted 0 → 1 joins
+    const won = await tx.run('UPDATE firm_invites SET accepted = 1 WHERE id = ? AND accepted = 0', [inv.id]);
+    if (!won.changes) return false;
+    await tx.run(
+      `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by, active, status, joined_at)
+       VALUES (?, ?, ?, ?, ?, 1, 'active', NOW())
+       ON CONFLICT (firm_id, user_id) DO UPDATE SET firm_role = excluded.firm_role, role = excluded.role, active = 1, status = 'active'`,
+      [inv.firm_id, req.user.id, inv.role, inv.role, inv.invited_by]);
+    return true;
+  });
+  if (!joined) return { status: 404, code: 'invite_not_found' };
+  await writeAuditLog(db, { user_id: req.user.id, firm_id: inv.firm_id, action: 'join', resource: 'firm', record_id: inv.firm_id, ip: req.ip, ua: req.headers['user-agent'] });
+  return { ok: true };
+}
+
+async function joinFirm(req, res, inv) {
+  const r = await acceptFirmInvite(await getDb(), req, inv);
+  if (!r.ok) return fail(req, res, r.status, r.code, r.code === 'invite_other_email' ? { email: inv.email } : {});
+  res.json({ joined: true, firm_id: Number(inv.firm_id), firm: inv.firm_name || null, role: inv.role, message: say(req, 'msg.joined') });
+}
+
+router.get('/invite/:token', authRequired, routeLimiter, async (req, res) => {
+  try {
+    const inv = await inviteByToken(await getDb(), req.params.token);
+    if (!inv) return fail(req, res, 404, 'invite_not_found');
+    res.json({ firm: inv.firm_name, role: inv.role, email: inv.email, email_matches: emailMatches(req, inv),
+      invited_by_name: inv.invited_by_name || null, expires_at: inv.expires_at });
   } catch (e) {
-    logger.error('[firm-acq/invites]', e.message);
+    logger.error('[firm-acq/invite/preview]', e.message);
     fail(req, res, 500, 'server');
   }
+});
+
+router.post('/invite/accept', authRequired, routeLimiter, async (req, res) => {
+  try {
+    const inv = await inviteByToken(await getDb(), req.body?.token);
+    if (!inv) return fail(req, res, 404, 'invite_not_found');
+    await joinFirm(req, res, inv);
+  } catch (e) {
+    logger.error('[firm-acq/invite/accept]', e.message);
+    fail(req, res, 500, 'server');
+  }
+});
+
+// Older app versions listed invitations by the signed-in e-mail and accepted by id. The
+// address is not proof of the inbox, so nothing is listed any more and accepting needs the
+// link's token.
+router.get('/invites', authRequired, (req, res) => {
+  res.json({ invites: [], join_by_link: true });
 });
 
 router.post('/invites/:id/accept', authRequired, routeLimiter, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
   try {
-    const db = await getDb();
-    const inv = await db.get(
-      `SELECT id, firm_id, role, invited_by FROM firm_invites
-        WHERE id = ? AND LOWER(email) = LOWER(?) AND accepted = 0 AND expires_at > NOW()`, [Number.isSafeInteger(id) ? id : 0, req.user.email || '']);
-    if (!inv) return fail(req, res, 404, 'invite_not_found');
-    const member = await db.get(`SELECT firm_id FROM firm_members WHERE user_id = ? AND COALESCE(status, 'active') = 'active' AND COALESCE(active, 1) = 1 LIMIT 1`, [req.user.id]);
-    if (member && Number(member.firm_id) !== Number(inv.firm_id)) return fail(req, res, 409, 'already_member');
-    if (!member && await seatsLeft(db, inv.firm_id) <= 0) return fail(req, res, 403, 'no_seats');
-    await db.transaction(async (tx) => {
-      await tx.run(
-        `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by, active, status, joined_at)
-         VALUES (?, ?, ?, ?, ?, 1, 'active', NOW())
-         ON CONFLICT (firm_id, user_id) DO UPDATE SET firm_role = excluded.firm_role, role = excluded.role, active = 1, status = 'active'`,
-        [inv.firm_id, req.user.id, inv.role, inv.role, inv.invited_by]);
-      await tx.run('UPDATE firm_invites SET accepted = 1 WHERE id = ?', [inv.id]);
-    });
-    await writeAuditLog(db, { user_id: req.user.id, firm_id: inv.firm_id, action: 'join', resource: 'firm', record_id: inv.firm_id, ip: req.ip, ua: req.headers['user-agent'] });
-    res.json({ joined: true, firm_id: Number(inv.firm_id), role: inv.role, message: say(req, 'msg.joined') });
+    if (!req.body?.token) return fail(req, res, 400, 'invite_token_required');
+    const inv = await inviteByToken(await getDb(), req.body.token);
+    if (!inv || !Number.isSafeInteger(id) || Number(inv.id) !== id) return fail(req, res, 404, 'invite_not_found');
+    await joinFirm(req, res, inv);
   } catch (e) {
     logger.error('[firm-acq/invites/accept]', e.message);
     fail(req, res, 500, 'server');

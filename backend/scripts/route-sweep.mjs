@@ -452,10 +452,19 @@ for (const route of mounted.filter(r => r.method === 'GET' && !OWNER_READ_SKIP.h
 }
 
 const t0 = Date.now();
-await pool(targets, CONCURRENCY, async (route, k) => {
+// Routes that can end the caller's sessions (logout { allDevices: true } — a junk body of
+// booleans is exactly that) run last, one at a time, each followed by signing everyone in
+// again: since migration 51 ending sessions also ends access tokens, and a parallel route
+// would otherwise see a 401 it did not cause.
+const killers = targets.filter(isSessionKiller);
+await pool(targets.filter(r => !isSessionKiller(r)), CONCURRENCY, async (route, k) => {
   await sweepRoute(route);
   if ((k + 1) % 100 === 0) console.log(`  … ${k + 1}/${targets.length} routes, ${requestCount} requests, ${findings.length} findings`);
 });
+for (const route of killers) {
+  await sweepRoute(route);
+  for (const c of callers) if (c.p) await relogin(c.p);
+}
 
 // Language: the same error must read differently in Spanish and Vietnamese.
 const seenLang = new Set();

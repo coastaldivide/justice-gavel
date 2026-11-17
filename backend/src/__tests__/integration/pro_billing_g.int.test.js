@@ -594,12 +594,15 @@ test('G10 bail-agent plan: verified before it counts; new-arrest alerts for the 
     const otherFirm = await ctx.db.get(`INSERT INTO firms (name, owner_id) VALUES (?, ?) RETURNING id`, [`${ctx.tag} Other`, consumer.user.id]);
     expect((await req('post', '/api/conflicts/check', attorney).send({ parties: ['x'], firm_id: otherFirm.id })).status).toBe(403);
     await ctx.db.run('DELETE FROM firms WHERE id = ?', [otherFirm.id]);
-    // the second attorney is invited, sees the invite and joins; the other firm's index stays private
-    expect((await req('post', '/api/firm-acquisition/invite', attorney).send({ email: attorney2.email, role: 'associate' })).status).toBe(201);
-    const inv = await req('get', '/api/firm-acquisition/invites', attorney2);
-    expect(inv.body.invites.length).toBe(1);
-    expect((await req('post', `/api/firm-acquisition/invites/${inv.body.invites[0].id}/accept`, consumer).send({})).status).toBe(404);
-    expect((await req('post', `/api/firm-acquisition/invites/${inv.body.invites[0].id}/accept`, attorney2).send({})).status).toBe(200);
+    // the second attorney is invited and joins with the invitation link (no e-mail provider here:
+    // the admin is given the link); the other firm's index stays private
+    const sent = await req('post', '/api/firm-acquisition/invite', attorney).send({ email: attorney2.email, role: 'associate' });
+    expect(sent.status).toBe(201);
+    const token = String(sent.body.link).split('/firm/join/')[1];
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect((await req('get', '/api/firm-acquisition/invites', attorney2)).body.invites).toEqual([]);   // no list by e-mail
+    expect((await req('post', '/api/firm-acquisition/invite/accept', consumer).send({ token })).status).toBe(403);   // not the invited address
+    expect((await req('post', '/api/firm-acquisition/invite/accept', attorney2).send({ token })).status).toBe(200);
     expect((await req('get', '/api/firm-acquisition/checklist', attorney)).body.checklist.find(c => c.key === 'team_invited').done).toBe(true);
     // trial ended: the firm and its data stay, the screen is told
     await ctx.db.run(`UPDATE firm_trials SET trial_end = NOW() - INTERVAL '1 day' WHERE user_id = ?`, [attorney.user.id]);

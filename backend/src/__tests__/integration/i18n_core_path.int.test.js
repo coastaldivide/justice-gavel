@@ -203,13 +203,15 @@ describeIntegration('core path in es / pt / vi (real Postgres)', () => {
       TELNYX_API_BASE: `http://127.0.0.1:${twilio.server.address().port}`,
     });
     await ctx.request().post('/api/push/language').set(bao.headers).send({ language: 'vi' });
-    await ctx.request().put('/api/court-dates/preferences').set(bao.headers).send({ sms_reminders: true, phone: '(615) 555-0177' });
+    // the number as /api/me/phone/confirm leaves it (preferences no longer set it: sandbox review 2026-11-17)
+    await ctx.db.run('UPDATE users SET phone = ?, phone_verified_phone = ?, phone_verified_at = NOW() WHERE id = ?', ['+16155550377', '+16155550377', bao.user.id]);
+    expect((await ctx.request().put('/api/court-dates/preferences').set(bao.headers).send({ sms_reminders: true })).status).toBe(200);
     const b = await ctx.request().post('/api/court-dates').set(bao.headers).send({ case_title: 'Hồ sơ của Bảo', court_date: dayPlus(5) });
     const br = await ctx.db.get(`SELECT id FROM scheduled_pushes WHERE court_date_id = ? AND status = 'pending' ORDER BY deliver_at LIMIT 1`, [b.body.id]);
     await ctx.db.run(`UPDATE scheduled_pushes SET deliver_at = NOW() - INTERVAL '1 minute' WHERE id = ?`, [br.id]);
     await dispatch({ now: new Date() });
     const sms = twilio.received.at(-1);
-    expect(sms.To).toBe('+16155550177');
+    expect(sms.To).toBe('+16155550377');
     // texts keep their accents (owner decision Oct 27 2026; services/smsText.js)
     expect(sms.Body).toContain('Nếu vắng mặt, tòa có thể ra lệnh bắt');
     expect(sms.Body).toContain('Trả lời STOP để ngừng nhận tin');

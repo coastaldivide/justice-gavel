@@ -18,6 +18,16 @@
  *                       phone_verified_at / phone_verified_phone. Any other account that had
  *                       verified the same number loses that verification (numbers are recycled).
  *                       A database trigger clears the verification whenever users.phone changes.
+ *
+ * One account per number (sandbox review 2026-11-17, finding 5; unique index in migration 51):
+ *   • a number another account SIGNS IN with is refused (409 phone_in_use) before any text is
+ *     sent, and again at confirmation — two accounts may never share a sign-in number;
+ *   • a number another account only keeps as its contact phone (it signs in with e-mail) moves
+ *     to the account that just proved it: numbers are recycled, and texts (court reminders)
+ *     must go to whoever has the number now. The other account's phone becomes empty.
+ *   • an account that signed up with a phone number keeps that number as its sign-in
+ *     identifier after verifying another one, and can sign in with either (routes/auth.js
+ *     looks up phone OR login_identifier); nobody else can take the sign-in number.
  */
 import crypto from 'node:crypto';
 import { sendSms, smsLive, toE164 } from './sms.js';
@@ -28,6 +38,12 @@ import logger from '../utils/logger.js';
 export const CODE_MINUTES = 10;
 export const MAX_ATTEMPTS = 5;
 export const LIMITS = Object.freeze({ perUserHour: 5, perPhoneHour: 5, perPhoneDay: 10, phoneGapSeconds: 60 });
+
+/** Another account signs in with this number → its id, else null. */
+async function signInHolder(db, phone, userId) {
+  const r = await db.get('SELECT id FROM users WHERE LOWER(login_identifier) = ? AND id <> ? LIMIT 1', [phone, userId]);
+  return r ? Number(r.id) : null;
+}
 
 export class VerifyError extends Error {
   constructor(status, code, params) { super(code); this.status = status; this.code = code; this.params = params; }
@@ -81,6 +97,7 @@ export async function startVerification(db, userId, rawPhone, { lang = 'en', now
   if (!phone) throw new VerifyError(400, 'bad_phone');
   if (!smsLive()) throw new VerifyError(503, 'sms_unavailable');
   if (await db.get('SELECT phone FROM sms_opt_outs WHERE phone = ?', [phone])) throw new VerifyError(409, 'opted_out');
+  if (await signInHolder(db, phone, userId)) throw new VerifyError(409, 'phone_in_use');
   const nowIso = now.toISOString();
   const counts = await db.get(
     `SELECT
@@ -150,8 +167,11 @@ export async function confirmVerification(db, userId, rawCode, { now = new Date(
     [now.toISOString(), v.id]);
   if (!won) throw new VerifyError(400, 'no_code');
   await db.transaction(async (tx) => {
-    // the number now belongs to this account: nobody else keeps it verified
+    // Another account signs in with this number (registered since the code was sent): refused.
+    if (await signInHolder(tx, v.phone, userId)) throw new VerifyError(409, 'phone_in_use');
+    // the number now belongs to this account: nobody else keeps it verified or as contact phone
     await tx.run(`UPDATE users SET phone_verified_at = NULL, phone_verified_phone = NULL WHERE phone_verified_phone = ? AND id <> ?`, [v.phone, userId]);
+    await tx.run(`UPDATE users SET phone = NULL WHERE phone = ? AND id <> ?`, [v.phone, userId]);
     await tx.run(`UPDATE users SET phone = ?, phone_verified_phone = ?, phone_verified_at = ? WHERE id = ?`, [v.phone, v.phone, now.toISOString(), userId]);
   });
   const linked = claim ? await claim(db, userId) : [];

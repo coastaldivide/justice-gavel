@@ -346,6 +346,8 @@ describeIntegration('Court attendance: Bond Desk reminders, morning-after, "Did 
   test('CA7 app users: asked by text, reply "2" → rescheduled; marked missed in the app → morning-after now; attended → never', async () => {
     if (!ctx.app) return;
     const { dispatchDueReminders } = await import('../../services/reminderDispatcher.js');
+    // the number as /api/me/phone/confirm leaves it (preferences no longer set it: sandbox review 2026-11-17)
+    await ctx.db.run('UPDATE users SET phone = ?, phone_verified_phone = ?, phone_verified_at = NOW() WHERE id = ?', [APP, APP, consumer.user.id]);
     const pref = await req('put', '/api/court-dates/preferences', consumer).send({ sms_reminders: true, phone: APP });
     expect(pref.status).toBe(200);
     const day = addDays(todayInZone('America/Chicago'), 2);

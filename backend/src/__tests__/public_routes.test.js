@@ -22,6 +22,7 @@ const PUBLIC = {
   'POST /api/auth/refresh': 'takes a refresh token / still-valid access token',
   'POST /api/auth/forgot-password': 'non-enumerating, rate limited',
   'POST /api/auth/reset-password': 'takes a single-use hashed reset token',
+  'POST /api/auth/confirm-email': 'takes a single-use hashed token from the link e-mailed to the new address, rate limited',
   // signed webhooks
   'POST /webhooks/stripe': 'Stripe signature verified',
   'POST /api/webhooks/stripe': 'Stripe signature verified',

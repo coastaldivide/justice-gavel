@@ -237,10 +237,12 @@ describe('S6I. FirmAcquisitionScreen — loadPlans + requestUpgrade + activateTr
     expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
     expect(src).toContain('/firm-acquisition/status');
     expect(src).toContain('/firm-acquisition/checklist');
-    expect(src).toContain('/firm-acquisition/invites');
+    // joining is by the e-mailed link (FirmJoinScreen, sandbox review 2026-11-17), not an in-app list
+    expect(src).toContain("'/firm-acquisition/invite'");
+    expect(src).not.toContain('/firm-acquisition/invites');
     expect(src).toContain('/firm-acquisition/upgrade');
     expect(src).toContain('RefreshControl');
-    expect(src).toContain('useConfirm');
+    expect(src).toContain('inviteLink');   // the link shown when nothing was e-mailed
   });
   test('S6I-02: requestUpgrade(tier) initiates firm plan upgrade', async () => {
     const fs = await import('fs');
@@ -249,10 +251,12 @@ describe('S6I. FirmAcquisitionScreen — loadPlans + requestUpgrade + activateTr
     expect(src).not.toMatch(/selectedV|loadPitch|VERTICAL_PITCH|type Flow/);
     expect(src).toContain('/firm-acquisition/status');
     expect(src).toContain('/firm-acquisition/checklist');
-    expect(src).toContain('/firm-acquisition/invites');
+    // joining is by the e-mailed link (FirmJoinScreen, sandbox review 2026-11-17), not an in-app list
+    expect(src).toContain("'/firm-acquisition/invite'");
+    expect(src).not.toContain('/firm-acquisition/invites');
     expect(src).toContain('/firm-acquisition/upgrade');
     expect(src).toContain('RefreshControl');
-    expect(src).toContain('useConfirm');
+    expect(src).toContain('inviteLink');   // the link shown when nothing was e-mailed
     expect(src).toContain('requestPlan');
   });
 });

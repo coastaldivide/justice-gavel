@@ -100,9 +100,11 @@ describe('DBQ. DB Query Safety — safeTable + parameterized queries', () => {
   test('DBQ-03: auth.js UPDATE pattern safe — developer-controlled column names', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/auth.js','utf8');
-    expect(src).toContain("updates.join(', ')");
-    // Pattern: columns are from a developer-defined list, values from params[]
-    // Only values come from user input — always parameterized with ?
+    // update-profile (sandbox review 2026-11-17) runs fixed statements: no column list is
+    // built at all, and every value is a ? parameter
+    expect(src).not.toContain("updates.join(', ')");
+    expect(src).toContain("'UPDATE users SET display_name = ?, name = ? WHERE id = ?'");
+    expect(src).toContain("'UPDATE users SET pending_email = ?, pending_email_token = ?, pending_email_expires_at = ? WHERE id = ?'");
   });
 });
 

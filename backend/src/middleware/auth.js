@@ -15,6 +15,13 @@
  *     change (invalidateUserCache).
  *   - Fails CLOSED: if the DB cannot be reached the request gets 503
  *     auth_unavailable instead of being waved through.
+ *   - Session version (migration 51): a token carries the account's token_version
+ *     ("tv", absent = 0). Changing or resetting the password, confirming a new
+ *     e-mail address and "sign out everywhere" add one to it (bumpTokenVersion in
+ *     routes/auth.js, which also clears this cache), so every older token gets 401
+ *     session_revoked at once on this instance. The service runs one instance
+ *     (render.yaml numInstances: 1); with more, another instance notices within
+ *     CACHE_TTL_MS.
  *
  * optionalAuth:
  *   - Sets req.user if a valid token is present (with the same live DB state);
@@ -51,7 +58,10 @@ function dbBacked() {
 }
 
 const PRINCIPAL_COLS =
-  'id, role, account_status, is_admin, is_defender, subscription_tier, email, display_name, bar_verified';
+  'id, role, account_status, is_admin, is_defender, subscription_tier, email, display_name, bar_verified, token_version';
+
+/** The session version a token was issued for (tokens from before migration 51 have none: 0). */
+export const tokenVersionOf = (claims) => Number.isSafeInteger(claims?.tv) ? claims.tv : 0;
 
 /**
  * Load the live authorization state for a user id. Returns null when the user
@@ -76,6 +86,7 @@ export async function loadPrincipal(userId) {
     bar_verified:      Number(row.bar_verified || 0),
     email:             row.email || null,
     display_name:      row.display_name || null,
+    token_version:     Number(row.token_version || 0),
   } : null;
 
   USER_CACHE.set(key, { principal, checkedAt: now });
@@ -169,6 +180,12 @@ export function authRequired(req, res, next) {
         code:  'account_disabled',
       });
     }
+    if (tokenVersionOf(claims) !== p.token_version) {
+      return res.status(401).json({
+        error: 'You were signed out. Please sign in again.',
+        code:  'session_revoked',
+      });
+    }
     req.user = applyPrincipal(claims, p);
     next();
   }).catch(e => {
@@ -194,7 +211,7 @@ export function optionalAuth(req, res, next) {
   if (!claims || claims.type === 'refresh' || claims.id == null) { req.user = null; return next(); }
   if (!dbBacked()) { req.user = claims; return next(); }
   loadPrincipal(claims.id).then(p => {
-    req.user = (p && !DISABLED_STATUSES.has(String(p.account_status).toLowerCase()))
+    req.user = (p && !DISABLED_STATUSES.has(String(p.account_status).toLowerCase()) && tokenVersionOf(claims) === p.token_version)
       ? applyPrincipal(claims, p) : null;
     next();
   }).catch(() => { req.user = null; next(); });   // anonymous on DB error — grants nothing
