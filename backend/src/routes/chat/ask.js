@@ -4,7 +4,8 @@
  *
  * Used when the app cannot read a stream (native, old browsers, a proxy that
  * buffers SSE). Same rules as /stream: free accounts get
- * FREE_CHAT_MESSAGES_PER_DAY questions per local day, defender mode only for
+ * FREE_CHAT_MESSAGES_PER_DAY questions per rolling 24 hours (reserved before the
+ * answer, refunded when the job fails), defender mode only for
  * attorneys, answers in the request language, and a retry with the same
  * clientMessageId returns the answer already given instead of asking again.
  */
@@ -21,7 +22,7 @@ import { msg, resolveLang } from '../../i18n/index.js';
 import logger             from '../../utils/logger.js';
 import {
   chatContext, limitBody, readChatBody, prepareChatRequest, findReplay, saveExchange,
-  detectLawyerHandoff, callClaude, classifyIntent, sourcedReply, sentOf, replayOf,
+  reserveQuestion, settleQuestion, detectLawyerHandoff, callClaude, classifyIntent, sourcedReply, sentOf, replayOf,
 } from './_helpers.js';
 
 export const chatBurstLimiter = rateLimit({
@@ -52,19 +53,33 @@ router.post('/ask', chatBurstLimiter, authRequired, requireDisclaimer, requireAi
       intent: classifyIntent(body.message),
       rights_refs: ctx.defender ? [] : rightsRefsFor(body.message, reply, lang),
     });
-    if (replay == null && !ctx.unlimited && ctx.limited) return res.status(402).json(limitBody(ctx));
+    // A new question takes one free question now (a replay of an answered one takes none).
+    const hold = replay == null ? await reserveQuestion(db, userId, ctx, body.clientMessageId) : null;
+    if (hold && !hold.ok) return res.status(402).json(limitBody(ctx));
 
-    const jobId = await enqueue('chat', async () => {
-      if (replay != null) { const r = replayOf(replay, lang); return answerOf(r.reply, true, r.answer); }
-      // Long conversations: older turns → the stored recap, recent turns sent (AI step 5).
-      const { request } = await prepareChatRequest(db, { body, lang, defender: ctx.defender, userId });
-      // nothing_found: a legal question with no source → no model call (services/sourcedAnswers.js)
-      const out = request.mode === 'nothing_found' ? null : await callClaude({ ...request, defender: ctx.defender, userId });
-      const r = sourcedReply(request, out ?? {}, lang);
-      await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: r.content, clientMessageId: body.clientMessageId,
-        aiSent: sentOf(request), aiAnswer: r.answer });
-      return answerOf(r.reply, false, r.answer);
-    }, userId);
+    let jobId;
+    try {
+      jobId = await enqueue('chat', async () => {
+        if (replay != null) { const r = replayOf(replay, lang); return answerOf(r.reply, true, r.answer); }
+        try {
+          // Long conversations: older turns → the stored recap, recent turns sent (AI step 5).
+          const { request } = await prepareChatRequest(db, { body, lang, defender: ctx.defender, userId });
+          // nothing_found: a legal question with no source → no model call (services/sourcedAnswers.js)
+          const out = request.mode === 'nothing_found' ? null : await callClaude({ ...request, defender: ctx.defender, userId });
+          const r = sourcedReply(request, out ?? {}, lang);
+          await saveExchange(db, { sessionId: body.sessionId, userId, question: body.message, answer: r.content, clientMessageId: body.clientMessageId,
+            aiSent: sentOf(request), aiAnswer: r.answer });
+          await settleQuestion(db, hold, 'used');
+          return answerOf(r.reply, false, r.answer);
+        } catch (e) {
+          await settleQuestion(db, hold, 'refunded');   // no answer reached the person
+          throw e;
+        }
+      }, userId);
+    } catch (e) {
+      await settleQuestion(db, hold, 'refunded');
+      throw e;
+    }
 
     res.json({ jobId, status: 'pending', async: true, not_legal_advice: true });
   } catch (err) {

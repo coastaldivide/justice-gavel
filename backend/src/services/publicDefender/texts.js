@@ -29,7 +29,7 @@ import { toE164, sendSms, smsLive } from '../sms.js';
 import { encrypt, decrypt } from '../encryption.js';
 import { msg, formatDayShort, formatTime, normalizeLang } from '../../i18n/index.js';
 import { zonedDateTimeToUtc, addDays, todayInZone, daysBetween, DEFAULT_TIME_ZONE } from '../../utils/timezone.js';
-import { planSteps, ASK_AT, FOLLOWUP_AT, missedCourtLink, dateOnly, timeOnly } from '../courtReminders.js';
+import { planSteps, attendanceAskAt, FOLLOWUP_AT, missedCourtLink, dateOnly, timeOnly } from '../courtReminders.js';
 import { parseCourtReply } from '../bondDesk/courtDates.js';
 import { fitSms } from '../smsText.js';
 import { sendPushToUser } from '../pushDelivery.js';
@@ -160,7 +160,7 @@ async function plan(db, courtDateId, now) {
   if (!reason && phone) {
     const want = [];
     if (c.status === 'scheduled') {
-      for (const s of planSteps(day, tz, now)) {
+      for (const s of planSteps(day, tz, now, { courtTime: timeOnly(c.court_time) })) {
         if (s.immediate) {
           const done = await db.get(
             `SELECT 1 AS x FROM pd_reminders WHERE court_date_id = ? AND phone = ? AND court_day = ? AND step IN ('d7','d3','d1','d0','now')
@@ -169,7 +169,7 @@ async function plan(db, courtDateId, now) {
         }
         want.push({ step: s.immediate ? 'now' : `d${s.days}`, at: s.at });
       }
-      const ask = zonedDateTimeToUtc(day, ASK_AT.hh, ASK_AT.mm, tz);
+      const ask = attendanceAskAt(day, tz, timeOnly(c.court_time));
       if (ask && ask.getTime() > now.getTime()) want.push({ step: 'ask', at: ask });
       const fu = zonedDateTimeToUtc(addDays(day, 1), FOLLOWUP_AT.hh, FOLLOWUP_AT.mm, tz);
       if (fu && fu.getTime() > now.getTime()) want.push({ step: 'missed', at: fu });

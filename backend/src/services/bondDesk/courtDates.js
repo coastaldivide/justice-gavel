@@ -33,7 +33,7 @@ import { msg, formatDay, formatDayShort, formatTime, normalizeLang } from '../..
 import {
   DEFAULT_TIME_ZONE, isValidTimeZone, stateTimeZone, countyTimeZone, zonedDateTimeToUtc, addDays, todayInZone, daysBetween,
 } from '../../utils/timezone.js';
-import { planSteps, ASK_AT, FOLLOWUP_AT, missedCourtLink, dateOnly, timeOnly } from '../courtReminders.js';
+import { planSteps, attendanceAskAt, FOLLOWUP_AT, missedCourtLink, dateOnly, timeOnly } from '../courtReminders.js';
 import { fitSms } from '../smsText.js';
 import { sendAgentTextRecord, sendAgentEmail, agencyFor } from './core.js';
 import { sendPushToUser } from '../pushDelivery.js';
@@ -145,7 +145,7 @@ async function plan(db, courtDateId, now) {
     const people = await textRecipients(db, c);
     const want = [];
     if (c.status === 'scheduled') {
-      const steps = planSteps(day, tz, now);
+      const steps = planSteps(day, tz, now, { courtTime: timeOnly(c.court_time) });
       for (const p of people) {
         for (const s of steps) {
           if (s.immediate) {
@@ -160,7 +160,7 @@ async function plan(db, courtDateId, now) {
     }
     const def = people.find((p) => p.signer_type === 'defendant');
     if (def && c.status === 'scheduled') {
-      const ask = zonedDateTimeToUtc(day, ASK_AT.hh, ASK_AT.mm, tz);
+      const ask = attendanceAskAt(day, tz, timeOnly(c.court_time));
       if (ask && ask.getTime() > now.getTime()) want.push({ p: def, step: 'ask', at: ask });
       const fu = zonedDateTimeToUtc(addDays(day, 1), FOLLOWUP_AT.hh, FOLLOWUP_AT.mm, tz);
       if (fu && fu.getTime() > now.getTime()) want.push({ p: def, step: 'missed', at: fu });

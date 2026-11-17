@@ -168,8 +168,13 @@ describe('CST. chat/ — SSE Streaming + REST Fallback Routes', () => {
       const askSrc    = fs.readFileSync(__REPO + '/backend/src/routes/chat/ask.js', 'utf8');
       const streamSrc = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
       expect(helpers).toContain('FREE_CHAT_MESSAGES_PER_DAY = 3');
-      expect(askSrc).toContain('ctx.limited');
-      expect(streamSrc).toContain('ctx.limited');
+      // a free question is reserved before the answer (one at a time), refunded without one
+      // (sandbox review 2026-11-17, finding 6)
+      expect(helpers).toContain('CHAT_QUOTA_WINDOW_HOURS = 24');
+      expect(askSrc).toContain('reserveQuestion(db, userId, ctx');
+      expect(streamSrc).toContain('reserveQuestion(db, userId, ctx');
+      expect(askSrc).toContain("settleQuestion(db, hold, 'refunded')");
+      expect(streamSrc).toContain("settleQuestion(db, hold, saved ? 'used' : 'refunded')");
     });
 });
 
